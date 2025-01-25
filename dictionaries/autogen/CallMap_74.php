@@ -11131,12 +11131,12 @@ return array (
   ),
   'date_time_set' => 
   array (
-    0 => 'mixed',
-    'object' => 'mixed',
-    'hour' => 'mixed',
-    'minute' => 'mixed',
-    'second=' => 'mixed',
-    'microseconds=' => 'mixed',
+    0 => 'int',
+    'object' => 'int',
+    'hour' => 'int',
+    'minute' => 'int',
+    'second=' => 'int',
+    'microseconds=' => 'int',
   ),
   'date_timestamp_get' => 
   array (
@@ -11590,8 +11590,9 @@ return array (
   ),
   'debug_zval_dump' => 
   array (
-    0 => 'mixed',
-    '...vars' => 'mixed',
+    0 => 'void',
+    'value' => 'mixed',
+    '...values=' => 'mixed',
   ),
   'decbin' => 
   array (
@@ -16799,10 +16800,10 @@ return array (
   ),
   'evloop::check' => 
   array (
-    0 => 'mixed',
-    'callback' => 'mixed',
+    0 => 'EvCheck',
+    'callback' => 'callable',
     'data=' => 'mixed',
-    'priority=' => 'mixed',
+    'priority=' => 'int',
   ),
   'evloop::child' => 
   array (
@@ -16824,17 +16825,16 @@ return array (
   'evloop::embed' => 
   array (
     0 => 'mixed',
-    'other' => 'mixed',
-    'callback=' => 'mixed',
+    'callback' => 'callable',
     'data=' => 'mixed',
-    'priority=' => 'mixed',
+    'priority=' => 'int',
   ),
   'evloop::fork' => 
   array (
     0 => 'mixed',
-    'callback' => 'mixed',
+    'callback' => 'callable',
     'data=' => 'mixed',
-    'priority=' => 'mixed',
+    'priority=' => 'int',
   ),
   'evloop::idle' => 
   array (
@@ -16880,9 +16880,9 @@ return array (
   'evloop::prepare' => 
   array (
     0 => 'mixed',
-    'callback' => 'mixed',
+    'callback' => 'callable',
     'data=' => 'mixed',
-    'priority=' => 'mixed',
+    'priority=' => 'int',
   ),
   'evloop::resume' => 
   array (
@@ -17622,10 +17622,10 @@ return array (
   array (
     0 => 'mixed',
     'filename' => 'mixed',
-    'flags=' => 'mixed',
     'context=' => 'mixed',
     'offset=' => 'mixed',
     'maxlen=' => 'mixed',
+    'use_include_path=' => 'bool',
   ),
   'file_put_contents' => 
   array (
@@ -26883,10 +26883,11 @@ return array (
   ),
   'mb_convert_variables' => 
   array (
-    0 => 'mixed',
-    'to' => 'mixed',
-    'from' => 'mixed',
-    '...&vars' => 'mixed',
+    0 => 'false|string',
+    'to_encoding' => 'string',
+    'from_encoding' => 'array<array-key, mixed>|string',
+    '&var' => 'array<array-key, mixed>|object|string',
+    '...&vars=' => 'array<array-key, mixed>|object|string',
   ),
   'mb_decode_mimeheader' => 
   array (

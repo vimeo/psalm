@@ -15334,6 +15334,9 @@ return array (
   'evloop::check' => 
   array (
     0 => 'EvCheck',
+    'callback' => 'callable',
+    'data=' => 'mixed',
+    'priority=' => 'int',
   ),
   'evloop::child' => 
   array (
@@ -15355,10 +15358,16 @@ return array (
   'evloop::embed' => 
   array (
     0 => 'EvEmbed',
+    'callback' => 'callable',
+    'data=' => 'mixed',
+    'priority=' => 'int',
   ),
   'evloop::fork' => 
   array (
     0 => 'EvFork',
+    'callback' => 'callable',
+    'data=' => 'mixed',
+    'priority=' => 'int',
   ),
   'evloop::idle' => 
   array (
@@ -15405,6 +15414,9 @@ return array (
   'evloop::prepare' => 
   array (
     0 => 'EvPrepare',
+    'callback' => 'callable',
+    'data=' => 'mixed',
+    'priority=' => 'int',
   ),
   'evloop::resume' => 
   array (
@@ -25587,8 +25599,8 @@ return array (
     0 => 'false|string',
     'to_encoding' => 'string',
     'from_encoding' => 'array<array-key, mixed>|string',
-    '&var' => 'mixed',
-    '...&vars=' => 'mixed',
+    '&var' => 'array<array-key, mixed>|object|string',
+    '...&vars=' => 'array<array-key, mixed>|object|string',
   ),
   'mb_decode_mimeheader' => 
   array (

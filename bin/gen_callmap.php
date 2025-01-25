@@ -25,11 +25,6 @@ foreach (glob(__DIR__."/../dictionaries/autogen/CallMap_*.php") as $file) {
     $version = $matches[1];
 
     $baseMaps[$version] = normalizeCallMap(require $file);
-    $baseMaps[$version]['datefmt_set_lenient'] = [
-        0 => 'void',
-        'formatter' => 'IntlDateFormatter',
-        'lenient' => 'bool',
-    ];
     $baseMaps[$version]['debug_zval_dump'] = [
         0 => 'void',
         'value' => 'mixed',
@@ -42,12 +37,45 @@ foreach (glob(__DIR__."/../dictionaries/autogen/CallMap_*.php") as $file) {
           '&var' => 'array<array-key, mixed>|object|string',
           '...&vars=' => 'array<array-key, mixed>|object|string',
     ];
+    $baseMaps[$version] = [
+        0 => 'mixed',
+        '...args=' => 'mixed',
+    ];
+    foreach (['check', 'embed', 'fork', 'prepare'] as $f) {
+        $baseMaps[$version]["evloop::$f"] = [
+            0 => $baseMaps[$version]["evloop::$f"][0],
+            'callback' => 'callable',
+            'data=' => 'mixed',
+            'priority=' => 'int',
+        ];
+    }
+    if (count($baseMaps[$version]['amqpbasicproperties::__construct']) === 1) {
+        $baseMaps[$version]['amqpbasicproperties::__construct'] = [
+        0 => 'void',
+        'contentType=' => 'null|string',
+        'contentEncoding=' => 'null|string',
+        'headers=' => 'array<array-key, mixed>',
+        'deliveryMode=' => 'int',
+        'priority=' => 'int',
+        'correlationId=' => 'null|string',
+        'replyTo=' => 'null|string',
+        'expiration=' => 'null|string',
+        'messageId=' => 'null|string',
+        'timestamp=' => 'int|null',
+        'type=' => 'null|string',
+        'userId=' => 'null|string',
+        'appId=' => 'null|string',
+        'clusterId=' => 'null|string',
+        ];
+    }
     if (isset($baseMaps[$version]['file_get_contents']['flags='])) {
         unset($baseMaps[$version]['file_get_contents']['flags=']);
         $baseMaps[$version]['file_get_contents']['use_include_path='] = 'bool';
     }
     foreach ($baseMaps[$version]['date_time_set'] as &$t) {
-        if ($t === 'mixed') $t = 'int';
+        if ($t === 'mixed') {
+            $t = 'int';
+        }
     } unset($t);
     writeCallMap($file, $baseMaps[$version]);
 }

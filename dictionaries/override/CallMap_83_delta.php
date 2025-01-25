@@ -57,6 +57,70 @@ return array (
         'background_color' => 'int',
       ),
     ),
+    'imagick::setimageblueprimary' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'x' => 'float',
+        'y' => 'float',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'x' => 'float',
+        'y' => 'float',
+        'z' => 'float',
+      ),
+    ),
+    'imagick::setimagegreenprimary' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'x' => 'float',
+        'y' => 'float',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'x' => 'float',
+        'y' => 'float',
+        'z' => 'float',
+      ),
+    ),
+    'imagick::setimageredprimary' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'x' => 'float',
+        'y' => 'float',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'x' => 'float',
+        'y' => 'float',
+        'z' => 'float',
+      ),
+    ),
+    'imagick::setimagewhitepoint' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'x' => 'float',
+        'y' => 'float',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'x' => 'float',
+        'y' => 'float',
+        'z' => 'float',
+      ),
+    ),
     'imap_clearflag_full' => 
     array (
       'old' => 

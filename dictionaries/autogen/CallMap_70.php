@@ -30,6 +30,20 @@ return array (
   'amqpbasicproperties::__construct' => 
   array (
     0 => 'void',
+    'contentType=' => 'null|string',
+    'contentEncoding=' => 'null|string',
+    'headers=' => 'array<array-key, mixed>',
+    'deliveryMode=' => 'int',
+    'priority=' => 'int',
+    'correlationId=' => 'null|string',
+    'replyTo=' => 'null|string',
+    'expiration=' => 'null|string',
+    'messageId=' => 'null|string',
+    'timestamp=' => 'int|null',
+    'type=' => 'null|string',
+    'userId=' => 'null|string',
+    'appId=' => 'null|string',
+    'clusterId=' => 'null|string',
   ),
   'amqpbasicproperties::getappid' => 
   array (
@@ -10132,11 +10146,11 @@ return array (
   ),
   'date_time_set' => 
   array (
-    0 => 'mixed',
-    'object' => 'mixed',
-    'hour' => 'mixed',
-    'minute' => 'mixed',
-    'second=' => 'mixed',
+    0 => 'int',
+    'object' => 'int',
+    'hour' => 'int',
+    'minute' => 'int',
+    'second=' => 'int',
   ),
   'date_timestamp_get' => 
   array (
@@ -10574,8 +10588,9 @@ return array (
   ),
   'debug_zval_dump' => 
   array (
-    0 => 'mixed',
-    '...vars' => 'mixed',
+    0 => 'void',
+    'value' => 'mixed',
+    '...values=' => 'mixed',
   ),
   'decbin' => 
   array (
@@ -15761,10 +15776,10 @@ return array (
   ),
   'evloop::check' => 
   array (
-    0 => 'mixed',
-    'callback' => 'mixed',
+    0 => 'EvCheck',
+    'callback' => 'callable',
     'data=' => 'mixed',
-    'priority=' => 'mixed',
+    'priority=' => 'int',
   ),
   'evloop::child' => 
   array (
@@ -15786,17 +15801,16 @@ return array (
   'evloop::embed' => 
   array (
     0 => 'mixed',
-    'other' => 'mixed',
-    'callback=' => 'mixed',
+    'callback' => 'callable',
     'data=' => 'mixed',
-    'priority=' => 'mixed',
+    'priority=' => 'int',
   ),
   'evloop::fork' => 
   array (
     0 => 'mixed',
-    'callback' => 'mixed',
+    'callback' => 'callable',
     'data=' => 'mixed',
-    'priority=' => 'mixed',
+    'priority=' => 'int',
   ),
   'evloop::idle' => 
   array (
@@ -15842,9 +15856,9 @@ return array (
   'evloop::prepare' => 
   array (
     0 => 'mixed',
-    'callback' => 'mixed',
+    'callback' => 'callable',
     'data=' => 'mixed',
-    'priority=' => 'mixed',
+    'priority=' => 'int',
   ),
   'evloop::resume' => 
   array (
@@ -16393,10 +16407,10 @@ return array (
   array (
     0 => 'mixed',
     'filename' => 'mixed',
-    'flags=' => 'mixed',
     'context=' => 'mixed',
     'offset=' => 'mixed',
     'maxlen=' => 'mixed',
+    'use_include_path=' => 'bool',
   ),
   'file_put_contents' => 
   array (
@@ -25329,10 +25343,11 @@ return array (
   ),
   'mb_convert_variables' => 
   array (
-    0 => 'mixed',
-    'to' => 'mixed',
-    'from' => 'mixed',
-    '...&vars' => 'mixed',
+    0 => 'false|string',
+    'to_encoding' => 'string',
+    'from_encoding' => 'array<array-key, mixed>|string',
+    '&var' => 'array<array-key, mixed>|object|string',
+    '...&vars=' => 'array<array-key, mixed>|object|string',
   ),
   'mb_decode_mimeheader' => 
   array (

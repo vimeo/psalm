@@ -28,7 +28,7 @@ return array (
   'abs' => 
   array (
     0 => 'int<0, max>',
-    'num' => 'int',
+    'number' => 'int',
   ),
   'abs\'1' => 
   array (
@@ -86,20 +86,20 @@ return array (
   'amqpbasicproperties::__construct' => 
   array (
     0 => 'void',
-    'content_type=' => 'string',
-    'content_encoding=' => 'string',
+    'contentType=' => 'string',
+    'contentEncoding=' => 'string',
     'headers=' => 'array<array-key, mixed>',
-    'delivery_mode=' => 'int',
+    'deliveryMode=' => 'int',
     'priority=' => 'int',
-    'correlation_id=' => 'string',
-    'reply_to=' => 'string',
+    'correlationId=' => 'string',
+    'replyTo=' => 'string',
     'expiration=' => 'string',
-    'message_id=' => 'string',
+    'messageId=' => 'string',
     'timestamp=' => 'int',
     'type=' => 'string',
-    'user_id=' => 'string',
-    'app_id=' => 'string',
-    'cluster_id=' => 'string',
+    'userId=' => 'string',
+    'appId=' => 'string',
+    'clusterId=' => 'string',
   ),
   'amqpbasicproperties::getappid' => 
   array (
@@ -160,7 +160,7 @@ return array (
   'amqpchannel::__construct' => 
   array (
     0 => 'void',
-    'amqp_connection' => 'AMQPConnection',
+    'connection' => 'AMQPConnection',
   ),
   'amqpchannel::basicrecover' => 
   array (
@@ -216,6 +216,7 @@ return array (
     0 => 'bool',
     'size' => 'int',
     'count' => 'int',
+    'global=' => 'bool',
   ),
   'amqpchannel::rollbacktransaction' => 
   array (
@@ -224,8 +225,8 @@ return array (
   'amqpchannel::setconfirmcallback' => 
   array (
     0 => 'mixed',
-    'ack_callback=' => 'callable|null',
-    'nack_callback=' => 'callable|null',
+    'ackCallback' => 'callable|null',
+    'nackCallback=' => 'callable|null',
   ),
   'amqpchannel::setglobalprefetchcount' => 
   array (
@@ -250,7 +251,7 @@ return array (
   'amqpchannel::setreturncallback' => 
   array (
     0 => 'mixed',
-    'return_callback=' => 'callable|null',
+    'returnCallback' => 'callable|null',
   ),
   'amqpchannel::starttransaction' => 
   array (
@@ -621,7 +622,7 @@ return array (
   'amqpenvelope::getheader' => 
   array (
     0 => 'false|string',
-    'header_key' => 'string',
+    'headerName' => 'string',
   ),
   'amqpenvelope::getheaders' => 
   array (
@@ -658,7 +659,7 @@ return array (
   'amqpenvelope::hasheader' => 
   array (
     0 => 'bool',
-    'header_key' => 'string',
+    'headerName' => 'string',
   ),
   'amqpenvelope::isredelivery' => 
   array (
@@ -765,13 +766,13 @@ return array (
   'amqpexchange::__construct' => 
   array (
     0 => 'void',
-    'amqp_channel' => 'AMQPChannel',
+    'channel' => 'AMQPChannel',
   ),
   'amqpexchange::bind' => 
   array (
     0 => 'bool',
-    'exchange_name' => 'string',
-    'routing_key=' => 'string',
+    'exchangeName' => 'string',
+    'routingKey=' => 'string',
     'arguments=' => 'array<array-key, mixed>',
   ),
   'amqpexchange::declare' => 
@@ -791,7 +792,7 @@ return array (
   'amqpexchange::getargument' => 
   array (
     0 => 'false|int|string',
-    'key' => 'string',
+    'argumentName' => 'string',
   ),
   'amqpexchange::getarguments' => 
   array (
@@ -820,15 +821,15 @@ return array (
   'amqpexchange::hasargument' => 
   array (
     0 => 'bool',
-    'key' => 'string',
+    'argumentName' => 'string',
   ),
   'amqpexchange::publish' => 
   array (
     0 => 'bool',
     'message' => 'string',
-    'routing_key=' => 'string',
+    'routingKey=' => 'string',
     'flags=' => 'int',
-    'attributes=' => 'array<array-key, mixed>',
+    'headers=' => 'array<array-key, mixed>',
   ),
   'amqpexchange::removeargument' => 
   array (
@@ -838,8 +839,8 @@ return array (
   'amqpexchange::setargument' => 
   array (
     0 => 'bool',
-    'key' => 'string',
-    'value' => 'int|string',
+    'argumentName' => 'string',
+    'argumentValue' => 'int|string',
   ),
   'amqpexchange::setarguments' => 
   array (
@@ -854,18 +855,18 @@ return array (
   'amqpexchange::setname' => 
   array (
     0 => 'bool',
-    'exchange_name' => 'string',
+    'exchangeName' => 'string',
   ),
   'amqpexchange::settype' => 
   array (
     0 => 'bool',
-    'exchange_type' => 'string',
+    'exchangeType' => 'string',
   ),
   'amqpexchange::unbind' => 
   array (
     0 => 'bool',
-    'exchange_name' => 'string',
-    'routing_key=' => 'string',
+    'exchangeName' => 'string',
+    'routingKey=' => 'string',
     'arguments=' => 'array<array-key, mixed>',
   ),
   'amqpexchangeexception::__clone' => 
@@ -918,25 +919,25 @@ return array (
   'amqpqueue::__construct' => 
   array (
     0 => 'void',
-    'amqp_channel' => 'AMQPChannel',
+    'channel' => 'AMQPChannel',
   ),
   'amqpqueue::ack' => 
   array (
     0 => 'bool',
-    'delivery_tag' => 'string',
+    'deliveryTag' => 'string',
     'flags=' => 'int',
   ),
   'amqpqueue::bind' => 
   array (
     0 => 'bool',
-    'exchange_name' => 'string',
-    'routing_key=' => 'string',
+    'exchangeName' => 'string',
+    'routingKey=' => 'string',
     'arguments=' => 'array<array-key, mixed>',
   ),
   'amqpqueue::cancel' => 
   array (
     0 => 'bool',
-    'consumer_tag=' => 'string',
+    'consumerTag=' => 'string',
   ),
   'amqpqueue::consume' => 
   array (
@@ -966,7 +967,7 @@ return array (
   'amqpqueue::getargument' => 
   array (
     0 => 'false|int|string',
-    'key' => 'string',
+    'argumentName' => 'string',
   ),
   'amqpqueue::getarguments' => 
   array (
@@ -995,12 +996,12 @@ return array (
   'amqpqueue::hasargument' => 
   array (
     0 => 'bool',
-    'key' => 'string',
+    'argumentName' => 'string',
   ),
   'amqpqueue::nack' => 
   array (
     0 => 'bool',
-    'delivery_tag' => 'string',
+    'deliveryTag' => 'string',
     'flags=' => 'int',
   ),
   'amqpqueue::purge' => 
@@ -1015,7 +1016,7 @@ return array (
   'amqpqueue::reject' => 
   array (
     0 => 'bool',
-    'delivery_tag' => 'string',
+    'deliveryTag' => 'string',
     'flags=' => 'int',
   ),
   'amqpqueue::removeargument' => 
@@ -1026,8 +1027,8 @@ return array (
   'amqpqueue::setargument' => 
   array (
     0 => 'bool',
-    'key' => 'string',
-    'value' => 'mixed',
+    'argumentName' => 'string',
+    'argumentValue' => 'mixed',
   ),
   'amqpqueue::setarguments' => 
   array (
@@ -1042,13 +1043,13 @@ return array (
   'amqpqueue::setname' => 
   array (
     0 => 'bool',
-    'queue_name' => 'string',
+    'name' => 'string',
   ),
   'amqpqueue::unbind' => 
   array (
     0 => 'bool',
-    'exchange_name' => 'string',
-    'routing_key=' => 'string',
+    'exchangeName' => 'string',
+    'routingKey=' => 'string',
     'arguments=' => 'array<array-key, mixed>',
   ),
   'amqpqueueexception::__clone' => 
@@ -2243,7 +2244,6 @@ return array (
   'arrayiterator::asort' => 
   array (
     0 => 'true',
-    'flags=' => 'int',
   ),
   'arrayiterator::count' => 
   array (
@@ -2268,7 +2268,6 @@ return array (
   'arrayiterator::ksort' => 
   array (
     0 => 'true',
-    'flags=' => 'int',
   ),
   'arrayiterator::natcasesort' => 
   array (
@@ -2285,23 +2284,23 @@ return array (
   'arrayiterator::offsetexists' => 
   array (
     0 => 'bool',
-    'key' => 'int|string',
+    'index' => 'int|string',
   ),
   'arrayiterator::offsetget' => 
   array (
     0 => 'mixed',
-    'key' => 'int|string',
+    'index' => 'int|string',
   ),
   'arrayiterator::offsetset' => 
   array (
     0 => 'void',
-    'key' => 'int|null|string',
-    'value' => 'mixed',
+    'index' => 'int|null|string',
+    'newval' => 'mixed',
   ),
   'arrayiterator::offsetunset' => 
   array (
     0 => 'void',
-    'key' => 'int|string',
+    'index' => 'int|string',
   ),
   'arrayiterator::rewind' => 
   array (
@@ -2310,7 +2309,7 @@ return array (
   'arrayiterator::seek' => 
   array (
     0 => 'void',
-    'offset' => 'int',
+    'position' => 'int',
   ),
   'arrayiterator::serialize' => 
   array (
@@ -2324,17 +2323,17 @@ return array (
   'arrayiterator::uasort' => 
   array (
     0 => 'true',
-    'callback' => 'callable(mixed, mixed):int',
+    'cmp_function' => 'callable(mixed, mixed):int',
   ),
   'arrayiterator::uksort' => 
   array (
     0 => 'true',
-    'callback' => 'callable(mixed, mixed):int',
+    'cmp_function' => 'callable(mixed, mixed):int',
   ),
   'arrayiterator::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
+    'serialized' => 'string',
   ),
   'arrayiterator::valid' => 
   array (
@@ -2343,9 +2342,9 @@ return array (
   'arrayobject::__construct' => 
   array (
     0 => 'void',
-    'array=' => 'array<array-key, mixed>|object',
+    'input=' => 'array<array-key, mixed>|object',
     'flags=' => 'int',
-    'iteratorClass=' => 'class-string',
+    'iterator_class=' => 'class-string',
   ),
   'arrayobject::__debuginfo' => 
   array (
@@ -2368,7 +2367,6 @@ return array (
   'arrayobject::asort' => 
   array (
     0 => 'true',
-    'flags=' => 'int',
   ),
   'arrayobject::count' => 
   array (
@@ -2377,7 +2375,7 @@ return array (
   'arrayobject::exchangearray' => 
   array (
     0 => 'array<array-key, mixed>',
-    'array' => 'array<array-key, mixed>|object',
+    'input' => 'array<array-key, mixed>|object',
   ),
   'arrayobject::getarraycopy' => 
   array (
@@ -2398,7 +2396,6 @@ return array (
   'arrayobject::ksort' => 
   array (
     0 => 'true',
-    'flags=' => 'int',
   ),
   'arrayobject::natcasesort' => 
   array (
@@ -2411,23 +2408,23 @@ return array (
   'arrayobject::offsetexists' => 
   array (
     0 => 'bool',
-    'key' => 'int|string',
+    'index' => 'int|string',
   ),
   'arrayobject::offsetget' => 
   array (
     0 => 'mixed|null',
-    'key' => 'int|string',
+    'index' => 'int|string',
   ),
   'arrayobject::offsetset' => 
   array (
     0 => 'void',
-    'key' => 'int|null|string',
-    'value' => 'mixed',
+    'index' => 'int|null|string',
+    'newval' => 'mixed',
   ),
   'arrayobject::offsetunset' => 
   array (
     0 => 'void',
-    'key' => 'int|string',
+    'index' => 'int|string',
   ),
   'arrayobject::serialize' => 
   array (
@@ -2446,17 +2443,17 @@ return array (
   'arrayobject::uasort' => 
   array (
     0 => 'true',
-    'callback' => 'callable(mixed, mixed):int',
+    'cmp_function' => 'callable(mixed, mixed):int',
   ),
   'arrayobject::uksort' => 
   array (
     0 => 'true',
-    'callback' => 'callable(mixed, mixed):int',
+    'cmp_function' => 'callable(mixed, mixed):int',
   ),
   'arrayobject::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
+    'serialized' => 'string',
   ),
   'arsort' => 
   array (
@@ -3116,23 +3113,23 @@ return array (
   'cachingiterator::offsetexists' => 
   array (
     0 => 'bool',
-    'key' => 'string',
+    'index' => 'string',
   ),
   'cachingiterator::offsetget' => 
   array (
     0 => 'mixed',
-    'key' => 'string',
+    'index' => 'string',
   ),
   'cachingiterator::offsetset' => 
   array (
     0 => 'void',
-    'key' => 'string',
-    'value' => 'mixed',
+    'index' => 'string',
+    'newval' => 'mixed',
   ),
   'cachingiterator::offsetunset' => 
   array (
     0 => 'void',
-    'key' => 'string',
+    'index' => 'string',
   ),
   'cachingiterator::rewind' => 
   array (
@@ -3636,31 +3633,30 @@ return array (
   'closure::__invoke' => 
   array (
     0 => 'mixed',
-    '...args=' => 'mixed',
   ),
   'closure::bind' => 
   array (
     0 => 'Closure|null',
     'closure' => 'Closure',
-    'newThis' => 'null|object',
-    'newScope=' => 'null|object|string',
+    'newthis' => 'null|object',
+    'newscope=' => 'null|object|string',
   ),
   'closure::bindto' => 
   array (
     0 => 'Closure|null',
-    'newThis' => 'null|object',
-    'newScope=' => 'null|object|string',
+    'newthis' => 'null|object',
+    'newscope=' => 'null|object|string',
   ),
   'closure::call' => 
   array (
     0 => 'mixed',
-    'newThis' => 'object',
-    '...args=' => 'mixed',
+    'newthis' => 'object',
+    '...parameters=' => 'mixed',
   ),
   'closure::fromcallable' => 
   array (
     0 => 'Closure',
-    'callback' => 'callable',
+    'callable' => 'callable',
   ),
   'clusterobj::converttostring' => 
   array (
@@ -6498,29 +6494,29 @@ return array (
   'collator::__construct' => 
   array (
     0 => 'void',
-    'locale' => 'string',
+    'arg1' => 'string',
   ),
   'collator::asort' => 
   array (
     0 => 'bool',
-    '&rw_array' => 'array<array-key, mixed>',
+    '&arr' => 'array<array-key, mixed>',
     'flags=' => 'int',
   ),
   'collator::compare' => 
   array (
     0 => 'false|int',
-    'string1' => 'string',
-    'string2' => 'string',
+    'arg1' => 'string',
+    'arg2' => 'string',
   ),
   'collator::create' => 
   array (
     0 => 'Collator|null',
-    'locale' => 'string',
+    'arg1' => 'string',
   ),
   'collator::getattribute' => 
   array (
     0 => 'false|int',
-    'attribute' => 'int',
+    'arg1' => 'int',
   ),
   'collator::geterrorcode' => 
   array (
@@ -6533,12 +6529,12 @@ return array (
   'collator::getlocale' => 
   array (
     0 => 'string',
-    'type' => 'int',
+    'arg1' => 'int',
   ),
   'collator::getsortkey' => 
   array (
     0 => 'false|string',
-    'string' => 'string',
+    'arg1' => 'string',
   ),
   'collator::getstrength' => 
   array (
@@ -6547,24 +6543,24 @@ return array (
   'collator::setattribute' => 
   array (
     0 => 'bool',
-    'attribute' => 'int',
-    'value' => 'int',
+    'arg1' => 'int',
+    'arg2' => 'int',
   ),
   'collator::setstrength' => 
   array (
     0 => 'bool',
-    'strength' => 'int',
+    'arg1' => 'int',
   ),
   'collator::sort' => 
   array (
     0 => 'bool',
-    '&rw_array' => 'array<array-key, mixed>',
+    '&arr' => 'array<array-key, mixed>',
     'flags=' => 'int',
   ),
   'collator::sortwithsortkeys' => 
   array (
     0 => 'bool',
-    '&rw_array' => 'array<array-key, mixed>',
+    '&arr' => 'array<array-key, mixed>',
   ),
   'collator_asort' => 
   array (
@@ -7648,6 +7644,7 @@ return array (
   'couchbase\\booleanfieldsearchquery::__construct' => 
   array (
     0 => 'void',
+    'arg' => 'bool',
   ),
   'couchbase\\booleanfieldsearchquery::boost' => 
   array (
@@ -7679,17 +7676,17 @@ return array (
   'couchbase\\booleansearchquery::must' => 
   array (
     0 => 'Couchbase\\BooleanSearchQuery',
-    '...queries=' => 'array<int, Couchbase\\SearchQueryPart>',
+    'query' => 'array<int, Couchbase\\SearchQueryPart>',
   ),
   'couchbase\\booleansearchquery::mustnot' => 
   array (
     0 => 'Couchbase\\BooleanSearchQuery',
-    '...queries=' => 'array<int, Couchbase\\SearchQueryPart>',
+    'query' => 'array<int, Couchbase\\SearchQueryPart>',
   ),
   'couchbase\\booleansearchquery::should' => 
   array (
     0 => 'Couchbase\\BooleanSearchQuery',
-    '...queries=' => 'array<int, Couchbase\\SearchQueryPart>',
+    'query' => 'array<int, Couchbase\\SearchQueryPart>',
   ),
   'couchbase\\bucket::__construct' => 
   array (
@@ -7881,8 +7878,8 @@ return array (
   'couchbase\\bucket::ping' => 
   array (
     0 => 'array<array-key, mixed>',
-    'services=' => 'int',
-    'reportId=' => 'string',
+    'services' => 'int',
+    'reportId' => 'string',
   ),
   'couchbase\\bucket::prepend' => 
   array (
@@ -8043,6 +8040,7 @@ return array (
   'couchbase\\bucketmanager::flush' => 
   array (
     0 => 'mixed',
+    'name' => 'string',
   ),
   'couchbase\\bucketmanager::getallbuckets' => 
   array (
@@ -8317,6 +8315,7 @@ return array (
   array (
     0 => 'void',
     'connstr' => 'string',
+    'options' => 'Couchbase\\ClusterOptions',
   ),
   'couchbase\\cluster::analyticsindexes' => 
   array (
@@ -8667,6 +8666,7 @@ return array (
   'couchbase\\conjunctionsearchquery::__construct' => 
   array (
     0 => 'void',
+    'queries' => 'array<array-key, mixed>',
   ),
   'couchbase\\conjunctionsearchquery::boost' => 
   array (
@@ -8810,13 +8810,15 @@ return array (
   'couchbase\\daterangesearchfacet::__construct' => 
   array (
     0 => 'void',
+    'field' => 'string',
+    'limit' => 'int',
   ),
   'couchbase\\daterangesearchfacet::addrange' => 
   array (
     0 => 'Couchbase\\DateRangeSearchFacet',
     'name' => 'string',
-    'start' => 'int|string',
-    'end' => 'int|string',
+    'start=' => 'int|string',
+    'end=' => 'int|string',
   ),
   'couchbase\\daterangesearchfacet::jsonserialize' => 
   array (
@@ -8925,6 +8927,7 @@ return array (
   'couchbase\\disjunctionsearchquery::__construct' => 
   array (
     0 => 'void',
+    'queries' => 'array<array-key, mixed>',
   ),
   'couchbase\\disjunctionsearchquery::boost' => 
   array (
@@ -9221,6 +9224,10 @@ return array (
   'couchbase\\geoboundingboxsearchquery::__construct' => 
   array (
     0 => 'void',
+    'top_left_longitude' => 'float',
+    'top_left_latitude' => 'float',
+    'buttom_right_longitude' => 'float',
+    'buttom_right_latitude' => 'float',
   ),
   'couchbase\\geoboundingboxsearchquery::boost' => 
   array (
@@ -9239,6 +9246,9 @@ return array (
   'couchbase\\geodistancesearchquery::__construct' => 
   array (
     0 => 'void',
+    'longitude' => 'float',
+    'latitude' => 'float',
+    'distance=' => 'null|string',
   ),
   'couchbase\\geodistancesearchquery::boost' => 
   array (
@@ -10142,6 +10152,7 @@ return array (
   'couchbase\\matchphrasesearchquery::__construct' => 
   array (
     0 => 'void',
+    'value' => 'string',
   ),
   'couchbase\\matchphrasesearchquery::analyzer' => 
   array (
@@ -10165,6 +10176,7 @@ return array (
   'couchbase\\matchsearchquery::__construct' => 
   array (
     0 => 'void',
+    'value' => 'string',
   ),
   'couchbase\\matchsearchquery::analyzer' => 
   array (
@@ -10586,13 +10598,15 @@ return array (
   'couchbase\\numericrangesearchfacet::__construct' => 
   array (
     0 => 'void',
+    'field' => 'string',
+    'limit' => 'int',
   ),
   'couchbase\\numericrangesearchfacet::addrange' => 
   array (
     0 => 'Couchbase\\NumericRangeSearchFacet',
     'name' => 'string',
-    'min' => 'float',
-    'max' => 'float',
+    'min=' => 'float',
+    'max=' => 'float',
   ),
   'couchbase\\numericrangesearchfacet::jsonserialize' => 
   array (
@@ -10881,6 +10895,7 @@ return array (
   'couchbase\\phrasesearchquery::__construct' => 
   array (
     0 => 'void',
+    '...terms=' => 'string',
   ),
   'couchbase\\phrasesearchquery::boost' => 
   array (
@@ -10954,6 +10969,7 @@ return array (
   'couchbase\\prefixsearchquery::__construct' => 
   array (
     0 => 'void',
+    'prefix' => 'string',
   ),
   'couchbase\\prefixsearchquery::boost' => 
   array (
@@ -11366,6 +11382,7 @@ return array (
   'couchbase\\querystringsearchquery::__construct' => 
   array (
     0 => 'void',
+    'query_string' => 'string',
   ),
   'couchbase\\querystringsearchquery::boost' => 
   array (
@@ -11489,6 +11506,7 @@ return array (
   'couchbase\\regexpsearchquery::__construct' => 
   array (
     0 => 'void',
+    'regexp' => 'string',
   ),
   'couchbase\\regexpsearchquery::boost' => 
   array (
@@ -12229,6 +12247,7 @@ return array (
   'couchbase\\searchsortfield::__construct' => 
   array (
     0 => 'void',
+    'field' => 'string',
   ),
   'couchbase\\searchsortfield::descending' => 
   array (
@@ -12277,6 +12296,9 @@ return array (
   'couchbase\\searchsortgeodistance::__construct' => 
   array (
     0 => 'void',
+    'field' => 'string',
+    'logitude' => 'float',
+    'latitude' => 'float',
   ),
   'couchbase\\searchsortgeodistance::descending' => 
   array (
@@ -12624,6 +12646,8 @@ return array (
   'couchbase\\termsearchfacet::__construct' => 
   array (
     0 => 'void',
+    'field' => 'string',
+    'limit' => 'int',
   ),
   'couchbase\\termsearchfacet::jsonserialize' => 
   array (
@@ -12632,6 +12656,7 @@ return array (
   'couchbase\\termsearchquery::__construct' => 
   array (
     0 => 'void',
+    'term' => 'string',
   ),
   'couchbase\\termsearchquery::boost' => 
   array (
@@ -13259,6 +13284,7 @@ return array (
   'couchbase\\wildcardsearchquery::__construct' => 
   array (
     0 => 'void',
+    'wildcard' => 'string',
   ),
   'couchbase\\wildcardsearchquery::boost' => 
   array (
@@ -14181,8 +14207,8 @@ return array (
   array (
     0 => 'void',
     'filename' => 'string',
-    'mime_type=' => 'string',
-    'posted_filename=' => 'string',
+    'mimetype=' => 'string',
+    'postname=' => 'string',
   ),
   'curlfile::getfilename' => 
   array (
@@ -14199,12 +14225,12 @@ return array (
   'curlfile::setmimetype' => 
   array (
     0 => 'void',
-    'mime_type' => 'string',
+    'name' => 'string',
   ),
   'curlfile::setpostfilename' => 
   array (
     0 => 'void',
-    'posted_filename' => 'string',
+    'name' => 'string',
   ),
   'current' => 
   array (
@@ -14548,7 +14574,7 @@ return array (
   'dateinterval::__construct' => 
   array (
     0 => 'void',
-    'duration' => 'string',
+    'interval_spec' => 'string',
   ),
   'dateinterval::__set_state' => 
   array (
@@ -14562,7 +14588,7 @@ return array (
   'dateinterval::createfromdatestring' => 
   array (
     0 => 'DateInterval|false',
-    'datetime' => 'string',
+    'time' => 'string',
   ),
   'dateinterval::format' => 
   array (
@@ -14574,8 +14600,7 @@ return array (
     0 => 'void',
     'start' => 'DateTimeInterface',
     'interval' => 'DateInterval',
-    'recur' => 'int',
-    'options=' => 'int',
+    'end' => 'int',
   ),
   'dateperiod::__construct\'1' => 
   array (
@@ -14620,6 +14645,7 @@ return array (
   array (
     0 => 'void',
     'time=' => 'string',
+    'timezone=' => 'mixed',
   ),
   'datetime::__construct\'1' => 
   array (
@@ -14645,18 +14671,18 @@ return array (
   array (
     0 => 'false|static',
     'format' => 'string',
-    'datetime' => 'string',
-    'timezone=' => 'DateTimeZone|null',
+    'time' => 'string',
+    'object=' => 'DateTimeZone|null',
   ),
   'datetime::createfromimmutable' => 
   array (
     0 => 'static',
-    'object' => 'DateTimeImmutable',
+    'DateTimeImmutable' => 'DateTimeImmutable',
   ),
   'datetime::diff' => 
   array (
     0 => 'DateInterval',
-    'targetObject' => 'DateTimeInterface',
+    'object' => 'DateTimeInterface',
     'absolute=' => 'bool',
   ),
   'datetime::format' => 
@@ -14683,7 +14709,7 @@ return array (
   'datetime::modify' => 
   array (
     0 => 'false|static',
-    'modifier' => 'string',
+    'modify' => 'string',
   ),
   'datetime::setdate' => 
   array (
@@ -14697,7 +14723,7 @@ return array (
     0 => 'static',
     'year' => 'int',
     'week' => 'int',
-    'dayOfWeek=' => 'int',
+    'day=' => 'int',
   ),
   'datetime::settime' => 
   array (
@@ -14705,12 +14731,12 @@ return array (
     'hour' => 'int',
     'minute' => 'int',
     'second=' => 'int',
-    'microsecond=' => 'int',
+    'microseconds=' => 'int',
   ),
   'datetime::settimestamp' => 
   array (
     0 => 'static',
-    'timestamp' => 'int',
+    'unixtimestamp' => 'int',
   ),
   'datetime::settimezone' => 
   array (
@@ -14871,13 +14897,13 @@ return array (
   'datetimezone::getoffset' => 
   array (
     0 => 'false|int',
-    'datetime' => 'DateTimeInterface',
+    'object' => 'DateTimeInterface',
   ),
   'datetimezone::gettransitions' => 
   array (
     0 => 'false|list<array{abbr: string, isdst: bool, offset: int, time: string, ts: int}>',
-    'timestampBegin=' => 'int',
-    'timestampEnd=' => 'int',
+    'timestamp_begin=' => 'int',
+    'timestamp_end=' => 'int',
   ),
   'datetimezone::listabbreviations' => 
   array (
@@ -14886,8 +14912,8 @@ return array (
   'datetimezone::listidentifiers' => 
   array (
     0 => 'false|list<string>',
-    'timezoneGroup=' => 'int',
-    'countryCode=' => 'null|string',
+    'what=' => 'int',
+    'country=' => 'null|string',
   ),
   'db2_autocommit' => 
   array (
@@ -15759,7 +15785,8 @@ return array (
   'debug_zval_dump' => 
   array (
     0 => 'void',
-    '...vars' => 'mixed',
+    'value' => 'mixed',
+    '...values=' => 'mixed',
   ),
   'debugger_connect' => 
   array (
@@ -15921,7 +15948,7 @@ return array (
   'directoryiterator::__construct' => 
   array (
     0 => 'void',
-    'directory' => 'string',
+    'path' => 'string',
   ),
   'directoryiterator::__debuginfo' => 
   array (
@@ -15959,7 +15986,7 @@ return array (
   'directoryiterator::getfileinfo' => 
   array (
     0 => 'SplFileInfo',
-    'class=' => 'class-string',
+    'class_name=' => 'class-string',
   ),
   'directoryiterator::getfilename' => 
   array (
@@ -15992,7 +16019,7 @@ return array (
   'directoryiterator::getpathinfo' => 
   array (
     0 => 'SplFileInfo|null',
-    'class=' => 'class-string',
+    'class_name=' => 'class-string',
   ),
   'directoryiterator::getpathname' => 
   array (
@@ -16053,8 +16080,8 @@ return array (
   'directoryiterator::openfile' => 
   array (
     0 => 'SplFileObject',
-    'mode=' => 'string',
-    'useIncludePath=' => 'bool',
+    'open_mode=' => 'string',
+    'use_include_path=' => 'bool',
     'context=' => 'resource',
   ),
   'directoryiterator::rewind' => 
@@ -16064,17 +16091,17 @@ return array (
   'directoryiterator::seek' => 
   array (
     0 => 'void',
-    'offset' => 'int',
+    'position' => 'int',
   ),
   'directoryiterator::setfileclass' => 
   array (
     0 => 'void',
-    'class=' => 'class-string',
+    'class_name=' => 'class-string',
   ),
   'directoryiterator::setinfoclass' => 
   array (
     0 => 'void',
-    'class=' => 'class-string',
+    'class_name=' => 'class-string',
   ),
   'directoryiterator::valid' => 
   array (
@@ -16358,13 +16385,13 @@ return array (
   'domattr::insertbefore' => 
   array (
     0 => 'DOMNode|false',
-    'node' => 'DOMNode',
-    'child=' => 'DOMNode|null',
+    'newChild' => 'DOMNode',
+    'refChild=' => 'DOMNode|null',
   ),
   'domattr::isdefaultnamespace' => 
   array (
     0 => 'bool',
-    'namespace' => 'string',
+    'namespaceURI' => 'string',
   ),
   'domattr::isequalnode' => 
   array (
@@ -16378,7 +16405,7 @@ return array (
   'domattr::issamenode' => 
   array (
     0 => 'bool',
-    'otherNode' => 'DOMNode',
+    'other' => 'DOMNode',
   ),
   'domattr::issupported' => 
   array (
@@ -16394,7 +16421,7 @@ return array (
   'domattr::lookupprefix' => 
   array (
     0 => 'null|string',
-    'namespace' => 'string',
+    'namespaceURI' => 'string',
   ),
   'domattr::normalize' => 
   array (
@@ -16403,13 +16430,13 @@ return array (
   'domattr::removechild' => 
   array (
     0 => 'DOMNode|false',
-    'child' => 'DOMNode',
+    'oldChild' => 'DOMNode',
   ),
   'domattr::replacechild' => 
   array (
     0 => 'DOMNode|false',
-    'node' => 'DOMNode',
-    'child' => 'DOMNode',
+    'newChild' => 'DOMNode',
+    'oldChild' => 'DOMNode',
   ),
   'domattr::setuserdata' => 
   array (
@@ -16438,7 +16465,7 @@ return array (
   'domcdatasection::__construct' => 
   array (
     0 => 'void',
-    'data' => 'string',
+    'value' => 'string',
   ),
   'domcdatasection::appendchild' => 
   array (
@@ -16614,7 +16641,7 @@ return array (
   'domcharacterdata::appenddata' => 
   array (
     0 => 'true',
-    'data' => 'string',
+    'arg' => 'string',
   ),
   'domcharacterdata::c14n' => 
   array (
@@ -16686,7 +16713,7 @@ return array (
   array (
     0 => 'bool',
     'offset' => 'int',
-    'data' => 'string',
+    'arg' => 'string',
   ),
   'domcharacterdata::isdefaultnamespace' => 
   array (
@@ -16739,7 +16766,7 @@ return array (
     0 => 'bool',
     'offset' => 'int',
     'count' => 'int',
-    'data' => 'string',
+    'arg' => 'string',
   ),
   'domcharacterdata::setuserdata' => 
   array (
@@ -16757,7 +16784,7 @@ return array (
   'domcomment::__construct' => 
   array (
     0 => 'void',
-    'data=' => 'string',
+    'value=' => 'string',
   ),
   'domcomment::appendchild' => 
   array (
@@ -16970,12 +16997,12 @@ return array (
   'domdocument::createattribute' => 
   array (
     0 => 'DOMAttr|false',
-    'localName' => 'string',
+    'name' => 'string',
   ),
   'domdocument::createattributens' => 
   array (
     0 => 'DOMAttr|false',
-    'namespace' => 'null|string',
+    'namespaceURI' => 'null|string',
     'qualifiedName' => 'string',
   ),
   'domdocument::createcdatasection' => 
@@ -16995,13 +17022,13 @@ return array (
   'domdocument::createelement' => 
   array (
     0 => 'DOMElement|false',
-    'localName' => 'string',
+    'tagName' => 'string',
     'value=' => 'string',
   ),
   'domdocument::createelementns' => 
   array (
     0 => 'DOMElement|false',
-    'namespace' => 'null|string',
+    'namespaceURI' => 'null|string',
     'qualifiedName' => 'string',
     'value=' => 'string',
   ),
@@ -17029,12 +17056,12 @@ return array (
   'domdocument::getelementsbytagname' => 
   array (
     0 => 'DOMNodeList',
-    'qualifiedName' => 'string',
+    'tagName' => 'string',
   ),
   'domdocument::getelementsbytagnamens' => 
   array (
     0 => 'DOMNodeList',
-    'namespace' => 'string',
+    'namespaceURI' => 'string',
     'localName' => 'string',
   ),
   'domdocument::getfeature' => 
@@ -17067,7 +17094,7 @@ return array (
   'domdocument::importnode' => 
   array (
     0 => 'DOMNode|false',
-    'node' => 'DOMNode',
+    'importedNode' => 'DOMNode',
     'deep=' => 'bool',
   ),
   'domdocument::insertbefore' => 
@@ -17100,7 +17127,7 @@ return array (
   'domdocument::load' => 
   array (
     0 => 'DOMDocument|bool',
-    'filename' => 'string',
+    'source' => 'string',
     'options=' => 'int',
   ),
   'domdocument::loadhtml' => 
@@ -17112,7 +17139,7 @@ return array (
   'domdocument::loadhtmlfile' => 
   array (
     0 => 'DOMDocument|bool',
-    'filename' => 'string',
+    'source' => 'string',
     'options=' => 'int',
   ),
   'domdocument::loadxml' => 
@@ -17176,18 +17203,16 @@ return array (
   'domdocument::save' => 
   array (
     0 => 'false|int',
-    'filename' => 'string',
-    'options=' => 'int',
+    'file' => 'string',
   ),
   'domdocument::savehtml' => 
   array (
     0 => 'false|string',
-    'node=' => 'DOMNode|null',
   ),
   'domdocument::savehtmlfile' => 
   array (
     0 => 'false|int',
-    'filename' => 'string',
+    'file' => 'string',
   ),
   'domdocument::savexml' => 
   array (
@@ -17199,13 +17224,11 @@ return array (
   array (
     0 => 'bool',
     'filename' => 'string',
-    'flags=' => 'int',
   ),
   'domdocument::schemavalidatesource' => 
   array (
     0 => 'bool',
     'source' => 'string',
-    'flags=' => 'int',
   ),
   'domdocument::setuserdata' => 
   array (
@@ -17471,9 +17494,9 @@ return array (
   'domelement::__construct' => 
   array (
     0 => 'void',
-    'qualifiedName' => 'string',
+    'name' => 'string',
     'value=' => 'null|string',
-    'namespace=' => 'string',
+    'uri=' => 'string',
   ),
   'domelement::appendchild' => 
   array (
@@ -17510,34 +17533,34 @@ return array (
   'domelement::getattribute' => 
   array (
     0 => 'string',
-    'qualifiedName' => 'string',
+    'name' => 'string',
   ),
   'domelement::getattributenode' => 
   array (
     0 => 'DOMAttr',
-    'qualifiedName' => 'string',
+    'name' => 'string',
   ),
   'domelement::getattributenodens' => 
   array (
     0 => 'DOMAttr',
-    'namespace' => 'null|string',
+    'namespaceURI' => 'null|string',
     'localName' => 'string',
   ),
   'domelement::getattributens' => 
   array (
     0 => 'string',
-    'namespace' => 'null|string',
+    'namespaceURI' => 'null|string',
     'localName' => 'string',
   ),
   'domelement::getelementsbytagname' => 
   array (
     0 => 'DOMNodeList',
-    'qualifiedName' => 'string',
+    'name' => 'string',
   ),
   'domelement::getelementsbytagnamens' => 
   array (
     0 => 'DOMNodeList',
-    'namespace' => 'null|string',
+    'namespaceURI' => 'null|string',
     'localName' => 'string',
   ),
   'domelement::getfeature' => 
@@ -17562,12 +17585,12 @@ return array (
   'domelement::hasattribute' => 
   array (
     0 => 'bool',
-    'qualifiedName' => 'string',
+    'name' => 'string',
   ),
   'domelement::hasattributens' => 
   array (
     0 => 'bool',
-    'namespace' => 'null|string',
+    'namespaceURI' => 'null|string',
     'localName' => 'string',
   ),
   'domelement::hasattributes' => 
@@ -17622,17 +17645,17 @@ return array (
   'domelement::removeattribute' => 
   array (
     0 => 'bool',
-    'qualifiedName' => 'string',
+    'name' => 'string',
   ),
   'domelement::removeattributenode' => 
   array (
     0 => 'DOMAttr|false',
-    'attr' => 'DOMAttr',
+    'oldAttr' => 'DOMAttr',
   ),
   'domelement::removeattributens' => 
   array (
     0 => 'void',
-    'namespace' => 'null|string',
+    'namespaceURI' => 'null|string',
     'localName' => 'string',
   ),
   'domelement::removechild' => 
@@ -17649,30 +17672,30 @@ return array (
   'domelement::setattribute' => 
   array (
     0 => 'DOMAttr|false',
-    'qualifiedName' => 'string',
+    'name' => 'string',
     'value' => 'string',
   ),
   'domelement::setattributenode' => 
   array (
     0 => 'DOMAttr|null',
-    'attr' => 'DOMAttr',
+    'newAttr' => 'DOMAttr',
   ),
   'domelement::setattributenodens' => 
   array (
     0 => 'DOMAttr',
-    'attr' => 'DOMAttr',
+    'newAttr' => 'DOMAttr',
   ),
   'domelement::setattributens' => 
   array (
     0 => 'void',
-    'namespace' => 'null|string',
+    'namespaceURI' => 'null|string',
     'qualifiedName' => 'string',
     'value' => 'string',
   ),
   'domelement::setidattribute' => 
   array (
     0 => 'void',
-    'qualifiedName' => 'string',
+    'name' => 'string',
     'isId' => 'bool',
   ),
   'domelement::setidattributenode' => 
@@ -17684,8 +17707,8 @@ return array (
   'domelement::setidattributens' => 
   array (
     0 => 'void',
-    'namespace' => 'string',
-    'qualifiedName' => 'string',
+    'namespaceURI' => 'string',
+    'localName' => 'string',
     'isId' => 'bool',
   ),
   'domelement::setuserdata' => 
@@ -17995,16 +18018,16 @@ return array (
   'domimplementation::createdocument' => 
   array (
     0 => 'DOMDocument|false',
-    'namespace=' => 'string',
-    'qualifiedName=' => 'string',
-    'doctype=' => 'DOMDocumentType',
+    'namespaceURI' => 'string',
+    'qualifiedName' => 'string',
+    'docType=' => 'DOMDocumentType',
   ),
   'domimplementation::createdocumenttype' => 
   array (
     0 => 'DOMDocumentType|false',
     'qualifiedName' => 'string',
-    'publicId=' => 'string',
-    'systemId=' => 'string',
+    'publicId' => 'string',
+    'systemId' => 'string',
   ),
   'domimplementation::getfeature' => 
   array (
@@ -18015,8 +18038,6 @@ return array (
   'domimplementation::hasfeature' => 
   array (
     0 => 'bool',
-    'feature' => 'string',
-    'version' => 'string',
   ),
   'domimplementationlist::item' => 
   array (
@@ -18040,18 +18061,18 @@ return array (
   'domnamednodemap::getnameditem' => 
   array (
     0 => 'DOMNode|null',
-    'qualifiedName' => 'string',
+    'name' => 'string',
   ),
   'domnamednodemap::getnameditemns' => 
   array (
     0 => 'DOMNode|null',
-    'namespace' => 'null|string',
-    'localName' => 'string',
+    'namespaceURI=' => 'null|string',
+    'localName=' => 'string',
   ),
   'domnamednodemap::item' => 
   array (
     0 => 'DOMNode|null',
-    'index' => 'int',
+    'index=' => 'int',
   ),
   'domnamednodemap::removenameditem' => 
   array (
@@ -18087,24 +18108,24 @@ return array (
   'domnode::appendchild' => 
   array (
     0 => 'DOMNode|false',
-    'node' => 'DOMNode',
+    'newChild' => 'DOMNode',
   ),
   'domnode::c14n' => 
   array (
     0 => 'false|string',
     'exclusive=' => 'bool',
-    'withComments=' => 'bool',
+    'with_comments=' => 'bool',
     'xpath=' => 'array<array-key, mixed>|null',
-    'nsPrefixes=' => 'array<array-key, mixed>|null',
+    'ns_prefixes=' => 'array<array-key, mixed>|null',
   ),
   'domnode::c14nfile' => 
   array (
     0 => 'false|int',
     'uri' => 'string',
     'exclusive=' => 'bool',
-    'withComments=' => 'bool',
+    'with_comments=' => 'bool',
     'xpath=' => 'array<array-key, mixed>|null',
-    'nsPrefixes=' => 'array<array-key, mixed>|null',
+    'ns_prefixes=' => 'array<array-key, mixed>|null',
   ),
   'domnode::clonenode' => 
   array (
@@ -18146,13 +18167,13 @@ return array (
   'domnode::insertbefore' => 
   array (
     0 => 'DOMNode|false',
-    'node' => 'DOMNode',
-    'child=' => 'DOMNode|null',
+    'newChild' => 'DOMNode',
+    'refChild=' => 'DOMNode|null',
   ),
   'domnode::isdefaultnamespace' => 
   array (
     0 => 'bool',
-    'namespace' => 'string',
+    'namespaceURI' => 'string',
   ),
   'domnode::isequalnode' => 
   array (
@@ -18162,7 +18183,7 @@ return array (
   'domnode::issamenode' => 
   array (
     0 => 'bool',
-    'otherNode' => 'DOMNode',
+    'other' => 'DOMNode',
   ),
   'domnode::issupported' => 
   array (
@@ -18178,7 +18199,7 @@ return array (
   'domnode::lookupprefix' => 
   array (
     0 => 'null|string',
-    'namespace' => 'string',
+    'namespaceURI' => 'string',
   ),
   'domnode::normalize' => 
   array (
@@ -18187,13 +18208,13 @@ return array (
   'domnode::removechild' => 
   array (
     0 => 'DOMNode|false',
-    'child' => 'DOMNode',
+    'oldChild' => 'DOMNode',
   ),
   'domnode::replacechild' => 
   array (
     0 => 'DOMNode|false',
-    'node' => 'DOMNode',
-    'child' => 'DOMNode',
+    'newChild' => 'DOMNode',
+    'oldChild' => 'DOMNode',
   ),
   'domnode::setuserdata' => 
   array (
@@ -18471,7 +18492,7 @@ return array (
   'domtext::__construct' => 
   array (
     0 => 'void',
-    'data=' => 'string',
+    'value=' => 'string',
   ),
   'domtext::appendchild' => 
   array (
@@ -18693,33 +18714,31 @@ return array (
   'domxpath::__construct' => 
   array (
     0 => 'void',
-    'document' => 'DOMDocument',
-    'registerNodeNS=' => 'bool',
+    'doc' => 'DOMDocument',
   ),
   'domxpath::evaluate' => 
   array (
     0 => 'mixed',
-    'expression' => 'string',
-    'contextNode=' => 'DOMNode|null',
+    'expr' => 'string',
+    'context=' => 'DOMNode|null',
     'registerNodeNS=' => 'bool',
   ),
   'domxpath::query' => 
   array (
     0 => 'DOMNodeList|false',
-    'expression' => 'string',
-    'contextNode=' => 'DOMNode|null',
+    'expr' => 'string',
+    'context=' => 'DOMNode|null',
     'registerNodeNS=' => 'bool',
   ),
   'domxpath::registernamespace' => 
   array (
     0 => 'bool',
     'prefix' => 'string',
-    'namespace' => 'string',
+    'uri' => 'string',
   ),
   'domxpath::registerphpfunctions' => 
   array (
     0 => 'void',
-    'restrict=' => 'array<array-key, mixed>|null|string',
   ),
   'domxsltstylesheet::process' => 
   array (
@@ -19523,7 +19542,7 @@ return array (
   'ds\\set::filter' => 
   array (
     0 => 'Ds\\Set',
-    'callback=' => 'callable',
+    'predicate=' => 'callable',
   ),
   'ds\\set::first' => 
   array (
@@ -20606,7 +20625,7 @@ return array (
     'code=' => 'int',
     'severity=' => 'int',
     'filename=' => 'string',
-    'line=' => 'int',
+    'lineno=' => 'int',
     'previous=' => 'Throwable|null',
   ),
   'errorexception::__tostring' => 
@@ -20758,7 +20777,7 @@ return array (
   'evcheck::feed' => 
   array (
     0 => 'void',
-    'events' => 'int',
+    'revents' => 'int',
   ),
   'evcheck::getloop' => 
   array (
@@ -20767,12 +20786,12 @@ return array (
   'evcheck::invoke' => 
   array (
     0 => 'void',
-    'events' => 'int',
+    'revents' => 'int',
   ),
   'evcheck::keepalive' => 
   array (
     0 => 'void',
-    'value' => 'bool',
+    'value=' => 'bool',
   ),
   'evcheck::setcallback' => 
   array (
@@ -20812,7 +20831,7 @@ return array (
   'evchild::feed' => 
   array (
     0 => 'void',
-    'events' => 'int',
+    'revents' => 'int',
   ),
   'evchild::getloop' => 
   array (
@@ -20821,12 +20840,12 @@ return array (
   'evchild::invoke' => 
   array (
     0 => 'void',
-    'events' => 'int',
+    'revents' => 'int',
   ),
   'evchild::keepalive' => 
   array (
     0 => 'void',
-    'value' => 'bool',
+    'value=' => 'bool',
   ),
   'evchild::set' => 
   array (
@@ -20870,7 +20889,7 @@ return array (
   'evembed::feed' => 
   array (
     0 => 'void',
-    'events' => 'int',
+    'revents' => 'int',
   ),
   'evembed::getloop' => 
   array (
@@ -20879,12 +20898,12 @@ return array (
   'evembed::invoke' => 
   array (
     0 => 'void',
-    'events' => 'int',
+    'revents' => 'int',
   ),
   'evembed::keepalive' => 
   array (
     0 => 'void',
-    'value' => 'bool',
+    'value=' => 'bool',
   ),
   'evembed::set' => 
   array (
@@ -21217,7 +21236,6 @@ return array (
   'eventbase::getmethod' => 
   array (
     0 => 'string',
-    'cfg=' => 'EventConfig',
   ),
   'eventbase::gettimeofdaycached' => 
   array (
@@ -21275,7 +21293,7 @@ return array (
   array (
     0 => 'int',
     'buf' => 'EventBuffer',
-    'length' => 'int',
+    'len' => 'int',
   ),
   'eventbuffer::copyout' => 
   array (
@@ -21286,7 +21304,7 @@ return array (
   'eventbuffer::drain' => 
   array (
     0 => 'bool',
-    'length' => 'int',
+    'len' => 'int',
   ),
   'eventbuffer::enablelocking' => 
   array (
@@ -21295,7 +21313,7 @@ return array (
   'eventbuffer::expand' => 
   array (
     0 => 'bool',
-    'length' => 'int',
+    'len' => 'int',
   ),
   'eventbuffer::freeze' => 
   array (
@@ -21330,7 +21348,7 @@ return array (
   array (
     0 => 'int',
     'fd' => 'mixed',
-    'howmuch' => 'int',
+    'howmuch=' => 'int',
   ),
   'eventbuffer::readline' => 
   array (
@@ -21485,7 +21503,7 @@ return array (
   'eventbufferevent::sslfilter' => 
   array (
     0 => 'EventBufferEvent',
-    'base' => 'EventBase',
+    'unused' => 'EventBase',
     'underlying' => 'EventBufferEvent',
     'ctx' => 'EventSslContext',
     'state' => 'int',
@@ -21732,7 +21750,7 @@ return array (
     'dns_base' => 'EventDnsBase',
     'address' => 'string',
     'port' => 'int',
-    'ctx=' => 'EventSslContext',
+    'ctx' => 'EventSslContext',
   ),
   'eventhttpconnection::__sleep' => 
   array (
@@ -22038,7 +22056,7 @@ return array (
   'evfork::feed' => 
   array (
     0 => 'void',
-    'events' => 'int',
+    'revents' => 'int',
   ),
   'evfork::getloop' => 
   array (
@@ -22047,12 +22065,12 @@ return array (
   'evfork::invoke' => 
   array (
     0 => 'void',
-    'events' => 'int',
+    'revents' => 'int',
   ),
   'evfork::keepalive' => 
   array (
     0 => 'void',
-    'value' => 'bool',
+    'value=' => 'bool',
   ),
   'evfork::setcallback' => 
   array (
@@ -22088,7 +22106,7 @@ return array (
   'evidle::feed' => 
   array (
     0 => 'void',
-    'events' => 'int',
+    'revents' => 'int',
   ),
   'evidle::getloop' => 
   array (
@@ -22097,12 +22115,12 @@ return array (
   'evidle::invoke' => 
   array (
     0 => 'void',
-    'events' => 'int',
+    'revents' => 'int',
   ),
   'evidle::keepalive' => 
   array (
     0 => 'void',
-    'value' => 'bool',
+    'value=' => 'bool',
   ),
   'evidle::setcallback' => 
   array (
@@ -22142,7 +22160,7 @@ return array (
   'evio::feed' => 
   array (
     0 => 'void',
-    'events' => 'int',
+    'revents' => 'int',
   ),
   'evio::getloop' => 
   array (
@@ -22151,12 +22169,12 @@ return array (
   'evio::invoke' => 
   array (
     0 => 'void',
-    'events' => 'int',
+    'revents' => 'int',
   ),
   'evio::keepalive' => 
   array (
     0 => 'void',
-    'value' => 'bool',
+    'value=' => 'bool',
   ),
   'evio::set' => 
   array (
@@ -22216,8 +22234,7 @@ return array (
   'evloop::embed' => 
   array (
     0 => 'EvEmbed',
-    'other' => 'EvLoop',
-    'callback=' => 'callable',
+    'callback' => 'callable',
     'data=' => 'mixed',
     'priority=' => 'int',
   ),
@@ -22359,7 +22376,7 @@ return array (
   'evperiodic::feed' => 
   array (
     0 => 'void',
-    'events' => 'int',
+    'revents' => 'int',
   ),
   'evperiodic::getloop' => 
   array (
@@ -22368,12 +22385,12 @@ return array (
   'evperiodic::invoke' => 
   array (
     0 => 'void',
-    'events' => 'int',
+    'revents' => 'int',
   ),
   'evperiodic::keepalive' => 
   array (
     0 => 'void',
-    'value' => 'bool',
+    'value=' => 'bool',
   ),
   'evperiodic::set' => 
   array (
@@ -22415,7 +22432,7 @@ return array (
   'evprepare::feed' => 
   array (
     0 => 'void',
-    'events' => 'int',
+    'revents' => 'int',
   ),
   'evprepare::getloop' => 
   array (
@@ -22424,12 +22441,12 @@ return array (
   'evprepare::invoke' => 
   array (
     0 => 'void',
-    'events' => 'int',
+    'revents' => 'int',
   ),
   'evprepare::keepalive' => 
   array (
     0 => 'void',
-    'value' => 'bool',
+    'value=' => 'bool',
   ),
   'evprepare::setcallback' => 
   array (
@@ -22467,7 +22484,7 @@ return array (
   'evsignal::feed' => 
   array (
     0 => 'void',
-    'events' => 'int',
+    'revents' => 'int',
   ),
   'evsignal::getloop' => 
   array (
@@ -22476,12 +22493,12 @@ return array (
   'evsignal::invoke' => 
   array (
     0 => 'void',
-    'events' => 'int',
+    'revents' => 'int',
   ),
   'evsignal::keepalive' => 
   array (
     0 => 'void',
-    'value' => 'bool',
+    'value=' => 'bool',
   ),
   'evsignal::set' => 
   array (
@@ -22530,7 +22547,7 @@ return array (
   'evstat::feed' => 
   array (
     0 => 'void',
-    'events' => 'int',
+    'revents' => 'int',
   ),
   'evstat::getloop' => 
   array (
@@ -22539,12 +22556,12 @@ return array (
   'evstat::invoke' => 
   array (
     0 => 'void',
-    'events' => 'int',
+    'revents' => 'int',
   ),
   'evstat::keepalive' => 
   array (
     0 => 'void',
-    'value' => 'bool',
+    'value=' => 'bool',
   ),
   'evstat::prev' => 
   array (
@@ -22602,7 +22619,7 @@ return array (
   'evtimer::feed' => 
   array (
     0 => 'void',
-    'events' => 'int',
+    'revents' => 'int',
   ),
   'evtimer::getloop' => 
   array (
@@ -22611,12 +22628,12 @@ return array (
   'evtimer::invoke' => 
   array (
     0 => 'void',
-    'events' => 'int',
+    'revents' => 'int',
   ),
   'evtimer::keepalive' => 
   array (
     0 => 'void',
-    'value' => 'bool',
+    'value=' => 'bool',
   ),
   'evtimer::set' => 
   array (
@@ -24720,10 +24737,10 @@ return array (
   array (
     0 => 'false|string',
     'filename' => 'string',
-    'flags=' => 'bool',
     'context=' => 'null|resource',
     'offset=' => 'int',
     'maxlen=' => 'int',
+    'use_include_path=' => 'int',
   ),
   'file_put_contents' => 
   array (
@@ -24810,7 +24827,7 @@ return array (
   'filesystemiterator::__construct' => 
   array (
     0 => 'void',
-    'directory' => 'string',
+    'path' => 'string',
     'flags=' => 'int',
   ),
   'filesystemiterator::__debuginfo' => 
@@ -24849,7 +24866,7 @@ return array (
   'filesystemiterator::getfileinfo' => 
   array (
     0 => 'SplFileInfo',
-    'class=' => 'class-string',
+    'class_name=' => 'class-string',
   ),
   'filesystemiterator::getfilename' => 
   array (
@@ -24886,7 +24903,7 @@ return array (
   'filesystemiterator::getpathinfo' => 
   array (
     0 => 'SplFileInfo|null',
-    'class=' => 'class-string',
+    'class_name=' => 'class-string',
   ),
   'filesystemiterator::getpathname' => 
   array (
@@ -24947,8 +24964,8 @@ return array (
   'filesystemiterator::openfile' => 
   array (
     0 => 'SplFileObject',
-    'mode=' => 'string',
-    'useIncludePath=' => 'bool',
+    'open_mode=' => 'string',
+    'use_include_path=' => 'bool',
     'context=' => 'resource',
   ),
   'filesystemiterator::rewind' => 
@@ -24958,22 +24975,22 @@ return array (
   'filesystemiterator::seek' => 
   array (
     0 => 'void',
-    'offset' => 'int',
+    'position' => 'int',
   ),
   'filesystemiterator::setfileclass' => 
   array (
     0 => 'void',
-    'class=' => 'class-string',
+    'class_name=' => 'class-string',
   ),
   'filesystemiterator::setflags' => 
   array (
     0 => 'void',
-    'flags' => 'int',
+    'flags=' => 'int',
   ),
   'filesystemiterator::setinfoclass' => 
   array (
     0 => 'void',
-    'class=' => 'class-string',
+    'class_name=' => 'class-string',
   ),
   'filesystemiterator::valid' => 
   array (
@@ -27522,7 +27539,7 @@ return array (
   'globiterator::__construct' => 
   array (
     0 => 'void',
-    'pattern' => 'string',
+    'path' => 'string',
     'flags=' => 'int',
   ),
   'globiterator::__debuginfo' => 
@@ -27565,7 +27582,7 @@ return array (
   'globiterator::getfileinfo' => 
   array (
     0 => 'SplFileInfo',
-    'class=' => 'class-string',
+    'class_name=' => 'class-string',
   ),
   'globiterator::getfilename' => 
   array (
@@ -27602,7 +27619,7 @@ return array (
   'globiterator::getpathinfo' => 
   array (
     0 => 'SplFileInfo|null',
-    'class=' => 'class-string',
+    'class_name=' => 'class-string',
   ),
   'globiterator::getpathname' => 
   array (
@@ -27663,8 +27680,8 @@ return array (
   'globiterator::openfile' => 
   array (
     0 => 'SplFileObject',
-    'mode=' => 'string',
-    'useIncludePath=' => 'bool',
+    'open_mode=' => 'string',
+    'use_include_path=' => 'bool',
     'context=' => 'resource',
   ),
   'globiterator::rewind' => 
@@ -27674,22 +27691,22 @@ return array (
   'globiterator::seek' => 
   array (
     0 => 'void',
-    'offset' => 'int',
+    'position' => 'int',
   ),
   'globiterator::setfileclass' => 
   array (
     0 => 'void',
-    'class=' => 'class-string',
+    'class_name=' => 'class-string',
   ),
   'globiterator::setflags' => 
   array (
     0 => 'void',
-    'flags' => 'int',
+    'flags=' => 'int',
   ),
   'globiterator::setinfoclass' => 
   array (
     0 => 'void',
-    'class=' => 'class-string',
+    'class_name=' => 'class-string',
   ),
   'globiterator::valid' => 
   array (
@@ -29278,7 +29295,7 @@ return array (
     0 => 'void',
     'channel' => 'Grpc\\Channel',
     'method' => 'string',
-    'absolute_deadline' => 'Grpc\\Timeval',
+    'deadline' => 'Grpc\\Timeval',
     'host_override=' => 'mixed',
   ),
   'grpc\\call::cancel' => 
@@ -29292,18 +29309,18 @@ return array (
   'grpc\\call::setcredentials' => 
   array (
     0 => 'int',
-    'creds_obj' => 'Grpc\\CallCredentials',
+    'credentials' => 'Grpc\\CallCredentials',
   ),
   'grpc\\call::startbatch' => 
   array (
     0 => 'object',
-    'batch' => 'array<array-key, mixed>',
+    'ops' => 'array<array-key, mixed>',
   ),
   'grpc\\callcredentials::createcomposite' => 
   array (
     0 => 'Grpc\\CallCredentials',
-    'cred1' => 'Grpc\\CallCredentials',
-    'cred2' => 'Grpc\\CallCredentials',
+    'creds1' => 'Grpc\\CallCredentials',
+    'creds2' => 'Grpc\\CallCredentials',
   ),
   'grpc\\callcredentials::createfromplugin' => 
   array (
@@ -29314,7 +29331,7 @@ return array (
   array (
     0 => 'void',
     'target' => 'string',
-    'args=' => 'array<array-key, mixed>',
+    'args' => 'array<array-key, mixed>',
   ),
   'grpc\\channel::close' => 
   array (
@@ -29333,13 +29350,13 @@ return array (
   array (
     0 => 'bool',
     'last_state' => 'int',
-    'deadline_obj' => 'Grpc\\Timeval',
+    'deadline' => 'Grpc\\Timeval',
   ),
   'grpc\\channelcredentials::createcomposite' => 
   array (
     0 => 'Grpc\\ChannelCredentials',
-    'cred1' => 'Grpc\\ChannelCredentials',
-    'cred2' => 'Grpc\\CallCredentials',
+    'channel_creds' => 'Grpc\\ChannelCredentials',
+    'call_creds' => 'Grpc\\CallCredentials',
   ),
   'grpc\\channelcredentials::createdefault' => 
   array (
@@ -29352,7 +29369,7 @@ return array (
   'grpc\\channelcredentials::createssl' => 
   array (
     0 => 'Grpc\\ChannelCredentials',
-    'pem_root_certs' => 'string',
+    'pem_root_certs=' => 'string',
     'pem_private_key=' => 'string',
     'pem_cert_chain=' => 'string',
   ),
@@ -29377,7 +29394,7 @@ return array (
   'grpc\\server::__construct' => 
   array (
     0 => 'void',
-    'args' => 'array<array-key, mixed>',
+    'args=' => 'array<array-key, mixed>',
   ),
   'grpc\\server::addhttp2port' => 
   array (
@@ -29388,13 +29405,11 @@ return array (
   array (
     0 => 'bool',
     'addr' => 'string',
-    'creds_obj' => 'Grpc\\ServerCredentials',
+    'server_creds' => 'Grpc\\ServerCredentials',
   ),
   'grpc\\server::requestcall' => 
   array (
     0 => 'mixed',
-    'tag_new' => 'int',
-    'tag_cancel' => 'int',
   ),
   'grpc\\server::start' => 
   array (
@@ -29410,18 +29425,18 @@ return array (
   'grpc\\timeval::__construct' => 
   array (
     0 => 'void',
-    'usec' => 'int',
+    'microseconds' => 'int',
   ),
   'grpc\\timeval::add' => 
   array (
     0 => 'Grpc\\Timeval',
-    'other' => 'Grpc\\Timeval',
+    'timeval' => 'Grpc\\Timeval',
   ),
   'grpc\\timeval::compare' => 
   array (
     0 => 'int',
-    'a' => 'Grpc\\Timeval',
-    'b' => 'Grpc\\Timeval',
+    'a_timeval' => 'Grpc\\Timeval',
+    'b_timeval' => 'Grpc\\Timeval',
   ),
   'grpc\\timeval::inffuture' => 
   array (
@@ -29438,9 +29453,9 @@ return array (
   'grpc\\timeval::similar' => 
   array (
     0 => 'bool',
-    'a' => 'Grpc\\Timeval',
-    'b' => 'Grpc\\Timeval',
-    'threshold' => 'Grpc\\Timeval',
+    'a_timeval' => 'Grpc\\Timeval',
+    'b_timeval' => 'Grpc\\Timeval',
+    'threshold_timeval' => 'Grpc\\Timeval',
   ),
   'grpc\\timeval::sleepuntil' => 
   array (
@@ -29449,7 +29464,7 @@ return array (
   'grpc\\timeval::subtract' => 
   array (
     0 => 'Grpc\\Timeval',
-    'other' => 'Grpc\\Timeval',
+    'timeval' => 'Grpc\\Timeval',
   ),
   'grpc\\timeval::zero' => 
   array (
@@ -36701,6 +36716,7 @@ return array (
     'columns' => 'int',
     'rows' => 'int',
     'bestfit=' => 'bool',
+    'legacy=' => 'mixed',
   ),
   'imagick::adaptivesharpenimage' => 
   array (
@@ -36719,12 +36735,12 @@ return array (
   'imagick::addimage' => 
   array (
     0 => 'bool',
-    'source' => 'Imagick',
+    'image' => 'Imagick',
   ),
   'imagick::addnoiseimage' => 
   array (
     0 => 'bool',
-    'noise_type' => 'int',
+    'noise' => 'int',
     'channel=' => 'int',
   ),
   'imagick::addnoiseimagewithattenuate' => 
@@ -36737,7 +36753,7 @@ return array (
   'imagick::affinetransformimage' => 
   array (
     0 => 'bool',
-    'matrix' => 'ImagickDraw',
+    'settings' => 'ImagickDraw',
   ),
   'imagick::animateimages' => 
   array (
@@ -36747,7 +36763,7 @@ return array (
   'imagick::annotateimage' => 
   array (
     0 => 'bool',
-    'draw_settings' => 'ImagickDraw',
+    'settings' => 'ImagickDraw',
     'x' => 'float',
     'y' => 'float',
     'angle' => 'float',
@@ -36766,7 +36782,7 @@ return array (
   'imagick::autolevelimage' => 
   array (
     0 => 'void',
-    'CHANNEL=' => 'string',
+    'channel=' => 'string',
   ),
   'imagick::autoorient' => 
   array (
@@ -36796,7 +36812,7 @@ return array (
   'imagick::blackthresholdimage' => 
   array (
     0 => 'bool',
-    'threshold' => 'mixed',
+    'threshold_color' => 'mixed',
   ),
   'imagick::blueshiftimage' => 
   array (
@@ -36813,7 +36829,7 @@ return array (
   'imagick::borderimage' => 
   array (
     0 => 'bool',
-    'bordercolor' => 'mixed',
+    'border_color' => 'mixed',
     'width' => 'int',
     'height' => 'int',
   ),
@@ -36830,7 +36846,7 @@ return array (
     0 => 'void',
     'brightness' => 'string',
     'contrast' => 'string',
-    'CHANNEL=' => 'string',
+    'channel=' => 'string',
   ),
   'imagick::calculatecrop' => 
   array (
@@ -36879,7 +36895,7 @@ return array (
   'imagick::clampimage' => 
   array (
     0 => 'void',
-    'CHANNEL=' => 'string',
+    'channel=' => 'string',
   ),
   'imagick::clear' => 
   array (
@@ -36932,8 +36948,9 @@ return array (
   'imagick::colorizeimage' => 
   array (
     0 => 'bool',
-    'colorize' => 'mixed',
-    'opacity' => 'mixed',
+    'colorize_color' => 'mixed',
+    'opacity_color' => 'mixed',
+    'legacy=' => 'mixed',
   ),
   'imagick::colormatriximage' => 
   array (
@@ -36949,7 +36966,7 @@ return array (
   'imagick::combineimages' => 
   array (
     0 => 'Imagick',
-    'channeltype' => 'int',
+    'colorspace' => 'int',
   ),
   'imagick::commentimage' => 
   array (
@@ -36959,19 +36976,19 @@ return array (
   'imagick::compareimagechannels' => 
   array (
     0 => 'list{Imagick, float}',
-    'image' => 'Imagick',
-    'channeltype' => 'int',
-    'metrictype' => 'int',
+    'reference' => 'Imagick',
+    'channel' => 'int',
+    'metric' => 'int',
   ),
   'imagick::compareimagelayers' => 
   array (
     0 => 'Imagick',
-    'method' => 'int',
+    'metric' => 'int',
   ),
   'imagick::compareimages' => 
   array (
     0 => 'list{Imagick, float}',
-    'compare' => 'Imagick',
+    'reference' => 'Imagick',
     'metric' => 'int',
   ),
   'imagick::compleximages' => 
@@ -36982,7 +36999,7 @@ return array (
   'imagick::compositeimage' => 
   array (
     0 => 'bool',
-    'composite_object' => 'Imagick',
+    'composite_image' => 'Imagick',
     'composite' => 'int',
     'x' => 'int',
     'y' => 'int',
@@ -36991,9 +37008,9 @@ return array (
   'imagick::compositeimagegravity' => 
   array (
     0 => 'bool',
-    'Imagick' => 'Imagick',
-    'COMPOSITE_CONSTANT' => 'int',
-    'GRAVITY_CONSTANT' => 'int',
+    'image' => 'Imagick',
+    'composite_constant' => 'int',
+    'gravity' => 'int',
   ),
   'imagick::contrastimage' => 
   array (
@@ -37092,14 +37109,14 @@ return array (
   'imagick::distortimage' => 
   array (
     0 => 'bool',
-    'method' => 'int',
+    'distortion' => 'int',
     'arguments' => 'array<array-key, mixed>',
     'bestfit' => 'bool',
   ),
   'imagick::drawimage' => 
   array (
     0 => 'bool',
-    'draw' => 'ImagickDraw',
+    'drawing' => 'ImagickDraw',
   ),
   'imagick::edgeimage' => 
   array (
@@ -37128,14 +37145,14 @@ return array (
   'imagick::evaluateimage' => 
   array (
     0 => 'bool',
-    'op' => 'int',
+    'evaluate' => 'int',
     'constant' => 'float',
     'channel=' => 'int',
   ),
   'imagick::evaluateimages' => 
   array (
     0 => 'bool',
-    'EVALUATE_CONSTANT' => 'int',
+    'evaluate' => 'int',
   ),
   'imagick::exportimagepixels' => 
   array (
@@ -37145,7 +37162,7 @@ return array (
     'width' => 'int',
     'height' => 'int',
     'map' => 'string',
-    'storage' => 'int',
+    'pixelstorage' => 'int',
   ),
   'imagick::extentimage' => 
   array (
@@ -37172,9 +37189,9 @@ return array (
   'imagick::floodfillpaintimage' => 
   array (
     0 => 'bool',
-    'fill' => 'mixed',
+    'fill_color' => 'mixed',
     'fuzz' => 'float',
-    'target' => 'mixed',
+    'border_color' => 'mixed',
     'x' => 'int',
     'y' => 'int',
     'invert' => 'bool',
@@ -37212,7 +37229,7 @@ return array (
   array (
     0 => 'bool',
     'function' => 'int',
-    'arguments' => 'array<array-key, mixed>',
+    'parameters' => 'array<array-key, mixed>',
     'channel=' => 'int',
   ),
   'imagick::fximage' => 
@@ -37257,6 +37274,7 @@ return array (
   'imagick::getconfigureoptions' => 
   array (
     0 => 'string',
+    'pattern=' => 'mixed',
   ),
   'imagick::getcopyright' => 
   array (
@@ -37344,7 +37362,7 @@ return array (
   'imagick::getimagechanneldistortions' => 
   array (
     0 => 'float',
-    'reference' => 'Imagick',
+    'reference_image' => 'Imagick',
     'metric' => 'int',
     'channel=' => 'int',
   ),
@@ -37527,13 +37545,13 @@ return array (
   array (
     0 => 'array<array-key, mixed>',
     'pattern=' => 'string',
-    'only_names=' => 'bool',
+    'include_values=' => 'bool',
   ),
   'imagick::getimageproperties' => 
   array (
     0 => 'array<int|string, string>',
     'pattern=' => 'string',
-    'only_names=' => 'bool',
+    'include_values=' => 'bool',
   ),
   'imagick::getimageproperty' => 
   array (
@@ -37741,12 +37759,12 @@ return array (
   'imagick::identifyformat' => 
   array (
     0 => 'false|string',
-    'embedText' => 'string',
+    'format' => 'string',
   ),
   'imagick::identifyimage' => 
   array (
     0 => 'array<string, mixed>',
-    'appendrawoutput=' => 'bool',
+    'append_raw_output=' => 'bool',
   ),
   'imagick::identifyimagetype' => 
   array (
@@ -37771,7 +37789,7 @@ return array (
     'width' => 'int',
     'height' => 'int',
     'map' => 'string',
-    'storage' => 'int',
+    'pixelstorage' => 'int',
     'pixels' => 'list<int>',
   ),
   'imagick::interpolativeresizeimage' => 
@@ -37806,9 +37824,9 @@ return array (
   'imagick::levelimage' => 
   array (
     0 => 'bool',
-    'blackpoint' => 'float',
+    'black_point' => 'float',
     'gamma' => 'float',
-    'whitepoint' => 'float',
+    'white_point' => 'float',
     'channel=' => 'int',
   ),
   'imagick::levelimagecolors' => 
@@ -37828,8 +37846,8 @@ return array (
   'imagick::linearstretchimage' => 
   array (
     0 => 'bool',
-    'blackpoint' => 'float',
-    'whitepoint' => 'float',
+    'black_point' => 'float',
+    'white_point' => 'float',
   ),
   'imagick::liquidrescaleimage' => 
   array (
@@ -37883,7 +37901,7 @@ return array (
   'imagick::mergeimagelayers' => 
   array (
     0 => 'Imagick',
-    'layer_method' => 'int',
+    'layermethod' => 'int',
   ),
   'imagick::minifyimage' => 
   array (
@@ -37899,10 +37917,10 @@ return array (
   'imagick::montageimage' => 
   array (
     0 => 'Imagick',
-    'draw' => 'ImagickDraw',
+    'settings' => 'ImagickDraw',
     'tile_geometry' => 'string',
     'thumbnail_geometry' => 'string',
-    'mode' => 'int',
+    'monatgemode' => 'int',
     'frame' => 'string',
   ),
   'imagick::morphimages' => 
@@ -37913,10 +37931,10 @@ return array (
   'imagick::morphology' => 
   array (
     0 => 'void',
-    'morphologyMethod' => 'int',
+    'morphology' => 'int',
     'iterations' => 'int',
-    'ImagickKernel' => 'ImagickKernel',
-    'CHANNEL=' => 'string',
+    'kernel' => 'ImagickKernel',
+    'channel=' => 'string',
   ),
   'imagick::mosaicimages' => 
   array (
@@ -37939,9 +37957,9 @@ return array (
   'imagick::newimage' => 
   array (
     0 => 'bool',
-    'cols' => 'int',
+    'columns' => 'int',
     'rows' => 'int',
-    'background' => 'mixed',
+    'background_color' => 'mixed',
     'format=' => 'string',
   ),
   'imagick::newpseudoimage' => 
@@ -37949,7 +37967,7 @@ return array (
     0 => 'bool',
     'columns' => 'int',
     'rows' => 'int',
-    'pseudostring' => 'string',
+    'pseudo_format' => 'string',
   ),
   'imagick::next' => 
   array (
@@ -37978,8 +37996,8 @@ return array (
   'imagick::opaquepaintimage' => 
   array (
     0 => 'bool',
-    'target' => 'mixed',
-    'fill' => 'mixed',
+    'target_color' => 'mixed',
+    'fill_color' => 'mixed',
     'fuzz' => 'float',
     'invert' => 'bool',
     'channel=' => 'int',
@@ -38047,7 +38065,7 @@ return array (
   'imagick::polaroidimage' => 
   array (
     0 => 'bool',
-    'properties' => 'ImagickDraw',
+    'settings' => 'ImagickDraw',
     'angle' => 'float',
   ),
   'imagick::polaroidwithtextandmethod' => 
@@ -38087,25 +38105,25 @@ return array (
   'imagick::quantizeimage' => 
   array (
     0 => 'bool',
-    'numbercolors' => 'int',
+    'number_colors' => 'int',
     'colorspace' => 'int',
-    'treedepth' => 'int',
+    'tree_depth' => 'int',
     'dither' => 'bool',
-    'measureerror' => 'bool',
+    'measure_error' => 'bool',
   ),
   'imagick::quantizeimages' => 
   array (
     0 => 'bool',
-    'numbercolors' => 'int',
+    'number_colors' => 'int',
     'colorspace' => 'int',
-    'treedepth' => 'int',
+    'tree_depth' => 'int',
     'dither' => 'bool',
-    'measureerror' => 'bool',
+    'measure_error' => 'bool',
   ),
   'imagick::queryfontmetrics' => 
   array (
     0 => 'array<array-key, mixed>',
-    'properties' => 'ImagickDraw',
+    'settings' => 'ImagickDraw',
     'text' => 'string',
     'multiline=' => 'bool',
   ),
@@ -38185,7 +38203,7 @@ return array (
   array (
     0 => 'bool',
     'replacement' => 'Imagick',
-    'dither' => 'int',
+    'dither_method' => 'int',
   ),
   'imagick::removeimage' => 
   array (
@@ -38225,6 +38243,7 @@ return array (
     'filter' => 'int',
     'blur' => 'float',
     'bestfit=' => 'bool',
+    'legacy=' => 'mixed',
   ),
   'imagick::rewind' => 
   array (
@@ -38239,14 +38258,14 @@ return array (
   'imagick::rotateimage' => 
   array (
     0 => 'bool',
-    'background' => 'mixed',
+    'background_color' => 'mixed',
     'degrees' => 'float',
   ),
   'imagick::rotationalblurimage' => 
   array (
     0 => 'void',
     'angle' => 'string',
-    'CHANNEL=' => 'string',
+    'channel=' => 'string',
   ),
   'imagick::roundcorners' => 
   array (
@@ -38260,11 +38279,11 @@ return array (
   'imagick::roundcornersimage' => 
   array (
     0 => 'mixed',
-    'xRounding' => 'mixed',
-    'yRounding' => 'mixed',
-    'strokeWidth' => 'mixed',
-    'displace' => 'mixed',
-    'sizeCorrection' => 'mixed',
+    'x_rounding' => 'mixed',
+    'y_rounding' => 'mixed',
+    'stroke_width=' => 'mixed',
+    'displace=' => 'mixed',
+    'size_correction=' => 'mixed',
   ),
   'imagick::sampleimage' => 
   array (
@@ -38275,9 +38294,10 @@ return array (
   'imagick::scaleimage' => 
   array (
     0 => 'bool',
-    'cols' => 'int',
+    'columns' => 'int',
     'rows' => 'int',
     'bestfit=' => 'bool',
+    'legacy=' => 'mixed',
   ),
   'imagick::segmentimage' => 
   array (
@@ -38293,7 +38313,7 @@ return array (
     'radius' => 'float',
     'sigma' => 'float',
     'threshold' => 'float',
-    'CHANNEL' => 'int',
+    'channel=' => 'int',
   ),
   'imagick::separateimagechannel' => 
   array (
@@ -38313,7 +38333,7 @@ return array (
   'imagick::setbackgroundcolor' => 
   array (
     0 => 'bool',
-    'background' => 'mixed',
+    'background_color' => 'mixed',
   ),
   'imagick::setcolorspace' => 
   array (
@@ -38367,7 +38387,7 @@ return array (
   'imagick::setimage' => 
   array (
     0 => 'bool',
-    'replace' => 'Imagick',
+    'image' => 'Imagick',
   ),
   'imagick::setimagealpha' => 
   array (
@@ -38377,7 +38397,7 @@ return array (
   'imagick::setimagealphachannel' => 
   array (
     0 => 'bool',
-    'mode' => 'int',
+    'alphachannel' => 'int',
   ),
   'imagick::setimageartifact' => 
   array (
@@ -38394,7 +38414,7 @@ return array (
   'imagick::setimagebackgroundcolor' => 
   array (
     0 => 'bool',
-    'background' => 'mixed',
+    'background_color' => 'mixed',
   ),
   'imagick::setimagebias' => 
   array (
@@ -38415,7 +38435,7 @@ return array (
   'imagick::setimagebordercolor' => 
   array (
     0 => 'bool',
-    'border' => 'mixed',
+    'border_color' => 'mixed',
   ),
   'imagick::setimagechanneldepth' => 
   array (
@@ -38514,7 +38534,7 @@ return array (
   'imagick::setimageinterlacescheme' => 
   array (
     0 => 'bool',
-    'interlace_scheme' => 'int',
+    'interlace' => 'int',
   ),
   'imagick::setimageinterpolatemethod' => 
   array (
@@ -38540,7 +38560,7 @@ return array (
   'imagick::setimagemattecolor' => 
   array (
     0 => 'bool',
-    'matte' => 'mixed',
+    'matte_color' => 'mixed',
   ),
   'imagick::setimageopacity' => 
   array (
@@ -38635,7 +38655,7 @@ return array (
   'imagick::setinterlacescheme' => 
   array (
     0 => 'bool',
-    'interlace_scheme' => 'int',
+    'interlace' => 'int',
   ),
   'imagick::setinterpolatemethod' => 
   array (
@@ -38724,7 +38744,7 @@ return array (
   'imagick::settype' => 
   array (
     0 => 'bool',
-    'image_type' => 'int',
+    'imgtype' => 'int',
   ),
   'imagick::shadeimage' => 
   array (
@@ -38757,7 +38777,7 @@ return array (
   'imagick::shearimage' => 
   array (
     0 => 'bool',
-    'background' => 'mixed',
+    'background_color' => 'mixed',
     'x_shear' => 'float',
     'y_shear' => 'float',
   ),
@@ -38772,11 +38792,11 @@ return array (
   'imagick::similarityimage' => 
   array (
     0 => 'Imagick',
-    'Imagick' => 'Imagick',
-    '&bestMatch' => 'array<array-key, mixed>',
-    '&similarity' => 'float',
-    'similarity_threshold' => 'float',
-    'metric' => 'int',
+    'image' => 'Imagick',
+    '&offset=' => 'array<array-key, mixed>',
+    '&similarity=' => 'float',
+    'threshold=' => 'float',
+    'metric=' => 'int',
   ),
   'imagick::sketchimage' => 
   array (
@@ -38799,7 +38819,7 @@ return array (
   'imagick::sparsecolorimage' => 
   array (
     0 => 'bool',
-    'sparse_method' => 'int',
+    'sparsecolormethod' => 'int',
     'arguments' => 'array<array-key, mixed>',
     'channel=' => 'int',
   ),
@@ -38828,18 +38848,18 @@ return array (
     'type' => 'int',
     'width' => 'int',
     'height' => 'int',
-    'CHANNEL=' => 'string',
+    'channel=' => 'string',
   ),
   'imagick::steganoimage' => 
   array (
     0 => 'Imagick',
-    'watermark_wand' => 'Imagick',
+    'watermark' => 'Imagick',
     'offset' => 'int',
   ),
   'imagick::stereoimage' => 
   array (
     0 => 'bool',
-    'offset_wand' => 'Imagick',
+    'offset_image' => 'Imagick',
   ),
   'imagick::stripimage' => 
   array (
@@ -38848,9 +38868,11 @@ return array (
   'imagick::subimagematch' => 
   array (
     0 => 'Imagick',
-    'Imagick' => 'Imagick',
+    'image' => 'Imagick',
     '&w_offset=' => 'array<array-key, mixed>',
     '&w_similarity=' => 'float',
+    'threshold=' => 'mixed',
+    'metric=' => 'mixed',
   ),
   'imagick::swirlimage' => 
   array (
@@ -38866,7 +38888,7 @@ return array (
   'imagick::textureimage' => 
   array (
     0 => 'bool',
-    'texture_wand' => 'Imagick',
+    'texture' => 'Imagick',
   ),
   'imagick::thresholdimage' => 
   array (
@@ -38886,8 +38908,9 @@ return array (
   'imagick::tintimage' => 
   array (
     0 => 'bool',
-    'tint' => 'mixed',
-    'opacity' => 'mixed',
+    'tint_color' => 'mixed',
+    'opacity_color' => 'mixed',
+    'legacy=' => 'mixed',
   ),
   'imagick::transformimage' => 
   array (
@@ -38903,7 +38926,7 @@ return array (
   'imagick::transparentpaintimage' => 
   array (
     0 => 'bool',
-    'target' => 'mixed',
+    'target_color' => 'mixed',
     'alpha' => 'float',
     'fuzz' => 'float',
     'invert' => 'bool',
@@ -38941,8 +38964,8 @@ return array (
   'imagick::vignetteimage' => 
   array (
     0 => 'bool',
-    'blackpoint' => 'float',
-    'whitepoint' => 'float',
+    'black_point' => 'float',
+    'white_point' => 'float',
     'x' => 'int',
     'y' => 'int',
   ),
@@ -38972,7 +38995,7 @@ return array (
   'imagick::whitethresholdimage' => 
   array (
     0 => 'bool',
-    'threshold' => 'mixed',
+    'threshold_color' => 'mixed',
   ),
   'imagick::writeimage' => 
   array (
@@ -38983,6 +39006,7 @@ return array (
   array (
     0 => 'bool',
     'filehandle' => 'resource',
+    'format=' => 'mixed',
   ),
   'imagick::writeimages' => 
   array (
@@ -38994,6 +39018,7 @@ return array (
   array (
     0 => 'bool',
     'filehandle' => 'resource',
+    'format=' => 'mixed',
   ),
   'imagickdraw::__construct' => 
   array (
@@ -39021,12 +39046,12 @@ return array (
   'imagickdraw::arc' => 
   array (
     0 => 'bool',
-    'sx' => 'float',
-    'sy' => 'float',
-    'ex' => 'float',
-    'ey' => 'float',
-    'sd' => 'float',
-    'ed' => 'float',
+    'start_x' => 'float',
+    'start_y' => 'float',
+    'end_x' => 'float',
+    'end_y' => 'float',
+    'start_angle' => 'float',
+    'end_angle' => 'float',
   ),
   'imagickdraw::bezier' => 
   array (
@@ -39036,10 +39061,10 @@ return array (
   'imagickdraw::circle' => 
   array (
     0 => 'bool',
-    'ox' => 'float',
-    'oy' => 'float',
-    'px' => 'float',
-    'py' => 'float',
+    'origin_x' => 'float',
+    'origin_y' => 'float',
+    'perimeter_x' => 'float',
+    'perimeter_y' => 'float',
   ),
   'imagickdraw::clear' => 
   array (
@@ -39054,7 +39079,7 @@ return array (
     0 => 'bool',
     'x' => 'float',
     'y' => 'float',
-    'paintmethod' => 'int',
+    'paint' => 'int',
   ),
   'imagickdraw::comment' => 
   array (
@@ -39064,12 +39089,12 @@ return array (
   'imagickdraw::composite' => 
   array (
     0 => 'bool',
-    'compose' => 'int',
+    'composite' => 'int',
     'x' => 'float',
     'y' => 'float',
     'width' => 'float',
     'height' => 'float',
-    'compositewand' => 'Imagick',
+    'image' => 'Imagick',
   ),
   'imagickdraw::destroy' => 
   array (
@@ -39078,12 +39103,12 @@ return array (
   'imagickdraw::ellipse' => 
   array (
     0 => 'bool',
-    'ox' => 'float',
-    'oy' => 'float',
-    'rx' => 'float',
-    'ry' => 'float',
-    'start' => 'float',
-    'end' => 'float',
+    'origin_x' => 'float',
+    'origin_y' => 'float',
+    'radius_x' => 'float',
+    'radius_y' => 'float',
+    'angle_start' => 'float',
+    'angle_end' => 'float',
   ),
   'imagickdraw::getbordercolor' => 
   array (
@@ -39232,10 +39257,10 @@ return array (
   'imagickdraw::line' => 
   array (
     0 => 'bool',
-    'sx' => 'float',
-    'sy' => 'float',
-    'ex' => 'float',
-    'ey' => 'float',
+    'start_x' => 'float',
+    'start_y' => 'float',
+    'end_x' => 'float',
+    'end_y' => 'float',
   ),
   'imagickdraw::matte' => 
   array (
@@ -39263,7 +39288,7 @@ return array (
     0 => 'bool',
     'x1' => 'float',
     'y1' => 'float',
-    'x' => 'float',
+    'x_end' => 'float',
     'y' => 'float',
   ),
   'imagickdraw::pathcurvetoquadraticbezierrelative' => 
@@ -39271,7 +39296,7 @@ return array (
     0 => 'bool',
     'x1' => 'float',
     'y1' => 'float',
-    'x' => 'float',
+    'x_end' => 'float',
     'y' => 'float',
   ),
   'imagickdraw::pathcurvetoquadraticbeziersmoothabsolute' => 
@@ -39318,8 +39343,8 @@ return array (
     'rx' => 'float',
     'ry' => 'float',
     'x_axis_rotation' => 'float',
-    'large_arc_flag' => 'bool',
-    'sweep_flag' => 'bool',
+    'large_arc' => 'bool',
+    'sweep' => 'bool',
     'x' => 'float',
     'y' => 'float',
   ),
@@ -39329,8 +39354,8 @@ return array (
     'rx' => 'float',
     'ry' => 'float',
     'x_axis_rotation' => 'float',
-    'large_arc_flag' => 'bool',
-    'sweep_flag' => 'bool',
+    'large_arc' => 'bool',
+    'sweep' => 'bool',
     'x' => 'float',
     'y' => 'float',
   ),
@@ -39443,10 +39468,10 @@ return array (
   'imagickdraw::rectangle' => 
   array (
     0 => 'bool',
-    'x1' => 'float',
-    'y1' => 'float',
-    'x2' => 'float',
-    'y2' => 'float',
+    'top_left_x' => 'float',
+    'top_left_y' => 'float',
+    'bottom_right_x' => 'float',
+    'bottom_right_y' => 'float',
   ),
   'imagickdraw::render' => 
   array (
@@ -39464,12 +39489,12 @@ return array (
   'imagickdraw::roundrectangle' => 
   array (
     0 => 'bool',
-    'x1' => 'float',
-    'y1' => 'float',
-    'x2' => 'float',
-    'y2' => 'float',
-    'rx' => 'float',
-    'ry' => 'float',
+    'top_left_x' => 'float',
+    'top_left_y' => 'float',
+    'bottom_right_x' => 'float',
+    'bottom_right_y' => 'float',
+    'rounding_x' => 'float',
+    'rounding_y' => 'float',
   ),
   'imagickdraw::scale' => 
   array (
@@ -39490,32 +39515,32 @@ return array (
   'imagickdraw::setcliprule' => 
   array (
     0 => 'bool',
-    'fill_rule' => 'int',
+    'fillrule' => 'int',
   ),
   'imagickdraw::setclipunits' => 
   array (
     0 => 'bool',
-    'clip_units' => 'int',
+    'pathunits' => 'int',
   ),
   'imagickdraw::setdensity' => 
   array (
     0 => 'bool',
-    'density_string' => 'string',
+    'density' => 'string',
   ),
   'imagickdraw::setfillalpha' => 
   array (
     0 => 'bool',
-    'opacity' => 'float',
+    'alpha' => 'float',
   ),
   'imagickdraw::setfillcolor' => 
   array (
     0 => 'bool',
-    'fill_pixel' => 'ImagickPixel|string',
+    'fill_color' => 'ImagickPixel|string',
   ),
   'imagickdraw::setfillopacity' => 
   array (
     0 => 'bool',
-    'fillopacity' => 'float',
+    'opacity' => 'float',
   ),
   'imagickdraw::setfillpatternurl' => 
   array (
@@ -39525,7 +39550,7 @@ return array (
   'imagickdraw::setfillrule' => 
   array (
     0 => 'bool',
-    'fill_rule' => 'int',
+    'fillrule' => 'int',
   ),
   'imagickdraw::setfont' => 
   array (
@@ -39546,12 +39571,12 @@ return array (
   'imagickdraw::setfontsize' => 
   array (
     0 => 'bool',
-    'pointsize' => 'float',
+    'point_size' => 'float',
   ),
   'imagickdraw::setfontstretch' => 
   array (
     0 => 'bool',
-    'fontstretch' => 'int',
+    'stretch' => 'int',
   ),
   'imagickdraw::setfontstyle' => 
   array (
@@ -39561,7 +39586,7 @@ return array (
   'imagickdraw::setfontweight' => 
   array (
     0 => 'bool',
-    'font_weight' => 'int',
+    'weight' => 'int',
   ),
   'imagickdraw::setgravity' => 
   array (
@@ -39576,28 +39601,28 @@ return array (
   'imagickdraw::setresolution' => 
   array (
     0 => 'void',
-    'x_resolution' => 'float',
-    'y_resolution' => 'float',
+    'resolution_x' => 'float',
+    'resolution_y' => 'float',
   ),
   'imagickdraw::setstrokealpha' => 
   array (
     0 => 'bool',
-    'opacity' => 'float',
+    'alpha' => 'float',
   ),
   'imagickdraw::setstrokeantialias' => 
   array (
     0 => 'bool',
-    'stroke_antialias' => 'bool',
+    'enabled' => 'bool',
   ),
   'imagickdraw::setstrokecolor' => 
   array (
     0 => 'bool',
-    'stroke_pixel' => 'ImagickPixel|string',
+    'color' => 'ImagickPixel|string',
   ),
   'imagickdraw::setstrokedasharray' => 
   array (
     0 => 'bool',
-    'dasharray' => 'list<float|int>',
+    'dashes' => 'list<float|int>',
   ),
   'imagickdraw::setstrokedashoffset' => 
   array (
@@ -39622,7 +39647,7 @@ return array (
   'imagickdraw::setstrokeopacity' => 
   array (
     0 => 'bool',
-    'stroke_opacity' => 'float',
+    'opacity' => 'float',
   ),
   'imagickdraw::setstrokepatternurl' => 
   array (
@@ -39632,12 +39657,12 @@ return array (
   'imagickdraw::setstrokewidth' => 
   array (
     0 => 'bool',
-    'stroke_width' => 'float',
+    'width' => 'float',
   ),
   'imagickdraw::settextalignment' => 
   array (
     0 => 'bool',
-    'alignment' => 'int',
+    'align' => 'int',
   ),
   'imagickdraw::settextantialias' => 
   array (
@@ -39687,10 +39712,10 @@ return array (
   'imagickdraw::setviewbox' => 
   array (
     0 => 'bool',
-    'x1' => 'int',
-    'y1' => 'int',
-    'x2' => 'int',
-    'y2' => 'int',
+    'left_x' => 'int',
+    'top_y' => 'int',
+    'right_x' => 'int',
+    'bottom_y' => 'int',
   ),
   'imagickdraw::skewx' => 
   array (
@@ -39805,23 +39830,24 @@ return array (
   'imagickkernel::addkernel' => 
   array (
     0 => 'void',
-    'ImagickKernel' => 'ImagickKernel',
+    'kernel' => 'ImagickKernel',
   ),
   'imagickkernel::addunitykernel' => 
   array (
     0 => 'void',
+    'scale' => 'mixed',
   ),
   'imagickkernel::frombuiltin' => 
   array (
     0 => 'ImagickKernel',
-    'kernelType' => 'string',
-    'kernelString' => 'string',
+    'kernel' => 'string',
+    'shape' => 'string',
   ),
   'imagickkernel::frommatrix' => 
   array (
     0 => 'ImagickKernel',
     'matrix' => 'list<list<float>>',
-    'origin=' => 'array<array-key, mixed>',
+    'origin' => 'array<array-key, mixed>',
   ),
   'imagickkernel::getmatrix' => 
   array (
@@ -39830,6 +39856,8 @@ return array (
   'imagickkernel::scale' => 
   array (
     0 => 'void',
+    'scale' => 'mixed',
+    'normalize_kernel=' => 'mixed',
   ),
   'imagickkernel::separate' => 
   array (
@@ -39928,6 +39956,7 @@ return array (
   'imagickpixel::getcolorvaluequantum' => 
   array (
     0 => 'mixed',
+    'color' => 'mixed',
   ),
   'imagickpixel::gethsl' => 
   array (
@@ -39947,13 +39976,13 @@ return array (
   array (
     0 => 'bool',
     'color' => 'string',
-    'fuzz=' => 'string',
+    'fuzz_quantum_range_scaled_by_square_root_of_three' => 'string',
   ),
   'imagickpixel::issimilar' => 
   array (
     0 => 'bool',
     'color' => 'ImagickPixel',
-    'fuzz' => 'float',
+    'fuzz_quantum_range_scaled_by_square_root_of_three' => 'float',
   ),
   'imagickpixel::setcolor' => 
   array (
@@ -39963,12 +39992,12 @@ return array (
   'imagickpixel::setcolorcount' => 
   array (
     0 => 'void',
-    'colorCount' => 'string',
+    'color_count' => 'string',
   ),
   'imagickpixel::setcolorfrompixel' => 
   array (
     0 => 'bool',
-    'srcPixel' => 'ImagickPixel',
+    'pixel' => 'ImagickPixel',
   ),
   'imagickpixel::setcolorvalue' => 
   array (
@@ -40044,7 +40073,7 @@ return array (
   'imagickpixeliterator::__construct' => 
   array (
     0 => 'void',
-    'wand' => 'Imagick',
+    'imagick' => 'Imagick',
   ),
   'imagickpixeliterator::clear' => 
   array (
@@ -40073,12 +40102,12 @@ return array (
   'imagickpixeliterator::getpixeliterator' => 
   array (
     0 => 'mixed',
-    'Imagick' => 'Imagick',
+    'imagick' => 'Imagick',
   ),
   'imagickpixeliterator::getpixelregioniterator' => 
   array (
     0 => 'mixed',
-    'Imagick' => 'Imagick',
+    'imagick' => 'Imagick',
     'x' => 'mixed',
     'y' => 'mixed',
     'columns' => 'mixed',
@@ -40095,12 +40124,12 @@ return array (
   'imagickpixeliterator::newpixeliterator' => 
   array (
     0 => 'bool',
-    'wand' => 'Imagick',
+    'imagick' => 'Imagick',
   ),
   'imagickpixeliterator::newpixelregioniterator' => 
   array (
     0 => 'bool',
-    'wand' => 'Imagick',
+    'imagick' => 'Imagick',
     'x' => 'int',
     'y' => 'int',
     'columns' => 'int',
@@ -41109,12 +41138,12 @@ return array (
   'intlbreakiterator::getlocale' => 
   array (
     0 => 'false|string',
-    'type' => 'int',
+    'locale_type' => 'int',
   ),
   'intlbreakiterator::getpartsiterator' => 
   array (
     0 => 'IntlPartsIterator',
-    'type=' => 'string',
+    'key_type=' => 'string',
   ),
   'intlbreakiterator::gettext' => 
   array (
@@ -41429,17 +41458,17 @@ return array (
   array (
     0 => 'bool',
     'field' => 'int',
-    'value' => 'int',
+    'amount' => 'int',
   ),
   'intlcalendar::after' => 
   array (
     0 => 'bool',
-    'other' => 'IntlCalendar',
+    'calendar' => 'IntlCalendar',
   ),
   'intlcalendar::before' => 
   array (
     0 => 'bool',
-    'other' => 'IntlCalendar',
+    'calendar' => 'IntlCalendar',
   ),
   'intlcalendar::clear' => 
   array (
@@ -41449,25 +41478,24 @@ return array (
   'intlcalendar::createinstance' => 
   array (
     0 => 'IntlCalendar|null',
-    'timezone=' => 'DateTimeZone|IntlTimeZone|null|string',
+    'timeZone=' => 'DateTimeZone|IntlTimeZone|null|string',
     'locale=' => 'null|string',
   ),
   'intlcalendar::equals' => 
   array (
     0 => 'bool',
-    'other' => 'IntlCalendar',
+    'calendar' => 'IntlCalendar',
   ),
   'intlcalendar::fielddifference' => 
   array (
     0 => 'false|int',
-    'timestamp' => 'float',
+    'when' => 'float',
     'field' => 'int',
   ),
   'intlcalendar::fromdatetime' => 
   array (
     0 => 'IntlCalendar|null',
-    'datetime' => 'DateTime|string',
-    'locale=' => 'null|string',
+    'dateTime' => 'DateTime|string',
   ),
   'intlcalendar::get' => 
   array (
@@ -41513,9 +41541,9 @@ return array (
   'intlcalendar::getkeywordvaluesforlocale' => 
   array (
     0 => 'IntlIterator|false',
-    'keyword' => 'string',
+    'key' => 'string',
     'locale' => 'string',
-    'onlyCommon' => 'bool',
+    'commonlyUsed' => 'bool',
   ),
   'intlcalendar::getleastmaximum' => 
   array (
@@ -41525,7 +41553,7 @@ return array (
   'intlcalendar::getlocale' => 
   array (
     0 => 'false|string',
-    'type' => 'int',
+    'localeType' => 'int',
   ),
   'intlcalendar::getmaximum' => 
   array (
@@ -41577,7 +41605,7 @@ return array (
   'intlcalendar::isequivalentto' => 
   array (
     0 => 'bool',
-    'other' => 'IntlCalendar',
+    'calendar' => 'IntlCalendar',
   ),
   'intlcalendar::islenient' => 
   array (
@@ -41591,19 +41619,23 @@ return array (
   'intlcalendar::isweekend' => 
   array (
     0 => 'bool',
-    'timestamp=' => 'float|null',
+    'date=' => 'float|null',
   ),
   'intlcalendar::roll' => 
   array (
     0 => 'bool',
     'field' => 'int',
-    'value' => 'bool|int',
+    'amountOrUpOrDown' => 'bool|int',
   ),
   'intlcalendar::set' => 
   array (
     0 => 'bool',
-    'field' => 'int',
-    'value' => 'int',
+    'fieldOrYear' => 'int',
+    'valueOrMonth' => 'int',
+    'dayOfMonth=' => 'mixed',
+    'hour=' => 'mixed',
+    'minute=' => 'mixed',
+    'second=' => 'mixed',
   ),
   'intlcalendar::set\'1' => 
   array (
@@ -41623,32 +41655,32 @@ return array (
   'intlcalendar::setlenient' => 
   array (
     0 => 'true',
-    'lenient' => 'bool',
+    'isLenient' => 'bool',
   ),
   'intlcalendar::setminimaldaysinfirstweek' => 
   array (
     0 => 'bool',
-    'days' => 'int',
+    'numberOfDays' => 'int',
   ),
   'intlcalendar::setrepeatedwalltimeoption' => 
   array (
     0 => 'true',
-    'option' => 'int',
+    'wallTimeOption' => 'int',
   ),
   'intlcalendar::setskippedwalltimeoption' => 
   array (
     0 => 'true',
-    'option' => 'int',
+    'wallTimeOption' => 'int',
   ),
   'intlcalendar::settime' => 
   array (
     0 => 'bool',
-    'timestamp' => 'float',
+    'date' => 'float',
   ),
   'intlcalendar::settimezone' => 
   array (
     0 => 'bool',
-    'timezone' => 'DateTimeZone|IntlTimeZone|null|string',
+    'timeZone' => 'DateTimeZone|IntlTimeZone|null|string',
   ),
   'intlcalendar::todatetime' => 
   array (
@@ -41672,8 +41704,8 @@ return array (
   'intlchar::charfromname' => 
   array (
     0 => 'int|null',
-    'name' => 'string',
-    'type=' => 'int',
+    'characterName' => 'string',
+    'nameChoice=' => 'int',
   ),
   'intlchar::charmirror' => 
   array (
@@ -41684,7 +41716,7 @@ return array (
   array (
     0 => 'null|string',
     'codepoint' => 'int|string',
-    'type=' => 'int',
+    'nameChoice=' => 'int',
   ),
   'intlchar::chartype' => 
   array (
@@ -41700,20 +41732,20 @@ return array (
   array (
     0 => 'false|int|null',
     'codepoint' => 'int|string',
-    'base=' => 'int',
+    'radix=' => 'int',
   ),
   'intlchar::enumcharnames' => 
   array (
     0 => 'bool|null',
     'start' => 'int|string',
-    'end' => 'int|string',
+    'limit' => 'int|string',
     'callback' => 'callable(int, int, int):void',
-    'type=' => 'int',
+    'nameChoice=' => 'int',
   ),
   'intlchar::enumchartypes' => 
   array (
     0 => 'void',
-    'callback' => 'callable(int, int, int):void',
+    'callback=' => 'callable(int, int, int):void',
   ),
   'intlchar::foldcase' => 
   array (
@@ -41725,7 +41757,7 @@ return array (
   array (
     0 => 'int',
     'digit' => 'int',
-    'base=' => 'int',
+    'radix=' => 'int',
   ),
   'intlchar::getbidipairedbracket' => 
   array (
@@ -41777,7 +41809,7 @@ return array (
   array (
     0 => 'false|string',
     'property' => 'int',
-    'type=' => 'int',
+    'nameChoice=' => 'int',
   ),
   'intlchar::getpropertyvalueenum' => 
   array (
@@ -41790,7 +41822,7 @@ return array (
     0 => 'false|string',
     'property' => 'int',
     'value' => 'int',
-    'type=' => 'int',
+    'nameChoice=' => 'int',
   ),
   'intlchar::getunicodeversion' => 
   array (
@@ -42023,12 +42055,12 @@ return array (
   'intlcodepointbreakiterator::getlocale' => 
   array (
     0 => 'false|string',
-    'type' => 'int',
+    'locale_type' => 'int',
   ),
   'intlcodepointbreakiterator::getpartsiterator' => 
   array (
     0 => 'IntlPartsIterator',
-    'type=' => 'string',
+    'key_type=' => 'string',
   ),
   'intlcodepointbreakiterator::gettext' => 
   array (
@@ -42085,7 +42117,8 @@ return array (
   'intldateformatter::format' => 
   array (
     0 => 'false|string',
-    'value' => 'DateTimeInterface|IntlCalendar|array{0?: int, 1?: int, 2?: int, 3?: int, 4?: int, 5?: int, 6?: int, 7?: int, 8?: int, tm_hour?: int, tm_isdst?: int, tm_mday?: int, tm_min?: int, tm_mon?: int, tm_sec?: int, tm_wday?: int, tm_yday?: int, tm_year?: int}|float|int|string',
+    'args=' => 'DateTimeInterface|IntlCalendar|array{0?: int, 1?: int, 2?: int, 3?: int, 4?: int, 5?: int, 6?: int, 7?: int, 8?: int, tm_hour?: int, tm_isdst?: int, tm_mday?: int, tm_min?: int, tm_mon?: int, tm_sec?: int, tm_wday?: int, tm_yday?: int, tm_year?: int}|float|int|string',
+    'array=' => 'mixed',
   ),
   'intldateformatter::formatobject' => 
   array (
@@ -42117,7 +42150,6 @@ return array (
   'intldateformatter::getlocale' => 
   array (
     0 => 'string',
-    'which=' => 'int',
   ),
   'intldateformatter::getpattern' => 
   array (
@@ -42142,14 +42174,14 @@ return array (
   'intldateformatter::localtime' => 
   array (
     0 => 'array<array-key, mixed>',
-    'value' => 'string',
-    '&rw_position=' => 'int',
+    'string' => 'string',
+    '&position=' => 'int',
   ),
   'intldateformatter::parse' => 
   array (
     0 => 'float|int',
-    'value' => 'string',
-    '&rw_position=' => 'int',
+    'string' => 'string',
+    '&position=' => 'int',
   ),
   'intldateformatter::setcalendar' => 
   array (
@@ -42248,22 +42280,28 @@ return array (
   'intlgregoriancalendar::__construct' => 
   array (
     0 => 'void',
+    'timeZoneOrYear=' => 'mixed',
+    'localeOrMonth=' => 'mixed',
+    'dayOfMonth=' => 'mixed',
+    'hour=' => 'mixed',
+    'minute=' => 'mixed',
+    'second=' => 'mixed',
   ),
   'intlgregoriancalendar::add' => 
   array (
     0 => 'bool',
     'field' => 'int',
-    'value' => 'int',
+    'amount' => 'int',
   ),
   'intlgregoriancalendar::after' => 
   array (
     0 => 'bool',
-    'other' => 'IntlCalendar',
+    'calendar' => 'IntlCalendar',
   ),
   'intlgregoriancalendar::before' => 
   array (
     0 => 'bool',
-    'other' => 'IntlCalendar',
+    'calendar' => 'IntlCalendar',
   ),
   'intlgregoriancalendar::clear' => 
   array (
@@ -42273,25 +42311,24 @@ return array (
   'intlgregoriancalendar::createinstance' => 
   array (
     0 => 'IntlGregorianCalendar|null',
-    'timezone=' => 'DateTimeZone|IntlTimeZone|null|string',
+    'timeZone=' => 'DateTimeZone|IntlTimeZone|null|string',
     'locale=' => 'null|string',
   ),
   'intlgregoriancalendar::equals' => 
   array (
     0 => 'bool',
-    'other' => 'IntlCalendar',
+    'calendar' => 'IntlCalendar',
   ),
   'intlgregoriancalendar::fielddifference' => 
   array (
     0 => 'false|int',
-    'timestamp' => 'float',
+    'when' => 'float',
     'field' => 'int',
   ),
   'intlgregoriancalendar::fromdatetime' => 
   array (
     0 => 'IntlCalendar|null',
-    'datetime' => 'DateTime|string',
-    'locale=' => 'null|string',
+    'dateTime' => 'DateTime|string',
   ),
   'intlgregoriancalendar::get' => 
   array (
@@ -42341,9 +42378,9 @@ return array (
   'intlgregoriancalendar::getkeywordvaluesforlocale' => 
   array (
     0 => 'IntlIterator|false',
-    'keyword' => 'string',
+    'key' => 'string',
     'locale' => 'string',
-    'onlyCommon' => 'bool',
+    'commonlyUsed' => 'bool',
   ),
   'intlgregoriancalendar::getleastmaximum' => 
   array (
@@ -42353,7 +42390,7 @@ return array (
   'intlgregoriancalendar::getlocale' => 
   array (
     0 => 'false|string',
-    'type' => 'int',
+    'localeType' => 'int',
   ),
   'intlgregoriancalendar::getmaximum' => 
   array (
@@ -42405,7 +42442,7 @@ return array (
   'intlgregoriancalendar::isequivalentto' => 
   array (
     0 => 'bool',
-    'other' => 'IntlCalendar',
+    'calendar' => 'IntlCalendar',
   ),
   'intlgregoriancalendar::isleapyear' => 
   array (
@@ -42424,19 +42461,23 @@ return array (
   'intlgregoriancalendar::isweekend' => 
   array (
     0 => 'bool',
-    'timestamp=' => 'float|null',
+    'date=' => 'float|null',
   ),
   'intlgregoriancalendar::roll' => 
   array (
     0 => 'bool',
     'field' => 'int',
-    'value' => 'bool|int',
+    'amountOrUpOrDown' => 'bool|int',
   ),
   'intlgregoriancalendar::set' => 
   array (
     0 => 'bool',
-    'field' => 'int',
-    'value' => 'int',
+    'fieldOrYear' => 'int',
+    'valueOrMonth' => 'int',
+    'dayOfMonth=' => 'mixed',
+    'hour=' => 'mixed',
+    'minute=' => 'mixed',
+    'second=' => 'mixed',
   ),
   'intlgregoriancalendar::set\'1' => 
   array (
@@ -42456,37 +42497,37 @@ return array (
   'intlgregoriancalendar::setgregorianchange' => 
   array (
     0 => 'bool',
-    'timestamp' => 'float',
+    'date' => 'float',
   ),
   'intlgregoriancalendar::setlenient' => 
   array (
     0 => 'true',
-    'lenient' => 'bool',
+    'isLenient' => 'bool',
   ),
   'intlgregoriancalendar::setminimaldaysinfirstweek' => 
   array (
     0 => 'bool',
-    'days' => 'int',
+    'numberOfDays' => 'int',
   ),
   'intlgregoriancalendar::setrepeatedwalltimeoption' => 
   array (
     0 => 'true',
-    'option' => 'int',
+    'wallTimeOption' => 'int',
   ),
   'intlgregoriancalendar::setskippedwalltimeoption' => 
   array (
     0 => 'true',
-    'option' => 'int',
+    'wallTimeOption' => 'int',
   ),
   'intlgregoriancalendar::settime' => 
   array (
     0 => 'bool',
-    'timestamp' => 'float',
+    'date' => 'float',
   ),
   'intlgregoriancalendar::settimezone' => 
   array (
     0 => 'bool',
-    'timezone' => 'DateTimeZone|IntlTimeZone|null|string',
+    'timeZone' => 'DateTimeZone|IntlTimeZone|null|string',
   ),
   'intlgregoriancalendar::todatetime' => 
   array (
@@ -42544,7 +42585,7 @@ return array (
   array (
     0 => 'void',
     'rules' => 'string',
-    'compiled=' => 'bool',
+    'areCompiled=' => 'bool',
   ),
   'intlrulebasedbreakiterator::createcharacterinstance' => 
   array (
@@ -42603,12 +42644,12 @@ return array (
   'intlrulebasedbreakiterator::getlocale' => 
   array (
     0 => 'false|string',
-    'type' => 'int',
+    'locale_type' => 'int',
   ),
   'intlrulebasedbreakiterator::getpartsiterator' => 
   array (
     0 => 'IntlPartsIterator',
-    'type=' => 'string',
+    'key_type=' => 'string',
   ),
   'intlrulebasedbreakiterator::getrules' => 
   array (
@@ -42661,7 +42702,7 @@ return array (
   'intltimezone::countequivalentids' => 
   array (
     0 => 'false|int',
-    'timezoneId' => 'string',
+    'zoneId' => 'string',
   ),
   'intltimezone::createdefault' => 
   array (
@@ -42675,30 +42716,30 @@ return array (
   'intltimezone::createtimezone' => 
   array (
     0 => 'IntlTimeZone|null',
-    'timezoneId' => 'string',
+    'zoneId' => 'string',
   ),
   'intltimezone::createtimezoneidenumeration' => 
   array (
     0 => 'IntlIterator|false',
-    'type' => 'int',
+    'zoneType' => 'int',
     'region=' => 'null|string',
     'rawOffset=' => 'int|null',
   ),
   'intltimezone::fromdatetimezone' => 
   array (
     0 => 'IntlTimeZone|null',
-    'timezone' => 'DateTimeZone',
+    'zoneId' => 'DateTimeZone',
   ),
   'intltimezone::getcanonicalid' => 
   array (
     0 => 'false|string',
-    'timezoneId' => 'string',
-    '&w_isSystemId=' => 'bool',
+    'zoneId' => 'string',
+    '&w_isSystemID=' => 'bool',
   ),
   'intltimezone::getdisplayname' => 
   array (
     0 => 'false|string',
-    'dst=' => 'bool',
+    'isDaylight=' => 'bool',
     'style=' => 'int',
     'locale=' => 'null|string',
   ),
@@ -42709,8 +42750,8 @@ return array (
   'intltimezone::getequivalentid' => 
   array (
     0 => 'false|string',
-    'timezoneId' => 'string',
-    'offset' => 'int',
+    'zoneId' => 'string',
+    'index' => 'int',
   ),
   'intltimezone::geterrorcode' => 
   array (
@@ -42731,13 +42772,13 @@ return array (
   'intltimezone::getidforwindowsid' => 
   array (
     0 => 'false|string',
-    'timezoneId' => 'string',
+    'timezone' => 'string',
     'region=' => 'string',
   ),
   'intltimezone::getoffset' => 
   array (
     0 => 'bool',
-    'timestamp' => 'float',
+    'date' => 'float',
     'local' => 'bool',
     '&w_rawOffset' => 'int',
     '&w_dstOffset' => 'int',
@@ -42749,7 +42790,7 @@ return array (
   'intltimezone::getregion' => 
   array (
     0 => 'false|string',
-    'timezoneId' => 'string',
+    'zoneId' => 'string',
   ),
   'intltimezone::gettzdataversion' => 
   array (
@@ -42762,12 +42803,12 @@ return array (
   'intltimezone::getwindowsid' => 
   array (
     0 => 'false|string',
-    'timezoneId' => 'string',
+    'timezone' => 'string',
   ),
   'intltimezone::hassamerules' => 
   array (
     0 => 'bool',
-    'other' => 'IntlTimeZone',
+    'otherTimeZone' => 'IntlTimeZone',
   ),
   'intltimezone::todatetimezone' => 
   array (
@@ -43191,7 +43232,6 @@ return array (
   array (
     0 => 'void',
     'iterator' => 'Traversable',
-    'class=' => 'null|string',
   ),
   'iteratoriterator::current' => 
   array (
@@ -44886,7 +44926,7 @@ return array (
     0 => 'void',
     'iterator' => 'Iterator',
     'offset=' => 'int',
-    'limit=' => 'int',
+    'count=' => 'int',
   ),
   'limititerator::current' => 
   array (
@@ -44915,7 +44955,7 @@ return array (
   'limititerator::seek' => 
   array (
     0 => 'int',
-    'offset' => 'int',
+    'position' => 'int',
   ),
   'limititerator::valid' => 
   array (
@@ -44997,7 +45037,7 @@ return array (
   'locale::filtermatches' => 
   array (
     0 => 'bool|null',
-    'languageTag' => 'string',
+    'langtag' => 'string',
     'locale' => 'string',
     'canonicalize=' => 'bool',
   ),
@@ -45014,31 +45054,31 @@ return array (
   array (
     0 => 'string',
     'locale' => 'string',
-    'displayLocale=' => 'string',
+    'in_locale=' => 'string',
   ),
   'locale::getdisplayname' => 
   array (
     0 => 'string',
     'locale' => 'string',
-    'displayLocale=' => 'string',
+    'in_locale=' => 'string',
   ),
   'locale::getdisplayregion' => 
   array (
     0 => 'string',
     'locale' => 'string',
-    'displayLocale=' => 'string',
+    'in_locale=' => 'string',
   ),
   'locale::getdisplayscript' => 
   array (
     0 => 'string',
     'locale' => 'string',
-    'displayLocale=' => 'string',
+    'in_locale=' => 'string',
   ),
   'locale::getdisplayvariant' => 
   array (
     0 => 'string',
     'locale' => 'string',
-    'displayLocale=' => 'string',
+    'in_locale=' => 'string',
   ),
   'locale::getkeywords' => 
   array (
@@ -45063,10 +45103,10 @@ return array (
   'locale::lookup' => 
   array (
     0 => 'null|string',
-    'languageTag' => 'array<array-key, mixed>',
+    'langtag' => 'array<array-key, mixed>',
     'locale' => 'string',
     'canonicalize=' => 'bool',
-    'defaultLocale=' => 'null|string',
+    'default=' => 'null|string',
   ),
   'locale::parselocale' => 
   array (
@@ -45849,9 +45889,10 @@ return array (
   'mb_convert_variables' => 
   array (
     0 => 'false|string',
-    'to' => 'string',
-    'from' => 'array<array-key, mixed>|string',
-    '...&vars' => 'array<array-key, mixed>|object|string',
+    'to_encoding' => 'string',
+    'from_encoding' => 'array<array-key, mixed>|string',
+    '&var' => 'array<array-key, mixed>|object|string',
+    '...&vars=' => 'array<array-key, mixed>|object|string',
   ),
   'mb_decode_mimeheader' => 
   array (
@@ -47408,14 +47449,14 @@ return array (
   'messageformatter::format' => 
   array (
     0 => 'false|string',
-    'values' => 'array<array-key, mixed>',
+    'args' => 'array<array-key, mixed>',
   ),
   'messageformatter::formatmessage' => 
   array (
     0 => 'false|string',
     'locale' => 'string',
     'pattern' => 'string',
-    'values' => 'array<array-key, mixed>',
+    'args' => 'array<array-key, mixed>',
   ),
   'messageformatter::geterrorcode' => 
   array (
@@ -47436,14 +47477,14 @@ return array (
   'messageformatter::parse' => 
   array (
     0 => 'array<array-key, mixed>|false',
-    'string' => 'string',
+    'source' => 'string',
   ),
   'messageformatter::parsemessage' => 
   array (
     0 => 'array<array-key, mixed>|false',
     'locale' => 'string',
     'pattern' => 'string',
-    'message' => 'string',
+    'args' => 'string',
   ),
   'messageformatter::setpattern' => 
   array (
@@ -48524,7 +48565,7 @@ return array (
   'mongodb\\bson\\binary::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
+    'serialized' => 'string',
   ),
   'mongodb\\bson\\binaryinterface::__tostring' => 
   array (
@@ -48571,7 +48612,7 @@ return array (
   'mongodb\\bson\\dbpointer::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
+    'serialized' => 'string',
   ),
   'mongodb\\bson\\decimal128::__construct' => 
   array (
@@ -48607,7 +48648,7 @@ return array (
   'mongodb\\bson\\decimal128::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
+    'serialized' => 'string',
   ),
   'mongodb\\bson\\decimal128interface::__tostring' => 
   array (
@@ -48705,7 +48746,7 @@ return array (
   'mongodb\\bson\\document::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
+    'serialized' => 'string',
   ),
   'mongodb\\bson\\fromjson' => 
   array (
@@ -48751,7 +48792,7 @@ return array (
   'mongodb\\bson\\int64::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
+    'serialized' => 'string',
   ),
   'mongodb\\bson\\iterator::__construct' => 
   array (
@@ -48820,7 +48861,7 @@ return array (
   'mongodb\\bson\\javascript::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
+    'serialized' => 'string',
   ),
   'mongodb\\bson\\javascriptinterface::__tostring' => 
   array (
@@ -48859,7 +48900,7 @@ return array (
   'mongodb\\bson\\maxkey::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
+    'serialized' => 'string',
   ),
   'mongodb\\bson\\minkey::__serialize' => 
   array (
@@ -48886,7 +48927,7 @@ return array (
   'mongodb\\bson\\minkey::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
+    'serialized' => 'string',
   ),
   'mongodb\\bson\\objectid::__construct' => 
   array (
@@ -48926,7 +48967,7 @@ return array (
   'mongodb\\bson\\objectid::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
+    'serialized' => 'string',
   ),
   'mongodb\\bson\\objectidinterface::__tostring' => 
   array (
@@ -49023,7 +49064,7 @@ return array (
   'mongodb\\bson\\packedarray::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
+    'serialized' => 'string',
   ),
   'mongodb\\bson\\persistable::bsonserialize' => 
   array (
@@ -49072,7 +49113,7 @@ return array (
   'mongodb\\bson\\regex::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
+    'serialized' => 'string',
   ),
   'mongodb\\bson\\regexinterface::__tostring' => 
   array (
@@ -49123,7 +49164,7 @@ return array (
   'mongodb\\bson\\symbol::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
+    'serialized' => 'string',
   ),
   'mongodb\\bson\\timestamp::__construct' => 
   array (
@@ -49168,7 +49209,7 @@ return array (
   'mongodb\\bson\\timestamp::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
+    'serialized' => 'string',
   ),
   'mongodb\\bson\\timestampinterface::__tostring' => 
   array (
@@ -49236,7 +49277,7 @@ return array (
   'mongodb\\bson\\undefined::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
+    'serialized' => 'string',
   ),
   'mongodb\\bson\\unserializable::bsonunserialize' => 
   array (
@@ -49285,7 +49326,7 @@ return array (
   'mongodb\\bson\\utcdatetime::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
+    'serialized' => 'string',
   ),
   'mongodb\\bson\\utcdatetimeinterface::__tostring' => 
   array (
@@ -49404,6 +49445,7 @@ return array (
   'mongodb\\driver\\cursor::getid' => 
   array (
     0 => 'MongoDB\\Driver\\CursorId',
+    'asInt64=' => 'bool',
   ),
   'mongodb\\driver\\cursor::getserver' => 
   array (
@@ -49467,7 +49509,7 @@ return array (
   'mongodb\\driver\\cursorid::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
+    'serialized' => 'string',
   ),
   'mongodb\\driver\\cursorinterface::getid' => 
   array (
@@ -50737,7 +50779,7 @@ return array (
   'mongodb\\driver\\readconcern::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
+    'serialized' => 'string',
   ),
   'mongodb\\driver\\readpreference::__construct' => 
   array (
@@ -50791,7 +50833,7 @@ return array (
   'mongodb\\driver\\readpreference::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
+    'serialized' => 'string',
   ),
   'mongodb\\driver\\server::__construct' => 
   array (
@@ -50919,7 +50961,7 @@ return array (
   'mongodb\\driver\\serverapi::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
+    'serialized' => 'string',
   ),
   'mongodb\\driver\\serverdescription::__construct' => 
   array (
@@ -51081,7 +51123,7 @@ return array (
   'mongodb\\driver\\writeconcern::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
+    'serialized' => 'string',
   ),
   'mongodb\\driver\\writeconcernerror::__construct' => 
   array (
@@ -52506,7 +52548,7 @@ return array (
   'multipleiterator::__construct' => 
   array (
     0 => 'void',
-    'flags=' => 'int',
+    'flags' => 'int',
   ),
   'multipleiterator::__debuginfo' => 
   array (
@@ -52516,7 +52558,7 @@ return array (
   array (
     0 => 'void',
     'iterator' => 'Iterator',
-    'info=' => 'int|null|string',
+    'infos=' => 'int|null|string',
   ),
   'multipleiterator::containsiterator' => 
   array (
@@ -55098,19 +55140,18 @@ return array (
   'normalizer::getrawdecomposition' => 
   array (
     0 => 'null|string',
-    'string' => 'string',
-    'form=' => 'int',
+    'input' => 'string',
   ),
   'normalizer::isnormalized' => 
   array (
     0 => 'bool',
-    'string' => 'string',
+    'input' => 'string',
     'form=' => 'int',
   ),
   'normalizer::normalize' => 
   array (
     0 => 'false|string',
-    'string' => 'string',
+    'input' => 'string',
     'form=' => 'int',
   ),
   'normalizer_get_raw_decomposition' => 
@@ -55267,19 +55308,19 @@ return array (
   'numberformatter::format' => 
   array (
     0 => 'false|string',
-    'num' => 'mixed',
+    'num' => 'float|int',
     'type=' => 'int',
   ),
   'numberformatter::formatcurrency' => 
   array (
     0 => 'false|string',
-    'amount' => 'float',
+    'num' => 'float',
     'currency' => 'string',
   ),
   'numberformatter::getattribute' => 
   array (
     0 => 'false|float|int',
-    'attribute' => 'int',
+    'attr' => 'int',
   ),
   'numberformatter::geterrorcode' => 
   array (
@@ -55301,31 +55342,31 @@ return array (
   'numberformatter::getsymbol' => 
   array (
     0 => 'false|string',
-    'symbol' => 'int',
+    'attr' => 'int',
   ),
   'numberformatter::gettextattribute' => 
   array (
     0 => 'false|string',
-    'attribute' => 'int',
+    'attr' => 'int',
   ),
   'numberformatter::parse' => 
   array (
     0 => 'false|float|int',
     'string' => 'string',
     'type=' => 'int',
-    '&rw_offset=' => 'int',
+    '&position=' => 'int',
   ),
   'numberformatter::parsecurrency' => 
   array (
     0 => 'false|float',
     'string' => 'string',
     '&w_currency' => 'string',
-    '&rw_offset=' => 'int',
+    '&position=' => 'int',
   ),
   'numberformatter::setattribute' => 
   array (
     0 => 'bool',
-    'attribute' => 'int',
+    'attr' => 'int',
     'value' => 'float|int',
   ),
   'numberformatter::setpattern' => 
@@ -55336,13 +55377,13 @@ return array (
   'numberformatter::setsymbol' => 
   array (
     0 => 'bool',
+    'attr' => 'int',
     'symbol' => 'int',
-    'value' => 'string',
   ),
   'numberformatter::settextattribute' => 
   array (
     0 => 'bool',
-    'attribute' => 'int',
+    'attr' => 'int',
     'value' => 'string',
   ),
   'numfmt_create' => 
@@ -60353,7 +60394,7 @@ return array (
     0 => 'void',
     'dsn' => 'string',
     'username=' => 'null|string',
-    'password=' => 'null|string',
+    'passwd=' => 'null|string',
     'options=' => 'array<array-key, mixed>|null',
   ),
   'pdo::begintransaction' => 
@@ -60382,7 +60423,7 @@ return array (
   'pdo::exec' => 
   array (
     0 => 'false|int',
-    'statement' => 'string',
+    'query' => 'string',
   ),
   'pdo::getattribute' => 
   array (
@@ -60400,7 +60441,7 @@ return array (
   'pdo::lastinsertid' => 
   array (
     0 => 'string',
-    'name=' => 'null|string',
+    'seqname=' => 'null|string',
   ),
   'pdo::pgsqlcopyfromarray' => 
   array (
@@ -60465,13 +60506,12 @@ return array (
   'pdo::prepare' => 
   array (
     0 => 'PDOStatement|false',
-    'query' => 'string',
+    'statement' => 'string',
     'options=' => 'array<array-key, mixed>',
   ),
   'pdo::query' => 
   array (
     0 => 'PDOStatement|false',
-    'query' => 'string',
   ),
   'pdo::query\'1' => 
   array (
@@ -60499,7 +60539,7 @@ return array (
   array (
     0 => 'false|string',
     'string' => 'string',
-    'type=' => 'int',
+    'paramtype=' => 'int',
   ),
   'pdo::rollback' => 
   array (
@@ -60587,25 +60627,25 @@ return array (
   array (
     0 => 'bool',
     'column' => 'int|string',
-    '&rw_var' => 'mixed',
+    '&param' => 'mixed',
     'type=' => 'int',
-    'maxLength=' => 'int',
-    'driverOptions=' => 'mixed',
+    'maxlen=' => 'int',
+    'driverdata=' => 'mixed',
   ),
   'pdostatement::bindparam' => 
   array (
     0 => 'bool',
-    'param' => 'int|string',
-    '&rw_var' => 'mixed',
+    'paramno' => 'int|string',
+    '&param' => 'int|string',
     'type=' => 'int',
-    'maxLength=' => 'int',
-    'driverOptions=' => 'mixed',
+    'maxlen=' => 'int',
+    'driverdata=' => 'mixed',
   ),
   'pdostatement::bindvalue' => 
   array (
     0 => 'bool',
+    'paramno' => 'int|string',
     'param' => 'int|string',
-    'value' => 'mixed',
     'type=' => 'int',
   ),
   'pdostatement::closecursor' => 
@@ -60644,7 +60684,7 @@ return array (
   array (
     0 => 'array<array-key, mixed>|false',
     'how=' => 'int',
-    'fetch_argument=' => 'callable|int|string',
+    'class_name=' => 'callable|int|string',
     'ctor_args=' => 'array<array-key, mixed>|null',
   ),
   'pdostatement::fetchcolumn' => 
@@ -60655,13 +60695,13 @@ return array (
   'pdostatement::fetchobject' => 
   array (
     0 => 'false|object',
-    'class=' => 'class-string|null',
-    'constructorArgs=' => 'array<array-key, mixed>',
+    'class_name=' => 'class-string|null',
+    'ctor_args=' => 'array<array-key, mixed>',
   ),
   'pdostatement::getattribute' => 
   array (
     0 => 'mixed',
-    'name' => 'int',
+    'attribute' => 'int',
   ),
   'pdostatement::getcolumnmeta' => 
   array (
@@ -60686,6 +60726,7 @@ return array (
   array (
     0 => 'bool',
     'mode' => 'int',
+    'params=' => 'mixed',
   ),
   'pdostatement::setfetchmode\'1' => 
   array (
@@ -61547,19 +61588,19 @@ return array (
   'phar::addemptydir' => 
   array (
     0 => 'void',
-    'directory' => 'string',
+    'dirname=' => 'string',
   ),
   'phar::addfile' => 
   array (
     0 => 'void',
     'filename' => 'string',
-    'localName=' => 'string',
+    'localname=' => 'string',
   ),
   'phar::addfromstring' => 
   array (
     0 => 'void',
-    'localName' => 'string',
-    'contents' => 'string',
+    'localname' => 'string',
+    'contents=' => 'string',
   ),
   'phar::apiversion' => 
   array (
@@ -61568,19 +61609,19 @@ return array (
   'phar::buildfromdirectory' => 
   array (
     0 => 'array<array-key, mixed>|false',
-    'directory' => 'string',
-    'pattern=' => 'string',
+    'base_dir' => 'string',
+    'regex=' => 'string',
   ),
   'phar::buildfromiterator' => 
   array (
     0 => 'array<array-key, mixed>|false',
     'iterator' => 'Traversable',
-    'baseDirectory=' => 'string',
+    'base_directory=' => 'string',
   ),
   'phar::cancompress' => 
   array (
     0 => 'bool',
-    'compression=' => 'int',
+    'method=' => 'int',
   ),
   'phar::canwrite' => 
   array (
@@ -61589,44 +61630,43 @@ return array (
   'phar::compress' => 
   array (
     0 => 'Phar|null',
-    'compression' => 'int',
-    'extension=' => 'string',
+    'compression_type' => 'int',
+    'file_ext=' => 'string',
   ),
   'phar::compressfiles' => 
   array (
     0 => 'void',
-    'compression' => 'int',
+    'compression_type' => 'int',
   ),
   'phar::converttodata' => 
   array (
     0 => 'PharData|null',
     'format=' => 'int',
-    'compression=' => 'int',
-    'extension=' => 'string',
+    'compression_type=' => 'int',
+    'file_ext=' => 'string',
   ),
   'phar::converttoexecutable' => 
   array (
     0 => 'Phar|null',
     'format=' => 'int',
-    'compression=' => 'int',
-    'extension=' => 'string',
+    'compression_type=' => 'int',
+    'file_ext=' => 'string',
   ),
   'phar::copy' => 
   array (
     0 => 'bool',
-    'from' => 'string',
-    'to' => 'string',
+    'newfile' => 'string',
+    'oldfile' => 'string',
   ),
   'phar::count' => 
   array (
     0 => 'int',
-    'mode=' => 'int',
   ),
   'phar::createdefaultstub' => 
   array (
     0 => 'string',
     'index=' => 'string',
-    'webIndex=' => 'string',
+    'webindex=' => 'string',
   ),
   'phar::current' => 
   array (
@@ -61635,7 +61675,7 @@ return array (
   'phar::decompress' => 
   array (
     0 => 'Phar|null',
-    'extension=' => 'string',
+    'file_ext=' => 'string',
   ),
   'phar::decompressfiles' => 
   array (
@@ -61644,7 +61684,7 @@ return array (
   'phar::delete' => 
   array (
     0 => 'bool',
-    'localName' => 'string',
+    'entry' => 'string',
   ),
   'phar::delmetadata' => 
   array (
@@ -61653,7 +61693,7 @@ return array (
   'phar::extractto' => 
   array (
     0 => 'bool',
-    'directory' => 'string',
+    'pathto' => 'string',
     'files=' => 'array<array-key, mixed>|null|string',
     'overwrite=' => 'bool',
   ),
@@ -61820,7 +61860,7 @@ return array (
   'phar::isfileformat' => 
   array (
     0 => 'bool',
-    'format' => 'int',
+    'fileformat' => 'int',
   ),
   'phar::islink' => 
   array (
@@ -61859,13 +61899,13 @@ return array (
   'phar::mount' => 
   array (
     0 => 'void',
-    'pharPath' => 'string',
-    'externalPath' => 'string',
+    'inphar' => 'string',
+    'externalfile' => 'string',
   ),
   'phar::mungserver' => 
   array (
     0 => 'void',
-    'variables' => 'list<string>',
+    'munglist' => 'list<string>',
   ),
   'phar::next' => 
   array (
@@ -61874,23 +61914,23 @@ return array (
   'phar::offsetexists' => 
   array (
     0 => 'bool',
-    'localName' => 'string',
+    'entry' => 'string',
   ),
   'phar::offsetget' => 
   array (
     0 => 'PharFileInfo',
-    'localName' => 'string',
+    'entry' => 'string',
   ),
   'phar::offsetset' => 
   array (
     0 => 'void',
-    'localName' => 'string',
+    'entry' => 'string',
     'value' => 'resource|string',
   ),
   'phar::offsetunset' => 
   array (
     0 => 'void',
-    'localName' => 'string',
+    'entry' => 'string',
   ),
   'phar::openfile' => 
   array (
@@ -61906,7 +61946,7 @@ return array (
   'phar::running' => 
   array (
     0 => 'string',
-    'returnPhar=' => 'bool',
+    'retphar=' => 'bool',
   ),
   'phar::seek' => 
   array (
@@ -61922,7 +61962,7 @@ return array (
   array (
     0 => 'bool',
     'index=' => 'null|string',
-    'webIndex=' => 'string',
+    'webindex=' => 'string',
   ),
   'phar::setfileclass' => 
   array (
@@ -61947,14 +61987,14 @@ return array (
   'phar::setsignaturealgorithm' => 
   array (
     0 => 'void',
-    'algo' => 'int',
-    'privateKey=' => 'string',
+    'algorithm' => 'int',
+    'privatekey=' => 'string',
   ),
   'phar::setstub' => 
   array (
     0 => 'bool',
-    'stub' => 'string',
-    'length=' => 'int',
+    'newstub' => 'string',
+    'maxlen=' => 'int',
   ),
   'phar::startbuffering' => 
   array (
@@ -61967,7 +62007,7 @@ return array (
   'phar::unlinkarchive' => 
   array (
     0 => 'bool',
-    'filename' => 'string',
+    'archive' => 'string',
   ),
   'phar::valid' => 
   array (
@@ -61978,9 +62018,9 @@ return array (
     0 => 'void',
     'alias=' => 'null|string',
     'index=' => 'null|string',
-    'fileNotFoundScript=' => 'string',
-    'mimeTypes=' => 'array<array-key, mixed>',
-    'rewrite=' => 'callable',
+    'f404=' => 'string',
+    'mimetypes=' => 'array<array-key, mixed>',
+    'rewrites=' => 'callable',
   ),
   'phardata::__construct' => 
   array (
@@ -61988,7 +62028,7 @@ return array (
     'filename' => 'string',
     'flags=' => 'int',
     'alias=' => 'null|string',
-    'format=' => 'int',
+    'fileformat=' => 'int',
   ),
   'phardata::__debuginfo' => 
   array (
@@ -62009,19 +62049,19 @@ return array (
   'phardata::addemptydir' => 
   array (
     0 => 'void',
-    'directory' => 'string',
+    'dirname=' => 'string',
   ),
   'phardata::addfile' => 
   array (
     0 => 'void',
     'filename' => 'string',
-    'localName=' => 'string',
+    'localname=' => 'string',
   ),
   'phardata::addfromstring' => 
   array (
     0 => 'void',
-    'localName' => 'string',
-    'contents' => 'string',
+    'localname' => 'string',
+    'contents=' => 'string',
   ),
   'phardata::apiversion' => 
   array (
@@ -62030,14 +62070,14 @@ return array (
   'phardata::buildfromdirectory' => 
   array (
     0 => 'array<array-key, mixed>|false',
-    'directory' => 'string',
-    'pattern=' => 'string',
+    'base_dir' => 'string',
+    'regex=' => 'string',
   ),
   'phardata::buildfromiterator' => 
   array (
     0 => 'array<array-key, mixed>|false',
     'iterator' => 'Traversable',
-    'baseDirectory=' => 'string',
+    'base_directory=' => 'string',
   ),
   'phardata::cancompress' => 
   array (
@@ -62051,33 +62091,33 @@ return array (
   'phardata::compress' => 
   array (
     0 => 'PharData|null',
-    'compression' => 'int',
-    'extension=' => 'string',
+    'compression_type' => 'int',
+    'file_ext=' => 'string',
   ),
   'phardata::compressfiles' => 
   array (
     0 => 'void',
-    'compression' => 'int',
+    'compression_type' => 'int',
   ),
   'phardata::converttodata' => 
   array (
     0 => 'PharData|null',
     'format=' => 'int',
-    'compression=' => 'int',
-    'extension=' => 'string',
+    'compression_type=' => 'int',
+    'file_ext=' => 'string',
   ),
   'phardata::converttoexecutable' => 
   array (
     0 => 'Phar|null',
     'format=' => 'int',
-    'compression=' => 'int',
-    'extension=' => 'string',
+    'compression_type=' => 'int',
+    'file_ext=' => 'string',
   ),
   'phardata::copy' => 
   array (
     0 => 'bool',
-    'from' => 'string',
-    'to' => 'string',
+    'newfile' => 'string',
+    'oldfile' => 'string',
   ),
   'phardata::count' => 
   array (
@@ -62096,7 +62136,7 @@ return array (
   'phardata::decompress' => 
   array (
     0 => 'PharData|null',
-    'extension=' => 'string',
+    'file_ext=' => 'string',
   ),
   'phardata::decompressfiles' => 
   array (
@@ -62105,7 +62145,7 @@ return array (
   'phardata::delete' => 
   array (
     0 => 'bool',
-    'localName' => 'string',
+    'entry' => 'string',
   ),
   'phardata::delmetadata' => 
   array (
@@ -62114,7 +62154,7 @@ return array (
   'phardata::extractto' => 
   array (
     0 => 'bool',
-    'directory' => 'string',
+    'pathto' => 'string',
     'files=' => 'array<array-key, mixed>|null|string',
     'overwrite=' => 'bool',
   ),
@@ -62335,23 +62375,23 @@ return array (
   'phardata::offsetexists' => 
   array (
     0 => 'bool',
-    'localName' => 'string',
+    'entry' => 'string',
   ),
   'phardata::offsetget' => 
   array (
     0 => 'PharFileInfo',
-    'localName' => 'string',
+    'entry' => 'string',
   ),
   'phardata::offsetset' => 
   array (
     0 => 'void',
-    'localName' => 'string',
+    'entry' => 'string',
     'value' => 'string',
   ),
   'phardata::offsetunset' => 
   array (
     0 => 'void',
-    'localName' => 'string',
+    'entry' => 'string',
   ),
   'phardata::openfile' => 
   array (
@@ -62383,7 +62423,7 @@ return array (
   array (
     0 => 'bool',
     'index=' => 'null|string',
-    'webIndex=' => 'string',
+    'webindex=' => 'string',
   ),
   'phardata::setfileclass' => 
   array (
@@ -62408,14 +62448,14 @@ return array (
   'phardata::setsignaturealgorithm' => 
   array (
     0 => 'void',
-    'algo' => 'int',
-    'privateKey=' => 'string',
+    'algorithm' => 'int',
+    'privatekey=' => 'string',
   ),
   'phardata::setstub' => 
   array (
     0 => 'bool',
-    'stub' => 'string',
-    'length=' => 'int',
+    'newstub' => 'string',
+    'maxlen=' => 'int',
   ),
   'phardata::startbuffering' => 
   array (
@@ -62519,7 +62559,7 @@ return array (
   'pharfileinfo::compress' => 
   array (
     0 => 'bool',
-    'compression' => 'int',
+    'compression_type' => 'int',
   ),
   'pharfileinfo::decompress' => 
   array (
@@ -62631,7 +62671,7 @@ return array (
   'pharfileinfo::iscompressed' => 
   array (
     0 => 'bool',
-    'compression=' => 'int',
+    'compression_type=' => 'int',
   ),
   'pharfileinfo::iscrcchecked' => 
   array (
@@ -65318,7 +65358,6 @@ return array (
   'recursivearrayiterator::asort' => 
   array (
     0 => 'true',
-    'flags=' => 'int',
   ),
   'recursivearrayiterator::count' => 
   array (
@@ -65351,7 +65390,6 @@ return array (
   'recursivearrayiterator::ksort' => 
   array (
     0 => 'true',
-    'flags=' => 'int',
   ),
   'recursivearrayiterator::natcasesort' => 
   array (
@@ -65368,23 +65406,23 @@ return array (
   'recursivearrayiterator::offsetexists' => 
   array (
     0 => 'bool',
-    'key' => 'int|string',
+    'index' => 'int|string',
   ),
   'recursivearrayiterator::offsetget' => 
   array (
     0 => 'mixed',
-    'key' => 'int|string',
+    'index' => 'int|string',
   ),
   'recursivearrayiterator::offsetset' => 
   array (
     0 => 'void',
-    'key' => 'int|null|string',
-    'value' => 'string',
+    'index' => 'int|null|string',
+    'newval' => 'string',
   ),
   'recursivearrayiterator::offsetunset' => 
   array (
     0 => 'void',
-    'key' => 'int|string',
+    'index' => 'int|string',
   ),
   'recursivearrayiterator::rewind' => 
   array (
@@ -65393,7 +65431,7 @@ return array (
   'recursivearrayiterator::seek' => 
   array (
     0 => 'void',
-    'offset' => 'int',
+    'position' => 'int',
   ),
   'recursivearrayiterator::serialize' => 
   array (
@@ -65407,17 +65445,17 @@ return array (
   'recursivearrayiterator::uasort' => 
   array (
     0 => 'true',
-    'callback' => 'callable(mixed, mixed):int',
+    'cmp_function' => 'callable(mixed, mixed):int',
   ),
   'recursivearrayiterator::uksort' => 
   array (
     0 => 'true',
-    'callback' => 'callable(mixed, mixed):int',
+    'cmp_function' => 'callable(mixed, mixed):int',
   ),
   'recursivearrayiterator::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
+    'serialized' => 'string',
   ),
   'recursivearrayiterator::valid' => 
   array (
@@ -65476,23 +65514,23 @@ return array (
   'recursivecachingiterator::offsetexists' => 
   array (
     0 => 'bool',
-    'key' => 'string',
+    'index' => 'string',
   ),
   'recursivecachingiterator::offsetget' => 
   array (
     0 => 'string',
-    'key' => 'string',
+    'index' => 'string',
   ),
   'recursivecachingiterator::offsetset' => 
   array (
     0 => 'void',
-    'key' => 'string',
-    'value' => 'string',
+    'index' => 'string',
+    'newval' => 'string',
   ),
   'recursivecachingiterator::offsetunset' => 
   array (
     0 => 'void',
-    'key' => 'string',
+    'index' => 'string',
   ),
   'recursivecachingiterator::rewind' => 
   array (
@@ -65552,7 +65590,7 @@ return array (
   'recursivedirectoryiterator::__construct' => 
   array (
     0 => 'void',
-    'directory' => 'string',
+    'path' => 'string',
     'flags=' => 'int',
   ),
   'recursivedirectoryiterator::__debuginfo' => 
@@ -65595,7 +65633,7 @@ return array (
   'recursivedirectoryiterator::getfileinfo' => 
   array (
     0 => 'SplFileInfo',
-    'class=' => 'class-string',
+    'class_name=' => 'class-string',
   ),
   'recursivedirectoryiterator::getfilename' => 
   array (
@@ -65632,7 +65670,7 @@ return array (
   'recursivedirectoryiterator::getpathinfo' => 
   array (
     0 => 'SplFileInfo|null',
-    'class=' => 'class-string',
+    'class_name=' => 'class-string',
   ),
   'recursivedirectoryiterator::getpathname' => 
   array (
@@ -65665,7 +65703,7 @@ return array (
   'recursivedirectoryiterator::haschildren' => 
   array (
     0 => 'bool',
-    'allowLinks=' => 'bool',
+    'allow_links=' => 'bool',
   ),
   'recursivedirectoryiterator::isdir' => 
   array (
@@ -65706,8 +65744,8 @@ return array (
   'recursivedirectoryiterator::openfile' => 
   array (
     0 => 'SplFileObject',
-    'mode=' => 'string',
-    'useIncludePath=' => 'bool',
+    'open_mode=' => 'string',
+    'use_include_path=' => 'bool',
     'context=' => 'resource',
   ),
   'recursivedirectoryiterator::rewind' => 
@@ -65717,22 +65755,22 @@ return array (
   'recursivedirectoryiterator::seek' => 
   array (
     0 => 'void',
-    'offset' => 'int',
+    'position' => 'int',
   ),
   'recursivedirectoryiterator::setfileclass' => 
   array (
     0 => 'void',
-    'class=' => 'class-string',
+    'class_name=' => 'class-string',
   ),
   'recursivedirectoryiterator::setflags' => 
   array (
     0 => 'void',
-    'flags' => 'int',
+    'flags=' => 'int',
   ),
   'recursivedirectoryiterator::setinfoclass' => 
   array (
     0 => 'void',
-    'class=' => 'class-string',
+    'class_name=' => 'class-string',
   ),
   'recursivedirectoryiterator::valid' => 
   array (
@@ -65882,7 +65920,7 @@ return array (
   'recursiveiteratoriterator::setmaxdepth' => 
   array (
     0 => 'void',
-    'maxDepth=' => 'int',
+    'max_depth=' => 'int',
   ),
   'recursiveiteratoriterator::valid' => 
   array (
@@ -65892,10 +65930,10 @@ return array (
   array (
     0 => 'void',
     'iterator' => 'RecursiveIterator',
-    'pattern' => 'string',
+    'regex' => 'string',
     'mode=' => 'int',
     'flags=' => 'int',
-    'pregFlags=' => 'int',
+    'preg_flags=' => 'int',
   ),
   'recursiveregexiterator::accept' => 
   array (
@@ -65958,7 +65996,7 @@ return array (
   'recursiveregexiterator::setpregflags' => 
   array (
     0 => 'void',
-    'pregFlags' => 'int',
+    'preg_flags' => 'int',
   ),
   'recursiveregexiterator::valid' => 
   array (
@@ -65969,7 +66007,7 @@ return array (
     0 => 'void',
     'iterator' => 'IteratorAggregate|RecursiveIterator',
     'flags=' => 'int',
-    'cachingIteratorFlags=' => 'int',
+    'caching_it_flags=' => 'int',
     'mode=' => 'int',
   ),
   'recursivetreeiterator::beginchildren' => 
@@ -66048,7 +66086,7 @@ return array (
   'recursivetreeiterator::setmaxdepth' => 
   array (
     0 => 'void',
-    'maxDepth=' => 'int',
+    'max_depth=' => 'int',
   ),
   'recursivetreeiterator::setpostfix' => 
   array (
@@ -66068,6 +66106,7 @@ return array (
   'redis::__construct' => 
   array (
     0 => 'void',
+    'options=' => 'mixed',
   ),
   'redis::__destruct' => 
   array (
@@ -66086,7 +66125,7 @@ return array (
   'redis::_prefix' => 
   array (
     0 => 'string',
-    'value' => 'mixed',
+    'key' => 'mixed',
   ),
   'redis::_serialize' => 
   array (
@@ -66123,7 +66162,7 @@ return array (
   'redis::auth' => 
   array (
     0 => 'bool',
-    'password' => 'string',
+    'credentials' => 'string',
   ),
   'redis::bgrewriteaof' => 
   array (
@@ -66137,13 +66176,16 @@ return array (
   array (
     0 => 'int',
     'key' => 'string',
+    'start=' => 'mixed',
+    'end=' => 'mixed',
+    'bybit=' => 'mixed',
   ),
   'redis::bitop' => 
   array (
     0 => 'int',
     'operation' => 'string',
-    'ret_key' => 'string',
-    'key' => 'string',
+    'deskey' => 'string',
+    'srckey' => 'string',
     '...other_keys=' => 'string',
   ),
   'redis::bitpos' => 
@@ -66153,6 +66195,7 @@ return array (
     'bit' => 'int',
     'start=' => 'int',
     'end=' => 'int',
+    'bybit=' => 'mixed',
   ),
   'redis::blmove' => 
   array (
@@ -66174,8 +66217,9 @@ return array (
   'redis::blpop' => 
   array (
     0 => 'array<array-key, mixed>',
-    'keys' => 'array<array-key, string>',
-    'timeout' => 'int',
+    'key_or_keys' => 'array<array-key, string>',
+    'timeout_or_key' => 'int',
+    '...extra_args=' => 'mixed',
   ),
   'redis::blpop\'1' => 
   array (
@@ -66187,8 +66231,9 @@ return array (
   'redis::brpop' => 
   array (
     0 => 'array<array-key, mixed>',
-    'keys' => 'array<array-key, string>',
-    'timeout' => 'int',
+    'key_or_keys' => 'array<array-key, string>',
+    'timeout_or_key' => 'int',
+    '...extra_args=' => 'mixed',
   ),
   'redis::brpop\'1' => 
   array (
@@ -66200,8 +66245,8 @@ return array (
   'redis::brpoplpush' => 
   array (
     0 => 'false|string',
-    'srcKey' => 'string',
-    'dstKey' => 'string',
+    'src' => 'string',
+    'dst' => 'string',
     'timeout' => 'int',
   ),
   'redis::bzmpop' => 
@@ -66237,8 +66282,8 @@ return array (
   'redis::client' => 
   array (
     0 => 'mixed',
-    'command' => 'string',
-    'arg=' => 'string',
+    'opt' => 'string',
+    '...args=' => 'string',
   ),
   'redis::close' => 
   array (
@@ -66247,13 +66292,14 @@ return array (
   'redis::command' => 
   array (
     0 => 'mixed',
-    '...args' => 'mixed',
+    'opt=' => 'mixed',
+    '...args=' => 'mixed',
   ),
   'redis::config' => 
   array (
     0 => 'string',
     'operation' => 'string',
-    'key' => 'string',
+    'key_or_settings=' => 'string',
     'value=' => 'string',
   ),
   'redis::connect' => 
@@ -66262,9 +66308,10 @@ return array (
     'host' => 'string',
     'port=' => 'int',
     'timeout=' => 'float',
-    'reserved=' => 'null',
+    'persistent_id=' => 'null',
     'retry_interval=' => 'int|null',
     'read_timeout=' => 'float',
+    'context=' => 'mixed',
   ),
   'redis::copy' => 
   array (
@@ -66286,6 +66333,7 @@ return array (
   array (
     0 => 'int',
     'key' => 'string',
+    'by=' => 'mixed',
   ),
   'redis::decrby' => 
   array (
@@ -66303,7 +66351,7 @@ return array (
   array (
     0 => 'int',
     'key' => 'string',
-    '...args' => 'string',
+    '...other_keys=' => 'string',
   ),
   'redis::del\'1' => 
   array (
@@ -66314,7 +66362,7 @@ return array (
   array (
     0 => 'int',
     'key' => 'string',
-    '...args' => 'string',
+    '...other_keys=' => 'string',
   ),
   'redis::delete\'1' => 
   array (
@@ -66333,14 +66381,14 @@ return array (
   'redis::echo' => 
   array (
     0 => 'string',
-    'message' => 'string',
+    'str' => 'string',
   ),
   'redis::eval' => 
   array (
     0 => 'mixed',
     'script' => 'mixed',
     'args=' => 'mixed',
-    'numKeys=' => 'mixed',
+    'num_keys=' => 'mixed',
   ),
   'redis::eval_ro' => 
   array (
@@ -66352,9 +66400,9 @@ return array (
   'redis::evalsha' => 
   array (
     0 => 'mixed',
-    'scriptSha' => 'string',
+    'sha1' => 'string',
     'args=' => 'array<array-key, mixed>',
-    'numKeys=' => 'int',
+    'num_keys=' => 'int',
   ),
   'redis::evalsha_ro' => 
   array (
@@ -66384,7 +66432,8 @@ return array (
   'redis::exists' => 
   array (
     0 => 'int',
-    'keys' => 'array<array-key, string>|string',
+    'key' => 'array<array-key, string>|string',
+    '...other_keys=' => 'mixed',
   ),
   'redis::exists\'1' => 
   array (
@@ -66395,13 +66444,15 @@ return array (
   array (
     0 => 'bool',
     'key' => 'string',
-    'ttl' => 'int',
+    'timeout' => 'int',
+    'mode=' => 'mixed',
   ),
   'redis::expireat' => 
   array (
     0 => 'bool',
     'key' => 'string',
-    'expiry' => 'int',
+    'timestamp' => 'int',
+    'mode=' => 'mixed',
   ),
   'redis::expiretime' => 
   array (
@@ -66432,12 +66483,12 @@ return array (
   'redis::flushall' => 
   array (
     0 => 'bool',
-    'async=' => 'bool',
+    'sync=' => 'bool',
   ),
   'redis::flushdb' => 
   array (
     0 => 'bool',
-    'async=' => 'bool',
+    'sync=' => 'bool',
   ),
   'redis::function' => 
   array (
@@ -66449,17 +66500,17 @@ return array (
   array (
     0 => 'int',
     'key' => 'string',
-    'longitude' => 'float',
-    'latitude' => 'float',
+    'lng' => 'float',
+    'lat' => 'float',
     'member' => 'string',
-    '...other_triples=' => 'float|int|string',
+    '...other_triples_and_options=' => 'float|int|string',
   ),
   'redis::geodist' => 
   array (
     0 => 'float',
     'key' => 'string',
-    'member1' => 'string',
-    'member2' => 'string',
+    'src' => 'string',
+    'dst' => 'string',
     'unit=' => 'string',
   ),
   'redis::geohash' => 
@@ -66474,14 +66525,14 @@ return array (
     0 => 'array<int, array{0: string, 1: string}>',
     'key' => 'string',
     'member' => 'string',
-    '...members=' => 'string',
+    '...other_members=' => 'string',
   ),
   'redis::georadius' => 
   array (
     0 => 'array<int, mixed>|int',
     'key' => 'string',
-    'longitude' => 'float',
-    'latitude' => 'float',
+    'lng' => 'float',
+    'lat' => 'float',
     'radius' => 'float',
     'unit' => 'float',
     'options=' => 'array<string, mixed>',
@@ -66502,7 +66553,7 @@ return array (
     'key' => 'string',
     'member' => 'string',
     'radius' => 'float',
-    'units' => 'string',
+    'unit' => 'string',
     'options=' => 'array<string, mixed>',
   ),
   'redis::georadiusbymember_ro' => 
@@ -66546,7 +66597,7 @@ return array (
   array (
     0 => 'int',
     'key' => 'string',
-    'offset' => 'int',
+    'idx' => 'int',
   ),
   'redis::getdbnum' => 
   array (
@@ -66588,7 +66639,7 @@ return array (
   'redis::getoption' => 
   array (
     0 => 'int',
-    'name' => 'int',
+    'option' => 'int',
   ),
   'redis::getpersistentid' => 
   array (
@@ -66613,7 +66664,7 @@ return array (
   array (
     0 => 'string',
     'key' => 'string',
-    'string' => 'string',
+    'value' => 'string',
   ),
   'redis::gettimeout' => 
   array (
@@ -66627,20 +66678,20 @@ return array (
   array (
     0 => 'false|int',
     'key' => 'string',
-    'hashKey1' => 'string',
-    '...otherHashKeys=' => 'string',
+    'field' => 'string',
+    '...other_fields=' => 'string',
   ),
   'redis::hexists' => 
   array (
     0 => 'bool',
     'key' => 'string',
-    'hashKey' => 'string',
+    'field' => 'string',
   ),
   'redis::hget' => 
   array (
     0 => 'false|string',
     'key' => 'string',
-    'hashKey' => 'string',
+    'member' => 'string',
   ),
   'redis::hgetall' => 
   array (
@@ -66651,7 +66702,7 @@ return array (
   array (
     0 => 'int',
     'key' => 'string',
-    'hashKey' => 'string',
+    'field' => 'string',
     'value' => 'int',
   ),
   'redis::hincrbyfloat' => 
@@ -66659,7 +66710,7 @@ return array (
     0 => 'float',
     'key' => 'string',
     'field' => 'string',
-    'increment' => 'float',
+    'value' => 'float',
   ),
   'redis::hkeys' => 
   array (
@@ -66675,13 +66726,13 @@ return array (
   array (
     0 => 'array<array-key, mixed>',
     'key' => 'string',
-    'hashKeys' => 'array<array-key, mixed>',
+    'fields' => 'array<array-key, mixed>',
   ),
   'redis::hmset' => 
   array (
     0 => 'bool',
     'key' => 'string',
-    'hashKeys' => 'array<array-key, mixed>',
+    'fieldvals' => 'array<array-key, mixed>',
   ),
   'redis::hrandfield' => 
   array (
@@ -66701,21 +66752,20 @@ return array (
   array (
     0 => 'false|int',
     'key' => 'string',
-    'hashKey' => 'string',
-    'value' => 'string',
+    '...fields_and_vals=' => 'string',
   ),
   'redis::hsetnx' => 
   array (
     0 => 'bool',
     'key' => 'string',
-    'hashKey' => 'string',
+    'field' => 'string',
     'value' => 'string',
   ),
   'redis::hstrlen' => 
   array (
     0 => 'mixed',
     'key' => 'mixed',
-    'member' => 'mixed',
+    'field' => 'mixed',
   ),
   'redis::hvals' => 
   array (
@@ -66726,6 +66776,7 @@ return array (
   array (
     0 => 'int',
     'key' => 'string',
+    'by=' => 'mixed',
   ),
   'redis::incrby' => 
   array (
@@ -66742,7 +66793,7 @@ return array (
   'redis::info' => 
   array (
     0 => 'array<array-key, mixed>',
-    'option=' => 'string',
+    '...sections=' => 'string',
   ),
   'redis::isconnected' => 
   array (
@@ -66787,7 +66838,7 @@ return array (
   array (
     0 => 'int',
     'key' => 'string',
-    'position' => 'int',
+    'pos' => 'int',
     'pivot' => 'string',
     'value' => 'string',
   ),
@@ -66822,6 +66873,7 @@ return array (
   array (
     0 => 'false|string',
     'key' => 'string',
+    'count=' => 'mixed',
   ),
   'redis::lpos' => 
   array (
@@ -66834,9 +66886,7 @@ return array (
   array (
     0 => 'false|int',
     'key' => 'string',
-    'value1' => 'string',
-    'value2=' => 'string',
-    'valueN=' => 'string',
+    '...elements=' => 'string',
   ),
   'redis::lpushx' => 
   array (
@@ -66856,7 +66906,7 @@ return array (
     0 => 'false|int',
     'key' => 'string',
     'value' => 'string',
-    'count' => 'int',
+    'count=' => 'int',
   ),
   'redis::lremove' => 
   array (
@@ -66882,7 +66932,7 @@ return array (
     0 => 'array<array-key, mixed>|false',
     'key' => 'string',
     'start' => 'int',
-    'stop' => 'int',
+    'end' => 'int',
   ),
   'redis::mget' => 
   array (
@@ -66895,36 +66945,37 @@ return array (
     'host' => 'string',
     'port' => 'int',
     'key' => 'array<array-key, string>|string',
-    'db' => 'int',
+    'dstdb' => 'int',
     'timeout' => 'int',
     'copy=' => 'bool',
     'replace=' => 'bool',
+    'credentials=' => 'mixed',
   ),
   'redis::move' => 
   array (
     0 => 'bool',
     'key' => 'string',
-    'dbindex' => 'int',
+    'index' => 'int',
   ),
   'redis::mset' => 
   array (
     0 => 'bool',
-    'pairs' => 'array<array-key, mixed>',
+    'key_values' => 'array<array-key, mixed>',
   ),
   'redis::msetnx' => 
   array (
     0 => 'bool',
-    'pairs' => 'array<array-key, mixed>',
+    'key_values' => 'array<array-key, mixed>',
   ),
   'redis::multi' => 
   array (
     0 => 'Redis',
-    'mode=' => 'int',
+    'value=' => 'int',
   ),
   'redis::object' => 
   array (
     0 => 'false|long|string',
-    'info' => 'string',
+    'subcommand' => 'string',
     'key' => 'string',
   ),
   'redis::open' => 
@@ -66933,9 +66984,10 @@ return array (
     'host' => 'string',
     'port=' => 'int',
     'timeout=' => 'float',
-    'reserved=' => 'null',
+    'persistent_id=' => 'null',
     'retry_interval=' => 'int|null',
     'read_timeout=' => 'float',
+    'context=' => 'mixed',
   ),
   'redis::pconnect' => 
   array (
@@ -66945,6 +66997,8 @@ return array (
     'timeout=' => 'float',
     'persistent_id=' => 'string',
     'retry_interval=' => 'int|null',
+    'read_timeout=' => 'mixed',
+    'context=' => 'mixed',
   ),
   'redis::persist' => 
   array (
@@ -66955,13 +67009,15 @@ return array (
   array (
     0 => 'bool',
     'key' => 'string',
-    'ttl' => 'int',
+    'timeout' => 'int',
+    'mode=' => 'mixed',
   ),
   'redis::pexpireat' => 
   array (
     0 => 'bool',
     'key' => 'string',
-    'expiry' => 'int',
+    'timestamp' => 'int',
+    'mode=' => 'mixed',
   ),
   'redis::pexpiretime' => 
   array (
@@ -66977,17 +67033,18 @@ return array (
   'redis::pfcount' => 
   array (
     0 => 'int',
-    'key' => 'array<array-key, mixed>|string',
+    'key_or_keys' => 'array<array-key, mixed>|string',
   ),
   'redis::pfmerge' => 
   array (
     0 => 'bool',
-    'destkey' => 'string',
-    'sourcekeys' => 'array<array-key, mixed>',
+    'dst' => 'string',
+    'srckeys' => 'array<array-key, mixed>',
   ),
   'redis::ping' => 
   array (
     0 => 'string',
+    'message=' => 'mixed',
   ),
   'redis::pipeline' => 
   array (
@@ -67001,19 +67058,21 @@ return array (
     'timeout=' => 'float',
     'persistent_id=' => 'string',
     'retry_interval=' => 'int|null',
+    'read_timeout=' => 'mixed',
+    'context=' => 'mixed',
   ),
   'redis::psetex' => 
   array (
     0 => 'bool',
     'key' => 'string',
-    'ttl' => 'int',
+    'expire' => 'int',
     'value' => 'string',
   ),
   'redis::psubscribe' => 
   array (
     0 => 'mixed',
     'patterns' => 'array<array-key, mixed>',
-    'callback' => 'array<array-key, mixed>|string',
+    'cb' => 'array<array-key, mixed>|string',
   ),
   'redis::pttl' => 
   array (
@@ -67029,14 +67088,13 @@ return array (
   'redis::pubsub' => 
   array (
     0 => 'array<array-key, mixed>|int',
-    'keyword' => 'string',
-    'argument=' => 'array<array-key, mixed>|string',
+    'command' => 'string',
+    'arg=' => 'array<array-key, mixed>|string',
   ),
   'redis::punsubscribe' => 
   array (
     0 => 'mixed',
-    'pattern' => 'string',
-    '...other_patterns=' => 'string',
+    'patterns' => 'string',
   ),
   'redis::randomkey' => 
   array (
@@ -67046,13 +67104,13 @@ return array (
   array (
     0 => 'mixed',
     'command' => 'string',
-    '...arguments=' => 'mixed',
+    '...args=' => 'mixed',
   ),
   'redis::rename' => 
   array (
     0 => 'bool',
-    'srckey' => 'string',
-    'dstkey' => 'string',
+    'old_name' => 'string',
+    'new_name' => 'string',
   ),
   'redis::renamekey' => 
   array (
@@ -67063,8 +67121,8 @@ return array (
   'redis::renamenx' => 
   array (
     0 => 'bool',
-    'srckey' => 'string',
-    'dstkey' => 'string',
+    'key_src' => 'string',
+    'key_dst' => 'string',
   ),
   'redis::replicaof' => 
   array (
@@ -67086,30 +67144,29 @@ return array (
     'key' => 'string',
     'ttl' => 'int',
     'value' => 'string',
+    'options=' => 'mixed',
   ),
   'redis::role' => 
   array (
     0 => 'array<array-key, mixed>',
-    'nodeParams' => 'array{0: string, 1: int}|string',
   ),
   'redis::rpop' => 
   array (
     0 => 'false|string',
     'key' => 'string',
+    'count=' => 'mixed',
   ),
   'redis::rpoplpush' => 
   array (
     0 => 'string',
-    'srcKey' => 'string',
-    'dstKey' => 'string',
+    'srckey' => 'string',
+    'dstkey' => 'string',
   ),
   'redis::rpush' => 
   array (
     0 => 'false|int',
     'key' => 'string',
-    'value1' => 'string',
-    'value2=' => 'string',
-    'valueN=' => 'string',
+    '...elements=' => 'string',
   ),
   'redis::rpushx' => 
   array (
@@ -67121,9 +67178,8 @@ return array (
   array (
     0 => 'false|int',
     'key' => 'string',
-    'value1' => 'string',
-    'value2=' => 'string',
-    'valueN=' => 'string',
+    'value' => 'string',
+    '...other_values=' => 'string',
   ),
   'redis::saddarray' => 
   array (
@@ -67138,9 +67194,10 @@ return array (
   'redis::scan' => 
   array (
     0 => 'array<int, string>|false',
-    '&rw_iterator' => 'int|null',
+    '&iterator' => 'int|null',
     'pattern=' => 'null|string',
     'count=' => 'int|null',
+    'type=' => 'mixed',
   ),
   'redis::scard' => 
   array (
@@ -67162,20 +67219,20 @@ return array (
   'redis::sdiff' => 
   array (
     0 => 'array<array-key, mixed>',
-    'key1' => 'string',
+    'key' => 'string',
     '...other_keys=' => 'string',
   ),
   'redis::sdiffstore' => 
   array (
     0 => 'false|int',
-    'dstKey' => 'string',
+    'dst' => 'string',
     'key' => 'string',
     '...other_keys=' => 'string',
   ),
   'redis::select' => 
   array (
     0 => 'bool',
-    'dbindex' => 'int',
+    'db' => 'int',
   ),
   'redis::sendecho' => 
   array (
@@ -67200,14 +67257,14 @@ return array (
   array (
     0 => 'int',
     'key' => 'string',
-    'offset' => 'int',
+    'idx' => 'int',
     'value' => 'int',
   ),
   'redis::setex' => 
   array (
     0 => 'bool',
     'key' => 'string',
-    'ttl' => 'int',
+    'expire' => 'int',
     'value' => 'string',
   ),
   'redis::setnx' => 
@@ -67219,15 +67276,15 @@ return array (
   'redis::setoption' => 
   array (
     0 => 'bool',
-    'name' => 'int',
+    'option' => 'int',
     'value' => 'mixed',
   ),
   'redis::setrange' => 
   array (
     0 => 'int',
     'key' => 'string',
-    'offset' => 'int',
-    'end' => 'int',
+    'index' => 'int',
+    'value' => 'int',
   ),
   'redis::settimeout' => 
   array (
@@ -67255,7 +67312,6 @@ return array (
   'redis::sinterstore' => 
   array (
     0 => 'false|int',
-    'dstKey' => 'string',
     'key' => 'string',
     '...other_keys=' => 'string',
   ),
@@ -67304,9 +67360,9 @@ return array (
   'redis::smove' => 
   array (
     0 => 'bool',
-    'srcKey' => 'string',
-    'dstKey' => 'string',
-    'member' => 'string',
+    'src' => 'string',
+    'dst' => 'string',
+    'value' => 'string',
   ),
   'redis::sort' => 
   array (
@@ -67326,9 +67382,9 @@ return array (
     'key' => 'string',
     'pattern=' => 'string',
     'get=' => 'string',
-    'start=' => 'int',
-    'end=' => 'int',
-    'getList=' => 'bool',
+    'offset=' => 'int',
+    'count=' => 'int',
+    'store=' => 'bool',
   ),
   'redis::sortascalpha' => 
   array (
@@ -67336,9 +67392,9 @@ return array (
     'key' => 'string',
     'pattern=' => 'mixed',
     'get=' => 'string',
-    'start=' => 'int',
-    'end=' => 'int',
-    'getList=' => 'bool',
+    'offset=' => 'int',
+    'count=' => 'int',
+    'store=' => 'bool',
   ),
   'redis::sortdesc' => 
   array (
@@ -67346,9 +67402,9 @@ return array (
     'key' => 'string',
     'pattern=' => 'mixed',
     'get=' => 'string',
-    'start=' => 'int',
-    'end=' => 'int',
-    'getList=' => 'bool',
+    'offset=' => 'int',
+    'count=' => 'int',
+    'store=' => 'bool',
   ),
   'redis::sortdescalpha' => 
   array (
@@ -67356,14 +67412,15 @@ return array (
     'key' => 'string',
     'pattern=' => 'mixed',
     'get=' => 'string',
-    'start=' => 'int',
-    'end=' => 'int',
-    'getList=' => 'bool',
+    'offset=' => 'int',
+    'count=' => 'int',
+    'store=' => 'bool',
   ),
   'redis::spop' => 
   array (
     0 => 'false|string',
     'key' => 'string',
+    'count=' => 'mixed',
   ),
   'redis::srandmember' => 
   array (
@@ -67375,8 +67432,8 @@ return array (
   array (
     0 => 'int',
     'key' => 'string',
-    'member1' => 'string',
-    '...other_members=' => 'string',
+    'value' => 'string',
+    '...other_values=' => 'string',
   ),
   'redis::sremove' => 
   array (
@@ -67413,7 +67470,7 @@ return array (
   array (
     0 => 'mixed|null',
     'channels' => 'array<array-key, mixed>',
-    'callback' => 'array<array-key, mixed>|string',
+    'cb' => 'array<array-key, mixed>|string',
   ),
   'redis::substr' => 
   array (
@@ -67431,7 +67488,7 @@ return array (
   'redis::sunionstore' => 
   array (
     0 => 'int',
-    'dstKey' => 'string',
+    'dst' => 'string',
     'key' => 'string',
     '...other_keys=' => 'string',
   ),
@@ -67443,8 +67500,8 @@ return array (
   'redis::swapdb' => 
   array (
     0 => 'bool',
-    'srcdb' => 'int',
-    'dstdb' => 'int',
+    'src' => 'int',
+    'dst' => 'int',
   ),
   'redis::time' => 
   array (
@@ -67470,7 +67527,7 @@ return array (
   array (
     0 => 'int',
     'key' => 'string',
-    '...args' => 'string',
+    '...other_keys=' => 'string',
   ),
   'redis::unlink\'1' => 
   array (
@@ -67480,8 +67537,7 @@ return array (
   'redis::unsubscribe' => 
   array (
     0 => 'mixed',
-    'channel' => 'string',
-    '...other_channels=' => 'string',
+    'channels' => 'string',
   ),
   'redis::unwatch' => 
   array (
@@ -67490,7 +67546,7 @@ return array (
   'redis::wait' => 
   array (
     0 => 'int',
-    'numSlaves' => 'int',
+    'numreplicas' => 'int',
     'timeout' => 'int',
   ),
   'redis::waitaof' => 
@@ -67509,18 +67565,19 @@ return array (
   'redis::xack' => 
   array (
     0 => 'mixed',
-    'str_key' => 'string',
-    'str_group' => 'string',
-    'arr_ids' => 'array<array-key, mixed>',
+    'key' => 'string',
+    'group' => 'string',
+    'ids' => 'array<array-key, mixed>',
   ),
   'redis::xadd' => 
   array (
     0 => 'mixed',
-    'str_key' => 'string',
-    'str_id' => 'string',
-    'arr_fields' => 'array<array-key, mixed>',
-    'i_maxlen=' => 'mixed',
-    'boo_approximate=' => 'mixed',
+    'key' => 'string',
+    'id' => 'string',
+    'values' => 'array<array-key, mixed>',
+    'maxlen=' => 'mixed',
+    'approx=' => 'mixed',
+    'nomkstream=' => 'mixed',
   ),
   'redis::xautoclaim' => 
   array (
@@ -67536,34 +67593,36 @@ return array (
   'redis::xclaim' => 
   array (
     0 => 'mixed',
-    'str_key' => 'string',
-    'str_group' => 'string',
-    'str_consumer' => 'string',
-    'i_min_idle' => 'mixed',
-    'arr_ids' => 'array<array-key, mixed>',
-    'arr_opts=' => 'array<array-key, mixed>',
+    'key' => 'string',
+    'group' => 'string',
+    'consumer' => 'string',
+    'min_idle' => 'mixed',
+    'ids' => 'array<array-key, mixed>',
+    'options' => 'array<array-key, mixed>',
   ),
   'redis::xdel' => 
   array (
     0 => 'mixed',
-    'str_key' => 'string',
-    'arr_ids' => 'array<array-key, mixed>',
+    'key' => 'string',
+    'ids' => 'array<array-key, mixed>',
   ),
   'redis::xgroup' => 
   array (
     0 => 'mixed',
-    'str_operation' => 'string',
-    'str_key=' => 'string',
-    'str_arg1=' => 'mixed',
-    'str_arg2=' => 'mixed',
-    'str_arg3=' => 'mixed',
+    'operation' => 'string',
+    'key=' => 'string',
+    'group=' => 'mixed',
+    'id_or_consumer=' => 'mixed',
+    'mkstream=' => 'mixed',
+    'entries_read=' => 'mixed',
   ),
   'redis::xinfo' => 
   array (
     0 => 'mixed',
-    'str_cmd' => 'string',
-    'str_key=' => 'string',
-    'str_group=' => 'string',
+    'operation' => 'string',
+    'arg1=' => 'string',
+    'arg2=' => 'string',
+    'count=' => 'mixed',
   ),
   'redis::xlen' => 
   array (
@@ -67573,62 +67632,60 @@ return array (
   'redis::xpending' => 
   array (
     0 => 'mixed',
-    'str_key' => 'string',
-    'str_group' => 'string',
-    'str_start=' => 'mixed',
-    'str_end=' => 'mixed',
-    'i_count=' => 'mixed',
-    'str_consumer=' => 'string',
+    'key' => 'string',
+    'group' => 'string',
+    'start=' => 'mixed',
+    'end=' => 'mixed',
+    'count=' => 'mixed',
+    'consumer=' => 'string',
   ),
   'redis::xrange' => 
   array (
     0 => 'mixed',
-    'str_key' => 'string',
-    'str_start' => 'mixed',
-    'str_end' => 'mixed',
-    'i_count=' => 'mixed',
+    'key' => 'string',
+    'start' => 'mixed',
+    'end' => 'mixed',
+    'count=' => 'mixed',
   ),
   'redis::xread' => 
   array (
     0 => 'mixed',
-    'arr_streams' => 'array<array-key, mixed>',
-    'i_count=' => 'mixed',
-    'i_block=' => 'mixed',
+    'streams' => 'array<array-key, mixed>',
+    'count=' => 'mixed',
+    'block=' => 'mixed',
   ),
   'redis::xreadgroup' => 
   array (
     0 => 'mixed',
-    'str_group' => 'string',
-    'str_consumer' => 'string',
-    'arr_streams' => 'array<array-key, mixed>',
-    'i_count=' => 'mixed',
-    'i_block=' => 'mixed',
+    'group' => 'string',
+    'consumer' => 'string',
+    'streams' => 'array<array-key, mixed>',
+    'count=' => 'mixed',
+    'block=' => 'mixed',
   ),
   'redis::xrevrange' => 
   array (
     0 => 'mixed',
-    'str_key' => 'string',
-    'str_start' => 'mixed',
-    'str_end' => 'mixed',
-    'i_count=' => 'mixed',
+    'key' => 'string',
+    'end' => 'mixed',
+    'start' => 'mixed',
+    'count=' => 'mixed',
   ),
   'redis::xtrim' => 
   array (
     0 => 'mixed',
-    'str_key' => 'string',
-    'i_maxlen' => 'mixed',
-    'boo_approximate=' => 'mixed',
+    'key' => 'string',
+    'threshold' => 'mixed',
+    'approx=' => 'mixed',
+    'minid=' => 'mixed',
+    'limit=' => 'mixed',
   ),
   'redis::zadd' => 
   array (
     0 => 'int',
     'key' => 'string',
-    'score1' => 'float',
-    'value1' => 'string',
-    'score2=' => 'float',
-    'value2=' => 'string',
-    'scoreN=' => 'float',
-    'valueN=' => 'string',
+    'score_or_options' => 'float',
+    '...more_scores_and_mems=' => 'string',
   ),
   'redis::zadd\'1' => 
   array (
@@ -67697,10 +67754,9 @@ return array (
   'redis::zinter' => 
   array (
     0 => 'int',
-    'Output' => 'string',
-    'ZSetKeys' => 'array<array-key, mixed>',
-    'Weights=' => 'array<array-key, mixed>|null',
-    'aggregateFunction=' => 'string',
+    'keys' => 'string',
+    'weights=' => 'array<array-key, mixed>',
+    'options=' => 'array<array-key, mixed>|null',
   ),
   'redis::zintercard' => 
   array (
@@ -67711,10 +67767,10 @@ return array (
   'redis::zinterstore' => 
   array (
     0 => 'int',
-    'Output' => 'string',
-    'ZSetKeys' => 'array<array-key, mixed>',
-    'Weights=' => 'array<array-key, mixed>|null',
-    'aggregateFunction=' => 'string',
+    'dst' => 'string',
+    'keys' => 'array<array-key, mixed>',
+    'weights=' => 'array<array-key, mixed>|null',
+    'aggregate=' => 'string',
   ),
   'redis::zlexcount' => 
   array (
@@ -67761,7 +67817,7 @@ return array (
     'key' => 'string',
     'start' => 'int',
     'end' => 'int',
-    'withscores=' => 'bool',
+    'options=' => 'bool',
   ),
   'redis::zrangebylex' => 
   array (
@@ -67770,7 +67826,7 @@ return array (
     'min' => 'int',
     'max' => 'int',
     'offset=' => 'int',
-    'limit=' => 'int',
+    'count=' => 'int',
   ),
   'redis::zrangebyscore' => 
   array (
@@ -67858,23 +67914,23 @@ return array (
     'key' => 'string',
     'start' => 'int',
     'end' => 'int',
-    'withscore=' => 'bool',
+    'scores=' => 'bool',
   ),
   'redis::zrevrangebylex' => 
   array (
     0 => 'array<array-key, mixed>',
     'key' => 'string',
-    'min' => 'string',
     'max' => 'string',
+    'min' => 'string',
     'offset=' => 'int',
-    'limit=' => 'int',
+    'count=' => 'int',
   ),
   'redis::zrevrangebyscore' => 
   array (
     0 => 'array<array-key, mixed>',
     'key' => 'string',
-    'start' => 'string',
-    'end' => 'string',
+    'max' => 'string',
+    'min' => 'string',
     'options=' => 'array<array-key, mixed>',
   ),
   'redis::zrevrank' => 
@@ -67905,18 +67961,17 @@ return array (
   'redis::zunion' => 
   array (
     0 => 'int',
-    'Output' => 'string',
-    'ZSetKeys' => 'array<array-key, mixed>',
-    'Weights=' => 'array<array-key, mixed>|null',
-    'aggregateFunction=' => 'string',
+    'keys' => 'string',
+    'weights=' => 'array<array-key, mixed>',
+    'options=' => 'array<array-key, mixed>|null',
   ),
   'redis::zunionstore' => 
   array (
     0 => 'int',
-    'Output' => 'string',
-    'ZSetKeys' => 'array<array-key, mixed>',
-    'Weights=' => 'array<array-key, mixed>|null',
-    'aggregateFunction=' => 'string',
+    'dst' => 'string',
+    'keys' => 'array<array-key, mixed>',
+    'weights=' => 'array<array-key, mixed>|null',
+    'aggregate=' => 'string',
   ),
   'redisarray::__call' => 
   array (
@@ -67927,9 +67982,8 @@ return array (
   'redisarray::__construct' => 
   array (
     0 => 'void',
-    'name=' => 'string',
-    'hosts=' => 'array<array-key, mixed>|null',
-    'opts=' => 'array<array-key, mixed>|null',
+    'name_or_hosts' => 'string',
+    'options=' => 'array<array-key, mixed>|null',
   ),
   'redisarray::_continuum' => 
   array (
@@ -67955,7 +68009,7 @@ return array (
   'redisarray::_rehash' => 
   array (
     0 => 'mixed',
-    'callable=' => 'callable',
+    'fn=' => 'callable',
   ),
   'redisarray::_target' => 
   array (
@@ -67970,7 +68024,7 @@ return array (
   array (
     0 => 'bool',
     'key' => 'string',
-    '...args' => 'string',
+    '...otherkeys=' => 'string',
   ),
   'redisarray::delete' => 
   array (
@@ -67994,12 +68048,10 @@ return array (
   'redisarray::flushall' => 
   array (
     0 => 'bool',
-    'async=' => 'bool',
   ),
   'redisarray::flushdb' => 
   array (
     0 => 'bool',
-    'async=' => 'bool',
   ),
   'redisarray::getmultiple' => 
   array (
@@ -68083,7 +68135,7 @@ return array (
   array (
     0 => 'int',
     'key' => 'string',
-    '...other_keys=' => 'string',
+    '...otherkeys=' => 'string',
   ),
   'redisarray::unlink\'1' => 
   array (
@@ -68108,9 +68160,10 @@ return array (
     'name' => 'null|string',
     'seeds=' => 'array<array-key, string>',
     'timeout=' => 'float',
-    'readTimeout=' => 'float',
+    'read_timeout=' => 'float',
     'persistent=' => 'bool',
     'auth=' => 'null|string',
+    'context=' => 'mixed',
   ),
   'rediscluster::_compress' => 
   array (
@@ -68129,7 +68182,7 @@ return array (
   'rediscluster::_prefix' => 
   array (
     0 => 'string',
-    'value' => 'mixed',
+    'key' => 'mixed',
   ),
   'rediscluster::_redir' => 
   array (
@@ -68171,25 +68224,28 @@ return array (
   'rediscluster::bgrewriteaof' => 
   array (
     0 => 'bool',
-    'nodeParams' => 'array{0: string, 1: int}|string',
+    'key_or_address' => 'array{0: string, 1: int}|string',
   ),
   'rediscluster::bgsave' => 
   array (
     0 => 'bool',
-    'nodeParams' => 'array{0: string, 1: int}|string',
+    'key_or_address' => 'array{0: string, 1: int}|string',
   ),
   'rediscluster::bitcount' => 
   array (
     0 => 'int',
     'key' => 'string',
+    'start=' => 'mixed',
+    'end=' => 'mixed',
+    'bybit=' => 'mixed',
   ),
   'rediscluster::bitop' => 
   array (
     0 => 'int',
     'operation' => 'string',
-    'retKey' => 'string',
-    'key1' => 'string',
-    '...other_keys=' => 'string',
+    'deskey' => 'string',
+    'srckey' => 'string',
+    '...otherkeys=' => 'string',
   ),
   'rediscluster::bitpos' => 
   array (
@@ -68198,6 +68254,7 @@ return array (
     'bit' => 'int',
     'start=' => 'int',
     'end=' => 'int',
+    'bybit=' => 'mixed',
   ),
   'rediscluster::blmove' => 
   array (
@@ -68219,20 +68276,22 @@ return array (
   'rediscluster::blpop' => 
   array (
     0 => 'array<array-key, mixed>',
-    'keys' => 'array<array-key, mixed>',
-    'timeout' => 'int',
+    'key' => 'array<array-key, mixed>',
+    'timeout_or_key' => 'int',
+    '...extra_args=' => 'mixed',
   ),
   'rediscluster::brpop' => 
   array (
     0 => 'array<array-key, mixed>',
-    'keys' => 'array<array-key, mixed>',
-    'timeout' => 'int',
+    'key' => 'array<array-key, mixed>',
+    'timeout_or_key' => 'int',
+    '...extra_args=' => 'mixed',
   ),
   'rediscluster::brpoplpush' => 
   array (
     0 => 'false|string',
-    'srcKey' => 'string',
-    'dstKey' => 'string',
+    'srckey' => 'string',
+    'deskey' => 'string',
     'timeout' => 'int',
   ),
   'rediscluster::bzmpop' => 
@@ -68268,9 +68327,9 @@ return array (
   'rediscluster::client' => 
   array (
     0 => 'mixed',
-    'nodeParams' => 'array{0: string, 1: int}|string',
-    'subCmd=' => 'string',
-    '...args=' => 'mixed',
+    'key_or_address' => 'array{0: string, 1: int}|string',
+    'subcommand' => 'string',
+    'arg=' => 'mixed',
   ),
   'rediscluster::close' => 
   array (
@@ -68279,21 +68338,21 @@ return array (
   'rediscluster::cluster' => 
   array (
     0 => 'mixed',
-    'nodeParams' => 'array{0: string, 1: int}|string',
+    'key_or_address' => 'array{0: string, 1: int}|string',
     'command' => 'string',
-    'arguments=' => 'mixed',
+    '...extra_args=' => 'mixed',
   ),
   'rediscluster::command' => 
   array (
     0 => 'array<array-key, mixed>|bool',
+    '...extra_args=' => 'mixed',
   ),
   'rediscluster::config' => 
   array (
     0 => 'array<array-key, mixed>|bool',
-    'nodeParams' => 'array{0: string, 1: int}|string',
-    'operation' => 'string',
-    'key' => 'string',
-    'value=' => 'string',
+    'key_or_address' => 'array{0: string, 1: int}|string',
+    'subcommand' => 'string',
+    '...extra_args=' => 'string',
   ),
   'rediscluster::copy' => 
   array (
@@ -68305,12 +68364,13 @@ return array (
   'rediscluster::dbsize' => 
   array (
     0 => 'int',
-    'nodeParams' => 'array{0: string, 1: int}|string',
+    'key_or_address' => 'array{0: string, 1: int}|string',
   ),
   'rediscluster::decr' => 
   array (
     0 => 'int',
     'key' => 'string',
+    'by=' => 'mixed',
   ),
   'rediscluster::decrby' => 
   array (
@@ -68347,7 +68407,7 @@ return array (
   'rediscluster::echo' => 
   array (
     0 => 'string',
-    'nodeParams' => 'array{0: string, 1: int}|string',
+    'key_or_address' => 'array{0: string, 1: int}|string',
     'msg' => 'string',
   ),
   'rediscluster::eval' => 
@@ -68355,7 +68415,7 @@ return array (
     0 => 'mixed',
     'script' => 'mixed',
     'args=' => 'mixed',
-    'numKeys=' => 'mixed',
+    'num_keys=' => 'mixed',
   ),
   'rediscluster::eval_ro' => 
   array (
@@ -68367,9 +68427,9 @@ return array (
   'rediscluster::evalsha' => 
   array (
     0 => 'mixed',
-    'scriptSha' => 'string',
+    'script_sha' => 'string',
     'args=' => 'array<array-key, mixed>',
-    'numKeys=' => 'int',
+    'num_keys=' => 'int',
   ),
   'rediscluster::evalsha_ro' => 
   array (
@@ -68386,18 +68446,21 @@ return array (
   array (
     0 => 'bool',
     'key' => 'string',
+    '...other_keys=' => 'mixed',
   ),
   'rediscluster::expire' => 
   array (
     0 => 'bool',
     'key' => 'string',
-    'ttl' => 'int',
+    'timeout' => 'int',
+    'mode=' => 'mixed',
   ),
   'rediscluster::expireat' => 
   array (
     0 => 'bool',
     'key' => 'string',
     'timestamp' => 'int',
+    'mode=' => 'mixed',
   ),
   'rediscluster::expiretime' => 
   array (
@@ -68407,30 +68470,30 @@ return array (
   'rediscluster::flushall' => 
   array (
     0 => 'bool',
-    'nodeParams' => 'array{0: string, 1: int}|string',
+    'key_or_address' => 'array{0: string, 1: int}|string',
     'async=' => 'bool',
   ),
   'rediscluster::flushdb' => 
   array (
     0 => 'bool',
-    'nodeParams' => 'array{0: string, 1: int}|string',
+    'key_or_address' => 'array{0: string, 1: int}|string',
     'async=' => 'bool',
   ),
   'rediscluster::geoadd' => 
   array (
     0 => 'int',
     'key' => 'string',
-    'longitude' => 'float',
-    'latitude' => 'float',
+    'lng' => 'float',
+    'lat' => 'float',
     'member' => 'string',
-    '...other_members=' => 'float|string',
+    '...other_triples_and_options=' => 'float|string',
   ),
   'rediscluster::geodist' => 
   array (
     0 => 'mixed',
     'key' => 'string',
-    'member1' => 'string',
-    'member2' => 'string',
+    'src' => 'string',
+    'dest' => 'string',
     'unit=' => 'string',
   ),
   'rediscluster::geohash' => 
@@ -68451,10 +68514,10 @@ return array (
   array (
     0 => 'mixed',
     'key' => 'string',
-    'longitude' => 'float',
-    'latitude' => 'float',
+    'lng' => 'float',
+    'lat' => 'float',
     'radius' => 'float',
-    'radiusUnit' => 'string',
+    'unit' => 'string',
     'options=' => 'array<array-key, mixed>',
   ),
   'rediscluster::georadius_ro' => 
@@ -68473,7 +68536,7 @@ return array (
     'key' => 'string',
     'member' => 'string',
     'radius' => 'float',
-    'radiusUnit' => 'string',
+    'unit' => 'string',
     'options=' => 'array<array-key, mixed>',
   ),
   'rediscluster::georadiusbymember_ro' => 
@@ -68513,7 +68576,7 @@ return array (
   array (
     0 => 'int',
     'key' => 'string',
-    'offset' => 'int',
+    'value' => 'int',
   ),
   'rediscluster::getex' => 
   array (
@@ -68555,20 +68618,20 @@ return array (
   array (
     0 => 'false|int',
     'key' => 'string',
-    'hashKey' => 'string',
-    '...other_hashKeys=' => 'array<array-key, string>',
+    'member' => 'string',
+    '...other_members=' => 'array<array-key, string>',
   ),
   'rediscluster::hexists' => 
   array (
     0 => 'bool',
     'key' => 'string',
-    'hashKey' => 'string',
+    'member' => 'string',
   ),
   'rediscluster::hget' => 
   array (
     0 => 'false|string',
     'key' => 'string',
-    'hashKey' => 'string',
+    'member' => 'string',
   ),
   'rediscluster::hgetall' => 
   array (
@@ -68579,15 +68642,15 @@ return array (
   array (
     0 => 'int',
     'key' => 'string',
-    'hashKey' => 'string',
+    'member' => 'string',
     'value' => 'int',
   ),
   'rediscluster::hincrbyfloat' => 
   array (
     0 => 'float',
     'key' => 'string',
-    'field' => 'string',
-    'increment' => 'float',
+    'member' => 'string',
+    'value' => 'float',
   ),
   'rediscluster::hkeys' => 
   array (
@@ -68603,13 +68666,13 @@ return array (
   array (
     0 => 'array<array-key, mixed>',
     'key' => 'string',
-    'hashKeys' => 'array<array-key, mixed>',
+    'keys' => 'array<array-key, mixed>',
   ),
   'rediscluster::hmset' => 
   array (
     0 => 'bool',
     'key' => 'string',
-    'hashKeys' => 'array<array-key, mixed>',
+    'key_values' => 'array<array-key, mixed>',
   ),
   'rediscluster::hrandfield' => 
   array (
@@ -68629,21 +68692,21 @@ return array (
   array (
     0 => 'int',
     'key' => 'string',
-    'hashKey' => 'string',
+    'member' => 'string',
     'value' => 'string',
   ),
   'rediscluster::hsetnx' => 
   array (
     0 => 'bool',
     'key' => 'string',
-    'hashKey' => 'string',
+    'member' => 'string',
     'value' => 'string',
   ),
   'rediscluster::hstrlen' => 
   array (
     0 => 'int',
     'key' => 'string',
-    'member' => 'string',
+    'field' => 'string',
   ),
   'rediscluster::hvals' => 
   array (
@@ -68654,6 +68717,7 @@ return array (
   array (
     0 => 'int',
     'key' => 'string',
+    'by=' => 'mixed',
   ),
   'rediscluster::incrby' => 
   array (
@@ -68665,13 +68729,13 @@ return array (
   array (
     0 => 'float',
     'key' => 'string',
-    'increment' => 'float',
+    'value' => 'float',
   ),
   'rediscluster::info' => 
   array (
     0 => 'array<array-key, mixed>',
-    'nodeParams' => 'array{0: string, 1: int}|string',
-    'option=' => 'string',
+    'key_or_address' => 'array{0: string, 1: int}|string',
+    '...sections=' => 'string',
   ),
   'rediscluster::keys' => 
   array (
@@ -68681,7 +68745,7 @@ return array (
   'rediscluster::lastsave' => 
   array (
     0 => 'int',
-    'nodeParams' => 'array{0: string, 1: int}|string',
+    'key_or_address' => 'array{0: string, 1: int}|string',
   ),
   'rediscluster::lcs' => 
   array (
@@ -68706,7 +68770,7 @@ return array (
   array (
     0 => 'int',
     'key' => 'string',
-    'position' => 'int',
+    'pos' => 'int',
     'pivot' => 'string',
     'value' => 'string',
   ),
@@ -68734,6 +68798,7 @@ return array (
   array (
     0 => 'false|string',
     'key' => 'string',
+    'count=' => 'mixed',
   ),
   'rediscluster::lpos' => 
   array (
@@ -68746,9 +68811,8 @@ return array (
   array (
     0 => 'false|int',
     'key' => 'string',
-    'value1' => 'string',
-    'value2=' => 'string',
-    'valueN=' => 'string',
+    'value' => 'string',
+    '...other_values=' => 'string',
   ),
   'rediscluster::lpushx' => 
   array (
@@ -68768,7 +68832,7 @@ return array (
     0 => 'false|int',
     'key' => 'string',
     'value' => 'string',
-    'count' => 'int',
+    'count=' => 'int',
   ),
   'rediscluster::lset' => 
   array (
@@ -68782,32 +68846,32 @@ return array (
     0 => 'array<array-key, mixed>|false',
     'key' => 'string',
     'start' => 'int',
-    'stop' => 'int',
+    'end' => 'int',
   ),
   'rediscluster::mget' => 
   array (
     0 => 'array<array-key, mixed>',
-    'array' => 'array<array-key, mixed>',
+    'keys' => 'array<array-key, mixed>',
   ),
   'rediscluster::mset' => 
   array (
     0 => 'bool',
-    'array' => 'array<array-key, mixed>',
+    'key_values' => 'array<array-key, mixed>',
   ),
   'rediscluster::msetnx' => 
   array (
     0 => 'int',
-    'array' => 'array<array-key, mixed>',
+    'key_values' => 'array<array-key, mixed>',
   ),
   'rediscluster::multi' => 
   array (
     0 => 'Redis',
-    'mode=' => 'int',
+    'value=' => 'int',
   ),
   'rediscluster::object' => 
   array (
     0 => 'false|int|string',
-    'string' => 'string',
+    'subcommand' => 'string',
     'key' => 'string',
   ),
   'rediscluster::persist' => 
@@ -68819,13 +68883,15 @@ return array (
   array (
     0 => 'bool',
     'key' => 'string',
-    'ttl' => 'int',
+    'timeout' => 'int',
+    'mode=' => 'mixed',
   ),
   'rediscluster::pexpireat' => 
   array (
     0 => 'bool',
     'key' => 'string',
     'timestamp' => 'int',
+    'mode=' => 'mixed',
   ),
   'rediscluster::pexpiretime' => 
   array (
@@ -68846,19 +68912,20 @@ return array (
   'rediscluster::pfmerge' => 
   array (
     0 => 'bool',
-    'destKey' => 'string',
-    'sourceKeys' => 'array<array-key, mixed>',
+    'key' => 'string',
+    'keys' => 'array<array-key, mixed>',
   ),
   'rediscluster::ping' => 
   array (
     0 => 'string',
-    'nodeParams' => 'array{0: string, 1: int}|string',
+    'key_or_address' => 'array{0: string, 1: int}|string',
+    'message=' => 'mixed',
   ),
   'rediscluster::psetex' => 
   array (
     0 => 'bool',
     'key' => 'string',
-    'ttl' => 'int',
+    'timeout' => 'int',
     'value' => 'string',
   ),
   'rediscluster::psubscribe' => 
@@ -68881,69 +68948,69 @@ return array (
   'rediscluster::pubsub' => 
   array (
     0 => 'array<array-key, mixed>',
-    'nodeParams' => 'string',
-    'keyword' => 'string',
-    '...argument=' => 'string',
+    'key_or_address' => 'string',
+    '...values=' => 'string',
   ),
   'rediscluster::punsubscribe' => 
   array (
     0 => 'mixed',
-    'channels' => 'mixed',
-    'callback' => 'mixed',
+    'pattern' => 'mixed',
+    '...other_patterns=' => 'mixed',
   ),
   'rediscluster::randomkey' => 
   array (
     0 => 'string',
-    'nodeParams' => 'array{0: string, 1: int}|string',
+    'key_or_address' => 'array{0: string, 1: int}|string',
   ),
   'rediscluster::rawcommand' => 
   array (
     0 => 'mixed',
-    'nodeParams' => 'array{0: string, 1: int}|string',
+    'key_or_address' => 'array{0: string, 1: int}|string',
     'command' => 'string',
-    'arguments=' => 'mixed',
+    '...args=' => 'mixed',
   ),
   'rediscluster::rename' => 
   array (
     0 => 'bool',
-    'srcKey' => 'string',
-    'dstKey' => 'string',
+    'key_src' => 'string',
+    'key_dst' => 'string',
   ),
   'rediscluster::renamenx' => 
   array (
     0 => 'bool',
-    'srcKey' => 'string',
-    'dstKey' => 'string',
+    'key' => 'string',
+    'newkey' => 'string',
   ),
   'rediscluster::restore' => 
   array (
     0 => 'bool',
     'key' => 'string',
-    'ttl' => 'int',
+    'timeout' => 'int',
     'value' => 'string',
+    'options=' => 'mixed',
   ),
   'rediscluster::role' => 
   array (
     0 => 'array<array-key, mixed>',
+    'key_or_address' => 'mixed',
   ),
   'rediscluster::rpop' => 
   array (
     0 => 'false|string',
     'key' => 'string',
+    'count=' => 'mixed',
   ),
   'rediscluster::rpoplpush' => 
   array (
     0 => 'false|string',
-    'srcKey' => 'string',
-    'dstKey' => 'string',
+    'src' => 'string',
+    'dst' => 'string',
   ),
   'rediscluster::rpush' => 
   array (
     0 => 'false|int',
     'key' => 'string',
-    'value1' => 'string',
-    'value2=' => 'string',
-    'valueN=' => 'string',
+    '...elements=' => 'string',
   ),
   'rediscluster::rpushx' => 
   array (
@@ -68955,26 +69022,25 @@ return array (
   array (
     0 => 'false|int',
     'key' => 'string',
-    'value1' => 'string',
-    'value2=' => 'string',
-    'valueN=' => 'string',
+    'value' => 'string',
+    '...other_values=' => 'string',
   ),
   'rediscluster::saddarray' => 
   array (
     0 => 'false|int',
     'key' => 'string',
-    'valueArray' => 'array<array-key, mixed>',
+    'values' => 'array<array-key, mixed>',
   ),
   'rediscluster::save' => 
   array (
     0 => 'bool',
-    'nodeParams' => 'array{0: string, 1: int}|string',
+    'key_or_address' => 'array{0: string, 1: int}|string',
   ),
   'rediscluster::scan' => 
   array (
     0 => 'array<array-key, mixed>|false',
     '&iterator' => 'int',
-    'nodeParams' => 'array{0: string, 1: int}|string',
+    'key_or_address' => 'array{0: string, 1: int}|string',
     'pattern=' => 'string',
     'count=' => 'int',
   ),
@@ -68986,23 +69052,20 @@ return array (
   'rediscluster::script' => 
   array (
     0 => 'array<array-key, mixed>|bool|string',
-    'nodeParams' => 'array{0: string, 1: int}|string',
-    'command' => 'string',
-    'script=' => 'string',
-    '...other_scripts=' => 'array<array-key, string>',
+    'key_or_address' => 'array{0: string, 1: int}|string',
+    '...args=' => 'string',
   ),
   'rediscluster::sdiff' => 
   array (
     0 => 'list<string>',
-    'key1' => 'string',
-    'key2' => 'string',
+    'key' => 'string',
     '...other_keys=' => 'string',
   ),
   'rediscluster::sdiffstore' => 
   array (
     0 => 'int',
-    'dstKey' => 'string',
-    'key1' => 'string',
+    'dst' => 'string',
+    'key' => 'string',
     '...other_keys=' => 'string',
   ),
   'rediscluster::set' => 
@@ -69010,20 +69073,20 @@ return array (
     0 => 'bool',
     'key' => 'string',
     'value' => 'string',
-    'timeout=' => 'array<array-key, mixed>|int',
+    'options=' => 'array<array-key, mixed>|int',
   ),
   'rediscluster::setbit' => 
   array (
     0 => 'int',
     'key' => 'string',
     'offset' => 'int',
-    'value' => 'bool|int',
+    'onoff' => 'bool|int',
   ),
   'rediscluster::setex' => 
   array (
     0 => 'bool',
     'key' => 'string',
-    'ttl' => 'int',
+    'expire' => 'int',
     'value' => 'string',
   ),
   'rediscluster::setnx' => 
@@ -69060,7 +69123,6 @@ return array (
   'rediscluster::sinterstore' => 
   array (
     0 => 'int',
-    'dstKey' => 'string',
     'key' => 'string',
     '...other_keys=' => 'string',
   ),
@@ -69073,9 +69135,8 @@ return array (
   'rediscluster::slowlog' => 
   array (
     0 => 'array<array-key, mixed>|bool|int',
-    'nodeParams' => 'array{0: string, 1: int}|string',
-    'command' => 'string',
-    'length=' => 'int',
+    'key_or_address' => 'array{0: string, 1: int}|string',
+    '...args=' => 'string',
   ),
   'rediscluster::smembers' => 
   array (
@@ -69092,15 +69153,15 @@ return array (
   'rediscluster::smove' => 
   array (
     0 => 'bool',
-    'srcKey' => 'string',
-    'dstKey' => 'string',
+    'src' => 'string',
+    'dst' => 'string',
     'member' => 'string',
   ),
   'rediscluster::sort' => 
   array (
     0 => 'array<array-key, mixed>',
     'key' => 'string',
-    'option=' => 'array<array-key, mixed>',
+    'options=' => 'array<array-key, mixed>',
   ),
   'rediscluster::sort_ro' => 
   array (
@@ -69112,6 +69173,7 @@ return array (
   array (
     0 => 'string',
     'key' => 'string',
+    'count=' => 'mixed',
   ),
   'rediscluster::srandmember' => 
   array (
@@ -69123,8 +69185,8 @@ return array (
   array (
     0 => 'int',
     'key' => 'string',
-    'member1' => 'string',
-    '...other_members=' => 'string',
+    'value' => 'string',
+    '...other_values=' => 'string',
   ),
   'rediscluster::sscan' => 
   array (
@@ -69143,12 +69205,12 @@ return array (
   array (
     0 => 'mixed',
     'channels' => 'array<array-key, mixed>',
-    'callback' => 'string',
+    'cb' => 'string',
   ),
   'rediscluster::sunion' => 
   array (
     0 => 'list<string>',
-    'key1' => 'string',
+    'key' => 'string',
     '...other_keys=' => 'string',
   ),
   'rediscluster::sunion\'1' => 
@@ -69159,13 +69221,14 @@ return array (
   'rediscluster::sunionstore' => 
   array (
     0 => 'int',
-    'dstKey' => 'string',
-    'key1' => 'string',
+    'dst' => 'string',
+    'key' => 'string',
     '...other_keys=' => 'string',
   ),
   'rediscluster::time' => 
   array (
     0 => 'array<array-key, mixed>',
+    'key_or_address' => 'mixed',
   ),
   'rediscluster::touch' => 
   array (
@@ -69193,7 +69256,6 @@ return array (
   array (
     0 => 'mixed',
     'channels' => 'mixed',
-    '...other_channels=' => 'mixed',
   ),
   'rediscluster::unwatch' => 
   array (
@@ -69216,18 +69278,18 @@ return array (
   'rediscluster::xack' => 
   array (
     0 => 'mixed',
-    'str_key' => 'string',
-    'str_group' => 'string',
-    'arr_ids' => 'array<array-key, mixed>',
+    'key' => 'string',
+    'group' => 'string',
+    'ids' => 'array<array-key, mixed>',
   ),
   'rediscluster::xadd' => 
   array (
     0 => 'mixed',
-    'str_key' => 'string',
-    'str_id' => 'string',
-    'arr_fields' => 'array<array-key, mixed>',
-    'i_maxlen=' => 'mixed',
-    'boo_approximate=' => 'mixed',
+    'key' => 'string',
+    'id' => 'string',
+    'values' => 'array<array-key, mixed>',
+    'maxlen=' => 'mixed',
+    'approx=' => 'mixed',
   ),
   'rediscluster::xautoclaim' => 
   array (
@@ -69243,34 +69305,36 @@ return array (
   'rediscluster::xclaim' => 
   array (
     0 => 'mixed',
-    'str_key' => 'string',
-    'str_group' => 'string',
-    'str_consumer' => 'string',
-    'i_min_idle' => 'mixed',
-    'arr_ids' => 'array<array-key, mixed>',
-    'arr_opts=' => 'array<array-key, mixed>',
+    'key' => 'string',
+    'group' => 'string',
+    'consumer' => 'string',
+    'min_iddle' => 'mixed',
+    'ids' => 'array<array-key, mixed>',
+    'options' => 'array<array-key, mixed>',
   ),
   'rediscluster::xdel' => 
   array (
     0 => 'mixed',
-    'str_key' => 'string',
-    'arr_ids' => 'array<array-key, mixed>',
+    'key' => 'string',
+    'ids' => 'array<array-key, mixed>',
   ),
   'rediscluster::xgroup' => 
   array (
     0 => 'mixed',
-    'str_operation' => 'string',
-    'str_key=' => 'string',
-    'str_arg1=' => 'mixed',
-    'str_arg2=' => 'mixed',
-    'str_arg3=' => 'mixed',
+    'operation' => 'string',
+    'key=' => 'string',
+    'group=' => 'mixed',
+    'id_or_consumer=' => 'mixed',
+    'mkstream=' => 'mixed',
+    'entries_read=' => 'mixed',
   ),
   'rediscluster::xinfo' => 
   array (
     0 => 'mixed',
-    'str_cmd' => 'string',
-    'str_key=' => 'string',
-    'str_group=' => 'string',
+    'operation' => 'string',
+    'arg1=' => 'string',
+    'arg2=' => 'string',
+    'count=' => 'mixed',
   ),
   'rediscluster::xlen' => 
   array (
@@ -69280,62 +69344,60 @@ return array (
   'rediscluster::xpending' => 
   array (
     0 => 'mixed',
-    'str_key' => 'string',
-    'str_group' => 'string',
-    'str_start=' => 'mixed',
-    'str_end=' => 'mixed',
-    'i_count=' => 'mixed',
-    'str_consumer=' => 'string',
+    'key' => 'string',
+    'group' => 'string',
+    'start=' => 'mixed',
+    'end=' => 'mixed',
+    'count=' => 'mixed',
+    'consumer=' => 'string',
   ),
   'rediscluster::xrange' => 
   array (
     0 => 'mixed',
-    'str_key' => 'string',
-    'str_start' => 'mixed',
-    'str_end' => 'mixed',
-    'i_count=' => 'mixed',
+    'key' => 'string',
+    'start' => 'mixed',
+    'end' => 'mixed',
+    'count=' => 'mixed',
   ),
   'rediscluster::xread' => 
   array (
     0 => 'mixed',
-    'arr_streams' => 'array<array-key, mixed>',
-    'i_count=' => 'mixed',
-    'i_block=' => 'mixed',
+    'streams' => 'array<array-key, mixed>',
+    'count=' => 'mixed',
+    'block=' => 'mixed',
   ),
   'rediscluster::xreadgroup' => 
   array (
     0 => 'mixed',
-    'str_group' => 'string',
-    'str_consumer' => 'string',
-    'arr_streams' => 'array<array-key, mixed>',
-    'i_count=' => 'mixed',
-    'i_block=' => 'mixed',
+    'group' => 'string',
+    'consumer' => 'string',
+    'streams' => 'array<array-key, mixed>',
+    'count=' => 'mixed',
+    'block=' => 'mixed',
   ),
   'rediscluster::xrevrange' => 
   array (
     0 => 'mixed',
-    'str_key' => 'string',
-    'str_start' => 'mixed',
-    'str_end' => 'mixed',
-    'i_count=' => 'mixed',
+    'key' => 'string',
+    'start' => 'mixed',
+    'end' => 'mixed',
+    'count=' => 'mixed',
   ),
   'rediscluster::xtrim' => 
   array (
     0 => 'mixed',
-    'str_key' => 'string',
-    'i_maxlen' => 'mixed',
-    'boo_approximate=' => 'mixed',
+    'key' => 'string',
+    'maxlen' => 'mixed',
+    'approx=' => 'mixed',
+    'minid=' => 'mixed',
+    'limit=' => 'mixed',
   ),
   'rediscluster::zadd' => 
   array (
     0 => 'int',
     'key' => 'string',
-    'score1' => 'float',
-    'value1' => 'string',
-    'score2=' => 'float',
-    'value2=' => 'string',
-    'scoreN=' => 'float',
-    'valueN=' => 'string',
+    'score_or_options' => 'float',
+    '...more_scores_and_mems=' => 'string',
   ),
   'rediscluster::zcard' => 
   array (
@@ -69384,10 +69446,10 @@ return array (
   'rediscluster::zinterstore' => 
   array (
     0 => 'int',
-    'Output' => 'string',
-    'ZSetKeys' => 'array<array-key, mixed>',
-    'Weights=' => 'array<array-key, mixed>|null',
-    'aggregateFunction=' => 'string',
+    'dst' => 'string',
+    'keys' => 'array<array-key, mixed>',
+    'weights=' => 'array<array-key, mixed>|null',
+    'aggregate=' => 'string',
   ),
   'rediscluster::zlexcount' => 
   array (
@@ -69434,7 +69496,7 @@ return array (
     'key' => 'string',
     'start' => 'int',
     'end' => 'int',
-    'withscores=' => 'bool',
+    'options=' => 'bool',
   ),
   'rediscluster::zrangebylex' => 
   array (
@@ -69443,7 +69505,7 @@ return array (
     'min' => 'int',
     'max' => 'int',
     'offset=' => 'int',
-    'limit=' => 'int',
+    'count=' => 'int',
   ),
   'rediscluster::zrangebyscore' => 
   array (
@@ -69472,8 +69534,8 @@ return array (
   array (
     0 => 'int',
     'key' => 'string',
-    'member1' => 'string',
-    '...other_members=' => 'string',
+    'value' => 'string',
+    '...other_values=' => 'string',
   ),
   'rediscluster::zremrangebylex' => 
   array (
@@ -69486,23 +69548,23 @@ return array (
   array (
     0 => 'int',
     'key' => 'string',
-    'start' => 'int',
-    'end' => 'int',
+    'min' => 'int',
+    'max' => 'int',
   ),
   'rediscluster::zremrangebyscore' => 
   array (
     0 => 'int',
     'key' => 'string',
-    'start' => 'float|string',
-    'end' => 'float|string',
+    'min' => 'float|string',
+    'max' => 'float|string',
   ),
   'rediscluster::zrevrange' => 
   array (
     0 => 'array<array-key, mixed>',
     'key' => 'string',
-    'start' => 'int',
-    'end' => 'int',
-    'withscore=' => 'bool',
+    'min' => 'int',
+    'max' => 'int',
+    'options=' => 'bool',
   ),
   'rediscluster::zrevrangebylex' => 
   array (
@@ -69510,15 +69572,14 @@ return array (
     'key' => 'string',
     'min' => 'int',
     'max' => 'int',
-    'offset=' => 'int',
-    'limit=' => 'int',
+    'options=' => 'int',
   ),
   'rediscluster::zrevrangebyscore' => 
   array (
     0 => 'array<array-key, mixed>',
     'key' => 'string',
-    'start' => 'int',
-    'end' => 'int',
+    'min' => 'int',
+    'max' => 'int',
     'options=' => 'array<array-key, mixed>',
   ),
   'rediscluster::zrevrank' => 
@@ -69551,10 +69612,10 @@ return array (
   'rediscluster::zunionstore' => 
   array (
     0 => 'int',
-    'Output' => 'string',
-    'ZSetKeys' => 'array<array-key, mixed>',
-    'Weights=' => 'array<array-key, mixed>|null',
-    'aggregateFunction=' => 'string',
+    'dst' => 'string',
+    'keys' => 'array<array-key, mixed>',
+    'weights=' => 'array<array-key, mixed>|null',
+    'aggregate=' => 'string',
   ),
   'redisclusterexception::__clone' => 
   array (
@@ -69709,7 +69770,7 @@ return array (
   'reflection::export' => 
   array (
     0 => 'null|string',
-    'r' => 'reflector',
+    'reflector' => 'reflector',
     'return=' => 'bool',
   ),
   'reflection::getmodifiernames' => 
@@ -69724,7 +69785,7 @@ return array (
   'reflectionclass::__construct' => 
   array (
     0 => 'void',
-    'objectOrClass' => 'class-string|object',
+    'argument' => 'class-string|object',
   ),
   'reflectionclass::__tostring' => 
   array (
@@ -69937,7 +69998,7 @@ return array (
   'reflectionclass::newinstance' => 
   array (
     0 => 'object',
-    '...args=' => 'mixed',
+    'args' => 'mixed',
   ),
   'reflectionclass::newinstanceargs' => 
   array (
@@ -69962,7 +70023,7 @@ return array (
   array (
     0 => 'void',
     'class' => 'class-string|object',
-    'constant' => 'string',
+    'name' => 'string',
   ),
   'reflectionclassconstant::__tostring' => 
   array (
@@ -70124,7 +70185,7 @@ return array (
   'reflectionfunction::__construct' => 
   array (
     0 => 'void',
-    'function' => 'Closure|callable-string',
+    'name' => 'Closure|callable-string',
   ),
   'reflectionfunction::__tostring' => 
   array (
@@ -70215,7 +70276,7 @@ return array (
   'reflectionfunction::invoke' => 
   array (
     0 => 'mixed',
-    '...args=' => 'mixed',
+    'args=' => 'mixed',
   ),
   'reflectionfunction::invokeargs' => 
   array (
@@ -70403,8 +70464,8 @@ return array (
   'reflectionmethod::__construct' => 
   array (
     0 => 'void',
-    'class' => 'class-string|object',
-    'name' => 'string',
+    'class_or_method' => 'class-string|object',
+    'name=' => 'string',
   ),
   'reflectionmethod::__construct\'1' => 
   array (
@@ -70515,7 +70576,7 @@ return array (
   array (
     0 => 'mixed',
     'object' => 'null|object',
-    '...args=' => 'mixed',
+    'args' => 'mixed',
   ),
   'reflectionmethod::invokeargs' => 
   array (
@@ -70586,7 +70647,7 @@ return array (
   'reflectionmethod::setaccessible' => 
   array (
     0 => 'void',
-    'accessible' => 'bool',
+    'value' => 'bool',
   ),
   'reflectionnamedtype::__clone' => 
   array (
@@ -70615,7 +70676,7 @@ return array (
   'reflectionobject::__construct' => 
   array (
     0 => 'void',
-    'object' => 'object',
+    'argument' => 'object',
   ),
   'reflectionobject::__tostring' => 
   array (
@@ -70828,8 +70889,7 @@ return array (
   'reflectionobject::newinstance' => 
   array (
     0 => 'object',
-    'args=' => 'mixed',
-    '...args=' => 'array<array-key, mixed>',
+    'args' => 'array<array-key, mixed>',
   ),
   'reflectionobject::newinstanceargs' => 
   array (
@@ -70854,7 +70914,7 @@ return array (
   array (
     0 => 'void',
     'function' => 'array<array-key, mixed>|object|string',
-    'param' => 'int|string',
+    'parameter' => 'int|string',
   ),
   'reflectionparameter::__tostring' => 
   array (
@@ -70947,7 +71007,7 @@ return array (
   array (
     0 => 'void',
     'class' => 'class-string|object',
-    'property' => 'string',
+    'name' => 'string',
   ),
   'reflectionproperty::__tostring' => 
   array (
@@ -70996,7 +71056,7 @@ return array (
   'reflectionproperty::isinitialized' => 
   array (
     0 => 'bool',
-    'object' => 'object',
+    'object=' => 'object',
   ),
   'reflectionproperty::isprivate' => 
   array (
@@ -71017,13 +71077,13 @@ return array (
   'reflectionproperty::setaccessible' => 
   array (
     0 => 'void',
-    'accessible' => 'bool',
+    'visible' => 'bool',
   ),
   'reflectionproperty::setvalue' => 
   array (
     0 => 'void',
     'object' => 'null|object',
-    'value' => 'mixed',
+    'value=' => 'mixed',
   ),
   'reflectionproperty::setvalue\'1' => 
   array (
@@ -71115,10 +71175,10 @@ return array (
   array (
     0 => 'void',
     'iterator' => 'Iterator',
-    'pattern' => 'string',
+    'regex' => 'string',
     'mode=' => 'int',
     'flags=' => 'int',
-    'pregFlags=' => 'int',
+    'preg_flags=' => 'int',
   ),
   'regexiterator::accept' => 
   array (
@@ -71173,7 +71233,7 @@ return array (
   'regexiterator::setpregflags' => 
   array (
     0 => 'void',
-    'pregFlags' => 'int',
+    'preg_flags' => 'int',
   ),
   'regexiterator::valid' => 
   array (
@@ -71220,7 +71280,7 @@ return array (
   array (
     0 => 'void',
     'locale' => 'null|string',
-    'bundle' => 'null|string',
+    'bundlename' => 'null|string',
     'fallback=' => 'bool',
   ),
   'resourcebundle::count' => 
@@ -71231,7 +71291,7 @@ return array (
   array (
     0 => 'ResourceBundle|null',
     'locale' => 'null|string',
-    'bundle' => 'null|string',
+    'bundlename' => 'null|string',
     'fallback=' => 'bool',
   ),
   'resourcebundle::get' => 
@@ -71251,7 +71311,7 @@ return array (
   'resourcebundle::getlocales' => 
   array (
     0 => 'array<array-key, mixed>|false',
-    'bundle' => 'string',
+    'bundlename' => 'string',
   ),
   'resourcebundle_count' => 
   array (
@@ -73420,29 +73480,29 @@ return array (
   'sessionhandler::destroy' => 
   array (
     0 => 'bool',
-    'id' => 'string',
+    'key' => 'string',
   ),
   'sessionhandler::gc' => 
   array (
     0 => 'false|int',
-    'max_lifetime' => 'int',
+    'maxlifetime' => 'int',
   ),
   'sessionhandler::open' => 
   array (
     0 => 'bool',
-    'path' => 'string',
-    'name' => 'string',
+    'save_path' => 'string',
+    'session_name' => 'string',
   ),
   'sessionhandler::read' => 
   array (
     0 => 'false|string',
-    'id' => 'string',
+    'key' => 'string',
   ),
   'sessionhandler::write' => 
   array (
     0 => 'bool',
-    'id' => 'string',
-    'data' => 'string',
+    'key' => 'string',
+    'val' => 'string',
   ),
   'sessionhandlerinterface::close' => 
   array (
@@ -73991,9 +74051,9 @@ return array (
     0 => 'void',
     'data' => 'string',
     'options=' => 'int',
-    'dataIsURL=' => 'bool',
-    'namespaceOrPrefix=' => 'string',
-    'isPrefix=' => 'bool',
+    'data_is_url=' => 'bool',
+    'ns=' => 'string',
+    'is_prefix=' => 'bool',
   ),
   'simplexmlelement::__get' => 
   array (
@@ -74007,21 +74067,21 @@ return array (
   'simplexmlelement::addattribute' => 
   array (
     0 => 'void',
-    'qualifiedName' => 'string',
-    'value' => 'string',
-    'namespace=' => 'null|string',
+    'name' => 'string',
+    'value=' => 'string',
+    'ns=' => 'null|string',
   ),
   'simplexmlelement::addchild' => 
   array (
     0 => 'SimpleXMLElement|null',
-    'qualifiedName' => 'string',
+    'name' => 'string',
     'value=' => 'null|string',
-    'namespace=' => 'null|string',
+    'ns=' => 'null|string',
   ),
   'simplexmlelement::asxml' => 
   array (
     0 => 'bool|string',
-    'filename' => 'string',
+    'filename=' => 'string',
   ),
   'simplexmlelement::asxml\'1' => 
   array (
@@ -74030,14 +74090,14 @@ return array (
   'simplexmlelement::attributes' => 
   array (
     0 => 'SimpleXMLElement|null',
-    'namespaceOrPrefix=' => 'null|string',
-    'isPrefix=' => 'bool',
+    'ns=' => 'null|string',
+    'is_prefix=' => 'bool',
   ),
   'simplexmlelement::children' => 
   array (
     0 => 'SimpleXMLElement|null',
-    'namespaceOrPrefix=' => 'null|string',
-    'isPrefix=' => 'bool',
+    'ns=' => 'null|string',
+    'is_prefix=' => 'bool',
   ),
   'simplexmlelement::count' => 
   array (
@@ -74046,8 +74106,8 @@ return array (
   'simplexmlelement::getdocnamespaces' => 
   array (
     0 => 'array<string, string>',
-    'recursive=' => 'bool',
-    'fromRoot=' => 'bool',
+    'recursve=' => 'bool',
+    'from_root=' => 'bool',
   ),
   'simplexmlelement::getname' => 
   array (
@@ -74056,7 +74116,7 @@ return array (
   'simplexmlelement::getnamespaces' => 
   array (
     0 => 'array<string, string>',
-    'recursive=' => 'bool',
+    'recursve=' => 'bool',
   ),
   'simplexmlelement::offsetexists' => 
   array (
@@ -74083,7 +74143,7 @@ return array (
   array (
     0 => 'bool',
     'prefix' => 'string',
-    'namespace' => 'string',
+    'ns' => 'string',
   ),
   'simplexmlelement::savexml' => 
   array (
@@ -74093,7 +74153,7 @@ return array (
   'simplexmlelement::xpath' => 
   array (
     0 => 'array<array-key, SimpleXMLElement>|false|null',
-    'expression' => 'string',
+    'path' => 'string',
   ),
   'simplexmliterator::__construct' => 
   array (
@@ -74581,12 +74641,9 @@ return array (
   'soapfault::__construct' => 
   array (
     0 => 'void',
-    'code' => 'array<array-key, mixed>|null|string',
-    'string' => 'string',
-    'actor=' => 'null|string',
-    'details=' => 'mixed|null',
-    'name=' => 'null|string',
-    'headerFault=' => 'mixed|null',
+    'message=' => 'array<array-key, mixed>|null|string',
+    'code=' => 'array<array-key, mixed>|null|string',
+    'previous=' => 'null|string',
   ),
   'soapfault::__tostring' => 
   array (
@@ -79088,7 +79145,7 @@ return array (
   array (
     0 => 'void',
     'index' => 'int',
-    'value' => 'mixed',
+    'newval' => 'mixed',
   ),
   'spldoublylinkedlist::bottom' => 
   array (
@@ -79132,7 +79189,7 @@ return array (
   array (
     0 => 'void',
     'index' => 'int|null',
-    'value' => 'mixed',
+    'newval' => 'mixed',
   ),
   'spldoublylinkedlist::offsetunset' => 
   array (
@@ -79176,7 +79233,7 @@ return array (
   'spldoublylinkedlist::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
+    'serialized' => 'string',
   ),
   'spldoublylinkedlist::unshift' => 
   array (
@@ -79201,7 +79258,7 @@ return array (
   'splfileinfo::__construct' => 
   array (
     0 => 'void',
-    'filename' => 'string',
+    'file_name' => 'string',
   ),
   'splfileinfo::__debuginfo' => 
   array (
@@ -79235,7 +79292,7 @@ return array (
   'splfileinfo::getfileinfo' => 
   array (
     0 => 'SplFileInfo',
-    'class=' => 'class-string',
+    'class_name=' => 'class-string',
   ),
   'splfileinfo::getfilename' => 
   array (
@@ -79268,7 +79325,7 @@ return array (
   'splfileinfo::getpathinfo' => 
   array (
     0 => 'SplFileInfo|null',
-    'class=' => 'class-string',
+    'class_name=' => 'class-string',
   ),
   'splfileinfo::getpathname' => 
   array (
@@ -79317,26 +79374,26 @@ return array (
   'splfileinfo::openfile' => 
   array (
     0 => 'SplFileObject',
-    'mode=' => 'string',
-    'useIncludePath=' => 'bool',
+    'open_mode=' => 'string',
+    'use_include_path=' => 'bool',
     'context=' => 'resource',
   ),
   'splfileinfo::setfileclass' => 
   array (
     0 => 'void',
-    'class=' => 'class-string',
+    'class_name=' => 'class-string',
   ),
   'splfileinfo::setinfoclass' => 
   array (
     0 => 'void',
-    'class=' => 'class-string',
+    'class_name=' => 'class-string',
   ),
   'splfileobject::__construct' => 
   array (
     0 => 'void',
-    'filename' => 'string',
-    'mode=' => 'string',
-    'useIncludePath=' => 'bool',
+    'file_name' => 'string',
+    'open_mode=' => 'string',
+    'use_include_path=' => 'bool',
     'context=' => 'null|resource',
   ),
   'splfileobject::__debuginfo' => 
@@ -79370,7 +79427,7 @@ return array (
   'splfileobject::fgetcsv' => 
   array (
     0 => 'array{0?: null|string, ...<int<0, max>, string>}|false',
-    'separator=' => 'string',
+    'delimiter=' => 'string',
     'enclosure=' => 'string',
     'escape=' => 'string',
   ),
@@ -79387,7 +79444,7 @@ return array (
   array (
     0 => 'bool',
     'operation' => 'int',
-    '&w_wouldBlock=' => 'int',
+    '&w_wouldblock=' => 'int',
   ),
   'splfileobject::fpassthru' => 
   array (
@@ -79397,7 +79454,7 @@ return array (
   array (
     0 => 'false|int',
     'fields' => 'array<array-key, Stringable|null|scalar>',
-    'separator=' => 'string',
+    'delimiter=' => 'string',
     'enclosure=' => 'string',
     'escape=' => 'string',
   ),
@@ -79410,12 +79467,12 @@ return array (
   array (
     0 => 'array<array-key, mixed>|int',
     'format' => 'string',
-    '&...w_vars=' => 'float|int|string',
+    '...&vars=' => 'float|int|string',
   ),
   'splfileobject::fseek' => 
   array (
     0 => 'int',
-    'offset' => 'int',
+    'pos' => 'int',
     'whence=' => 'int',
   ),
   'splfileobject::fstat' => 
@@ -79434,7 +79491,7 @@ return array (
   'splfileobject::fwrite' => 
   array (
     0 => 'false|int',
-    'data' => 'string',
+    'str' => 'string',
     'length=' => 'int',
   ),
   'splfileobject::getatime' => 
@@ -79469,7 +79526,7 @@ return array (
   'splfileobject::getfileinfo' => 
   array (
     0 => 'SplFileInfo',
-    'class=' => 'class-string',
+    'class_name=' => 'class-string',
   ),
   'splfileobject::getfilename' => 
   array (
@@ -79510,7 +79567,7 @@ return array (
   'splfileobject::getpathinfo' => 
   array (
     0 => 'SplFileInfo|null',
-    'class=' => 'class-string',
+    'class_name=' => 'class-string',
   ),
   'splfileobject::getpathname' => 
   array (
@@ -79571,8 +79628,8 @@ return array (
   'splfileobject::openfile' => 
   array (
     0 => 'SplFileObject',
-    'mode=' => 'string',
-    'useIncludePath=' => 'bool',
+    'open_mode=' => 'string',
+    'use_include_path=' => 'bool',
     'context=' => 'resource',
   ),
   'splfileobject::rewind' => 
@@ -79582,19 +79639,19 @@ return array (
   'splfileobject::seek' => 
   array (
     0 => 'void',
-    'line' => 'int',
+    'line_pos' => 'int',
   ),
   'splfileobject::setcsvcontrol' => 
   array (
     0 => 'void',
-    'separator=' => 'string',
+    'delimiter=' => 'string',
     'enclosure=' => 'string',
     'escape=' => 'string',
   ),
   'splfileobject::setfileclass' => 
   array (
     0 => 'void',
-    'class=' => 'class-string',
+    'class_name=' => 'class-string',
   ),
   'splfileobject::setflags' => 
   array (
@@ -79604,12 +79661,12 @@ return array (
   'splfileobject::setinfoclass' => 
   array (
     0 => 'void',
-    'class=' => 'class-string',
+    'class_name=' => 'class-string',
   ),
   'splfileobject::setmaxlinelen' => 
   array (
     0 => 'void',
-    'maxLength' => 'int',
+    'max_len' => 'int',
   ),
   'splfileobject::valid' => 
   array (
@@ -79636,7 +79693,7 @@ return array (
   array (
     0 => 'SplFixedArray',
     'array' => 'array<array-key, mixed>',
-    'preserveKeys=' => 'bool',
+    'save_indexes=' => 'bool',
   ),
   'splfixedarray::getsize' => 
   array (
@@ -79664,7 +79721,7 @@ return array (
   array (
     0 => 'void',
     'index' => 'int',
-    'value' => 'mixed',
+    'newval' => 'mixed',
   ),
   'splfixedarray::offsetunset' => 
   array (
@@ -79678,7 +79735,7 @@ return array (
   'splfixedarray::setsize' => 
   array (
     0 => 'bool',
-    'size' => 'int',
+    'value' => 'int',
   ),
   'splfixedarray::toarray' => 
   array (
@@ -79699,8 +79756,6 @@ return array (
   'splheap::compare' => 
   array (
     0 => 'int',
-    'value1' => 'mixed',
-    'value2' => 'mixed',
   ),
   'splheap::count' => 
   array (
@@ -79893,13 +79948,13 @@ return array (
   'splobjectstorage::addall' => 
   array (
     0 => 'int',
-    'storage' => 'SplObjectStorage',
+    'object' => 'SplObjectStorage',
   ),
   'splobjectstorage::attach' => 
   array (
     0 => 'void',
     'object' => 'object',
-    'info=' => 'mixed',
+    'data=' => 'mixed',
   ),
   'splobjectstorage::contains' => 
   array (
@@ -79909,7 +79964,6 @@ return array (
   'splobjectstorage::count' => 
   array (
     0 => 'int',
-    'mode=' => 'int',
   ),
   'splobjectstorage::current' => 
   array (
@@ -79951,7 +80005,7 @@ return array (
   array (
     0 => 'void',
     'object' => 'object',
-    'info=' => 'mixed',
+    'data=' => 'mixed',
   ),
   'splobjectstorage::offsetunset' => 
   array (
@@ -79961,12 +80015,12 @@ return array (
   'splobjectstorage::removeall' => 
   array (
     0 => 'int',
-    'storage' => 'SplObjectStorage',
+    'object' => 'SplObjectStorage',
   ),
   'splobjectstorage::removeallexcept' => 
   array (
     0 => 'int',
-    'storage' => 'SplObjectStorage',
+    'object' => 'SplObjectStorage',
   ),
   'splobjectstorage::rewind' => 
   array (
@@ -79984,7 +80038,7 @@ return array (
   'splobjectstorage::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
+    'serialized' => 'string',
   ),
   'splobjectstorage::valid' => 
   array (
@@ -80006,8 +80060,8 @@ return array (
   'splpriorityqueue::compare' => 
   array (
     0 => 'int',
-    'priority1' => 'mixed',
-    'priority2' => 'mixed',
+    'value1' => 'mixed',
+    'value2' => 'mixed',
   ),
   'splpriorityqueue::count' => 
   array (
@@ -80138,7 +80192,7 @@ return array (
   array (
     0 => 'void',
     'index' => 'int|null',
-    'value' => 'mixed',
+    'newval' => 'mixed',
   ),
   'splqueue::offsetunset' => 
   array (
@@ -80182,7 +80236,7 @@ return array (
   'splqueue::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
+    'serialized' => 'string',
   ),
   'splqueue::unshift' => 
   array (
@@ -80214,7 +80268,7 @@ return array (
   array (
     0 => 'void',
     'index' => 'int',
-    'value' => 'mixed',
+    'newval' => 'mixed',
   ),
   'splstack::bottom' => 
   array (
@@ -80258,7 +80312,7 @@ return array (
   array (
     0 => 'void',
     'index' => 'int|null',
-    'value' => 'mixed',
+    'newval' => 'mixed',
   ),
   'splstack::offsetunset' => 
   array (
@@ -80302,7 +80356,7 @@ return array (
   'splstack::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
+    'serialized' => 'string',
   ),
   'splstack::unshift' => 
   array (
@@ -80330,7 +80384,7 @@ return array (
   'spltempfileobject::__construct' => 
   array (
     0 => 'void',
-    'maxMemory=' => 'int',
+    'max_memory=' => 'int',
   ),
   'spltempfileobject::__debuginfo' => 
   array (
@@ -80363,7 +80417,7 @@ return array (
   'spltempfileobject::fgetcsv' => 
   array (
     0 => 'array{0?: null|string, ...<int<0, max>, string>}|false',
-    'separator=' => 'string',
+    'delimiter=' => 'string',
     'enclosure=' => 'string',
     'escape=' => 'string',
   ),
@@ -80380,7 +80434,7 @@ return array (
   array (
     0 => 'bool',
     'operation' => 'int',
-    '&w_wouldBlock=' => 'int',
+    '&w_wouldblock=' => 'int',
   ),
   'spltempfileobject::fpassthru' => 
   array (
@@ -80390,7 +80444,7 @@ return array (
   array (
     0 => 'false|int',
     'fields' => 'array<array-key, Stringable|null|scalar>',
-    'separator=' => 'string',
+    'delimiter=' => 'string',
     'enclosure=' => 'string',
     'escape=' => 'string',
   ),
@@ -80403,12 +80457,12 @@ return array (
   array (
     0 => 'array<array-key, mixed>|int',
     'format' => 'string',
-    '&...w_vars=' => 'float|int|string',
+    '...&vars=' => 'float|int|string',
   ),
   'spltempfileobject::fseek' => 
   array (
     0 => 'int',
-    'offset' => 'int',
+    'pos' => 'int',
     'whence=' => 'int',
   ),
   'spltempfileobject::fstat' => 
@@ -80427,7 +80481,7 @@ return array (
   'spltempfileobject::fwrite' => 
   array (
     0 => 'false|int',
-    'data' => 'string',
+    'str' => 'string',
     'length=' => 'int',
   ),
   'spltempfileobject::getatime' => 
@@ -80462,7 +80516,7 @@ return array (
   'spltempfileobject::getfileinfo' => 
   array (
     0 => 'SplFileInfo',
-    'class=' => 'class-string',
+    'class_name=' => 'class-string',
   ),
   'spltempfileobject::getfilename' => 
   array (
@@ -80503,7 +80557,7 @@ return array (
   'spltempfileobject::getpathinfo' => 
   array (
     0 => 'SplFileInfo|null',
-    'class=' => 'class-string',
+    'class_name=' => 'class-string',
   ),
   'spltempfileobject::getpathname' => 
   array (
@@ -80564,8 +80618,8 @@ return array (
   'spltempfileobject::openfile' => 
   array (
     0 => 'SplTempFileObject',
-    'mode=' => 'string',
-    'useIncludePath=' => 'bool',
+    'open_mode=' => 'string',
+    'use_include_path=' => 'bool',
     'context=' => 'resource',
   ),
   'spltempfileobject::rewind' => 
@@ -80575,19 +80629,19 @@ return array (
   'spltempfileobject::seek' => 
   array (
     0 => 'void',
-    'line' => 'int',
+    'line_pos' => 'int',
   ),
   'spltempfileobject::setcsvcontrol' => 
   array (
     0 => 'void',
-    'separator=' => 'string',
+    'delimiter=' => 'string',
     'enclosure=' => 'string',
     'escape=' => 'string',
   ),
   'spltempfileobject::setfileclass' => 
   array (
     0 => 'void',
-    'class=' => 'class-string',
+    'class_name=' => 'class-string',
   ),
   'spltempfileobject::setflags' => 
   array (
@@ -80597,12 +80651,12 @@ return array (
   'spltempfileobject::setinfoclass' => 
   array (
     0 => 'void',
-    'class=' => 'class-string',
+    'class_name=' => 'class-string',
   ),
   'spltempfileobject::setmaxlinelen' => 
   array (
     0 => 'void',
-    'maxLength' => 'int',
+    'max_len' => 'int',
   ),
   'spltempfileobject::valid' => 
   array (
@@ -80621,20 +80675,20 @@ return array (
   'spoofchecker::areconfusable' => 
   array (
     0 => 'bool',
-    'string1' => 'string',
-    'string2' => 'string',
-    '&w_errorCode=' => 'int',
+    's1' => 'string',
+    's2' => 'string',
+    '&w_error=' => 'int',
   ),
   'spoofchecker::issuspicious' => 
   array (
     0 => 'bool',
-    'string' => 'string',
-    '&w_errorCode=' => 'int',
+    'text' => 'string',
+    '&w_error=' => 'int',
   ),
   'spoofchecker::setallowedlocales' => 
   array (
     0 => 'void',
-    'locales' => 'string',
+    'locale_list' => 'string',
   ),
   'spoofchecker::setchecks' => 
   array (
@@ -80657,7 +80711,7 @@ return array (
     0 => 'void',
     'filename' => 'string',
     'flags=' => 'int',
-    'encryptionKey=' => 'string',
+    'encryption_key=' => 'string',
   ),
   'sqlite3::backup' => 
   array (
@@ -80669,7 +80723,7 @@ return array (
   'sqlite3::busytimeout' => 
   array (
     0 => 'bool',
-    'milliseconds' => 'int',
+    'ms' => 'int',
   ),
   'sqlite3::changes' => 
   array (
@@ -80683,9 +80737,9 @@ return array (
   array (
     0 => 'bool',
     'name' => 'string',
-    'stepCallback' => 'callable',
-    'finalCallback' => 'callable',
-    'argCount=' => 'int',
+    'step_callback' => 'callable',
+    'final_callback' => 'callable',
+    'argument_count=' => 'int',
   ),
   'sqlite3::createcollation' => 
   array (
@@ -80698,13 +80752,13 @@ return array (
     0 => 'bool',
     'name' => 'string',
     'callback' => 'callable',
-    'argCount=' => 'int',
+    'argument_count=' => 'int',
     'flags=' => 'int',
   ),
   'sqlite3::enableexceptions' => 
   array (
     0 => 'bool',
-    'enable=' => 'bool',
+    'enableExceptions=' => 'bool',
   ),
   'sqlite3::enableextendedresultcodes' => 
   array (
@@ -80714,7 +80768,7 @@ return array (
   'sqlite3::escapestring' => 
   array (
     0 => 'string',
-    'string' => 'string',
+    'value' => 'string',
   ),
   'sqlite3::exec' => 
   array (
@@ -80740,14 +80794,14 @@ return array (
   'sqlite3::loadextension' => 
   array (
     0 => 'bool',
-    'name' => 'string',
+    'shared_library' => 'string',
   ),
   'sqlite3::open' => 
   array (
     0 => 'void',
     'filename' => 'string',
     'flags=' => 'int',
-    'encryptionKey=' => 'string',
+    'encryption_key=' => 'string',
   ),
   'sqlite3::openblob' => 
   array (
@@ -80755,7 +80809,7 @@ return array (
     'table' => 'string',
     'column' => 'string',
     'rowid' => 'int',
-    'database=' => 'string',
+    'dbname=' => 'string',
     'flags=' => 'int',
   ),
   'sqlite3::prepare' => 
@@ -80772,7 +80826,7 @@ return array (
   array (
     0 => 'array<array-key, mixed>|null|scalar',
     'query' => 'string',
-    'entireRow=' => 'bool',
+    'entire_row=' => 'bool',
   ),
   'sqlite3::version' => 
   array (
@@ -80785,12 +80839,12 @@ return array (
   'sqlite3result::columnname' => 
   array (
     0 => 'string',
-    'column' => 'int',
+    'column_number' => 'int',
   ),
   'sqlite3result::columntype' => 
   array (
     0 => 'int',
-    'column' => 'int',
+    'column_number' => 'int',
   ),
   'sqlite3result::fetcharray' => 
   array (
@@ -80813,20 +80867,19 @@ return array (
   array (
     0 => 'void',
     'sqlite3' => 'sqlite3',
-    'query' => 'string',
   ),
   'sqlite3stmt::bindparam' => 
   array (
     0 => 'bool',
-    'param' => 'int|string',
-    '&rw_var' => 'mixed',
+    'param_number' => 'int|string',
+    '&param' => 'int|string',
     'type=' => 'int',
   ),
   'sqlite3stmt::bindvalue' => 
   array (
     0 => 'bool',
+    'param_number' => 'int|string',
     'param' => 'int|string',
-    'value' => 'mixed',
     'type=' => 'int',
   ),
   'sqlite3stmt::clear' => 
@@ -80844,7 +80897,7 @@ return array (
   'sqlite3stmt::getsql' => 
   array (
     0 => 'string',
-    'expand=' => 'bool',
+    'expanded=' => 'bool',
   ),
   'sqlite3stmt::paramcount' => 
   array (
@@ -81537,7 +81590,7 @@ return array (
     0 => 'int|list<float|int|null|string>|null',
     'str' => 'string',
     'format' => 'string',
-    '...w_&vars=' => 'float|int|null|string',
+    '...&vars=' => 'float|int|null|string',
   ),
   'ssdeep_fuzzy_compare' => 
   array (
@@ -85698,23 +85751,23 @@ return array (
   'swoole\\connection\\iterator::offsetexists' => 
   array (
     0 => 'bool',
-    'index' => 'int',
+    'fd' => 'int',
   ),
   'swoole\\connection\\iterator::offsetget' => 
   array (
     0 => 'Connection',
-    'index' => 'string',
+    'fd' => 'string',
   ),
   'swoole\\connection\\iterator::offsetset' => 
   array (
     0 => 'void',
-    'offset' => 'int',
-    'connection' => 'mixed',
+    'fd' => 'int',
+    'value' => 'mixed',
   ),
   'swoole\\connection\\iterator::offsetunset' => 
   array (
     0 => 'void',
-    'offset' => 'int',
+    'fd' => 'int',
   ),
   'swoole\\connection\\iterator::rewind' => 
   array (
@@ -86595,6 +86648,12 @@ return array (
   'swoole\\coroutine\\http\\client::addfile' => 
   array (
     0 => 'ReturnType',
+    'path' => 'mixed',
+    'name' => 'mixed',
+    'type=' => 'mixed',
+    'filename=' => 'mixed',
+    'offset=' => 'mixed',
+    'length=' => 'mixed',
   ),
   'swoole\\coroutine\\http\\client::close' => 
   array (
@@ -86689,22 +86748,27 @@ return array (
   'swoole\\coroutine\\http\\client::setcookies' => 
   array (
     0 => 'ReturnType',
+    'cookies' => 'array<array-key, mixed>',
   ),
   'swoole\\coroutine\\http\\client::setdata' => 
   array (
     0 => 'ReturnType',
+    'data' => 'mixed',
   ),
   'swoole\\coroutine\\http\\client::setdefer' => 
   array (
     0 => 'ReturnType',
+    'defer=' => 'mixed',
   ),
   'swoole\\coroutine\\http\\client::setheaders' => 
   array (
     0 => 'ReturnType',
+    'headers' => 'array<array-key, mixed>',
   ),
   'swoole\\coroutine\\http\\client::setmethod' => 
   array (
     0 => 'ReturnType',
+    'method' => 'mixed',
   ),
   'swoole\\coroutine\\http\\client::upgrade' => 
   array (
@@ -87076,6 +87140,7 @@ return array (
   'swoole\\coroutine\\mysql::setdefer' => 
   array (
     0 => 'ReturnType',
+    'defer=' => 'mixed',
   ),
   'swoole\\coroutine\\mysql\\exception::__clone' => 
   array (
@@ -92399,8 +92464,9 @@ return array (
   'swoole\\process::usequeue' => 
   array (
     0 => 'bool',
-    'key' => 'int',
+    'key=' => 'int',
     'mode=' => 'int',
+    'capacity=' => 'mixed',
   ),
   'swoole\\process::wait' => 
   array (
@@ -92787,8 +92853,6 @@ return array (
     0 => 'ReturnType',
     'command' => 'string',
     'callback' => 'string',
-    'number_of_string_param=' => 'string',
-    'type_of_array_param=' => 'string',
   ),
   'swoole\\redis\\server::shutdown' => 
   array (
@@ -92981,7 +93045,7 @@ return array (
   array (
     0 => 'array<array-key, mixed>',
     'start_fd' => 'int',
-    'pagesize=' => 'int',
+    'find_count=' => 'int',
   ),
   'swoole\\server::getlasterror' => 
   array (
@@ -93065,8 +93129,8 @@ return array (
   'swoole\\server::sendmessage' => 
   array (
     0 => 'bool',
-    'worker_id' => 'int',
-    'data' => 'string',
+    'message' => 'int',
+    'dst_worker_id' => 'string',
   ),
   'swoole\\server::sendto' => 
   array (
@@ -93128,7 +93192,7 @@ return array (
   array (
     0 => 'void',
     'tasks' => 'array<array-key, mixed>',
-    'timeout_ms=' => 'float',
+    'timeout=' => 'float',
   ),
   'swoole\\server::tick' => 
   array (
@@ -99464,7 +99528,7 @@ return array (
   'transliterator::transliterate' => 
   array (
     0 => 'false|string',
-    'string' => 'string',
+    'subject' => 'string',
     'start=' => 'int',
     'end=' => 'int',
   ),
@@ -99641,7 +99705,7 @@ return array (
   'uconverter::reasontext' => 
   array (
     0 => 'string',
-    'reason' => 'int',
+    'reason=' => 'int',
   ),
   'uconverter::setdestinationencoding' => 
   array (
@@ -103418,7 +103482,7 @@ return array (
   'xmlreader::expand' => 
   array (
     0 => 'DOMNode|false',
-    'baseNode=' => 'DOMNode|null',
+    'basenode=' => 'DOMNode|null',
   ),
   'xmlreader::getattribute' => 
   array (
@@ -103434,7 +103498,7 @@ return array (
   array (
     0 => 'null|string',
     'name' => 'string',
-    'namespace' => 'string',
+    'namespaceURI' => 'string',
   ),
   'xmlreader::getparserproperty' => 
   array (
@@ -103464,7 +103528,7 @@ return array (
   array (
     0 => 'bool',
     'name' => 'string',
-    'namespace' => 'string',
+    'namespaceURI' => 'string',
   ),
   'xmlreader::movetoelement' => 
   array (
@@ -103481,14 +103545,14 @@ return array (
   'xmlreader::next' => 
   array (
     0 => 'bool',
-    'name=' => 'string',
+    'localname=' => 'string',
   ),
   'xmlreader::open' => 
   array (
     0 => 'XmlReader|bool',
-    'uri' => 'string',
+    'URI' => 'string',
     'encoding=' => 'null|string',
-    'flags=' => 'int',
+    'options=' => 'int',
   ),
   'xmlreader::read' => 
   array (
@@ -103532,7 +103596,7 @@ return array (
     0 => 'XMLReader|bool',
     'source' => 'string',
     'encoding=' => 'null|string',
-    'flags=' => 'int',
+    'options=' => 'int',
   ),
   'xmlrpc_decode' => 
   array (
@@ -103682,12 +103746,12 @@ return array (
   'xmlwriter::setindent' => 
   array (
     0 => 'bool',
-    'enable' => 'bool',
+    'indent' => 'bool',
   ),
   'xmlwriter::setindentstring' => 
   array (
     0 => 'bool',
-    'indentation' => 'string',
+    'indentString' => 'string',
   ),
   'xmlwriter::startattribute' => 
   array (
@@ -103699,7 +103763,7 @@ return array (
     0 => 'bool',
     'prefix' => 'string',
     'name' => 'string',
-    'namespace' => 'null|string',
+    'uri' => 'null|string',
   ),
   'xmlwriter::startcdata' => 
   array (
@@ -103737,7 +103801,7 @@ return array (
   array (
     0 => 'bool',
     'name' => 'string',
-    'isParam' => 'bool',
+    'isparam' => 'bool',
   ),
   'xmlwriter::startelement' => 
   array (
@@ -103749,7 +103813,7 @@ return array (
     0 => 'bool',
     'prefix' => 'null|string',
     'name' => 'string',
-    'namespace' => 'null|string',
+    'uri' => 'null|string',
   ),
   'xmlwriter::startpi' => 
   array (
@@ -103772,8 +103836,8 @@ return array (
     0 => 'bool',
     'prefix' => 'string',
     'name' => 'string',
-    'namespace' => 'null|string',
-    'value' => 'string',
+    'uri' => 'null|string',
+    'content' => 'string',
   ),
   'xmlwriter::writecdata' => 
   array (
@@ -103791,7 +103855,7 @@ return array (
     'name' => 'string',
     'publicId=' => 'null|string',
     'systemId=' => 'null|string',
-    'content=' => 'null|string',
+    'subset=' => 'null|string',
   ),
   'xmlwriter::writedtdattlist' => 
   array (
@@ -103810,10 +103874,6 @@ return array (
     0 => 'bool',
     'name' => 'string',
     'content' => 'string',
-    'isParam' => 'bool',
-    'publicId' => 'string',
-    'systemId' => 'string',
-    'notationData' => 'string',
   ),
   'xmlwriter::writeelement' => 
   array (
@@ -103826,7 +103886,7 @@ return array (
     0 => 'bool',
     'prefix' => 'null|string',
     'name' => 'string',
-    'namespace' => 'null|string',
+    'uri' => 'null|string',
     'content=' => 'null|string',
   ),
   'xmlwriter::writepi' => 
@@ -108702,7 +108762,7 @@ return array (
   'ziparchive::getfromname' => 
   array (
     0 => 'false|string',
-    'name' => 'string',
+    'entryname' => 'string',
     'len=' => 'int',
     'flags=' => 'int',
   ),
@@ -108719,7 +108779,7 @@ return array (
   'ziparchive::getstream' => 
   array (
     0 => 'false|resource',
-    'name' => 'string',
+    'entryname' => 'string',
   ),
   'ziparchive::iscompressionmethodsupported' => 
   array (
@@ -108736,7 +108796,7 @@ return array (
   'ziparchive::locatename' => 
   array (
     0 => 'false|int',
-    'name' => 'string',
+    'filename' => 'string',
     'flags=' => 'int',
   ),
   'ziparchive::open' => 
@@ -108866,7 +108926,7 @@ return array (
   'ziparchive::statname' => 
   array (
     0 => 'array<array-key, mixed>|false',
-    'name' => 'string',
+    'filename' => 'string',
     'flags=' => 'int',
   ),
   'ziparchive::unchangeall' => 
@@ -108934,7 +108994,7 @@ return array (
   array (
     0 => 'void',
     'io_threads=' => 'int',
-    'is_persistent=' => 'bool',
+    'persistent=' => 'bool',
   ),
   'zmqcontext::acquire' => 
   array (
@@ -108943,13 +109003,13 @@ return array (
   'zmqcontext::getopt' => 
   array (
     0 => 'int|string',
-    'key' => 'string',
+    'option' => 'string',
   ),
   'zmqcontext::getsocket' => 
   array (
     0 => 'ZMQSocket',
     'type' => 'int',
-    'persistent_id=' => 'string',
+    'dsn' => 'string',
     'on_new_socket=' => 'callable',
   ),
   'zmqcontext::getsocketcount' => 
@@ -108963,7 +109023,7 @@ return array (
   'zmqcontext::setopt' => 
   array (
     0 => 'ZMQContext',
-    'key' => 'int',
+    'option' => 'int',
     'value' => 'mixed',
   ),
   'zmqcontextexception::__clone' => 
@@ -109022,7 +109082,7 @@ return array (
     0 => 'void',
     'frontend' => 'ZMQSocket',
     'backend' => 'ZMQSocket',
-    'listener=' => 'ZMQSocket',
+    'capture=' => 'ZMQSocket',
   ),
   'zmqdevice::getidletimeout' => 
   array (
@@ -109039,7 +109099,7 @@ return array (
   'zmqdevice::setidlecallback' => 
   array (
     0 => 'ZMQDevice',
-    'cb_func' => 'callable',
+    'idle_callback' => 'callable',
     'timeout' => 'int',
     'user_data=' => 'mixed',
   ),
@@ -109051,7 +109111,7 @@ return array (
   'zmqdevice::settimercallback' => 
   array (
     0 => 'ZMQDevice',
-    'cb_func' => 'callable',
+    'idle_callback' => 'callable',
     'timeout' => 'int',
     'user_data=' => 'mixed',
   ),
@@ -109190,7 +109250,7 @@ return array (
   'zmqpoll::remove' => 
   array (
     0 => 'bool',
-    'item' => 'mixed',
+    'remove' => 'mixed',
   ),
   'zmqpollexception::__clone' => 
   array (
@@ -109246,7 +109306,7 @@ return array (
   'zmqsocket::__construct' => 
   array (
     0 => 'void',
-    'context' => 'ZMQContext',
+    'ZMQContext' => 'ZMQContext',
     'type' => 'int',
     'persistent_id=' => 'string',
     'on_new_socket=' => 'callable',
@@ -109426,8 +109486,8 @@ return array (
   array (
     0 => 'string',
     'path' => 'string',
-    'value' => 'string',
-    'acls' => 'array<array-key, mixed>',
+    'value=' => 'string',
+    'acl=' => 'array<array-key, mixed>',
     'flags=' => 'int',
   ),
   'zookeeper::delete' => 
@@ -109451,7 +109511,7 @@ return array (
     0 => 'string',
     'path' => 'string',
     'watcher_cb=' => 'callable',
-    'stat=' => 'array<array-key, mixed>',
+    '&stat_info=' => 'array<array-key, mixed>',
     'max_size=' => 'int',
   ),
   'zookeeper::getacl' => 
@@ -109489,9 +109549,9 @@ return array (
   array (
     0 => 'bool',
     'path' => 'string',
-    'value' => 'string',
+    'value=' => 'string',
     'version=' => 'int',
-    'stat=' => 'array<array-key, mixed>',
+    '&stat_info=' => 'array<array-key, mixed>',
   ),
   'zookeeper::setacl' => 
   array (
@@ -109503,12 +109563,12 @@ return array (
   'zookeeper::setdebuglevel' => 
   array (
     0 => 'bool',
-    'logLevel' => 'int',
+    'level' => 'int',
   ),
   'zookeeper::setdeterministicconnorder' => 
   array (
     0 => 'bool',
-    'yesOrNo' => 'bool',
+    'trueOrFalse' => 'bool',
   ),
   'zookeeper::setlogstream' => 
   array (
@@ -109576,27 +109636,27 @@ return array (
     0 => 'void',
     'members' => 'string',
     'version=' => 'int',
-    'stat=' => 'array<array-key, mixed>',
+    '&stat_info=' => 'array<array-key, mixed>',
   ),
   'zookeeperconfig::get' => 
   array (
     0 => 'string',
-    'watcher_cb=' => 'callable',
-    'stat=' => 'array<array-key, mixed>',
+    'watcher_cb' => 'callable',
+    '&stat_info' => 'array<array-key, mixed>',
   ),
   'zookeeperconfig::remove' => 
   array (
     0 => 'void',
-    'id_list' => 'string',
+    'members' => 'string',
     'version=' => 'int',
-    'stat=' => 'array<array-key, mixed>',
+    '&stat_info=' => 'array<array-key, mixed>',
   ),
   'zookeeperconfig::set' => 
   array (
     0 => 'void',
     'members' => 'string',
     'version=' => 'int',
-    'stat=' => 'array<array-key, mixed>',
+    '&stat_info=' => 'array<array-key, mixed>',
   ),
   'zookeeperconnectionexception::__clone' => 
   array (

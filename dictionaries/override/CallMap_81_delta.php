@@ -63,7 +63,7 @@ return array (
     'fiber::start' => 
     array (
       0 => 'mixed',
-      '...args' => 'mixed',
+      '...args=' => 'mixed',
     ),
     'fiber::suspend' => 
     array (
@@ -5267,6 +5267,18 @@ return array (
         0 => 'ReturnType',
         'sql' => 'mixed',
         'timeout=' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'ReturnType',
+      ),
+    ),
+    'swoole\\coroutine\\mysql::setdefer' => 
+    array (
+      'old' => 
+      array (
+        0 => 'ReturnType',
+        'defer=' => 'mixed',
       ),
       'new' => 
       array (

@@ -19,6 +19,21 @@ return array (
         'status=' => 'int|string',
       ),
     ),
+    'imagickkernel::frommatrix' => 
+    array (
+      'old' => 
+      array (
+        0 => 'ImagickKernel',
+        'matrix' => 'list<list<float>>',
+        'origin' => 'array<array-key, mixed>',
+      ),
+      'new' => 
+      array (
+        0 => 'ImagickKernel',
+        'matrix' => 'list<list<float>>',
+        'origin=' => 'array<array-key, mixed>',
+      ),
+    ),
     'openssl_csr_sign' => 
     array (
       'old' => 

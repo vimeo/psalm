@@ -16,7 +16,7 @@ return array (
     'datetime::createfromimmutable' => 
     array (
       0 => 'static',
-      'object' => 'DateTimeImmutable',
+      'DateTimeImmutable' => 'DateTimeImmutable',
     ),
     'fpm_get_status' => 
     array (
@@ -118,8 +118,7 @@ return array (
     'normalizer::getrawdecomposition' => 
     array (
       0 => 'null|string',
-      'string' => 'string',
-      'form=' => 'int',
+      'input' => 'string',
     ),
     'normalizer_get_raw_decomposition' => 
     array (
@@ -216,6 +215,30 @@ return array (
       array (
         0 => 'int',
         'scale=' => 'int',
+      ),
+    ),
+    'dateinterval::__set_state' => 
+    array (
+      'old' => 
+      array (
+        0 => 'DateInterval',
+      ),
+      'new' => 
+      array (
+        0 => 'DateInterval',
+        'array' => 'array<array-key, mixed>',
+      ),
+    ),
+    'datetimezone::__set_state' => 
+    array (
+      'old' => 
+      array (
+        0 => 'DateTimeZone',
+      ),
+      'new' => 
+      array (
+        0 => 'DateTimeZone',
+        'array' => 'array<array-key, mixed>',
       ),
     ),
     'define' => 
@@ -710,6 +733,18 @@ return array (
         'context=' => 'null|resource',
       ),
     ),
+    'recursivetreeiterator::setpostfix' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'postfix' => 'string',
+      ),
+    ),
     'session_get_cookie_params' => 
     array (
       'old' => 
@@ -790,6 +825,21 @@ return array (
         'domain=' => 'string',
         'secure=' => 'bool',
         'httponly=' => 'bool',
+      ),
+    ),
+    'soapserver::setclass' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'class_name' => 'string',
+        'args=' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'class_name' => 'string',
+        '...args=' => 'mixed',
       ),
     ),
   ),

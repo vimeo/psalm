@@ -6,7 +6,7 @@ return array (
     'closure::fromcallable' => 
     array (
       0 => 'Closure',
-      'callback' => 'callable',
+      'callable' => 'callable',
     ),
     'curl_multi_errno' => 
     array (
@@ -148,6 +148,40 @@ return array (
         '...arrays=' => 'array<array-key, mixed>',
       ),
     ),
+    'arrayiterator::__construct' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'array=' => 'array<array-key, mixed>|object',
+        'ar_flags=' => 'int',
+        'iterator_class=' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'input=' => 'array<array-key, mixed>|object',
+        'flags=' => 'int',
+        'iterator_class=' => 'mixed',
+      ),
+    ),
+    'arrayobject::__construct' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'array=' => 'array<array-key, mixed>|object',
+        'ar_flags=' => 'int',
+        'iterator_class=' => 'class-string',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'input=' => 'array<array-key, mixed>|object',
+        'flags=' => 'int',
+        'iterator_class=' => 'class-string',
+      ),
+    ),
     'date_create' => 
     array (
       'old' => 
@@ -198,19 +232,52 @@ return array (
         'microseconds=' => 'mixed',
       ),
     ),
+    'datetime::__construct' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'time=' => 'string',
+        'object=' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'time=' => 'string',
+        'timezone=' => 'mixed',
+      ),
+    ),
+    'datetime::settime' => 
+    array (
+      'old' => 
+      array (
+        0 => 'static',
+        'hour' => 'int',
+        'minute' => 'int',
+        'second=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'static',
+        'hour' => 'int',
+        'minute' => 'int',
+        'second=' => 'int',
+        'microseconds=' => 'int',
+      ),
+    ),
     'datetimezone::listidentifiers' => 
     array (
       'old' => 
       array (
         0 => 'false|list<string>',
-        'timezoneGroup=' => 'int',
-        'countryCode=' => 'string',
+        'what=' => 'int',
+        'country=' => 'string',
       ),
       'new' => 
       array (
         0 => 'false|list<string>',
-        'timezoneGroup=' => 'int',
-        'countryCode=' => 'null|string',
+        'what=' => 'int',
+        'country=' => 'null|string',
       ),
     ),
     'fsockopen' => 
@@ -448,12 +515,68 @@ return array (
       'old' => 
       array (
         0 => 'false|string',
-        'value' => 'DateTime|IntlCalendar|array{0?: int, 1?: int, 2?: int, 3?: int, 4?: int, 5?: int, 6?: int, 7?: int, 8?: int, tm_hour?: int, tm_isdst?: int, tm_mday?: int, tm_min?: int, tm_mon?: int, tm_sec?: int, tm_wday?: int, tm_yday?: int, tm_year?: int}|float|int|string',
+        'args=' => 'DateTime|IntlCalendar|array{0?: int, 1?: int, 2?: int, 3?: int, 4?: int, 5?: int, 6?: int, 7?: int, 8?: int, tm_hour?: int, tm_isdst?: int, tm_mday?: int, tm_min?: int, tm_mon?: int, tm_sec?: int, tm_wday?: int, tm_yday?: int, tm_year?: int}|float|int|string',
+        'array=' => 'mixed',
       ),
       'new' => 
       array (
         0 => 'false|string',
-        'value' => 'DateTimeInterface|IntlCalendar|array{0?: int, 1?: int, 2?: int, 3?: int, 4?: int, 5?: int, 6?: int, 7?: int, 8?: int, tm_hour?: int, tm_isdst?: int, tm_mday?: int, tm_min?: int, tm_mon?: int, tm_sec?: int, tm_wday?: int, tm_yday?: int, tm_year?: int}|float|int|string',
+        'args=' => 'DateTimeInterface|IntlCalendar|array{0?: int, 1?: int, 2?: int, 3?: int, 4?: int, 5?: int, 6?: int, 7?: int, 8?: int, tm_hour?: int, tm_isdst?: int, tm_mday?: int, tm_min?: int, tm_mon?: int, tm_sec?: int, tm_wday?: int, tm_yday?: int, tm_year?: int}|float|int|string',
+        'array=' => 'mixed',
+      ),
+    ),
+    'intltimezone::getidforwindowsid' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'timezoneId' => 'string',
+        'region=' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'timezone' => 'string',
+        'region=' => 'string',
+      ),
+    ),
+    'intltimezone::getwindowsid' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'timezoneId' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'timezone' => 'string',
+      ),
+    ),
+    'mongodb\\driver\\manager::selectserver' => 
+    array (
+      'old' => 
+      array (
+        0 => 'MongoDB\\Driver\\Server',
+        'readPreference' => 'MongoDB\\Driver\\ReadPreference|null',
+      ),
+      'new' => 
+      array (
+        0 => 'MongoDB\\Driver\\Server',
+        'readPreference=' => 'MongoDB\\Driver\\ReadPreference|null',
+      ),
+    ),
+    'mongodb\\driver\\serverapi::unserialize' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'data' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'serialized' => 'string',
       ),
     ),
     'mt_srand' => 
@@ -669,17 +792,49 @@ return array (
         'result_type=' => 'int',
       ),
     ),
+    'recursivearrayiterator::__construct' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'array=' => 'array<array-key, mixed>|object',
+        'ar_flags=' => 'int',
+        'iterator_class=' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'input=' => 'array<array-key, mixed>|object',
+        'flags=' => 'int',
+        'iterator_class=' => 'mixed',
+      ),
+    ),
+    'reflectionclassconstant::__construct' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'class' => 'class-string|object',
+        'constant' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'class' => 'class-string|object',
+        'name' => 'string',
+      ),
+    ),
     'sessionhandler::gc' => 
     array (
       'old' => 
       array (
         0 => 'bool',
-        'max_lifetime' => 'int',
+        'maxlifetime' => 'int',
       ),
       'new' => 
       array (
         0 => 'false|int',
-        'max_lifetime' => 'int',
+        'maxlifetime' => 'int',
       ),
     ),
     'sqlite3::createfunction' => 
@@ -689,14 +844,14 @@ return array (
         0 => 'bool',
         'name' => 'string',
         'callback' => 'callable',
-        'argCount=' => 'int',
+        'argument_count=' => 'int',
       ),
       'new' => 
       array (
         0 => 'bool',
         'name' => 'string',
         'callback' => 'callable',
-        'argCount=' => 'int',
+        'argument_count=' => 'int',
         'flags=' => 'int',
       ),
     ),
