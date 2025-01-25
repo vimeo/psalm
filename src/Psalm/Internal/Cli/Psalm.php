@@ -912,7 +912,7 @@ final class Psalm
 
         $ini_handler->disableExtensions([
             'uopz',
-            // extesions that are incompatible with JIT (they are also usually make Psalm slow)
+            // extensions that are incompatible with JIT (they are also usually make Psalm slow)
             'pcov',
             'blackfire',
         ]);

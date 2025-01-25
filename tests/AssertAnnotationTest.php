@@ -92,7 +92,7 @@ class AssertAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    public function testAssertsAllongCallStaticMethodWork(): void
+    public function testAssertsAlongCallStaticMethodWork(): void
     {
         $this->addFile(
             'somefile.php',
@@ -152,7 +152,7 @@ class AssertAnnotationTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
-            'implictAssertInstanceOfB' => [
+            'implicitAssertInstanceOfB' => [
                 'code' => '<?php
                     namespace Bar;
 
@@ -251,7 +251,7 @@ class AssertAnnotationTest extends TestCase
                         return $s;
                     }',
             ],
-            'implictAssertInstanceOfInterface' => [
+            'implicitAssertInstanceOfInterface' => [
                 'code' => '<?php
                     namespace Bar;
 

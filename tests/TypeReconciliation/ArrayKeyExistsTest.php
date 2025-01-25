@@ -157,7 +157,7 @@ class ArrayKeyExistsTest extends TestCase
                         echo $a[0];
                     }',
             ],
-            'arrayKeyExistsShoudldNotModifyIntType' => [
+            'arrayKeyExistsShouldNotModifyIntType' => [
                 'code' => '<?php
                     class HttpError {
                         const ERRS = [

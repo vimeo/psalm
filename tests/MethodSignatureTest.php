@@ -754,7 +754,7 @@ class MethodSignatureTest extends TestCase
                         public function getTraceAsString(): string;
                     }',
             ],
-            'allowExecptionToStringWithNoType' => [
+            'allowExceptionToStringWithNoType' => [
                 'code' => '<?php
                     class E extends Exception {
                         public function __toString() {
@@ -762,7 +762,7 @@ class MethodSignatureTest extends TestCase
                         }
                     }',
             ],
-            'allowExecptionToStringIn71' => [
+            'allowExceptionToStringIn71' => [
                 'code' => '<?php
                     class E extends Exception {
                         public function __toString() : string {
@@ -849,12 +849,12 @@ class MethodSignatureTest extends TestCase
                 'code' => '<?php
                     final class B extends A
                     {
-                        public static function doCretate1(): self
+                        public static function doCreate1(): self
                         {
                             return self::create1();
                         }
 
-                        public static function doCretate2(): self
+                        public static function doCreate2(): self
                         {
                             return self::create2();
                         }

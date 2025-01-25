@@ -494,7 +494,7 @@ class AnnotationTest extends TestCase
 
                     $arr["a"]();',
             ],
-            'multipeLineGenericArray' => [
+            'multipleLineGenericArray' => [
                 'code' => '<?php
                     /**
                      * @psalm-type MiddlewareArray = array<
@@ -515,7 +515,7 @@ class AnnotationTest extends TestCase
                      */
                     class A {}',
             ],
-            'multipeLineGenericArray2' => [
+            'multipleLineGenericArray2' => [
                 'code' => '<?php
                     /**
                      * @psalm-type TRelAlternate =

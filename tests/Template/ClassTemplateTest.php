@@ -206,7 +206,7 @@ class ClassTemplateTest extends TestCase
                     'DocblockTypeContradiction',
                 ],
             ],
-            'classTemplateSelfs' => [
+            'classTemplateSelf' => [
                 'code' => '<?php
                     /**
                      * @template T as object
@@ -3132,7 +3132,7 @@ class ClassTemplateTest extends TestCase
                         /**
                          * @psalm-param FooOrBarOrNull $qux
                          */
-                        public function __contruct(?object $qux)
+                        public function __construct(?object $qux)
                         {
                             if ($qux instanceof Foo) {
                                 $this->entity = $qux;

@@ -205,7 +205,7 @@ final class NegatedAssertionReconciler extends Reconciler
             && $assertion_type instanceof TNamedObject
             && isset($existing_var_type->getAtomicTypes()[$assertion_type->getKey()])
         ) {
-            // checking if two types share a common parent is not enough to guarantee childs are instanceof each other
+            // checking if two types share a common parent is not enough to guarantee children are instanceof each other
             // fall through
         } elseif ($existing_var_type->isArray()
             && ($assertion->getAtomicType() instanceof TArray

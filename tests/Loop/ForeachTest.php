@@ -430,7 +430,7 @@ class ForeachTest extends TestCase
                     'MixedAssignment',
                 ],
             ],
-            'noMixedAssigmentWithIfAssertion' => [
+            'noMixedAssignmentWithIfAssertion' => [
                 'code' => '<?php
                     $object = new stdClass();
                     $reflection = new ReflectionClass($object);
@@ -443,7 +443,7 @@ class ForeachTest extends TestCase
                         }
                     }',
             ],
-            'noMixedAssigmentWithAssertion' => [
+            'noMixedAssignmentWithAssertion' => [
                 'code' => '<?php
                     $object = new stdClass();
                     $reflection = new ReflectionClass($object);

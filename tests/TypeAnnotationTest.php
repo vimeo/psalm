@@ -663,7 +663,7 @@ class TypeAnnotationTest extends TestCase
                     '$output===' => 'list<1|2>',
                 ],
             ],
-            'callableWithReturnTypeTypeAliasWithinBackets' => [
+            'callableWithReturnTypeTypeAliasWithinBrackets' => [
                 'code' => '<?php
                     /** @psalm-type TCallback (callable():int) */
                     class Foo {

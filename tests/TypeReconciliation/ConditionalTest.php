@@ -1401,7 +1401,7 @@ class ConditionalTest extends TestCase
                         takes_int($int);
                     }',
             ],
-            'looseEqualityShouldNotConverMixedToString' => [
+            'looseEqualityShouldNotConvertMixedToString' => [
                 'code' => '<?php
                     /** @var mixed */
                     $int = 0;

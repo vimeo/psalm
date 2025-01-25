@@ -156,7 +156,7 @@ abstract class DataFlowGraph
         $edges = [];
 
         foreach ($this->forward_edges as $source => $destinations) {
-            $edges[] = [...[$source], ...array_keys($destinations)];
+            $edges[] = [$source, ...array_keys($destinations)];
         }
 
         return $edges;
