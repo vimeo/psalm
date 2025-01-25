@@ -5248,43 +5248,6 @@ return array (
         'microseconds=' => 'int|null',
       ),
     ),
-    'swoole\\coroutine\\mysql::connect' => 
-    array (
-      'old' => 
-      array (
-        0 => 'ReturnType',
-        'server_config=' => 'array<array-key, mixed>',
-      ),
-      'new' => 
-      array (
-        0 => 'ReturnType',
-      ),
-    ),
-    'swoole\\coroutine\\mysql::query' => 
-    array (
-      'old' => 
-      array (
-        0 => 'ReturnType',
-        'sql' => 'mixed',
-        'timeout=' => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'ReturnType',
-      ),
-    ),
-    'swoole\\coroutine\\mysql::setdefer' => 
-    array (
-      'old' => 
-      array (
-        0 => 'ReturnType',
-        'defer=' => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'ReturnType',
-      ),
-    ),
     'swoole\\http\\response::cookie' => 
     array (
       'old' => 
@@ -5389,6 +5352,38 @@ return array (
     'reflectionmethod::isstatic' => 
     array (
       0 => 'bool',
+    ),
+    'swoole\\coroutine\\mysql::__destruct' => 
+    array (
+      0 => 'ReturnType',
+    ),
+    'swoole\\coroutine\\mysql::close' => 
+    array (
+      0 => 'ReturnType',
+    ),
+    'swoole\\coroutine\\mysql::connect' => 
+    array (
+      0 => 'ReturnType',
+      'server_config=' => 'array<array-key, mixed>',
+    ),
+    'swoole\\coroutine\\mysql::getdefer' => 
+    array (
+      0 => 'ReturnType',
+    ),
+    'swoole\\coroutine\\mysql::query' => 
+    array (
+      0 => 'ReturnType',
+      'sql' => 'mixed',
+      'timeout=' => 'mixed',
+    ),
+    'swoole\\coroutine\\mysql::recv' => 
+    array (
+      0 => 'ReturnType',
+    ),
+    'swoole\\coroutine\\mysql::setdefer' => 
+    array (
+      0 => 'ReturnType',
+      'defer=' => 'mixed',
     ),
   ),
 );

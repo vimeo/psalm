@@ -3,6 +3,31 @@
 return array (
   'added' => 
   array (
+    'pcntl_wifcontinued' => 
+    array (
+      0 => 'bool',
+      'status' => 'int',
+    ),
+    'sodium_crypto_aead_aes256gcm_decrypt' => 
+    array (
+      0 => 'false|string',
+      'ciphertext' => 'string',
+      'additional_data' => 'string',
+      'nonce' => 'string',
+      'key' => 'string',
+    ),
+    'sodium_crypto_aead_aes256gcm_encrypt' => 
+    array (
+      0 => 'string',
+      'message' => 'string',
+      'additional_data' => 'string',
+      'nonce' => 'string',
+      'key' => 'string',
+    ),
+    'sodium_crypto_aead_aes256gcm_keygen' => 
+    array (
+      0 => 'non-empty-string',
+    ),
   ),
   'changed' => 
   array (

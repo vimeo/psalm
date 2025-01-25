@@ -3633,6 +3633,7 @@ return array (
   'closure::__invoke' => 
   array (
     0 => 'mixed',
+    '...args=' => 'mixed',
   ),
   'closure::bind' => 
   array (
@@ -25077,12 +25078,6 @@ return array (
   'filteriterator::valid' => 
   array (
     0 => 'bool',
-  ),
-  'finfo::__construct' => 
-  array (
-    0 => 'void',
-    'flags=' => 'int',
-    'magic_database=' => 'string',
   ),
   'finfo::buffer' => 
   array (
@@ -58215,11 +58210,6 @@ return array (
     0 => 'int',
     'status' => 'int',
   ),
-  'pcntl_wifcontinued' => 
-  array (
-    0 => 'bool',
-    'status' => 'int',
-  ),
   'pcntl_wifexited' => 
   array (
     0 => 'bool',
@@ -66411,20 +66401,6 @@ return array (
     'args=' => 'mixed',
     'num_keys=' => 'mixed',
   ),
-  'redis::evaluate' => 
-  array (
-    0 => 'mixed',
-    'script' => 'string',
-    'args=' => 'array<array-key, mixed>',
-    'numKeys=' => 'int',
-  ),
-  'redis::evaluatesha' => 
-  array (
-    0 => 'mixed',
-    'scriptSha' => 'string',
-    'args=' => 'array<array-key, mixed>',
-    'numKeys=' => 'int',
-  ),
   'redis::exec' => 
   array (
     0 => 'array<array-key, mixed>',
@@ -66618,11 +66594,6 @@ return array (
   array (
     0 => 'false|string',
   ),
-  'redis::getkeys' => 
-  array (
-    0 => 'array<int, string>',
-    'pattern' => 'string',
-  ),
   'redis::getlasterror' => 
   array (
     0 => 'null|string',
@@ -66630,11 +66601,6 @@ return array (
   'redis::getmode' => 
   array (
     0 => 'int',
-  ),
-  'redis::getmultiple' => 
-  array (
-    0 => 'array<array-key, mixed>',
-    'keys' => 'array<array-key, string>',
   ),
   'redis::getoption' => 
   array (
@@ -66815,19 +66781,6 @@ return array (
     'key2' => 'mixed',
     'options=' => 'mixed',
   ),
-  'redis::lget' => 
-  array (
-    0 => 'string',
-    'key' => 'string',
-    'index' => 'int',
-  ),
-  'redis::lgetrange' => 
-  array (
-    0 => 'array<array-key, mixed>',
-    'key' => 'string',
-    'start' => 'int',
-    'end' => 'int',
-  ),
   'redis::lindex' => 
   array (
     0 => 'false|string',
@@ -66841,13 +66794,6 @@ return array (
     'pos' => 'int',
     'pivot' => 'string',
     'value' => 'string',
-  ),
-  'redis::listtrim' => 
-  array (
-    0 => 'mixed',
-    'key' => 'string',
-    'start' => 'int',
-    'stop' => 'int',
   ),
   'redis::llen' => 
   array (
@@ -66908,24 +66854,12 @@ return array (
     'value' => 'string',
     'count=' => 'int',
   ),
-  'redis::lremove' => 
-  array (
-    0 => 'int',
-    'key' => 'string',
-    'value' => 'string',
-    'count' => 'int',
-  ),
   'redis::lset' => 
   array (
     0 => 'bool',
     'key' => 'string',
     'index' => 'int',
     'value' => 'string',
-  ),
-  'redis::lsize' => 
-  array (
-    0 => 'int',
-    'key' => 'string',
   ),
   'redis::ltrim' => 
   array (
@@ -67112,12 +67046,6 @@ return array (
     'old_name' => 'string',
     'new_name' => 'string',
   ),
-  'redis::renamekey' => 
-  array (
-    0 => 'bool',
-    'srckey' => 'string',
-    'dstkey' => 'string',
-  ),
   'redis::renamenx' => 
   array (
     0 => 'bool',
@@ -67204,12 +67132,6 @@ return array (
     0 => 'int',
     'key' => 'string',
   ),
-  'redis::scontains' => 
-  array (
-    0 => 'mixed',
-    'key' => 'string',
-    'value' => 'string',
-  ),
   'redis::script' => 
   array (
     0 => 'mixed',
@@ -67233,11 +67155,6 @@ return array (
   array (
     0 => 'bool',
     'db' => 'int',
-  ),
-  'redis::sendecho' => 
-  array (
-    0 => 'string',
-    'msg' => 'string',
   ),
   'redis::set' => 
   array (
@@ -67285,17 +67202,6 @@ return array (
     'key' => 'string',
     'index' => 'int',
     'value' => 'int',
-  ),
-  'redis::settimeout' => 
-  array (
-    0 => 'mixed',
-    'key' => 'string',
-    'ttl' => 'int',
-  ),
-  'redis::sgetmembers' => 
-  array (
-    0 => 'mixed',
-    'key' => 'string',
   ),
   'redis::sinter' => 
   array (
@@ -67435,13 +67341,6 @@ return array (
     'value' => 'string',
     '...other_values=' => 'string',
   ),
-  'redis::sremove' => 
-  array (
-    0 => 'int',
-    'key' => 'string',
-    'member1' => 'string',
-    '...other_members=' => 'string',
-  ),
   'redis::sscan' => 
   array (
     0 => 'array<array-key, mixed>|bool',
@@ -67449,11 +67348,6 @@ return array (
     '&iterator' => 'int',
     'pattern=' => 'string',
     'count=' => 'int',
-  ),
-  'redis::ssize' => 
-  array (
-    0 => 'int',
-    'key' => 'string',
   ),
   'redis::ssubscribe' => 
   array (
@@ -67471,13 +67365,6 @@ return array (
     0 => 'mixed|null',
     'channels' => 'array<array-key, mixed>',
     'cb' => 'array<array-key, mixed>|string',
-  ),
-  'redis::substr' => 
-  array (
-    0 => 'mixed',
-    'key' => 'string',
-    'start' => 'int',
-    'end' => 'int',
   ),
   'redis::sunion' => 
   array (
@@ -67711,27 +67598,6 @@ return array (
     'start' => 'string',
     'end' => 'string',
   ),
-  'redis::zdelete' => 
-  array (
-    0 => 'int',
-    'key' => 'string',
-    'member' => 'string',
-    '...other_members=' => 'string',
-  ),
-  'redis::zdeleterangebyrank' => 
-  array (
-    0 => 'mixed',
-    'key' => 'string',
-    'start' => 'int',
-    'end' => 'int',
-  ),
-  'redis::zdeleterangebyscore' => 
-  array (
-    0 => 'mixed',
-    'key' => 'string',
-    'start' => 'float',
-    'end' => 'float',
-  ),
   'redis::zdiff' => 
   array (
     0 => 'mixed',
@@ -67858,26 +67724,12 @@ return array (
     'member' => 'string',
     '...other_members=' => 'string',
   ),
-  'redis::zremove' => 
-  array (
-    0 => 'int',
-    'key' => 'string',
-    'member' => 'string',
-    '...other_members=' => 'string',
-  ),
   'redis::zremoverangebyrank' => 
   array (
     0 => 'int',
     'key' => 'string',
     'start' => 'int',
     'end' => 'int',
-  ),
-  'redis::zremoverangebyscore' => 
-  array (
-    0 => 'int',
-    'key' => 'string',
-    'start' => 'float|string',
-    'end' => 'float|string',
   ),
   'redis::zremrangebylex' => 
   array (
@@ -67899,14 +67751,6 @@ return array (
     'key' => 'string',
     'start' => 'float|string',
     'end' => 'float|string',
-  ),
-  'redis::zreverserange' => 
-  array (
-    0 => 'array<array-key, mixed>',
-    'key' => 'string',
-    'start' => 'int',
-    'end' => 'int',
-    'withscore=' => 'bool',
   ),
   'redis::zrevrange' => 
   array (
@@ -67952,11 +67796,6 @@ return array (
     0 => 'false|float',
     'key' => 'string',
     'member' => 'string',
-  ),
-  'redis::zsize' => 
-  array (
-    0 => 'mixed',
-    'key' => 'string',
   ),
   'redis::zunion' => 
   array (
@@ -68026,12 +67865,6 @@ return array (
     'key' => 'string',
     '...otherkeys=' => 'string',
   ),
-  'redisarray::delete' => 
-  array (
-    0 => 'bool',
-    'key' => 'string',
-    '...args' => 'string',
-  ),
   'redisarray::delete\'1' => 
   array (
     0 => 'bool',
@@ -68052,11 +67885,6 @@ return array (
   'redisarray::flushdb' => 
   array (
     0 => 'bool',
-  ),
-  'redisarray::getmultiple' => 
-  array (
-    0 => 'mixed',
-    'keys' => 'mixed',
   ),
   'redisarray::getoption' => 
   array (
@@ -70322,10 +70150,6 @@ return array (
   'reflectionfunctionabstract::__tostring' => 
   array (
     0 => 'string',
-  ),
-  'reflectionfunctionabstract::export' => 
-  array (
-    0 => 'null|string',
   ),
   'reflectionfunctionabstract::getclosurescopeclass' => 
   array (
@@ -74560,12 +74384,6 @@ return array (
     'function_name' => 'string',
     'arguments' => 'array<array-key, mixed>',
   ),
-  'soapclient::__construct' => 
-  array (
-    0 => 'void',
-    'wsdl' => 'mixed',
-    'options=' => 'array<array-key, mixed>|null',
-  ),
   'soapclient::__dorequest' => 
   array (
     0 => 'null|string',
@@ -74691,15 +74509,6 @@ return array (
     'faultname=' => 'null|string',
     'headerfault=' => 'mixed|null',
   ),
-  'soapheader::__construct' => 
-  array (
-    0 => 'void',
-    'namespace' => 'string',
-    'name' => 'string',
-    'data=' => 'mixed',
-    'mustunderstand=' => 'bool',
-    'actor=' => 'string',
-  ),
   'soapheader::soapheader' => 
   array (
     0 => 'object',
@@ -74709,23 +74518,11 @@ return array (
     'mustunderstand=' => 'bool',
     'actor=' => 'string',
   ),
-  'soapparam::__construct' => 
-  array (
-    0 => 'void',
-    'data' => 'mixed',
-    'name' => 'string',
-  ),
   'soapparam::soapparam' => 
   array (
     0 => 'object',
     'data' => 'mixed',
     'name' => 'string',
-  ),
-  'soapserver::__construct' => 
-  array (
-    0 => 'void',
-    'wsdl' => 'null|string',
-    'options=' => 'array<array-key, mixed>',
   ),
   'soapserver::addfunction' => 
   array (
@@ -74776,16 +74573,6 @@ return array (
     0 => 'object',
     'wsdl' => 'null|string',
     'options=' => 'array<array-key, mixed>',
-  ),
-  'soapvar::__construct' => 
-  array (
-    0 => 'void',
-    'data' => 'mixed',
-    'encoding' => 'int',
-    'type_name=' => 'null|string',
-    'type_namespace=' => 'null|string',
-    'node_name=' => 'null|string',
-    'node_namespace=' => 'null|string',
   ),
   'soapvar::soapvar' => 
   array (
@@ -75099,29 +74886,9 @@ return array (
     'string_1' => 'string',
     'string_2' => 'string',
   ),
-  'sodium_crypto_aead_aes256gcm_decrypt' => 
-  array (
-    0 => 'false|string',
-    'ciphertext' => 'string',
-    'additional_data' => 'string',
-    'nonce' => 'string',
-    'key' => 'string',
-  ),
-  'sodium_crypto_aead_aes256gcm_encrypt' => 
-  array (
-    0 => 'string',
-    'message' => 'string',
-    'additional_data' => 'string',
-    'nonce' => 'string',
-    'key' => 'string',
-  ),
   'sodium_crypto_aead_aes256gcm_is_available' => 
   array (
     0 => 'bool',
-  ),
-  'sodium_crypto_aead_aes256gcm_keygen' => 
-  array (
-    0 => 'non-empty-string',
   ),
   'sodium_crypto_aead_chacha20poly1305_decrypt' => 
   array (
@@ -85504,51 +85271,6 @@ return array (
     0 => 'mixed',
     'sub_value=' => 'mixed',
   ),
-  'swoole\\buffer::__destruct' => 
-  array (
-    0 => 'void',
-  ),
-  'swoole\\buffer::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'swoole\\buffer::append' => 
-  array (
-    0 => 'int',
-    'data' => 'string',
-  ),
-  'swoole\\buffer::clear' => 
-  array (
-    0 => 'void',
-  ),
-  'swoole\\buffer::expand' => 
-  array (
-    0 => 'int',
-    'size' => 'int',
-  ),
-  'swoole\\buffer::read' => 
-  array (
-    0 => 'string',
-    'offset' => 'int',
-    'length' => 'int',
-  ),
-  'swoole\\buffer::recycle' => 
-  array (
-    0 => 'void',
-  ),
-  'swoole\\buffer::substr' => 
-  array (
-    0 => 'string',
-    'offset' => 'int',
-    'length=' => 'int',
-    'remove=' => 'bool',
-  ),
-  'swoole\\buffer::write' => 
-  array (
-    0 => 'void',
-    'offset' => 'int',
-    'data' => 'string',
-  ),
   'swoole\\channel::__destruct' => 
   array (
     0 => 'void',
@@ -85610,30 +85332,11 @@ return array (
   array (
     0 => 'bool',
   ),
-  'swoole\\client::on' => 
-  array (
-    0 => 'void',
-    'event' => 'string',
-    'callback' => 'callable',
-  ),
-  'swoole\\client::pause' => 
-  array (
-    0 => 'void',
-  ),
-  'swoole\\client::pipe' => 
-  array (
-    0 => 'void',
-    'socket' => 'string',
-  ),
   'swoole\\client::recv' => 
   array (
     0 => 'void',
     'size=' => 'string',
     'flag=' => 'string',
-  ),
-  'swoole\\client::resume' => 
-  array (
-    0 => 'void',
   ),
   'swoole\\client::send' => 
   array (
@@ -85665,17 +85368,9 @@ return array (
     0 => 'mixed',
     'how' => 'mixed',
   ),
-  'swoole\\client::sleep' => 
-  array (
-    0 => 'void',
-  ),
   'swoole\\client::verifypeercert' => 
   array (
     0 => 'mixed',
-  ),
-  'swoole\\client::wakeup' => 
-  array (
-    0 => 'void',
   ),
   'swoole\\client\\exception::__clone' => 
   array (
@@ -92917,18 +92612,6 @@ return array (
   array (
     0 => 'mixed',
     'flags' => 'mixed',
-  ),
-  'swoole\\serialize::pack' => 
-  array (
-    0 => 'ReturnType',
-    'data' => 'string',
-    'is_fast=' => 'int',
-  ),
-  'swoole\\serialize::unpack' => 
-  array (
-    0 => 'ReturnType',
-    'data' => 'string',
-    'args=' => 'string',
   ),
   'swoole\\server::__construct' => 
   array (
@@ -108781,18 +108464,6 @@ return array (
     0 => 'false|resource',
     'entryname' => 'string',
   ),
-  'ziparchive::iscompressionmethodsupported' => 
-  array (
-    0 => 'bool',
-    'method' => 'int',
-    'enc=' => 'bool',
-  ),
-  'ziparchive::isencryptionmethodsupported' => 
-  array (
-    0 => 'bool',
-    'method' => 'int',
-    'enc=' => 'bool',
-  ),
   'ziparchive::locatename' => 
   array (
     0 => 'false|int',
@@ -108805,17 +108476,6 @@ return array (
     'filename' => 'string',
     'flags=' => 'int',
   ),
-  'ziparchive::registercancelcallback' => 
-  array (
-    0 => 'bool',
-    'callback' => 'callable',
-  ),
-  'ziparchive::registerprogresscallback' => 
-  array (
-    0 => 'bool',
-    'rate' => 'float',
-    'callback' => 'callable',
-  ),
   'ziparchive::renameindex' => 
   array (
     0 => 'bool',
@@ -108827,15 +108487,6 @@ return array (
     0 => 'bool',
     'name' => 'string',
     'new_name' => 'string',
-  ),
-  'ziparchive::replacefile' => 
-  array (
-    0 => 'bool',
-    'filepath' => 'string',
-    'index' => 'int',
-    'start=' => 'int',
-    'length=' => 'int',
-    'flags=' => 'int',
   ),
   'ziparchive::setarchivecomment' => 
   array (
@@ -108896,20 +108547,6 @@ return array (
     'name' => 'string',
     'opsys' => 'int',
     'attr' => 'int',
-    'flags=' => 'int',
-  ),
-  'ziparchive::setmtimeindex' => 
-  array (
-    0 => 'bool',
-    'index' => 'int',
-    'timestamp' => 'int',
-    'flags=' => 'int',
-  ),
-  'ziparchive::setmtimename' => 
-  array (
-    0 => 'bool',
-    'name' => 'string',
-    'timestamp' => 'int',
     'flags=' => 'int',
   ),
   'ziparchive::setpassword' => 

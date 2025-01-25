@@ -3,6 +3,10 @@
 return array (
   'added' => 
   array (
+    'domnamednodemap::count' => 
+    array (
+      0 => 'int',
+    ),
     'domnodelist::count' => 
     array (
       0 => 'int',
@@ -31,6 +35,11 @@ return array (
       0 => 'false|resource',
       'filename' => 'string',
     ),
+    'imagegetclip' => 
+    array (
+      0 => 'array<int, int>|false',
+      'im' => 'resource',
+    ),
     'imageopenpolygon' => 
     array (
       0 => 'bool',
@@ -54,6 +63,16 @@ return array (
       'y1' => 'int',
       'x2' => 'int',
       'y2' => 'int',
+    ),
+    'inflate_get_read_len' => 
+    array (
+      0 => 'int',
+      'resource' => 'resource',
+    ),
+    'inflate_get_status' => 
+    array (
+      0 => 'int',
+      'resource' => 'resource',
     ),
     'ldap_exop' => 
     array (
@@ -118,6 +137,346 @@ return array (
       'str' => 'string',
       'encoding=' => 'string',
     ),
+    'mongodb\\bson\\document::__tostring' => 
+    array (
+      0 => 'string',
+    ),
+    'mongodb\\bson\\document::frombson' => 
+    array (
+      0 => 'MongoDB\\BSON\\Document',
+      'bson' => 'string',
+    ),
+    'mongodb\\bson\\document::fromjson' => 
+    array (
+      0 => 'MongoDB\\BSON\\Document',
+      'json' => 'string',
+    ),
+    'mongodb\\bson\\document::fromphp' => 
+    array (
+      0 => 'MongoDB\\BSON\\Document',
+      'value' => 'array<array-key, mixed>|object',
+    ),
+    'mongodb\\bson\\document::get' => 
+    array (
+      0 => 'mixed',
+      'key' => 'string',
+    ),
+    'mongodb\\bson\\document::getiterator' => 
+    array (
+      0 => 'MongoDB\\BSON\\Iterator',
+    ),
+    'mongodb\\bson\\document::has' => 
+    array (
+      0 => 'bool',
+      'key' => 'string',
+    ),
+    'mongodb\\bson\\document::serialize' => 
+    array (
+      0 => 'string',
+    ),
+    'mongodb\\bson\\document::tocanonicalextendedjson' => 
+    array (
+      0 => 'string',
+    ),
+    'mongodb\\bson\\document::tophp' => 
+    array (
+      0 => 'array<array-key, mixed>|object',
+      'typeMap=' => 'array<array-key, mixed>|null',
+    ),
+    'mongodb\\bson\\document::torelaxedextendedjson' => 
+    array (
+      0 => 'string',
+    ),
+    'mongodb\\bson\\document::unserialize' => 
+    array (
+      0 => 'void',
+      'serialized' => 'string',
+    ),
+    'mongodb\\bson\\iterator::current' => 
+    array (
+      0 => 'mixed',
+    ),
+    'mongodb\\bson\\iterator::key' => 
+    array (
+      0 => 'int|string',
+    ),
+    'mongodb\\bson\\iterator::next' => 
+    array (
+      0 => 'void',
+    ),
+    'mongodb\\bson\\iterator::rewind' => 
+    array (
+      0 => 'void',
+    ),
+    'mongodb\\bson\\iterator::valid' => 
+    array (
+      0 => 'bool',
+    ),
+    'mongodb\\bson\\packedarray::__tostring' => 
+    array (
+      0 => 'string',
+    ),
+    'mongodb\\bson\\packedarray::fromphp' => 
+    array (
+      0 => 'MongoDB\\BSON\\PackedArray',
+      'value' => 'array<array-key, mixed>',
+    ),
+    'mongodb\\bson\\packedarray::get' => 
+    array (
+      0 => 'mixed',
+      'index' => 'int',
+    ),
+    'mongodb\\bson\\packedarray::getiterator' => 
+    array (
+      0 => 'MongoDB\\BSON\\Iterator',
+    ),
+    'mongodb\\bson\\packedarray::has' => 
+    array (
+      0 => 'bool',
+      'index' => 'int',
+    ),
+    'mongodb\\bson\\packedarray::serialize' => 
+    array (
+      0 => 'string',
+    ),
+    'mongodb\\bson\\packedarray::tophp' => 
+    array (
+      0 => 'array<array-key, mixed>|object',
+      'typeMap=' => 'array<array-key, mixed>|null',
+    ),
+    'mongodb\\bson\\packedarray::unserialize' => 
+    array (
+      0 => 'void',
+      'serialized' => 'string',
+    ),
+    'mongodb\\driver\\clientencryption::addkeyaltname' => 
+    array (
+      0 => 'null|object',
+      'keyId' => 'MongoDB\\BSON\\Binary',
+      'keyAltName' => 'string',
+    ),
+    'mongodb\\driver\\clientencryption::deletekey' => 
+    array (
+      0 => 'object',
+      'keyId' => 'MongoDB\\BSON\\Binary',
+    ),
+    'mongodb\\driver\\clientencryption::encryptexpression' => 
+    array (
+      0 => 'object',
+      'expr' => 'array<array-key, mixed>|object',
+      'options=' => 'array<array-key, mixed>|null',
+    ),
+    'mongodb\\driver\\clientencryption::getkey' => 
+    array (
+      0 => 'null|object',
+      'keyId' => 'MongoDB\\BSON\\Binary',
+    ),
+    'mongodb\\driver\\clientencryption::getkeybyaltname' => 
+    array (
+      0 => 'null|object',
+      'keyAltName' => 'string',
+    ),
+    'mongodb\\driver\\clientencryption::getkeys' => 
+    array (
+      0 => 'MongoDB\\Driver\\Cursor',
+    ),
+    'mongodb\\driver\\clientencryption::removekeyaltname' => 
+    array (
+      0 => 'null|object',
+      'keyId' => 'MongoDB\\BSON\\Binary',
+      'keyAltName' => 'string',
+    ),
+    'mongodb\\driver\\clientencryption::rewrapmanydatakey' => 
+    array (
+      0 => 'object',
+      'filter' => 'array<array-key, mixed>|object',
+      'options=' => 'array<array-key, mixed>|null',
+    ),
+    'mongodb\\driver\\manager::getencryptedfieldsmap' => 
+    array (
+      0 => 'array<array-key, mixed>|null|object',
+    ),
+    'mongodb\\driver\\monitoring\\commandfailedevent::getserverconnectionid' => 
+    array (
+      0 => 'int|null',
+    ),
+    'mongodb\\driver\\monitoring\\commandstartedevent::getserverconnectionid' => 
+    array (
+      0 => 'int|null',
+    ),
+    'mongodb\\driver\\monitoring\\commandsucceededevent::getserverconnectionid' => 
+    array (
+      0 => 'int|null',
+    ),
+    'mongodb\\driver\\monitoring\\serverchangedevent::gethost' => 
+    array (
+      0 => 'string',
+    ),
+    'mongodb\\driver\\monitoring\\serverchangedevent::getnewdescription' => 
+    array (
+      0 => 'MongoDB\\Driver\\ServerDescription',
+    ),
+    'mongodb\\driver\\monitoring\\serverchangedevent::getport' => 
+    array (
+      0 => 'int',
+    ),
+    'mongodb\\driver\\monitoring\\serverchangedevent::getpreviousdescription' => 
+    array (
+      0 => 'MongoDB\\Driver\\ServerDescription',
+    ),
+    'mongodb\\driver\\monitoring\\serverchangedevent::gettopologyid' => 
+    array (
+      0 => 'MongoDB\\BSON\\ObjectId',
+    ),
+    'mongodb\\driver\\monitoring\\serverclosedevent::gethost' => 
+    array (
+      0 => 'string',
+    ),
+    'mongodb\\driver\\monitoring\\serverclosedevent::getport' => 
+    array (
+      0 => 'int',
+    ),
+    'mongodb\\driver\\monitoring\\serverclosedevent::gettopologyid' => 
+    array (
+      0 => 'MongoDB\\BSON\\ObjectId',
+    ),
+    'mongodb\\driver\\monitoring\\serverheartbeatfailedevent::getdurationmicros' => 
+    array (
+      0 => 'int',
+    ),
+    'mongodb\\driver\\monitoring\\serverheartbeatfailedevent::geterror' => 
+    array (
+      0 => 'Exception',
+    ),
+    'mongodb\\driver\\monitoring\\serverheartbeatfailedevent::gethost' => 
+    array (
+      0 => 'string',
+    ),
+    'mongodb\\driver\\monitoring\\serverheartbeatfailedevent::getport' => 
+    array (
+      0 => 'int',
+    ),
+    'mongodb\\driver\\monitoring\\serverheartbeatfailedevent::isawaited' => 
+    array (
+      0 => 'bool',
+    ),
+    'mongodb\\driver\\monitoring\\serverheartbeatstartedevent::gethost' => 
+    array (
+      0 => 'string',
+    ),
+    'mongodb\\driver\\monitoring\\serverheartbeatstartedevent::getport' => 
+    array (
+      0 => 'int',
+    ),
+    'mongodb\\driver\\monitoring\\serverheartbeatstartedevent::isawaited' => 
+    array (
+      0 => 'bool',
+    ),
+    'mongodb\\driver\\monitoring\\serverheartbeatsucceededevent::getdurationmicros' => 
+    array (
+      0 => 'int',
+    ),
+    'mongodb\\driver\\monitoring\\serverheartbeatsucceededevent::gethost' => 
+    array (
+      0 => 'string',
+    ),
+    'mongodb\\driver\\monitoring\\serverheartbeatsucceededevent::getport' => 
+    array (
+      0 => 'int',
+    ),
+    'mongodb\\driver\\monitoring\\serverheartbeatsucceededevent::getreply' => 
+    array (
+      0 => 'object',
+    ),
+    'mongodb\\driver\\monitoring\\serverheartbeatsucceededevent::isawaited' => 
+    array (
+      0 => 'bool',
+    ),
+    'mongodb\\driver\\monitoring\\serveropeningevent::gethost' => 
+    array (
+      0 => 'string',
+    ),
+    'mongodb\\driver\\monitoring\\serveropeningevent::getport' => 
+    array (
+      0 => 'int',
+    ),
+    'mongodb\\driver\\monitoring\\serveropeningevent::gettopologyid' => 
+    array (
+      0 => 'MongoDB\\BSON\\ObjectId',
+    ),
+    'mongodb\\driver\\monitoring\\topologychangedevent::getnewdescription' => 
+    array (
+      0 => 'MongoDB\\Driver\\TopologyDescription',
+    ),
+    'mongodb\\driver\\monitoring\\topologychangedevent::getpreviousdescription' => 
+    array (
+      0 => 'MongoDB\\Driver\\TopologyDescription',
+    ),
+    'mongodb\\driver\\monitoring\\topologychangedevent::gettopologyid' => 
+    array (
+      0 => 'MongoDB\\BSON\\ObjectId',
+    ),
+    'mongodb\\driver\\monitoring\\topologyclosedevent::gettopologyid' => 
+    array (
+      0 => 'MongoDB\\BSON\\ObjectId',
+    ),
+    'mongodb\\driver\\monitoring\\topologyopeningevent::gettopologyid' => 
+    array (
+      0 => 'MongoDB\\BSON\\ObjectId',
+    ),
+    'mongodb\\driver\\server::getserverdescription' => 
+    array (
+      0 => 'MongoDB\\Driver\\ServerDescription',
+    ),
+    'mongodb\\driver\\serverdescription::gethelloresponse' => 
+    array (
+      0 => 'array<array-key, mixed>',
+    ),
+    'mongodb\\driver\\serverdescription::gethost' => 
+    array (
+      0 => 'string',
+    ),
+    'mongodb\\driver\\serverdescription::getlastupdatetime' => 
+    array (
+      0 => 'int',
+    ),
+    'mongodb\\driver\\serverdescription::getport' => 
+    array (
+      0 => 'int',
+    ),
+    'mongodb\\driver\\serverdescription::getroundtriptime' => 
+    array (
+      0 => 'int|null',
+    ),
+    'mongodb\\driver\\serverdescription::gettype' => 
+    array (
+      0 => 'string',
+    ),
+    'mongodb\\driver\\session::isdirty' => 
+    array (
+      0 => 'bool',
+    ),
+    'mongodb\\driver\\topologydescription::getservers' => 
+    array (
+      0 => 'array<array-key, mixed>',
+    ),
+    'mongodb\\driver\\topologydescription::gettype' => 
+    array (
+      0 => 'string',
+    ),
+    'mongodb\\driver\\topologydescription::hasreadableserver' => 
+    array (
+      0 => 'bool',
+      'readPreference=' => 'MongoDB\\Driver\\ReadPreference|null',
+    ),
+    'mongodb\\driver\\topologydescription::haswritableserver' => 
+    array (
+      0 => 'bool',
+    ),
+    'mongodb\\driver\\writeresult::geterrorreplies' => 
+    array (
+      0 => 'array<array-key, mixed>',
+    ),
     'oci_register_taf_callback' => 
     array (
       0 => 'bool',
@@ -129,7 +488,46 @@ return array (
       0 => 'bool',
       'connection' => 'resource',
     ),
+    'opcache_compile_file' => 
+    array (
+      0 => 'bool',
+      'file' => 'string',
+    ),
+    'opcache_get_configuration' => 
+    array (
+      0 => 'array<array-key, mixed>',
+    ),
+    'opcache_get_status' => 
+    array (
+      0 => 'array<array-key, mixed>|false',
+      'fetch_scripts=' => 'bool',
+    ),
+    'opcache_invalidate' => 
+    array (
+      0 => 'bool',
+      'script' => 'string',
+      'force=' => 'bool',
+    ),
+    'opcache_is_script_cached' => 
+    array (
+      0 => 'bool',
+      'script' => 'string',
+    ),
+    'opcache_reset' => 
+    array (
+      0 => 'bool',
+    ),
+    'openssl_pkcs7_read' => 
+    array (
+      0 => 'bool',
+      'infilename' => 'string',
+      '&w_certs' => 'array<array-key, mixed>',
+    ),
     'reflectionclass::isiterable' => 
+    array (
+      0 => 'bool',
+    ),
+    'reflectionobject::isiterable' => 
     array (
       0 => 'bool',
     ),
@@ -191,29 +589,9 @@ return array (
       'string_1' => 'string',
       'string_2' => 'string',
     ),
-    'sodium_crypto_aead_aes256gcm_decrypt' => 
-    array (
-      0 => 'false|string',
-      'ciphertext' => 'string',
-      'additional_data' => 'string',
-      'nonce' => 'string',
-      'key' => 'string',
-    ),
-    'sodium_crypto_aead_aes256gcm_encrypt' => 
-    array (
-      0 => 'string',
-      'message' => 'string',
-      'additional_data' => 'string',
-      'nonce' => 'string',
-      'key' => 'string',
-    ),
     'sodium_crypto_aead_aes256gcm_is_available' => 
     array (
       0 => 'bool',
-    ),
-    'sodium_crypto_aead_aes256gcm_keygen' => 
-    array (
-      0 => 'non-empty-string',
     ),
     'sodium_crypto_aead_chacha20poly1305_decrypt' => 
     array (
@@ -663,6 +1041,11 @@ return array (
       'string' => 'string',
       'length' => 'int',
     ),
+    'spl_object_id' => 
+    array (
+      0 => 'int',
+      'obj' => 'object',
+    ),
     'stream_isatty' => 
     array (
       0 => 'bool',
@@ -724,18 +1107,6 @@ return array (
         'left_operand' => 'numeric-string',
         'right_operand' => 'numeric-string',
         'scale=' => 'int',
-      ),
-    ),
-    'closure::__invoke' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-        '...args=' => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'mixed',
       ),
     ),
     'hash_copy' => 
@@ -832,32 +1203,6 @@ return array (
         'length=' => 'int',
       ),
     ),
-    'inflate_get_read_len' => 
-    array (
-      'old' => 
-      array (
-        0 => 'int',
-        'context' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'int',
-        'resource' => 'resource',
-      ),
-    ),
-    'inflate_get_status' => 
-    array (
-      'old' => 
-      array (
-        0 => 'int',
-        'context' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'int',
-        'resource' => 'resource',
-      ),
-    ),
     'json_decode' => 
     array (
       'old' => 
@@ -925,19 +1270,6 @@ return array (
         'type=' => 'int',
       ),
     ),
-    'mongodb\\bson\\document::unserialize' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'data' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'serialized' => 'string',
-      ),
-    ),
     'mongodb\\bson\\int64::__construct' => 
     array (
       'old' => 
@@ -963,19 +1295,6 @@ return array (
         0 => 'void',
         'code' => 'string',
         'scope=' => 'array<array-key, mixed>|null|object',
-      ),
-    ),
-    'mongodb\\bson\\packedarray::unserialize' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'data' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'serialized' => 'string',
       ),
     ),
     'mongodb\\driver\\bulkwrite::delete' => 
@@ -1174,75 +1493,6 @@ return array (
       array (
         0 => 'void',
         'operationTime' => 'MongoDB\\BSON\\TimestampInterface',
-      ),
-    ),
-    'opcache_compile_file' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'filename' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'file' => 'string',
-      ),
-    ),
-    'opcache_get_status' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>|false',
-        'include_scripts=' => 'bool',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>|false',
-        'fetch_scripts=' => 'bool',
-      ),
-    ),
-    'opcache_invalidate' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'filename' => 'string',
-        'force=' => 'bool',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'script' => 'string',
-        'force=' => 'bool',
-      ),
-    ),
-    'opcache_is_script_cached' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'filename' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'script' => 'string',
-      ),
-    ),
-    'openssl_pkcs7_read' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'data' => 'string',
-        '&w_certificates' => 'array<array-key, mixed>',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'infilename' => 'string',
-        '&w_certs' => 'array<array-key, mixed>',
       ),
     ),
     'openssl_pkcs7_verify' => 
@@ -1524,40 +1774,6 @@ return array (
         'sha1' => 'string',
         'args=' => 'array<array-key, mixed>',
         'num_keys=' => 'int',
-      ),
-    ),
-    'redis::evaluate' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-        'script' => 'string',
-        'args=' => 'array<array-key, mixed>',
-        'num_keys=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'mixed',
-        'script' => 'string',
-        'args=' => 'array<array-key, mixed>',
-        'numKeys=' => 'int',
-      ),
-    ),
-    'redis::evaluatesha' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-        'script_sha' => 'string',
-        'args=' => 'array<array-key, mixed>',
-        'num_keys=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'mixed',
-        'scriptSha' => 'string',
-        'args=' => 'array<array-key, mixed>',
-        'numKeys=' => 'int',
       ),
     ),
     'redis::expire' => 
@@ -2259,21 +2475,6 @@ return array (
         'new_name' => 'string',
       ),
     ),
-    'redis::renamekey' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'key' => 'string',
-        'newkey' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'srckey' => 'string',
-        'dstkey' => 'string',
-      ),
-    ),
     'redis::renamenx' => 
     array (
       'old' => 
@@ -2479,21 +2680,6 @@ return array (
         'value' => 'int',
       ),
     ),
-    'redis::settimeout' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-        'key' => 'string',
-        'timeout' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'mixed',
-        'key' => 'string',
-        'ttl' => 'int',
-      ),
-    ),
     'redis::sinterstore' => 
     array (
       'old' => 
@@ -2646,23 +2832,6 @@ return array (
         'key' => 'string',
         'value' => 'string',
         '...other_values=' => 'string',
-      ),
-    ),
-    'redis::sremove' => 
-    array (
-      'old' => 
-      array (
-        0 => 'int',
-        'key' => 'string',
-        'member' => 'string',
-        '...other_members=' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'int',
-        'key' => 'string',
-        'member1' => 'string',
-        '...other_members=' => 'string',
       ),
     ),
     'redis::sscan' => 
@@ -3013,40 +3182,6 @@ return array (
         'end' => 'string',
       ),
     ),
-    'redis::zdeleterangebyrank' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-        'key' => 'string',
-        'min' => 'int',
-        'max' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'mixed',
-        'key' => 'string',
-        'start' => 'int',
-        'end' => 'int',
-      ),
-    ),
-    'redis::zdeleterangebyscore' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-        'key' => 'string',
-        'min' => 'float',
-        'max' => 'float',
-      ),
-      'new' => 
-      array (
-        0 => 'mixed',
-        'key' => 'string',
-        'start' => 'float',
-        'end' => 'float',
-      ),
-    ),
     'redis::zinter' => 
     array (
       'old' => 
@@ -3124,23 +3259,6 @@ return array (
         'count=' => 'int',
       ),
     ),
-    'redis::zremoverangebyscore' => 
-    array (
-      'old' => 
-      array (
-        0 => 'int',
-        'key' => 'string',
-        'min' => 'float|string',
-        'max' => 'float|string',
-      ),
-      'new' => 
-      array (
-        0 => 'int',
-        'key' => 'string',
-        'start' => 'float|string',
-        'end' => 'float|string',
-      ),
-    ),
     'redis::zremrangebyscore' => 
     array (
       'old' => 
@@ -3156,25 +3274,6 @@ return array (
         'key' => 'string',
         'start' => 'float|string',
         'end' => 'float|string',
-      ),
-    ),
-    'redis::zreverserange' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>',
-        'key' => 'string',
-        'start' => 'int',
-        'end' => 'int',
-        'scores=' => 'bool',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>',
-        'key' => 'string',
-        'start' => 'int',
-        'end' => 'int',
-        'withscore=' => 'bool',
       ),
     ),
     'redis::zrevrangebylex' => 
@@ -3298,20 +3397,6 @@ return array (
         0 => 'bool',
         'key' => 'string',
         '...otherkeys=' => 'string',
-      ),
-    ),
-    'redisarray::delete' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'keys' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'key' => 'string',
-        '...args' => 'string',
       ),
     ),
     'redisarray::flushall' => 
@@ -4813,19 +4898,6 @@ return array (
         'filter=' => 'int|null',
       ),
     ),
-    'spl_object_id' => 
-    array (
-      'old' => 
-      array (
-        0 => 'int',
-        'object' => 'object',
-      ),
-      'new' => 
-      array (
-        0 => 'int',
-        'obj' => 'object',
-      ),
-    ),
     'sqlite3::openblob' => 
     array (
       'old' => 
@@ -4900,6 +4972,167 @@ return array (
   ),
   'removed' => 
   array (
+    'redis::evaluate' => 
+    array (
+      0 => 'mixed',
+      'script' => 'string',
+      'args=' => 'array<array-key, mixed>',
+      'num_keys=' => 'int',
+    ),
+    'redis::evaluatesha' => 
+    array (
+      0 => 'mixed',
+      'script_sha' => 'string',
+      'args=' => 'array<array-key, mixed>',
+      'num_keys=' => 'int',
+    ),
+    'redis::getkeys' => 
+    array (
+      0 => 'array<int, string>',
+      'pattern' => 'string',
+    ),
+    'redis::getmultiple' => 
+    array (
+      0 => 'array<array-key, mixed>',
+      'keys' => 'array<array-key, string>',
+    ),
+    'redis::lget' => 
+    array (
+      0 => 'string',
+      'key' => 'string',
+      'index' => 'int',
+    ),
+    'redis::lgetrange' => 
+    array (
+      0 => 'array<array-key, mixed>',
+      'key' => 'string',
+      'start' => 'int',
+      'end' => 'int',
+    ),
+    'redis::listtrim' => 
+    array (
+      0 => 'mixed',
+      'key' => 'string',
+      'start' => 'int',
+      'stop' => 'int',
+    ),
+    'redis::lremove' => 
+    array (
+      0 => 'int',
+      'key' => 'string',
+      'value' => 'string',
+      'count' => 'int',
+    ),
+    'redis::lsize' => 
+    array (
+      0 => 'int',
+      'key' => 'string',
+    ),
+    'redis::renamekey' => 
+    array (
+      0 => 'bool',
+      'key' => 'string',
+      'newkey' => 'string',
+    ),
+    'redis::scontains' => 
+    array (
+      0 => 'mixed',
+      'key' => 'string',
+      'value' => 'string',
+    ),
+    'redis::sendecho' => 
+    array (
+      0 => 'string',
+      'msg' => 'string',
+    ),
+    'redis::settimeout' => 
+    array (
+      0 => 'mixed',
+      'key' => 'string',
+      'timeout' => 'int',
+    ),
+    'redis::sgetmembers' => 
+    array (
+      0 => 'mixed',
+      'key' => 'string',
+    ),
+    'redis::sremove' => 
+    array (
+      0 => 'int',
+      'key' => 'string',
+      'member' => 'string',
+      '...other_members=' => 'string',
+    ),
+    'redis::ssize' => 
+    array (
+      0 => 'int',
+      'key' => 'string',
+    ),
+    'redis::substr' => 
+    array (
+      0 => 'mixed',
+      'key' => 'string',
+      'start' => 'int',
+      'end' => 'int',
+    ),
+    'redis::zdelete' => 
+    array (
+      0 => 'int',
+      'key' => 'string',
+      'member' => 'string',
+      '...other_members=' => 'string',
+    ),
+    'redis::zdeleterangebyrank' => 
+    array (
+      0 => 'mixed',
+      'key' => 'string',
+      'min' => 'int',
+      'max' => 'int',
+    ),
+    'redis::zdeleterangebyscore' => 
+    array (
+      0 => 'mixed',
+      'key' => 'string',
+      'min' => 'float',
+      'max' => 'float',
+    ),
+    'redis::zremove' => 
+    array (
+      0 => 'int',
+      'key' => 'string',
+      'member' => 'string',
+      '...other_members=' => 'string',
+    ),
+    'redis::zremoverangebyscore' => 
+    array (
+      0 => 'int',
+      'key' => 'string',
+      'min' => 'float|string',
+      'max' => 'float|string',
+    ),
+    'redis::zreverserange' => 
+    array (
+      0 => 'array<array-key, mixed>',
+      'key' => 'string',
+      'start' => 'int',
+      'end' => 'int',
+      'scores=' => 'bool',
+    ),
+    'redis::zsize' => 
+    array (
+      0 => 'mixed',
+      'key' => 'string',
+    ),
+    'redisarray::delete' => 
+    array (
+      0 => 'bool',
+      'keys' => 'string',
+    ),
+    'redisarray::getmultiple' => 
+    array (
+      0 => 'mixed',
+      'keys' => 'mixed',
+    ),
     'sodium\\add' => 
     array (
       0 => 'void',

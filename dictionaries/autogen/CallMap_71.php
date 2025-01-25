@@ -54314,4 +54314,9 @@ return array (
   array (
     0 => 'mixed',
   ),
+  'closure::__invoke' => 
+  array (
+    0 => 'mixed',
+    '...args=' => 'mixed',
+  ),
 );

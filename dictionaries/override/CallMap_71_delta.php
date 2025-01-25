@@ -3,6 +3,58 @@
 return array (
   'added' => 
   array (
+    'argumentcounterror::__clone' => 
+    array (
+      0 => 'void',
+    ),
+    'argumentcounterror::__construct' => 
+    array (
+      0 => 'void',
+      'message=' => 'string',
+      'code=' => 'int',
+      'previous=' => 'Throwable|null',
+    ),
+    'argumentcounterror::__tostring' => 
+    array (
+      0 => 'string',
+    ),
+    'argumentcounterror::__wakeup' => 
+    array (
+      0 => 'void',
+    ),
+    'argumentcounterror::getcode' => 
+    array (
+      0 => 'int',
+    ),
+    'argumentcounterror::getfile' => 
+    array (
+      0 => 'string',
+    ),
+    'argumentcounterror::getline' => 
+    array (
+      0 => 'int',
+    ),
+    'argumentcounterror::getmessage' => 
+    array (
+      0 => 'string',
+    ),
+    'argumentcounterror::getprevious' => 
+    array (
+      0 => 'Throwable|null',
+    ),
+    'argumentcounterror::gettrace' => 
+    array (
+      0 => 'list<array{args?: array<array-key, mixed>, class?: class-string, file?: string, function: string, line?: int, type?: \'->\'|\'::\'}>',
+    ),
+    'argumentcounterror::gettraceasstring' => 
+    array (
+      0 => 'string',
+    ),
+    'chroot' => 
+    array (
+      0 => 'bool',
+      'directory' => 'string',
+    ),
     'closure::fromcallable' => 
     array (
       0 => 'Closure',
@@ -36,10 +88,63 @@ return array (
       'string=' => 'string',
       'salt=' => 'string',
     ),
+    'intltimezone::getidforwindowsid' => 
+    array (
+      0 => 'false|string',
+      'timezone' => 'string',
+      'region=' => 'string',
+    ),
+    'intltimezone::getwindowsid' => 
+    array (
+      0 => 'false|string',
+      'timezone' => 'string',
+    ),
     'is_iterable' => 
     array (
       0 => 'bool',
       'var' => 'mixed',
+    ),
+    'mongodb\\driver\\manager::addsubscriber' => 
+    array (
+      0 => 'void',
+      'subscriber' => 'MongoDB\\Driver\\Monitoring\\Subscriber',
+    ),
+    'mongodb\\driver\\manager::removesubscriber' => 
+    array (
+      0 => 'void',
+      'subscriber' => 'MongoDB\\Driver\\Monitoring\\Subscriber',
+    ),
+    'mongodb\\driver\\monitoring\\commandfailedevent::getserviceid' => 
+    array (
+      0 => 'MongoDB\\BSON\\ObjectId|null',
+    ),
+    'mongodb\\driver\\monitoring\\commandstartedevent::getserviceid' => 
+    array (
+      0 => 'MongoDB\\BSON\\ObjectId|null',
+    ),
+    'mongodb\\driver\\monitoring\\commandsucceededevent::getserviceid' => 
+    array (
+      0 => 'MongoDB\\BSON\\ObjectId|null',
+    ),
+    'mongodb\\driver\\serverapi::__construct' => 
+    array (
+      0 => 'void',
+      'version' => 'string',
+      'strict=' => 'bool|null',
+      'deprecationErrors=' => 'bool|null',
+    ),
+    'mongodb\\driver\\serverapi::bsonserialize' => 
+    array (
+      0 => 'stdClass',
+    ),
+    'mongodb\\driver\\serverapi::serialize' => 
+    array (
+      0 => 'string',
+    ),
+    'mongodb\\driver\\serverapi::unserialize' => 
+    array (
+      0 => 'void',
+      'serialized' => 'string',
     ),
     'openssl_get_curve_names' => 
     array (
@@ -54,6 +159,93 @@ return array (
     array (
       0 => 'int|string',
       'signo' => 'int',
+    ),
+    'reflectionclass::getreflectionconstant' => 
+    array (
+      0 => 'ReflectionClassConstant|false',
+      'name' => 'string',
+    ),
+    'reflectionclass::getreflectionconstants' => 
+    array (
+      0 => 'list<ReflectionClassConstant>',
+    ),
+    'reflectionclassconstant::__construct' => 
+    array (
+      0 => 'void',
+      'class' => 'class-string|object',
+      'name' => 'string',
+    ),
+    'reflectionclassconstant::__tostring' => 
+    array (
+      0 => 'string',
+    ),
+    'reflectionclassconstant::export' => 
+    array (
+      0 => 'string',
+      'class' => 'mixed',
+      'name' => 'string',
+      'return=' => 'bool',
+    ),
+    'reflectionclassconstant::getdeclaringclass' => 
+    array (
+      0 => 'ReflectionClass',
+    ),
+    'reflectionclassconstant::getdoccomment' => 
+    array (
+      0 => 'false|string',
+    ),
+    'reflectionclassconstant::getmodifiers' => 
+    array (
+      0 => 'int',
+    ),
+    'reflectionclassconstant::getname' => 
+    array (
+      0 => 'string',
+    ),
+    'reflectionclassconstant::getvalue' => 
+    array (
+      0 => 'array<array-key, scalar>|null|scalar',
+    ),
+    'reflectionclassconstant::isprivate' => 
+    array (
+      0 => 'bool',
+    ),
+    'reflectionclassconstant::isprotected' => 
+    array (
+      0 => 'bool',
+    ),
+    'reflectionclassconstant::ispublic' => 
+    array (
+      0 => 'bool',
+    ),
+    'reflectionnamedtype::__clone' => 
+    array (
+      0 => 'void',
+    ),
+    'reflectionnamedtype::__tostring' => 
+    array (
+      0 => 'string',
+    ),
+    'reflectionnamedtype::allowsnull' => 
+    array (
+      0 => 'bool',
+    ),
+    'reflectionnamedtype::getname' => 
+    array (
+      0 => 'string',
+    ),
+    'reflectionnamedtype::isbuiltin' => 
+    array (
+      0 => 'bool',
+    ),
+    'reflectionobject::getreflectionconstant' => 
+    array (
+      0 => 'ReflectionClassConstant',
+      'name' => 'string',
+    ),
+    'reflectionobject::getreflectionconstants' => 
+    array (
+      0 => 'list<ReflectionClassConstant>',
     ),
     'sapi_windows_cp_conv' => 
     array (
@@ -525,34 +717,6 @@ return array (
         'array=' => 'mixed',
       ),
     ),
-    'intltimezone::getidforwindowsid' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|string',
-        'timezoneId' => 'string',
-        'region=' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'false|string',
-        'timezone' => 'string',
-        'region=' => 'string',
-      ),
-    ),
-    'intltimezone::getwindowsid' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|string',
-        'timezoneId' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'false|string',
-        'timezone' => 'string',
-      ),
-    ),
     'mongodb\\driver\\manager::selectserver' => 
     array (
       'old' => 
@@ -564,19 +728,6 @@ return array (
       array (
         0 => 'MongoDB\\Driver\\Server',
         'readPreference=' => 'MongoDB\\Driver\\ReadPreference|null',
-      ),
-    ),
-    'mongodb\\driver\\serverapi::unserialize' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'data' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'serialized' => 'string',
       ),
     ),
     'mt_srand' => 
@@ -809,21 +960,6 @@ return array (
         'iterator_class=' => 'mixed',
       ),
     ),
-    'reflectionclassconstant::__construct' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'class' => 'class-string|object',
-        'constant' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'class' => 'class-string|object',
-        'name' => 'string',
-      ),
-    ),
     'sessionhandler::gc' => 
     array (
       'old' => 
@@ -897,34 +1033,6 @@ return array (
         0 => 'false|non-empty-string',
         'str' => 'string',
         'token=' => 'string',
-      ),
-    ),
-    'swoole\\client::on' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'event_name' => 'string',
-        'callback' => 'callable',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'event' => 'string',
-        'callback' => 'callable',
-      ),
-    ),
-    'swoole\\client::pipe' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'dst_socket' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'socket' => 'string',
       ),
     ),
     'swoole\\coroutine\\mysql::connect' => 
@@ -1008,36 +1116,6 @@ return array (
         'nochdir=' => 'bool',
         'noclose=' => 'bool',
         'pipes=' => 'mixed',
-      ),
-    ),
-    'swoole\\serialize::pack' => 
-    array (
-      'old' => 
-      array (
-        0 => 'ReturnType',
-        'data' => 'string',
-        'flag=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'ReturnType',
-        'data' => 'string',
-        'is_fast=' => 'int',
-      ),
-    ),
-    'swoole\\serialize::unpack' => 
-    array (
-      'old' => 
-      array (
-        0 => 'ReturnType',
-        'string' => 'string',
-        'flag=' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'ReturnType',
-        'data' => 'string',
-        'args=' => 'string',
       ),
     ),
     'swoole\\server::after' => 
@@ -1174,5 +1252,89 @@ return array (
   ),
   'removed' => 
   array (
+    'swoole\\buffer::__destruct' => 
+    array (
+      0 => 'void',
+    ),
+    'swoole\\buffer::__tostring' => 
+    array (
+      0 => 'string',
+    ),
+    'swoole\\buffer::append' => 
+    array (
+      0 => 'int',
+      'data' => 'string',
+    ),
+    'swoole\\buffer::clear' => 
+    array (
+      0 => 'void',
+    ),
+    'swoole\\buffer::expand' => 
+    array (
+      0 => 'int',
+      'size' => 'int',
+    ),
+    'swoole\\buffer::read' => 
+    array (
+      0 => 'string',
+      'offset' => 'int',
+      'length' => 'int',
+    ),
+    'swoole\\buffer::recycle' => 
+    array (
+      0 => 'void',
+    ),
+    'swoole\\buffer::substr' => 
+    array (
+      0 => 'string',
+      'offset' => 'int',
+      'length=' => 'int',
+      'remove=' => 'bool',
+    ),
+    'swoole\\buffer::write' => 
+    array (
+      0 => 'void',
+      'offset' => 'int',
+      'data' => 'string',
+    ),
+    'swoole\\client::on' => 
+    array (
+      0 => 'void',
+      'event_name' => 'string',
+      'callback' => 'callable',
+    ),
+    'swoole\\client::pause' => 
+    array (
+      0 => 'void',
+    ),
+    'swoole\\client::pipe' => 
+    array (
+      0 => 'void',
+      'dst_socket' => 'string',
+    ),
+    'swoole\\client::resume' => 
+    array (
+      0 => 'void',
+    ),
+    'swoole\\client::sleep' => 
+    array (
+      0 => 'void',
+    ),
+    'swoole\\client::wakeup' => 
+    array (
+      0 => 'void',
+    ),
+    'swoole\\serialize::pack' => 
+    array (
+      0 => 'ReturnType',
+      'data' => 'string',
+      'flag=' => 'int',
+    ),
+    'swoole\\serialize::unpack' => 
+    array (
+      0 => 'ReturnType',
+      'string' => 'string',
+      'flag=' => 'string',
+    ),
   ),
 );

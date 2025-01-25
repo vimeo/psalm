@@ -19,6 +19,12 @@ return array (
       'num1' => 'float',
       'num2' => 'float',
     ),
+    'finfo::__construct' => 
+    array (
+      0 => 'void',
+      'flags=' => 'int',
+      'magic_database=' => 'null|string',
+    ),
     'get_debug_type' => 
     array (
       0 => 'string',
@@ -99,6 +105,43 @@ return array (
     array (
       0 => 'list<ReflectionNamedType>',
     ),
+    'soapclient::__construct' => 
+    array (
+      0 => 'void',
+      'wsdl' => 'mixed',
+      'options=' => 'array<array-key, mixed>|null',
+    ),
+    'soapheader::__construct' => 
+    array (
+      0 => 'void',
+      'namespace' => 'string',
+      'name' => 'string',
+      'data=' => 'mixed',
+      'mustUnderstand=' => 'bool',
+      'actor=' => 'string',
+    ),
+    'soapparam::__construct' => 
+    array (
+      0 => 'void',
+      'data' => 'mixed',
+      'name' => 'string',
+    ),
+    'soapserver::__construct' => 
+    array (
+      0 => 'void',
+      'wsdl' => 'null|string',
+      'options=' => 'array<array-key, mixed>',
+    ),
+    'soapvar::__construct' => 
+    array (
+      0 => 'void',
+      'data' => 'mixed',
+      'encoding' => 'int',
+      'typeName=' => 'null|string',
+      'typeNamespace=' => 'null|string',
+      'nodeName=' => 'null|string',
+      'nodeNamespace=' => 'null|string',
+    ),
     'splfixedarray::getiterator' => 
     array (
       0 => 'Iterator',
@@ -149,6 +192,52 @@ return array (
     array (
       0 => 'void',
       'object' => 'object',
+    ),
+    'ziparchive::iscompressionmethodsupported' => 
+    array (
+      0 => 'bool',
+      'method' => 'int',
+      'enc=' => 'bool',
+    ),
+    'ziparchive::isencryptionmethodsupported' => 
+    array (
+      0 => 'bool',
+      'method' => 'int',
+      'enc=' => 'bool',
+    ),
+    'ziparchive::registercancelcallback' => 
+    array (
+      0 => 'bool',
+      'callback' => 'callable',
+    ),
+    'ziparchive::registerprogresscallback' => 
+    array (
+      0 => 'bool',
+      'rate' => 'float',
+      'callback' => 'callable',
+    ),
+    'ziparchive::replacefile' => 
+    array (
+      0 => 'bool',
+      'filepath' => 'string',
+      'index' => 'int',
+      'start=' => 'int',
+      'length=' => 'int',
+      'flags=' => 'int',
+    ),
+    'ziparchive::setmtimeindex' => 
+    array (
+      0 => 'bool',
+      'index' => 'int',
+      'timestamp' => 'int',
+      'flags=' => 'int',
+    ),
+    'ziparchive::setmtimename' => 
+    array (
+      0 => 'bool',
+      'name' => 'string',
+      'timestamp' => 'int',
+      'flags=' => 'int',
     ),
   ),
   'changed' => 
@@ -2331,23 +2420,6 @@ return array (
       array (
         0 => 'mixed',
         'name' => 'string',
-      ),
-    ),
-    'convert_cyr_string' => 
-    array (
-      'old' => 
-      array (
-        0 => 'string',
-        'str' => 'string',
-        'from' => 'string',
-        'to' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'string',
-        'string' => 'string',
-        'from' => 'string',
-        'to' => 'string',
       ),
     ),
     'convert_uudecode' => 
@@ -5695,27 +5767,6 @@ return array (
         'arg=' => 'mixed',
       ),
     ),
-    'eventbufferevent::sslfilter' => 
-    array (
-      'old' => 
-      array (
-        0 => 'EventBufferEvent',
-        'unused' => 'EventBase',
-        'underlying' => 'EventBufferEvent',
-        'ctx' => 'EventSslContext',
-        'state' => 'int',
-        'options=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'EventBufferEvent',
-        'base' => 'EventBase',
-        'underlying' => 'EventBufferEvent',
-        'ctx' => 'EventSslContext',
-        'state' => 'int',
-        'options=' => 'int',
-      ),
-    ),
     'eventhttpconnection::__construct' => 
     array (
       'old' => 
@@ -6250,21 +6301,6 @@ return array (
         'array' => 'array<array-key, mixed>',
         'options=' => 'array<array-key, mixed>|int',
         'add_empty=' => 'bool',
-      ),
-    ),
-    'finfo::__construct' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'flags=' => 'int',
-        'magic_database=' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'flags=' => 'int',
-        'magic_database=' => 'null|string',
       ),
     ),
     'finfo::buffer' => 
@@ -8692,21 +8728,6 @@ return array (
       ),
     ),
     'hebrev' => 
-    array (
-      'old' => 
-      array (
-        0 => 'string',
-        'str' => 'string',
-        'max_chars_per_line=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'string',
-        'string' => 'string',
-        'max_chars_per_line=' => 'int',
-      ),
-    ),
-    'hebrevc' => 
     array (
       'old' => 
       array (
@@ -13421,19 +13442,6 @@ return array (
       ),
     ),
     'is_object' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'var' => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'value' => 'mixed',
-      ),
-    ),
-    'is_real' => 
     array (
       'old' => 
       array (
@@ -24181,27 +24189,6 @@ return array (
         'headerFault=' => 'mixed|null',
       ),
     ),
-    'soapheader::__construct' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'namespace' => 'string',
-        'name' => 'string',
-        'data=' => 'mixed',
-        'mustunderstand=' => 'bool',
-        'actor=' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'namespace' => 'string',
-        'name' => 'string',
-        'data=' => 'mixed',
-        'mustUnderstand=' => 'bool',
-        'actor=' => 'string',
-      ),
-    ),
     'soapserver::addsoapheader' => 
     array (
       'old' => 
@@ -24241,29 +24228,6 @@ return array (
         0 => 'void',
         'class' => 'string',
         '...args=' => 'mixed',
-      ),
-    ),
-    'soapvar::__construct' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'data' => 'mixed',
-        'encoding' => 'int',
-        'type_name=' => 'null|string',
-        'type_namespace=' => 'null|string',
-        'node_name=' => 'null|string',
-        'node_namespace=' => 'null|string',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'data' => 'mixed',
-        'encoding' => 'int',
-        'typeName=' => 'null|string',
-        'typeNamespace=' => 'null|string',
-        'nodeName=' => 'null|string',
-        'nodeNamespace=' => 'null|string',
       ),
     ),
     'socket_accept' => 
@@ -28572,22 +28536,6 @@ return array (
         'capacity=' => 'int',
       ),
     ),
-    'swoole\\server::after' => 
-    array (
-      'old' => 
-      array (
-        0 => 'ReturnType',
-        'ms' => 'int',
-        'callback' => 'callable',
-      ),
-      'new' => 
-      array (
-        0 => 'ReturnType',
-        'after_time_ms' => 'int',
-        'callback' => 'callable',
-        'param=' => 'string',
-      ),
-    ),
     'swoole\\server::connection_info' => 
     array (
       'old' => 
@@ -28757,21 +28705,6 @@ return array (
         'data' => 'string',
         'timeout=' => 'float',
         'taskWorkerIndex=' => 'int',
-      ),
-    ),
-    'swoole\\server::tick' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'ms' => 'int',
-        'callback' => 'callable',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'interval_ms' => 'int',
-        'callback' => 'callable',
       ),
     ),
     'swoole\\table::decr' => 
@@ -31036,16 +30969,69 @@ return array (
   ),
   'removed' => 
   array (
+    'argumentcounterror::__clone' => 
+    array (
+      0 => 'void',
+    ),
+    'arithmeticerror::__clone' => 
+    array (
+      0 => 'void',
+    ),
+    'badfunctioncallexception::__clone' => 
+    array (
+      0 => 'void',
+    ),
+    'badmethodcallexception::__clone' => 
+    array (
+      0 => 'void',
+    ),
+    'closedgeneratorexception::__clone' => 
+    array (
+      0 => 'void',
+    ),
+    'convert_cyr_string' => 
+    array (
+      0 => 'string',
+      'str' => 'string',
+      'from' => 'string',
+      'to' => 'string',
+    ),
     'create_function' => 
     array (
       0 => 'string',
       'args' => 'string',
       'code' => 'string',
     ),
+    'domainexception::__clone' => 
+    array (
+      0 => 'void',
+    ),
     'each' => 
     array (
       0 => 'array{0: int|string, 1: mixed, key: int|string, value: mixed}',
       '&r_arr' => 'array<array-key, mixed>',
+    ),
+    'errorexception::__clone' => 
+    array (
+      0 => 'void',
+    ),
+    'eventbufferevent::sslfilter' => 
+    array (
+      0 => 'EventBufferEvent',
+      'unused' => 'EventBase',
+      'underlying' => 'EventBufferEvent',
+      'ctx' => 'EventSslContext',
+      'state' => 'int',
+      'options=' => 'int',
+    ),
+    'evwatcher::__construct' => 
+    array (
+      0 => 'void',
+    ),
+    'ezmlm_hash' => 
+    array (
+      0 => 'int',
+      'addr' => 'string',
     ),
     'fgetss' => 
     array (
@@ -31053,6 +31039,14 @@ return array (
       'fp' => 'resource',
       'length=' => 'int',
       'allowable_tags=' => 'string',
+    ),
+    'get_magic_quotes_gpc' => 
+    array (
+      0 => 'false|int',
+    ),
+    'get_magic_quotes_runtime' => 
+    array (
+      0 => 'false|int',
     ),
     'gmp_random' => 
     array (
@@ -31066,12 +31060,35 @@ return array (
       'length=' => 'int',
       'allowable_tags=' => 'string',
     ),
+    'hebrevc' => 
+    array (
+      0 => 'string',
+      'str' => 'string',
+      'max_chars_per_line=' => 'int',
+    ),
     'image2wbmp' => 
     array (
       0 => 'bool',
       'im' => 'resource',
       'filename=' => 'null|string',
       'foreground=' => 'int',
+    ),
+    'intlcodepointbreakiterator::__construct' => 
+    array (
+      0 => 'void',
+    ),
+    'intlexception::__clone' => 
+    array (
+      0 => 'void',
+    ),
+    'invalidargumentexception::__clone' => 
+    array (
+      0 => 'void',
+    ),
+    'is_real' => 
+    array (
+      0 => 'bool',
+      'var' => 'mixed',
     ),
     'jpeg2wbmp' => 
     array (
@@ -31081,6 +31098,10 @@ return array (
       'd_height' => 'int',
       'd_width' => 'int',
       'd_threshold' => 'int',
+    ),
+    'jsonexception::__clone' => 
+    array (
+      0 => 'void',
     ),
     'ldap_control_paged_result' => 
     array (
@@ -31105,6 +31126,20 @@ return array (
       'result_identifier' => 'resource',
       'sortfilter' => 'string',
     ),
+    'lengthexception::__clone' => 
+    array (
+      0 => 'void',
+    ),
+    'logicexception::__clone' => 
+    array (
+      0 => 'void',
+    ),
+    'money_format' => 
+    array (
+      0 => 'string',
+      'format' => 'string',
+      'value' => 'float',
+    ),
     'number_format\'1' => 
     array (
       0 => 'string',
@@ -31112,6 +31147,22 @@ return array (
       'decimals' => 'int',
       'decimal_separator' => 'null|string',
       'thousands_separator' => 'null|string',
+    ),
+    'outofboundsexception::__clone' => 
+    array (
+      0 => 'void',
+    ),
+    'outofrangeexception::__clone' => 
+    array (
+      0 => 'void',
+    ),
+    'overflowexception::__clone' => 
+    array (
+      0 => 'void',
+    ),
+    'parseerror::__clone' => 
+    array (
+      0 => 'void',
     ),
     'pdostatement::setfetchmode\'1' => 
     array (
@@ -31140,6 +31191,10 @@ return array (
       'd_height' => 'int',
       'd_width' => 'int',
       'd_threshold' => 'int',
+    ),
+    'rangeexception::__clone' => 
+    array (
+      0 => 'void',
     ),
     'read_exif_data' => 
     array (
@@ -31180,16 +31235,20 @@ return array (
       'name' => 'string',
       'return=' => 'bool',
     ),
-    'reflectionfunctionabstract::export' => 
-    array (
-      0 => 'null|string',
-    ),
     'reflectionmethod::export' => 
     array (
       0 => 'null|string',
       'class' => 'string',
       'name' => 'string',
       'return=' => 'bool',
+    ),
+    'reflectionnamedtype::__clone' => 
+    array (
+      0 => 'void',
+    ),
+    'reflectionobject::__clone' => 
+    array (
+      0 => 'void',
     ),
     'reflectionobject::export' => 
     array (
@@ -31221,6 +31280,14 @@ return array (
       'name' => 'string',
       'return=' => 'bool',
     ),
+    'restore_include_path' => 
+    array (
+      0 => 'void',
+    ),
+    'runtimeexception::__clone' => 
+    array (
+      0 => 'void',
+    ),
     'simplexmliterator::current' => 
     array (
       0 => 'SimpleXMLIterator|null',
@@ -31248,6 +31315,57 @@ return array (
     'simplexmliterator::valid' => 
     array (
       0 => 'bool',
+    ),
+    'soapclient::soapclient' => 
+    array (
+      0 => 'object',
+      'wsdl' => 'mixed',
+      'options=' => 'array<array-key, mixed>|null',
+    ),
+    'soapfault::__clone' => 
+    array (
+      0 => 'void',
+    ),
+    'soapfault::soapfault' => 
+    array (
+      0 => 'object',
+      'faultcode' => 'string',
+      'faultstring' => 'string',
+      'faultactor=' => 'null|string',
+      'detail=' => 'mixed|null',
+      'faultname=' => 'null|string',
+      'headerfault=' => 'mixed|null',
+    ),
+    'soapheader::soapheader' => 
+    array (
+      0 => 'object',
+      'namespace' => 'string',
+      'name' => 'string',
+      'data=' => 'mixed',
+      'mustunderstand=' => 'bool',
+      'actor=' => 'string',
+    ),
+    'soapparam::soapparam' => 
+    array (
+      0 => 'object',
+      'data' => 'mixed',
+      'name' => 'string',
+    ),
+    'soapserver::soapserver' => 
+    array (
+      0 => 'object',
+      'wsdl' => 'null|string',
+      'options=' => 'array<array-key, mixed>',
+    ),
+    'soapvar::soapvar' => 
+    array (
+      0 => 'object',
+      'data' => 'mixed',
+      'encoding' => 'int',
+      'type_name=' => 'null|string',
+      'type_namespace=' => 'null|string',
+      'node_name=' => 'null|string',
+      'node_namespace=' => 'null|string',
     ),
     'splfileobject::fgetss' => 
     array (
@@ -31278,6 +31396,43 @@ return array (
     array (
       0 => 'string',
       'allowable_tags=' => 'string',
+    ),
+    'swoole\\http\\request::__destruct' => 
+    array (
+      0 => 'void',
+    ),
+    'swoole\\http\\response::__destruct' => 
+    array (
+      0 => 'void',
+    ),
+    'swoole\\server::after' => 
+    array (
+      0 => 'ReturnType',
+      'ms' => 'int',
+      'callback' => 'callable',
+    ),
+    'swoole\\server::defer' => 
+    array (
+      0 => 'void',
+      'callback' => 'callable',
+    ),
+    'swoole\\server::tick' => 
+    array (
+      0 => 'void',
+      'ms' => 'int',
+      'callback' => 'callable',
+    ),
+    'typeerror::__clone' => 
+    array (
+      0 => 'void',
+    ),
+    'underflowexception::__clone' => 
+    array (
+      0 => 'void',
+    ),
+    'unexpectedvalueexception::__clone' => 
+    array (
+      0 => 'void',
     ),
     'xmlrpc_decode' => 
     array (

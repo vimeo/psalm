@@ -3053,6 +3053,7 @@ return array (
   'closure::__invoke' => 
   array (
     0 => 'mixed',
+    '...args=' => 'mixed',
   ),
   'closure::bind' => 
   array (
@@ -3664,13 +3665,6 @@ return array (
   array (
     0 => 'mixed',
     'name' => 'string',
-  ),
-  'convert_cyr_string' => 
-  array (
-    0 => 'string',
-    'string' => 'string',
-    'from' => 'string',
-    'to' => 'string',
   ),
   'convert_uudecode' => 
   array (
@@ -11546,15 +11540,6 @@ return array (
   array (
     0 => 'string',
   ),
-  'eventbufferevent::sslfilter' => 
-  array (
-    0 => 'EventBufferEvent',
-    'base' => 'EventBase',
-    'underlying' => 'EventBufferEvent',
-    'ctx' => 'EventSslContext',
-    'state' => 'int',
-    'options=' => 'int',
-  ),
   'eventbufferevent::sslgetcipherinfo' => 
   array (
     0 => 'string',
@@ -12598,10 +12583,6 @@ return array (
   array (
     0 => 'void',
   ),
-  'evwatcher::__construct' => 
-  array (
-    0 => 'void',
-  ),
   'evwatcher::clear' => 
   array (
     0 => 'int',
@@ -12759,11 +12740,6 @@ return array (
     '&array' => 'array<array-key, mixed>',
     'flags=' => 'int',
     'prefix=' => 'string',
-  ),
-  'ezmlm_hash' => 
-  array (
-    0 => 'int',
-    'addr' => 'string',
   ),
   'fam_cancel_monitor' => 
   array (
@@ -17151,14 +17127,6 @@ return array (
     0 => 'list<string>',
     'zend_extensions=' => 'bool',
   ),
-  'get_magic_quotes_gpc' => 
-  array (
-    0 => 'false|int',
-  ),
-  'get_magic_quotes_runtime' => 
-  array (
-    0 => 'false|int',
-  ),
   'get_meta_tags' => 
   array (
     0 => 'array<array-key, mixed>',
@@ -20631,12 +20599,6 @@ return array (
     '&w_line=' => 'int',
   ),
   'hebrev' => 
-  array (
-    0 => 'string',
-    'string' => 'string',
-    'max_chars_per_line=' => 'int',
-  ),
-  'hebrevc' => 
   array (
     0 => 'string',
     'string' => 'string',
@@ -32301,11 +32263,6 @@ return array (
     0 => 'bool',
     'filename' => 'string',
   ),
-  'is_real' => 
-  array (
-    0 => 'bool',
-    'value' => 'mixed',
-  ),
   'is_resource' => 
   array (
     0 => 'bool',
@@ -36605,12 +36562,6 @@ return array (
     'month=' => 'int|null',
     'day=' => 'int|null',
     'year=' => 'int|null',
-  ),
-  'money_format' => 
-  array (
-    0 => 'string',
-    'format' => 'string',
-    'value' => 'float',
   ),
   'mongo::__construct' => 
   array (
@@ -53310,20 +53261,6 @@ return array (
     'args=' => 'array<array-key, mixed>',
     'num_keys=' => 'int',
   ),
-  'redis::evaluate' => 
-  array (
-    0 => 'mixed',
-    'script' => 'string',
-    'args=' => 'array<array-key, mixed>',
-    'numKeys=' => 'int',
-  ),
-  'redis::evaluatesha' => 
-  array (
-    0 => 'mixed',
-    'scriptSha' => 'string',
-    'args=' => 'array<array-key, mixed>',
-    'numKeys=' => 'int',
-  ),
   'redis::exec' => 
   array (
     0 => 'array<array-key, mixed>',
@@ -53436,11 +53373,6 @@ return array (
   array (
     0 => 'false|string',
   ),
-  'redis::getkeys' => 
-  array (
-    0 => 'array<int, string>',
-    'pattern' => 'string',
-  ),
   'redis::getlasterror' => 
   array (
     0 => 'null|string',
@@ -53448,11 +53380,6 @@ return array (
   'redis::getmode' => 
   array (
     0 => 'int',
-  ),
-  'redis::getmultiple' => 
-  array (
-    0 => 'array<array-key, mixed>',
-    'keys' => 'array<array-key, string>',
   ),
   'redis::getoption' => 
   array (
@@ -53616,19 +53543,6 @@ return array (
   array (
     0 => 'int',
   ),
-  'redis::lget' => 
-  array (
-    0 => 'string',
-    'key' => 'string',
-    'index' => 'int',
-  ),
-  'redis::lgetrange' => 
-  array (
-    0 => 'array<array-key, mixed>',
-    'key' => 'string',
-    'start' => 'int',
-    'end' => 'int',
-  ),
   'redis::lindex' => 
   array (
     0 => 'false|string',
@@ -53642,13 +53556,6 @@ return array (
     'pos' => 'int',
     'pivot' => 'string',
     'value' => 'string',
-  ),
-  'redis::listtrim' => 
-  array (
-    0 => 'mixed',
-    'key' => 'string',
-    'start' => 'int',
-    'stop' => 'int',
   ),
   'redis::llen' => 
   array (
@@ -53687,24 +53594,12 @@ return array (
     'value' => 'string',
     'count=' => 'int',
   ),
-  'redis::lremove' => 
-  array (
-    0 => 'int',
-    'key' => 'string',
-    'value' => 'string',
-    'count' => 'int',
-  ),
   'redis::lset' => 
   array (
     0 => 'bool',
     'key' => 'string',
     'index' => 'int',
     'value' => 'string',
-  ),
-  'redis::lsize' => 
-  array (
-    0 => 'int',
-    'key' => 'string',
   ),
   'redis::ltrim' => 
   array (
@@ -53886,12 +53781,6 @@ return array (
     'old_name' => 'string',
     'new_name' => 'string',
   ),
-  'redis::renamekey' => 
-  array (
-    0 => 'bool',
-    'srckey' => 'string',
-    'dstkey' => 'string',
-  ),
   'redis::renamenx' => 
   array (
     0 => 'bool',
@@ -53968,12 +53857,6 @@ return array (
     0 => 'int',
     'key' => 'string',
   ),
-  'redis::scontains' => 
-  array (
-    0 => 'mixed',
-    'key' => 'string',
-    'value' => 'string',
-  ),
   'redis::script' => 
   array (
     0 => 'mixed',
@@ -53997,11 +53880,6 @@ return array (
   array (
     0 => 'bool',
     'db' => 'int',
-  ),
-  'redis::sendecho' => 
-  array (
-    0 => 'string',
-    'msg' => 'string',
   ),
   'redis::set' => 
   array (
@@ -54049,17 +53927,6 @@ return array (
     'key' => 'string',
     'index' => 'int',
     'value' => 'int',
-  ),
-  'redis::settimeout' => 
-  array (
-    0 => 'mixed',
-    'key' => 'string',
-    'ttl' => 'int',
-  ),
-  'redis::sgetmembers' => 
-  array (
-    0 => 'mixed',
-    'key' => 'string',
   ),
   'redis::sinter' => 
   array (
@@ -54180,13 +54047,6 @@ return array (
     'value' => 'string',
     '...other_values=' => 'string',
   ),
-  'redis::sremove' => 
-  array (
-    0 => 'int',
-    'key' => 'string',
-    'member1' => 'string',
-    '...other_members=' => 'string',
-  ),
   'redis::sscan' => 
   array (
     0 => 'array<array-key, mixed>|bool',
@@ -54194,11 +54054,6 @@ return array (
     '&iterator' => 'int',
     'pattern=' => 'string',
     'count=' => 'int',
-  ),
-  'redis::ssize' => 
-  array (
-    0 => 'int',
-    'key' => 'string',
   ),
   'redis::strlen' => 
   array (
@@ -54210,13 +54065,6 @@ return array (
     0 => 'mixed|null',
     'channels' => 'array<array-key, mixed>',
     'cb' => 'array<array-key, mixed>|string',
-  ),
-  'redis::substr' => 
-  array (
-    0 => 'mixed',
-    'key' => 'string',
-    'start' => 'int',
-    'end' => 'int',
   ),
   'redis::sunion' => 
   array (
@@ -54421,27 +54269,6 @@ return array (
     'start' => 'string',
     'end' => 'string',
   ),
-  'redis::zdelete' => 
-  array (
-    0 => 'int',
-    'key' => 'string',
-    'member' => 'string',
-    '...other_members=' => 'string',
-  ),
-  'redis::zdeleterangebyrank' => 
-  array (
-    0 => 'mixed',
-    'key' => 'string',
-    'start' => 'int',
-    'end' => 'int',
-  ),
-  'redis::zdeleterangebyscore' => 
-  array (
-    0 => 'mixed',
-    'key' => 'string',
-    'start' => 'float',
-    'end' => 'float',
-  ),
   'redis::zincrby' => 
   array (
     0 => 'float',
@@ -54509,26 +54336,12 @@ return array (
     'member' => 'string',
     '...other_members=' => 'string',
   ),
-  'redis::zremove' => 
-  array (
-    0 => 'int',
-    'key' => 'string',
-    'member' => 'string',
-    '...other_members=' => 'string',
-  ),
   'redis::zremoverangebyrank' => 
   array (
     0 => 'int',
     'key' => 'string',
     'start' => 'int',
     'end' => 'int',
-  ),
-  'redis::zremoverangebyscore' => 
-  array (
-    0 => 'int',
-    'key' => 'string',
-    'start' => 'float|string',
-    'end' => 'float|string',
   ),
   'redis::zremrangebylex' => 
   array (
@@ -54550,14 +54363,6 @@ return array (
     'key' => 'string',
     'start' => 'float|string',
     'end' => 'float|string',
-  ),
-  'redis::zreverserange' => 
-  array (
-    0 => 'array<array-key, mixed>',
-    'key' => 'string',
-    'start' => 'int',
-    'end' => 'int',
-    'withscore=' => 'bool',
   ),
   'redis::zrevrange' => 
   array (
@@ -54603,11 +54408,6 @@ return array (
     0 => 'false|float',
     'key' => 'string',
     'member' => 'string',
-  ),
-  'redis::zsize' => 
-  array (
-    0 => 'mixed',
-    'key' => 'string',
   ),
   'redis::zunion' => 
   array (
@@ -54677,12 +54477,6 @@ return array (
     'key' => 'string',
     '...otherkeys=' => 'string',
   ),
-  'redisarray::delete' => 
-  array (
-    0 => 'bool',
-    'key' => 'string',
-    '...args' => 'string',
-  ),
   'redisarray::delete\'1' => 
   array (
     0 => 'bool',
@@ -54703,11 +54497,6 @@ return array (
   'redisarray::flushdb' => 
   array (
     0 => 'bool',
-  ),
-  'redisarray::getmultiple' => 
-  array (
-    0 => 'mixed',
-    'keys' => 'mixed',
   ),
   'redisarray::getoption' => 
   array (
@@ -57463,10 +57252,6 @@ return array (
   'restore_exception_handler' => 
   array (
     0 => 'true',
-  ),
-  'restore_include_path' => 
-  array (
-    0 => 'void',
   ),
   'rewind' => 
   array (
@@ -60623,16 +60408,6 @@ return array (
     'inputHeaders=' => 'SoapHeader|array<array-key, mixed>',
     '&w_outputHeaders=' => 'array<array-key, mixed>',
   ),
-  'soapclient::soapclient' => 
-  array (
-    0 => 'object',
-    'wsdl' => 'mixed',
-    'options=' => 'array<array-key, mixed>|null',
-  ),
-  'soapfault::__clone' => 
-  array (
-    0 => 'void',
-  ),
   'soapfault::__construct' => 
   array (
     0 => 'void',
@@ -60679,16 +60454,6 @@ return array (
   array (
     0 => 'string',
   ),
-  'soapfault::soapfault' => 
-  array (
-    0 => 'object',
-    'faultcode' => 'string',
-    'faultstring' => 'string',
-    'faultactor=' => 'null|string',
-    'detail=' => 'mixed|null',
-    'faultname=' => 'null|string',
-    'headerfault=' => 'mixed|null',
-  ),
   'soapheader::__construct' => 
   array (
     0 => 'void',
@@ -60698,24 +60463,9 @@ return array (
     'mustUnderstand=' => 'bool',
     'actor=' => 'string',
   ),
-  'soapheader::soapheader' => 
-  array (
-    0 => 'object',
-    'namespace' => 'string',
-    'name' => 'string',
-    'data=' => 'mixed',
-    'mustunderstand=' => 'bool',
-    'actor=' => 'string',
-  ),
   'soapparam::__construct' => 
   array (
     0 => 'void',
-    'data' => 'mixed',
-    'name' => 'string',
-  ),
-  'soapparam::soapparam' => 
-  array (
-    0 => 'object',
     'data' => 'mixed',
     'name' => 'string',
   ),
@@ -60769,12 +60519,6 @@ return array (
     0 => 'void',
     'mode' => 'int',
   ),
-  'soapserver::soapserver' => 
-  array (
-    0 => 'object',
-    'wsdl' => 'null|string',
-    'options=' => 'array<array-key, mixed>',
-  ),
   'soapvar::__construct' => 
   array (
     0 => 'void',
@@ -60784,16 +60528,6 @@ return array (
     'typeNamespace=' => 'null|string',
     'nodeName=' => 'null|string',
     'nodeNamespace=' => 'null|string',
-  ),
-  'soapvar::soapvar' => 
-  array (
-    0 => 'object',
-    'data' => 'mixed',
-    'encoding' => 'int',
-    'type_name=' => 'null|string',
-    'type_namespace=' => 'null|string',
-    'node_name=' => 'null|string',
-    'node_namespace=' => 'null|string',
   ),
   'socket_accept' => 
   array (
@@ -70910,51 +70644,6 @@ return array (
     0 => 'int',
     'sub_value=' => 'int',
   ),
-  'swoole\\buffer::__destruct' => 
-  array (
-    0 => 'void',
-  ),
-  'swoole\\buffer::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'swoole\\buffer::append' => 
-  array (
-    0 => 'int',
-    'data' => 'string',
-  ),
-  'swoole\\buffer::clear' => 
-  array (
-    0 => 'void',
-  ),
-  'swoole\\buffer::expand' => 
-  array (
-    0 => 'int',
-    'size' => 'int',
-  ),
-  'swoole\\buffer::read' => 
-  array (
-    0 => 'string',
-    'offset' => 'int',
-    'length' => 'int',
-  ),
-  'swoole\\buffer::recycle' => 
-  array (
-    0 => 'void',
-  ),
-  'swoole\\buffer::substr' => 
-  array (
-    0 => 'string',
-    'offset' => 'int',
-    'length=' => 'int',
-    'remove=' => 'bool',
-  ),
-  'swoole\\buffer::write' => 
-  array (
-    0 => 'void',
-    'offset' => 'int',
-    'data' => 'string',
-  ),
   'swoole\\channel::__destruct' => 
   array (
     0 => 'void',
@@ -71001,30 +70690,11 @@ return array (
   array (
     0 => 'bool',
   ),
-  'swoole\\client::on' => 
-  array (
-    0 => 'void',
-    'event' => 'string',
-    'callback' => 'callable',
-  ),
-  'swoole\\client::pause' => 
-  array (
-    0 => 'void',
-  ),
-  'swoole\\client::pipe' => 
-  array (
-    0 => 'void',
-    'socket' => 'string',
-  ),
   'swoole\\client::recv' => 
   array (
     0 => 'void',
     'size=' => 'string',
     'flag=' => 'string',
-  ),
-  'swoole\\client::resume' => 
-  array (
-    0 => 'void',
   ),
   'swoole\\client::send' => 
   array (
@@ -71050,14 +70720,6 @@ return array (
   array (
     0 => 'void',
     'settings' => 'array<array-key, mixed>',
-  ),
-  'swoole\\client::sleep' => 
-  array (
-    0 => 'void',
-  ),
-  'swoole\\client::wakeup' => 
-  array (
-    0 => 'void',
   ),
   'swoole\\connection\\iterator::count' => 
   array (
@@ -71275,34 +70937,6 @@ return array (
     0 => 'ReturnType',
     'method' => 'string',
   ),
-  'swoole\\coroutine\\mysql::__destruct' => 
-  array (
-    0 => 'ReturnType',
-  ),
-  'swoole\\coroutine\\mysql::close' => 
-  array (
-    0 => 'ReturnType',
-  ),
-  'swoole\\coroutine\\mysql::connect' => 
-  array (
-    0 => 'ReturnType',
-  ),
-  'swoole\\coroutine\\mysql::getdefer' => 
-  array (
-    0 => 'ReturnType',
-  ),
-  'swoole\\coroutine\\mysql::query' => 
-  array (
-    0 => 'ReturnType',
-  ),
-  'swoole\\coroutine\\mysql::recv' => 
-  array (
-    0 => 'ReturnType',
-  ),
-  'swoole\\coroutine\\mysql::setdefer' => 
-  array (
-    0 => 'ReturnType',
-  ),
   'swoole\\event::add' => 
   array (
     0 => 'bool',
@@ -71435,17 +71069,9 @@ return array (
     'path' => 'string',
     'callback' => 'string',
   ),
-  'swoole\\http\\request::__destruct' => 
-  array (
-    0 => 'void',
-  ),
   'swoole\\http\\request::rawcontent' => 
   array (
     0 => 'string',
-  ),
-  'swoole\\http\\response::__destruct' => 
-  array (
-    0 => 'void',
   ),
   'swoole\\http\\response::cookie' => 
   array (
@@ -71695,18 +71321,6 @@ return array (
   array (
     0 => 'ReturnType',
   ),
-  'swoole\\serialize::pack' => 
-  array (
-    0 => 'ReturnType',
-    'data' => 'string',
-    'is_fast=' => 'int',
-  ),
-  'swoole\\serialize::unpack' => 
-  array (
-    0 => 'ReturnType',
-    'data' => 'string',
-    'args=' => 'string',
-  ),
   'swoole\\server::addlistener' => 
   array (
     0 => 'void',
@@ -71718,13 +71332,6 @@ return array (
   array (
     0 => 'bool',
     'process' => 'swoole_process',
-  ),
-  'swoole\\server::after' => 
-  array (
-    0 => 'ReturnType',
-    'after_time_ms' => 'int',
-    'callback' => 'callable',
-    'param=' => 'string',
   ),
   'swoole\\server::bind' => 
   array (
@@ -71755,11 +71362,6 @@ return array (
     0 => 'array<array-key, mixed>',
     'start_fd=' => 'int',
     'find_count=' => 'int',
-  ),
-  'swoole\\server::defer' => 
-  array (
-    0 => 'void',
-    'callback' => 'callable',
   ),
   'swoole\\server::exist' => 
   array (
@@ -71904,12 +71506,6 @@ return array (
     0 => 'void',
     'tasks' => 'array<array-key, mixed>',
     'timeout=' => 'float',
-  ),
-  'swoole\\server::tick' => 
-  array (
-    0 => 'void',
-    'interval_ms' => 'int',
-    'callback' => 'callable',
   ),
   'swoole\\server\\port::__destruct' => 
   array (

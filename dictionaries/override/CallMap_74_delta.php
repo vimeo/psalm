@@ -10,6 +10,48 @@ return array (
       'split_length=' => 'int<1, max>',
       'encoding=' => 'string',
     ),
+    'mongodb\\bson\\document::offsetexists' => 
+    array (
+      0 => 'bool',
+      'offset' => 'mixed',
+    ),
+    'mongodb\\bson\\document::offsetget' => 
+    array (
+      0 => 'mixed',
+      'offset' => 'mixed',
+    ),
+    'mongodb\\bson\\document::offsetset' => 
+    array (
+      0 => 'void',
+      'offset' => 'mixed',
+      'value' => 'mixed',
+    ),
+    'mongodb\\bson\\document::offsetunset' => 
+    array (
+      0 => 'void',
+      'offset' => 'mixed',
+    ),
+    'mongodb\\bson\\packedarray::offsetexists' => 
+    array (
+      0 => 'bool',
+      'offset' => 'mixed',
+    ),
+    'mongodb\\bson\\packedarray::offsetget' => 
+    array (
+      0 => 'mixed',
+      'offset' => 'mixed',
+    ),
+    'mongodb\\bson\\packedarray::offsetset' => 
+    array (
+      0 => 'void',
+      'offset' => 'mixed',
+      'value' => 'mixed',
+    ),
+    'mongodb\\bson\\packedarray::offsetunset' => 
+    array (
+      0 => 'void',
+      'offset' => 'mixed',
+    ),
     'openssl_x509_verify' => 
     array (
       0 => 'int',
@@ -20,10 +62,19 @@ return array (
     array (
       0 => 'ReflectionType|null',
     ),
+    'reflectionproperty::hastype' => 
+    array (
+      0 => 'bool',
+    ),
     'reflectionproperty::isinitialized' => 
     array (
       0 => 'bool',
       'object=' => 'object',
+    ),
+    'sqlite3stmt::getsql' => 
+    array (
+      0 => 'string',
+      'expanded=' => 'bool',
     ),
   ),
   'changed' => 
@@ -1088,19 +1139,6 @@ return array (
         'length=' => 'int',
       ),
     ),
-    'sqlite3stmt::getsql' => 
-    array (
-      'old' => 
-      array (
-        0 => 'string',
-        'expand=' => 'bool',
-      ),
-      'new' => 
-      array (
-        0 => 'string',
-        'expanded=' => 'bool',
-      ),
-    ),
     'stream_context_set_option' => 
     array (
       'old' => 
@@ -1138,5 +1176,9 @@ return array (
   ),
   'removed' => 
   array (
+    'reflectionfunctionabstract::export' => 
+    array (
+      0 => 'null|string',
+    ),
   ),
 );

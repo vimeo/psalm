@@ -132,6 +132,10 @@ return array (
       'priv_key' => 'mixed',
       'keylen=' => 'int|null',
     ),
+    'readline_list_history' => 
+    array (
+      0 => 'array<array-key, mixed>',
+    ),
     'session_set_cookie_params\'1' => 
     array (
       0 => 'bool',
@@ -170,6 +174,11 @@ return array (
     'splpriorityqueue::iscorrupted' => 
     array (
       0 => 'bool',
+    ),
+    'spoofchecker::setrestrictionlevel' => 
+    array (
+      0 => 'void',
+      'level' => 'int',
     ),
   ),
   'changed' => 

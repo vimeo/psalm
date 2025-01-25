@@ -17659,10 +17659,6 @@ return array (
     0 => 'mixed',
     'features' => 'mixed',
   ),
-  'domnamednodemap::count' => 
-  array (
-    0 => 'int',
-  ),
   'domnamednodemap::getnameditem' => 
   array (
     0 => 'DOMNode|null',
@@ -24483,12 +24479,6 @@ return array (
   'filteriterator::valid' => 
   array (
     0 => 'bool',
-  ),
-  'finfo::__construct' => 
-  array (
-    0 => 'void',
-    'flags=' => 'int',
-    'magic_database=' => 'string',
   ),
   'finfo::buffer' => 
   array (
@@ -35739,11 +35729,6 @@ return array (
     'chunk_size=' => 'int',
     'type=' => 'int',
   ),
-  'imagegetclip' => 
-  array (
-    0 => 'array<int, int>|false',
-    'im' => 'resource',
-  ),
   'imagegif' => 
   array (
     0 => 'bool',
@@ -39965,16 +39950,6 @@ return array (
     'context' => 'resource',
     'encoded_data' => 'string',
     'flush_mode=' => 'int',
-  ),
-  'inflate_get_read_len' => 
-  array (
-    0 => 'int',
-    'context' => 'resource',
-  ),
-  'inflate_get_status' => 
-  array (
-    0 => 'int',
-    'context' => 'resource',
   ),
   'inflate_init' => 
   array (
@@ -47696,82 +47671,6 @@ return array (
   array (
     0 => 'string',
   ),
-  'mongodb\\bson\\document::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\document::frombson' => 
-  array (
-    0 => 'MongoDB\\BSON\\Document',
-    'bson' => 'string',
-  ),
-  'mongodb\\bson\\document::fromjson' => 
-  array (
-    0 => 'MongoDB\\BSON\\Document',
-    'json' => 'string',
-  ),
-  'mongodb\\bson\\document::fromphp' => 
-  array (
-    0 => 'MongoDB\\BSON\\Document',
-    'value' => 'array<array-key, mixed>|object',
-  ),
-  'mongodb\\bson\\document::get' => 
-  array (
-    0 => 'mixed',
-    'key' => 'string',
-  ),
-  'mongodb\\bson\\document::getiterator' => 
-  array (
-    0 => 'MongoDB\\BSON\\Iterator',
-  ),
-  'mongodb\\bson\\document::has' => 
-  array (
-    0 => 'bool',
-    'key' => 'string',
-  ),
-  'mongodb\\bson\\document::offsetexists' => 
-  array (
-    0 => 'bool',
-    'offset' => 'mixed',
-  ),
-  'mongodb\\bson\\document::offsetget' => 
-  array (
-    0 => 'mixed',
-    'offset' => 'mixed',
-  ),
-  'mongodb\\bson\\document::offsetset' => 
-  array (
-    0 => 'void',
-    'offset' => 'mixed',
-    'value' => 'mixed',
-  ),
-  'mongodb\\bson\\document::offsetunset' => 
-  array (
-    0 => 'void',
-    'offset' => 'mixed',
-  ),
-  'mongodb\\bson\\document::serialize' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\document::tocanonicalextendedjson' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\document::tophp' => 
-  array (
-    0 => 'array<array-key, mixed>|object',
-    'typeMap=' => 'array<array-key, mixed>|null',
-  ),
-  'mongodb\\bson\\document::torelaxedextendedjson' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\document::unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
-  ),
   'mongodb\\bson\\fromjson' => 
   array (
     0 => 'string',
@@ -47811,26 +47710,6 @@ return array (
   array (
     0 => 'void',
     'serialized' => 'string',
-  ),
-  'mongodb\\bson\\iterator::current' => 
-  array (
-    0 => 'mixed',
-  ),
-  'mongodb\\bson\\iterator::key' => 
-  array (
-    0 => 'int|string',
-  ),
-  'mongodb\\bson\\iterator::next' => 
-  array (
-    0 => 'void',
-  ),
-  'mongodb\\bson\\iterator::rewind' => 
-  array (
-    0 => 'void',
-  ),
-  'mongodb\\bson\\iterator::valid' => 
-  array (
-    0 => 'bool',
   ),
   'mongodb\\bson\\javascript::__construct' => 
   array (
@@ -47990,64 +47869,6 @@ return array (
   'mongodb\\bson\\objectidinterface::gettimestamp' => 
   array (
     0 => 'int',
-  ),
-  'mongodb\\bson\\packedarray::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\packedarray::fromphp' => 
-  array (
-    0 => 'MongoDB\\BSON\\PackedArray',
-    'value' => 'array<array-key, mixed>',
-  ),
-  'mongodb\\bson\\packedarray::get' => 
-  array (
-    0 => 'mixed',
-    'index' => 'int',
-  ),
-  'mongodb\\bson\\packedarray::getiterator' => 
-  array (
-    0 => 'MongoDB\\BSON\\Iterator',
-  ),
-  'mongodb\\bson\\packedarray::has' => 
-  array (
-    0 => 'bool',
-    'index' => 'int',
-  ),
-  'mongodb\\bson\\packedarray::offsetexists' => 
-  array (
-    0 => 'bool',
-    'offset' => 'mixed',
-  ),
-  'mongodb\\bson\\packedarray::offsetget' => 
-  array (
-    0 => 'mixed',
-    'offset' => 'mixed',
-  ),
-  'mongodb\\bson\\packedarray::offsetset' => 
-  array (
-    0 => 'void',
-    'offset' => 'mixed',
-    'value' => 'mixed',
-  ),
-  'mongodb\\bson\\packedarray::offsetunset' => 
-  array (
-    0 => 'void',
-    'offset' => 'mixed',
-  ),
-  'mongodb\\bson\\packedarray::serialize' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\packedarray::tophp' => 
-  array (
-    0 => 'array<array-key, mixed>|object',
-    'typeMap=' => 'array<array-key, mixed>|null',
-  ),
-  'mongodb\\bson\\packedarray::unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
   ),
   'mongodb\\bson\\persistable::bsonserialize' => 
   array (
@@ -48344,12 +48165,6 @@ return array (
   array (
     0 => 'mixed',
   ),
-  'mongodb\\driver\\clientencryption::addkeyaltname' => 
-  array (
-    0 => 'null|object',
-    'keyId' => 'MongoDB\\BSON\\Binary',
-    'keyAltName' => 'string',
-  ),
   'mongodb\\driver\\clientencryption::createdatakey' => 
   array (
     0 => 'MongoDB\\BSON\\Binary',
@@ -48361,47 +48176,10 @@ return array (
     0 => 'mixed',
     'keyVaultClient' => 'MongoDB\\BSON\\Binary',
   ),
-  'mongodb\\driver\\clientencryption::deletekey' => 
-  array (
-    0 => 'object',
-    'keyId' => 'MongoDB\\BSON\\Binary',
-  ),
   'mongodb\\driver\\clientencryption::encrypt' => 
   array (
     0 => 'MongoDB\\BSON\\Binary',
     'value' => 'mixed',
-    'options=' => 'array<array-key, mixed>|null',
-  ),
-  'mongodb\\driver\\clientencryption::encryptexpression' => 
-  array (
-    0 => 'object',
-    'expr' => 'array<array-key, mixed>|object',
-    'options=' => 'array<array-key, mixed>|null',
-  ),
-  'mongodb\\driver\\clientencryption::getkey' => 
-  array (
-    0 => 'null|object',
-    'keyId' => 'MongoDB\\BSON\\Binary',
-  ),
-  'mongodb\\driver\\clientencryption::getkeybyaltname' => 
-  array (
-    0 => 'null|object',
-    'keyAltName' => 'string',
-  ),
-  'mongodb\\driver\\clientencryption::getkeys' => 
-  array (
-    0 => 'MongoDB\\Driver\\Cursor',
-  ),
-  'mongodb\\driver\\clientencryption::removekeyaltname' => 
-  array (
-    0 => 'null|object',
-    'keyId' => 'MongoDB\\BSON\\Binary',
-    'keyAltName' => 'string',
-  ),
-  'mongodb\\driver\\clientencryption::rewrapmanydatakey' => 
-  array (
-    0 => 'object',
-    'filter' => 'array<array-key, mixed>|object',
     'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\command::__construct' => 
@@ -49307,10 +49085,6 @@ return array (
     'command' => 'MongoDB\\Driver\\Command',
     'options=' => 'array<array-key, mixed>|null',
   ),
-  'mongodb\\driver\\manager::getencryptedfieldsmap' => 
-  array (
-    0 => 'array<array-key, mixed>|null|object',
-  ),
   'mongodb\\driver\\manager::getreadconcern' => 
   array (
     0 => 'MongoDB\\Driver\\ReadConcern',
@@ -49383,10 +49157,6 @@ return array (
   array (
     0 => 'MongoDB\\Driver\\Server',
   ),
-  'mongodb\\driver\\monitoring\\commandfailedevent::getserverconnectionid' => 
-  array (
-    0 => 'int|null',
-  ),
   'mongodb\\driver\\monitoring\\commandfailedevent::getserviceid' => 
   array (
     0 => 'MongoDB\\BSON\\ObjectId|null',
@@ -49422,10 +49192,6 @@ return array (
   'mongodb\\driver\\monitoring\\commandstartedevent::getserver' => 
   array (
     0 => 'MongoDB\\Driver\\Server',
-  ),
-  'mongodb\\driver\\monitoring\\commandstartedevent::getserverconnectionid' => 
-  array (
-    0 => 'int|null',
   ),
   'mongodb\\driver\\monitoring\\commandstartedevent::getserviceid' => 
   array (
@@ -49477,10 +49243,6 @@ return array (
   'mongodb\\driver\\monitoring\\commandsucceededevent::getserver' => 
   array (
     0 => 'MongoDB\\Driver\\Server',
-  ),
-  'mongodb\\driver\\monitoring\\commandsucceededevent::getserverconnectionid' => 
-  array (
-    0 => 'int|null',
   ),
   'mongodb\\driver\\monitoring\\commandsucceededevent::getserviceid' => 
   array (
@@ -49542,122 +49304,6 @@ return array (
   array (
     0 => 'void',
     'event' => 'MongoDB\\Driver\\Monitoring\\TopologyOpeningEvent',
-  ),
-  'mongodb\\driver\\monitoring\\serverchangedevent::gethost' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\monitoring\\serverchangedevent::getnewdescription' => 
-  array (
-    0 => 'MongoDB\\Driver\\ServerDescription',
-  ),
-  'mongodb\\driver\\monitoring\\serverchangedevent::getport' => 
-  array (
-    0 => 'int',
-  ),
-  'mongodb\\driver\\monitoring\\serverchangedevent::getpreviousdescription' => 
-  array (
-    0 => 'MongoDB\\Driver\\ServerDescription',
-  ),
-  'mongodb\\driver\\monitoring\\serverchangedevent::gettopologyid' => 
-  array (
-    0 => 'MongoDB\\BSON\\ObjectId',
-  ),
-  'mongodb\\driver\\monitoring\\serverclosedevent::gethost' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\monitoring\\serverclosedevent::getport' => 
-  array (
-    0 => 'int',
-  ),
-  'mongodb\\driver\\monitoring\\serverclosedevent::gettopologyid' => 
-  array (
-    0 => 'MongoDB\\BSON\\ObjectId',
-  ),
-  'mongodb\\driver\\monitoring\\serverheartbeatfailedevent::getdurationmicros' => 
-  array (
-    0 => 'int',
-  ),
-  'mongodb\\driver\\monitoring\\serverheartbeatfailedevent::geterror' => 
-  array (
-    0 => 'Exception',
-  ),
-  'mongodb\\driver\\monitoring\\serverheartbeatfailedevent::gethost' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\monitoring\\serverheartbeatfailedevent::getport' => 
-  array (
-    0 => 'int',
-  ),
-  'mongodb\\driver\\monitoring\\serverheartbeatfailedevent::isawaited' => 
-  array (
-    0 => 'bool',
-  ),
-  'mongodb\\driver\\monitoring\\serverheartbeatstartedevent::gethost' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\monitoring\\serverheartbeatstartedevent::getport' => 
-  array (
-    0 => 'int',
-  ),
-  'mongodb\\driver\\monitoring\\serverheartbeatstartedevent::isawaited' => 
-  array (
-    0 => 'bool',
-  ),
-  'mongodb\\driver\\monitoring\\serverheartbeatsucceededevent::getdurationmicros' => 
-  array (
-    0 => 'int',
-  ),
-  'mongodb\\driver\\monitoring\\serverheartbeatsucceededevent::gethost' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\monitoring\\serverheartbeatsucceededevent::getport' => 
-  array (
-    0 => 'int',
-  ),
-  'mongodb\\driver\\monitoring\\serverheartbeatsucceededevent::getreply' => 
-  array (
-    0 => 'object',
-  ),
-  'mongodb\\driver\\monitoring\\serverheartbeatsucceededevent::isawaited' => 
-  array (
-    0 => 'bool',
-  ),
-  'mongodb\\driver\\monitoring\\serveropeningevent::gethost' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\monitoring\\serveropeningevent::getport' => 
-  array (
-    0 => 'int',
-  ),
-  'mongodb\\driver\\monitoring\\serveropeningevent::gettopologyid' => 
-  array (
-    0 => 'MongoDB\\BSON\\ObjectId',
-  ),
-  'mongodb\\driver\\monitoring\\topologychangedevent::getnewdescription' => 
-  array (
-    0 => 'MongoDB\\Driver\\TopologyDescription',
-  ),
-  'mongodb\\driver\\monitoring\\topologychangedevent::getpreviousdescription' => 
-  array (
-    0 => 'MongoDB\\Driver\\TopologyDescription',
-  ),
-  'mongodb\\driver\\monitoring\\topologychangedevent::gettopologyid' => 
-  array (
-    0 => 'MongoDB\\BSON\\ObjectId',
-  ),
-  'mongodb\\driver\\monitoring\\topologyclosedevent::gettopologyid' => 
-  array (
-    0 => 'MongoDB\\BSON\\ObjectId',
-  ),
-  'mongodb\\driver\\monitoring\\topologyopeningevent::gettopologyid' => 
-  array (
-    0 => 'MongoDB\\BSON\\ObjectId',
   ),
   'mongodb\\driver\\query::__construct' => 
   array (
@@ -49829,10 +49475,6 @@ return array (
   array (
     0 => 'int',
   ),
-  'mongodb\\driver\\server::getserverdescription' => 
-  array (
-    0 => 'MongoDB\\Driver\\ServerDescription',
-  ),
   'mongodb\\driver\\server::gettags' => 
   array (
     0 => 'array<array-key, mixed>',
@@ -49895,30 +49537,6 @@ return array (
     0 => 'void',
     'serialized' => 'string',
   ),
-  'mongodb\\driver\\serverdescription::gethelloresponse' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongodb\\driver\\serverdescription::gethost' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\serverdescription::getlastupdatetime' => 
-  array (
-    0 => 'int',
-  ),
-  'mongodb\\driver\\serverdescription::getport' => 
-  array (
-    0 => 'int',
-  ),
-  'mongodb\\driver\\serverdescription::getroundtriptime' => 
-  array (
-    0 => 'int|null',
-  ),
-  'mongodb\\driver\\serverdescription::gettype' => 
-  array (
-    0 => 'string',
-  ),
   'mongodb\\driver\\session::__construct' => 
   array (
     0 => 'void',
@@ -49973,10 +49591,6 @@ return array (
   array (
     0 => 'string',
   ),
-  'mongodb\\driver\\session::isdirty' => 
-  array (
-    0 => 'bool',
-  ),
   'mongodb\\driver\\session::isintransaction' => 
   array (
     0 => 'bool',
@@ -49985,23 +49599,6 @@ return array (
   array (
     0 => 'void',
     'options=' => 'array<array-key, mixed>|null',
-  ),
-  'mongodb\\driver\\topologydescription::getservers' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongodb\\driver\\topologydescription::gettype' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\topologydescription::hasreadableserver' => 
-  array (
-    0 => 'bool',
-    'readPreference=' => 'MongoDB\\Driver\\ReadPreference|null',
-  ),
-  'mongodb\\driver\\topologydescription::haswritableserver' => 
-  array (
-    0 => 'bool',
   ),
   'mongodb\\driver\\writeconcern::__construct' => 
   array (
@@ -50108,10 +49705,6 @@ return array (
   'mongodb\\driver\\writeresult::getdeletedcount' => 
   array (
     0 => 'int|null',
-  ),
-  'mongodb\\driver\\writeresult::geterrorreplies' => 
-  array (
-    0 => 'array<array-key, mixed>',
   ),
   'mongodb\\driver\\writeresult::getinsertedcount' => 
   array (
@@ -55640,35 +55233,6 @@ return array (
     'table=' => 'string',
     'types=' => 'string',
   ),
-  'opcache_compile_file' => 
-  array (
-    0 => 'bool',
-    'filename' => 'string',
-  ),
-  'opcache_get_configuration' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'opcache_get_status' => 
-  array (
-    0 => 'array<array-key, mixed>|false',
-    'include_scripts=' => 'bool',
-  ),
-  'opcache_invalidate' => 
-  array (
-    0 => 'bool',
-    'filename' => 'string',
-    'force=' => 'bool',
-  ),
-  'opcache_is_script_cached' => 
-  array (
-    0 => 'bool',
-    'filename' => 'string',
-  ),
-  'opcache_reset' => 
-  array (
-    0 => 'bool',
-  ),
   'openal_buffer_create' => 
   array (
     0 => 'resource',
@@ -55990,12 +55554,6 @@ return array (
     'headers' => 'array<array-key, mixed>',
     'flags=' => 'int',
     'cipher=' => 'int',
-  ),
-  'openssl_pkcs7_read' => 
-  array (
-    0 => 'bool',
-    'data' => 'string',
-    '&w_certificates' => 'array<array-key, mixed>',
   ),
   'openssl_pkcs7_sign' => 
   array (
@@ -57101,11 +56659,6 @@ return array (
   'pcntl_wexitstatus' => 
   array (
     0 => 'int',
-    'status' => 'int',
-  ),
-  'pcntl_wifcontinued' => 
-  array (
-    0 => 'bool',
     'status' => 'int',
   ),
   'pcntl_wifexited' => 
@@ -64117,10 +63670,6 @@ return array (
     'varname=' => 'string',
     'newvalue=' => 'bool|int|string',
   ),
-  'readline_list_history' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
   'readline_on_new_line' => 
   array (
     0 => 'void',
@@ -69177,10 +68726,6 @@ return array (
   array (
     0 => 'bool',
   ),
-  'reflectionobject::isiterable' => 
-  array (
-    0 => 'bool',
-  ),
   'reflectionobject::isiterateable' => 
   array (
     0 => 'bool',
@@ -69352,10 +68897,6 @@ return array (
   array (
     0 => 'mixed',
     'object=' => 'object',
-  ),
-  'reflectionproperty::hastype' => 
-  array (
-    0 => 'bool',
   ),
   'reflectionproperty::isdefault' => 
   array (
@@ -72820,12 +72361,6 @@ return array (
     'function_name' => 'string',
     'arguments' => 'array<array-key, mixed>',
   ),
-  'soapclient::__construct' => 
-  array (
-    0 => 'void',
-    'wsdl' => 'mixed',
-    'options=' => 'array<array-key, mixed>|null',
-  ),
   'soapclient::__dorequest' => 
   array (
     0 => 'null|string',
@@ -72951,15 +72486,6 @@ return array (
     'faultname=' => 'null|string',
     'headerfault=' => 'mixed|null',
   ),
-  'soapheader::__construct' => 
-  array (
-    0 => 'void',
-    'namespace' => 'string',
-    'name' => 'string',
-    'data=' => 'mixed',
-    'mustunderstand=' => 'bool',
-    'actor=' => 'string',
-  ),
   'soapheader::soapheader' => 
   array (
     0 => 'object',
@@ -72969,23 +72495,11 @@ return array (
     'mustunderstand=' => 'bool',
     'actor=' => 'string',
   ),
-  'soapparam::__construct' => 
-  array (
-    0 => 'void',
-    'data' => 'mixed',
-    'name' => 'string',
-  ),
   'soapparam::soapparam' => 
   array (
     0 => 'object',
     'data' => 'mixed',
     'name' => 'string',
-  ),
-  'soapserver::__construct' => 
-  array (
-    0 => 'void',
-    'wsdl' => 'null|string',
-    'options=' => 'array<array-key, mixed>',
   ),
   'soapserver::addfunction' => 
   array (
@@ -73036,16 +72550,6 @@ return array (
     0 => 'object',
     'wsdl' => 'null|string',
     'options=' => 'array<array-key, mixed>',
-  ),
-  'soapvar::__construct' => 
-  array (
-    0 => 'void',
-    'data' => 'mixed',
-    'encoding' => 'int',
-    'type_name=' => 'null|string',
-    'type_namespace=' => 'null|string',
-    'node_name=' => 'null|string',
-    'node_namespace=' => 'null|string',
   ),
   'soapvar::soapvar' => 
   array (
@@ -77148,11 +76652,6 @@ return array (
     0 => 'string',
     'obj' => 'object',
   ),
-  'spl_object_id' => 
-  array (
-    0 => 'int',
-    'object' => 'object',
-  ),
   'spldoublylinkedlist::__construct' => 
   array (
     0 => 'void',
@@ -78644,11 +78143,6 @@ return array (
     0 => 'void',
     'checks' => 'int',
   ),
-  'spoofchecker::setrestrictionlevel' => 
-  array (
-    0 => 'void',
-    'level' => 'int',
-  ),
   'sprintf' => 
   array (
     0 => 'string',
@@ -78825,11 +78319,6 @@ return array (
   'sqlite3stmt::execute' => 
   array (
     0 => 'SQLite3Result|false',
-  ),
-  'sqlite3stmt::getsql' => 
-  array (
-    0 => 'string',
-    'expand=' => 'bool',
   ),
   'sqlite3stmt::paramcount' => 
   array (
@@ -83416,51 +82905,6 @@ return array (
     0 => 'mixed',
     'sub_value=' => 'mixed',
   ),
-  'swoole\\buffer::__destruct' => 
-  array (
-    0 => 'void',
-  ),
-  'swoole\\buffer::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'swoole\\buffer::append' => 
-  array (
-    0 => 'int',
-    'data' => 'string',
-  ),
-  'swoole\\buffer::clear' => 
-  array (
-    0 => 'void',
-  ),
-  'swoole\\buffer::expand' => 
-  array (
-    0 => 'int',
-    'size' => 'int',
-  ),
-  'swoole\\buffer::read' => 
-  array (
-    0 => 'string',
-    'offset' => 'int',
-    'length' => 'int',
-  ),
-  'swoole\\buffer::recycle' => 
-  array (
-    0 => 'void',
-  ),
-  'swoole\\buffer::substr' => 
-  array (
-    0 => 'string',
-    'offset' => 'int',
-    'length=' => 'int',
-    'remove=' => 'bool',
-  ),
-  'swoole\\buffer::write' => 
-  array (
-    0 => 'void',
-    'offset' => 'int',
-    'data' => 'string',
-  ),
   'swoole\\channel::__destruct' => 
   array (
     0 => 'void',
@@ -83522,30 +82966,11 @@ return array (
   array (
     0 => 'bool',
   ),
-  'swoole\\client::on' => 
-  array (
-    0 => 'void',
-    'event' => 'string',
-    'callback' => 'callable',
-  ),
-  'swoole\\client::pause' => 
-  array (
-    0 => 'void',
-  ),
-  'swoole\\client::pipe' => 
-  array (
-    0 => 'void',
-    'socket' => 'string',
-  ),
   'swoole\\client::recv' => 
   array (
     0 => 'void',
     'size=' => 'string',
     'flag=' => 'string',
-  ),
-  'swoole\\client::resume' => 
-  array (
-    0 => 'void',
   ),
   'swoole\\client::send' => 
   array (
@@ -83577,17 +83002,9 @@ return array (
     0 => 'mixed',
     'how' => 'mixed',
   ),
-  'swoole\\client::sleep' => 
-  array (
-    0 => 'void',
-  ),
   'swoole\\client::verifypeercert' => 
   array (
     0 => 'mixed',
-  ),
-  'swoole\\client::wakeup' => 
-  array (
-    0 => 'void',
   ),
   'swoole\\client\\exception::__clone' => 
   array (
@@ -90085,18 +89502,6 @@ return array (
   array (
     0 => 'mixed',
     'flags' => 'mixed',
-  ),
-  'swoole\\serialize::pack' => 
-  array (
-    0 => 'ReturnType',
-    'data' => 'string',
-    'is_fast=' => 'int',
-  ),
-  'swoole\\serialize::unpack' => 
-  array (
-    0 => 'ReturnType',
-    'data' => 'string',
-    'args=' => 'string',
   ),
   'swoole\\server::__construct' => 
   array (
@@ -105343,18 +104748,6 @@ return array (
     0 => 'false|resource',
     'entryname' => 'string',
   ),
-  'ziparchive::iscompressionmethodsupported' => 
-  array (
-    0 => 'bool',
-    'method' => 'int',
-    'enc=' => 'bool',
-  ),
-  'ziparchive::isencryptionmethodsupported' => 
-  array (
-    0 => 'bool',
-    'method' => 'int',
-    'enc=' => 'bool',
-  ),
   'ziparchive::locatename' => 
   array (
     0 => 'false|int',
@@ -105367,17 +104760,6 @@ return array (
     'filename' => 'string',
     'flags=' => 'int',
   ),
-  'ziparchive::registercancelcallback' => 
-  array (
-    0 => 'bool',
-    'callback' => 'callable',
-  ),
-  'ziparchive::registerprogresscallback' => 
-  array (
-    0 => 'bool',
-    'rate' => 'float',
-    'callback' => 'callable',
-  ),
   'ziparchive::renameindex' => 
   array (
     0 => 'bool',
@@ -105389,15 +104771,6 @@ return array (
     0 => 'bool',
     'name' => 'string',
     'new_name' => 'string',
-  ),
-  'ziparchive::replacefile' => 
-  array (
-    0 => 'bool',
-    'filepath' => 'string',
-    'index' => 'int',
-    'start=' => 'int',
-    'length=' => 'int',
-    'flags=' => 'int',
   ),
   'ziparchive::setarchivecomment' => 
   array (
@@ -105444,20 +104817,6 @@ return array (
     'name' => 'string',
     'opsys' => 'int',
     'attr' => 'int',
-    'flags=' => 'int',
-  ),
-  'ziparchive::setmtimeindex' => 
-  array (
-    0 => 'bool',
-    'index' => 'int',
-    'timestamp' => 'int',
-    'flags=' => 'int',
-  ),
-  'ziparchive::setmtimename' => 
-  array (
-    0 => 'bool',
-    'name' => 'string',
-    'timestamp' => 'int',
     'flags=' => 'int',
   ),
   'ziparchive::setpassword' => 

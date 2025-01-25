@@ -2521,6 +2521,7 @@ return array (
   'closure::__invoke' => 
   array (
     0 => 'mixed',
+    '...args=' => 'mixed',
   ),
   'closure::bind' => 
   array (
