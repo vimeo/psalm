@@ -397,26 +397,6 @@ return array (
         'timezone=' => 'DateTimeZone|null',
       ),
     ),
-    'date_time_set' => 
-    array (
-      'old' => 
-      array (
-        0 => 'int',
-        'object' => 'int',
-        'hour' => 'int',
-        'minute' => 'int',
-        'second=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'int',
-        'object' => 'int',
-        'hour' => 'int',
-        'minute' => 'int',
-        'second=' => 'int',
-        'microseconds=' => 'int',
-      ),
-    ),
     'datetime::__construct' => 
     array (
       'old' => 

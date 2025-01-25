@@ -68,24 +68,6 @@ return array (
     0 => 'string',
     'string' => 'string',
   ),
-  'amqpbasicproperties::__construct' => 
-  array (
-    0 => 'void',
-    'contentType=' => 'null|string',
-    'contentEncoding=' => 'null|string',
-    'headers=' => 'array<array-key, mixed>',
-    'deliveryMode=' => 'int',
-    'priority=' => 'int',
-    'correlationId=' => 'null|string',
-    'replyTo=' => 'null|string',
-    'expiration=' => 'null|string',
-    'messageId=' => 'null|string',
-    'timestamp=' => 'int|null',
-    'type=' => 'null|string',
-    'userId=' => 'null|string',
-    'appId=' => 'null|string',
-    'clusterId=' => 'null|string',
-  ),
   'amqpbasicproperties::getappid' => 
   array (
     0 => 'null|string',
@@ -147,15 +129,7 @@ return array (
     0 => 'void',
     'requeue=' => 'bool',
   ),
-  'amqpchannel::close' => 
-  array (
-    0 => 'void',
-  ),
   'amqpchannel::committransaction' => 
-  array (
-    0 => 'void',
-  ),
-  'amqpchannel::confirmselect' => 
   array (
     0 => 'void',
   ),
@@ -384,12 +358,6 @@ return array (
   array (
     0 => 'void',
     'timeout' => 'float',
-  ),
-  'amqpdecimal::__construct' => 
-  array (
-    0 => 'void',
-    'exponent' => 'int',
-    'significand' => 'int',
   ),
   'amqpdecimal::getexponent' => 
   array (
@@ -2494,12 +2462,6 @@ return array (
     'data' => 'string',
     'length=' => 'int|null',
   ),
-  'cachingiterator::__construct' => 
-  array (
-    0 => 'void',
-    'iterator' => 'Iterator',
-    'flags=' => 'int',
-  ),
   'cachingiterator::__tostring' => 
   array (
     0 => 'string',
@@ -3663,21 +3625,6 @@ return array (
   array (
     0 => 'array<array-key, mixed>',
   ),
-  'couchbase\\booleansearchquery::must' => 
-  array (
-    0 => 'Couchbase\\BooleanSearchQuery',
-    'query' => 'Couchbase\\ConjunctionSearchQuery',
-  ),
-  'couchbase\\booleansearchquery::mustnot' => 
-  array (
-    0 => 'Couchbase\\BooleanSearchQuery',
-    'query' => 'Couchbase\\DisjunctionSearchQuery',
-  ),
-  'couchbase\\booleansearchquery::should' => 
-  array (
-    0 => 'Couchbase\\BooleanSearchQuery',
-    'query' => 'Couchbase\\DisjunctionSearchQuery',
-  ),
   'couchbase\\bucket::__construct' => 
   array (
     0 => 'void',
@@ -4100,11 +4047,6 @@ return array (
     0 => 'Couchbase\\ConjunctionSearchQuery',
     'boost' => 'float',
   ),
-  'couchbase\\conjunctionsearchquery::every' => 
-  array (
-    0 => 'Couchbase\\ConjunctionSearchQuery',
-    '...queries=' => 'Couchbase\\SearchQuery',
-  ),
   'couchbase\\conjunctionsearchquery::jsonserialize' => 
   array (
     0 => 'array<array-key, mixed>',
@@ -4148,19 +4090,9 @@ return array (
     0 => 'array<array-key, mixed>',
     'value' => 'mixed',
   ),
-  'couchbase\\disjunctionsearchquery::either' => 
-  array (
-    0 => 'Couchbase\\DisjunctionSearchQuery',
-    '...queries=' => 'Couchbase\\SearchQuery',
-  ),
   'couchbase\\disjunctionsearchquery::jsonserialize' => 
   array (
     0 => 'array<array-key, mixed>',
-  ),
-  'couchbase\\docidsearchquery::docids' => 
-  array (
-    0 => 'Couchbase\\DocIdSearchQuery',
-    '...documentIds=' => 'string',
   ),
   'couchbase\\docidsearchquery::jsonserialize' => 
   array (
@@ -4327,11 +4259,6 @@ return array (
     0 => 'Couchbase\\MutateInBuilder',
     'expiry' => 'Couchbase\\expiry',
   ),
-  'couchbase\\mutationstate::add' => 
-  array (
-    0 => 'Couchbase\\MutationState',
-    'source' => 'Couchbase\\MutationResult',
-  ),
   'couchbase\\mutationstate::from' => 
   array (
     0 => 'Couchbase\\MutationState',
@@ -4437,13 +4364,6 @@ return array (
   array (
     0 => 'Couchbase\\N1qlQuery',
     'scanCap' => 'int',
-  ),
-  'couchbase\\numericrangesearchfacet::addrange' => 
-  array (
-    0 => 'Couchbase\\NumericRangeSearchFacet',
-    'name' => 'string',
-    'min=' => 'float|null',
-    'max=' => 'float|null',
   ),
   'couchbase\\numericrangesearchfacet::jsonserialize' => 
   array (
@@ -4705,24 +4625,9 @@ return array (
   array (
     0 => 'Couchbase\\SearchSortId',
   ),
-  'couchbase\\searchsortfield::missing' => 
-  array (
-    0 => 'Couchbase\\SearchSortField',
-    'missing' => 'string',
-  ),
-  'couchbase\\searchsortfield::mode' => 
-  array (
-    0 => 'Couchbase\\SearchSortField',
-    'mode' => 'string',
-  ),
   'couchbase\\searchsortfield::score' => 
   array (
     0 => 'Couchbase\\SearchSortScore',
-  ),
-  'couchbase\\searchsortfield::type' => 
-  array (
-    0 => 'Couchbase\\SearchSortField',
-    'type' => 'string',
   ),
   'couchbase\\searchsortgeodistance::field' => 
   array (
@@ -6069,15 +5974,6 @@ return array (
     'zenith=' => 'float|null',
     'utcOffset=' => 'float|null',
   ),
-  'date_time_set' => 
-  array (
-    0 => 'DateTime',
-    'object' => 'DateTime',
-    'hour' => 'int',
-    'minute' => 'int',
-    'second=' => 'int',
-    'microsecond=' => 'int',
-  ),
   'date_timestamp_get' => 
   array (
     0 => 'int',
@@ -6750,10 +6646,6 @@ return array (
     'resource' => 'resource',
     'options' => 'array<array-key, mixed>',
     'type' => 'int',
-  ),
-  'db2_setoption' => 
-  array (
-    0 => 'bool',
   ),
   'db2_special_columns' => 
   array (
@@ -8528,15 +8420,6 @@ return array (
   array (
     0 => 'void',
   ),
-  'ds\\deque::copy' => 
-  array (
-    0 => 'Ds\\Collection',
-  ),
-  'ds\\deque::filter' => 
-  array (
-    0 => 'Ds\\Sequence',
-    'callback=' => 'callable|null',
-  ),
   'ds\\deque::get' => 
   array (
     0 => 'void',
@@ -8552,16 +8435,6 @@ return array (
   array (
     0 => 'array<array-key, mixed>',
   ),
-  'ds\\deque::map' => 
-  array (
-    0 => 'Ds\\Sequence',
-    'callback' => 'callable',
-  ),
-  'ds\\deque::merge' => 
-  array (
-    0 => 'Ds\\Sequence',
-    'values' => 'mixed',
-  ),
   'ds\\deque::push' => 
   array (
     0 => 'void',
@@ -8570,10 +8443,6 @@ return array (
   'ds\\deque::reverse' => 
   array (
     0 => 'void',
-  ),
-  'ds\\deque::reversed' => 
-  array (
-    0 => 'Ds\\Sequence',
   ),
   'ds\\deque::rotate' => 
   array (
@@ -8586,20 +8455,9 @@ return array (
     'index' => 'int',
     'value' => 'mixed',
   ),
-  'ds\\deque::slice' => 
-  array (
-    0 => 'Ds\\Sequence',
-    'index' => 'int',
-    'length=' => 'int|null',
-  ),
   'ds\\deque::sort' => 
   array (
     0 => 'void',
-    'comparator=' => 'callable|null',
-  ),
-  'ds\\deque::sorted' => 
-  array (
-    0 => 'Ds\\Sequence',
     'comparator=' => 'callable|null',
   ),
   'ds\\deque::sum' => 
@@ -8634,15 +8492,6 @@ return array (
   array (
     0 => 'void',
   ),
-  'ds\\map::copy' => 
-  array (
-    0 => 'Ds\\Collection',
-  ),
-  'ds\\map::filter' => 
-  array (
-    0 => 'Ds\\Map',
-    'callback=' => 'callable|null',
-  ),
   'ds\\map::jsonserialize' => 
   array (
     0 => 'array<array-key, mixed>',
@@ -8650,11 +8499,6 @@ return array (
   'ds\\map::ksort' => 
   array (
     0 => 'void',
-    'comparator=' => 'callable|null',
-  ),
-  'ds\\map::ksorted' => 
-  array (
-    0 => 'Ds\\Map',
     'comparator=' => 'callable|null',
   ),
   'ds\\map::put' => 
@@ -8675,11 +8519,6 @@ return array (
   'ds\\map::sort' => 
   array (
     0 => 'void',
-    'comparator=' => 'callable|null',
-  ),
-  'ds\\map::sorted' => 
-  array (
-    0 => 'Ds\\Map',
     'comparator=' => 'callable|null',
   ),
   'ds\\map::sum' => 
@@ -8712,10 +8551,6 @@ return array (
   array (
     0 => 'void',
   ),
-  'ds\\priorityqueue::copy' => 
-  array (
-    0 => 'Ds\\Collection',
-  ),
   'ds\\priorityqueue::jsonserialize' => 
   array (
     0 => 'array<array-key, mixed>',
@@ -8734,10 +8569,6 @@ return array (
   'ds\\queue::clear' => 
   array (
     0 => 'void',
-  ),
-  'ds\\queue::copy' => 
-  array (
-    0 => 'Ds\\Collection',
   ),
   'ds\\queue::jsonserialize' => 
   array (
@@ -8893,15 +8724,6 @@ return array (
   array (
     0 => 'void',
   ),
-  'ds\\set::copy' => 
-  array (
-    0 => 'Ds\\Collection',
-  ),
-  'ds\\set::filter' => 
-  array (
-    0 => 'Ds\\Set',
-    'predicate=' => 'callable|null',
-  ),
   'ds\\set::join' => 
   array (
     0 => 'string',
@@ -8925,11 +8747,6 @@ return array (
     0 => 'void',
     'comparator=' => 'callable|null',
   ),
-  'ds\\set::sorted' => 
-  array (
-    0 => 'Ds\\Set',
-    'comparator=' => 'callable|null',
-  ),
   'ds\\set::sum' => 
   array (
     0 => 'float|int',
@@ -8942,10 +8759,6 @@ return array (
   'ds\\stack::clear' => 
   array (
     0 => 'void',
-  ),
-  'ds\\stack::copy' => 
-  array (
-    0 => 'Ds\\Collection',
   ),
   'ds\\stack::jsonserialize' => 
   array (
@@ -8970,15 +8783,6 @@ return array (
   array (
     0 => 'void',
   ),
-  'ds\\vector::copy' => 
-  array (
-    0 => 'Ds\\Collection',
-  ),
-  'ds\\vector::filter' => 
-  array (
-    0 => 'Ds\\Sequence',
-    'callback=' => 'callable|null',
-  ),
   'ds\\vector::insert' => 
   array (
     0 => 'void',
@@ -8989,16 +8793,6 @@ return array (
   array (
     0 => 'array<array-key, mixed>',
   ),
-  'ds\\vector::map' => 
-  array (
-    0 => 'Ds\\Sequence',
-    'callback' => 'callable',
-  ),
-  'ds\\vector::merge' => 
-  array (
-    0 => 'Ds\\Sequence',
-    'values' => 'mixed',
-  ),
   'ds\\vector::push' => 
   array (
     0 => 'void',
@@ -9007,10 +8801,6 @@ return array (
   'ds\\vector::reverse' => 
   array (
     0 => 'void',
-  ),
-  'ds\\vector::reversed' => 
-  array (
-    0 => 'Ds\\Sequence',
   ),
   'ds\\vector::rotate' => 
   array (
@@ -9023,20 +8813,9 @@ return array (
     'index' => 'int',
     'value' => 'mixed',
   ),
-  'ds\\vector::slice' => 
-  array (
-    0 => 'Ds\\Sequence',
-    'index' => 'int',
-    'length=' => 'int|null',
-  ),
   'ds\\vector::sort' => 
   array (
     0 => 'void',
-    'comparator=' => 'callable|null',
-  ),
-  'ds\\vector::sorted' => 
-  array (
-    0 => 'Ds\\Sequence',
     'comparator=' => 'callable|null',
   ),
   'ds\\vector::sum' => 
@@ -10680,12 +10459,6 @@ return array (
     0 => 'void',
     'ndots' => 'int',
   ),
-  'eventhttp::__construct' => 
-  array (
-    0 => 'void',
-    'base' => 'EventBase',
-    'ctx=' => 'EventSslContext|null',
-  ),
   'eventhttp::accept' => 
   array (
     0 => 'bool',
@@ -11717,11 +11490,6 @@ return array (
     '&w_width=' => 'int',
     '&w_height=' => 'int',
     '&w_image_type=' => 'int',
-  ),
-  'exit' => 
-  array (
-    0 => 'never',
-    'status=' => 'int|string',
   ),
   'exp' => 
   array (
@@ -13466,10 +13234,6 @@ return array (
     0 => 'false|string',
     'stream' => 'resource',
     'length=' => 'int|null',
-  ),
-  'fiber::getcurrent' => 
-  array (
-    0 => 'Fiber|null',
   ),
   'fiber::resume' => 
   array (
@@ -26637,10 +26401,6 @@ return array (
     0 => 'bool',
     'page' => 'string',
   ),
-  'imagick::resetiterator' => 
-  array (
-    0 => 'void',
-  ),
   'imagick::resizeimage' => 
   array (
     0 => 'bool',
@@ -26674,15 +26434,6 @@ return array (
     'channel=' => 'int',
   ),
   'imagick::roundcorners' => 
-  array (
-    0 => 'bool',
-    'x_rounding' => 'float',
-    'y_rounding' => 'float',
-    'stroke_width=' => 'float',
-    'displace=' => 'float',
-    'size_correction=' => 'float',
-  ),
-  'imagick::roundcornersimage' => 
   array (
     0 => 'bool',
     'x_rounding' => 'float',
@@ -26977,11 +26728,6 @@ return array (
     0 => 'bool',
     'name' => 'string',
     'profile' => 'string',
-  ),
-  'imagick::setimageprogressmonitor' => 
-  array (
-    0 => 'bool',
-    'filename' => 'string',
   ),
   'imagick::setimageproperty' => 
   array (
@@ -28135,18 +27881,9 @@ return array (
   array (
     0 => 'int',
   ),
-  'imagickpixel::getcolorquantum' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
   'imagickpixel::getcolorvalue' => 
   array (
     0 => 'float',
-    'color' => 'int',
-  ),
-  'imagickpixel::getcolorvaluequantum' => 
-  array (
-    0 => '5',
     'color' => 'int',
   ),
   'imagickpixel::gethsl' => 
@@ -28218,10 +27955,6 @@ return array (
   array (
     0 => 'bool',
   ),
-  'imagickpixeliterator::current' => 
-  array (
-    0 => 'array<array-key, mixed>|null',
-  ),
   'imagickpixeliterator::destroy' => 
   array (
     0 => 'bool',
@@ -28237,20 +27970,6 @@ return array (
   'imagickpixeliterator::getnextiteratorrow' => 
   array (
     0 => 'array<array-key, mixed>|null',
-  ),
-  'imagickpixeliterator::getpixeliterator' => 
-  array (
-    0 => 'ImagickPixelIterator',
-    'imagick' => 'Imagick',
-  ),
-  'imagickpixeliterator::getpixelregioniterator' => 
-  array (
-    0 => 'ImagickPixelIterator',
-    'imagick' => 'Imagick',
-    'x' => 'int',
-    'y' => 'int',
-    'columns' => 'int',
-    'rows' => 'int',
   ),
   'imagickpixeliterator::getpreviousiteratorrow' => 
   array (
@@ -36709,11 +36428,6 @@ return array (
     0 => 'MongoDB\\BSON\\Binary',
     'kmsProvider' => 'string',
     'options=' => 'array<array-key, mixed>|null',
-  ),
-  'mongodb\\driver\\clientencryption::decrypt' => 
-  array (
-    0 => 'mixed',
-    'value' => 'MongoDB\\BSON\\Binary',
   ),
   'mongodb\\driver\\clientencryption::encrypt' => 
   array (
@@ -51392,11 +51106,6 @@ return array (
     0 => 'string',
     'key' => 'string',
   ),
-  'redis::_serialize' => 
-  array (
-    0 => 'string',
-    'value' => 'mixed',
-  ),
   'redis::_unserialize' => 
   array (
     0 => 'mixed',
@@ -51495,12 +51204,6 @@ return array (
   array (
     0 => 'bool',
   ),
-  'redis::command' => 
-  array (
-    0 => 'mixed',
-    'opt=' => 'null|string',
-    '...args=' => 'mixed',
-  ),
   'redis::config' => 
   array (
     0 => 'string',
@@ -51522,11 +51225,6 @@ return array (
   'redis::dbsize' => 
   array (
     0 => 'int',
-  ),
-  'redis::debug' => 
-  array (
-    0 => 'Redis|string',
-    'key' => 'string',
   ),
   'redis::decr' => 
   array (
@@ -51568,10 +51266,6 @@ return array (
     0 => 'int',
     'key' => 'array<array-key, string>',
   ),
-  'redis::discard' => 
-  array (
-    0 => 'Redis|bool',
-  ),
   'redis::dump' => 
   array (
     0 => 'false|string',
@@ -51581,13 +51275,6 @@ return array (
   array (
     0 => 'string',
     'str' => 'string',
-  ),
-  'redis::eval' => 
-  array (
-    0 => 'mixed',
-    'script' => 'string',
-    'args=' => 'array<array-key, mixed>',
-    'num_keys=' => 'int',
   ),
   'redis::evalsha' => 
   array (
@@ -51830,12 +51517,6 @@ return array (
     'key' => 'string',
     'field' => 'string',
     'value' => 'string',
-  ),
-  'redis::hstrlen' => 
-  array (
-    0 => 'Redis|false|int',
-    'key' => 'string',
-    'field' => 'string',
   ),
   'redis::hvals' => 
   array (
@@ -52450,10 +52131,6 @@ return array (
     0 => 'Redis|array<array-key, mixed>|bool',
     'channels' => 'array<array-key, mixed>',
   ),
-  'redis::unwatch' => 
-  array (
-    0 => 'Redis|bool',
-  ),
   'redis::wait' => 
   array (
     0 => 'int',
@@ -52516,11 +52193,6 @@ return array (
     'arg1=' => 'null|string',
     'arg2=' => 'null|string',
     'count=' => 'int',
-  ),
-  'redis::xlen' => 
-  array (
-    0 => 'Redis|false|int',
-    'key' => 'string',
   ),
   'redis::xpending' => 
   array (
@@ -52771,14 +52443,6 @@ return array (
     'name_or_hosts' => 'string',
     'options=' => 'array<array-key, mixed>|null',
   ),
-  'redisarray::_continuum' => 
-  array (
-    0 => 'array<array-key, mixed>|bool',
-  ),
-  'redisarray::_distributor' => 
-  array (
-    0 => 'bool|callable',
-  ),
   'redisarray::_function' => 
   array (
     0 => 'bool|callable',
@@ -52786,11 +52450,6 @@ return array (
   'redisarray::_hosts' => 
   array (
     0 => 'array<array-key, mixed>',
-  ),
-  'redisarray::_instance' => 
-  array (
-    0 => 'Redis|bool|null',
-    'host' => 'string',
   ),
   'redisarray::_rehash' => 
   array (
@@ -52801,10 +52460,6 @@ return array (
   array (
     0 => 'null|string',
     'key' => 'string',
-  ),
-  'redisarray::bgsave' => 
-  array (
-    0 => 'array<array-key, mixed>',
   ),
   'redisarray::del' => 
   array (
@@ -52817,10 +52472,6 @@ return array (
     0 => 'bool',
     'key' => 'array<array-key, string>',
   ),
-  'redisarray::discard' => 
-  array (
-    0 => 'bool|null',
-  ),
   'redisarray::exec' => 
   array (
     0 => 'array<array-key, mixed>|null',
@@ -52832,11 +52483,6 @@ return array (
   'redisarray::flushdb' => 
   array (
     0 => 'bool',
-  ),
-  'redisarray::getoption' => 
-  array (
-    0 => 'array<array-key, mixed>|bool',
-    'opt' => 'int',
   ),
   'redisarray::info' => 
   array (
@@ -52871,17 +52517,6 @@ return array (
   array (
     0 => 'bool',
   ),
-  'redisarray::select' => 
-  array (
-    0 => 'array<array-key, mixed>|bool',
-    'index' => 'int',
-  ),
-  'redisarray::setoption' => 
-  array (
-    0 => 'array<array-key, mixed>|bool',
-    'opt' => 'int',
-    'value' => 'string',
-  ),
   'redisarray::unlink' => 
   array (
     0 => 'int',
@@ -52892,10 +52527,6 @@ return array (
   array (
     0 => 'int',
     'key' => 'array<array-key, string>',
-  ),
-  'redisarray::unwatch' => 
-  array (
-    0 => 'bool|null',
   ),
   'rediscluster::__construct' => 
   array (
@@ -52916,15 +52547,6 @@ return array (
   array (
     0 => 'string',
     'key' => 'string',
-  ),
-  'rediscluster::_redir' => 
-  array (
-    0 => 'null|string',
-  ),
-  'rediscluster::_serialize' => 
-  array (
-    0 => 'bool|string',
-    'value' => 'mixed',
   ),
   'rediscluster::_unserialize' => 
   array (
@@ -53004,10 +52626,6 @@ return array (
     'subcommand' => 'string',
     'arg=' => 'null|string',
   ),
-  'rediscluster::close' => 
-  array (
-    0 => 'bool',
-  ),
   'rediscluster::cluster' => 
   array (
     0 => 'mixed',
@@ -53055,10 +52673,6 @@ return array (
     0 => 'int',
     'key' => 'array<array-key, string>',
   ),
-  'rediscluster::discard' => 
-  array (
-    0 => 'bool',
-  ),
   'rediscluster::dump' => 
   array (
     0 => 'false|string',
@@ -53069,13 +52683,6 @@ return array (
     0 => 'string',
     'key_or_address' => 'array{0: string, 1: int}|string',
     'msg' => 'string',
-  ),
-  'rediscluster::eval' => 
-  array (
-    0 => 'mixed',
-    'script' => 'string',
-    'args=' => 'array<array-key, mixed>',
-    'num_keys=' => 'int',
   ),
   'rediscluster::evalsha' => 
   array (
@@ -53504,12 +53111,6 @@ return array (
     'key_or_address' => 'string',
     '...values=' => 'string',
   ),
-  'rediscluster::punsubscribe' => 
-  array (
-    0 => 'array<array-key, mixed>|bool',
-    'pattern' => 'string',
-    '...other_patterns=' => 'string',
-  ),
   'rediscluster::randomkey' => 
   array (
     0 => 'string',
@@ -53780,15 +53381,6 @@ return array (
     'key' => 'string',
     '...other_keys=' => 'string',
   ),
-  'rediscluster::unsubscribe' => 
-  array (
-    0 => 'array<array-key, mixed>|bool',
-    'channels' => 'array<array-key, mixed>',
-  ),
-  'rediscluster::unwatch' => 
-  array (
-    0 => 'bool',
-  ),
   'rediscluster::watch' => 
   array (
     0 => 'RedisCluster|bool',
@@ -53844,11 +53436,6 @@ return array (
     'arg1=' => 'null|string',
     'arg2=' => 'null|string',
     'count=' => 'int',
-  ),
-  'rediscluster::xlen' => 
-  array (
-    0 => 'RedisCluster|false|int',
-    'key' => 'string',
   ),
   'rediscluster::xpending' => 
   array (
@@ -58591,12 +58178,6 @@ return array (
     'name' => 'string',
     'args' => 'array<array-key, mixed>',
   ),
-  'soapclient::__construct' => 
-  array (
-    0 => 'void',
-    'wsdl' => 'null|string',
-    'options=' => 'array<array-key, mixed>',
-  ),
   'soapclient::__dorequest' => 
   array (
     0 => 'null|string',
@@ -58757,16 +58338,6 @@ return array (
   array (
     0 => 'void',
     'mode' => 'int',
-  ),
-  'soapvar::__construct' => 
-  array (
-    0 => 'void',
-    'data' => 'mixed',
-    'encoding' => 'int|null',
-    'typeName=' => 'null|string',
-    'typeNamespace=' => 'null|string',
-    'nodeName=' => 'null|string',
-    'nodeNamespace=' => 'null|string',
   ),
   'socket_accept' => 
   array (

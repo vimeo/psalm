@@ -171,33 +171,11 @@ return array (
         'requeue=' => 'bool',
       ),
     ),
-    'amqpchannel::close' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-      ),
-    ),
     'amqpchannel::committransaction' => 
     array (
       'old' => 
       array (
         0 => 'bool',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-      ),
-    ),
-    'amqpchannel::confirmselect' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
       ),
       'new' => 
       array (
@@ -598,21 +576,6 @@ return array (
       array (
         0 => 'void',
         'timeout' => 'float',
-      ),
-    ),
-    'amqpdecimal::__construct' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'exponent' => 'mixed',
-        'significand' => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'exponent' => 'int',
-        'significand' => 'int',
       ),
     ),
     'amqpenvelope::getappid' => 

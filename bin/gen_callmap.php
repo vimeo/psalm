@@ -140,7 +140,7 @@ foreach ($customMaps as $version => &$data) {
             && !str_starts_with($func, 'db2')
             && isset($allFuncs[$func])
         ) {
-            //unset($data[$func]);
+            unset($data[$func]);
         }
     } unset($params);
     $data = normalizeCallMap($data);
@@ -161,7 +161,7 @@ foreach ($baseMaps as $version => $data) {
 foreach ($equal as $func => $ok) {
     if ($ok) {
         foreach ($customMaps as &$data) {
-            //unset($data[$func]);
+            unset($data[$func]);
         } unset($data);
     }
 }

@@ -15059,10 +15059,6 @@ return array (
     'options' => 'array<array-key, mixed>',
     'type' => 'int',
   ),
-  'db2_setoption' => 
-  array (
-    0 => 'mixed',
-  ),
   'db2_special_columns' => 
   array (
     0 => 'false|resource',
@@ -22615,11 +22611,6 @@ return array (
     '&w_width=' => 'int',
     '&w_height=' => 'int',
     '&w_image_type=' => 'int',
-  ),
-  'exit' => 
-  array (
-    0 => 'mixed',
-    'status' => 'int|string',
   ),
   'exp' => 
   array (

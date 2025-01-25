@@ -22178,11 +22178,6 @@ return array (
     '&w_height=' => 'int',
     '&w_image_type=' => 'int',
   ),
-  'exit' => 
-  array (
-    0 => 'mixed',
-    'status' => 'int|string',
-  ),
   'exp' => 
   array (
     0 => 'float',

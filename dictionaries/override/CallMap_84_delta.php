@@ -83,19 +83,6 @@ return array (
         'doctype=' => 'DOMDocumentType|null',
       ),
     ),
-    'exit' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-        'status' => 'int|string',
-      ),
-      'new' => 
-      array (
-        0 => 'never',
-        'status=' => 'int|string',
-      ),
-    ),
     'finfo::set_flags' => 
     array (
       'old' => 
@@ -375,17 +362,6 @@ return array (
         0 => 'bool|null',
         'color' => 'ImagickPixel',
         'fuzz_quantum_range_scaled_by_square_root_of_three' => 'float',
-      ),
-    ),
-    'imagickpixeliterator::current' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>|null',
       ),
     ),
     'imagickpixeliterator::getcurrentiteratorrow' => 

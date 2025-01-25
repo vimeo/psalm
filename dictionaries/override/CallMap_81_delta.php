@@ -8,10 +8,6 @@ return array (
       0 => 'bool',
       'stream' => 'resource',
     ),
-    'fiber::getcurrent' => 
-    array (
-      0 => 'Fiber|null',
-    ),
     'fiber::resume' => 
     array (
       0 => 'mixed',
@@ -1134,19 +1130,6 @@ return array (
       array (
         0 => 'GdFont|false',
         'filename' => 'string',
-      ),
-    ),
-    'imagickpixel::getcolorvaluequantum' => 
-    array (
-      'old' => 
-      array (
-        0 => 'float',
-        'color' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => '5',
-        'color' => 'int',
       ),
     ),
     'imagickpixel::setcolorvaluequantum' => 

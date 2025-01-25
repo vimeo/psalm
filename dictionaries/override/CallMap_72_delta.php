@@ -1049,19 +1049,6 @@ return array (
         'updateOptions=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'mongodb\\driver\\clientencryption::decrypt' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-        'keyVaultClient' => 'MongoDB\\BSON\\BinaryInterface',
-      ),
-      'new' => 
-      array (
-        0 => 'mixed',
-        'value' => 'MongoDB\\BSON\\Binary',
-      ),
-    ),
     'mongodb\\driver\\command::__construct' => 
     array (
       'old' => 
@@ -1460,20 +1447,6 @@ return array (
         '...args=' => 'string',
       ),
     ),
-    'redis::command' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-        '...args=' => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'mixed',
-        'opt=' => 'mixed',
-        '...args=' => 'mixed',
-      ),
-    ),
     'redis::config' => 
     array (
       'old' => 
@@ -1825,21 +1798,6 @@ return array (
         'key' => 'string',
         'field' => 'string',
         'value' => 'string',
-      ),
-    ),
-    'redis::hstrlen' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-        'key' => 'mixed',
-        'member' => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'mixed',
-        'key' => 'mixed',
-        'field' => 'mixed',
       ),
     ),
     'redis::incr' => 
@@ -4185,20 +4143,6 @@ return array (
       array (
         0 => 'array<array-key, mixed>',
         'key_or_address' => 'mixed',
-      ),
-    ),
-    'rediscluster::unsubscribe' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-        'channel' => 'mixed',
-        '...other_channels=' => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'mixed',
-        'channels' => 'mixed',
       ),
     ),
     'rediscluster::xack' => 

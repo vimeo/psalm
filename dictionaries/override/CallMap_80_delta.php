@@ -63,12 +63,6 @@ return array (
     array (
       0 => 'list<ReflectionNamedType>',
     ),
-    'soapclient::__construct' => 
-    array (
-      0 => 'void',
-      'wsdl' => 'null|string',
-      'options=' => 'array<array-key, mixed>',
-    ),
     'soapheader::__construct' => 
     array (
       0 => 'void',
@@ -77,16 +71,6 @@ return array (
       'data=' => 'mixed',
       'mustUnderstand=' => 'bool',
       'actor=' => 'null|string',
-    ),
-    'soapvar::__construct' => 
-    array (
-      0 => 'void',
-      'data' => 'mixed',
-      'encoding' => 'int|null',
-      'typeName=' => 'null|string',
-      'typeNamespace=' => 'null|string',
-      'nodeName=' => 'null|string',
-      'nodeNamespace=' => 'null|string',
     ),
     'weakmap::offsetexists' => 
     array (
@@ -1655,21 +1639,6 @@ return array (
         'bz' => 'resource',
         'data' => 'string',
         'length=' => 'int|null',
-      ),
-    ),
-    'cachingiterator::__construct' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'iterator' => 'Iterator',
-        'flags=' => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'iterator' => 'Iterator',
-        'flags=' => 'int',
       ),
     ),
     'cachingiterator::offsetexists' => 
@@ -3310,27 +3279,6 @@ return array (
         'utcOffset=' => 'float|null',
       ),
     ),
-    'date_time_set' => 
-    array (
-      'old' => 
-      array (
-        0 => 'int',
-        'object' => 'int',
-        'hour' => 'int',
-        'minute' => 'int',
-        'second=' => 'int',
-        'microseconds=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'DateTime',
-        'object' => 'DateTime',
-        'hour' => 'int',
-        'minute' => 'int',
-        'second=' => 'int',
-        'microsecond=' => 'int',
-      ),
-    ),
     'date_timestamp_set' => 
     array (
       'old' => 
@@ -3923,17 +3871,6 @@ return array (
       array (
         0 => 'bool',
         'connection' => 'resource',
-      ),
-    ),
-    'db2_setoption' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
       ),
     ),
     'decbin' => 
@@ -5948,21 +5885,6 @@ return array (
       array (
         0 => 'void',
         'ndots' => 'int',
-      ),
-    ),
-    'eventhttp::__construct' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'base' => 'EventBase',
-        'ctx=' => 'EventSslContext',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'base' => 'EventBase',
-        'ctx=' => 'EventSslContext|null',
       ),
     ),
     'eventhttp::bind' => 
@@ -12239,17 +12161,6 @@ return array (
         'filenames' => 'array<array-key, mixed>',
       ),
     ),
-    'imagick::resetiterator' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-      ),
-    ),
     'imagick::resizeimage' => 
     array (
       'old' => 
@@ -12301,27 +12212,6 @@ return array (
         0 => 'bool',
         'angle' => 'float',
         'channel=' => 'int',
-      ),
-    ),
-    'imagick::roundcornersimage' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-        'x_rounding' => 'mixed',
-        'y_rounding' => 'mixed',
-        'stroke_width=' => 'mixed',
-        'displace=' => 'mixed',
-        'size_correction=' => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'x_rounding' => 'float',
-        'y_rounding' => 'float',
-        'stroke_width=' => 'float',
-        'displace=' => 'float',
-        'size_correction=' => 'float',
       ),
     ),
     'imagick::scaleimage' => 
@@ -12453,19 +12343,6 @@ return array (
       array (
         0 => 'bool',
         'matte_color' => 'ImagickPixel|string',
-      ),
-    ),
-    'imagick::setimageprogressmonitor' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-        'filename' => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'filename' => 'string',
       ),
     ),
     'imagick::setprogressmonitor' => 
@@ -12908,30 +12785,6 @@ return array (
         'color=' => 'null|string',
       ),
     ),
-    'imagickpixel::getcolorquantum' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>',
-      ),
-    ),
-    'imagickpixel::getcolorvaluequantum' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-        'color' => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'float',
-        'color' => 'int',
-      ),
-    ),
     'imagickpixel::ispixelsimilarquantum' => 
     array (
       'old' => 
@@ -12986,51 +12839,6 @@ return array (
       array (
         0 => 'bool',
         'index' => 'float',
-      ),
-    ),
-    'imagickpixeliterator::current' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>',
-      ),
-    ),
-    'imagickpixeliterator::getpixeliterator' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-        'imagick' => 'Imagick',
-      ),
-      'new' => 
-      array (
-        0 => 'ImagickPixelIterator',
-        'imagick' => 'Imagick',
-      ),
-    ),
-    'imagickpixeliterator::getpixelregioniterator' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-        'imagick' => 'Imagick',
-        'x' => 'mixed',
-        'y' => 'mixed',
-        'columns' => 'mixed',
-        'rows' => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'ImagickPixelIterator',
-        'imagick' => 'Imagick',
-        'x' => 'int',
-        'y' => 'int',
-        'columns' => 'int',
-        'rows' => 'int',
       ),
     ),
     'imagickpixeliterator::key' => 
@@ -23744,19 +23552,6 @@ return array (
         'key' => 'string',
       ),
     ),
-    'redis::_serialize' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-        'value' => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'string',
-        'value' => 'mixed',
-      ),
-    ),
     'redis::bitcount' => 
     array (
       'old' => 
@@ -23831,21 +23626,6 @@ return array (
         '...extra_args=' => 'mixed',
       ),
     ),
-    'redis::command' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-        'opt=' => 'mixed',
-        '...args=' => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'mixed',
-        'opt=' => 'null|string',
-        '...args=' => 'mixed',
-      ),
-    ),
     'redis::config' => 
     array (
       'old' => 
@@ -23888,19 +23668,6 @@ return array (
         'context=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'redis::debug' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-        'key' => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'Redis|string',
-        'key' => 'string',
-      ),
-    ),
     'redis::decr' => 
     array (
       'old' => 
@@ -23914,34 +23681,6 @@ return array (
         0 => 'int',
         'key' => 'string',
         'by=' => 'int',
-      ),
-    ),
-    'redis::discard' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'Redis|bool',
-      ),
-    ),
-    'redis::eval' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-        'script' => 'mixed',
-        'args=' => 'mixed',
-        'num_keys=' => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'mixed',
-        'script' => 'string',
-        'args=' => 'array<array-key, mixed>',
-        'num_keys=' => 'int',
       ),
     ),
     'redis::expire' => 
@@ -24135,21 +23874,6 @@ return array (
         '&iterator' => 'int|null',
         'pattern=' => 'null|string',
         'count=' => 'int',
-      ),
-    ),
-    'redis::hstrlen' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-        'key' => 'mixed',
-        'field' => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'Redis|false|int',
-        'key' => 'string',
-        'field' => 'string',
       ),
     ),
     'redis::incr' => 
@@ -24684,17 +24408,6 @@ return array (
         'channels' => 'array<array-key, mixed>',
       ),
     ),
-    'redis::unwatch' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'Redis|bool',
-      ),
-    ),
     'redis::watch' => 
     array (
       'old' => 
@@ -24828,19 +24541,6 @@ return array (
         'arg1=' => 'null|string',
         'arg2=' => 'null|string',
         'count=' => 'int',
-      ),
-    ),
-    'redis::xlen' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-        'key' => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'Redis|false|int',
-        'key' => 'string',
       ),
     ),
     'redis::xpending' => 
@@ -25130,28 +24830,6 @@ return array (
         'aggregate=' => 'null|string',
       ),
     ),
-    'redisarray::_continuum' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>|bool',
-      ),
-    ),
-    'redisarray::_distributor' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'bool|callable',
-      ),
-    ),
     'redisarray::_function' => 
     array (
       'old' => 
@@ -25161,19 +24839,6 @@ return array (
       'new' => 
       array (
         0 => 'bool|callable',
-      ),
-    ),
-    'redisarray::_instance' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-        'host' => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'Redis|bool|null',
-        'host' => 'string',
       ),
     ),
     'redisarray::_rehash' => 
@@ -25202,28 +24867,6 @@ return array (
         'key' => 'string',
       ),
     ),
-    'redisarray::bgsave' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>',
-      ),
-    ),
-    'redisarray::discard' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'bool|null',
-      ),
-    ),
     'redisarray::exec' => 
     array (
       'old' => 
@@ -25233,19 +24876,6 @@ return array (
       'new' => 
       array (
         0 => 'array<array-key, mixed>|null',
-      ),
-    ),
-    'redisarray::getoption' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-        'opt' => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>|bool',
-        'opt' => 'int',
       ),
     ),
     'redisarray::keys' => 
@@ -25287,45 +24917,6 @@ return array (
         0 => 'array<array-key, mixed>|bool',
       ),
     ),
-    'redisarray::select' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-        'index' => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>|bool',
-        'index' => 'int',
-      ),
-    ),
-    'redisarray::setoption' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-        'opt' => 'mixed',
-        'value' => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>|bool',
-        'opt' => 'int',
-        'value' => 'string',
-      ),
-    ),
-    'redisarray::unwatch' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'bool|null',
-      ),
-    ),
     'rediscluster::__construct' => 
     array (
       'old' => 
@@ -25362,30 +24953,6 @@ return array (
       array (
         0 => 'string',
         'key' => 'string',
-      ),
-    ),
-    'rediscluster::_redir' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'null|string',
-      ),
-    ),
-    'rediscluster::_serialize' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-        'value' => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'bool|string',
-        'value' => 'mixed',
       ),
     ),
     'rediscluster::bitcount' => 
@@ -25479,17 +25046,6 @@ return array (
         'arg=' => 'null|string',
       ),
     ),
-    'rediscluster::close' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-      ),
-    ),
     'rediscluster::decr' => 
     array (
       'old' => 
@@ -25503,34 +25059,6 @@ return array (
         0 => 'int',
         'key' => 'string',
         'by=' => 'int',
-      ),
-    ),
-    'rediscluster::discard' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-      ),
-    ),
-    'rediscluster::eval' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-        'script' => 'mixed',
-        'args=' => 'mixed',
-        'num_keys=' => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'mixed',
-        'script' => 'string',
-        'args=' => 'array<array-key, mixed>',
-        'num_keys=' => 'int',
       ),
     ),
     'rediscluster::exec' => 
@@ -25804,21 +25332,6 @@ return array (
         'callback' => 'callable',
       ),
     ),
-    'rediscluster::punsubscribe' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-        'pattern' => 'mixed',
-        '...other_patterns=' => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>|bool',
-        'pattern' => 'string',
-        '...other_patterns=' => 'string',
-      ),
-    ),
     'rediscluster::restore' => 
     array (
       'old' => 
@@ -25996,30 +25509,6 @@ return array (
         'key_or_address' => 'array<array-key, mixed>|string',
       ),
     ),
-    'rediscluster::unsubscribe' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-        'channels' => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>|bool',
-        'channels' => 'array<array-key, mixed>',
-      ),
-    ),
-    'rediscluster::unwatch' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-      ),
-    ),
     'rediscluster::watch' => 
     array (
       'old' => 
@@ -26151,19 +25640,6 @@ return array (
         'arg1=' => 'null|string',
         'arg2=' => 'null|string',
         'count=' => 'int',
-      ),
-    ),
-    'rediscluster::xlen' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-        'key' => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'RedisCluster|false|int',
-        'key' => 'string',
       ),
     ),
     'rediscluster::xpending' => 
