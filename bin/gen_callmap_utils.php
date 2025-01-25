@@ -171,7 +171,9 @@ function assertEntryParameters(string $func, array $baseParameters, array $custo
  */
 function assertParameter(string $func, string $paramName, array $custom, array $base): array
 {
-    $custom['optional'] = $base['optional'];
+    if ($func !== 'version_compare') {
+        $custom['optional'] = $base['optional'];
+    }
     $custom['variadic'] = $base['variadic'];
     $custom['byRef'] = $base['byRef'];
     
