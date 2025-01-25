@@ -119,6 +119,9 @@ function assertEntryParameters(string $func, array $baseParameters, array $custo
     $final = [];
     $idx = 0;
     foreach ($baseParameters as $name => $parameter) {
+        if (!isset($customParameters[$name]) && ($func === 'max' || $func === 'min')) {
+            continue;
+        }
         if (isset($customParameters[$name])) {
             $final[$name] = assertParameter($func, $name, $customParameters[$name], $parameter);
         } elseif (isset($customParametersByVal[$idx])) {

@@ -44963,7 +44963,6 @@ return array (
   array (
     0 => 'mixed',
     'value' => 'non-empty-array<array-key, mixed>',
-    '...values=' => 'mixed',
   ),
   'max\'1' => 
   array (
@@ -46598,7 +46597,6 @@ return array (
   array (
     0 => 'mixed',
     'value' => 'non-empty-array<array-key, mixed>',
-    '...values=' => 'mixed',
   ),
   'min\'1' => 
   array (

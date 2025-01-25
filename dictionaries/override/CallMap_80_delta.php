@@ -16364,7 +16364,6 @@ return array (
       array (
         0 => 'mixed',
         'value' => 'non-empty-array<array-key, mixed>',
-        '...values=' => 'mixed',
       ),
     ),
     'mb_check_encoding' => 
@@ -17445,7 +17444,6 @@ return array (
       array (
         0 => 'mixed',
         'value' => 'non-empty-array<array-key, mixed>',
-        '...values=' => 'mixed',
       ),
     ),
     'mkdir' => 
