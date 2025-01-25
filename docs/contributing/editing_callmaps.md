@@ -81,6 +81,8 @@ The second usort fails (equivalent to the non-split return type of `version_comp
 
 When you have multifaceted functions like these, it's a very good idea to at least define a templated stub in `stubs/` for them, or a custom return type provider for even more complex logic, not representable with templates/conditional types/etc in a stub.
 
+Also note that `bin/gen_callmap.php` has some validation logic which will re-add back removed parameters in overridden aliased callmaps: to avoid this, explicitly whitelist aliased functions by editing `assertParameter` in `bin/gen_callmap_utils.php`, and eventually `bin/gen_callmap.php` as needed.
+
 ## Delta file format
 
 Delta files (named `CallMap_<PHP major version><PHP minor version>_delta.php`)
