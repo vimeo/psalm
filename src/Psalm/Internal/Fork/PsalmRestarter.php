@@ -30,7 +30,7 @@ use const PHP_VERSION_ID;
  */
 final class PsalmRestarter extends XdebugHandler
 {
-    public const MIN_PHP_VERSION_WINDOWS_JIT = 8_04_00;
+    public const MIN_PHP_VERSION_WINDOWS_JIT = 8_04_03;
     private const REQUIRED_OPCACHE_SETTINGS = [
         'enable_cli' => 1,
         'jit' => 1205,

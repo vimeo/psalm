@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="dev-master@611ed6e84ab5488c1ae378094dcb25cc667d0dc1">
+<files psalm-version="dev-master@e9e270f363bd05ea3790890de3f04f6726ea5643">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$comment_block->tags['variablesfrom'][0]]]></code>
@@ -1201,9 +1201,9 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Codebase/InternalCallMapHandler.php">
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[!$return_type_string]]></code>
-    </RiskyTruthyFalsyComparison>
+    <PossiblyNullArgument>
+      <code><![CDATA[array_shift($call_map_function_args)]]></code>
+    </PossiblyNullArgument>
   </file>
   <file src="src/Psalm/Internal/Codebase/Methods.php">
     <RiskyTruthyFalsyComparison>
@@ -2012,17 +2012,41 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Report/ByIssueLevelAndTypeReport.php">
+    <PossiblyInvalidArgument>
+      <code><![CDATA[$this->link_format]]></code>
+    </PossiblyInvalidArgument>
+    <PossiblyInvalidCast>
+      <code><![CDATA[$this->link_format]]></code>
+    </PossiblyInvalidCast>
+    <PossiblyInvalidPropertyAssignmentValue>
+      <code><![CDATA[(
+                ini_get('xdebug.file_link_format') ?: get_cfg_var('xdebug.file_link_format')
+            ) ?: 'file://%f#L%l']]></code>
+    </PossiblyInvalidPropertyAssignmentValue>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$issue_data->other_references]]></code>
       <code><![CDATA[$issue_data->taint_trace]]></code>
       <code><![CDATA[ini_get('xdebug.file_link_format')]]></code>
+      <code><![CDATA[ini_get('xdebug.file_link_format') ?: get_cfg_var('xdebug.file_link_format')]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Report/ConsoleReport.php">
+    <PossiblyInvalidArgument>
+      <code><![CDATA[$this->link_format]]></code>
+    </PossiblyInvalidArgument>
+    <PossiblyInvalidCast>
+      <code><![CDATA[$this->link_format]]></code>
+    </PossiblyInvalidCast>
+    <PossiblyInvalidPropertyAssignmentValue>
+      <code><![CDATA[(
+                ini_get('xdebug.file_link_format') ?: get_cfg_var('xdebug.file_link_format')
+            ) ?: 'file://%f#L%l']]></code>
+    </PossiblyInvalidPropertyAssignmentValue>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$issue_data->other_references]]></code>
       <code><![CDATA[$issue_data->taint_trace]]></code>
       <code><![CDATA[ini_get('xdebug.file_link_format')]]></code>
+      <code><![CDATA[ini_get('xdebug.file_link_format') ?: get_cfg_var('xdebug.file_link_format')]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Report/PhpStormReport.php">
@@ -2330,6 +2354,9 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="tests/Internal/Codebase/InternalCallMapHandlerTest.php">
+    <MixedReturnStatement>
+      <code><![CDATA[ReflectionMethod::createFromMethodName($functionName)]]></code>
+    </MixedReturnStatement>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[empty($normalizedEntry['type'])]]></code>
     </RiskyTruthyFalsyComparison>

@@ -31,6 +31,7 @@ use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
@@ -44,6 +45,7 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Union;
 use ReflectionProperty;
+use UnitEnum;
 
 use function ctype_digit;
 use function is_array;
@@ -368,11 +370,14 @@ final class ConstantTypeResolver
     /**
      * Note: This takes an array, but any array should only contain other arrays and scalars.
      */
-    public static function getLiteralTypeFromScalarValue(array|string|int|float|bool|null $value): Atomic
+    public static function getLiteralTypeFromScalarValue(array|string|int|float|bool|UnitEnum|null $value): Atomic
     {
+        if ($value instanceof UnitEnum) {
+            return new TEnumCase($value::class, $value->name);
+        }
         if (is_array($value)) {
             if (empty($value)) {
-                return Type::getEmptyArray()->getSingleAtomic();
+                return Type::getEmptyArrayAtomic();
             }
 
             $types = [];

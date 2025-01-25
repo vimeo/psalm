@@ -3,77 +3,20 @@
 return array (
   'added' => 
   array (
-    'DateTime::createFromImmutable' => 
-    array (
-      0 => 'static',
-      'object' => 'DateTimeImmutable',
-    ),
-    'JsonException::__clone' => 
-    array (
-      0 => 'void',
-    ),
-    'JsonException::__construct' => 
-    array (
-      0 => 'void',
-      'message=' => 'string',
-      'code=' => 'int',
-      'previous=' => 'Throwable|null',
-    ),
-    'JsonException::__toString' => 
-    array (
-      0 => 'string',
-    ),
-    'JsonException::__wakeup' => 
-    array (
-      0 => 'void',
-    ),
-    'JsonException::getCode' => 
-    array (
-      0 => 'int',
-    ),
-    'JsonException::getFile' => 
-    array (
-      0 => 'string',
-    ),
-    'JsonException::getLine' => 
-    array (
-      0 => 'int',
-    ),
-    'JsonException::getMessage' => 
-    array (
-      0 => 'string',
-    ),
-    'JsonException::getPrevious' => 
-    array (
-      0 => 'Throwable|null',
-    ),
-    'JsonException::getTrace' => 
-    array (
-      0 => 'list<array{args?: array<array-key, mixed>, class?: class-string, file?: string, function: string, line?: int, type?: \'->\'|\'::\'}>',
-    ),
-    'JsonException::getTraceAsString' => 
-    array (
-      0 => 'string',
-    ),
-    'Normalizer::getRawDecomposition' => 
-    array (
-      0 => 'null|string',
-      'string' => 'string',
-      'form=' => 'int',
-    ),
-    'SplPriorityQueue::isCorrupted' => 
-    array (
-      0 => 'bool',
-    ),
     'array_key_first' => 
     array (
       0 => 'int|null|string',
-      'array' => 'array<array-key, mixed>',
+      'arg' => 'array<array-key, mixed>',
     ),
     'array_key_last' => 
     array (
       0 => 'int|null|string',
-      'array' => 'array<array-key, mixed>',
+      'arg' => 'array<array-key, mixed>',
+    ),
+    'datetime::createfromimmutable' => 
+    array (
+      0 => 'static',
+      'DateTimeImmutable' => 'DateTimeImmutable',
     ),
     'fpm_get_status' => 
     array (
@@ -86,30 +29,30 @@ return array (
     'gmp_binomial' => 
     array (
       0 => 'GMP|false',
-      'n' => 'GMP|int|string',
-      'k' => 'int',
+      'a' => 'GMP|int|string',
+      'b' => 'int',
     ),
     'gmp_kronecker' => 
     array (
       0 => 'int',
-      'num1' => 'GMP|int|string',
-      'num2' => 'GMP|int|string',
+      'a' => 'GMP|int|string',
+      'b' => 'GMP|int|string',
     ),
     'gmp_lcm' => 
     array (
       0 => 'GMP',
-      'num1' => 'GMP|int|string',
-      'num2' => 'GMP|int|string',
+      'a' => 'GMP|int|string',
+      'b' => 'GMP|int|string',
     ),
     'gmp_perfect_power' => 
     array (
       0 => 'bool',
-      'num' => 'GMP|int|string',
+      'a' => 'GMP|int|string',
     ),
     'hrtime' => 
     array (
       0 => 'array{0: int, 1: int}|false',
-      'as_number=' => 'false',
+      'get_as_number' => 'false',
     ),
     'hrtime\'1' => 
     array (
@@ -119,24 +62,79 @@ return array (
     'is_countable' => 
     array (
       0 => 'bool',
-      'value' => 'mixed',
+      'var' => 'mixed',
     ),
-    'normalizer_get_raw_decomposition' => 
+    'jsonexception::__clone' => 
     array (
-      0 => 'null|string',
-      'string' => 'string',
-      'form=' => 'int',
+      0 => 'void',
+    ),
+    'jsonexception::__construct' => 
+    array (
+      0 => 'void',
+      'message=' => 'string',
+      'code=' => 'int',
+      'previous=' => 'Throwable|null',
+    ),
+    'jsonexception::__tostring' => 
+    array (
+      0 => 'string',
+    ),
+    'jsonexception::__wakeup' => 
+    array (
+      0 => 'void',
+    ),
+    'jsonexception::getcode' => 
+    array (
+      0 => 'int',
+    ),
+    'jsonexception::getfile' => 
+    array (
+      0 => 'string',
+    ),
+    'jsonexception::getline' => 
+    array (
+      0 => 'int',
+    ),
+    'jsonexception::getmessage' => 
+    array (
+      0 => 'string',
+    ),
+    'jsonexception::getprevious' => 
+    array (
+      0 => 'Throwable|null',
+    ),
+    'jsonexception::gettrace' => 
+    array (
+      0 => 'list<array{args?: array<array-key, mixed>, class?: class-string, file?: string, function: string, line?: int, type?: \'->\'|\'::\'}>',
+    ),
+    'jsonexception::gettraceasstring' => 
+    array (
+      0 => 'string',
     ),
     'net_get_interfaces' => 
     array (
       0 => 'array<string, array<string, mixed>>|false',
     ),
+    'normalizer::getrawdecomposition' => 
+    array (
+      0 => 'null|string',
+      'input' => 'string',
+    ),
+    'normalizer_get_raw_decomposition' => 
+    array (
+      0 => 'null|string',
+      'input' => 'string',
+    ),
     'openssl_pkey_derive' => 
     array (
       0 => 'false|string',
-      'public_key' => 'mixed',
-      'private_key' => 'mixed',
-      'key_length=' => 'int|null',
+      'peer_pub_key' => 'mixed',
+      'priv_key' => 'mixed',
+      'keylen=' => 'int|null',
+    ),
+    'readline_list_history' => 
+    array (
+      0 => 'array<array-key, mixed>',
     ),
     'session_set_cookie_params\'1' => 
     array (
@@ -173,6 +171,15 @@ return array (
       0 => 'bool',
       'info_id' => 'string',
     ),
+    'splpriorityqueue::iscorrupted' => 
+    array (
+      0 => 'bool',
+    ),
+    'spoofchecker::setrestrictionlevel' => 
+    array (
+      0 => 'void',
+      'level' => 'int',
+    ),
   ),
   'changed' => 
   array (
@@ -181,14 +188,14 @@ return array (
       'old' => 
       array (
         0 => 'int',
-        '&rw_array' => 'array<array-key, mixed>',
-        '...values' => 'mixed',
+        '&stack' => 'array<array-key, mixed>',
+        '...vars' => 'mixed',
       ),
       'new' => 
       array (
         0 => 'int',
-        '&rw_array' => 'array<array-key, mixed>',
-        '...values=' => 'mixed',
+        '&stack' => 'array<array-key, mixed>',
+        '...vars=' => 'mixed',
       ),
     ),
     'array_unshift' => 
@@ -196,14 +203,14 @@ return array (
       'old' => 
       array (
         0 => 'int',
-        '&rw_array' => 'array<array-key, mixed>',
-        '...values' => 'mixed',
+        '&stack' => 'array<array-key, mixed>',
+        '...vars' => 'mixed',
       ),
       'new' => 
       array (
         0 => 'int',
-        '&rw_array' => 'array<array-key, mixed>',
-        '...values=' => 'mixed',
+        '&stack' => 'array<array-key, mixed>',
+        '...vars=' => 'mixed',
       ),
     ),
     'bcscale' => 
@@ -217,6 +224,30 @@ return array (
       array (
         0 => 'int',
         'scale=' => 'int',
+      ),
+    ),
+    'dateinterval::__set_state' => 
+    array (
+      'old' => 
+      array (
+        0 => 'DateInterval',
+      ),
+      'new' => 
+      array (
+        0 => 'DateInterval',
+        'array' => 'array<array-key, mixed>',
+      ),
+    ),
+    'datetimezone::__set_state' => 
+    array (
+      'old' => 
+      array (
+        0 => 'DateTimeZone',
+      ),
+      'new' => 
+      array (
+        0 => 'DateTimeZone',
+        'array' => 'array<array-key, mixed>',
       ),
     ),
     'define' => 
@@ -234,6 +265,210 @@ return array (
         'constant_name' => 'string',
         'value' => 'array<array-key, mixed>|null|scalar',
         'case_insensitive=' => 'false',
+      ),
+    ),
+    'ftp_append' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'ftp' => 'resource',
+        'remote_file' => 'string',
+        'local_file' => 'string',
+        'mode' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'ftp' => 'resource',
+        'remote_file' => 'string',
+        'local_file' => 'string',
+        'mode=' => 'int',
+      ),
+    ),
+    'ftp_fget' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'ftp' => 'resource',
+        'fp' => 'resource',
+        'remote_file' => 'string',
+        'mode' => 'int',
+        'resumepos=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'ftp' => 'resource',
+        'fp' => 'resource',
+        'remote_file' => 'string',
+        'mode=' => 'int',
+        'resumepos=' => 'int',
+      ),
+    ),
+    'ftp_fput' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'ftp' => 'resource',
+        'remote_file' => 'string',
+        'fp' => 'resource',
+        'mode' => 'int',
+        'startpos=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'ftp' => 'resource',
+        'remote_file' => 'string',
+        'fp' => 'resource',
+        'mode=' => 'int',
+        'startpos=' => 'int',
+      ),
+    ),
+    'ftp_get' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'ftp' => 'resource',
+        'local_file' => 'string',
+        'remote_file' => 'string',
+        'mode' => 'int',
+        'resume_pos=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'ftp' => 'resource',
+        'local_file' => 'string',
+        'remote_file' => 'string',
+        'mode=' => 'int',
+        'resume_pos=' => 'int',
+      ),
+    ),
+    'ftp_nb_fget' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'ftp' => 'resource',
+        'fp' => 'resource',
+        'remote_file' => 'string',
+        'mode' => 'int',
+        'resumepos=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'ftp' => 'resource',
+        'fp' => 'resource',
+        'remote_file' => 'string',
+        'mode=' => 'int',
+        'resumepos=' => 'int',
+      ),
+    ),
+    'ftp_nb_fput' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'ftp' => 'resource',
+        'remote_file' => 'string',
+        'fp' => 'resource',
+        'mode' => 'int',
+        'startpos=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'ftp' => 'resource',
+        'remote_file' => 'string',
+        'fp' => 'resource',
+        'mode=' => 'int',
+        'startpos=' => 'int',
+      ),
+    ),
+    'ftp_nb_get' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'ftp' => 'resource',
+        'local_file' => 'string',
+        'remote_file' => 'string',
+        'mode' => 'int',
+        'resume_pos=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'ftp' => 'resource',
+        'local_file' => 'string',
+        'remote_file' => 'string',
+        'mode=' => 'int',
+        'resume_pos=' => 'int',
+      ),
+    ),
+    'ftp_nb_put' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'ftp' => 'resource',
+        'remote_file' => 'string',
+        'local_file' => 'string',
+        'mode' => 'int',
+        'startpos=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'ftp' => 'resource',
+        'remote_file' => 'string',
+        'local_file' => 'string',
+        'mode=' => 'int',
+        'startpos=' => 'int',
+      ),
+    ),
+    'ftp_put' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'ftp' => 'resource',
+        'remote_file' => 'string',
+        'local_file' => 'string',
+        'mode' => 'int',
+        'startpos=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'ftp' => 'resource',
+        'remote_file' => 'string',
+        'local_file' => 'string',
+        'mode=' => 'int',
+        'startpos=' => 'int',
+      ),
+    ),
+    'image2wbmp' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'im' => 'resource',
+        'filename=' => 'null|string',
+        'threshold=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'im' => 'resource',
+        'filename=' => 'null|string',
+        'foreground=' => 'int',
       ),
     ),
     'ldap_compare' => 
@@ -493,18 +728,30 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'directory' => 'string',
-        'permissions=' => 'int',
+        'pathname' => 'string',
+        'mode=' => 'int',
         'recursive=' => 'bool',
         'context=' => 'resource',
       ),
       'new' => 
       array (
         0 => 'bool',
-        'directory' => 'string',
-        'permissions=' => 'int',
+        'pathname' => 'string',
+        'mode=' => 'int',
         'recursive=' => 'bool',
         'context=' => 'null|resource',
+      ),
+    ),
+    'recursivetreeiterator::setpostfix' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'postfix' => 'string',
       ),
     ),
     'session_get_cookie_params' => 
@@ -516,6 +763,92 @@ return array (
       'new' => 
       array (
         0 => 'array{domain: null|string, httponly: bool|null, lifetime: int|null, path: null|string, samesite: null|string, secure: bool|null}',
+      ),
+    ),
+    'session_set_cookie_params' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'lifetime' => 'int',
+        'path=' => 'string',
+        'domain=' => 'string',
+        'secure=' => 'bool',
+        'httponly=' => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'lifetime_or_options' => 'int',
+        'path=' => 'string',
+        'domain=' => 'string',
+        'secure=' => 'bool',
+        'httponly=' => 'bool',
+      ),
+    ),
+    'setcookie' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'name' => 'string',
+        'value=' => 'string',
+        'expires=' => 'int',
+        'path=' => 'string',
+        'domain=' => 'string',
+        'secure=' => 'bool',
+        'httponly=' => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'name' => 'string',
+        'value=' => 'string',
+        'expires_or_options=' => 'int',
+        'path=' => 'string',
+        'domain=' => 'string',
+        'secure=' => 'bool',
+        'httponly=' => 'bool',
+      ),
+    ),
+    'setrawcookie' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'name' => 'string',
+        'value=' => 'string',
+        'expires=' => 'int',
+        'path=' => 'string',
+        'domain=' => 'string',
+        'secure=' => 'bool',
+        'httponly=' => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'name' => 'string',
+        'value=' => 'string',
+        'expires_or_options=' => 'int',
+        'path=' => 'string',
+        'domain=' => 'string',
+        'secure=' => 'bool',
+        'httponly=' => 'bool',
+      ),
+    ),
+    'soapserver::setclass' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'class_name' => 'string',
+        'args=' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'class_name' => 'string',
+        '...args=' => 'mixed',
       ),
     ),
   ),

@@ -33,6 +33,8 @@ use function array_merge;
 use function implode;
 use function strtolower;
 
+use const PHP_VERSION_ID;
+
 /**
  * @internal
  *
@@ -390,7 +392,11 @@ final class Reflection
                     $storage->addParam($param_obj);
                 }
 
-                if ($reflection_return_type = $reflection_function->getReturnType()) {
+                if ($reflection_return_type = (PHP_VERSION_ID >= 8_01_00 ? (
+                    ($reflection_function->getTentativeReturnType()
+                        ?? $reflection_function->getReturnType()
+                    )
+                ) : $reflection_function->getReturnType())) {
                     $storage->return_type = self::getPsalmTypeFromReflectionType($reflection_return_type);
                 }
             }
