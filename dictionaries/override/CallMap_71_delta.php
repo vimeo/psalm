@@ -401,20 +401,20 @@ return array (
     array (
       'old' => 
       array (
-        0 => 'DateTime|false',
-        'object' => 'mixed',
-        'hour' => 'mixed',
-        'minute' => 'mixed',
-        'second=' => 'mixed',
+        0 => 'int',
+        'object' => 'int',
+        'hour' => 'int',
+        'minute' => 'int',
+        'second=' => 'int',
       ),
       'new' => 
       array (
-        0 => 'DateTime|false',
-        'object' => 'mixed',
-        'hour' => 'mixed',
-        'minute' => 'mixed',
-        'second=' => 'mixed',
-        'microseconds=' => 'mixed',
+        0 => 'int',
+        'object' => 'int',
+        'hour' => 'int',
+        'minute' => 'int',
+        'second=' => 'int',
+        'microseconds=' => 'int',
       ),
     ),
     'datetime::__construct' => 
@@ -715,7 +715,7 @@ return array (
       'old' => 
       array (
         0 => 'MongoDB\\Driver\\Server',
-        'readPreference' => 'MongoDB\\Driver\\ReadPreference|null',
+        'readPreference' => 'MongoDB\\Driver\\ReadPreference',
       ),
       'new' => 
       array (

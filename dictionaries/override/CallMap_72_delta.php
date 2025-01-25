@@ -1002,6 +1002,21 @@ return array (
         'scope=' => 'array<array-key, mixed>|null|object',
       ),
     ),
+    'mongodb\\bson\\tophp' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|object',
+        'bson' => 'string',
+        'typemap=' => 'array<array-key, mixed>',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|object',
+        'bson' => 'string',
+        'typemap=' => 'array<array-key, mixed>|null',
+      ),
+    ),
     'mongodb\\driver\\bulkwrite::delete' => 
     array (
       'old' => 
@@ -1039,7 +1054,7 @@ return array (
       'old' => 
       array (
         0 => 'mixed',
-        'keyVaultClient' => 'MongoDB\\BSON\\Binary',
+        'keyVaultClient' => 'MongoDB\\BSON\\BinaryInterface',
       ),
       'new' => 
       array (
@@ -1081,8 +1096,8 @@ return array (
       array (
         0 => 'void',
         'uri=' => 'null|string',
-        'options=' => 'array<array-key, mixed>|null',
-        'driverOptions=' => 'array<array-key, mixed>|null',
+        'options=' => 'array<array-key, mixed>',
+        'driverOptions=' => 'array<array-key, mixed>',
       ),
       'new' => 
       array (
@@ -1124,6 +1139,40 @@ return array (
         'namespace' => 'string',
         'query' => 'MongoDB\\Driver\\Query',
         'options=' => 'MongoDB\\Driver\\ReadPreference|array<array-key, mixed>|null',
+      ),
+    ),
+    'mongodb\\driver\\manager::executereadcommand' => 
+    array (
+      'old' => 
+      array (
+        0 => 'MongoDB\\Driver\\Cursor',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>',
+      ),
+      'new' => 
+      array (
+        0 => 'MongoDB\\Driver\\Cursor',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+    ),
+    'mongodb\\driver\\manager::executewritecommand' => 
+    array (
+      'old' => 
+      array (
+        0 => 'MongoDB\\Driver\\Cursor',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>',
+      ),
+      'new' => 
+      array (
+        0 => 'MongoDB\\Driver\\Cursor',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>|null',
       ),
     ),
     'mongodb\\driver\\query::__construct' => 
@@ -1173,6 +1222,57 @@ return array (
         'namespace' => 'string',
         'query' => 'MongoDB\\Driver\\Query',
         'options=' => 'MongoDB\\Driver\\ReadPreference|array<array-key, mixed>|null',
+      ),
+    ),
+    'mongodb\\driver\\server::executereadcommand' => 
+    array (
+      'old' => 
+      array (
+        0 => 'MongoDB\\Driver\\Cursor',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>',
+      ),
+      'new' => 
+      array (
+        0 => 'MongoDB\\Driver\\Cursor',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+    ),
+    'mongodb\\driver\\server::executereadwritecommand' => 
+    array (
+      'old' => 
+      array (
+        0 => 'MongoDB\\Driver\\Cursor',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>',
+      ),
+      'new' => 
+      array (
+        0 => 'MongoDB\\Driver\\Cursor',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+    ),
+    'mongodb\\driver\\server::executewritecommand' => 
+    array (
+      'old' => 
+      array (
+        0 => 'MongoDB\\Driver\\Cursor',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>',
+      ),
+      'new' => 
+      array (
+        0 => 'MongoDB\\Driver\\Cursor',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>|null',
       ),
     ),
     'mongodb\\driver\\session::advanceoperationtime' => 
@@ -3053,6 +3153,21 @@ return array (
         'aggregate=' => 'string',
       ),
     ),
+    'redisarray::__construct' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'name_or_hosts' => 'string',
+        'options=' => 'array<array-key, mixed>',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'name_or_hosts' => 'string',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+    ),
     'redisarray::_rehash' => 
     array (
       'old' => 
@@ -4599,6 +4714,17 @@ return array (
         'flags=' => 'int',
       ),
     ),
+    'swoole\\connection\\iterator::next' => 
+    array (
+      'old' => 
+      array (
+        0 => 'Connection',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+      ),
+    ),
     'swoole\\http\\response::header' => 
     array (
       'old' => 
@@ -4623,14 +4749,14 @@ return array (
         0 => 'mixed',
         'data' => 'string',
         'worker_id=' => 'int',
-        'finish_callback=' => 'callable',
+        'finish_callback=' => 'callable|null',
       ),
       'new' => 
       array (
         0 => 'mixed',
         'data' => 'string',
         'task_worker_index=' => 'int',
-        'finish_callback=' => 'callable',
+        'finish_callback=' => 'callable|null',
       ),
     ),
     'swoole\\server::taskwait' => 
@@ -4648,6 +4774,17 @@ return array (
         'data' => 'string',
         'timeout=' => 'float',
         'task_worker_index=' => 'int',
+      ),
+    ),
+    'swoole\\table::next' => 
+    array (
+      'old' => 
+      array (
+        0 => 'ReturnType',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
       ),
     ),
   ),

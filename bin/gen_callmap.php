@@ -134,14 +134,13 @@ foreach ($customMaps as $version => &$data) {
         if (isset($baseMaps[$version][$func])) {
             $baseParams = $baseMaps[$version][$func];
             $params = assertEntryParameters($func, $baseParams, $params);
-        } else if (!str_contains($func, "'") 
+        } elseif (!str_contains($func, "'")
             && !str_starts_with($func, 'apache')
             && !str_starts_with($func, 'ftp')
             && !str_starts_with($func, 'db2')
-            && $func !== 'exit'
             && isset($allFuncs[$func])
         ) {
-            unset($data[$func]);
+            //unset($data[$func]);
         }
     } unset($params);
     $data = normalizeCallMap($data);
@@ -162,7 +161,7 @@ foreach ($baseMaps as $version => $data) {
 foreach ($equal as $func => $ok) {
     if ($ok) {
         foreach ($customMaps as &$data) {
-            unset($data[$func]);
+            //unset($data[$func]);
         } unset($data);
     }
 }

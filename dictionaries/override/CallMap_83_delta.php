@@ -121,6 +121,19 @@ return array (
         'z' => 'float',
       ),
     ),
+    'imagickdraw::setstrokedasharray' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'dashes' => 'list<float|int>',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'dashes' => 'list<float|int>|null',
+      ),
+    ),
     'imap_clearflag_full' => 
     array (
       'old' => 
@@ -264,6 +277,31 @@ return array (
         'field=' => 'int|null',
       ),
     ),
+    'intlcal_set' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'calendar' => 'IntlCalendar',
+        'year' => 'int',
+        'month' => 'int',
+        'dayOfMonth=' => 'int',
+        'hour=' => 'int',
+        'minute=' => 'int',
+        'second=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'true',
+        'calendar' => 'IntlCalendar',
+        'year' => 'int',
+        'month' => 'int',
+        'dayOfMonth=' => 'int',
+        'hour=' => 'int',
+        'minute=' => 'int',
+        'second=' => 'int',
+      ),
+    ),
     'intlcal_set_first_day_of_week' => 
     array (
       'old' => 
@@ -393,6 +431,19 @@ return array (
         '&array' => 'array<array-key, mixed>',
       ),
     ),
+    'pg_close' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'connection=' => 'PgSql\\Connection|null',
+      ),
+      'new' => 
+      array (
+        0 => 'true',
+        'connection=' => 'PgSql\\Connection|null',
+      ),
+    ),
     'pg_trace' => 
     array (
       'old' => 
@@ -411,6 +462,19 @@ return array (
         'trace_mode=' => 'int',
       ),
     ),
+    'pg_untrace' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'connection=' => 'PgSql\\Connection|null',
+      ),
+      'new' => 
+      array (
+        0 => 'true',
+        'connection=' => 'PgSql\\Connection|null',
+      ),
+    ),
     'posix_getrlimit' => 
     array (
       'old' => 
@@ -421,6 +485,28 @@ return array (
       array (
         0 => 'array{\'hard core\': string, \'hard cpu\': string, \'hard data\': string, \'hard filesize\': string, \'hard maxproc\': int, \'hard memlock\': int, \'hard openfiles\': int, \'hard rss\': string, \'hard stack\': string, \'hard totalmem\': string, \'soft core\': string, \'soft cpu\': string, \'soft data\': string, \'soft filesize\': string, \'soft maxproc\': int, \'soft memlock\': int, \'soft openfiles\': int, \'soft rss\': string, \'soft stack\': int, \'soft totalmem\': string}|false',
         'resource=' => 'int|null',
+      ),
+    ),
+    'reflectionclass::getstaticproperties' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<string, ReflectionProperty>|null',
+      ),
+      'new' => 
+      array (
+        0 => 'array<string, ReflectionProperty>',
+      ),
+    ),
+    'reflectionobject::getstaticproperties' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, ReflectionProperty>|null',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, ReflectionProperty>',
       ),
     ),
     'rsort' => 
@@ -436,6 +522,35 @@ return array (
         0 => 'true',
         '&array' => 'array<array-key, mixed>',
         'flags=' => 'int',
+      ),
+    ),
+    'session_set_save_handler' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'open' => 'callable(string, string):bool',
+        'close=' => 'callable():bool',
+        'read=' => 'callable(string):string',
+        'write=' => 'callable(string, string):bool',
+        'destroy=' => 'callable(string):bool',
+        'gc=' => 'callable(string):bool',
+        'create_sid=' => 'callable():string',
+        'validate_sid=' => 'callable(string):bool',
+        'update_timestamp=' => 'callable(string):bool',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'open' => 'callable(string, string):bool',
+        'close=' => 'callable():bool',
+        'read=' => 'callable(string):string',
+        'write=' => 'callable(string, string):bool',
+        'destroy=' => 'callable(string):bool',
+        'gc=' => 'callable(string):bool',
+        'create_sid=' => 'callable():string|null',
+        'validate_sid=' => 'callable(string):bool|null',
+        'update_timestamp=' => 'callable(string):bool|null',
       ),
     ),
     'srand' => 

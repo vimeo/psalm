@@ -67,6 +67,40 @@ return array (
   ),
   'changed' => 
   array (
+    'array_walk' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        '&array' => 'array<array-key, mixed>',
+        'callback' => 'callable',
+        'arg=' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'true',
+        '&array' => 'array<array-key, mixed>',
+        'callback' => 'callable',
+        'arg=' => 'mixed',
+      ),
+    ),
+    'array_walk_recursive' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        '&array' => 'array<array-key, mixed>',
+        'callback' => 'callable',
+        'arg=' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'true',
+        '&array' => 'array<array-key, mixed>',
+        'callback' => 'callable',
+        'arg=' => 'mixed',
+      ),
+    ),
     'dba_open' => 
     array (
       'old' => 
@@ -148,6 +182,36 @@ return array (
       array (
         0 => 'array<array-key, mixed>|false|int|null|string',
         'type=' => 'string',
+      ),
+    ),
+    'passthru' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool|null',
+        'command' => 'string',
+        '&w_result_code=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|null',
+        'command' => 'string',
+        '&w_result_code=' => 'int',
+      ),
+    ),
+    'register_shutdown_function' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool|null',
+        'callback' => 'callable',
+        '...args=' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'callback' => 'callable',
+        '...args=' => 'mixed',
       ),
     ),
     'str_split' => 

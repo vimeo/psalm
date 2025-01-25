@@ -7295,17 +7295,17 @@ return array (
   'couchbase\\booleansearchquery::must' => 
   array (
     0 => 'Couchbase\\BooleanSearchQuery',
-    'query' => 'array<int, Couchbase\\SearchQueryPart>',
+    'query' => 'Couchbase\\ConjunctionSearchQuery',
   ),
   'couchbase\\booleansearchquery::mustnot' => 
   array (
     0 => 'Couchbase\\BooleanSearchQuery',
-    'query' => 'array<int, Couchbase\\SearchQueryPart>',
+    'query' => 'Couchbase\\DisjunctionSearchQuery',
   ),
   'couchbase\\booleansearchquery::should' => 
   array (
     0 => 'Couchbase\\BooleanSearchQuery',
-    'query' => 'array<int, Couchbase\\SearchQueryPart>',
+    'query' => 'Couchbase\\DisjunctionSearchQuery',
   ),
   'couchbase\\bucket::__construct' => 
   array (
@@ -8295,7 +8295,7 @@ return array (
   'couchbase\\conjunctionsearchquery::every' => 
   array (
     0 => 'Couchbase\\ConjunctionSearchQuery',
-    '...queries=' => 'array<int, Couchbase\\SearchQueryPart>',
+    '...queries=' => 'Couchbase\\SearchQuery',
   ),
   'couchbase\\conjunctionsearchquery::jsonserialize' => 
   array (
@@ -8556,7 +8556,7 @@ return array (
   'couchbase\\disjunctionsearchquery::either' => 
   array (
     0 => 'Couchbase\\DisjunctionSearchQuery',
-    '...queries=' => 'array<int, Couchbase\\SearchQueryPart>',
+    '...queries=' => 'Couchbase\\SearchQuery',
   ),
   'couchbase\\disjunctionsearchquery::jsonserialize' => 
   array (
@@ -8634,7 +8634,7 @@ return array (
   'couchbase\\docidsearchquery::docids' => 
   array (
     0 => 'Couchbase\\DocIdSearchQuery',
-    '...documentIds=' => 'array<int, string>',
+    '...documentIds=' => 'string',
   ),
   'couchbase\\docidsearchquery::field' => 
   array (
@@ -10038,8 +10038,8 @@ return array (
   ),
   'couchbase\\mutationstate::add' => 
   array (
-    0 => 'mixed',
-    'source' => 'Couchbase\\Document|Couchbase\\DocumentFragment|array<array-key, mixed>',
+    0 => 'Couchbase\\MutationState',
+    'source' => 'Couchbase\\MutationResult',
   ),
   'couchbase\\mutationstate::from' => 
   array (
@@ -10224,8 +10224,8 @@ return array (
   array (
     0 => 'Couchbase\\NumericRangeSearchFacet',
     'name' => 'string',
-    'min=' => 'float',
-    'max=' => 'float',
+    'min=' => 'float|null',
+    'max=' => 'float|null',
   ),
   'couchbase\\numericrangesearchfacet::jsonserialize' => 
   array (
@@ -11895,12 +11895,12 @@ return array (
   ),
   'couchbase\\searchsortfield::missing' => 
   array (
-    0 => 'mixed',
+    0 => 'Couchbase\\SearchSortField',
     'missing' => 'string',
   ),
   'couchbase\\searchsortfield::mode' => 
   array (
-    0 => 'mixed',
+    0 => 'Couchbase\\SearchSortField',
     'mode' => 'string',
   ),
   'couchbase\\searchsortfield::score' => 
@@ -11909,7 +11909,7 @@ return array (
   ),
   'couchbase\\searchsortfield::type' => 
   array (
-    0 => 'mixed',
+    0 => 'Couchbase\\SearchSortField',
     'type' => 'string',
   ),
   'couchbase\\searchsortgeodistance::__construct' => 
@@ -14050,12 +14050,12 @@ return array (
   ),
   'date_time_set' => 
   array (
-    0 => 'DateTime|false',
-    'object' => 'mixed',
-    'hour' => 'mixed',
-    'minute' => 'mixed',
-    'second=' => 'mixed',
-    'microseconds=' => 'mixed',
+    0 => 'int',
+    'object' => 'int',
+    'hour' => 'int',
+    'minute' => 'int',
+    'second=' => 'int',
+    'microseconds=' => 'int',
   ),
   'date_timestamp_get' => 
   array (
@@ -15794,8 +15794,8 @@ return array (
     0 => 'false|list<array<array-key, mixed>>',
     'hostname' => 'string',
     'type=' => 'int',
-    '&w_authns=' => 'array<array-key, mixed>',
-    '&w_addtl=' => 'array<array-key, mixed>',
+    '&w_authns=' => 'array<array-key, mixed>|null',
+    '&w_addtl=' => 'array<array-key, mixed>|null',
     'raw=' => 'bool',
   ),
   'dom_document_relaxng_validate_file' => 
@@ -18417,7 +18417,7 @@ return array (
   ),
   'ds\\deque::copy' => 
   array (
-    0 => 'Ds\\Deque',
+    0 => 'Ds\\Collection',
   ),
   'ds\\deque::count' => 
   array (
@@ -18425,8 +18425,8 @@ return array (
   ),
   'ds\\deque::filter' => 
   array (
-    0 => 'Ds\\Deque',
-    'callback=' => 'callable',
+    0 => 'Ds\\Sequence',
+    'callback=' => 'callable|null',
   ),
   'ds\\deque::find' => 
   array (
@@ -18471,12 +18471,12 @@ return array (
   ),
   'ds\\deque::map' => 
   array (
-    0 => 'Ds\\Deque',
+    0 => 'Ds\\Sequence',
     'callback' => 'callable',
   ),
   'ds\\deque::merge' => 
   array (
-    0 => 'Ds\\Deque',
+    0 => 'Ds\\Sequence',
     'values' => 'mixed',
   ),
   'ds\\deque::offsetexists' => 
@@ -18526,7 +18526,7 @@ return array (
   ),
   'ds\\deque::reversed' => 
   array (
-    0 => 'Ds\\Deque',
+    0 => 'Ds\\Sequence',
   ),
   'ds\\deque::rotate' => 
   array (
@@ -18545,19 +18545,19 @@ return array (
   ),
   'ds\\deque::slice' => 
   array (
-    0 => 'Ds\\Deque',
+    0 => 'Ds\\Sequence',
     'index' => 'int',
     'length=' => 'int|null',
   ),
   'ds\\deque::sort' => 
   array (
     0 => 'void',
-    'comparator=' => 'callable',
+    'comparator=' => 'callable|null',
   ),
   'ds\\deque::sorted' => 
   array (
-    0 => 'Ds\\Deque',
-    'comparator=' => 'callable',
+    0 => 'Ds\\Sequence',
+    'comparator=' => 'callable|null',
   ),
   'ds\\deque::sum' => 
   array (
@@ -18606,7 +18606,7 @@ return array (
   ),
   'ds\\map::copy' => 
   array (
-    0 => 'Ds\\Map',
+    0 => 'Ds\\Collection',
   ),
   'ds\\map::count' => 
   array (
@@ -18620,7 +18620,7 @@ return array (
   'ds\\map::filter' => 
   array (
     0 => 'Ds\\Map',
-    'callback=' => 'callable',
+    'callback=' => 'callable|null',
   ),
   'ds\\map::first' => 
   array (
@@ -18666,12 +18666,12 @@ return array (
   'ds\\map::ksort' => 
   array (
     0 => 'void',
-    'comparator=' => 'callable',
+    'comparator=' => 'callable|null',
   ),
   'ds\\map::ksorted' => 
   array (
     0 => 'Ds\\Map',
-    'comparator=' => 'callable',
+    'comparator=' => 'callable|null',
   ),
   'ds\\map::last' => 
   array (
@@ -18757,12 +18757,12 @@ return array (
   'ds\\map::sort' => 
   array (
     0 => 'void',
-    'comparator=' => 'callable',
+    'comparator=' => 'callable|null',
   ),
   'ds\\map::sorted' => 
   array (
     0 => 'Ds\\Map',
-    'comparator=' => 'callable',
+    'comparator=' => 'callable|null',
   ),
   'ds\\map::sum' => 
   array (
@@ -18831,7 +18831,7 @@ return array (
   ),
   'ds\\priorityqueue::copy' => 
   array (
-    0 => 'Ds\\PriorityQueue',
+    0 => 'Ds\\Collection',
   ),
   'ds\\priorityqueue::count' => 
   array (
@@ -18887,7 +18887,7 @@ return array (
   ),
   'ds\\queue::copy' => 
   array (
-    0 => 'Ds\\Queue',
+    0 => 'Ds\\Collection',
   ),
   'ds\\queue::count' => 
   array (
@@ -19104,7 +19104,7 @@ return array (
   ),
   'ds\\set::copy' => 
   array (
-    0 => 'Ds\\Set',
+    0 => 'Ds\\Collection',
   ),
   'ds\\set::count' => 
   array (
@@ -19118,7 +19118,7 @@ return array (
   'ds\\set::filter' => 
   array (
     0 => 'Ds\\Set',
-    'predicate=' => 'callable',
+    'predicate=' => 'callable|null',
   ),
   'ds\\set::first' => 
   array (
@@ -19214,12 +19214,12 @@ return array (
   'ds\\set::sort' => 
   array (
     0 => 'void',
-    'comparator=' => 'callable',
+    'comparator=' => 'callable|null',
   ),
   'ds\\set::sorted' => 
   array (
     0 => 'Ds\\Set',
-    'comparator=' => 'callable',
+    'comparator=' => 'callable|null',
   ),
   'ds\\set::sum' => 
   array (
@@ -19259,7 +19259,7 @@ return array (
   ),
   'ds\\stack::copy' => 
   array (
-    0 => 'Ds\\Stack',
+    0 => 'Ds\\Collection',
   ),
   'ds\\stack::count' => 
   array (
@@ -19345,7 +19345,7 @@ return array (
   ),
   'ds\\vector::copy' => 
   array (
-    0 => 'Ds\\Vector',
+    0 => 'Ds\\Collection',
   ),
   'ds\\vector::count' => 
   array (
@@ -19353,8 +19353,8 @@ return array (
   ),
   'ds\\vector::filter' => 
   array (
-    0 => 'Ds\\Vector',
-    'callback=' => 'callable',
+    0 => 'Ds\\Sequence',
+    'callback=' => 'callable|null',
   ),
   'ds\\vector::find' => 
   array (
@@ -19399,12 +19399,12 @@ return array (
   ),
   'ds\\vector::map' => 
   array (
-    0 => 'Ds\\Vector',
+    0 => 'Ds\\Sequence',
     'callback' => 'callable',
   ),
   'ds\\vector::merge' => 
   array (
-    0 => 'Ds\\Vector',
+    0 => 'Ds\\Sequence',
     'values' => 'mixed',
   ),
   'ds\\vector::offsetexists' => 
@@ -19454,7 +19454,7 @@ return array (
   ),
   'ds\\vector::reversed' => 
   array (
-    0 => 'Ds\\Vector',
+    0 => 'Ds\\Sequence',
   ),
   'ds\\vector::rotate' => 
   array (
@@ -19473,19 +19473,19 @@ return array (
   ),
   'ds\\vector::slice' => 
   array (
-    0 => 'Ds\\Vector',
+    0 => 'Ds\\Sequence',
     'index' => 'int',
     'length=' => 'int|null',
   ),
   'ds\\vector::sort' => 
   array (
     0 => 'void',
-    'comparator=' => 'callable',
+    'comparator=' => 'callable|null',
   ),
   'ds\\vector::sorted' => 
   array (
-    0 => 'Ds\\Vector',
-    'comparator=' => 'callable',
+    0 => 'Ds\\Sequence',
+    'comparator=' => 'callable|null',
   ),
   'ds\\vector::sum' => 
   array (
@@ -24125,7 +24125,7 @@ return array (
     'context=' => 'null|resource',
     'offset=' => 'int',
     'maxlen=' => 'int',
-    'use_include_path=' => 'int',
+    'use_include_path=' => 'bool',
   ),
   'file_put_contents' => 
   array (
@@ -36661,7 +36661,7 @@ return array (
   'imagick::getimagedistortion' => 
   array (
     0 => 'float',
-    'reference' => 'magickwand',
+    'reference' => 'Imagick',
     'metric' => 'int',
   ),
   'imagick::getimageextrema' => 
@@ -37017,7 +37017,7 @@ return array (
   'imagick::inversefouriertransformimage' => 
   array (
     0 => 'void',
-    'complement' => 'string',
+    'complement' => 'Imagick',
     'magnitude' => 'string',
   ),
   'imagick::key' => 
@@ -48015,7 +48015,7 @@ return array (
   array (
     0 => 'array<array-key, mixed>|object',
     'bson' => 'string',
-    'typemap=' => 'array<array-key, mixed>|null',
+    'typemap=' => 'array<array-key, mixed>',
   ),
   'mongodb\\bson\\torelaxedextendedjson' => 
   array (
@@ -48153,7 +48153,7 @@ return array (
   'mongodb\\driver\\clientencryption::decrypt' => 
   array (
     0 => 'mixed',
-    'keyVaultClient' => 'MongoDB\\BSON\\Binary',
+    'keyVaultClient' => 'MongoDB\\BSON\\BinaryInterface',
   ),
   'mongodb\\driver\\clientencryption::encrypt' => 
   array (
@@ -49005,8 +49005,8 @@ return array (
   array (
     0 => 'void',
     'uri=' => 'null|string',
-    'options=' => 'array<array-key, mixed>|null',
-    'driverOptions=' => 'array<array-key, mixed>|null',
+    'options=' => 'array<array-key, mixed>',
+    'driverOptions=' => 'array<array-key, mixed>',
   ),
   'mongodb\\driver\\manager::__wakeup' => 
   array (
@@ -49048,7 +49048,7 @@ return array (
     0 => 'MongoDB\\Driver\\Cursor',
     'db' => 'string',
     'command' => 'MongoDB\\Driver\\Command',
-    'options=' => 'array<array-key, mixed>|null',
+    'options=' => 'array<array-key, mixed>',
   ),
   'mongodb\\driver\\manager::executereadwritecommand' => 
   array (
@@ -49062,7 +49062,7 @@ return array (
     0 => 'MongoDB\\Driver\\Cursor',
     'db' => 'string',
     'command' => 'MongoDB\\Driver\\Command',
-    'options=' => 'array<array-key, mixed>|null',
+    'options=' => 'array<array-key, mixed>',
   ),
   'mongodb\\driver\\manager::getreadconcern' => 
   array (
@@ -49422,21 +49422,21 @@ return array (
     0 => 'MongoDB\\Driver\\Cursor',
     'db' => 'string',
     'command' => 'MongoDB\\Driver\\Command',
-    'options=' => 'array<array-key, mixed>|null',
+    'options=' => 'array<array-key, mixed>',
   ),
   'mongodb\\driver\\server::executereadwritecommand' => 
   array (
     0 => 'MongoDB\\Driver\\Cursor',
     'db' => 'string',
     'command' => 'MongoDB\\Driver\\Command',
-    'options=' => 'array<array-key, mixed>|null',
+    'options=' => 'array<array-key, mixed>',
   ),
   'mongodb\\driver\\server::executewritecommand' => 
   array (
     0 => 'MongoDB\\Driver\\Cursor',
     'db' => 'string',
     'command' => 'MongoDB\\Driver\\Command',
-    'options=' => 'array<array-key, mixed>|null',
+    'options=' => 'array<array-key, mixed>',
   ),
   'mongodb\\driver\\server::gethost' => 
   array (
@@ -66088,7 +66088,7 @@ return array (
   array (
     0 => 'void',
     'name_or_hosts' => 'string',
-    'options=' => 'array<array-key, mixed>|null',
+    'options=' => 'array<array-key, mixed>',
   ),
   'redisarray::_continuum' => 
   array (
@@ -86599,8 +86599,8 @@ return array (
   array (
     0 => 'bool',
     'fd' => 'int',
-    'read_callback' => 'callable',
-    'write_callback=' => 'callable',
+    'read_callback' => 'callable|null',
+    'write_callback=' => 'callable|null',
     'events=' => 'string',
   ),
   'swoole\\event::cycle' => 
@@ -86612,7 +86612,7 @@ return array (
   'swoole\\event::defer' => 
   array (
     0 => 'void',
-    'callback' => 'mixed',
+    'callback' => 'callable',
   ),
   'swoole\\event::del' => 
   array (
@@ -86641,8 +86641,8 @@ return array (
   array (
     0 => 'bool',
     'fd' => 'int',
-    'read_callback=' => 'string',
-    'write_callback=' => 'string',
+    'read_callback=' => 'callable|null',
+    'write_callback=' => 'callable|null',
     'events=' => 'string',
   ),
   'swoole\\event::wait' => 
@@ -89416,7 +89416,7 @@ return array (
   array (
     0 => 'ReturnType',
     'command' => 'string',
-    'callback' => 'string',
+    'callback' => 'callable',
   ),
   'swoole\\redis\\server::shutdown' => 
   array (
@@ -89708,7 +89708,7 @@ return array (
     0 => 'mixed',
     'data' => 'string',
     'worker_id=' => 'int',
-    'finish_callback=' => 'callable',
+    'finish_callback=' => 'callable|null',
   ),
   'swoole\\server::taskco' => 
   array (
@@ -91020,8 +91020,8 @@ return array (
   array (
     0 => 'int',
     'fd' => 'int',
-    'read_callback' => 'callable',
-    'write_callback=' => 'callable',
+    'read_callback' => 'callable|null',
+    'write_callback=' => 'callable|null',
     'events=' => 'int',
   ),
   'swoole_event_cycle' => 
@@ -91058,8 +91058,8 @@ return array (
   array (
     0 => 'bool',
     'fd' => 'int',
-    'read_callback=' => 'callable',
-    'write_callback=' => 'callable',
+    'read_callback=' => 'callable|null',
+    'write_callback=' => 'callable|null',
     'events=' => 'int',
   ),
   'swoole_event_wait' => 

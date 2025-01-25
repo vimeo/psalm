@@ -176,7 +176,6 @@ function assertParameter(string $func, string $paramName, array $custom, array $
 
 function assertTypeValidity(string $base, string $custom, string $msgPrefix): string
 {
-    return $custom;
     $expectedType = Type::parseString($base);
     $callMapType = Type::parseString($custom === '' ? $base : $custom);
     
