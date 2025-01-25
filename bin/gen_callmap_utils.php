@@ -58,16 +58,22 @@ function normalizeParameters(string $func, array $parameters): array
             'optional' => false,
             'type' => $entry,
         ];
-        if (strncmp($normalizedKey, '&', 1) === 0) {
-            $normalizedEntry['byRef'] = true;
-            $normalizedKey = substr($normalizedKey, 1);
-        }
-    
-        if (strncmp($normalizedKey, '...', 3) === 0) {
-            $normalizedEntry['variadic'] = true;
-            $normalizedKey = substr($normalizedKey, 3);
-        }
-    
+
+        do {
+            if (strncmp($normalizedKey, '...', 3) === 0) {
+                $normalizedEntry['variadic'] = true;
+                $normalizedKey = substr($normalizedKey, 3);
+                continue;
+            }
+
+            if (strncmp($normalizedKey, '&', 1) === 0) {
+                $normalizedEntry['byRef'] = true;
+                $normalizedKey = substr($normalizedKey, 1);
+                continue;
+            }
+            break;
+        } while (true);
+
         // Read the reference mode
         if ($normalizedEntry['byRef']) {
             $parts = explode('_', $normalizedKey, 2);
@@ -130,11 +136,11 @@ function assertEntryParameters(string $func, array $baseParameters, array $custo
         if (($param['refMode'] ?? 'rw') !== 'rw') {
             $key = "{$param['refMode']}_$key";
         }
-        if ($param['byRef']) {
-            $key = "&$key";
-        }
         if ($param['variadic']) {
             $key = "...$key";
+        }
+        if ($param['byRef']) {
+            $key = "&$key";
         }
         if ($param['optional']) {
             $key = "$key=";

@@ -5479,13 +5479,13 @@ return array (
       array (
         0 => 'array<array-key, mixed>|int',
         'format' => 'string',
-        '...&vars=' => 'float|int|string',
+        '&...vars=' => 'float|int|string',
       ),
       'new' => 
       array (
         0 => 'array<array-key, mixed>|int|null',
         'format' => 'string',
-        '...&vars=' => 'float|int|string',
+        '&...vars=' => 'float|int|string',
       ),
     ),
     'spltempfileobject::fputcsv' => 
@@ -5514,13 +5514,13 @@ return array (
       array (
         0 => 'array<array-key, mixed>|int',
         'format' => 'string',
-        '...&vars=' => 'float|int|string',
+        '&...vars=' => 'float|int|string',
       ),
       'new' => 
       array (
         0 => 'array<array-key, mixed>|int|null',
         'format' => 'string',
-        '...&vars=' => 'float|int|string',
+        '&...vars=' => 'float|int|string',
       ),
     ),
     'stream_select' => 

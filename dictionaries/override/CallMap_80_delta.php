@@ -572,13 +572,13 @@ return array (
         '&arr1' => 'array<array-key, mixed>',
         '&sort_order=' => 'array<array-key, mixed>|int',
         '&sort_flags=' => 'array<array-key, mixed>|int',
-        '...&arr2=' => 'array<array-key, mixed>|int',
+        '&...arr2=' => 'array<array-key, mixed>|int',
       ),
       'new' => 
       array (
         0 => 'bool',
         '&array' => 'array<array-key, mixed>',
-        '...&rest=' => 'array<array-key, mixed>|int',
+        '&...rest=' => 'array<array-key, mixed>|int',
       ),
     ),
     'array_pad' => 
@@ -7218,14 +7218,14 @@ return array (
         0 => 'list<mixed>',
         'stream' => 'resource',
         'format' => 'string',
-        '...&vars=' => 'mixed',
+        '&...vars=' => 'mixed',
       ),
       'new' => 
       array (
         0 => 'list<mixed>|null',
         'stream' => 'resource',
         'format' => 'string',
-        '...&vars=' => 'mixed',
+        '&...vars=' => 'mixed',
       ),
     ),
     'fseek' => 
@@ -30300,14 +30300,14 @@ return array (
         0 => 'int|list<float|int|null|string>|null',
         'str' => 'string',
         'format' => 'string',
-        '...&vars=' => 'float|int|null|string',
+        '&...vars=' => 'float|int|null|string',
       ),
       'new' => 
       array (
         0 => 'int|list<float|int|null|string>|null',
         'string' => 'string',
         'format' => 'string',
-        '...&vars=' => 'float|int|null|string',
+        '&...vars=' => 'float|int|null|string',
       ),
     ),
     'str_getcsv' => 

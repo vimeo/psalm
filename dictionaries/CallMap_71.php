@@ -1928,7 +1928,7 @@ return array (
     '&arr1' => 'array<array-key, mixed>',
     '&sort_order=' => 'array<array-key, mixed>|int',
     '&sort_flags=' => 'array<array-key, mixed>|int',
-    '...&arr2=' => 'array<array-key, mixed>|int',
+    '&...arr2=' => 'array<array-key, mixed>|int',
   ),
   'array_pad' => 
   array (
@@ -24615,7 +24615,7 @@ return array (
     0 => 'list<mixed>',
     'stream' => 'resource',
     'format' => 'string',
-    '...&vars=' => 'mixed',
+    '&...vars=' => 'mixed',
   ),
   'fscanf\'1' => 
   array (
@@ -76944,7 +76944,7 @@ return array (
   array (
     0 => 'array<array-key, mixed>|int',
     'format' => 'string',
-    '...&vars=' => 'float|int|string',
+    '&...vars=' => 'float|int|string',
   ),
   'splfileobject::fseek' => 
   array (
@@ -77875,7 +77875,7 @@ return array (
   array (
     0 => 'array<array-key, mixed>|int',
     'format' => 'string',
-    '...&vars=' => 'float|int|string',
+    '&...vars=' => 'float|int|string',
   ),
   'spltempfileobject::fseek' => 
   array (
@@ -78981,7 +78981,7 @@ return array (
     0 => 'int|list<float|int|null|string>|null',
     'str' => 'string',
     'format' => 'string',
-    '...&vars=' => 'float|int|null|string',
+    '&...vars=' => 'float|int|null|string',
   ),
   'ssdeep_fuzzy_compare' => 
   array (
