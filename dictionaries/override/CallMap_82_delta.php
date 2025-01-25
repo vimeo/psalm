@@ -3,11 +3,6 @@
 return array (
   'added' => 
   array (
-    'curl_upkeep' => 
-    array (
-      0 => 'bool',
-      'handle' => 'CurlHandle',
-    ),
     'datetimeinterface::__serialize' => 
     array (
       0 => 'array<array-key, mixed>',
@@ -30,10 +25,6 @@ return array (
     'libxml_get_external_entity_loader' => 
     array (
       0 => 'callable(string, string, array{directory: null|string, extSubSystem: null|string, extSubURI: null|string, intSubName: null|string}):(null|resource|string)|null',
-    ),
-    'memory_reset_peak_usage' => 
-    array (
-      0 => 'void',
     ),
     'mysqli::execute_query' => 
     array (
@@ -60,10 +51,6 @@ return array (
       'nonce' => 'non-empty-string',
       'counter' => 'int',
       'key' => 'non-empty-string',
-    ),
-    'ziparchive::clearerror' => 
-    array (
-      0 => 'void',
     ),
     'ziparchive::getstreamindex' => 
     array (

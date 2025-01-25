@@ -162,7 +162,7 @@ foreach ($baseMaps as $version => $data) {
 foreach ($equal as $func => $ok) {
     if ($ok) {
         foreach ($customMaps as &$data) {
-            //unset($data[$func]);
+            unset($data[$func]);
         } unset($data);
     }
 }

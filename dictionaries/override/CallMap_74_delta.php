@@ -10,48 +10,6 @@ return array (
       'split_length=' => 'int<1, max>',
       'encoding=' => 'string',
     ),
-    'mongodb\\bson\\document::offsetexists' => 
-    array (
-      0 => 'bool',
-      'offset' => 'mixed',
-    ),
-    'mongodb\\bson\\document::offsetget' => 
-    array (
-      0 => 'mixed',
-      'offset' => 'mixed',
-    ),
-    'mongodb\\bson\\document::offsetset' => 
-    array (
-      0 => 'void',
-      'offset' => 'mixed',
-      'value' => 'mixed',
-    ),
-    'mongodb\\bson\\document::offsetunset' => 
-    array (
-      0 => 'void',
-      'offset' => 'mixed',
-    ),
-    'mongodb\\bson\\packedarray::offsetexists' => 
-    array (
-      0 => 'bool',
-      'offset' => 'mixed',
-    ),
-    'mongodb\\bson\\packedarray::offsetget' => 
-    array (
-      0 => 'mixed',
-      'offset' => 'mixed',
-    ),
-    'mongodb\\bson\\packedarray::offsetset' => 
-    array (
-      0 => 'void',
-      'offset' => 'mixed',
-      'value' => 'mixed',
-    ),
-    'mongodb\\bson\\packedarray::offsetunset' => 
-    array (
-      0 => 'void',
-      'offset' => 'mixed',
-    ),
     'openssl_x509_verify' => 
     array (
       0 => 'int',
@@ -116,19 +74,6 @@ return array (
         'userId=' => 'string',
         'appId=' => 'string',
         'clusterId=' => 'string',
-      ),
-    ),
-    'amqpchannel::__construct' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'amqp_connection' => 'AMQPConnection',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'connection' => 'AMQPConnection',
       ),
     ),
     'amqpchannel::qos' => 
@@ -200,19 +145,6 @@ return array (
       array (
         0 => 'bool',
         'headerName' => 'string',
-      ),
-    ),
-    'amqpexchange::__construct' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'amqp_channel' => 'AMQPChannel',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'channel' => 'AMQPChannel',
       ),
     ),
     'amqpexchange::bind' => 
@@ -348,19 +280,6 @@ return array (
         'exchangeName' => 'string',
         'routingKey=' => 'string',
         'arguments=' => 'array<array-key, mixed>',
-      ),
-    ),
-    'amqpqueue::__construct' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'amqp_channel' => 'AMQPChannel',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'channel' => 'AMQPChannel',
       ),
     ),
     'amqpqueue::ack' => 

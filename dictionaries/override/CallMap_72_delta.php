@@ -137,107 +137,24 @@ return array (
       'str' => 'string',
       'encoding=' => 'string',
     ),
-    'mongodb\\bson\\document::__tostring' => 
-    array (
-      0 => 'string',
-    ),
-    'mongodb\\bson\\document::frombson' => 
-    array (
-      0 => 'MongoDB\\BSON\\Document',
-      'bson' => 'string',
-    ),
-    'mongodb\\bson\\document::fromjson' => 
-    array (
-      0 => 'MongoDB\\BSON\\Document',
-      'json' => 'string',
-    ),
     'mongodb\\bson\\document::fromphp' => 
     array (
       0 => 'MongoDB\\BSON\\Document',
       'value' => 'array<array-key, mixed>|object',
-    ),
-    'mongodb\\bson\\document::get' => 
-    array (
-      0 => 'mixed',
-      'key' => 'string',
-    ),
-    'mongodb\\bson\\document::getiterator' => 
-    array (
-      0 => 'MongoDB\\BSON\\Iterator',
-    ),
-    'mongodb\\bson\\document::has' => 
-    array (
-      0 => 'bool',
-      'key' => 'string',
-    ),
-    'mongodb\\bson\\document::serialize' => 
-    array (
-      0 => 'string',
-    ),
-    'mongodb\\bson\\document::tocanonicalextendedjson' => 
-    array (
-      0 => 'string',
     ),
     'mongodb\\bson\\document::tophp' => 
     array (
       0 => 'array<array-key, mixed>|object',
       'typeMap=' => 'array<array-key, mixed>|null',
     ),
-    'mongodb\\bson\\document::torelaxedextendedjson' => 
-    array (
-      0 => 'string',
-    ),
     'mongodb\\bson\\document::unserialize' => 
     array (
       0 => 'void',
       'serialized' => 'string',
     ),
-    'mongodb\\bson\\iterator::current' => 
-    array (
-      0 => 'mixed',
-    ),
     'mongodb\\bson\\iterator::key' => 
     array (
       0 => 'int|string',
-    ),
-    'mongodb\\bson\\iterator::next' => 
-    array (
-      0 => 'void',
-    ),
-    'mongodb\\bson\\iterator::rewind' => 
-    array (
-      0 => 'void',
-    ),
-    'mongodb\\bson\\iterator::valid' => 
-    array (
-      0 => 'bool',
-    ),
-    'mongodb\\bson\\packedarray::__tostring' => 
-    array (
-      0 => 'string',
-    ),
-    'mongodb\\bson\\packedarray::fromphp' => 
-    array (
-      0 => 'MongoDB\\BSON\\PackedArray',
-      'value' => 'array<array-key, mixed>',
-    ),
-    'mongodb\\bson\\packedarray::get' => 
-    array (
-      0 => 'mixed',
-      'index' => 'int',
-    ),
-    'mongodb\\bson\\packedarray::getiterator' => 
-    array (
-      0 => 'MongoDB\\BSON\\Iterator',
-    ),
-    'mongodb\\bson\\packedarray::has' => 
-    array (
-      0 => 'bool',
-      'index' => 'int',
-    ),
-    'mongodb\\bson\\packedarray::serialize' => 
-    array (
-      0 => 'string',
     ),
     'mongodb\\bson\\packedarray::tophp' => 
     array (
@@ -249,42 +166,11 @@ return array (
       0 => 'void',
       'serialized' => 'string',
     ),
-    'mongodb\\driver\\clientencryption::addkeyaltname' => 
-    array (
-      0 => 'null|object',
-      'keyId' => 'MongoDB\\BSON\\Binary',
-      'keyAltName' => 'string',
-    ),
-    'mongodb\\driver\\clientencryption::deletekey' => 
-    array (
-      0 => 'object',
-      'keyId' => 'MongoDB\\BSON\\Binary',
-    ),
     'mongodb\\driver\\clientencryption::encryptexpression' => 
     array (
       0 => 'object',
       'expr' => 'array<array-key, mixed>|object',
       'options=' => 'array<array-key, mixed>|null',
-    ),
-    'mongodb\\driver\\clientencryption::getkey' => 
-    array (
-      0 => 'null|object',
-      'keyId' => 'MongoDB\\BSON\\Binary',
-    ),
-    'mongodb\\driver\\clientencryption::getkeybyaltname' => 
-    array (
-      0 => 'null|object',
-      'keyAltName' => 'string',
-    ),
-    'mongodb\\driver\\clientencryption::getkeys' => 
-    array (
-      0 => 'MongoDB\\Driver\\Cursor',
-    ),
-    'mongodb\\driver\\clientencryption::removekeyaltname' => 
-    array (
-      0 => 'null|object',
-      'keyId' => 'MongoDB\\BSON\\Binary',
-      'keyAltName' => 'string',
     ),
     'mongodb\\driver\\clientencryption::rewrapmanydatakey' => 
     array (
@@ -295,187 +181,6 @@ return array (
     'mongodb\\driver\\manager::getencryptedfieldsmap' => 
     array (
       0 => 'array<array-key, mixed>|null|object',
-    ),
-    'mongodb\\driver\\monitoring\\commandfailedevent::getserverconnectionid' => 
-    array (
-      0 => 'int|null',
-    ),
-    'mongodb\\driver\\monitoring\\commandstartedevent::getserverconnectionid' => 
-    array (
-      0 => 'int|null',
-    ),
-    'mongodb\\driver\\monitoring\\commandsucceededevent::getserverconnectionid' => 
-    array (
-      0 => 'int|null',
-    ),
-    'mongodb\\driver\\monitoring\\serverchangedevent::gethost' => 
-    array (
-      0 => 'string',
-    ),
-    'mongodb\\driver\\monitoring\\serverchangedevent::getnewdescription' => 
-    array (
-      0 => 'MongoDB\\Driver\\ServerDescription',
-    ),
-    'mongodb\\driver\\monitoring\\serverchangedevent::getport' => 
-    array (
-      0 => 'int',
-    ),
-    'mongodb\\driver\\monitoring\\serverchangedevent::getpreviousdescription' => 
-    array (
-      0 => 'MongoDB\\Driver\\ServerDescription',
-    ),
-    'mongodb\\driver\\monitoring\\serverchangedevent::gettopologyid' => 
-    array (
-      0 => 'MongoDB\\BSON\\ObjectId',
-    ),
-    'mongodb\\driver\\monitoring\\serverclosedevent::gethost' => 
-    array (
-      0 => 'string',
-    ),
-    'mongodb\\driver\\monitoring\\serverclosedevent::getport' => 
-    array (
-      0 => 'int',
-    ),
-    'mongodb\\driver\\monitoring\\serverclosedevent::gettopologyid' => 
-    array (
-      0 => 'MongoDB\\BSON\\ObjectId',
-    ),
-    'mongodb\\driver\\monitoring\\serverheartbeatfailedevent::getdurationmicros' => 
-    array (
-      0 => 'int',
-    ),
-    'mongodb\\driver\\monitoring\\serverheartbeatfailedevent::geterror' => 
-    array (
-      0 => 'Exception',
-    ),
-    'mongodb\\driver\\monitoring\\serverheartbeatfailedevent::gethost' => 
-    array (
-      0 => 'string',
-    ),
-    'mongodb\\driver\\monitoring\\serverheartbeatfailedevent::getport' => 
-    array (
-      0 => 'int',
-    ),
-    'mongodb\\driver\\monitoring\\serverheartbeatfailedevent::isawaited' => 
-    array (
-      0 => 'bool',
-    ),
-    'mongodb\\driver\\monitoring\\serverheartbeatstartedevent::gethost' => 
-    array (
-      0 => 'string',
-    ),
-    'mongodb\\driver\\monitoring\\serverheartbeatstartedevent::getport' => 
-    array (
-      0 => 'int',
-    ),
-    'mongodb\\driver\\monitoring\\serverheartbeatstartedevent::isawaited' => 
-    array (
-      0 => 'bool',
-    ),
-    'mongodb\\driver\\monitoring\\serverheartbeatsucceededevent::getdurationmicros' => 
-    array (
-      0 => 'int',
-    ),
-    'mongodb\\driver\\monitoring\\serverheartbeatsucceededevent::gethost' => 
-    array (
-      0 => 'string',
-    ),
-    'mongodb\\driver\\monitoring\\serverheartbeatsucceededevent::getport' => 
-    array (
-      0 => 'int',
-    ),
-    'mongodb\\driver\\monitoring\\serverheartbeatsucceededevent::getreply' => 
-    array (
-      0 => 'object',
-    ),
-    'mongodb\\driver\\monitoring\\serverheartbeatsucceededevent::isawaited' => 
-    array (
-      0 => 'bool',
-    ),
-    'mongodb\\driver\\monitoring\\serveropeningevent::gethost' => 
-    array (
-      0 => 'string',
-    ),
-    'mongodb\\driver\\monitoring\\serveropeningevent::getport' => 
-    array (
-      0 => 'int',
-    ),
-    'mongodb\\driver\\monitoring\\serveropeningevent::gettopologyid' => 
-    array (
-      0 => 'MongoDB\\BSON\\ObjectId',
-    ),
-    'mongodb\\driver\\monitoring\\topologychangedevent::getnewdescription' => 
-    array (
-      0 => 'MongoDB\\Driver\\TopologyDescription',
-    ),
-    'mongodb\\driver\\monitoring\\topologychangedevent::getpreviousdescription' => 
-    array (
-      0 => 'MongoDB\\Driver\\TopologyDescription',
-    ),
-    'mongodb\\driver\\monitoring\\topologychangedevent::gettopologyid' => 
-    array (
-      0 => 'MongoDB\\BSON\\ObjectId',
-    ),
-    'mongodb\\driver\\monitoring\\topologyclosedevent::gettopologyid' => 
-    array (
-      0 => 'MongoDB\\BSON\\ObjectId',
-    ),
-    'mongodb\\driver\\monitoring\\topologyopeningevent::gettopologyid' => 
-    array (
-      0 => 'MongoDB\\BSON\\ObjectId',
-    ),
-    'mongodb\\driver\\server::getserverdescription' => 
-    array (
-      0 => 'MongoDB\\Driver\\ServerDescription',
-    ),
-    'mongodb\\driver\\serverdescription::gethelloresponse' => 
-    array (
-      0 => 'array<array-key, mixed>',
-    ),
-    'mongodb\\driver\\serverdescription::gethost' => 
-    array (
-      0 => 'string',
-    ),
-    'mongodb\\driver\\serverdescription::getlastupdatetime' => 
-    array (
-      0 => 'int',
-    ),
-    'mongodb\\driver\\serverdescription::getport' => 
-    array (
-      0 => 'int',
-    ),
-    'mongodb\\driver\\serverdescription::getroundtriptime' => 
-    array (
-      0 => 'int|null',
-    ),
-    'mongodb\\driver\\serverdescription::gettype' => 
-    array (
-      0 => 'string',
-    ),
-    'mongodb\\driver\\session::isdirty' => 
-    array (
-      0 => 'bool',
-    ),
-    'mongodb\\driver\\topologydescription::getservers' => 
-    array (
-      0 => 'array<array-key, mixed>',
-    ),
-    'mongodb\\driver\\topologydescription::gettype' => 
-    array (
-      0 => 'string',
-    ),
-    'mongodb\\driver\\topologydescription::hasreadableserver' => 
-    array (
-      0 => 'bool',
-      'readPreference=' => 'MongoDB\\Driver\\ReadPreference|null',
-    ),
-    'mongodb\\driver\\topologydescription::haswritableserver' => 
-    array (
-      0 => 'bool',
-    ),
-    'mongodb\\driver\\writeresult::geterrorreplies' => 
-    array (
-      0 => 'array<array-key, mixed>',
     ),
     'oci_register_taf_callback' => 
     array (
@@ -1329,18 +1034,6 @@ return array (
         'updateOptions=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'mongodb\\driver\\clientencryption::__construct' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'options' => 'array<array-key, mixed>',
-      ),
-    ),
     'mongodb\\driver\\clientencryption::decrypt' => 
     array (
       'old' => 
@@ -1548,18 +1241,6 @@ return array (
         0 => 'void',
         'array=' => 'array<array-key, mixed>|object',
         'ar_flags=' => 'int',
-      ),
-    ),
-    'redis::__construct' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'options=' => 'mixed',
       ),
     ),
     'redis::auth' => 
@@ -5127,11 +4808,6 @@ return array (
     array (
       0 => 'bool',
       'keys' => 'string',
-    ),
-    'redisarray::getmultiple' => 
-    array (
-      0 => 'mixed',
-      'keys' => 'mixed',
     ),
     'sodium\\add' => 
     array (

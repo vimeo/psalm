@@ -14989,11 +14989,6 @@ return array (
     0 => 'int',
     'stmt' => 'resource',
   ),
-  'db2_escape_string' => 
-  array (
-    0 => 'string',
-    'string_literal' => 'string',
-  ),
   'db2_exec' => 
   array (
     0 => 'false|resource',
@@ -15158,10 +15153,6 @@ return array (
     'schema' => 'null|string',
     'table_name' => 'string',
   ),
-  'db2_primarykeys' => 
-  array (
-    0 => 'mixed',
-  ),
   'db2_procedure_columns' => 
   array (
     0 => 'false|resource',
@@ -15170,10 +15161,6 @@ return array (
     'schema' => 'string',
     'procedure' => 'string',
     'parameter' => 'null|string',
-  ),
-  'db2_procedurecolumns' => 
-  array (
-    0 => 'mixed',
   ),
   'db2_procedures' => 
   array (
@@ -15219,10 +15206,6 @@ return array (
     'table_name' => 'string',
     'scope' => 'int',
   ),
-  'db2_specialcolumns' => 
-  array (
-    0 => 'mixed',
-  ),
   'db2_statistics' => 
   array (
     0 => 'false|resource',
@@ -15249,10 +15232,6 @@ return array (
     'qualifier=' => 'null|string',
     'schema=' => 'null|string',
     'table_name=' => 'null|string',
-  ),
-  'db2_tableprivileges' => 
-  array (
-    0 => 'mixed',
   ),
   'db2_tables' => 
   array (

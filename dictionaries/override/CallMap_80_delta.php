@@ -13,45 +13,15 @@ return array (
       0 => 'static',
       'object' => 'DateTimeInterface',
     ),
-    'fdiv' => 
-    array (
-      0 => 'float',
-      'num1' => 'float',
-      'num2' => 'float',
-    ),
-    'finfo::__construct' => 
-    array (
-      0 => 'void',
-      'flags=' => 'int',
-      'magic_database=' => 'null|string',
-    ),
-    'get_debug_type' => 
-    array (
-      0 => 'string',
-      'value' => 'mixed',
-    ),
     'get_resource_id' => 
     array (
       0 => 'int',
       'resource' => 'resource',
     ),
-    'imagegetinterpolation' => 
-    array (
-      0 => 'int',
-      'image' => 'GdImage',
-    ),
-    'phptoken::gettokenname' => 
-    array (
-      0 => 'null|string',
-    ),
     'phptoken::is' => 
     array (
       0 => 'bool',
       'kind' => 'array<array-key, int|string>|int|string',
-    ),
-    'phptoken::isignorable' => 
-    array (
-      0 => 'bool',
     ),
     'phptoken::tokenize' => 
     array (
@@ -89,18 +59,6 @@ return array (
       'name=' => 'null|string',
       'flags=' => 'int',
     ),
-    'reflectionproperty::getdefaultvalue' => 
-    array (
-      0 => 'mixed',
-    ),
-    'reflectionproperty::hasdefaultvalue' => 
-    array (
-      0 => 'bool',
-    ),
-    'reflectionproperty::ispromoted' => 
-    array (
-      0 => 'bool',
-    ),
     'reflectionuniontype::gettypes' => 
     array (
       0 => 'list<ReflectionNamedType>',
@@ -120,18 +78,6 @@ return array (
       'mustUnderstand=' => 'bool',
       'actor=' => 'string',
     ),
-    'soapparam::__construct' => 
-    array (
-      0 => 'void',
-      'data' => 'mixed',
-      'name' => 'string',
-    ),
-    'soapserver::__construct' => 
-    array (
-      0 => 'void',
-      'wsdl' => 'null|string',
-      'options=' => 'array<array-key, mixed>',
-    ),
     'soapvar::__construct' => 
     array (
       0 => 'void',
@@ -141,36 +87,6 @@ return array (
       'typeNamespace=' => 'null|string',
       'nodeName=' => 'null|string',
       'nodeNamespace=' => 'null|string',
-    ),
-    'splfixedarray::getiterator' => 
-    array (
-      0 => 'Iterator',
-    ),
-    'str_contains' => 
-    array (
-      0 => 'bool',
-      'haystack' => 'string',
-      'needle' => 'string',
-    ),
-    'str_ends_with' => 
-    array (
-      0 => 'bool',
-      'haystack' => 'string',
-      'needle' => 'string',
-    ),
-    'str_starts_with' => 
-    array (
-      0 => 'bool',
-      'haystack' => 'string',
-      'needle' => 'string',
-    ),
-    'weakmap::count' => 
-    array (
-      0 => 'int',
-    ),
-    'weakmap::getiterator' => 
-    array (
-      0 => 'Iterator',
     ),
     'weakmap::offsetexists' => 
     array (
@@ -192,18 +108,6 @@ return array (
     array (
       0 => 'void',
       'object' => 'object',
-    ),
-    'ziparchive::iscompressionmethodsupported' => 
-    array (
-      0 => 'bool',
-      'method' => 'int',
-      'enc=' => 'bool',
-    ),
-    'ziparchive::isencryptionmethodsupported' => 
-    array (
-      0 => 'bool',
-      'method' => 'int',
-      'enc=' => 'bool',
     ),
     'ziparchive::registercancelcallback' => 
     array (
@@ -5188,20 +5092,6 @@ return array (
       array (
         0 => 'void',
         'data=' => 'string',
-      ),
-    ),
-    'domxpath::__construct' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'doc' => 'DOMDocument',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'document' => 'DOMDocument',
-        'registerNodeNS=' => 'bool',
       ),
     ),
     'domxpath::evaluate' => 
@@ -12442,29 +12332,6 @@ return array (
         'timestamp' => 'float',
       ),
     ),
-    'intlgregoriancalendar::__construct' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'timeZoneOrYear=' => 'mixed',
-        'localeOrMonth=' => 'mixed',
-        'dayOfMonth=' => 'mixed',
-        'hour=' => 'mixed',
-        'minute=' => 'mixed',
-        'second=' => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'timezoneOrYear=' => 'mixed',
-        'localeOrMonth=' => 'mixed',
-        'day=' => 'mixed',
-        'hour=' => 'mixed',
-        'minute=' => 'mixed',
-        'second=' => 'mixed',
-      ),
-    ),
     'intlgregoriancalendar::add' => 
     array (
       'old' => 
@@ -13540,20 +13407,6 @@ return array (
         0 => 'array<array-key, mixed>',
         'iterator' => 'Traversable',
         'preserve_keys=' => 'bool',
-      ),
-    ),
-    'iteratoriterator::__construct' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'iterator' => 'Traversable',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'iterator' => 'Traversable',
-        'class=' => 'null|string',
       ),
     ),
     'jdtounix' => 
@@ -20157,18 +20010,6 @@ return array (
         'overwrite=' => 'bool',
       ),
     ),
-    'phar::getmetadata' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'mixed',
-        'unserializeOptions=' => 'array<array-key, mixed>',
-      ),
-    ),
     'phar::isfileformat' => 
     array (
       'old' => 
@@ -20678,18 +20519,6 @@ return array (
       array (
         0 => 'bool',
         'compression' => 'int',
-      ),
-    ),
-    'pharfileinfo::getmetadata' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'mixed',
-        'unserializeOptions=' => 'array<array-key, mixed>',
       ),
     ),
     'pharfileinfo::iscompressed' => 
@@ -21876,19 +21705,6 @@ return array (
         'maxDepth=' => 'int',
       ),
     ),
-    'redis::__construct' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'options=' => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'options=' => 'array<array-key, mixed>|null',
-      ),
-    ),
     'redis::bitcount' => 
     array (
       'old' => 
@@ -22729,19 +22545,6 @@ return array (
       array (
         0 => 'void',
         'function' => 'Closure|callable-string',
-      ),
-    ),
-    'reflectionfunction::invoke' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-        'args=' => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'mixed',
-        '...args=' => 'mixed',
       ),
     ),
     'reflectionmethod::__construct' => 
@@ -31024,10 +30827,6 @@ return array (
       'state' => 'int',
       'options=' => 'int',
     ),
-    'evwatcher::__construct' => 
-    array (
-      0 => 'void',
-    ),
     'ezmlm_hash' => 
     array (
       0 => 'int',
@@ -31072,10 +30871,6 @@ return array (
       'im' => 'resource',
       'filename=' => 'null|string',
       'foreground=' => 'int',
-    ),
-    'intlcodepointbreakiterator::__construct' => 
-    array (
-      0 => 'void',
     ),
     'intlexception::__clone' => 
     array (
@@ -31371,10 +31166,6 @@ return array (
     array (
       0 => 'false|string',
       'allowable_tags=' => 'string',
-    ),
-    'splfixedarray::current' => 
-    array (
-      0 => 'mixed',
     ),
     'splfixedarray::key' => 
     array (

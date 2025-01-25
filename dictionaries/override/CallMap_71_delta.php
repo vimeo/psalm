@@ -126,13 +126,6 @@ return array (
     array (
       0 => 'MongoDB\\BSON\\ObjectId|null',
     ),
-    'mongodb\\driver\\serverapi::__construct' => 
-    array (
-      0 => 'void',
-      'version' => 'string',
-      'strict=' => 'bool|null',
-      'deprecationErrors=' => 'bool|null',
-    ),
     'mongodb\\driver\\serverapi::bsonserialize' => 
     array (
       0 => 'stdClass',

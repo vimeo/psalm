@@ -3,95 +3,29 @@
 return array (
   'added' => 
   array (
-    'array_is_list' => 
-    array (
-      0 => 'bool',
-      'array' => 'array<array-key, mixed>',
-    ),
-    'curlstringfile::__construct' => 
-    array (
-      0 => 'void',
-      'data' => 'string',
-      'postname' => 'string',
-      'mime=' => 'string',
-    ),
-    'enum_exists' => 
-    array (
-      0 => 'bool',
-      'enum' => 'string',
-      'autoload=' => 'bool',
-    ),
     'fdatasync' => 
     array (
       0 => 'bool',
       'stream' => 'resource',
     ),
-    'fiber::__construct' => 
-    array (
-      0 => 'void',
-      'callback' => 'callable',
-    ),
     'fiber::getcurrent' => 
     array (
       0 => 'null|self',
-    ),
-    'fiber::getreturn' => 
-    array (
-      0 => 'mixed',
-    ),
-    'fiber::isrunning' => 
-    array (
-      0 => 'bool',
-    ),
-    'fiber::isstarted' => 
-    array (
-      0 => 'bool',
-    ),
-    'fiber::issuspended' => 
-    array (
-      0 => 'bool',
-    ),
-    'fiber::isterminated' => 
-    array (
-      0 => 'bool',
     ),
     'fiber::resume' => 
     array (
       0 => 'mixed',
       'value=' => 'mixed|null',
     ),
-    'fiber::start' => 
-    array (
-      0 => 'mixed',
-      '...args=' => 'mixed',
-    ),
     'fiber::suspend' => 
     array (
       0 => 'mixed',
       'value=' => 'mixed|null',
     ),
-    'fiber::throw' => 
-    array (
-      0 => 'mixed',
-      'exception' => 'Throwable',
-    ),
-    'fibererror::__construct' => 
-    array (
-      0 => 'void',
-    ),
     'fsync' => 
     array (
       0 => 'bool',
       'stream' => 'resource',
-    ),
-    'gmp::__serialize' => 
-    array (
-      0 => 'array<array-key, mixed>',
-    ),
-    'gmp::__unserialize' => 
-    array (
-      0 => 'void',
-      'data' => 'array<array-key, mixed>',
     ),
     'imageavif' => 
     array (
@@ -100,11 +34,6 @@ return array (
       'file=' => 'null|resource|string',
       'quality=' => 'int',
       'speed=' => 'int',
-    ),
-    'imagecreatefromavif' => 
-    array (
-      0 => 'GdImage|false',
-      'filename' => 'string',
     ),
     'mysqli_fetch_column' => 
     array (
@@ -117,63 +46,13 @@ return array (
       0 => 'false|float|int|null|string',
       'column=' => 'int',
     ),
-    'reflectionclass::isenum' => 
-    array (
-      0 => 'bool',
-    ),
     'reflectionenum::getbackingtype' => 
     array (
       0 => 'ReflectionType|null',
     ),
-    'reflectionenum::getcase' => 
-    array (
-      0 => 'ReflectionEnumUnitCase',
-      'name' => 'string',
-    ),
     'reflectionenum::getcases' => 
     array (
       0 => 'list<ReflectionEnumUnitCase>',
-    ),
-    'reflectionenum::hascase' => 
-    array (
-      0 => 'bool',
-      'name' => 'string',
-    ),
-    'reflectionenum::isbacked' => 
-    array (
-      0 => 'bool',
-    ),
-    'reflectionenumbackedcase::getbackingvalue' => 
-    array (
-      0 => 'int|string',
-    ),
-    'reflectionenumunitcase::getenum' => 
-    array (
-      0 => 'ReflectionEnum',
-    ),
-    'reflectionenumunitcase::getvalue' => 
-    array (
-      0 => 'UnitEnum',
-    ),
-    'reflectionfunctionabstract::gettentativereturntype' => 
-    array (
-      0 => 'ReflectionType|null',
-    ),
-    'reflectionfunctionabstract::hastentativereturntype' => 
-    array (
-      0 => 'bool',
-    ),
-    'reflectionfunctionabstract::isstatic' => 
-    array (
-      0 => 'bool',
-    ),
-    'reflectionobject::isenum' => 
-    array (
-      0 => 'bool',
-    ),
-    'reflectionproperty::isreadonly' => 
-    array (
-      0 => 'bool',
     ),
     'sodium_crypto_stream_xchacha20' => 
     array (
