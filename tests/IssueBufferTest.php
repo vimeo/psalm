@@ -128,7 +128,7 @@ class IssueBufferTest extends TestCase
 
         ob_start();
         IssueBuffer::finish($projectAnalyzer, false, microtime(true), false, $baseline);
-        $output = ob_get_clean();
+        $output = (string) ob_get_clean();
         $this->assertStringNotContainsString("ERROR", $output, "all issues baselined");
         IssueBuffer::clear();
     }
