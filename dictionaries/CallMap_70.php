@@ -44214,7 +44214,7 @@ return array (
   'max' => 
   array (
     0 => 'mixed',
-    '...args' => 'non-empty-array<array-key, mixed>',
+    'value' => 'non-empty-array<array-key, mixed>',
   ),
   'max\'1' => 
   array (
@@ -45894,7 +45894,7 @@ return array (
   'min' => 
   array (
     0 => 'mixed',
-    '...args' => 'non-empty-array<array-key, mixed>',
+    'value' => 'non-empty-array<array-key, mixed>',
   ),
   'min\'1' => 
   array (

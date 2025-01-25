@@ -16353,19 +16353,6 @@ return array (
         'additional_params=' => 'string',
       ),
     ),
-    'max' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-        '...args' => 'non-empty-array<array-key, mixed>',
-      ),
-      'new' => 
-      array (
-        0 => 'mixed',
-        'value' => 'non-empty-array<array-key, mixed>',
-      ),
-    ),
     'mb_check_encoding' => 
     array (
       'old' => 
@@ -17431,19 +17418,6 @@ return array (
       array (
         0 => 'false|string',
         'filename' => 'resource|string',
-      ),
-    ),
-    'min' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-        '...args' => 'non-empty-array<array-key, mixed>',
-      ),
-      'new' => 
-      array (
-        0 => 'mixed',
-        'value' => 'non-empty-array<array-key, mixed>',
       ),
     ),
     'mkdir' => 

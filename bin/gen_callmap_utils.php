@@ -109,6 +109,9 @@ function normalizeParameters(string $func, array $parameters): array
  */
 function assertEntryParameters(string $func, array $baseParameters, array $customParameters): array
 {
+    if ($func === 'max' || $func === 'min') {
+        return $customParameters;
+    }
     $denormalized = [assertTypeValidity($baseParameters[0], $customParameters[0], "Return $func")];
 
     $baseParameters = normalizeParameters($func, $baseParameters);
@@ -119,9 +122,6 @@ function assertEntryParameters(string $func, array $baseParameters, array $custo
     $final = [];
     $idx = 0;
     foreach ($baseParameters as $name => $parameter) {
-        if (!isset($customParameters[$name]) && ($func === 'max' || $func === 'min')) {
-            continue;
-        }
         if (isset($customParameters[$name])) {
             $final[$name] = assertParameter($func, $name, $customParameters[$name], $parameter);
         } elseif (isset($customParametersByVal[$idx])) {
