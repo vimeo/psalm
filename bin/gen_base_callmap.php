@@ -50,11 +50,11 @@ function paramsToEntries(ReflectionFunctionAbstract $reflectionFunction, string 
 
     foreach ($reflectionFunction->getParameters() as $param) {
         $key = $param->getName();
-        if ($param->isPassedByReference()) {
-            $key = "&$key";
-        }
         if ($param->isVariadic()) {
             $key = "...$key";
+        }
+        if ($param->isPassedByReference()) {
+            $key = "&$key";
         }
         if ($param->isOptional()) {
             $key .= '=';

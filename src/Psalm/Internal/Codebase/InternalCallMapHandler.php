@@ -246,13 +246,7 @@ final class InternalCallMapHandler
         $possible_callables = [];
 
         foreach ($call_map_functions as $call_map_function_args) {
-            $return_type_string = array_shift($call_map_function_args);
-
-            if (!$return_type_string) {
-                $return_type = Type::getMixed();
-            } else {
-                $return_type = Type::parseString($return_type_string);
-            }
+            $return_type = Type::parseString(array_shift($call_map_function_args));
 
             $function_params = [];
 
@@ -279,9 +273,7 @@ final class InternalCallMapHandler
                     $variadic = true;
                 }
 
-                $param_type = $arg_type
-                    ? Type::parseString($arg_type)
-                    : Type::getMixed();
+                $param_type = Type::parseString($arg_type);
 
                 $out_type = null;
 
