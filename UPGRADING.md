@@ -3,6 +3,8 @@
 
 - The minimum PHP version was raised to PHP 8.1.17.
 
+- Dictionaries were refactored and are now automatically generated and validated with the new `bin/gen_callmap.sh` script, see [here &raquo;](https://psalm.dev/docs/contributing/editing_callmaps/) for the full documentation.
+
 - [BC] The configuration settings `ignoreInternalFunctionFalseReturn` and `ignoreInternalFunctionNullReturn` are now defaulted to `false`
 
 - [BC] Switched the internal representation of `list<T>` and `non-empty-list<T>` from the TList and TNonEmptyList classes to an unsealed list shape: the TList, TNonEmptyList and TCallableList classes were removed.
