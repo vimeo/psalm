@@ -14,7 +14,7 @@
 - [BC] The only optional boolean parameter of `TKeyedArray::getGenericArrayType` was removed, and was replaced with a string parameter with a different meaning.
 
 - [BC] The `TDependentListKey` type was removed and replaced with an optional property of the `TIntRange` type.
-- 
+
 - [BC] `TCallableArray` and `TCallableList` removed and replaced with `TCallableKeyedArray`.
 
 - [BC] Class `Psalm\Issue\MixedInferredReturnType` was removed
