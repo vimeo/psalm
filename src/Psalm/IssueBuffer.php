@@ -653,7 +653,7 @@ final class IssueBuffer
             if ($is_full && !$codebase->diff_run) {
                 foreach ($codebase->config->getIssueHandlers() as $type => $handler) {
                     foreach ($handler->getFilters() as $filter) {
-                        if ($filter->suppressions > 0 && $filter->getErrorLevel() == Config::REPORT_SUPPRESS) {
+                        if ($filter->suppressions > 0 || $filter->getErrorLevel() != Config::REPORT_SUPPRESS) {
                             continue;
                         }
                         $issues_data['config'][] = new IssueData(
