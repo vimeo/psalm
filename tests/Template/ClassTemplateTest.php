@@ -206,7 +206,7 @@ class ClassTemplateTest extends TestCase
                     'DocblockTypeContradiction',
                 ],
             ],
-            'classTemplateSelfs' => [
+            'classTemplateSelf' => [
                 'code' => '<?php
                     /**
                      * @template T as object
@@ -2350,7 +2350,7 @@ class ClassTemplateTest extends TestCase
 
                         /**
                          * @template U
-                         * @param callable(T=):U $callback
+                         * @param callable(T):U $callback
                          * @return static<U>
                          */
                         public function map(callable $callback) {
@@ -2880,6 +2880,8 @@ class ClassTemplateTest extends TestCase
                     ): void {
                     }
                 }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'noCrashTemplateInsideGenerator' => [
                 'code' => '<?php
@@ -3130,7 +3132,7 @@ class ClassTemplateTest extends TestCase
                         /**
                          * @psalm-param FooOrBarOrNull $qux
                          */
-                        public function __contruct(?object $qux)
+                        public function __construct(?object $qux)
                         {
                             if ($qux instanceof Foo) {
                                 $this->entity = $qux;
@@ -5024,6 +5026,16 @@ class ClassTemplateTest extends TestCase
                         return $c;
                     }',
                 'error_message' => 'InvalidReturnStatement',
+            ],
+            'noCrashOnBrokenTemplate' => [
+                'code' => <<<'PHP'
+                <?php
+                /**
+                 * @template TValidationRule of callable>|string
+                 */
+                class C {}
+                PHP,
+                'error_message' => 'InvalidDocblock',
             ],
         ];
     }

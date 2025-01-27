@@ -7,7 +7,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Assignment;
 use PhpParser;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\PropertyFetch;
-use PhpParser\Node\Stmt\PropertyProperty;
+use PhpParser\Node\PropertyItem;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Config;
@@ -92,8 +92,8 @@ use function strtolower;
 final class InstancePropertyAssignmentAnalyzer
 {
     /**
-     * @param   PropertyFetch|PropertyProperty  $stmt
-     * @param   bool                            $direct_assignment whether the variable is assigned explicitly
+     * @param   PropertyFetch|PropertyItem  $stmt
+     * @param   bool                        $direct_assignment whether the variable is assigned explicitly
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -106,7 +106,7 @@ final class InstancePropertyAssignmentAnalyzer
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
-        if ($stmt instanceof PropertyProperty) {
+        if ($stmt instanceof PropertyItem) {
             if (!$context->self || !$stmt->default) {
                 return;
             }
@@ -122,7 +122,7 @@ final class InstancePropertyAssignmentAnalyzer
                     $statements_analyzer,
                     $context,
                 );
-            } catch (UnexpectedValueException $e) {
+            } catch (UnexpectedValueException) {
                 // do nothing
             }
 
@@ -1089,7 +1089,7 @@ final class InstancePropertyAssignmentAnalyzer
              * If we have an explicit list of all allowed magic properties on the class, and we're
              * not in that list, fall through
              */
-            if (!$var_id || !$class_storage->hasSealedProperties($codebase->config)) {
+            if (!$class_storage->hasSealedProperties($codebase->config)) {
                 if (!$context->collect_initializations && !$context->collect_mutations) {
                     self::taintProperty(
                         $statements_analyzer,

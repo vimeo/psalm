@@ -37,6 +37,7 @@ use function preg_match;
 use function preg_replace;
 use function preg_split;
 use function reset;
+use function str_contains;
 use function str_replace;
 use function strlen;
 use function strpos;
@@ -68,9 +69,9 @@ final class ClassLikeDocblockParser
         $templates = [];
         if (isset($parsed_docblock->combined_tags['template'])) {
             foreach ($parsed_docblock->combined_tags['template'] as $offset => $template_line) {
-                $template_type = preg_split('/[\s]+/', (string) preg_replace('@^[ \t]*\*@m', '', $template_line));
+                $template_type = preg_split('/[\s]+/', CommentAnalyzer::sanitizeDocblockType($template_line));
                 if ($template_type === false) {
-                    throw new IncorrectDocblockException('Invalid @ŧemplate tag: '.preg_last_error_msg());
+                    throw new IncorrectDocblockException('Invalid @template tag: '.preg_last_error_msg());
                 }
 
                 $template_name = array_shift($template_type);
@@ -111,7 +112,7 @@ final class ClassLikeDocblockParser
 
         if (isset($parsed_docblock->combined_tags['template-covariant'])) {
             foreach ($parsed_docblock->combined_tags['template-covariant'] as $offset => $template_line) {
-                $template_type = preg_split('/[\s]+/', (string) preg_replace('@^[ \t]*\*@m', '', $template_line));
+                $template_type = preg_split('/[\s]+/', CommentAnalyzer::sanitizeDocblockType($template_line));
                 if ($template_type === false) {
                     throw new IncorrectDocblockException('Invalid @template-covariant tag: '.preg_last_error_msg());
                 }
@@ -171,20 +172,16 @@ final class ClassLikeDocblockParser
 
         if (isset($parsed_docblock->tags['psalm-require-extends'])
             && count($extension_requirements = $parsed_docblock->tags['psalm-require-extends']) > 0) {
-            $info->extension_requirement = trim((string) preg_replace(
-                '@^[ \t]*\*@m',
-                '',
+            $info->extension_requirement = CommentAnalyzer::sanitizeDocblockType(
                 $extension_requirements[array_key_first($extension_requirements)],
-            ));
+            );
         }
 
         if (isset($parsed_docblock->tags['psalm-require-implements'])) {
             foreach ($parsed_docblock->tags['psalm-require-implements'] as $implementation_requirement) {
-                $info->implementation_requirements[] = trim((string) preg_replace(
-                    '@^[ \t]*\*@m',
-                    '',
+                $info->implementation_requirements[] = CommentAnalyzer::sanitizeDocblockType(
                     $implementation_requirement,
-                ));
+                );
             }
         }
 
@@ -199,7 +196,7 @@ final class ClassLikeDocblockParser
         if (isset($parsed_docblock->tags['psalm-yield'])) {
             $yield = (string) reset($parsed_docblock->tags['psalm-yield']);
 
-            $info->yield = trim((string) preg_replace('@^[ \t]*\*@m', '', $yield));
+            $info->yield = CommentAnalyzer::sanitizeDocblockType($yield);
         }
 
         if (isset($parsed_docblock->tags['deprecated'])) {
@@ -240,18 +237,20 @@ final class ClassLikeDocblockParser
             }
         }
 
-        if (isset($parsed_docblock->tags['psalm-seal-properties'])) {
-            $info->sealed_properties = true;
-        }
-        if (isset($parsed_docblock->tags['psalm-no-seal-properties'])) {
-            $info->sealed_properties = false;
-        }
+        foreach (['', 'psalm-'] as $prefix) {
+            if (isset($parsed_docblock->tags[$prefix . 'seal-properties'])) {
+                $info->sealed_properties = true;
+            }
+            if (isset($parsed_docblock->tags[$prefix . 'no-seal-properties'])) {
+                $info->sealed_properties = false;
+            }
 
-        if (isset($parsed_docblock->tags['psalm-seal-methods'])) {
-            $info->sealed_methods = true;
-        }
-        if (isset($parsed_docblock->tags['psalm-no-seal-methods'])) {
-            $info->sealed_methods = false;
+            if (isset($parsed_docblock->tags[$prefix . 'seal-methods'])) {
+                $info->sealed_methods = true;
+            }
+            if (isset($parsed_docblock->tags[$prefix . 'no-seal-methods'])) {
+                $info->sealed_methods = false;
+            }
         }
 
         if (isset($parsed_docblock->tags['psalm-inheritors'])) {
@@ -324,14 +323,19 @@ final class ClassLikeDocblockParser
 
                 $has_return = false;
 
-                if (!preg_match('/^([a-z_A-Z][a-z_0-9A-Z]+) *\(/', $method_entry, $matches)) {
+                $doc_line_parts = CommentAnalyzer::splitDocLine($method_entry);
+
+                if (count($doc_line_parts) > 2
+                    && $doc_line_parts[0] === 'static'
+                    && !strpos($doc_line_parts[1], '(')
+                ) {
+                    $is_static = true;
+                    array_shift($doc_line_parts);
+                    $method_entry = implode(' ', $doc_line_parts);
                     $doc_line_parts = CommentAnalyzer::splitDocLine($method_entry);
+                }
 
-                    if ($doc_line_parts[0] === 'static' && !strpos($doc_line_parts[1], '(')) {
-                        $is_static = true;
-                        array_shift($doc_line_parts);
-                    }
-
+                if (!preg_match('/^([a-z_A-Z][a-z_0-9A-Z]+) *\(/', $method_entry, $matches)) {
                     if (count($doc_line_parts) > 1) {
                         $docblock_lines[] = '@return ' . array_shift($doc_line_parts);
                         $has_return = true;
@@ -454,7 +458,7 @@ final class ClassLikeDocblockParser
                         $codebase->analysis_php_version_id,
                         $has_errors,
                     );
-                } catch (Exception $e) {
+                } catch (Exception) {
                     throw new DocblockParseException('Badly-formatted @method string ' . $method_entry);
                 }
 
@@ -527,7 +531,7 @@ final class ClassLikeDocblockParser
      *     'psalm-property-read'|'property-write'|'psalm-property-write' $property_tag
      * @throws DocblockParseException
      */
-    protected static function addMagicPropertyToInfo(
+    private static function addMagicPropertyToInfo(
         Doc $comment,
         ClassLikeDocblockComment $info,
         array $specials,
@@ -552,7 +556,7 @@ final class ClassLikeDocblockParser
 
                     $end = $offset + strlen($line_parts[0]);
 
-                    $line_parts[0] = str_replace("\n", '', (string) preg_replace('@^[ \t]*\*@m', '', $line_parts[0]));
+                    $line_parts[0] = CommentAnalyzer::sanitizeDocblockType($line_parts[0]);
 
                     if ($line_parts[0] === ''
                         || ($line_parts[0][0] === '$'
@@ -593,7 +597,7 @@ final class ClassLikeDocblockParser
         $method_offset = 0;
 
         foreach ($lines as $i => $line) {
-            if (strpos($line, $method_entry) !== false) {
+            if (str_contains($line, $method_entry)) {
                 $method_offset = $i;
                 break;
             }

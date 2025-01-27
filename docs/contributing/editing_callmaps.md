@@ -8,20 +8,30 @@ callmaps.
 Callmap is a data file (formatted as a PHP file returning an array) that tells
 Psalm what arguments function/method takes and what it returns.
 
-There are two full callmaps (`CallMap.php` and `CallMap_historical.php`) in
-`dictionaries` folder, and a number of delta files that provide information on
-how signatures changed in various PHP versions. `CallMap_historical` has
-signatures as they were in PHP 7.0, `CallMap.php` contains current signatures
-(for PHP 8.1 at the time of writing).
+There is a partial callmap file in `dictionaries/override/CallMap.php` folder, and
+a number of delta files that provide information on
+how signatures changed in various PHP versions in `dictionaries/override/CallMap_*_delta.php`. 
+
+The callmap files in the `override` subfolder are then used, in conjunction with the
+automatically-generated reflection callmaps in `dictionaries/autogen`, to generate the
+final callmaps in `dictionaries/CallMap_*`, which are the actual callmaps in use by Psalm.
+
+After editing an override callmap, run `bin/gen_callmap.php` to regenerate the final callmap file.
+
+To also regenerate the base callmaps, run `bin/gen_callmap.sh`: it will use the dockerfiles in `bin/` 
+to extract types from PHP and a set of extensions.  
+To add types from an extension to the callmap, edit all versions of the Dockerfiles.  
 
 ## Full callmap format
 
-Full callmaps (`CallMap.php` and `CallMap_historical.php`) have function/method
+The full callmap (`CallMap.php`) has function/method
 names as keys and an array representing the corresponding signature as a value.
 
 First element of that value is a return type (it also doesn't have a key), and
 subsequent elements represent function/method parameters. Parameter name for an
-optional parameter is postfixed with `=`.
+optional parameter is postfixed with `=`, references with `&`/`&r_`/`&w_`/`&rw_`
+(depending on the read/write meaning of the reference param) and 
+variadic args are prefixed with `...`.
 
 ## Delta file format
 
@@ -71,8 +81,7 @@ it exists in the latest PHP version). Here's [the PR that does it](https://githu
 ### Correcting the function signature
 
 Assume you found an incorrect signature, the one that was always different to what
-we currently have in Psalm. This will need a change to `CallMap_historical.php`
-(as the signature was always that way) and `CallMap.php` (as the signature is
+we currently have in Psalm. This will need a change to `CallMap.php` (as the signature is
 still valid). Here's [the PR that does it](https://github.com/vimeo/psalm/pull/6359/files).
 
 If function signature is correct for an older version but has changed since you

@@ -21,7 +21,7 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function is_string;
-use function strpos;
+use function str_contains;
 use function strtolower;
 
 /**
@@ -274,7 +274,7 @@ final class HighOrderFunctionArgHandler
                     $class_storage,
                 );
             }
-        } catch (UnexpectedValueException $e) {
+        } catch (UnexpectedValueException) {
             return null;
         }
 
@@ -288,7 +288,8 @@ final class HighOrderFunctionArgHandler
         }
 
         foreach ($container_param->type->getAtomicTypes() as $a) {
-            if (($a instanceof TClosure || $a instanceof TCallable) && !$a->params) {
+            // must check null explicitly, since no params (empty array) would not be handled correctly otherwise
+            if (($a instanceof TClosure || $a instanceof TCallable) && $a->params === null) {
                 return false;
             }
 
@@ -316,7 +317,7 @@ final class HighOrderFunctionArgHandler
 
         return new HighOrderFunctionArgInfo(
             HighOrderFunctionArgInfo::TYPE_STRING_CALLABLE,
-            strpos($literal->value, '::') !== false
+            str_contains($literal->value, '::')
                 ? $codebase->methods->getStorage(MethodIdentifier::wrap($literal->value))
                 : $codebase->functions->getStorage($statements_analyzer, strtolower($literal->value)),
         );

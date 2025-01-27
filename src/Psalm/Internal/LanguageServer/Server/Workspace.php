@@ -25,20 +25,11 @@ use function realpath;
  */
 final class Workspace
 {
-    protected LanguageServer $server;
-
-    protected Codebase $codebase;
-
-    protected ProjectAnalyzer $project_analyzer;
-
     public function __construct(
-        LanguageServer $server,
-        Codebase $codebase,
-        ProjectAnalyzer $project_analyzer,
+        protected LanguageServer $server,
+        protected Codebase $codebase,
+        protected ProjectAnalyzer $project_analyzer,
     ) {
-        $this->server = $server;
-        $this->codebase = $codebase;
-        $this->project_analyzer = $project_analyzer;
     }
 
     /**
@@ -62,7 +53,7 @@ final class Workspace
             array_map(function (FileEvent $change) {
                 try {
                     return $this->server->uriToPath($change->uri);
-                } catch (InvalidArgumentException $e) {
+                } catch (InvalidArgumentException) {
                     return null;
                 }
             }, $changes),
@@ -96,7 +87,7 @@ final class Workspace
                 continue;
             }
 
-            //If the file is currently open then dont analize it because its tracked in didChange
+            //If the file is currently open then dont analyze it because its tracked in didChange
             if (!$this->codebase->file_provider->isOpen($file_path)) {
                 $this->server->queueClosedFileAnalysis($file_path, $change->uri);
             }

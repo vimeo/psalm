@@ -13,7 +13,7 @@ jobs:
     - uses: actions/checkout@v4
     - uses: shivammathur/setup-php@v2
       with:
-        php-version: '8.2'
+        php-version: '8.4'
         ini-values: zend.assertions=1
         tools: composer:v2
         coverage: none
@@ -26,4 +26,4 @@ jobs:
         COMPOSER_ROOT_VERSION: dev-master
 
     - name: Run Psalm
-      run: ./psalm --threads=2 --output-format=github --shepherd
+      run: ./psalm --output-format=github --shepherd --force-jit

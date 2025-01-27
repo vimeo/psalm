@@ -31,6 +31,7 @@ use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
@@ -44,6 +45,7 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Union;
 use ReflectionProperty;
+use UnitEnum;
 
 use function ctype_digit;
 use function is_array;
@@ -60,7 +62,7 @@ final class ConstantTypeResolver
     public static function resolve(
         ClassLikes $classlikes,
         UnresolvedConstantComponent $c,
-        StatementsAnalyzer $statements_analyzer = null,
+        ?StatementsAnalyzer $statements_analyzer = null,
         array $visited_constant_ids = [],
     ): Atomic {
         $c_id = spl_object_id($c);
@@ -218,8 +220,8 @@ final class ConstantTypeResolver
                         return new TArray([Type::getArrayKey(), Type::getMixed()]);
                     }
 
-                    foreach ($spread_array->properties as $spread_array_type) {
-                        $properties[$auto_key++] = $spread_array_type;
+                    foreach ($spread_array->properties as $k => $spread_array_type) {
+                        $properties[is_string($k) ? $k : $auto_key++] = $spread_array_type;
                     }
                     continue;
                 }
@@ -344,7 +346,16 @@ final class ConstantTypeResolver
                         $value = $enum_storage->enum_cases[$c->case]->value;
 
                         if ($value !== null) {
-                            return $value;
+                            if ($value instanceof UnresolvedConstantComponent) {
+                                return self::resolve(
+                                    $classlikes,
+                                    $value,
+                                    $statements_analyzer,
+                                    $visited_constant_ids + [$c_id => true],
+                                );
+                            } else {
+                                return $value;
+                            }
                         }
                     } elseif ($c instanceof EnumNameFetch) {
                         return Type::getString($c->case)->getSingleAtomic();
@@ -359,11 +370,14 @@ final class ConstantTypeResolver
     /**
      * Note: This takes an array, but any array should only contain other arrays and scalars.
      */
-    public static function getLiteralTypeFromScalarValue(array|string|int|float|bool|null $value): Atomic
+    public static function getLiteralTypeFromScalarValue(array|string|int|float|bool|UnitEnum|null $value): Atomic
     {
+        if ($value instanceof UnitEnum) {
+            return new TEnumCase($value::class, $value->name);
+        }
         if (is_array($value)) {
             if (empty($value)) {
-                return Type::getEmptyArray()->getSingleAtomic();
+                return Type::getEmptyArrayAtomic();
             }
 
             $types = [];

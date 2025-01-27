@@ -11,7 +11,7 @@ use Amp\ByteStream\WritableResourceStream;
  */
 final class ProtocolStreamWriter implements ProtocolWriter
 {
-    private WritableResourceStream $output;
+    private readonly WritableResourceStream $output;
 
     /**
      * @param resource $output

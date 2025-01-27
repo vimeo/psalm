@@ -21,8 +21,7 @@ final class MixedArgumentTypeCoercion extends ArgumentIssue implements MixedIssu
         ?string $function_id = null,
         ?CodeLocation $origin_location = null,
     ) {
-        $this->code_location = $code_location;
-        $this->message = $message;
+        parent::__construct($message, $code_location);
         $this->function_id = $function_id ? strtolower($function_id) : null;
         $this->origin_location = $origin_location;
     }

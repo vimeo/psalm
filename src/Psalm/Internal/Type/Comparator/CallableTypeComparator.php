@@ -20,6 +20,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TCallableInterface;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TKeyedArray;
@@ -30,6 +31,7 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_slice;
+use function count;
 use function end;
 use function strtolower;
 use function substr;
@@ -40,15 +42,30 @@ use function substr;
 final class CallableTypeComparator
 {
     /**
-     * @param  TCallable|TClosure   $input_type_part
      * @param  TCallable|TClosure   $container_type_part
      */
     public static function isContainedBy(
         Codebase $codebase,
-        Atomic $input_type_part,
+        TClosure|TCallableInterface $input_type_part,
         Atomic $container_type_part,
         ?TypeComparisonResult $atomic_comparison_result,
     ): bool {
+        if ($container_type_part instanceof TClosure) {
+            if ($input_type_part instanceof TCallableInterface
+                && !$input_type_part instanceof TCallable // it has stricter checks below
+            ) {
+                if ($atomic_comparison_result) {
+                    $atomic_comparison_result->type_coerced = true;
+                }
+                return false;
+            }
+        }
+        if ($input_type_part instanceof TCallableInterface
+            && !$input_type_part instanceof TCallable // it has stricter checks below
+        ) {
+            return true;
+        }
+
         if ($container_type_part->is_pure && !$input_type_part->is_pure) {
             if ($atomic_comparison_result) {
                 $atomic_comparison_result->type_coerced = $input_type_part->is_pure === null;
@@ -210,7 +227,7 @@ final class CallableTypeComparator
                 if (!$codebase->methods->hasStorage($method_id)) {
                     return false;
                 }
-            } catch (Exception $e) {
+            } catch (Exception) {
                 return false;
             }
         }
@@ -305,7 +322,7 @@ final class CallableTypeComparator
                     $return_type,
                     $function_storage->pure,
                 );
-            } catch (UnexpectedValueException $e) {
+            } catch (UnexpectedValueException) {
                 if (InternalCallMapHandler::inCallMap($input_type_part->value)) {
                     $args = [];
 
@@ -370,7 +387,7 @@ final class CallableTypeComparator
                         $converted_return_type,
                         $method_storage->pure,
                     );
-                } catch (UnexpectedValueException $e) {
+                } catch (UnexpectedValueException) {
                     // do nothing
                 }
             }
@@ -464,6 +481,7 @@ final class CallableTypeComparator
     ): string|MethodIdentifier|null {
         if (!isset($input_type_part->properties[0])
             || !isset($input_type_part->properties[1])
+            || count($input_type_part->properties) > 2
         ) {
             return 'not-callable';
         }

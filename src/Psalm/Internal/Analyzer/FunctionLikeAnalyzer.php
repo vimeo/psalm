@@ -33,11 +33,13 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\InvalidDocblockParamName;
+use Psalm\Issue\InvalidOverride;
 use Psalm\Issue\InvalidParamDefault;
 use Psalm\Issue\InvalidThrow;
 use Psalm\Issue\MethodSignatureMismatch;
 use Psalm\Issue\MismatchingDocblockParamType;
 use Psalm\Issue\MissingClosureParamType;
+use Psalm\Issue\MissingOverrideAttribute;
 use Psalm\Issue\MissingParamType;
 use Psalm\Issue\MissingThrowsDocblock;
 use Psalm\Issue\ReferenceConstraintViolation;
@@ -47,7 +49,10 @@ use Psalm\Issue\UnusedClosureParam;
 use Psalm\Issue\UnusedDocblockParam;
 use Psalm\Issue\UnusedParam;
 use Psalm\IssueBuffer;
+use Psalm\Node\Expr\VirtualVariable;
+use Psalm\Node\Stmt\VirtualWhile;
 use Psalm\Plugin\EventHandler\Event\AfterFunctionLikeAnalysisEvent;
+use Psalm\Storage\AttributeStorage;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
@@ -65,6 +70,7 @@ use UnexpectedValueException;
 
 use function array_combine;
 use function array_diff_key;
+use function array_filter;
 use function array_key_exists;
 use function array_keys;
 use function array_merge;
@@ -79,6 +85,7 @@ use function mb_strpos;
 use function md5;
 use function microtime;
 use function reset;
+use function str_starts_with;
 use function strpos;
 use function strtolower;
 use function substr;
@@ -91,11 +98,6 @@ use const SORT_NUMERIC;
  */
 abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 {
-    /**
-     * @var TFunction
-     */
-    protected Closure|Function_|ClassMethod|ArrowFunction $function;
-
     protected Codebase $codebase;
 
     /**
@@ -135,30 +137,33 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
      */
     public array $param_nodes = [];
 
-    protected FunctionLikeStorage $storage;
-
     /**
      * @param TFunction $function
      */
-    public function __construct($function, SourceAnalyzer $source, FunctionLikeStorage $storage)
-    {
-        $this->function = $function;
+    public function __construct(
+        protected Closure|Function_|ClassMethod|ArrowFunction $function,
+        SourceAnalyzer $source,
+        protected FunctionLikeStorage $storage,
+    ) {
         $this->source = $source;
         $this->suppressed_issues = $source->getSuppressedIssues();
         $this->codebase = $source->getCodebase();
-        $this->storage = $storage;
     }
 
     /**
      * @param bool          $add_mutations  whether or not to add mutations to this method
+     * @param array<string, Union> $byref_vars
+     * @param-out array<string, Union> $byref_vars
      * @return false|null
      * @psalm-suppress PossiblyUnusedReturnValue unused but seems important
+     * @psalm-suppress ComplexMethod Unavoidably complex
      */
     public function analyze(
         Context $context,
         NodeDataProvider $type_provider,
         ?Context $global_context = null,
         bool $add_mutations = false,
+        array &$byref_vars = [],
     ): ?bool {
         $storage = $this->storage;
 
@@ -188,7 +193,13 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 || !in_array("UnusedPsalmSuppress", $storage->suppressed_issues)
             ) {
                 foreach ($storage->suppressed_issues as $offset => $issue_name) {
-                    IssueBuffer::addUnusedSuppression($this->getFilePath(), $offset, $issue_name);
+                    IssueBuffer::addUnusedSuppression(
+                        $storage->location !== null
+                            ? $storage->location->file_path
+                            : $this->getFilePath(),
+                        $offset,
+                        $issue_name,
+                    );
                 }
             }
         }
@@ -231,9 +242,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         $statements_analyzer = new StatementsAnalyzer($this, $type_provider);
 
+        $byref_uses = [];
         if ($this instanceof ClosureAnalyzer && $this->function instanceof Closure) {
-            $byref_uses = [];
-
             foreach ($this->function->uses as $use) {
                 if (!is_string($use->var->name)) {
                     continue;
@@ -347,6 +357,31 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $context,
             (bool) $template_types,
         );
+
+        if ($byref_uses) {
+            $ref_context = clone $context;
+            $var = '$__tmp_byref_closure_if__' . (int) $this->function->getAttribute('startFilePos');
+
+            $ref_context->vars_in_scope[$var] = Type::getBool();
+
+            $var = new VirtualVariable(
+                substr($var, 1),
+            );
+            $virtual_while = new VirtualWhile(
+                $var,
+                $function_stmts,
+            );
+
+            $statements_analyzer->analyze(
+                [$virtual_while],
+                $ref_context,
+            );
+
+            foreach ($byref_uses as $var_id => $_) {
+                $byref_vars[$var_id] = $ref_context->vars_in_scope[$var_id];
+                $context->vars_in_scope[$var_id] = $ref_context->vars_in_scope[$var_id];
+            }
+        }
 
         if ($storage->pure) {
             $context->pure = true;
@@ -804,20 +839,20 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
 
             if ($this->return_vars_possibly_in_scope !== null) {
-                $context->vars_possibly_in_scope = array_merge(
-                    $context->vars_possibly_in_scope,
-                    $this->return_vars_possibly_in_scope,
-                );
+                $context->vars_possibly_in_scope = [
+                    ...$context->vars_possibly_in_scope,
+                    ...$this->return_vars_possibly_in_scope,
+                ];
             }
 
             foreach ($context->vars_in_scope as $var => $_) {
-                if (strpos($var, '$this->') !== 0 && $var !== '$this') {
+                if (!str_starts_with($var, '$this->') && $var !== '$this') {
                     $context->removePossibleReference($var);
                 }
             }
 
             foreach ($context->vars_possibly_in_scope as $var => $_) {
-                if (strpos($var, '$this->') !== 0 && $var !== '$this') {
+                if (!str_starts_with($var, '$this->') && $var !== '$this') {
                     unset($context->vars_possibly_in_scope[$var]);
                 }
             }
@@ -1545,10 +1580,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         }
 
         if ($this->return_vars_possibly_in_scope !== null) {
-            $this->return_vars_possibly_in_scope = array_merge(
-                $context->vars_possibly_in_scope,
-                $this->return_vars_possibly_in_scope,
-            );
+            $this->return_vars_possibly_in_scope = [
+                ...$context->vars_possibly_in_scope,
+                ...$this->return_vars_possibly_in_scope,
+            ];
         } else {
             $this->return_vars_possibly_in_scope = $context->vars_possibly_in_scope;
         }
@@ -1558,7 +1593,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         StatementsAnalyzer $statements_analyzer,
         Context $context,
         Codebase $codebase,
-        PhpParser\Node $stmt = null,
+        ?PhpParser\Node $stmt = null,
     ): void {
         $storage = $this->getFunctionLikeStorage($statements_analyzer);
 
@@ -1635,7 +1670,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
             try {
                 return $codebase_methods->getStorage($method_id);
-            } catch (UnexpectedValueException $e) {
+            } catch (UnexpectedValueException) {
                 $declaring_method_id = $codebase_methods->getDeclaringMethodId($method_id);
 
                 if ($declaring_method_id === null) {
@@ -1936,6 +1971,41 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 true,
             );
 
+            if ($codebase->analysis_php_version_id >= 8_03_00) {
+                $has_override_attribute = array_filter(
+                    $storage->attributes,
+                    static fn(AttributeStorage $s): bool => $s->fq_class_name === 'Override',
+                );
+
+                if ($has_override_attribute
+                    && (!$overridden_method_ids || $storage->cased_name === '__construct')
+                ) {
+                    IssueBuffer::maybeAdd(
+                        new InvalidOverride(
+                            'Method ' . $storage->cased_name . ' does not match any parent method',
+                            $codeLocation,
+                        ),
+                        $this->getSuppressedIssues(),
+                    );
+                }
+
+                if (!$has_override_attribute
+                    && $codebase->config->ensure_override_attribute
+                    && $overridden_method_ids
+                    && $storage->cased_name !== '__construct'
+                    && ($storage->cased_name !== '__toString'
+                       || isset($appearing_class_storage->direct_class_interfaces['stringable']))
+                ) {
+                    IssueBuffer::maybeAdd(
+                        new MissingOverrideAttribute(
+                            'Method ' . $storage->cased_name . ' should have the "Override" attribute',
+                            $codeLocation,
+                        ),
+                        $this->getSuppressedIssues(),
+                    );
+                }
+            }
+
             if ($overridden_method_ids
                 && !$context->collect_initializations
                 && !$context->collect_mutations
@@ -2168,6 +2238,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
     private function isIgnoredForUnusedParam(string $var_name): bool
     {
-        return strpos($var_name, '$_') === 0 || (strpos($var_name, '$unused') === 0 && $var_name !== '$unused');
+        return str_starts_with($var_name, '$_') || (str_starts_with($var_name, '$unused') && $var_name !== '$unused');
     }
 }

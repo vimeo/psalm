@@ -44,7 +44,7 @@ final class MethodParamsProvider
     public function registerClass(string $class): void
     {
         if (is_subclass_of($class, MethodParamsProviderInterface::class, true)) {
-            $callable = Closure::fromCallable([$class, 'getMethodParams']);
+            $callable = $class::getMethodParams(...);
 
             foreach ($class::getClassLikeNames() as $fq_classlike_name) {
                 $this->registerClosure($fq_classlike_name, $callable);

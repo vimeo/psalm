@@ -14,6 +14,7 @@ use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
+use Psalm\Internal\VersionUtils;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\AfterCodebasePopulatedInterface;
 use Psalm\Plugin\EventHandler\AfterEveryFunctionCallAnalysisInterface;
@@ -45,14 +46,18 @@ class PluginTest extends TestCase
 
     public static function setUpBeforeClass(): void
     {
+        // hack to isolate Psalm from PHPUnit cli arguments
+        global $argv;
+        $argv = [];
+
         self::$config = new TestConfig();
 
         if (!defined('PSALM_VERSION')) {
-            define('PSALM_VERSION', '4.0.0');
+            define('PSALM_VERSION', VersionUtils::getPsalmVersion());
         }
 
         if (!defined('PHP_PARSER_VERSION')) {
-            define('PHP_PARSER_VERSION', '4.0.0');
+            define('PHP_PARSER_VERSION', VersionUtils::getPhpParserVersion());
         }
     }
 
@@ -134,14 +139,20 @@ class PluginTest extends TestCase
 
         $file_path = (string) getcwd() . '/src/somefile.php';
 
+
         $this->addFile(
             $file_path,
-            '<?php
-                class A {
-                    const C = [
-                        "foo" => "Psalm\Internal\Analyzer\ProjectAnalyzer",
-                    ];
-                }',
+            sprintf(
+                <<<'PHP'
+                    <?php
+                    class A {
+                        const %s C = [
+                            "foo" => "Psalm\Internal\Analyzer\ProjectAnalyzer",
+                        ];
+                    }
+                    PHP,
+                $this->project_analyzer->getCodebase()->analysis_php_version_id >= 8_03_00 ? 'array' : '',
+            ),
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -174,14 +185,18 @@ class PluginTest extends TestCase
 
         $this->addFile(
             $file_path,
-            '<?php
-                namespace Psalm;
-
-                class A {
-                    const C = [
-                        "foo" => \Psalm\Internal\Analyzer\ProjectAnalyzer::class . "::foo",
-                    ];
-                }',
+            sprintf(
+                <<<'PHP'
+                    <?php
+                    namespace Psalm;
+                    class A {
+                        const %s C = [
+                            "foo" => \Psalm\Internal\Analyzer\ProjectAnalyzer::class . "::foo",
+                        ];
+                    }
+                    PHP,
+                $this->project_analyzer->getCodebase()->analysis_php_version_id >= 8_03_00 ? 'array' : '',
+            ),
         );
 
         $this->analyzeFile($file_path, new Context());

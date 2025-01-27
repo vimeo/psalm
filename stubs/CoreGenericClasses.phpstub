@@ -74,7 +74,7 @@ class Generator implements Traversable {
 interface ArrayAccess {
 
     /**
-     * Whether a offset exists
+     * Whether an offset exists
      * @link http://php.net/manual/en/arrayaccess.offsetexists.php
      *
      * @param TKey $offset An offset to check for.
@@ -82,6 +82,7 @@ interface ArrayAccess {
      *              The return value will be casted to boolean if non-boolean was returned.
      *
      * @since 5.0.0
+     * @no-named-arguments because of conflict with ArrayObject
      */
     public function offsetExists($offset);
 
@@ -94,6 +95,7 @@ interface ArrayAccess {
      * @psalm-ignore-nullable-return
      *
      * @since 5.0.0
+     * @no-named-arguments because of conflict with ArrayObject
      */
     public function offsetGet($offset);
 
@@ -106,6 +108,7 @@ interface ArrayAccess {
      * @return void
      *
      * @since 5.0.0
+     * @no-named-arguments because of conflict with ArrayObject
      */
     public function offsetSet($offset, $value);
 
@@ -117,6 +120,7 @@ interface ArrayAccess {
      * @return void
      *
      * @since 5.0.0
+     * @no-named-arguments because of conflict with ArrayObject
      */
     public function offsetUnset($offset);
 }
@@ -158,46 +162,50 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * Returns whether the requested index exists
      * @link http://php.net/manual/en/arrayobject.offsetexists.php
      *
-     * @param TKey $index The index being checked.
+     * @param TKey $offset The index being checked.
      * @return bool true if the requested index exists, otherwise false
      *
      * @since 5.0.0
+     * @no-named-arguments because of conflict with ArrayAccess
      */
-    public function offsetExists($index) { }
+    public function offsetExists($offset) { }
 
     /**
      * Returns the value at the specified index
      * @link http://php.net/manual/en/arrayobject.offsetget.php
      *
-     * @param TKey $index The index with the value.
+     * @param TKey $offset The index with the value.
      * @return TValue The value at the specified index or false.
      *
      * @since 5.0.0
+     * @no-named-arguments because of conflict with ArrayAccess
      */
-    public function offsetGet($index) { }
+    public function offsetGet($offset) { }
 
     /**
      * Sets the value at the specified index to newval
      * @link http://php.net/manual/en/arrayobject.offsetset.php
      *
-     * @param TKey $index  The index being set.
-     * @param TValue $newval The new value for the index.
+     * @param TKey $offset  The index being set.
+     * @param TValue $value The new value for the index.
      * @return void
      *
      * @since 5.0.0
+     * @no-named-arguments because of conflict with ArrayAccess
      */
-    public function offsetSet($index, $newval) { }
+    public function offsetSet($offset, $value) { }
 
     /**
      * Unsets the value at the specified index
      * @link http://php.net/manual/en/arrayobject.offsetunset.php
      *
-     * @param TKey $index The index being unset.
+     * @param TKey $offset The index being unset.
      * @return void
      *
      * @since 5.0.0
+     * @no-named-arguments because of conflict with ArrayAccess
      */
-    public function offsetUnset($index) { }
+    public function offsetUnset($offset) { }
 
     /**
      * Appends the value
@@ -492,6 +500,9 @@ final class WeakMap implements ArrayAccess, Countable, IteratorAggregate, Traver
      * @return void
      */
     public function offsetUnset($offset) {}
+
+    /** @return Traversable<TKey, TVal> */
+    public function getIterator() { }
 }
 
 class mysqli

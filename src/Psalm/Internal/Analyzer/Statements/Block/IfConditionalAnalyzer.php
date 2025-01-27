@@ -23,7 +23,7 @@ use Psalm\Type\Reconciler;
 
 use function array_diff_key;
 use function array_filter;
-use function array_keys;
+use function array_key_first;
 use function array_merge;
 use function array_values;
 use function count;
@@ -80,7 +80,7 @@ final class IfConditionalAnalyzer
                             $entry_clauses,
                             static fn(Clause $c): bool => count($c->possibilities) > 1
                                 || $c->wedge
-                                || !isset($changed_var_ids[array_keys($c->possibilities)[0]])
+                                || !isset($changed_var_ids[array_key_first($c->possibilities)]),
                         ),
                     );
                 }
@@ -219,7 +219,7 @@ final class IfConditionalAnalyzer
         // get all the var ids that were referenced in the conditional, but not assigned in it
         $cond_referenced_var_ids = array_diff_key($cond_referenced_var_ids, $assigned_in_conditional_var_ids);
 
-        $cond_referenced_var_ids = array_merge($newish_var_ids, $cond_referenced_var_ids);
+        $cond_referenced_var_ids = [...$newish_var_ids, ...$cond_referenced_var_ids];
 
         return new IfConditionalScope(
             $if_context,
@@ -368,6 +368,10 @@ final class IfConditionalAnalyzer
                         $statements_analyzer->getSuppressedIssues(),
                     );
                 }
+            } elseif (!($stmt instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical)
+                && !($stmt instanceof PhpParser\Node\Expr\BinaryOp\Identical)
+                && !($stmt instanceof PhpParser\Node\Expr\BooleanNot)) {
+                ExpressionAnalyzer::checkRiskyTruthyFalsyComparison($type, $statements_analyzer, $stmt);
             }
         }
     }

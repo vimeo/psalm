@@ -13,6 +13,7 @@ use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeAlias\LinkableTypeAlias;
 use Psalm\Internal\TypeVisitor\ClasslikeReplacer;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
@@ -66,24 +67,30 @@ use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Atomic\TVoid;
+use Stringable;
 
 use function array_filter;
 use function array_keys;
 use function count;
-use function get_class;
 use function is_array;
 use function is_numeric;
+use function str_starts_with;
 use function strpos;
 use function strtolower;
 
 /**
  * @psalm-immutable
  */
-abstract class Atomic implements TypeNode
+abstract class Atomic implements TypeNode, Stringable
 {
-    public function __construct(bool $from_docblock = false)
-    {
-        $this->from_docblock = $from_docblock;
+    use UnserializeMemoryUsageSuppressionTrait;
+
+    public function __construct(
+        /**
+         * Whether or not the type comes from a docblock
+         */
+        public bool $from_docblock = false,
+    ) {
     }
     protected function __clone()
     {
@@ -93,11 +100,6 @@ abstract class Atomic implements TypeNode
      * Whether or not the type has been checked yet
      */
     public bool $checked = false;
-
-    /**
-     * Whether or not the type comes from a docblock
-     */
-    public bool $from_docblock = false;
 
     public ?int $offset_start = null;
 
@@ -385,7 +387,7 @@ abstract class Atomic implements TypeNode
                 return new TClosure('Closure');
         }
 
-        if (strpos($value, '-') && strpos($value, 'OCI-') !== 0) {
+        if (strpos($value, '-') && !str_starts_with($value, 'OCI-')) {
             throw new TypeParseTreeException('Unrecognized type ' . $value);
         }
 
@@ -418,7 +420,7 @@ abstract class Atomic implements TypeNode
 
     /**
      * This is the string that will be used to represent the type in Union::$types. This means that two types sharing
-     * the same getKey value will override themselves in an Union
+     * the same getKey value will override themselves in a Union
      */
     abstract public function getKey(bool $include_extra = true): string;
 
@@ -446,7 +448,7 @@ abstract class Atomic implements TypeNode
                 && ($this->as->hasNamedObjectType()
                     || array_filter(
                         $this->extra_types,
-                        static fn($extra_type): bool => $extra_type->isNamedObjectType()
+                        static fn($extra_type): bool => $extra_type->isNamedObjectType(),
                     )
                 )
             );
@@ -534,7 +536,7 @@ abstract class Atomic implements TypeNode
                     $this->extra_types
                     && array_filter(
                         $this->extra_types,
-                        static fn(Atomic $a): bool => $a->hasTraversableInterface($codebase)
+                        static fn(Atomic $a): bool => $a->hasTraversableInterface($codebase),
                     )
                 )
             );
@@ -557,7 +559,7 @@ abstract class Atomic implements TypeNode
                     $this->extra_types
                     && array_filter(
                         $this->extra_types,
-                        static fn(Atomic $a): bool => $a->hasCountableInterface($codebase)
+                        static fn(Atomic $a): bool => $a->hasCountableInterface($codebase),
                     )
                 )
             );
@@ -595,7 +597,7 @@ abstract class Atomic implements TypeNode
                     $this->extra_types
                     && array_filter(
                         $this->extra_types,
-                        static fn(Atomic $a): bool => $a->hasArrayAccessInterface($codebase)
+                        static fn(Atomic $a): bool => $a->hasArrayAccessInterface($codebase),
                     )
                 )
             );
@@ -690,7 +692,7 @@ abstract class Atomic implements TypeNode
     }
 
     /**
-     * This is the true identifier for the type. It defaults to self::getKey() but can be overrided to be more precise
+     * This is the true identifier for the type. It defaults to self::getKey() but can be overridden to be more precise
      */
     public function getId(bool $exact = true, bool $nested = false): string
     {
@@ -742,7 +744,7 @@ abstract class Atomic implements TypeNode
         TemplateResult $template_result,
         Codebase $codebase,
         ?StatementsAnalyzer $statements_analyzer = null,
-        Atomic $input_type = null,
+        ?Atomic $input_type = null,
         ?int $input_arg_offset = null,
         ?string $calling_class = null,
         ?string $calling_function = null,
@@ -767,7 +769,7 @@ abstract class Atomic implements TypeNode
 
     public function equals(Atomic $other_type, bool $ensure_source_equality): bool
     {
-        return get_class($other_type) === get_class($this);
+        return $other_type::class === static::class;
     }
 
     public function isTruthy(): bool

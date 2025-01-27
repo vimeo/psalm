@@ -53,6 +53,14 @@ class ExpressionTest extends TestCase
                 '$a===' => 'array{9223372036854775806: 0, 9223372036854775807: 1}',
             ],
         ];
+        yield 'shellExecConcatInt' => [
+            'code' => <<<'PHP'
+                <?php
+                $a = 123;
+                /** @psalm-suppress ForbiddenCode */
+                `ls $a`;
+                PHP,
+        ];
     }
 
     /**

@@ -154,7 +154,7 @@ class ReadonlyPropertyTest extends TestCase
                     }',
                 'error_message' => 'InaccessibleProperty',
             ],
-            'readonlyPropertySetInConstructorAndAlsoAnotherMethodInSublass' => [
+            'readonlyPropertySetInConstructorAndAlsoAnotherMethodInSubclass' => [
                 'code' => '<?php
                     class A {
                         /**

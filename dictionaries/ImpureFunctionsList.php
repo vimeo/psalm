@@ -85,6 +85,7 @@ return [
     'ob_end_clean' => true,
     'ob_get_clean' => true,
     'readfile' => true,
+    'readgzfile' => true,
     'printf' => true,
     'var_dump' => true,
     'phpinfo' => true,
@@ -253,4 +254,9 @@ return [
     'openssl_pkcs12_export_to_file' => true,
     'openssl_pkey_export_to_file' => true,
     'openssl_x509_export_to_file' => true,
+    // xml
+    'xml_parser_set_option' => true,
+    'xml_parser_free' => true,
+    // mail
+    'mail' => true,
 ];

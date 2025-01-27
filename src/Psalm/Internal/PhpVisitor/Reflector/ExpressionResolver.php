@@ -218,8 +218,8 @@ final class ExpressionResolver
         }
 
         if ($stmt instanceof PhpParser\Node\Scalar\String_
-            || $stmt instanceof PhpParser\Node\Scalar\LNumber
-            || $stmt instanceof PhpParser\Node\Scalar\DNumber
+            || $stmt instanceof PhpParser\Node\Scalar\Int_
+            || $stmt instanceof PhpParser\Node\Scalar\Float_
         ) {
             return new ScalarValue($stmt->value);
         }
@@ -373,11 +373,11 @@ final class ExpressionResolver
                     (
                         $expr->left instanceof PhpParser\Node\Expr\ConstFetch
                         && $expr->left->name->getParts() === ['PHP_VERSION_ID']
-                        && $expr->right instanceof PhpParser\Node\Scalar\LNumber
+                        && $expr->right instanceof PhpParser\Node\Scalar\Int_
                     ) || (
                         $expr->right instanceof PhpParser\Node\Expr\ConstFetch
                         && $expr->right->name->getParts() === ['PHP_VERSION_ID']
-                        && $expr->left instanceof PhpParser\Node\Scalar\LNumber
+                        && $expr->left instanceof PhpParser\Node\Scalar\Int_
                     )
                 )
             ) {
@@ -390,7 +390,7 @@ final class ExpressionResolver
                 });
                 try {
                     return (bool) $evaluator->evaluateSilently($expr);
-                } catch (ConstExprEvaluationException $e) {
+                } catch (ConstExprEvaluationException) {
                     return null;
                 }
             }

@@ -16,6 +16,68 @@ class FunctionTemplateTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'extractTypeParameterValue' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     */
+                    interface Type {}
+
+                    /**
+                     * @implements Type<int>
+                     */
+                    final readonly class IntType implements Type {}
+
+                    /**
+                     * @template T
+                     * @implements Type<list<T>>
+                     */
+                    final readonly class ListType implements Type
+                    {
+                        /**
+                         * @param Type<T> $type
+                         */
+                        public function __construct(
+                            public Type $type,
+                        ) {
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @param Type<T> $type
+                     * @return T
+                     */
+                    function extractType(Type $type): mixed
+                    {
+                        throw new \RuntimeException("Should never be called at runtime");
+                    }
+
+                    /**
+                     * @template T
+                     * @param Type<T> $t
+                     * @return ListType<T>
+                     */
+                    function listType(Type $t): ListType
+                    {
+                        return new ListType($t);
+                    }
+
+                    function intType(): IntType
+                    {
+                        return new IntType();
+                    }
+
+                    $listType = listType(intType());
+                    $list = extractType($listType);
+                ',
+                'assertions' => [
+                    '$listType===' => 'ListType<int>',
+                    '$list' => 'list<int>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
             'validTemplatedType' => [
                 'code' => '<?php
                     namespace FooFoo;
@@ -748,6 +810,29 @@ class FunctionTemplateTest extends TestCase
                         if (!is_callable($foo)) {}
                     }',
             ],
+            'assertOnUnionTemplatedValue' => [
+                'code' => '<?php
+                    /**
+                     * @template I of bool|string|int|stdClass
+                     * @param I $foo
+                     */
+                    function bar($foo): void {
+                        if (is_string($foo)) {}
+                        if (!is_string($foo)) {}
+                        if (is_int($foo)) {}
+                        if (!is_int($foo)) {}
+                        if (is_numeric($foo)) {}
+                        if (!is_numeric($foo)) {}
+                        if (is_scalar($foo)) {}
+                        if (!is_scalar($foo)) {}
+                        if (is_bool($foo)) {}
+                        if (!is_bool($foo)) {}
+                        if (is_object($foo)) {}
+                        if (!is_object($foo)) {}
+                        if (is_callable($foo)) {}
+                        if (!is_callable($foo)) {}
+                    }',
+            ],
             'interpretFunctionCallableReturnValue' => [
                 'code' => '<?php
                     final class Id
@@ -1336,7 +1421,6 @@ class FunctionTemplateTest extends TestCase
                      * @param E $e
                      * @param mixed $d
                      * @return ?E
-                     * @psalm-suppress MixedInferredReturnType
                      */
                     function reduce_values($e, $d) {
                         if (rand(0, 1)) {
@@ -1359,7 +1443,6 @@ class FunctionTemplateTest extends TestCase
                      * @param E $e
                      * @param mixed $d
                      * @return ?E
-                     * @psalm-suppress MixedInferredReturnType
                      */
                     function reduce_values($e, $d)
                     {

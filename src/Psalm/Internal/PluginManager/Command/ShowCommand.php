@@ -19,18 +19,14 @@ use function count;
 use function getcwd;
 use function is_string;
 
-use const DIRECTORY_SEPARATOR;
-
 /**
  * @internal
  */
 final class ShowCommand extends Command
 {
-    private PluginListFactory $plugin_list_factory;
-
-    public function __construct(PluginListFactory $plugin_list_factory)
-    {
-        $this->plugin_list_factory = $plugin_list_factory;
+    public function __construct(
+        private readonly PluginListFactory $plugin_list_factory,
+    ) {
         parent::__construct();
     }
 
@@ -46,7 +42,7 @@ final class ShowCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
-        $current_dir = (string) getcwd() . DIRECTORY_SEPARATOR;
+        $current_dir = (string) getcwd();
 
         $config_file_path = $input->getOption('config');
         if ($config_file_path !== null && !is_string($config_file_path)) {

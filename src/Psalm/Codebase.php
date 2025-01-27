@@ -20,6 +20,7 @@ use PhpParser\Node\Arg;
 use Psalm\CodeLocation\Raw;
 use Psalm\Exception\UnanalyzedFileException;
 use Psalm\Exception\UnpopulatedClasslikeException;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -71,6 +72,7 @@ use ReflectionType;
 use UnexpectedValueException;
 
 use function array_combine;
+use function array_key_exists;
 use function array_pop;
 use function array_reverse;
 use function array_values;
@@ -87,7 +89,9 @@ use function krsort;
 use function ksort;
 use function preg_match;
 use function preg_replace;
+use function str_contains;
 use function str_replace;
+use function str_starts_with;
 use function strlen;
 use function strpos;
 use function strrpos;
@@ -97,11 +101,12 @@ use function substr_count;
 
 use const PHP_VERSION_ID;
 
-/** @psalm-import-type PoolData from Scanner */
+/** 
+ * @psalm-import-type PoolData from Scanner
+ * @api
+ */
 final class Codebase
 {
-    public Config $config;
-
     /**
      * A map of fully-qualified use declarations to the files
      * that reference them (keyed by filename)
@@ -129,7 +134,7 @@ final class Codebase
 
     public StatementsProvider $statements_provider;
 
-    private Progress $progress;
+    private readonly Progress $progress;
 
     /**
      * @var array<string, Union>
@@ -176,6 +181,9 @@ final class Codebase
     public bool $alter_code = false;
 
     public bool $diff_methods = false;
+
+    /** whether or not we only checked a part of the codebase */
+    public bool $diff_run = false;
 
     /**
      * @var array<lowercase-string, string>
@@ -243,15 +251,13 @@ final class Codebase
 
     /** @internal */
     public function __construct(
-        Config $config,
+        public Config $config,
         Providers $providers,
         ?Progress $progress = null,
     ) {
         if ($progress === null) {
             $progress = new VoidProgress();
         }
-
-        $this->config = $config;
         $this->file_storage_provider = $providers->file_storage_provider;
         $this->classlike_storage_provider = $providers->classlike_storage_provider;
         $this->progress = $progress;
@@ -548,11 +554,11 @@ final class Codebase
             throw new UnexpectedValueException('Should not be checking references');
         }
 
-        if (strpos($symbol, '::$') !== false) {
+        if (str_contains($symbol, '::$')) {
             return $this->findReferencesToProperty($symbol);
         }
 
-        if (strpos($symbol, '::') !== false) {
+        if (str_contains($symbol, '::')) {
             return $this->findReferencesToMethod($symbol);
         }
 
@@ -846,7 +852,7 @@ final class Codebase
 
     public function getMethodReturnTypeLocation(
         string|MethodIdentifier $method_id,
-        CodeLocation &$defined_location = null,
+        ?CodeLocation &$defined_location = null,
     ): ?CodeLocation {
         return $this->methods->getMethodReturnTypeLocation(
             MethodIdentifier::wrap($method_id),
@@ -890,7 +896,7 @@ final class Codebase
 
         try {
             $file_storage = $this->file_storage_provider->get($file_path);
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException) {
             return;
         }
 
@@ -979,7 +985,7 @@ final class Codebase
             [, $symbol_name] = explode('::', $reference->symbol);
 
             //Class Property
-            if (strpos($reference->symbol, '$') !== false) {
+            if (str_contains($reference->symbol, '$')) {
                 $property_id = (string) preg_replace('/^\\\\/', '', $reference->symbol);
                 /** @psalm-suppress PossiblyUndefinedIntArrayOffset */
                 [$fq_class_name, $property_name] = explode('::$', $property_id);
@@ -1075,7 +1081,7 @@ final class Codebase
         }
 
         //Procedural Variable
-        if (strpos($reference->symbol, '$') === 0) {
+        if (str_starts_with($reference->symbol, '$')) {
             $type = VariableFetchAnalyzer::getGlobalType($reference->symbol, $this->analysis_php_version_id);
             if (!$type->isMixed()) {
                 return new PHPMarkdownContent(
@@ -1096,7 +1102,7 @@ final class Codebase
                 $storage->name,
                 $storage->description,
             );
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException) {
             //continue on as normal
         }
 
@@ -1193,7 +1199,7 @@ final class Codebase
                     return $storage->location;
                 }
 
-                if (strpos($reference->symbol, '$') !== false) {
+                if (str_contains($reference->symbol, '$')) {
                     $storage = $this->properties->getStorage(
                         $reference->symbol,
                     );
@@ -1245,13 +1251,12 @@ final class Codebase
             error_log($e->getMessage());
 
             return null;
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException) {
             return null;
         }
     }
 
     /**
-     * @psalm-suppress PossiblyUnusedMethod
      * @return array{0: string, 1: Range}|null
      */
     public function getReferenceAtPosition(string $file_path, Position $position): ?array
@@ -1381,11 +1386,11 @@ final class Codebase
      */
     public function getSignatureInformation(
         string $function_symbol,
-        string $file_path = null,
+        ?string $file_path = null,
     ): ?SignatureInformation {
         $signature_label = '';
         $signature_documentation = null;
-        if (strpos($function_symbol, '::') !== false) {
+        if (str_contains($function_symbol, '::')) {
             /** @psalm-suppress ArgumentTypeCoercion */
             $method_id = new MethodIdentifier(...explode('::', $function_symbol));
 
@@ -1414,11 +1419,11 @@ final class Codebase
                 $params = $function_storage->params;
                 $signature_label = $function_storage->cased_name;
                 $signature_documentation = $function_storage->description;
-            } catch (Exception $exception) {
+            } catch (Exception) {
                 if (InternalCallMapHandler::inCallMap($function_symbol)) {
                     $callables = InternalCallMapHandler::getCallablesFromCallMap($function_symbol);
 
-                    if (!$callables || !$callables[0]->params) {
+                    if (!$callables || !isset($callables[0]->params)) {
                         return null;
                     }
 
@@ -1473,6 +1478,9 @@ final class Codebase
 
         $offset = $position->toOffset($file_contents);
 
+        $literal_part = $this->getBeginedLiteralPart($file_path, $position);
+        $begin_literal_offset = $offset - strlen($literal_part);
+
         [$reference_map, $type_map] = $this->analyzer->getMapsForFile($file_path);
 
         if (!$reference_map && !$type_map) {
@@ -1507,7 +1515,7 @@ final class Codebase
                 }
             }
 
-            if ($offset - $end_pos === 2 || $offset - $end_pos === 3) {
+            if ($begin_literal_offset - $end_pos === 2) {
                 $candidate_gap = substr($file_contents, $end_pos, 2);
 
                 if ($candidate_gap === '->' || $candidate_gap === '::') {
@@ -1532,6 +1540,11 @@ final class Codebase
                 return [$possible_reference, '::', $offset];
             }
 
+            if ($offset <= $end_pos && substr($file_contents, $begin_literal_offset - 2, 2) === '::') {
+                $class_name = explode('::', $possible_reference)[0];
+                return [$class_name, '::', $offset];
+            }
+
             // Only continue for references that are partial / don't exist.
             if ($possible_reference[0] !== '*') {
                 continue;
@@ -1545,6 +1558,23 @@ final class Codebase
         }
 
         return null;
+    }
+
+    public function getBeginedLiteralPart(string $file_path, Position $position): string
+    {
+        $is_open = $this->file_provider->isOpen($file_path);
+
+        if (!$is_open) {
+            throw new UnanalyzedFileException($file_path . ' is not open');
+        }
+
+        $file_contents = $this->getFileContents($file_path);
+
+        $offset = $position->toOffset($file_contents);
+
+        preg_match('/\$?\w+$/', substr($file_contents, 0, $offset), $matches);
+
+        return $matches[0] ?? '';
     }
 
     public function getTypeContextAtPosition(string $file_path, Position $position): ?Union
@@ -1573,13 +1603,26 @@ final class Codebase
     }
 
     /**
+     * @param list<int> $allow_visibilities
+     * @param list<string> $ignore_fq_class_names
      * @return list<CompletionItem>
      */
     public function getCompletionItemsForClassishThing(
         string $type_string,
         string $gap,
         bool $snippets_supported = false,
+        ?array $allow_visibilities = null,
+        array $ignore_fq_class_names = [],
     ): array {
+        if ($allow_visibilities === null) {
+            $allow_visibilities = [
+                ClassLikeAnalyzer::VISIBILITY_PUBLIC,
+                ClassLikeAnalyzer::VISIBILITY_PROTECTED,
+                ClassLikeAnalyzer::VISIBILITY_PRIVATE,
+            ];
+        }
+        $allow_visibilities[] = null;
+
         $completion_items = [];
 
         $type = Type::parseString($type_string);
@@ -1589,9 +1632,32 @@ final class Codebase
                 try {
                     $class_storage = $this->classlike_storage_provider->get($atomic_type->value);
 
-                    foreach ($class_storage->appearing_method_ids as $declaring_method_id) {
-                        $method_storage = $this->methods->getStorage($declaring_method_id);
+                    $method_storages = [];
+                    foreach ($class_storage->declaring_method_ids as $declaring_method_id) {
+                        try {
+                            $method_storages[] = $this->methods->getStorage($declaring_method_id);
+                        } catch (UnexpectedValueException $e) {
+                            error_log($e->getMessage());
+                        }
+                    }
+                    if ($gap === '->') {
+                        $method_storages += $class_storage->pseudo_methods;
+                    }
+                    if ($gap === '::') {
+                        $method_storages += $class_storage->pseudo_static_methods;
+                    }
 
+                    $had = [];
+                    foreach ($method_storages as $method_storage) {
+                        if (!in_array($method_storage->visibility, $allow_visibilities)) {
+                            continue;
+                        }
+                        if ($method_storage->cased_name !== null) {
+                            if (array_key_exists($method_storage->cased_name, $had)) {
+                                continue;
+                            }
+                            $had[$method_storage->cased_name] = true;
+                        }
                         if ($method_storage->is_static || $gap === '->') {
                             $completion_item = new CompletionItem(
                                 $method_storage->cased_name,
@@ -1620,43 +1686,51 @@ final class Codebase
                         }
                     }
 
-                    $pseudo_property_types = [];
-                    foreach ($class_storage->pseudo_property_get_types as $property_name => $type) {
-                        $pseudo_property_types[$property_name] = new CompletionItem(
-                            str_replace('$', '', $property_name),
-                            CompletionItemKind::PROPERTY,
-                            $type->__toString(),
-                            null,
-                            '1', //sort text
-                            str_replace('$', '', $property_name),
-                            ($gap === '::' ? '$' : '') .
+                    if ($gap === '->') {
+                        $pseudo_property_types = [];
+                        foreach ($class_storage->pseudo_property_get_types as $property_name => $type) {
+                            $pseudo_property_types[$property_name] = new CompletionItem(
                                 str_replace('$', '', $property_name),
-                        );
-                    }
-
-                    foreach ($class_storage->pseudo_property_set_types as $property_name => $type) {
-                        $pseudo_property_types[$property_name] = new CompletionItem(
-                            str_replace('$', '', $property_name),
-                            CompletionItemKind::PROPERTY,
-                            $type->__toString(),
-                            null,
-                            '1',
-                            str_replace('$', '', $property_name),
-                            ($gap === '::' ? '$' : '') .
+                                CompletionItemKind::PROPERTY,
+                                $type->__toString(),
+                                null,
+                                '1', //sort text
                                 str_replace('$', '', $property_name),
-                        );
-                    }
+                                str_replace('$', '', $property_name),
+                            );
+                        }
 
-                    $completion_items = [...$completion_items, ...array_values($pseudo_property_types)];
+                        foreach ($class_storage->pseudo_property_set_types as $property_name => $type) {
+                            $pseudo_property_types[$property_name] = new CompletionItem(
+                                str_replace('$', '', $property_name),
+                                CompletionItemKind::PROPERTY,
+                                $type->__toString(),
+                                null,
+                                '1',
+                                str_replace('$', '', $property_name),
+                                str_replace('$', '', $property_name),
+                            );
+                        }
+
+                        $completion_items = [...$completion_items, ...array_values($pseudo_property_types)];
+                    }
 
                     foreach ($class_storage->declaring_property_ids as $property_name => $declaring_class) {
-                        $property_storage = $this->properties->getStorage(
-                            $declaring_class . '::$' . $property_name,
-                        );
+                        try {
+                            $property_storage = $this->properties->getStorage(
+                                $declaring_class . '::$' . $property_name,
+                            );
+                        } catch (UnexpectedValueException $e) {
+                            error_log($e->getMessage());
+                            continue;
+                        }
 
-                        if ($property_storage->is_static || $gap === '->') {
+                        if (!in_array($property_storage->visibility, $allow_visibilities)) {
+                            continue;
+                        }
+                        if ($property_storage->is_static === ($gap === '::')) {
                             $completion_items[] = new CompletionItem(
-                                '$' . $property_name,
+                                $property_name,
                                 CompletionItemKind::PROPERTY,
                                 $property_storage->getInfo(),
                                 $property_storage->description,
@@ -1678,6 +1752,22 @@ final class Codebase
                             $const_name,
                         );
                     }
+
+                    if ($gap === '->') {
+                        foreach ($class_storage->namedMixins as $mixin) {
+                            if (in_array($mixin->value, $ignore_fq_class_names)) {
+                                continue;
+                            }
+                            $mixin_completion_items = $this->getCompletionItemsForClassishThing(
+                                $mixin->value,
+                                $gap,
+                                $snippets_supported,
+                                [ClassLikeAnalyzer::VISIBILITY_PUBLIC],
+                                [$type_string, ...$ignore_fq_class_names],
+                            );
+                            $completion_items = [...$completion_items, ...$mixin_completion_items];
+                        }
+                    }
                 } catch (Exception $e) {
                     error_log($e->getMessage());
                     continue;
@@ -1686,6 +1776,28 @@ final class Codebase
         }
 
         return $completion_items;
+    }
+
+    /**
+     * @param list<CompletionItem> $items
+     * @return list<CompletionItem>
+     * @deprecated to be removed in Psalm 6
+     * @api fix deprecation problem "PossiblyUnusedMethod: Cannot find any calls to method"
+     */
+    public function filterCompletionItemsByBeginLiteralPart(array $items, string $literal_part): array
+    {
+        if (!$literal_part) {
+            return $items;
+        }
+
+        $res = [];
+        foreach ($items as $item) {
+            if ($item->insertText && str_starts_with($item->insertText, $literal_part)) {
+                $res[] = $item;
+            }
+        }
+
+        return $res;
     }
 
     /**
@@ -1713,7 +1825,7 @@ final class Codebase
         foreach ($file_storage->classlikes_in_file as $fq_class_name => $_) {
             try {
                 $class_storage = $this->classlike_storage_provider->get($fq_class_name);
-            } catch (Exception $e) {
+            } catch (Exception) {
                 continue;
             }
 
@@ -1788,7 +1900,7 @@ final class Codebase
             try {
                 $class_storage = $this->classlike_storage_provider->get($fq_class_name);
                 $description = $class_storage->description;
-            } catch (Exception $e) {
+            } catch (Exception) {
                 $description = null;
             }
 
@@ -1828,14 +1940,14 @@ final class Codebase
             }
             $in_namespace_map = false;
             foreach ($namespace_map as $namespace_name => $namespace_alias) {
-                if (strpos($function_lowercase, $namespace_name . '\\') === 0) {
+                if (str_starts_with($function_lowercase, $namespace_name . '\\')) {
                     $function_name = $namespace_alias . '\\' . substr($function_name, strlen($namespace_name) + 1);
                     $in_namespace_map = true;
                 }
             }
             // If the function is not use'd, and it's not a global function
             // prepend it with a backslash.
-            if (!$in_namespace_map && strpos($function_name, '\\') !== false) {
+            if (!$in_namespace_map && str_contains($function_name, '\\')) {
                 $function_name = '\\' . $function_name;
             }
             $completion_items[] = new CompletionItem(
@@ -1983,8 +2095,21 @@ final class Codebase
     public function isTypeContainedByType(
         Union $input_type,
         Union $container_type,
+        bool $ignore_null = false,
+        bool $ignore_false = false,
+        bool $allow_interface_equality = false,
+        bool $allow_float_int_equality = true,
     ): bool {
-        return UnionTypeComparator::isContainedBy($this, $input_type, $container_type);
+        return UnionTypeComparator::isContainedBy(
+            $this,
+            $input_type,
+            $container_type,
+            $ignore_null,
+            $ignore_false,
+            null,
+            $allow_interface_equality,
+            $allow_float_int_equality,
+        );
     }
 
     /**
@@ -2048,7 +2173,6 @@ final class Codebase
 
     /**
      * @param array<string> $taints
-     * @psalm-suppress PossiblyUnusedMethod
      */
     public function addTaintSource(
         Union $expr_type,
@@ -2075,7 +2199,6 @@ final class Codebase
 
     /**
      * @param array<string> $taints
-     * @psalm-suppress PossiblyUnusedMethod
      */
     public function addTaintSink(
         string $taint_id,

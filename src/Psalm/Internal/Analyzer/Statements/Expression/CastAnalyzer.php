@@ -30,6 +30,7 @@ use Psalm\Type\Atomic\TClosedResource;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -53,7 +54,7 @@ use Psalm\Type\Union;
 use function array_merge;
 use function array_pop;
 use function array_values;
-use function get_class;
+use function range;
 use function strtolower;
 
 /**
@@ -143,9 +144,14 @@ final class CastAnalyzer
                 }
             }
 
-            $type = new Union([new TBool()], [
-                'parent_nodes' => $maybe_type->parent_nodes ?? [],
-            ]);
+            if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
+            ) {
+                $type = new Union([new TBool()], [
+                    'parent_nodes' => $maybe_type->parent_nodes ?? [],
+                ]);
+            } else {
+                $type = Type::getBool();
+            }
 
             $statements_analyzer->node_data->setType($stmt, $type);
 
@@ -294,7 +300,7 @@ final class CastAnalyzer
 
         IssueBuffer::maybeAdd(
             new UnrecognizedExpression(
-                'Psalm does not understand the cast ' . get_class($stmt),
+                'Psalm does not understand the cast ' . $stmt::class,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
             ),
             $statements_analyzer->getSuppressedIssues(),
@@ -318,7 +324,11 @@ final class CastAnalyzer
 
         $atomic_types = $stmt_type->getAtomicTypes();
 
-        $parent_nodes = $stmt_type->parent_nodes;
+        $parent_nodes = [];
+
+        if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
+            $parent_nodes = $stmt_type->parent_nodes;
+        }
 
         while ($atomic_types) {
             $atomic_type = array_pop($atomic_types);
@@ -385,7 +395,7 @@ final class CastAnalyzer
                 $intersection_types = [$atomic_type];
 
                 if ($atomic_type->extra_types) {
-                    $intersection_types = array_merge($intersection_types, $atomic_type->extra_types);
+                    $intersection_types = [...$intersection_types, ...$atomic_type->extra_types];
                 }
 
                 foreach ($intersection_types as $intersection_type) {
@@ -500,13 +510,29 @@ final class CastAnalyzer
 
         $atomic_types = $stmt_type->getAtomicTypes();
 
-        $parent_nodes = $stmt_type->parent_nodes;
+        $parent_nodes = [];
+
+        if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
+            $parent_nodes = $stmt_type->parent_nodes;
+        }
 
         while ($atomic_types) {
             $atomic_type = array_pop($atomic_types);
 
             if ($atomic_type instanceof TFloat) {
                 $valid_floats[] = $atomic_type;
+
+                continue;
+            }
+
+            if ($atomic_type instanceof TIntRange
+                && $atomic_type->min_bound !== null
+                && $atomic_type->max_bound !== null
+                && ($atomic_type->max_bound - $atomic_type->min_bound) < 500
+            ) {
+                foreach (range($atomic_type->min_bound, $atomic_type->max_bound) as $literal_int_value) {
+                    $valid_floats[] = new TLiteralFloat((float) $literal_int_value);
+                }
 
                 continue;
             }
@@ -566,7 +592,7 @@ final class CastAnalyzer
                 $intersection_types = [$atomic_type];
 
                 if ($atomic_type->extra_types) {
-                    $intersection_types = array_merge($intersection_types, $atomic_type->extra_types);
+                    $intersection_types = [...$intersection_types, ...$atomic_type->extra_types];
                 }
 
                 foreach ($intersection_types as $intersection_type) {
@@ -695,9 +721,17 @@ final class CastAnalyzer
                 || $atomic_type instanceof TNumeric
             ) {
                 if ($atomic_type instanceof TLiteralInt || $atomic_type instanceof TLiteralFloat) {
-                    $castable_types[] = Type::getAtomicStringFromLiteral((string) $atomic_type->value);
+                    $valid_strings[] = Type::getAtomicStringFromLiteral((string) $atomic_type->value);
                 } elseif ($atomic_type instanceof TNonspecificLiteralInt) {
                     $castable_types[] = new TNonspecificLiteralString();
+                } elseif ($atomic_type instanceof TIntRange
+                    && $atomic_type->min_bound !== null
+                    && $atomic_type->max_bound !== null
+                    && ($atomic_type->max_bound - $atomic_type->min_bound) < 500
+                ) {
+                    foreach (range($atomic_type->min_bound, $atomic_type->max_bound) as $literal_int_value) {
+                        $valid_strings[] = Type::getAtomicStringFromLiteral((string) $literal_int_value);
+                    }
                 } else {
                     $castable_types[] = new TNumericString();
                 }

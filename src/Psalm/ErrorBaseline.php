@@ -18,7 +18,6 @@ use function array_merge;
 use function array_reduce;
 use function array_values;
 use function get_loaded_extensions;
-use function htmlspecialchars;
 use function implode;
 use function ksort;
 use function min;
@@ -243,12 +242,13 @@ final class ErrorBaseline
 
             usort($extensions, 'strnatcasecmp');
 
-            $filesNode->setAttribute('php-version', implode(';' . "\n\t", [...[
-                ('php:' . PHP_VERSION),
-            ], ...array_map(
-                static fn(string $extension): string => $extension . ':' . (string) phpversion($extension),
-                $extensions,
-            )]));
+            $filesNode->setAttribute('php-version', implode(";\n\t", [
+                'php:' . PHP_VERSION,
+                ...array_map(
+                    static fn(string $extension): string => $extension . ':' . (string) phpversion($extension),
+                    $extensions,
+                ),
+            ]));
         }
 
         foreach ($groupedIssues as $file => $issueTypes) {
@@ -264,11 +264,7 @@ final class ErrorBaseline
                 foreach ($existingIssueType['s'] as $selection) {
                     $codeNode = $baselineDoc->createElement('code');
                     $textContent = trim($selection);
-                    if ($textContent !== htmlspecialchars($textContent)) {
-                        $codeNode->appendChild($baselineDoc->createCDATASection($textContent));
-                    } else {
-                        $codeNode->textContent = trim($textContent);
-                    }
+                    $codeNode->appendChild($baselineDoc->createCDATASection($textContent));
                     $issueNode->appendChild($codeNode);
                 }
                 $fileNode->appendChild($issueNode);

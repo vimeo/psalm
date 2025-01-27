@@ -826,6 +826,242 @@ class ConstantTest extends TestCase
                     A::foo(2);
                     A::foo(3);',
             ],
+            'tooLongArrayInvalidConstantAssignmentValueFalsePositiveWithArray' => [
+                'code' => '<?php
+                    class TestInvalidConstantAssignmentValueFalsePositiveWithArray {
+                        const LOOKUP = [
+                            "00" => null,
+                            "01" => null,
+                            "02" => null,
+                            "03" => null,
+                            "04" => null,
+                            "05" => null,
+                            "06" => null,
+                            "07" => null,
+                            "08" => null,
+                            "09" => null,
+                            "10" => null,
+                            "11" => null,
+                            "12" => null,
+                            "13" => null,
+                            "14" => null,
+                            "15" => null,
+                            "16" => null,
+                            "17" => null,
+                            "18" => null,
+                            "19" => null,
+                            "20" => null,
+                            "21" => null,
+                            "22" => null,
+                            "23" => null,
+                            "24" => null,
+                            "25" => null,
+                            "26" => null,
+                            "27" => null,
+                            "28" => null,
+                            "29" => null,
+                            "30" => null,
+                            "31" => null,
+                            "32" => null,
+                            "33" => null,
+                            "34" => null,
+                            "35" => null,
+                            "36" => null,
+                            "37" => null,
+                            "38" => null,
+                            "39" => null,
+                            "40" => null,
+                            "41" => null,
+                            "42" => null,
+                            "43" => null,
+                            "44" => null,
+                            "45" => null,
+                            "46" => null,
+                            "47" => null,
+                            "48" => null,
+                            "49" => null,
+                            "50" => null,
+                            "51" => null,
+                            "52" => null,
+                            "53" => null,
+                            "54" => null,
+                            "55" => null,
+                            "56" => null,
+                            "57" => null,
+                            "58" => null,
+                            "59" => null,
+                            "60" => null,
+                            "61" => null,
+                            "62" => null,
+                            "63" => null,
+                            "64" => null,
+                            "65" => null,
+                            "66" => null,
+                            "67" => null,
+                            "68" => null,
+                            "69" => null,
+                            "70" => self::SUCCEED,
+                            "71" => self::FAIL,
+                            "72" => null,
+                            "73" => null,
+                            "74" => null,
+                            "75" => null,
+                            "76" => null,
+                            "77" => null,
+                            "78" => null,
+                            "79" => null,
+                            "80" => null,
+                            "81" => null,
+                            "82" => null,
+                            "83" => null,
+                            "84" => null,
+                            "85" => null,
+                            "86" => null,
+                            "87" => null,
+                            "88" => null,
+                            "89" => null,
+                            "90" => null,
+                            "91" => null,
+                            "92" => null,
+                            "93" => null,
+                            "94" => null,
+                            "95" => null,
+                            "96" => null,
+                            "97" => null,
+                            "98" => null,
+                            "99" => null,
+                            "100" => null,
+                            "101" => null,
+                        ];
+
+                        const SUCCEED = "SUCCEED";
+                        const FAIL = "FAIL";
+
+                        public static function will_succeed(string $code) : bool {
+                            // Seems to fail when the array has over 100+ entries, and at least one value references
+                            // another constant from the same class (even nested)
+                            return (self::LOOKUP[$code] ?? null) === self::SUCCEED;
+                        }
+                    }',
+            ],
+            'tooLongArrayInvalidConstantAssignmentValueFalsePositiveWithList' => [
+                'code' => '<?php
+                    class TestInvalidConstantAssignmentValueFalsePositiveWithList {
+                        const LOOKUP = [
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            self::SUCCEED,
+                            self::FAIL,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                        ];
+
+                        const SUCCEED = "SUCCEED";
+                        const FAIL = "FAIL";
+
+                        public static function will_succeed(int $code) : bool {
+                            // Seems to fail when the array has over 100+ entries, and at least one value references
+                            // another constant from the same class (even nested)
+                            return (self::LOOKUP[$code] ?? null) === self::SUCCEED;
+                        }
+                    }',
+            ],
             'valueOf' => [
                 'code' => '<?php
                     class A {
@@ -2203,7 +2439,7 @@ class ConstantTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
-            'returnValueofNonExistantConstant' => [
+            'returnValueofNonExistentConstant' => [
                 'code' => '<?php
                     class Foo
                     {
@@ -2237,7 +2473,7 @@ class ConstantTest extends TestCase
                 ',
                 'error_message' => 'UnresolvableConstant',
             ],
-            'takeKeyofNonExistantConstant' => [
+            'takeKeyofNonExistentConstant' => [
                 'code' => '<?php
                     class Foo
                     {
@@ -2477,6 +2713,18 @@ class ConstantTest extends TestCase
                     }
                     PHP,
                 'error_message' => 'InvalidArrayOffset',
+            ],
+            'unsupportedDynamicFetch' => [
+                'code' => '<?php
+                    class C {
+                        const A = 0;
+                    }
+
+                    $a = C::{"A"};
+                ',
+                'error_message' => 'ParseError',
+                'error_levels' => [],
+                'php_version' => '8.2',
             ],
         ];
     }

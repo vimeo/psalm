@@ -46,33 +46,18 @@ use function strtolower;
  */
 final class Populator
 {
-    private ClassLikeStorageProvider $classlike_storage_provider;
-
-    private FileStorageProvider $file_storage_provider;
-
     /**
      * @var array<lowercase-string, list<ClassLikeStorage>>
      */
     private array $invalid_class_storages = [];
 
-    private Progress $progress;
-
-    private ClassLikes $classlikes;
-
-    private FileReferenceProvider $file_reference_provider;
-
     public function __construct(
-        ClassLikeStorageProvider $classlike_storage_provider,
-        FileStorageProvider $file_storage_provider,
-        ClassLikes $classlikes,
-        FileReferenceProvider $file_reference_provider,
-        Progress $progress,
+        private readonly ClassLikeStorageProvider $classlike_storage_provider,
+        private readonly FileStorageProvider $file_storage_provider,
+        private readonly ClassLikes $classlikes,
+        private readonly FileReferenceProvider $file_reference_provider,
+        private readonly Progress $progress,
     ) {
-        $this->classlike_storage_provider = $classlike_storage_provider;
-        $this->file_storage_provider = $file_storage_provider;
-        $this->classlikes = $classlikes;
-        $this->progress = $progress;
-        $this->file_reference_provider = $file_reference_provider;
     }
 
     public function populateCodebase(): void
@@ -97,7 +82,7 @@ final class Populator
             foreach ($class_storage->dependent_classlikes as $dependent_classlike_lc => $_) {
                 try {
                     $dependee_storage = $this->classlike_storage_provider->get($dependent_classlike_lc);
-                } catch (InvalidArgumentException $exception) {
+                } catch (InvalidArgumentException) {
                     continue;
                 }
 
@@ -286,7 +271,7 @@ final class Populator
                     ),
                 );
                 $implemented_interface_storage = $storage_provider->get($implemented_interface);
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException) {
                 continue;
             }
 
@@ -367,7 +352,9 @@ final class Populator
                     $declaring_method_name = $declaring_method_id->method_name;
                     $declaring_class_storage = $declaring_class_storages[$declaring_class];
 
-                    $declaring_method_storage = $declaring_class_storage->methods[$declaring_method_name];
+                    $declaring_method_storage = $declaring_class_storage->methods[$declaring_method_name]
+                        ?? $declaring_class_storage->pseudo_methods[$declaring_method_name]
+                        ?? $declaring_class_storage->pseudo_static_methods[$declaring_method_name];
 
                     if (($declaring_method_storage->has_docblock_param_types
                             || $declaring_method_storage->has_docblock_return_type)
@@ -437,7 +424,7 @@ final class Populator
                 ),
             );
             $trait_storage = $storage_provider->get($used_trait_lc);
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException) {
             return;
         }
 
@@ -452,6 +439,8 @@ final class Populator
         $storage->pseudo_property_get_types += $trait_storage->pseudo_property_get_types;
         $storage->pseudo_property_set_types += $trait_storage->pseudo_property_set_types;
 
+        $storage->pseudo_static_methods += $trait_storage->pseudo_static_methods;
+        
         $storage->pseudo_methods += $trait_storage->pseudo_methods;
         $storage->declaring_pseudo_method_ids += $trait_storage->declaring_pseudo_method_ids;
     }
@@ -501,7 +490,7 @@ final class Populator
 
         try {
             $parent_storage = $storage_provider->get($parent_storage_class);
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException) {
             $this->progress->debug('Populator could not find dependency (' . __LINE__ . ")\n");
 
             $storage->invalid_dependencies[$parent_storage_class] = true;
@@ -513,32 +502,26 @@ final class Populator
 
         $this->populateClassLikeStorage($parent_storage, $dependent_classlikes);
 
-        $storage->parent_classes = array_merge($storage->parent_classes, $parent_storage->parent_classes);
+        $storage->parent_classes = [...$storage->parent_classes, ...$parent_storage->parent_classes];
 
         self::extendTemplateParams($storage, $parent_storage, true);
 
         $this->inheritMethodsFromParent($storage, $parent_storage);
         $this->inheritPropertiesFromParent($storage, $parent_storage);
 
-        $storage->class_implements = array_merge($storage->class_implements, $parent_storage->class_implements);
-        $storage->invalid_dependencies = array_merge(
-            $storage->invalid_dependencies,
-            $parent_storage->invalid_dependencies,
-        );
+        $storage->class_implements = [...$storage->class_implements, ...$parent_storage->class_implements];
+        $storage->invalid_dependencies = [...$storage->invalid_dependencies, ...$parent_storage->invalid_dependencies];
 
         if ($parent_storage->has_visitor_issues) {
             $storage->has_visitor_issues = true;
         }
 
-        $storage->constants = array_merge(
-            array_filter(
-                $parent_storage->constants,
-                static fn(ClassConstantStorage $constant): bool
-                    => $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC
-                        || $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PROTECTED,
-            ),
-            $storage->constants,
-        );
+        $storage->constants = [...array_filter(
+            $parent_storage->constants,
+            static fn(ClassConstantStorage $constant): bool
+                => $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC
+                    || $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PROTECTED,
+        ), ...$storage->constants];
 
         if ($parent_storage->preserve_constructor_signature) {
             $storage->preserve_constructor_signature = true;
@@ -562,8 +545,21 @@ final class Populator
 
         $parent_storage->dependent_classlikes[strtolower($storage->name)] = true;
 
-        $storage->pseudo_methods += $parent_storage->pseudo_methods;
-        $storage->declaring_pseudo_method_ids += $parent_storage->declaring_pseudo_method_ids;
+        foreach ($parent_storage->pseudo_static_methods as $method_name => $pseudo_method) {
+            if (!isset($storage->methods[$method_name])) {
+                $storage->pseudo_static_methods[$method_name] = $pseudo_method;
+            }
+        }
+        foreach ($parent_storage->pseudo_methods as $method_name => $pseudo_method) {
+            if (!isset($storage->methods[$method_name])) {
+                $storage->pseudo_methods[$method_name] = $pseudo_method;
+            }
+        }
+        foreach ($parent_storage->declaring_pseudo_method_ids as $method_name => $pseudo_method_id) {
+            if (!isset($storage->methods[$method_name])) {
+                $storage->declaring_pseudo_method_ids[$method_name] = $pseudo_method_id;
+            };
+        }
     }
 
     private function populateInterfaceData(
@@ -575,19 +571,16 @@ final class Populator
         $this->populateClassLikeStorage($interface_storage, $dependent_classlikes);
 
         // copy over any constants
-        $storage->constants = array_merge(
-            array_filter(
-                $interface_storage->constants,
-                static fn(ClassConstantStorage $constant): bool
-                    => $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC,
-            ),
-            $storage->constants,
-        );
+        $storage->constants = [...array_filter(
+            $interface_storage->constants,
+            static fn(ClassConstantStorage $constant): bool
+                => $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC,
+        ), ...$storage->constants];
 
-        $storage->invalid_dependencies = array_merge(
-            $storage->invalid_dependencies,
-            $interface_storage->invalid_dependencies,
-        );
+        $storage->invalid_dependencies = [
+            ...$storage->invalid_dependencies,
+            ...$interface_storage->invalid_dependencies,
+        ];
 
         self::extendTemplateParams($storage, $interface_storage, false);
 
@@ -601,7 +594,7 @@ final class Populator
                     ),
                 );
                 $new_parent_interface_storage = $storage_provider->get($new_parent);
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException) {
                 continue;
             }
 
@@ -681,7 +674,7 @@ final class Populator
                 ),
             );
             $parent_interface_storage = $storage_provider->get($parent_interface_lc);
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException) {
             $this->progress->debug('Populator could not find dependency (' . __LINE__ . ")\n");
 
             $storage->invalid_dependencies[$parent_interface_lc] = true;
@@ -695,10 +688,7 @@ final class Populator
         $storage->pseudo_methods += $parent_interface_storage->pseudo_methods;
         $storage->declaring_pseudo_method_ids += $parent_interface_storage->declaring_pseudo_method_ids;
 
-        $storage->parent_interfaces = array_merge(
-            $parent_interface_storage->parent_interfaces,
-            $storage->parent_interfaces,
-        );
+        $storage->parent_interfaces = [...$parent_interface_storage->parent_interfaces, ...$storage->parent_interfaces];
 
         if (isset($storage->parent_interfaces[strtolower(UnitEnum::class)])) {
             $storage->declaring_property_ids['name'] = $storage->name;
@@ -727,7 +717,7 @@ final class Populator
                 ),
             );
             $implemented_interface_storage = $storage_provider->get($implemented_interface_lc);
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException) {
             $this->progress->debug('Populator could not find dependency (' . __LINE__ . ")\n");
 
             $storage->invalid_dependencies[$implemented_interface_lc] = true;
@@ -741,10 +731,10 @@ final class Populator
             $dependent_classlikes,
         );
 
-        $storage->class_implements = array_merge(
-            $storage->class_implements,
-            $implemented_interface_storage->parent_interfaces,
-        );
+        $storage->class_implements = [
+            ...$storage->class_implements,
+            ...$implemented_interface_storage->parent_interfaces,
+        ];
     }
 
     /**
@@ -769,7 +759,7 @@ final class Populator
         foreach ($storage->required_file_paths as $included_file_path => $_) {
             try {
                 $included_file_storage = $this->file_storage_provider->get($included_file_path);
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException) {
                 continue;
             }
 
@@ -781,25 +771,25 @@ final class Populator
         foreach ($all_required_file_paths as $included_file_path => $_) {
             try {
                 $included_file_storage = $this->file_storage_provider->get($included_file_path);
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException) {
                 continue;
             }
 
-            $storage->declaring_function_ids = array_merge(
-                $included_file_storage->declaring_function_ids,
-                $storage->declaring_function_ids,
-            );
+            $storage->declaring_function_ids = [
+                ...$included_file_storage->declaring_function_ids,
+                ...$storage->declaring_function_ids,
+            ];
 
-            $storage->declaring_constants = array_merge(
-                $included_file_storage->declaring_constants,
-                $storage->declaring_constants,
-            );
+            $storage->declaring_constants = [
+                ...$included_file_storage->declaring_constants,
+                ...$storage->declaring_constants,
+            ];
         }
 
         foreach ($storage->referenced_classlikes as $fq_class_name) {
             try {
                 $classlike_storage = $this->classlike_storage_provider->get($fq_class_name);
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException) {
                 continue;
             }
 
@@ -809,14 +799,14 @@ final class Populator
 
             try {
                 $included_file_storage = $this->file_storage_provider->get($classlike_storage->location->file_path);
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException) {
                 continue;
             }
 
             foreach ($classlike_storage->used_traits as $used_trait) {
                 try {
                     $trait_storage = $this->classlike_storage_provider->get($used_trait);
-                } catch (InvalidArgumentException $e) {
+                } catch (InvalidArgumentException) {
                     continue;
                 }
 
@@ -828,20 +818,20 @@ final class Populator
                     $included_trait_file_storage = $this->file_storage_provider->get(
                         $trait_storage->location->file_path,
                     );
-                } catch (InvalidArgumentException $e) {
+                } catch (InvalidArgumentException) {
                     continue;
                 }
 
-                $storage->declaring_function_ids = array_merge(
-                    $included_trait_file_storage->declaring_function_ids,
-                    $storage->declaring_function_ids,
-                );
+                $storage->declaring_function_ids = [
+                    ...$included_trait_file_storage->declaring_function_ids,
+                    ...$storage->declaring_function_ids,
+                ];
             }
 
-            $storage->declaring_function_ids = array_merge(
-                $included_file_storage->declaring_function_ids,
-                $storage->declaring_function_ids,
-            );
+            $storage->declaring_function_ids = [
+                ...$included_file_storage->declaring_function_ids,
+                ...$storage->declaring_function_ids,
+            ];
         }
 
         $storage->required_file_paths = $all_required_file_paths;
@@ -849,7 +839,7 @@ final class Populator
         foreach ($all_required_file_paths as $required_file_path) {
             try {
                 $required_file_storage = $this->file_storage_provider->get($required_file_path);
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException) {
                 continue;
             }
 
@@ -859,7 +849,7 @@ final class Populator
         foreach ($storage->required_classes as $required_classlike) {
             try {
                 $classlike_storage = $this->classlike_storage_provider->get($required_classlike);
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException) {
                 continue;
             }
 
@@ -869,7 +859,7 @@ final class Populator
 
             try {
                 $required_file_storage = $this->file_storage_provider->get($classlike_storage->location->file_path);
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException) {
                 continue;
             }
 
@@ -915,7 +905,7 @@ final class Populator
         }
     }
 
-    protected function inheritMethodsFromParent(
+    private function inheritMethodsFromParent(
         ClassLikeStorage $storage,
         ClassLikeStorage $parent_storage,
     ): void {
@@ -1017,7 +1007,11 @@ final class Populator
                         $implementing_method_id->fq_class_name,
                     );
 
-                    if (!$implementing_class_storage->methods[$implementing_method_id->method_name]->abstract
+                    $method = $implementing_class_storage->methods[$implementing_method_id->method_name]
+                        ?? $implementing_class_storage->pseudo_methods[$implementing_method_id->method_name]
+                        ?? $implementing_class_storage->pseudo_static_methods[$implementing_method_id->method_name];
+
+                    if (!$method->abstract
                         || !empty($storage->methods[$implementing_method_id->method_name]->abstract)
                     ) {
                         continue;

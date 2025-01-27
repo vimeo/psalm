@@ -12,6 +12,7 @@ use Psalm\Type\Union;
 final class FileStorage
 {
     use CustomMetadataTrait;
+    use UnserializeMemoryUsageSuppressionTrait;
 
     /**
      * @var array<lowercase-string, string>
@@ -32,8 +33,6 @@ final class FileStorage
      * @var array<lowercase-string, string>
      */
     public array $required_interfaces = [];
-
-    public string $file_path;
 
     /**
      * @var array<string, FunctionStorage>
@@ -87,8 +86,7 @@ final class FileStorage
     /** @var Aliases[] */
     public array $namespace_aliases = [];
 
-    public function __construct(string $file_path)
+    public function __construct(public string $file_path)
     {
-        $this->file_path = $file_path;
     }
 }

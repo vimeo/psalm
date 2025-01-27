@@ -194,7 +194,7 @@ class CoreStubsTest extends TestCase
                 '$c3===' => 'bool',
             ],
         ];
-        yield 'PHP8 str_* function assert non-empty-string' => [
+        yield 'PHP80-str_* function assert non-empty-string' => [
             'code' => '<?php
                 /** @return non-empty-string */
                 function after_str_contains(): string
@@ -260,7 +260,7 @@ class CoreStubsTest extends TestCase
                 '$e===' => 'non-empty-string',
             ],
         ];
-        yield "PHP8 str_* function doesn't subtract string after assertion" => [
+        yield "PHP80-str_* function doesn't subtract string after assertion" => [
             'code' => '<?php
                 /** @return false|string */
                 function after_str_contains()
@@ -425,6 +425,20 @@ class CoreStubsTest extends TestCase
                 <?php
                 $globBrace = glob('abc', GLOB_BRACE);
                 PHP,
+        ];
+        yield "ownerDocument's type is non-nullable DOMDocument and always null on DOMDocument itself" => [
+            'code' => '<?php
+                $a = (new DOMDocument())->ownerDocument;
+                $b = (new DOMNode())->ownerDocument;
+                $c = (new DOMElement("p"))->ownerDocument;
+                $d = (new DOMNameSpaceNode())->ownerDocument;
+            ',
+            'assertions' => [
+                '$a===' => 'null',
+                '$b===' => 'DOMDocument',
+                '$c===' => 'DOMDocument',
+                '$d===' => 'DOMDocument',
+            ],
         ];
     }
 

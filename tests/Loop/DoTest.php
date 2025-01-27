@@ -247,7 +247,7 @@ class DoTest extends TestCase
                     $c = null;
 
                     do {
-                        if (!$c) {
+                        if ($c === null || $c === "" || $c === "0") {
                             foo($c);
                         } else {
                             bar($c);

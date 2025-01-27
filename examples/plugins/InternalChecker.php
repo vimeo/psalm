@@ -12,14 +12,14 @@ use Psalm\Plugin\EventHandler\Event\AfterClassLikeAnalysisEvent;
 
 use function strpos;
 
-class InternalChecker implements AfterClassLikeAnalysisInterface
+final class InternalChecker implements AfterClassLikeAnalysisInterface
 {
     /** @return null|false */
     public static function afterStatementAnalysis(AfterClassLikeAnalysisEvent $event): ?bool
     {
         $storage = $event->getClasslikeStorage();
         if (!$storage->internal
-            && strpos($storage->name, 'Psalm\\Internal') === 0
+            && str_starts_with($storage->name, 'Psalm\\Internal')
             && $storage->location
         ) {
             IssueBuffer::maybeAdd(

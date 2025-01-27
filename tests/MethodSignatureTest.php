@@ -7,12 +7,14 @@ namespace Psalm\Tests;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
+use Psalm\Tests\Traits\InvalidCodeAnalysisWithIssuesTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use const DIRECTORY_SEPARATOR;
 
 class MethodSignatureTest extends TestCase
 {
+    use InvalidCodeAnalysisWithIssuesTestTrait;
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
 
@@ -313,7 +315,7 @@ class MethodSignatureTest extends TestCase
 
                     class B extends A {
                         public function foo(?string $s): string {
-                            return $s ?: "hello";
+                            return $s !== null ? $s : "hello";
                         }
                     }
 
@@ -329,7 +331,7 @@ class MethodSignatureTest extends TestCase
 
                     class B extends A {
                         public function foo(string $s = null): string {
-                            return $s ?: "hello";
+                            return $s !== null ? $s : "hello";
                         }
                     }
 
@@ -400,6 +402,15 @@ class MethodSignatureTest extends TestCase
                     '$b' => 'B',
                 ],
             ],
+            'returnIgnoresInlineComments' => [
+                'code' => '<?php
+                    class A {
+                        /** @return bool {@see true}*/
+                        public static function foo():bool {
+                            return true;
+                        }
+                    }',
+            ],
             'allowSomeCovariance' => [
                 'code' => '<?php
                     interface I1 {
@@ -452,13 +463,13 @@ class MethodSignatureTest extends TestCase
                         private $id = 1;
 
                         /**
-                         * @param string $serialized
+                         * @param string $data
                          */
-                        public function unserialize($serialized) : void
+                        public function unserialize($data) : void
                         {
                             [
                                 $this->id,
-                            ] = (array) \unserialize($serialized);
+                            ] = (array) \unserialize($data);
                         }
 
                         public function serialize() : string
@@ -501,22 +512,22 @@ class MethodSignatureTest extends TestCase
 
                     class Observer implements \SplObserver
                     {
-                        public function update(SplSubject $subject)
+                        public function update(SplSubject $subject): void
                         {
                         }
                     }
 
                     class Subject implements \SplSubject
                     {
-                        public function attach(SplObserver $observer)
+                        public function attach(SplObserver $observer): void
                         {
                         }
 
-                        public function detach(SplObserver $observer)
+                        public function detach(SplObserver $observer): void
                         {
                         }
 
-                        public function notify()
+                        public function notify(): void
                         {
                         }
                     }',
@@ -743,7 +754,7 @@ class MethodSignatureTest extends TestCase
                         public function getTraceAsString(): string;
                     }',
             ],
-            'allowExecptionToStringWithNoType' => [
+            'allowExceptionToStringWithNoType' => [
                 'code' => '<?php
                     class E extends Exception {
                         public function __toString() {
@@ -751,7 +762,7 @@ class MethodSignatureTest extends TestCase
                         }
                     }',
             ],
-            'allowExecptionToStringIn71' => [
+            'allowExceptionToStringIn71' => [
                 'code' => '<?php
                     class E extends Exception {
                         public function __toString() : string {
@@ -838,12 +849,12 @@ class MethodSignatureTest extends TestCase
                 'code' => '<?php
                     final class B extends A
                     {
-                        public static function doCretate1(): self
+                        public static function doCreate1(): self
                         {
                             return self::create1();
                         }
 
-                        public static function doCretate2(): self
+                        public static function doCreate2(): self
                         {
                             return self::create2();
                         }
@@ -917,6 +928,9 @@ class MethodSignatureTest extends TestCase
                     {
                         public function a(mixed $a): void {}
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'doesNotRequireInterfaceDestructorsToHaveReturnType' => [
                 'code' => '<?php
@@ -958,6 +972,24 @@ class MethodSignatureTest extends TestCase
                         }
                     }
                 ',
+            ],
+            'callmapInheritedMethodParamsDoNotHavePrefixes' => [
+                'code' => <<<'PHP'
+                    <?php
+
+                    class NoopFilter extends \php_user_filter
+                    {
+                        /**
+                         * @param resource $in
+                         * @param resource $out
+                         * @param int $consumed   -- this is called &rw_consumed in the callmap
+                         */
+                        public function filter($in, $out, &$consumed, bool $closing): int
+                        {
+                            return PSFS_PASS_ON;
+                        }
+                    }
+                PHP,
             ],
         ];
     }
@@ -1042,11 +1074,26 @@ class MethodSignatureTest extends TestCase
                     }',
                 'error_message' => 'ParamNameMismatch',
             ],
+            'differentArgumentName' => [
+                'code' => '<?php
+                    class A {
+                        public function fooFoo(int $a): void {
+
+                        }
+                    }
+
+                    class B extends A {
+                        public function fooFoo(int $b): void {
+
+                        }
+                    }',
+                'error_message' => 'ParamNameMismatch',
+            ],
             'nonNullableSubclassParam' => [
                 'code' => '<?php
                     class A {
                         public function foo(?string $s): string {
-                            return $s ?: "hello";
+                            return $s !== null ? $s : "hello";
                         }
                     }
 
@@ -1380,8 +1427,8 @@ class MethodSignatureTest extends TestCase
             'preventImplementingSerializableWithWrongDocblockType' => [
                 'code' => '<?php
                     class Foo implements \Serializable {
-                        /** @param int $serialized */
-                        public function unserialize($serialized) {}
+                        /** @param int $data */
+                        public function unserialize($data) {}
                         public function serialize() {}
                     }',
                 'error_message' => 'ImplementedParamTypeMismatch',
@@ -1629,6 +1676,28 @@ class MethodSignatureTest extends TestCase
                     }
                 ',
                 'error_message' => 'MethodSignatureMismatch',
+            ],
+            'methodAnnotationReturnMismatch' => [
+                'code' => '<?php
+                /**
+                * @method array bar()
+                */
+                interface Foo
+                {
+                    public function bar(): string;
+                }',
+                'error_message' => 'MismatchingDocblockReturnType',
+            ],
+            'methodAnnotationParamMismatch' => [
+                'code' => '<?php
+                /**
+                * @method string bar(string $i)
+                */
+                interface Foo
+                {
+                    public function bar(int $i): string;
+                }',
+                'error_message' => 'MismatchingDocblockParamType',
             ],
         ];
     }

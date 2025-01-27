@@ -2,12 +2,12 @@
 
 namespace Psalm\Example\Plugin;
 
-use PhpParser\Node\Expr\ArrayItem;
+use PhpParser\Node\ArrayItem;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\RemoveTaintsInterface;
 
-class SafeArrayKeyChecker implements RemoveTaintsInterface
+final class SafeArrayKeyChecker implements RemoveTaintsInterface
 {
     /**
      * Called to see what taints should be removed

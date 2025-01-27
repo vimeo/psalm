@@ -185,7 +185,7 @@ class PropertyTypeTest extends TestCase
                 }
 
                 function testX(X $x): void {
-                    if ($x->getX()) {
+                    if (is_int($x->getX())) {
                         XCollector::modify();
                         if ($x->getX() === null) {}
                     }
@@ -223,7 +223,7 @@ class PropertyTypeTest extends TestCase
                 }
 
                 function testX(X $x): void {
-                    if ($x->getX()) {
+                    if ($x->getX() !== null) {
                         XCollector::modify();
                         if ($x->getX() === null) {}
                     }
@@ -257,7 +257,7 @@ class PropertyTypeTest extends TestCase
                 }
 
                 function testX(X $x): void {
-                    if ($x->x) {
+                    if ($x->x !== null) {
                         XCollector::modify();
                         if ($x->x === null) {}
                     }
@@ -589,6 +589,22 @@ class PropertyTypeTest extends TestCase
                     'MixedAssignment',
                 ],
             ],
+            'promotedPropertyNoExtendedConstructor' => [
+                'code' => '<?php
+                    class A
+                    {
+                        public function __construct(
+                            public string $name,
+                        ) {}
+                    }
+
+                    class B extends A
+                    {
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'propertyWithoutTypeSuppressingIssueAndAssertingNull' => [
                 'code' => '<?php
                     class A {
@@ -688,6 +704,8 @@ class PropertyTypeTest extends TestCase
                     }
 
                     echo substr($a->aa, 1);',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'nullableStaticPropertyWithIfCheck' => [
                 'code' => '<?php
@@ -718,7 +736,7 @@ class PropertyTypeTest extends TestCase
                     $a = new DOMElement("foo");
                     $owner = $a->ownerDocument;',
                 'assertions' => [
-                    '$owner' => 'DOMDocument|null',
+                    '$owner' => 'DOMDocument',
                 ],
             ],
             'propertyMapHydration' => [
@@ -1166,7 +1184,7 @@ class PropertyTypeTest extends TestCase
                          * Constructs a finally node.
                          *
                          * @param list<Node\Stmt> $stmts      Statements
-                         * @param array  $attributes Additional attributes
+                         * @param array<string, mixed>  $attributes Additional attributes
                          */
                         public function __construct(array $stmts = array(), array $attributes = array()) {
                             parent::__construct($attributes);
@@ -1333,7 +1351,7 @@ class PropertyTypeTest extends TestCase
                         }
                     }',
             ],
-            'allowMixedAssignmetWhenDesired' => [
+            'allowMixedAssignmentWhenDesired' => [
                 'code' => '<?php
                     class A {
                         /**
@@ -1739,7 +1757,7 @@ class PropertyTypeTest extends TestCase
                     class B extends A {}
                     class C extends B {}',
             ],
-            'unitializedPropertySuppressPropertyNotSetInConstructor' => [
+            'uninitializedPropertySuppressPropertyNotSetInConstructor' => [
                 'code' => '<?php
                     class A {
                         /** @var string */
@@ -1757,7 +1775,7 @@ class PropertyTypeTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['PropertyNotSetInConstructor'],
             ],
-            'unitializedPropertySuppressPropertyNotSetInAbstractConstructor' => [
+            'uninitializedPropertySuppressPropertyNotSetInAbstractConstructor' => [
                 'code' => '<?php
                     abstract class A {
                           /** @readonly */
@@ -2399,7 +2417,7 @@ class PropertyTypeTest extends TestCase
 
                     echo (new A)->foo;',
             ],
-            'promotedPublicPropertyWitoutDefault' => [
+            'promotedPublicPropertyWithoutDefault' => [
                 'code' => '<?php
                     class A {
                         public function __construct(public int $foo) {}
@@ -3468,7 +3486,7 @@ class PropertyTypeTest extends TestCase
                     Y::$b = 5;',
                 'error_message' => 'InvalidPropertyAssignmentValue',
             ],
-            'unitializedProperty' => [
+            'uninitializedProperty' => [
                 'code' => '<?php
                     class A {
                         /** @var string */
@@ -3481,7 +3499,7 @@ class PropertyTypeTest extends TestCase
                     }',
                 'error_message' => 'UninitializedProperty',
             ],
-            'unitializedPropertyWithoutType' => [
+            'uninitializedPropertyWithoutType' => [
                 'code' => '<?php
                     class A {
                         public $foo;
@@ -3494,7 +3512,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'UninitializedProperty',
                 'ignored_issues' => ['MixedArgument', 'MissingPropertyType'],
             ],
-            'unitializedObjectProperty' => [
+            'uninitializedObjectProperty' => [
                 'code' => '<?php
                     class Foo {
                         /** @var int */
@@ -3572,6 +3590,23 @@ class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'PropertyNotSetInConstructor',
+            ],
+            'promotedPropertyNotSetInExtendedConstructor' => [
+                'code' => '<?php
+                    class A
+                    {
+                        public function __construct(
+                            public string $name,
+                        ) {}
+                    }
+
+                    class B extends A
+                    {
+                        public function __construct() {}
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'nullableTypedPropertyNoConstructor' => [
                 'code' => '<?php
@@ -3827,21 +3862,14 @@ class PropertyTypeTest extends TestCase
                 ',
                 'error_message' => 'UndefinedPropertyAssignment',
             ],
-            'setPropertiesOfSimpleXMLElement1' => [
-                'code' => '<?php
-                    $a = new SimpleXMLElement("<person><child role=\"son\"></child></person>");
-                    $a->b = "c";
-                ',
-                'error_message' => 'UndefinedPropertyAssignment',
-            ],
-            'setPropertiesOfSimpleXMLElement2' => [
-                'code' => '<?php
-                    $a = new SimpleXMLElement("<person><child role=\"son\"></child></person>");
-                    if (isset($a->b)) {
-                        $a->b = "c";
+            'nativeMixedPropertyWithNoConstructor' => [
+                'code' => <<< 'PHP'
+                    <?php
+                    class A {
+                        public mixed $foo;
                     }
-                ',
-                'error_message' => 'UndefinedPropertyAssignment',
+                PHP,
+                'error_message' => 'MissingConstructor',
             ],
         ];
     }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Type\Atomic;
 
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type\Atomic;
 
 /**
@@ -14,6 +15,7 @@ use Psalm\Type\Atomic;
  */
 final class TNever extends Atomic
 {
+    use UnserializeMemoryUsageSuppressionTrait;
     public function getKey(bool $include_extra = true): string
     {
         return 'never';

@@ -90,6 +90,79 @@ class TypeCombinationTest extends TestCase
                     }
                     ',
             ],
+            'emptyStringNumericStringDontCombine' => [
+                'code' => '<?php
+                    /**
+                     * @param numeric-string $arg
+                     * @return void
+                     */
+                    function takesNumeric($arg) {}
+
+                    $b = rand(0, 10);
+                    $a = $b < 5 ? "" : (string) $b;
+                    if ($a !== "") {
+                        takesNumeric($a);
+                    }
+
+                    /** @var ""|numeric-string $c */
+                    if (is_numeric($c)) {
+                        takesNumeric($c);
+                    }',
+            ],
+            'emptyStringNumericStringDontCombineNegation' => [
+                'code' => '<?php
+                    /**
+                     * @param ""|"hello" $arg
+                     * @return void
+                     */
+                    function takesLiteralString($arg) {}
+
+                    /** @var ""|numeric-string $c */
+                    if (!is_numeric($c)) {
+                        takesLiteralString($c);
+                    }',
+            ],
+            'tooLongLiteralShouldBeNonFalsyString' => [
+                'code' => '<?php
+                    $x = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";',
+                'assertions' => [
+                    '$x===' => 'non-falsy-string',
+                ],
+            ],
+            'loopNonFalsyWithZeroShouldBeNonEmpty' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-suppress InvalidReturnType
+                     * @return string[]
+                     */
+                    function getStringArray() {}
+
+                    $x = array();
+                    foreach (getStringArray() as $id) {
+                        $x[] = "0";
+                        $x[] = "some_" . $id;
+                    }',
+                'assertions' => [
+                    '$x===' => 'list<non-empty-string>',
+                ],
+            ],
+            'loopNonLowercaseLiteralWithNonEmptyLowercaseShouldBeNonEmptyAndNotLowercase' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-suppress InvalidReturnType
+                     * @return int[]
+                     */
+                    function getIntArray() {}
+
+                    $x = array();
+                    foreach (getIntArray() as $id) {
+                        $x[] = "TEXT";
+                        $x[] = "some_" . $id;
+                    }',
+                'assertions' => [
+                    '$x===' => 'list<non-empty-string>',
+                ],
+            ],
         ];
     }
 
@@ -863,10 +936,31 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'nonFalsyStringAndFalsyLiteral' => [
-                'string',
+                'non-empty-string',
                 [
                     'non-falsy-string',
                     '"0"',
+                ],
+            ],
+            'unionOfClassStringAndClassStringWithIntersection' => [
+                'class-string<IFoo>',
+                [
+                    'class-string<IFoo>',
+                    'class-string<IFoo & IBar>',
+                ],
+            ],
+            'unionNonEmptyLiteralStringAndLiteralString' => [
+                'literal-string',
+                [
+                    'non-empty-literal-string',
+                    'literal-string',
+                ],
+            ],
+            'unionLiteralStringAndNonEmptyLiteralString' => [
+                'literal-string',
+                [
+                    'literal-string',
+                    'non-empty-literal-string',
                 ],
             ],
         ];

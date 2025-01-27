@@ -17,13 +17,11 @@ final class LegacyProgress implements ProgressInterface
     private const STATUS_FINISHED = 'finished';
 
     private string $status = self::STATUS_INACTIVE;
-
-    private ClientHandler $handler;
     private ?string $title = null;
 
-    public function __construct(ClientHandler $handler)
-    {
-        $this->handler = $handler;
+    public function __construct(
+        private readonly ClientHandler $handler,
+    ) {
     }
 
     public function begin(string $title, ?string $message = null, ?int $percentage = null): void

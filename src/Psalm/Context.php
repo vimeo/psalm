@@ -30,6 +30,7 @@ use function json_encode;
 use function preg_match;
 use function preg_quote;
 use function preg_replace;
+use function str_contains;
 use function strpos;
 use function strtolower;
 
@@ -84,7 +85,7 @@ final class Context
     /**
      * A set of references that might still be in scope from a scope likely to cause confusion. This applies
      * to references set inside a loop or if statement, since it's easy to forget about PHP's weird scope
-     * rules, and assinging to a reference will change the referenced variable rather than shadowing it.
+     * rules, and assigning to a reference will change the referenced variable rather than shadowing it.
      *
      * @var array<string, CodeLocation>
      */
@@ -111,7 +112,7 @@ final class Context
     public bool $inside_unset = false;
 
     /**
-     * Whether or not we're inside an class_exists call, where
+     * Whether or not we're inside a class_exists call, where
      * we don't care about possibly undefined classes
      */
     public bool $inside_class_exists = false;
@@ -147,12 +148,6 @@ final class Context
     public bool $inside_try = false;
 
     public ?CodeLocation $include_location = null;
-
-    /**
-     * @var string|null
-     * The name of the current class. Null if outside a class.
-     */
-    public ?string $self = null;
 
     public ?string $parent = null;
 
@@ -212,9 +207,9 @@ final class Context
     /**
      * Stored to prevent re-analysing methods when checking for initialised properties
      *
-     * @var array<string, bool>|null
+     * @var array<string, bool>
      */
-    public ?array $initialized_methods = null;
+    public array $initialized_methods = [];
 
     /**
      * @var array<string, Union>
@@ -332,9 +327,13 @@ final class Context
     public array $parent_remove_vars = [];
 
     /** @internal */
-    public function __construct(?string $self = null)
-    {
-        $this->self = $self;
+    public function __construct(
+        /**
+         * @var string|null
+         * The name of the current class. Null if outside a class.
+         */
+        public ?string $self = null,
+    ) {
     }
 
     public function __destruct()
@@ -696,7 +695,7 @@ final class Context
 
         foreach ($this->vars_in_scope as $var_id => $type) {
             if ($type->has_mutations
-                && (strpos($var_id, '->') !== false || strpos($var_id, '::') !== false)
+                && (str_contains($var_id, '->') || str_contains($var_id, '::'))
                 && (!$methods_only || strpos($var_id, '()'))
             ) {
                 $vars_to_remove[] = $var_id;
@@ -717,7 +716,7 @@ final class Context
             $abandon_clause = false;
 
             foreach (array_keys($clause->possibilities) as $key) {
-                if ((strpos($key, '->') !== false || strpos($key, '::') !== false)
+                if ((str_contains($key, '->') || str_contains($key, '::'))
                     && (!$methods_only || strpos($key, '()'))
                 ) {
                     $abandon_clause = true;

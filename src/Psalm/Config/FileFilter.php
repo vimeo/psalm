@@ -9,6 +9,7 @@ use Psalm\Exception\ConfigException;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SimpleXMLElement;
+use Symfony\Component\Filesystem\Path;
 
 use function array_filter;
 use function array_map;
@@ -30,9 +31,10 @@ use function realpath;
 use function restore_error_handler;
 use function rtrim;
 use function set_error_handler;
+use function str_contains;
 use function str_replace;
+use function str_starts_with;
 use function stripos;
-use function strpos;
 use function strtolower;
 
 use const DIRECTORY_SEPARATOR;
@@ -90,8 +92,6 @@ class FileFilter
      */
     protected array $files_lowercase = [];
 
-    protected bool $inclusive;
-
     /**
      * @var array<string, bool>
      */
@@ -102,9 +102,8 @@ class FileFilter
      */
     protected array $declare_strict_types = [];
 
-    public function __construct(bool $inclusive)
+    public function __construct(protected bool $inclusive)
     {
-        $this->inclusive = $inclusive;
     }
 
     /**
@@ -127,14 +126,14 @@ class FileFilter
                 $resolve_symlinks = (bool) ($directory['resolveSymlinks'] ?? false);
                 $declare_strict_types = (bool) ($directory['useStrictTypes'] ?? false);
 
-                if ($directory_path[0] === '/' && DIRECTORY_SEPARATOR === '/') {
+                if (Path::isAbsolute($directory_path)) {
                     /** @var non-empty-string */
                     $prospective_directory_path = $directory_path;
                 } else {
                     $prospective_directory_path = $base_dir . DIRECTORY_SEPARATOR . $directory_path;
                 }
 
-                if (strpos($prospective_directory_path, '*') !== false) {
+                if (str_contains($prospective_directory_path, '*')) {
                     // Strip meaningless trailing recursive wildcard like "path/**/" or "path/**"
                     $prospective_directory_path = (string) preg_replace(
                         '#(\/\*\*)+\/?$#',
@@ -250,14 +249,14 @@ class FileFilter
             foreach ($config['file'] as $file) {
                 $file_path = (string) ($file['name'] ?? '');
 
-                if ($file_path[0] === '/' && DIRECTORY_SEPARATOR === '/') {
+                if (Path::isAbsolute($file_path)) {
                     /** @var non-empty-string */
                     $prospective_file_path = $file_path;
                 } else {
                     $prospective_file_path = $base_dir . DIRECTORY_SEPARATOR . $file_path;
                 }
 
-                if (strpos($prospective_file_path, '*') !== false) {
+                if (str_contains($prospective_file_path, '*')) {
                     // Split by /**/, allow duplicated wildcards like "path/**/**/path" and any leading dir separator.
                     /** @var non-empty-list<non-empty-string> $path_parts */
                     $path_parts = preg_split('#(\/|\\\)(\*\*\/)+#', $prospective_file_path);
@@ -311,7 +310,7 @@ class FileFilter
             foreach ($config['referencedClass'] as $referenced_class) {
                 $class_name = strtolower((string) ($referenced_class['name'] ?? ''));
 
-                if (strpos($class_name, '*') !== false) {
+                if (str_contains($class_name, '*')) {
                     $regex = '/' . str_replace('*', '.*', str_replace('\\', '\\\\', $class_name)) . '/i';
                     $filter->fq_classlike_patterns[] = $regex;
                 } else {
@@ -522,7 +521,7 @@ class FileFilter
         if ($this->inclusive) {
             foreach ($this->directories as $include_dir) {
                 if ($case_sensitive) {
-                    if (strpos($file_name, $include_dir) === 0) {
+                    if (str_starts_with($file_name, $include_dir)) {
                         return true;
                     }
                 } else {
@@ -548,7 +547,7 @@ class FileFilter
         // exclusive
         foreach ($this->directories as $exclude_dir) {
             if ($case_sensitive) {
-                if (strpos($file_name, $exclude_dir) === 0) {
+                if (str_starts_with($file_name, $exclude_dir)) {
                     return false;
                 }
             } else {

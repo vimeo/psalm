@@ -14,7 +14,6 @@ use function array_merge;
 use function dirname;
 use function file_exists;
 use function filemtime;
-use function get_class;
 use function hash;
 use function is_dir;
 use function is_null;
@@ -22,14 +21,13 @@ use function mkdir;
 use function strtolower;
 
 use const DIRECTORY_SEPARATOR;
-use const PHP_VERSION_ID;
 
 /**
  * @internal
  */
 class ClassLikeStorageCacheProvider
 {
-    private Cache $cache;
+    private readonly Cache $cache;
 
     private string $modified_timestamps = '';
 
@@ -79,6 +77,9 @@ class ClassLikeStorageCacheProvider
         $this->cache->saveItem($cache_location, $storage);
     }
 
+    /**
+     * @param lowercase-string $fq_classlike_name_lc
+     */
     public function getLatestFromCache(
         string $fq_classlike_name_lc,
         ?string $file_path,
@@ -93,7 +94,7 @@ class ClassLikeStorageCacheProvider
         $cache_hash = $this->getCacheHash($file_path, $file_contents);
 
         /** @psalm-suppress TypeDoesNotContainType */
-        if (@get_class($cached_value) === '__PHP_Incomplete_Class'
+        if (@$cached_value::class === '__PHP_Incomplete_Class'
             || $cache_hash !== $cached_value->hash
         ) {
             $this->cache->deleteItem($this->getCacheLocationForClass($fq_classlike_name_lc, $file_path));
@@ -106,10 +107,13 @@ class ClassLikeStorageCacheProvider
 
     private function getCacheHash(?string $_unused_file_path, ?string $file_contents): string
     {
-        $data = $file_contents ? $file_contents : $this->modified_timestamps;
-        return PHP_VERSION_ID >= 8_01_00 ? hash('xxh128', $data) : hash('md4', $data);
+        $data = $file_contents ?: $this->modified_timestamps;
+        return hash('xxh128', $data);
     }
 
+    /**
+     * @param lowercase-string $fq_classlike_name_lc
+     */
     private function loadFromCache(string $fq_classlike_name_lc, ?string $file_path): ?ClassLikeStorage
     {
         $storage = $this->cache->getItem($this->getCacheLocationForClass($fq_classlike_name_lc, $file_path));
@@ -120,6 +124,9 @@ class ClassLikeStorageCacheProvider
         return null;
     }
 
+    /**
+     * @param lowercase-string $fq_classlike_name_lc
+     */
     private function getCacheLocationForClass(
         string $fq_classlike_name_lc,
         ?string $file_path,
@@ -153,7 +160,7 @@ class ClassLikeStorageCacheProvider
 
         $data = $file_path ? strtolower($file_path) . ' ' : '';
         $data .= $fq_classlike_name_lc;
-        $file_path_sha = PHP_VERSION_ID >= 8_01_00 ? hash('xxh128', $data) : hash('md4', $data);
+        $file_path_sha = hash('xxh128', $data);
 
         return $parser_cache_directory
             . DIRECTORY_SEPARATOR

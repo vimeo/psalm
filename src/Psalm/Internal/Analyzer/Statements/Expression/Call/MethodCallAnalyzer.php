@@ -30,11 +30,13 @@ use Psalm\Issue\UndefinedMagicMethod;
 use Psalm\Issue\UndefinedMethod;
 use Psalm\IssueBuffer;
 use Psalm\Type;
+use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
+use function array_merge;
 use function array_reduce;
 use function count;
 use function is_string;
@@ -177,6 +179,17 @@ final class MethodCallAnalyzer extends CallAnalyzer
 
         $lhs_types = $class_type->getAtomicTypes();
 
+        foreach ($lhs_types as $k => $lhs_type_part) {
+            if ($lhs_type_part instanceof TConditional) {
+                $lhs_types = array_merge(
+                    $lhs_types,
+                    $lhs_type_part->if_type->getAtomicTypes(),
+                    $lhs_type_part->else_type->getAtomicTypes(),
+                );
+                unset($lhs_types[$k]);
+            }
+        }
+
         $result = new AtomicMethodCallAnalysisResult();
 
         $possible_new_class_types = [];
@@ -227,7 +240,7 @@ final class MethodCallAnalyzer extends CallAnalyzer
         if (count($possible_new_class_types) > 0) {
             $class_type = array_reduce(
                 $possible_new_class_types,
-                static fn(?Union $type_1, Union $type_2): Union => Type::combineUnionTypes($type_1, $type_2, $codebase)
+                static fn(?Union $type_1, Union $type_2): Union => Type::combineUnionTypes($type_1, $type_2, $codebase),
             );
         }
 
@@ -400,7 +413,7 @@ final class MethodCallAnalyzer extends CallAnalyzer
             $types = $class_type->getAtomicTypes();
 
             foreach ($types as $key => &$type) {
-                if (!$type instanceof TNamedObject && !$type instanceof TObject) {
+                if (!$type instanceof TNamedObject && !$type instanceof TObject && !$type instanceof TConditional) {
                     unset($types[$key]);
                 } else {
                     $type = $type->setFromDocblock(false);

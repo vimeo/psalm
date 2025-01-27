@@ -24,9 +24,9 @@ class CallableTest extends TestCase
 
                     /**
                      * @return void
-                     * @psalm-suppress MixedArgument
                      */
                     function f() {
+                        $data = 0;
                         run_function(
                             /**
                              * @return void
@@ -1788,16 +1788,421 @@ class CallableTest extends TestCase
 
                     takesCallable(function() { return; });',
             ],
-            'byRefUsesAlwaysMixed' => [
+            'callableMethodOutOfClassContextStaticPublic' => [
                 'code' => '<?php
-                    $callback = function() use (&$isCalled) : void {
-                        $isCalled = true;
-                    };
-                    $isCalled = false;
-                    $callback();
+                /**
+                 * @param callable $callable
+                 * @return void
+                 */
+                function run($callable) {
+                    call_user_func($callable);
+                }
 
-                    if ($isCalled === true) {}',
+                class Foo {
+                    public static function hello(): void {
+                        echo "hello";
+                    }
+                }
+
+                $foo = new Foo();
+                run(array($foo, "hello"));',
             ],
+            'callableMethodOutOfClassContextNonStatic' => [
+                'code' => '<?php
+                /**
+                 * @param callable $callable
+                 * @return void
+                 */
+                function run($callable) {
+                    call_user_func($callable);
+                }
+
+                class Foo {
+                    public function hello(): void {
+                        echo "hello";
+                    }
+                }
+
+                $foo = new Foo();
+                run(array($foo, "hello"));',
+            ],
+            'callableClassStringArrayMethodOutOfClassContextStaticPublic' => [
+                'code' => '<?php
+                /**
+                 * @param callable $callable
+                 * @return void
+                 */
+                function run($callable) {
+                    call_user_func($callable);
+                }
+
+                class Foo {
+                    public static function hello(): void {
+                        echo "hello";
+                    }
+                }
+
+                run(array(Foo::class, "hello"));',
+            ],
+            'callableClassStringMethodOutOfClassContextStaticPublic' => [
+                'code' => '<?php
+                /**
+                 * @param callable $callable
+                 * @return void
+                 */
+                function run($callable) {
+                    call_user_func($callable);
+                }
+
+                class Foo {
+                    public static function hello(): void {
+                        echo "hello";
+                    }
+                }
+
+                run("Foo::hello");',
+            ],
+            'callableInClassStringArrayMethodOutOfClassContextStaticPublic' => [
+                'code' => '<?php
+                /**
+                 * @param callable $callable
+                 * @return void
+                 */
+                function run($callable) {
+                    call_user_func($callable);
+                }
+
+                class Foo {
+                    public function __construct() {
+                        run(array(Foo::class, "hello"));
+                    }
+
+                    public static function hello(): void {
+                        echo "hello";
+                    }
+                }',
+            ],
+            'callableInClassLiteralStringArrayMethodOutOfClassContextStaticPublic' => [
+                'code' => '<?php
+                /**
+                 * @param callable $callable
+                 * @return void
+                 */
+                function run($callable) {
+                    call_user_func($callable);
+                }
+
+                class Foo {
+                    public function __construct() {
+                        run(array("Foo", "hello"));
+                    }
+
+                    public static function hello(): void {
+                        echo "hello";
+                    }
+                }',
+            ],
+            'callableInClassConstantArrayMethodOutOfClassContextStaticPublic' => [
+                'code' => '<?php
+                /**
+                 * @param callable $callable
+                 * @return void
+                 */
+                function run($callable) {
+                    call_user_func($callable);
+                }
+
+                class Foo {
+                    public function __construct() {
+                        run(array(__CLASS__, "hello"));
+                    }
+
+                    public static function hello(): void {
+                        echo "hello";
+                    }
+                }',
+            ],
+            'callableInClassStringMethodOutOfClassContextStaticPublic' => [
+                'code' => '<?php
+                /**
+                 * @param callable $callable
+                 * @return void
+                 */
+                function run($callable) {
+                    call_user_func($callable);
+                }
+
+                class Foo {
+                    public function __construct() {
+                        run("Foo::hello");
+                    }
+
+                    public static function hello(): void {
+                        echo "hello";
+                    }
+                }',
+            ],
+            'callableInstanceArrayMethodOutOfClassContextNonStaticPublic' => [
+                'code' => '<?php
+                /**
+                 * @param callable $callable
+                 * @return void
+                 */
+                function run($callable) {
+                    call_user_func($callable);
+                }
+
+                class Foo {
+                    public function __construct() {
+                        run(array($this, "hello"));
+                    }
+
+                    public function hello(): void {
+                        echo "hello";
+                    }
+                }',
+            ],
+            'callableInstanceArrayMethodOutOfClassContextStaticPublic' => [
+                'code' => '<?php
+                /**
+                 * @param callable $callable
+                 * @return void
+                 */
+                function run($callable) {
+                    call_user_func($callable);
+                }
+
+                class Foo {
+                    public function __construct() {
+                        run(array($this, "hello"));
+                    }
+
+                    public static function hello(): void {
+                        echo "hello";
+                    }
+                }',
+            ],
+            'callableInstanceArrayMethodOutOfClassContextNonStatic' => [
+                'code' => '<?php
+                /**
+                 * @param callable $callable
+                 * @return void
+                 */
+                function run($callable) {
+                    call_user_func($callable);
+                }
+
+                class Foo {
+                    public function __construct() {
+                        run(array($this, "hello"));
+                    }
+
+                    public function hello(): void {
+                        echo "hello";
+                    }
+                }',
+            ],
+            'callableInstanceArrayMethodClassContextPhpNativeNonStaticNonPublic' => [
+                'code' => '<?php
+                class Foo {
+                    public function __construct() {
+                        call_user_func(array($this, "hello"));
+                    }
+
+                    private function hello(): void {
+                        echo "hello";
+                    }
+                }',
+            ],
+            'callableClassStringArrayMethodClassContextPhpNativeNonStaticNonPublic' => [
+                'code' => '<?php
+                class Foo {
+                    public function __construct() {
+                        call_user_func(array(Foo::class, "hello"));
+                    }
+
+                    protected function hello(): void {
+                        echo "hello";
+                    }
+                }',
+            ],
+            'callableClassLiteralStringMethodClassContextPhpNativeNonStaticNonPublic' => [
+                'code' => '<?php
+                class Foo {
+                    public function __construct() {
+                        call_user_func("Foo::hello");
+                    }
+
+                    protected function hello(): void {
+                        echo "hello";
+                    }
+                }',
+            ],
+            'callableClassConstantArrayMethodClassContextPhpNativeNonStaticNonPublic' => [
+                'code' => '<?php
+                class Foo {
+                    public function __construct() {
+                        call_user_func(array(__CLASS__, "hello"));
+                    }
+
+                    protected function hello(): void {
+                        echo "hello";
+                    }
+                }',
+            ],
+            'callableInstanceArrayMethodClassContextNonStaticPublic' => [
+                'code' => '<?php
+                class Foo {
+                    public function __construct() {
+                        $this->run_in_c(array($this, "hello"));
+                    }
+
+                    public function hello(): void {
+                        echo "hello";
+                    }
+
+                    /**
+                     * @param callable $callable
+                     * @return void
+                     */
+                    public function run_in_c($callable) {
+                        call_user_func($callable);
+                    }
+                }',
+            ],
+            'callableInstanceArrayMethodClassContextNonStaticNonPublic' => [
+                'code' => '<?php
+                class Foo {
+                    public function __construct() {
+                        $this->run_in_c(array($this, "hello"));
+                    }
+
+                    protected function hello(): void {
+                        echo "hello";
+                    }
+
+                    /**
+                     * @param callable $callable
+                     * @return void
+                     */
+                    private function run_in_c($callable) {
+                        call_user_func($callable);
+                    }
+                }',
+            ],
+            'callableClassConstantArrayMethodClassContextStaticNonPublic' => [
+                'code' => '<?php
+                class Foo {
+                    public function __construct() {
+                        $this->run_in_c(array(Foo::class, "hello"));
+                    }
+
+                    protected static function hello(): void {
+                        echo "hello";
+                    }
+
+                    /**
+                     * @param callable $callable
+                     * @return void
+                     */
+                    private function run_in_c($callable) {
+                        call_user_func($callable);
+                    }
+                }',
+            ],
+            'callableClassConstantArrayMethodClassContextNonStaticNonPublic' => [
+                'code' => '<?php
+                class Foo {
+                    public function __construct() {
+                        $this->run_in_c(array(Foo::class, "hello"));
+                    }
+
+                    protected function hello(): void {
+                        echo "hello";
+                    }
+
+                    /**
+                     * @param callable $callable
+                     * @return void
+                     */
+                    private function run_in_c($callable) {
+                        call_user_func($callable);
+                    }
+                }',
+            ],
+            'callableClassStringArrayMethodOtherClassContextStaticPublic' => [
+                'code' => '<?php
+                class Foo {
+                    public function __construct() {
+                        $bar = new Bar();
+                        $bar->run_in_c(array(Foo::class, "hello"));
+                    }
+
+                    public static function hello(): void {
+                        echo "hello";
+                    }
+                }
+
+                class Bar {
+                    /**
+                     * @param callable $callable
+                     * @return void
+                     */
+                    public function run_in_c($callable) {
+                        call_user_func($callable);
+                    }
+                }
+                ',
+            ],
+            'callableInstanceArrayMethodOtherClassContextNonStaticPublic' => [
+                'code' => '<?php
+                class Foo {
+                    public function __construct() {
+                        $bar = new Bar();
+                        $bar->run_in_c(array($this, "hello"));
+                    }
+
+                    public function hello(): void {
+                        echo "hello";
+                    }
+                }
+
+                class Bar {
+                    /**
+                     * @param callable $callable
+                     * @return void
+                     */
+                    public function run_in_c($callable) {
+                        call_user_func($callable);
+                    }
+                }
+                ',
+            ],
+            'callableClassLiteralStringMethodOtherClassContextStaticPublic' => [
+                'code' => '<?php
+                class Foo {
+                    public function __construct() {
+                        $bar = new Bar();
+                        $bar->run_in_c("Foo::hello");
+                    }
+
+                    public static function hello(): void {
+                        echo "hello";
+                    }
+                }
+
+                class Bar {
+                    /**
+                     * @param callable $callable
+                     * @return void
+                     */
+                    public function run_in_c($callable) {
+                        call_user_func($callable);
+                    }
+                }
+                ',
+            ],
+            # @todo valid
             'notCallableListNoUndefinedClass' => [
                 'code' => '<?php
                     /**
@@ -1806,6 +2211,48 @@ class CallableTest extends TestCase
                     function foo($arg): void {}
 
                     foo(["a", "b"]);',
+            ],
+            'notCallableArray' => [
+                'code' => '<?php
+                    /**
+                     * @param array{class-string, string}|callable $arg
+                     */
+                    function foo($arg): void {}
+
+                    foo([\DateTime::class, "format"]);',
+            ],
+            'notCallableString' => [
+                'code' => '<?php
+                    /**
+                     * @param string|callable $arg
+                     */
+                    function foo($arg): void {}
+
+                    foo("notACallable");',
+            ],
+            'callableOptionalOrAdditionalOptional' => [
+                'code' => '<?php
+                    /**
+                     * @param callable(string, string, string, string=):bool $arg
+                     * @return void
+                     */
+                    function foo($arg) {}
+
+                    function bar(string $a, string $b, string $c, string $d = ""): bool {}
+
+                    foo("bar");
+
+                    /**
+                     * @param callable(string, string, string):bool $arg
+                     * @return void
+                     */
+                    function foo1($arg) {}
+
+                    function bar1(string $a, string $b, string $c, string $d = ""): bool {}
+
+                    foo1("bar1");',
+                'assertions' => [],
+                'ignored_issues' => ['InvalidReturnType'],
             ],
             'abstractInvokeInTrait' => [
                 'code' => '<?php
@@ -1892,6 +2339,49 @@ class CallableTest extends TestCase
                         return [1, 2, 3];
                     });',
             ],
+            'unsealedAllOptionalCbParam' => [
+                'code' => '<?php
+                    /**
+                     * @param callable(array<string, string>) $arg
+                     * @return void
+                     */
+                    function foo($arg) {}
+
+                    /**
+                     * @param array{a?: string}&array<string, string> $cb_arg
+                     * @return void
+                     */
+                    function bar($cb_arg) {}
+
+                    foo("bar");',
+            ],
+            'callableWithNamedArguments' => [
+                'code' => <<<'PHP'
+                <?php
+                /** @param callable(int $i) $c */
+                function f(callable $c): void {
+                    $c(i: 1);
+                }
+                PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'callableArrayPassedAsCallable' => [
+                'code' => <<<'PHP'
+                <?php
+                function f(callable $c): void {
+                    $c();
+                }
+                /** @var object $o */;
+
+                $ca = [$o::class, 'createFromFormat'];
+                if (!is_callable($ca)) {
+                    exit;
+                }
+                f($ca);
+                PHP,
+            ],
         ];
     }
 
@@ -1917,7 +2407,7 @@ class CallableTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidFunctionCall',
-                'ignored_issues' => ['UndefinedClass', 'MixedInferredReturnType'],
+                'ignored_issues' => ['UndefinedClass'],
             ],
             'undefinedCallableMethodFullString' => [
                 'code' => '<?php
@@ -2123,6 +2613,128 @@ class CallableTest extends TestCase
                     new Func("f", ["Foo", "bar"]);',
                 'error_message' => 'InvalidArgument',
             ],
+            'invalidArrayCallable' => [
+                'code' => '<?php
+                    function foo(callable $callback) : void {
+                        $callback();
+                    }
+
+                    final class Bar {
+                        public static function baz() : void {}
+                    }
+
+                    foo([Bar::class, "baz", 1231233]);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'callableMissingOptional' => [
+                'code' => '<?php
+                    /**
+                     * @param callable(string=):bool $arg
+                     * @return void
+                     */
+                    function foo($arg) {}
+
+                    function bar(): bool {
+                        return rand(0, 10) > 5 ? true : false;
+                    }
+
+                    foo("bar");',
+                'error_message' => 'PossiblyInvalidArgument',
+            ],
+            'callableMissingOptionalThisArray' => [
+                'code' => '<?php
+                    /**
+                     * @param callable(string=):bool $arg
+                     * @return void
+                     */
+                    function foo($arg) {}
+
+                    class A {
+                        public function __construct() {
+                            foo([$this, "bar"]);
+                        }
+
+                        public function bar(): bool {
+                            return true;
+                        }
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+            ],
+            'callableMissingOptionalVariableInstanceArray' => [
+                'code' => '<?php
+                    /**
+                     * @param callable(string=):bool $arg
+                     * @return void
+                     */
+                    function foo($arg) {}
+
+                    class A {
+                        public function bar(): bool {
+                            return true;
+                        }
+                    }
+
+                    $a_instance = new A();
+                    $y = [$a_instance, "bar"];
+                    foo($y);',
+                'error_message' => 'PossiblyInvalidArgument',
+            ],
+            'callableMissingOptionalMultipleParams' => [
+                'code' => '<?php
+                    /**
+                     * @param callable(string, string, string, string=):bool $arg
+                     * @return void
+                     */
+                    function foo($arg) {}
+
+                    function bar(string $a, string $b, string $c): bool {}
+
+                    foo("bar");',
+                'error_message' => 'PossiblyInvalidArgument',
+                'ignored_issues' => ['InvalidReturnType'],
+            ],
+            'callableMissingRequiredMultipleParams' => [
+                'code' => '<?php
+                    /**
+                     * @param callable(string, string, string, string):bool $arg
+                     * @return void
+                     */
+                    function foo($arg) {}
+
+                    function bar(string $a, string $b, string $c): bool {}
+
+                    foo("bar");',
+                'error_message' => 'PossiblyInvalidArgument',
+                'ignored_issues' => ['InvalidReturnType'],
+            ],
+            'callableAdditionalRequiredParam' => [
+                'code' => '<?php
+                    /**
+                     * @param callable(string, string, string):bool $arg
+                     * @return void
+                     */
+                    function foo($arg) {}
+
+                    function bar(string $a, string $b, string $c, string $d): bool {}
+
+                    foo("bar");',
+                'error_message' => 'InvalidArgument',
+                'ignored_issues' => ['InvalidReturnType'],
+            ],
+            'callableMultipleParamsWithOptional' => [
+                'code' => '<?php
+                    /**
+                     * @param callable(string, string, string=):bool $arg
+                     * @return void
+                     */
+                    function foo($arg) {}
+
+                    function bar(string $a, string $b, string $c): bool {}
+
+                    foo("bar");',
+                'error_message' => 'PossiblyInvalidArgument',
+                'ignored_issues' => ['InvalidReturnType'],
+            ],
             'preventStringDocblockType' => [
                 'code' => '<?php
                     /**
@@ -2187,6 +2799,540 @@ class CallableTest extends TestCase
                     $a();',
                 'error_message' => 'InvalidFunctionCall',
             ],
+            'callableMethodOutOfClassContextNonPublic' => [
+                'code' => '<?php
+                /**
+                 * @param callable $callable
+                 * @return void
+                 */
+                function run($callable) {
+                    call_user_func($callable);
+                }
+
+                class Foo {
+                    private static function hello(): void {
+                        echo "hello";
+                    }
+                }
+
+                $foo = new Foo();
+                run(array($foo, "hello"));',
+                'error_message' => 'InvalidArgument',
+            ],
+            'callableMethodOutOfClassContextNonStaticNonPublic' => [
+                'code' => '<?php
+                /**
+                 * @param callable $callable
+                 * @return void
+                 */
+                function run($callable) {
+                    call_user_func($callable);
+                }
+
+                class Foo {
+                    protected function hello(): void {
+                        echo "hello";
+                    }
+                }
+
+                $foo = new Foo();
+                run(array($foo, "hello"));',
+                'error_message' => 'InvalidArgument',
+            ],
+            'callableClassStringArrayMethodOutOfClassContextNonStatic' => [
+                'code' => '<?php
+                /**
+                 * @param callable $callable
+                 * @return void
+                 */
+                function run($callable) {
+                    call_user_func($callable);
+                }
+
+                class Foo {
+                    public function hello(): void {
+                        echo "hello";
+                    }
+                }
+
+                run(array(Foo::class, "hello"));',
+                'error_message' => 'InvalidArgument',
+            ],
+            'callableClassStringArrayMethodOutOfClassContextNonPublic' => [
+                'code' => '<?php
+                /**
+                 * @param callable $callable
+                 * @return void
+                 */
+                function run($callable) {
+                    call_user_func($callable);
+                }
+
+                class Foo {
+                    private static function hello(): void {
+                        echo "hello";
+                    }
+                }
+
+                run(array(Foo::class, "hello"));',
+                'error_message' => 'InvalidArgument',
+            ],
+            'callableClassStringArrayMethodOutOfClassContextNonStaticNonPublic' => [
+                'code' => '<?php
+                /**
+                 * @param callable $callable
+                 * @return void
+                 */
+                function run($callable) {
+                    call_user_func($callable);
+                }
+
+                class Foo {
+                    protected function hello(): void {
+                        echo "hello";
+                    }
+                }
+
+                run(array(Foo::class, "hello"));',
+                'error_message' => 'InvalidArgument',
+            ],
+            'callableClassStringMethodOutOfClassContextNonStatic' => [
+                'code' => '<?php
+                /**
+                 * @param callable $callable
+                 * @return void
+                 */
+                function run($callable) {
+                    call_user_func($callable);
+                }
+
+                class Foo {
+                    public function hello(): void {
+                        echo "hello";
+                    }
+                }
+
+                run("Foo::hello");',
+                'error_message' => 'InvalidArgument',
+            ],
+            'callableClassStringMethodOutOfClassContextNonPublic' => [
+                'code' => '<?php
+                /**
+                 * @param callable $callable
+                 * @return void
+                 */
+                function run($callable) {
+                    call_user_func($callable);
+                }
+
+                class Foo {
+                    private static function hello(): void {
+                        echo "hello";
+                    }
+                }
+
+                run("Foo::hello");',
+                'error_message' => 'InvalidArgument',
+            ],
+            'callableClassStringMethodOutOfClassContextNonStaticNonPublic' => [
+                'code' => '<?php
+                /**
+                 * @param callable $callable
+                 * @return void
+                 */
+                function run($callable) {
+                    call_user_func($callable);
+                }
+
+                class Foo {
+                    protected function hello(): void {
+                        echo "hello";
+                    }
+                }
+
+                run("Foo::hello");',
+                'error_message' => 'InvalidArgument',
+            ],
+            'callableInClassStringArrayMethodOutOfClassContextNonStatic' => [
+                'code' => '<?php
+                /**
+                 * @param callable $callable
+                 * @return void
+                 */
+                function run($callable) {
+                    call_user_func($callable);
+                }
+
+                class Foo {
+                    public function __construct() {
+                        run(array(Foo::class, "hello"));
+                    }
+
+                    public function hello(): void {
+                        echo "hello";
+                    }
+                }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'callableInClassStringArrayMethodOutOfClassContextNonPublic' => [
+                'code' => '<?php
+                /**
+                 * @param callable $callable
+                 * @return void
+                 */
+                function run($callable) {
+                    call_user_func($callable);
+                }
+
+                class Foo {
+                    public function __construct() {
+                        run(array(Foo::class, "hello"));
+                    }
+
+                    private static function hello(): void {
+                        echo "hello";
+                    }
+                }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'callableInClassStringArrayMethodOutOfClassContextNonStaticNonPublic' => [
+                'code' => '<?php
+                /**
+                 * @param callable $callable
+                 * @return void
+                 */
+                function run($callable) {
+                    call_user_func($callable);
+                }
+
+                class Foo {
+                    public function __construct() {
+                        run(array(Foo::class, "hello"));
+                    }
+
+                    protected function hello(): void {
+                        echo "hello";
+                    }
+                }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'callableInClassLiteralStringArrayMethodOutOfClassContextNonStatic' => [
+                'code' => '<?php
+                /**
+                 * @param callable $callable
+                 * @return void
+                 */
+                function run($callable) {
+                    call_user_func($callable);
+                }
+
+                class Foo {
+                    public function __construct() {
+                        run(array("Foo", "hello"));
+                    }
+
+                    public function hello(): void {
+                        echo "hello";
+                    }
+                }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'callableInClassLiteralStringArrayMethodOutOfClassContextNonPublic' => [
+                'code' => '<?php
+                /**
+                 * @param callable $callable
+                 * @return void
+                 */
+                function run($callable) {
+                    call_user_func($callable);
+                }
+
+                class Foo {
+                    public function __construct() {
+                        run(array("Foo", "hello"));
+                    }
+
+                    private static function hello(): void {
+                        echo "hello";
+                    }
+                }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'callableInClassLiteralStringArrayMethodOutOfClassContextNonStaticNonPublic' => [
+                'code' => '<?php
+                /**
+                 * @param callable $callable
+                 * @return void
+                 */
+                function run($callable) {
+                    call_user_func($callable);
+                }
+
+                class Foo {
+                    public function __construct() {
+                        run(array("Foo", "hello"));
+                    }
+
+                    protected function hello(): void {
+                        echo "hello";
+                    }
+                }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'callableInClassConstantArrayMethodOutOfClassContextNonStatic' => [
+                'code' => '<?php
+                /**
+                 * @param callable $callable
+                 * @return void
+                 */
+                function run($callable) {
+                    call_user_func($callable);
+                }
+
+                class Foo {
+                    public function __construct() {
+                        run(array(__CLASS__, "hello"));
+                    }
+
+                    public function hello(): void {
+                        echo "hello";
+                    }
+                }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'callableInClassConstantArrayMethodOutOfClassContextNonPublic' => [
+                'code' => '<?php
+                /**
+                 * @param callable $callable
+                 * @return void
+                 */
+                function run($callable) {
+                    call_user_func($callable);
+                }
+
+                class Foo {
+                    public function __construct() {
+                        run(array(__CLASS__, "hello"));
+                    }
+
+                    private static function hello(): void {
+                        echo "hello";
+                    }
+                }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'callableInClassConstantArrayMethodOutOfClassContextNonStaticNonPublic' => [
+                'code' => '<?php
+                /**
+                 * @param callable $callable
+                 * @return void
+                 */
+                function run($callable) {
+                    call_user_func($callable);
+                }
+
+                class Foo {
+                    public function __construct() {
+                        run(array(__CLASS__, "hello"));
+                    }
+
+                    protected function hello(): void {
+                        echo "hello";
+                    }
+                }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'callableInClassStringMethodOutOfClassContextNonStatic' => [
+                'code' => '<?php
+                /**
+                 * @param callable $callable
+                 * @return void
+                 */
+                function run($callable) {
+                    call_user_func($callable);
+                }
+
+                class Foo {
+                    public function __construct() {
+                        run("Foo::hello");
+                    }
+
+                    public function hello(): void {
+                        echo "hello";
+                    }
+                }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'callableInClassStringMethodOutOfClassContextNonPublic' => [
+                'code' => '<?php
+                /**
+                 * @param callable $callable
+                 * @return void
+                 */
+                function run($callable) {
+                    call_user_func($callable);
+                }
+
+                class Foo {
+                    public function __construct() {
+                        run("Foo::hello");
+                    }
+
+                    private static function hello(): void {
+                        echo "hello";
+                    }
+                }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'callableInClassStringMethodOutOfClassContextNonStaticNonPublic' => [
+                'code' => '<?php
+                /**
+                 * @param callable $callable
+                 * @return void
+                 */
+                function run($callable) {
+                    call_user_func($callable);
+                }
+
+                class Foo {
+                    public function __construct() {
+                        run("Foo::hello");
+                    }
+
+                    protected function hello(): void {
+                        echo "hello";
+                    }
+                }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'callableInstanceArrayMethodClassContextPhpNativeUnsupportedNonStaticNonPublic' => [
+                'code' => '<?php
+                class Foo {
+                    public function __construct() {
+                        header_register_callback(array($this, "hello"));
+                    }
+
+                    private function hello(): void {
+                        header("X-Test: hello");
+                    }
+                }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'callableInstanceArrayMethodOutOfClassContextNonStaticNonPublic' => [
+                'code' => '<?php
+                /**
+                 * @param callable $callable
+                 * @return void
+                 */
+                function run($callable) {
+                    call_user_func($callable);
+                }
+
+                class Foo {
+                    public function __construct() {
+                        run(array($this, "hello"));
+                    }
+
+                    protected function hello(): void {
+                        echo "hello";
+                    }
+                }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'callableInstanceArrayMethodOutOfClassContextStaticNonPublic' => [
+                'code' => '<?php
+                /**
+                 * @param callable $callable
+                 * @return void
+                 */
+                function run($callable) {
+                    call_user_func($callable);
+                }
+
+                class Foo {
+                    public function __construct() {
+                        run(array($this, "hello"));
+                    }
+
+                    protected static function hello(): void {
+                        echo "hello";
+                    }
+                }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'callableClassStringArrayMethodOtherClassContextNonStaticPublic' => [
+                'code' => '<?php
+                class Foo {
+                    public function __construct() {
+                        $bar = new Bar();
+                        $bar->run_in_c(array(Foo::class, "hello"));
+                    }
+
+                    public function hello(): void {
+                        echo "hello";
+                    }
+                }
+
+                class Bar {
+                    /**
+                     * @param callable $callable
+                     * @return void
+                     */
+                    public function run_in_c($callable) {
+                        call_user_func($callable);
+                    }
+                }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'callableInstanceArrayMethodOtherClassContextNonStaticNonPublic' => [
+                'code' => '<?php
+                class Foo {
+                    public function __construct() {
+                        $bar = new Bar();
+                        $bar->run_in_c(array($this, "hello"));
+                    }
+
+                    protected function hello(): void {
+                        echo "hello";
+                    }
+                }
+
+                class Bar {
+                    /**
+                     * @param callable $callable
+                     * @return void
+                     */
+                    public function run_in_c($callable) {
+                        call_user_func($callable);
+                    }
+                }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'callableClassLiteralStringMethodOtherClassContextStaticNonPublic' => [
+                'code' => '<?php
+                class Foo {
+                    public function __construct() {
+                        $bar = new Bar();
+                        $bar->run_in_c("Foo::hello");
+                    }
+
+                    protected static function hello(): void {
+                        echo "hello";
+                    }
+                }
+
+                class Bar {
+                    /**
+                     * @param callable $callable
+                     * @return void
+                     */
+                    public function run_in_c($callable) {
+                        call_user_func($callable);
+                    }
+                }',
+                'error_message' => 'InvalidArgument',
+            ],
+            # @todo invalid
             'ImpureFunctionCall' => [
                 'code' => '<?php
                     /**
@@ -2244,7 +3390,7 @@ class CallableTest extends TestCase
                     }',
                 'error_message' => 'InvalidArgument',
             ],
-            'inexistantCallableinCallableString' => [
+            'inexistentCallableinCallableString' => [
                 'code' => '<?php
                     /**
                      * @param callable-string $c
@@ -2291,6 +3437,125 @@ class CallableTest extends TestCase
                         );
                     }',
                 'error_message' => 'InvalidArgument',
+            ],
+            'callableArrayParentConstantDeprecated' => [
+                'code' => '<?php
+                class Z {
+                    public static function hello(): void {
+                        echo "hello";
+                    }
+                }
+
+                class A extends Z {
+                    public function __construct() {
+                        $this->run(["parent", "hello"]);
+                    }
+
+                    /**
+                     * @param callable $callable
+                     * @return void
+                     */
+                    public function run($callable) {
+                        call_user_func($callable);
+                    }
+                }',
+                'error_message' => 'DeprecatedConstant',
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'callableParentConstantDeprecated' => [
+                'code' => '<?php
+                class Z {
+                    public static function hello(): void {
+                        echo "hello";
+                    }
+                }
+
+                class A extends Z {
+                    public function __construct() {
+                        $this->run("parent::hello");
+                    }
+
+                    /**
+                     * @param callable $callable
+                     * @return void
+                     */
+                    public function run($callable) {
+                        call_user_func($callable);
+                    }
+                }',
+                'error_message' => 'DeprecatedConstant',
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'callableSelfConstantDeprecated' => [
+                'code' => '<?php
+                class A {
+                    public function __construct() {
+                        $this->run("self::hello");
+                    }
+
+                    public static function hello(): void {
+                        echo "hello";
+                    }
+
+                    /**
+                     * @param callable $callable
+                     * @return void
+                     */
+                    public function run($callable) {
+                        call_user_func($callable);
+                    }
+                }',
+                'error_message' => 'DeprecatedConstant',
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'callableStaticConstantDeprecated' => [
+                'code' => '<?php
+                class A {
+                    public function __construct() {
+                        $this->run("static::hello");
+                    }
+
+                    public static function hello(): void {
+                        echo "hello";
+                    }
+
+                    /**
+                     * @param callable $callable
+                     * @return void
+                     */
+                    public function run($callable) {
+                        call_user_func($callable);
+                    }
+                }',
+                'error_message' => 'DeprecatedConstant',
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'callableArrayStaticConstantDeprecated' => [
+                'code' => '<?php
+                class A {
+                    public function __construct() {
+                        $this->run(["static", "hello"]);
+                    }
+
+                    public static function hello(): void {
+                        echo "hello";
+                    }
+
+                    /**
+                     * @param callable $callable
+                     * @return void
+                     */
+                    public function run($callable) {
+                        call_user_func($callable);
+                    }
+                }',
+                'error_message' => 'DeprecatedConstant',
+                'ignored_issues' => [],
+                'php_version' => '8.2',
             ],
             'invalidFirstClassCallableCannotBeInferred' => [
                 'code' => '<?php
@@ -2355,6 +3620,62 @@ class CallableTest extends TestCase
                 'error_message' => 'InvalidScalarArgument',
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'callableWithInvalidNamedArguments' => [
+                'code' => <<<'PHP'
+                <?php
+                /** @param callable(int $a) $c */
+                function f(callable $c): void {
+                    $c(b: 1);
+                }
+                PHP,
+                'error_message' => 'InvalidNamedArgument',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'parentCallableArrayWithoutParent' => [
+                'code' => '<?php
+                class A {
+                    public function __construct() {
+                        $this->run(["parent", "hello"]);
+                    }
+
+                    /**
+                     * @param callable $callable
+                     * @return void
+                     */
+                    public function run($callable) {
+                        call_user_func($callable);
+                    }
+                }',
+                'error_message' => 'ParentNotFound',
+            ],
+            'parentCallableWithoutParent' => [
+                'code' => '<?php
+                class A {
+                    public function __construct() {
+                        $this->run("parent::hello");
+                    }
+
+                    /**
+                     * @param callable $callable
+                     * @return void
+                     */
+                    public function run($callable) {
+                        call_user_func($callable);
+                    }
+                }',
+                'error_message' => 'ParentNotFound',
+            ],
+            'wrongCallableInUnion' => [
+                'code' => '<?php
+                    /**
+                     * @param int|callable $arg
+                     */
+                    function foo($arg): void {}
+
+                    foo([\DateTime::class, "wrongMethod"]);',
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }

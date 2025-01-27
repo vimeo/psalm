@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Plugin\EventHandler\Event;
 
+use PhpParser\Node\Stmt;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\StatementsSource;
@@ -11,26 +12,19 @@ use Psalm\Storage\FileStorage;
 
 final class BeforeFileAnalysisEvent
 {
-    private StatementsSource $statements_source;
-    private Context $file_context;
-    private FileStorage $file_storage;
-    private Codebase $codebase;
-
     /**
      * Called before a file has been checked
      *
+     * @param list<Stmt> $stmts
      * @internal
      */
     public function __construct(
-        StatementsSource $statements_source,
-        Context $file_context,
-        FileStorage $file_storage,
-        Codebase $codebase,
+        private readonly StatementsSource $statements_source,
+        private readonly Context $file_context,
+        private readonly FileStorage $file_storage,
+        private readonly Codebase $codebase,
+        private readonly array $stmts,
     ) {
-        $this->statements_source = $statements_source;
-        $this->file_context = $file_context;
-        $this->file_storage = $file_storage;
-        $this->codebase = $codebase;
     }
 
     public function getStatementsSource(): StatementsSource
@@ -51,5 +45,13 @@ final class BeforeFileAnalysisEvent
     public function getCodebase(): Codebase
     {
         return $this->codebase;
+    }
+
+    /**
+     * @return list<Stmt>
+     */
+    public function getStmts(): array
+    {
+        return $this->stmts;
     }
 }

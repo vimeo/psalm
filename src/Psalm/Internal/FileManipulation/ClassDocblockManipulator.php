@@ -26,15 +26,13 @@ final class ClassDocblockManipulator
      */
     private static array $manipulators = [];
 
-    private Class_ $stmt;
+    private readonly int $docblock_start;
 
-    private int $docblock_start;
-
-    private int $docblock_end;
+    private readonly int $docblock_end;
 
     private bool $immutable = false;
 
-    private string $indentation;
+    private readonly string $indentation;
 
     public static function getForClass(
         ProjectAnalyzer $project_analyzer,
@@ -54,10 +52,9 @@ final class ClassDocblockManipulator
 
     private function __construct(
         ProjectAnalyzer $project_analyzer,
-        Class_ $stmt,
+        private readonly Class_ $stmt,
         string $file_path,
     ) {
-        $this->stmt = $stmt;
         $docblock = $stmt->getDocComment();
         $this->docblock_start = $docblock ? $docblock->getStartFilePos() : (int)$stmt->getAttribute('startFilePos');
         $this->docblock_end = (int)$stmt->getAttribute('startFilePos');

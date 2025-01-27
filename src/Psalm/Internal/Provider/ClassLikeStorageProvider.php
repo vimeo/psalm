@@ -8,7 +8,6 @@ use InvalidArgumentException;
 use LogicException;
 use Psalm\Storage\ClassLikeStorage;
 
-use function array_merge;
 use function strtolower;
 
 /**
@@ -28,11 +27,8 @@ final class ClassLikeStorageProvider
      */
     private static array $new_storage = [];
 
-    public ?ClassLikeStorageCacheProvider $cache = null;
-
-    public function __construct(?ClassLikeStorageCacheProvider $cache = null)
+    public function __construct(public ?ClassLikeStorageCacheProvider $cache = null)
     {
-        $this->cache = $cache;
     }
 
     /**
@@ -103,8 +99,8 @@ final class ClassLikeStorageProvider
      */
     public function addMore(array $more): void
     {
-        self::$new_storage = array_merge(self::$new_storage, $more);
-        self::$storage = array_merge(self::$storage, $more);
+        self::$new_storage = [...self::$new_storage, ...$more];
+        self::$storage = [...self::$storage, ...$more];
     }
 
     public function makeNew(string $fq_classlike_name_lc): void

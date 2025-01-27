@@ -82,6 +82,8 @@ use function number_format;
 use function preg_match;
 use function rename;
 use function sprintf;
+use function str_ends_with;
+use function str_starts_with;
 use function strlen;
 use function strpos;
 use function strtolower;
@@ -100,24 +102,24 @@ final class ProjectAnalyzer
     /**
      * Cached config
      */
-    private Config $config;
+    private readonly Config $config;
 
     public static ProjectAnalyzer $instance;
 
     /**
      * An object representing everything we know about the code
      */
-    private Codebase $codebase;
+    private readonly Codebase $codebase;
 
-    private FileProvider $file_provider;
+    private readonly FileProvider $file_provider;
 
-    private ClassLikeStorageProvider $classlike_storage_provider;
+    private readonly ClassLikeStorageProvider $classlike_storage_provider;
 
     private ?ParserCacheProvider $parser_cache_provider = null;
 
     public ?ProjectCacheProvider $project_cache_provider = null;
 
-    private FileReferenceProvider $file_reference_provider;
+    private readonly FileReferenceProvider $file_reference_provider;
 
     public Progress $progress;
 
@@ -162,18 +164,9 @@ final class ProjectAnalyzer
      */
     private array $to_refactor = [];
 
-    public ?ReportOptions $stdout_report_options = null;
-
-    /**
-     * @var array<ReportOptions>
-     */
-    public array $generated_report_options;
-
     /** @internal */
     public Pool $pool;
 
-    /** @internal */
-    public int $threads;
     /**
      * @var array<int, class-string<CodeIssue>>
      */
@@ -203,7 +196,7 @@ final class ProjectAnalyzer
 
     private const PHP_VERSION_REGEX = '^(0|[1-9]\d*)\.(0|[1-9]\d*)(?:\..*)?$';
 
-    private const PHP_SUPPORTED_VERSIONS_REGEX = '^(5\.[456]|7\.[01234]|8\.[0123])(\..*)?$';
+    private const PHP_SUPPORTED_VERSIONS_REGEX = '^(5\.[456]|7\.[01234]|8\.[01234])(\..*)?$';
 
     /**
      * @param array<ReportOptions> $generated_report_options
@@ -211,9 +204,9 @@ final class ProjectAnalyzer
     public function __construct(
         Config $config,
         Providers $providers,
-        ?ReportOptions $stdout_report_options = null,
-        array $generated_report_options = [],
-        int $threads = 1,
+        public ?ReportOptions $stdout_report_options = null,
+        public array $generated_report_options = [],
+        public int $threads = 1,
         ?Progress $progress = null,
         ?Codebase $codebase = null,
     ) {
@@ -236,15 +229,11 @@ final class ProjectAnalyzer
         $this->file_reference_provider = $providers->file_reference_provider;
 
         $this->progress = $progress;
-        $this->threads = $threads;
         $this->config = $config;
 
         $this->clearCacheDirectoryIfConfigOrComposerLockfileChanged();
 
         $this->codebase = $codebase;
-
-        $this->stdout_report_options = $stdout_report_options;
-        $this->generated_report_options = $generated_report_options;
 
         $this->config->processPluginFileExtensions($this);
         $file_extensions = $this->config->getFileExtensions();
@@ -253,7 +242,7 @@ final class ProjectAnalyzer
             $file_paths = $this->file_provider->getFilesInDir(
                 $dir_name,
                 $file_extensions,
-                [$this->config, 'isInProjectDirs'],
+                $this->config->isInProjectDirs(...),
             );
 
             foreach ($file_paths as $file_path) {
@@ -265,7 +254,7 @@ final class ProjectAnalyzer
             $file_paths = $this->file_provider->getFilesInDir(
                 $dir_name,
                 $file_extensions,
-                [$this->config, 'isInExtraDirs'],
+                $this->config->isInExtraDirs(...),
             );
 
             foreach ($file_paths as $file_path) {
@@ -338,25 +327,11 @@ final class ProjectAnalyzer
     {
         $report_options = [];
 
-        $mapping = [
-            'checkstyle.xml' => Report::TYPE_CHECKSTYLE,
-            'sonarqube.json' => Report::TYPE_SONARQUBE,
-            'codeclimate.json' => Report::TYPE_CODECLIMATE,
-            'summary.json' => Report::TYPE_JSON_SUMMARY,
-            'junit.xml' => Report::TYPE_JUNIT,
-            '.xml' => Report::TYPE_XML,
-            '.json' => Report::TYPE_JSON,
-            '.txt' => Report::TYPE_TEXT,
-            '.emacs' => Report::TYPE_EMACS,
-            '.pylint' => Report::TYPE_PYLINT,
-            '.console' => Report::TYPE_CONSOLE,
-            '.sarif' => Report::TYPE_SARIF,
-            'count.txt' => Report::TYPE_COUNT,
-        ];
+        $mapping = Report::getMapping();
 
         foreach ($report_file_paths as $report_file_path) {
             foreach ($mapping as $extension => $type) {
-                if (substr($report_file_path, -strlen($extension)) === $extension) {
+                if (str_ends_with($report_file_path, $extension)) {
                     $o = new ReportOptions();
 
                     $o->format = $type;
@@ -527,6 +502,7 @@ final class ProjectAnalyzer
 
             $this->codebase->infer_types_from_usage = true;
         } else {
+            $this->codebase->diff_run = true;
             $this->progress->debug(count($diff_files) . ' changed files: ' . "\n");
             $this->progress->debug('    ' . implode("\n    ", $diff_files) . "\n");
 
@@ -613,7 +589,7 @@ final class ProjectAnalyzer
                 && $destination_pos === (strlen($destination) - 1)
             ) {
                 foreach ($this->codebase->classlike_storage_provider->getAll() as $class_storage) {
-                    if (strpos($source, substr($class_storage->name, 0, $source_pos)) === 0) {
+                    if (str_starts_with($source, substr($class_storage->name, 0, $source_pos))) {
                         $this->to_refactor[$class_storage->name]
                             = substr($destination, 0, -1) . substr($class_storage->name, $source_pos);
                     }
@@ -938,7 +914,7 @@ final class ProjectAnalyzer
     private function checkDirWithConfig(string $dir_name, Config $config, bool $allow_non_project_files = false): void
     {
         $file_extensions = $config->getFileExtensions();
-        $filter = $allow_non_project_files ? null : [$this->config, 'isInProjectDirs'];
+        $filter = $allow_non_project_files ? null : $this->config->isInProjectDirs(...);
 
         $file_paths = $this->file_provider->getFilesInDir(
             $dir_name,
@@ -968,7 +944,7 @@ final class ProjectAnalyzer
     /**
      * @return list<string>
      */
-    protected function getDiffFiles(): array
+    private function getDiffFiles(): array
     {
         if (!$this->parser_cache_provider || !$this->project_cache_provider) {
             throw new UnexpectedValueException('Parser cache provider cannot be null here');
@@ -1049,6 +1025,9 @@ final class ProjectAnalyzer
      */
     public function checkPaths(array $paths_to_check): void
     {
+        $this->progress->write($this->generatePHPVersionMessage());
+        $this->progress->startScanningFiles();
+
         $this->config->visitPreloadedStubFiles($this->codebase, $this->progress);
         $this->visitAutoloadFiles();
 
@@ -1068,15 +1047,16 @@ final class ProjectAnalyzer
 
         $this->file_reference_provider->loadReferenceCache();
 
-        $this->progress->write($this->generatePHPVersionMessage());
-        $this->progress->startScanningFiles();
-
         $this->config->initializePlugins($this);
 
 
         $this->codebase->scanFiles();
 
         $this->config->visitStubFiles($this->codebase, $this->progress);
+
+        $event = new AfterCodebasePopulatedEvent($this->codebase);
+
+        $this->config->eventDispatcher->dispatchAfterCodebasePopulated($event);
 
         $this->progress->startAnalyzingFiles();
 
@@ -1203,8 +1183,7 @@ final class ProjectAnalyzer
         $analysis_php_version_id = $php_major_version * 10_000 + $php_minor_version * 100;
 
         if ($this->codebase->analysis_php_version_id !== $analysis_php_version_id) {
-            // reset lexer and parser when php version changes
-            StatementsProvider::clearLexer();
+            // reset parser when php version changes
             StatementsProvider::clearParser();
         }
 

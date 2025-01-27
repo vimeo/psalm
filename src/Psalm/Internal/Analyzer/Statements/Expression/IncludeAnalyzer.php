@@ -22,6 +22,7 @@ use Psalm\Issue\UnresolvableInclude;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type\TaintKind;
+use Symfony\Component\Filesystem\Path;
 
 use function constant;
 use function defined;
@@ -95,13 +96,7 @@ final class IncludeAnalyzer
             $include_path = self::resolveIncludePath($path_to_file, dirname($statements_analyzer->getFilePath()));
             $path_to_file = $include_path ?: $path_to_file;
 
-            if (DIRECTORY_SEPARATOR === '/') {
-                $is_path_relative = $path_to_file[0] !== DIRECTORY_SEPARATOR;
-            } else {
-                $is_path_relative = !preg_match('~^[A-Z]:\\\\~i', $path_to_file);
-            }
-
-            if ($is_path_relative) {
+            if (Path::isRelative($path_to_file)) {
                 $path_to_file = $config->base_dir . DIRECTORY_SEPARATOR . $path_to_file;
             }
         } else {
@@ -209,7 +204,7 @@ final class IncludeAnalyzer
                         $context,
                         $global_context,
                     );
-                } catch (UnpreparedAnalysisException $e) {
+                } catch (UnpreparedAnalysisException) {
                     if ($config->skip_checks_on_unresolvable_includes) {
                         $context->check_classes = false;
                         $context->check_variables = false;
@@ -287,13 +282,7 @@ final class IncludeAnalyzer
         string $file_name,
         Config $config,
     ): ?string {
-        if (DIRECTORY_SEPARATOR === '/') {
-            $is_path_relative = $file_name[0] !== DIRECTORY_SEPARATOR;
-        } else {
-            $is_path_relative = !preg_match('~^[A-Z]:\\\\~i', $file_name);
-        }
-
-        if ($is_path_relative) {
+        if (Path::isRelative($file_name)) {
             $file_name = $config->base_dir . DIRECTORY_SEPARATOR . $file_name;
         }
 
@@ -343,7 +332,7 @@ final class IncludeAnalyzer
                 $dir_level = 1;
 
                 if (isset($stmt->getArgs()[1])) {
-                    if ($stmt->getArgs()[1]->value instanceof PhpParser\Node\Scalar\LNumber) {
+                    if ($stmt->getArgs()[1]->value instanceof PhpParser\Node\Scalar\Int_) {
                         $dir_level = $stmt->getArgs()[1]->value->value;
                     } else {
                         if ($statements_analyzer) {

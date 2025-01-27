@@ -157,7 +157,7 @@ class WhileTest extends TestCase
                     }
 
                     while ($a = foo()) {
-                      if ($a->bar) {}
+                      if ($a->bar !== null) {}
                     }',
             ],
             'whileTrueWithBreak' => [
@@ -273,7 +273,7 @@ class WhileTest extends TestCase
                     $c = null;
 
                     while (rand(0, 1)) {
-                        if (!$c) {
+                        if ($c === null || $c === "" || $c === "0") {
                             foo($c);
                         } else {
                             bar($c);
@@ -373,7 +373,7 @@ class WhileTest extends TestCase
                         }
                     }',
             ],
-            'assingnedConditionallyReassignedToMixedInLoop' => [
+            'assignedConditionallyReassignedToMixedInLoop' => [
                 'code' => '<?php
                     function foo(array $arr): void {
                         while (rand(0, 1)) {
@@ -643,7 +643,7 @@ class WhileTest extends TestCase
 
                         private function getResult(): string
                         {
-                            // return tring or throw exception whatever
+                            // return string or throw exception whatever
                             throw new Exception();
                         }
 

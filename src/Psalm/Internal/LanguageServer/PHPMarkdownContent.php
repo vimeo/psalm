@@ -17,18 +17,8 @@ use function get_object_vars;
  */
 final class PHPMarkdownContent extends MarkupContent implements JsonSerializable
 {
-    public string $code;
-
-    public ?string $title = null;
-
-    public ?string $description = null;
-
-    public function __construct(string $code, ?string $title = null, ?string $description = null)
+    public function __construct(public string $code, public ?string $title = null, public ?string $description = null)
     {
-        $this->code = $code;
-        $this->title = $title;
-        $this->description = $description;
-
         $markdown = '';
         if ($title !== null) {
             $markdown = "**$title**\n\n";

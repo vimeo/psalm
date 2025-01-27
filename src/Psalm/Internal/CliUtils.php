@@ -41,6 +41,7 @@ use function preg_last_error_msg;
 use function preg_replace;
 use function preg_split;
 use function realpath;
+use function str_starts_with;
 use function stream_get_meta_data;
 use function stream_set_blocking;
 use function strlen;
@@ -236,7 +237,7 @@ final class CliUtils
             }
 
             if ($input_path[0] === '-' && strlen($input_path) === 2) {
-                if ($input_path[1] === 'c' || $input_path[1] === 'f') {
+                if ($input_path[1] === 'c' || $input_path[1] === 'f' || $input_path[1] === 'r') {
                     ++$i;
                 }
                 continue;
@@ -275,7 +276,7 @@ final class CliUtils
             $input_path = $input_paths[$i];
 
             if ($input_path[0] === '-' && strlen($input_path) === 2) {
-                if ($input_path[1] === 'c' || $input_path[1] === 'f') {
+                if ($input_path[1] === 'c' || $input_path[1] === 'f' || $input_path[1] === 'r') {
                     ++$i;
                 }
                 continue;
@@ -285,8 +286,12 @@ final class CliUtils
                 continue;
             }
 
-            if (strpos($input_path, '--') === 0 && strlen($input_path) > 2) {
-                if (substr($input_path, 2) === 'config') {
+            if (str_starts_with($input_path, '--') && strlen($input_path) > 2) {
+                // ignore --config psalm.xml
+                // ignore common phpunit args that accept a class instead of a path, as this can cause issues on Windows
+                $ignored_arguments = ['config', 'printer', 'root'];
+
+                if (in_array(substr($input_path, 2), $ignored_arguments, true)) {
                     ++$i;
                 }
                 continue;
@@ -480,7 +485,8 @@ final class CliUtils
 
         if (isset($options['php-version'])) {
             if (!is_string($options['php-version'])) {
-                die('Expecting a version number in the format x.y' . PHP_EOL);
+                fwrite(STDERR, 'Expecting a version number in the format x.y' . PHP_EOL);
+                exit(1);
             }
             $version = $options['php-version'];
             $source = 'cli';
@@ -511,14 +517,15 @@ final class CliUtils
             || isset($_SERVER['JENKINS_URL'])
             || isset($_SERVER['SCRUTINIZER'])
             || isset($_SERVER['GITLAB_CI'])
+            || isset($_SERVER['CI'])
             || isset($_SERVER['GITHUB_WORKFLOW'])
             || isset($_SERVER['DRONE']);
     }
 
     public static function checkRuntimeRequirements(): void
     {
-        $required_php_version = 7_04_00;
-        $required_php_version_text = '7.4.0';
+        $required_php_version = 8_01_17;
+        $required_php_version_text = '8.1.17';
 
         // the following list was taken from vendor/composer/platform_check.php
         // It includes both Psalm's requirements (from composer.json) and the
@@ -545,7 +552,7 @@ final class CliUtils
 
         $missing_extensions = array_filter(
             $required_extensions,
-            static fn(string $ext) => !extension_loaded($ext)
+            static fn(string $ext) => !extension_loaded($ext),
         );
 
         if ($missing_extensions) {

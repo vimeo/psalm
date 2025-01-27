@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\DataFlow;
 
 use Psalm\CodeLocation;
+use Stringable;
 
 use function strtolower;
 
@@ -12,20 +13,11 @@ use function strtolower;
  * @psalm-consistent-constructor
  * @internal
  */
-class DataFlowNode
+class DataFlowNode implements Stringable
 {
-    public string $id;
-
     public ?string $unspecialized_id = null;
 
-    public string $label;
-
-    public ?CodeLocation $code_location = null;
-
     public ?string $specialization_key = null;
-
-    /** @var array<string> */
-    public array $taints;
 
     /** @var ?self */
     public ?DataFlowNode $previous = null;
@@ -42,23 +34,17 @@ class DataFlowNode
      * @param array<string> $taints
      */
     public function __construct(
-        string $id,
-        string $label,
-        ?CodeLocation $code_location,
+        public string $id,
+        public string $label,
+        public ?CodeLocation $code_location,
         ?string $specialization_key = null,
-        array $taints = [],
+        public array $taints = [],
     ) {
-        $this->id = $id;
-
         if ($specialization_key) {
             $this->unspecialized_id = $id;
             $this->id .= '-' . $specialization_key;
         }
-
-        $this->label = $label;
-        $this->code_location = $code_location;
         $this->specialization_key = $specialization_key;
-        $this->taints = $taints;
     }
 
     /**

@@ -15,16 +15,10 @@ use Amp\DeferredFuture;
  */
 final class ClientHandler
 {
-    public ProtocolReader $protocolReader;
-
-    public ProtocolWriter $protocolWriter;
-
     public IdGenerator $idGenerator;
 
-    public function __construct(ProtocolReader $protocolReader, ProtocolWriter $protocolWriter)
+    public function __construct(public ProtocolReader $protocolReader, public ProtocolWriter $protocolWriter)
     {
-        $this->protocolReader = $protocolReader;
-        $this->protocolWriter = $protocolWriter;
         $this->idGenerator = new IdGenerator;
     }
 

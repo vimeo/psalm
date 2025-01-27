@@ -12,10 +12,8 @@ use function strlen;
 use function strpos;
 use function strtoupper;
 use function substr;
-use function version_compare;
 
 use const PHP_OS;
-use const PHP_VERSION;
 use const PHP_VERSION_ID;
 
 trait ValidCodeAnalysisTestTrait
@@ -43,19 +41,31 @@ trait ValidCodeAnalysisTestTrait
         string $code,
         array $assertions = [],
         array $ignored_issues = [],
-        string $php_version = '7.4',
+        ?string $php_version = null,
     ): void {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'PHP80-') !== false) {
-            if (version_compare(PHP_VERSION, '8.0.0', '<')) {
+            if (PHP_VERSION_ID < 8_00_00) {
                 $this->markTestSkipped('Test case requires PHP 8.0.');
             }
+
+            if ($php_version === null) {
+                $php_version = '8.0';
+            }
         } elseif (strpos($test_name, 'PHP81-') !== false) {
-            if (version_compare(PHP_VERSION, '8.1.0', '<')) {
+            if (PHP_VERSION_ID < 8_01_00) {
                 $this->markTestSkipped('Test case requires PHP 8.1.');
+            }
+
+            if ($php_version === null) {
+                $php_version = '8.1';
             }
         } elseif (strpos($test_name, 'SKIPPED-') !== false) {
             $this->markTestSkipped('Skipped due to a bug.');
+        }
+
+        if ($php_version === null) {
+            $php_version = '7.4';
         }
 
         // sanity check - do we have a PHP tag?
@@ -78,20 +88,6 @@ trait ValidCodeAnalysisTestTrait
         $codebase = $this->project_analyzer->getCodebase();
         $codebase->enterServerMode();
         $codebase->config->visitPreloadedStubFiles($codebase);
-
-        // avoid MethodSignatureMismatch for __unserialize/() when extending DateTime
-        if (PHP_VERSION_ID >= 8_02_00) {
-            $this->addStubFile(
-                'stubOne.phpstub',
-                '<?php
-                    namespace {
-                        interface DateTimeInterface {
-                            public function __unserialize(mixed[] $data) {}
-                        }
-                    }
-                ',
-            );
-        }
 
         $file_path = self::$src_dir_path . 'somefile.php';
 

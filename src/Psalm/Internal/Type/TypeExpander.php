@@ -44,7 +44,6 @@ use function array_map;
 use function array_merge;
 use function array_values;
 use function count;
-use function get_class;
 use function is_string;
 use function reset;
 use function strtolower;
@@ -156,10 +155,7 @@ final class TypeExpander
                     );
 
                     if ($extra_type instanceof TNamedObject && $extra_type->extra_types) {
-                        $new_intersection_types = array_merge(
-                            $new_intersection_types,
-                            $extra_type->extra_types,
-                        );
+                        $new_intersection_types = [...$new_intersection_types, ...$extra_type->extra_types];
                         $extra_type = $extra_type->setIntersectionTypes([]);
                     }
                     $extra_types[$extra_type->getKey()] = $extra_type;
@@ -254,7 +250,7 @@ final class TypeExpander
                         $return_type->const_name,
                         ReflectionProperty::IS_PRIVATE,
                     );
-                } catch (CircularReferenceException $e) {
+                } catch (CircularReferenceException) {
                     $class_constant = null;
                 }
 
@@ -282,7 +278,9 @@ final class TypeExpander
                 $declaring_fq_classlike_name = $self_class;
             }
 
-            if (!($evaluate_class_constants && $codebase->classOrInterfaceExists($declaring_fq_classlike_name))) {
+            if (!($evaluate_class_constants
+                && $codebase->classlikes->doesClassLikeExist(strtolower($declaring_fq_classlike_name))
+            )) {
                 return [$return_type];
             }
 
@@ -593,7 +591,7 @@ final class TypeExpander
         bool &$expand_generic = false,
     ): TNamedObject|TTemplateParam {
         if ($expand_generic
-            && get_class($return_type) === TNamedObject::class
+            && $return_type::class === TNamedObject::class
             && !$return_type->extra_types
             && $codebase->classOrInterfaceExists($return_type->value)
         ) {
@@ -605,7 +603,7 @@ final class TypeExpander
             if ($container_class_storage->template_types
                 && array_filter(
                     $container_class_storage->template_types,
-                    static fn($type_map): bool => !reset($type_map)->hasMixed()
+                    static fn($type_map): bool => !reset($type_map)->hasMixed(),
                 )
             ) {
                 $return_type = new TGenericObject(
@@ -1043,7 +1041,7 @@ final class TypeExpander
                     false,
                     $return_type instanceof TValueOf,
                 );
-            } catch (CircularReferenceException $e) {
+            } catch (CircularReferenceException) {
                 return [$return_type];
             }
 

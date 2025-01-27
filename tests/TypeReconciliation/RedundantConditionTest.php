@@ -68,6 +68,10 @@ class RedundantConditionTest extends TestCase
                         }
                         return $x;
                     }',
+                'assertions' => [],
+                'ignored_issues' => [
+                    'RiskyTruthyFalsyComparison',
+                ],
             ],
             'noRedundantConditionAfterAssignment' => [
                 'code' => '<?php
@@ -101,7 +105,7 @@ class RedundantConditionTest extends TestCase
 
                         switch (get_class($i)) {
                             case A::class:
-                                if ($i->foo) {}
+                                if ($i->foo !== null) {}
                                 break;
 
                             default:
@@ -182,7 +186,7 @@ class RedundantConditionTest extends TestCase
                     }
                     if ($a) {}',
                 'assertions' => [],
-                'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess'],
+                'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess', 'RiskyTruthyFalsyComparison'],
             ],
             'noComplaintWithIsNumericThenIsEmpty' => [
                 'code' => '<?php
@@ -379,7 +383,7 @@ class RedundantConditionTest extends TestCase
                     /** @psalm-suppress PossiblyUndefinedGlobalVariable */
                     $option = $options["option"] ?? false;
 
-                    if ($option) {}',
+                    if ($option !== false) {}',
                 'assertions' => [],
                 'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess'],
             ],
@@ -432,6 +436,64 @@ class RedundantConditionTest extends TestCase
                     function foo(int $x) : void {
                         if (rand(0, 1)) {
                             $x = $x + 1;
+                        }
+
+                        if (is_float($x)) {
+                            echo "Is a float.";
+                        } else {
+                            echo "Is an int.";
+                        }
+                    }',
+            ],
+            'allowIntValueCheckAfterComparisonDueToUnderflow' => [
+                'code' => '<?php
+                    function foo(int $x) : void {
+                        $x = $x - 1;
+
+                        if (!is_int($x)) {
+                            echo "Is a float.";
+                        } else {
+                            echo "Is an int.";
+                        }
+                    }
+
+                    function bar(int $x) : void {
+                        $x = $x - 1;
+
+                        if (is_float($x)) {
+                            echo "Is a float.";
+                        } else {
+                            echo "Is an int.";
+                        }
+                    }',
+            ],
+            'allowIntValueCheckAfterComparisonDueToUnderflowDec' => [
+                'code' => '<?php
+                    function foo(int $x) : void {
+                        $x--;
+
+                        if (!is_int($x)) {
+                            echo "Is a float.";
+                        } else {
+                            echo "Is an int.";
+                        }
+                    }
+
+                    function bar(int $x) : void {
+                        $x--;
+
+                        if (is_float($x)) {
+                            echo "Is a float.";
+                        } else {
+                            echo "Is an int.";
+                        }
+                    }',
+            ],
+            'allowIntValueCheckAfterComparisonDueToConditionalUnderflow' => [
+                'code' => '<?php
+                    function foo(int $x) : void {
+                        if (rand(0, 1)) {
+                            $x = $x - 1;
                         }
 
                         if (is_float($x)) {
@@ -541,7 +603,7 @@ class RedundantConditionTest extends TestCase
                         exit;
                     }
 
-                    if ($i) {}',
+                    if ($i !== array() && $i !== "" && $i !== "0") {}',
             ],
             'emptyWithoutKnowingArrayType' => [
                 'code' => '<?php
@@ -573,6 +635,8 @@ class RedundantConditionTest extends TestCase
                             if (empty($a["foo"])) {}
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'suppressRedundantConditionAfterAssertNonEmpty' => [
                 'code' => '<?php
@@ -827,7 +891,7 @@ class RedundantConditionTest extends TestCase
                 'code' => '<?php
                     function test(string|int|float|bool $value): bool {
                         if (is_numeric($value) || $value === true) {
-                            if ($value) {
+                            if ($value === true || (int) $value !== 0) {
                                 return true;
                             }
                         }
@@ -1070,6 +1134,7 @@ class RedundantConditionTest extends TestCase
                         return $a;
                     }',
                 'error_message' => 'RedundantCondition',
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'refineTypeInMethodCall' => [
                 'code' => '<?php
@@ -1570,6 +1635,15 @@ class RedundantConditionTest extends TestCase
                         return null;
                     }',
                 'error_message' => 'DocblockTypeContradiction',
+            ],
+            'array_key_exists_int_string_juggle' => [
+                'code' => '<?php
+                    /**
+                     * @var string[] $a
+                     */
+
+                    if (array_key_exists("10", $a) && array_key_exists(10, $a)) {}',
+                'error_message' => 'RedundantCondition',
             ],
         ];
     }

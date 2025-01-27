@@ -39,6 +39,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -47,10 +48,12 @@ use function array_values;
 use function count;
 use function explode;
 use function in_array;
+use function str_contains;
+use function str_ends_with;
 use function strlen;
-use function strpos;
 use function strtolower;
 use function substr;
+use function trim;
 
 /**
  * @internal
@@ -232,7 +235,7 @@ final class FunctionCallReturnTypeFetcher
                             );
                         }
                     }
-                } catch (InvalidArgumentException $e) {
+                } catch (InvalidArgumentException) {
                     // this can happen when the function was defined in the Config startup script
                     $stmt_type = Type::getMixed();
                 }
@@ -278,7 +281,7 @@ final class FunctionCallReturnTypeFetcher
 
                 $fake_call_factory = new BuilderFactory();
 
-                if (strpos($proxy_call['fqn'], '::') !== false) {
+                if (str_contains($proxy_call['fqn'], '::')) {
                     [$fqcn, $method] = explode('::', $proxy_call['fqn']);
                     $fake_call = $fake_call_factory->staticCall($fqcn, $method, $fake_call_arguments);
                 } else {
@@ -631,17 +634,19 @@ final class FunctionCallReturnTypeFetcher
                     $first_arg_value = $first_stmt_type->getSingleStringLiteral()->value;
 
                     $pattern = substr($first_arg_value, 1, -1);
+                    if (strlen(trim($pattern)) > 0) {
+                        $pattern = trim($pattern);
+                        if ($pattern[0] === '['
+                            && $pattern[1] === '^'
+                            && str_ends_with($pattern, ']')
+                        ) {
+                            $pattern = substr($pattern, 2, -1);
 
-                    if ($pattern[0] === '['
-                        && $pattern[1] === '^'
-                        && substr($pattern, -1) === ']'
-                    ) {
-                        $pattern = substr($pattern, 2, -1);
-
-                        if (self::simpleExclusion($pattern, $first_arg_value[0])) {
-                            $removed_taints[] = 'html';
-                            $removed_taints[] = 'has_quotes';
-                            $removed_taints[] = 'sql';
+                            if (self::simpleExclusion($pattern, $first_arg_value[0])) {
+                                $removed_taints[] = TaintKind::INPUT_HTML;
+                                $removed_taints[] = TaintKind::INPUT_HAS_QUOTES;
+                                $removed_taints[] = TaintKind::INPUT_SQL;
+                            }
                         }
                     }
                 }

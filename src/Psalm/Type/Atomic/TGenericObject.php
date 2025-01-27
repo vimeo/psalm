@@ -32,9 +32,6 @@ final class TGenericObject extends TNamedObject
      */
     public array $type_params;
 
-    /** @var bool if the parameters have been remapped to another class */
-    public bool $remapped_params = false;
-
     /**
      * @param string                $value the name of the object
      * @param non-empty-list<Union> $type_params
@@ -43,7 +40,8 @@ final class TGenericObject extends TNamedObject
     public function __construct(
         string $value,
         array $type_params,
-        bool $remapped_params = false,
+        /** @var bool if the parameters have been remapped to another class */
+        public bool $remapped_params = false,
         bool $is_static = false,
         array $extra_types = [],
         bool $from_docblock = false,
@@ -53,7 +51,6 @@ final class TGenericObject extends TNamedObject
         }
 
         $this->type_params = $type_params;
-        $this->remapped_params = $remapped_params;
         parent::__construct(
             $value,
             $is_static,
@@ -113,7 +110,7 @@ final class TGenericObject extends TNamedObject
         }
 
         foreach ($this->type_params as $i => $type_param) {
-            if (!$type_param->equals($other_type->type_params[$i], $ensure_source_equality)) {
+            if (!$type_param->equals($other_type->type_params[$i], $ensure_source_equality, false)) {
                 return false;
             }
         }

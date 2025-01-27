@@ -116,6 +116,8 @@ class EmptyTest extends TestCase
 
                         return "an exception";
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'emptyExceptionReconciliationAfterIf' => [
                 'code' => '<?php
@@ -177,6 +179,8 @@ class EmptyTest extends TestCase
                     foreach ($arr as $item) {
                         if (empty($item["hide"]) || $item["hide"] === 3) {}
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'alwaysBoolResult' => [
                 'code' => '<?php
@@ -221,7 +225,7 @@ class EmptyTest extends TestCase
                         if (empty($scopes)){}
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedAssignment', 'MissingParamType', 'MixedArgument'],
+                'ignored_issues' => ['MixedAssignment', 'MissingParamType', 'MixedArgument', 'RiskyTruthyFalsyComparison'],
             ],
             'multipleEmptiesInCondition' => [
                 'code' => '<?php
@@ -229,6 +233,8 @@ class EmptyTest extends TestCase
                     function foo(array $o) : void {
                         if (empty($o[0]) && empty($o[1])) {}
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'multipleEmptiesInConditionWithMixedOffset' => [
                 'code' => '<?php
@@ -313,6 +319,8 @@ class EmptyTest extends TestCase
                             if (empty($data[Foo::ONE])) {}
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'doubleEmptyCheckTwoArrays' => [
                 'code' => '<?php
@@ -328,6 +336,8 @@ class EmptyTest extends TestCase
                     function foo(array $arr) : void {
                         if (empty($arr["a"]) && empty($arr["b"])) {}
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'doubleEmptyCheckOnTKeyedArrayVariableOffsets' => [
                 'code' => '<?php
@@ -338,6 +348,8 @@ class EmptyTest extends TestCase
 
                         if (empty($arr[$i]) && empty($arr[$j])) {}
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'checkArrayEmptyUnknownRoot' => [
                 'code' => '<?php
@@ -391,6 +403,8 @@ class EmptyTest extends TestCase
 
                         echo $arr["a"];
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'reconcileEmptyTwiceWithoutReturn' => [
                 'code' => '<?php
@@ -614,6 +628,19 @@ class EmptyTest extends TestCase
                     '$GLOBALS[\'sql_query\']===' => 'string',
                 ],
             ],
+            'emptyLiteralTrueFalse' => [
+                'code' => '<?php
+                    $b = "asdf";
+                    $x = !empty($b);',
+                'assertions' => [
+                    '$x===' => 'true',
+                ],
+            ],
+            'emptyArrayFetch' => [
+                'code' => '<?php
+                    /** @var array<true> $a */
+                    if (empty($a["a"])) {}',
+            ],
         ];
     }
 
@@ -721,6 +748,37 @@ class EmptyTest extends TestCase
                         return strlen("a" . $str . "b") > 2 ? $str : "string";
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'impossibleEmptyOnFalsyFunctionCall' => [
+                'code' => '<?php
+                    /** @return false|null */
+                    function bar() {
+                        return rand(0, 5) ? null : false;
+                    }
+
+                    if (!empty(bar())) {
+                        echo "abc";
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'redundantEmptyOnFalsyFunctionCall' => [
+                'code' => '<?php
+                    /** @return false|null */
+                    function bar() {
+                        return rand(0, 5) ? null : false;
+                    }
+
+                    if (empty(bar())) {
+                        echo "abc";
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
+            ],
+            'redundantEmptyArrayFetch' => [
+                'code' => '<?php
+                    /** @var array<true> $a */;
+                    assert(isset($a["a"]));
+                    if (empty($a["a"])) {}',
+                'error_message' => 'DocblockTypeContradiction',
             ],
         ];
     }

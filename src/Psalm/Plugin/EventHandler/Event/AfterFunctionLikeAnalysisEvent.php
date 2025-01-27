@@ -14,17 +14,6 @@ use Psalm\Storage\FunctionLikeStorage;
 
 final class AfterFunctionLikeAnalysisEvent
 {
-    private Node\FunctionLike $stmt;
-    private FunctionLikeStorage $functionlike_storage;
-    private StatementsSource $statements_source;
-    private Codebase $codebase;
-    /**
-     * @var FileManipulation[]
-     */
-    private array $file_replacements;
-    private NodeTypeProvider $node_type_provider;
-    private Context $context;
-
     /**
      * Called after a statement has been checked
      *
@@ -32,21 +21,14 @@ final class AfterFunctionLikeAnalysisEvent
      * @internal
      */
     public function __construct(
-        Node\FunctionLike $stmt,
-        FunctionLikeStorage $functionlike_storage,
-        StatementsSource $statements_source,
-        Codebase $codebase,
-        array $file_replacements,
-        NodeTypeProvider $node_type_provider,
-        Context $context,
+        private readonly Node\FunctionLike $stmt,
+        private readonly FunctionLikeStorage $functionlike_storage,
+        private readonly StatementsSource $statements_source,
+        private readonly Codebase $codebase,
+        private array $file_replacements,
+        private readonly NodeTypeProvider $node_type_provider,
+        private readonly Context $context,
     ) {
-        $this->stmt = $stmt;
-        $this->functionlike_storage = $functionlike_storage;
-        $this->statements_source = $statements_source;
-        $this->codebase = $codebase;
-        $this->file_replacements = $file_replacements;
-        $this->node_type_provider = $node_type_provider;
-        $this->context = $context;
     }
 
     public function getStmt(): Node\FunctionLike

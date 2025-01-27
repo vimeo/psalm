@@ -20,9 +20,6 @@ final class TClosure extends TNamedObject
 {
     use CallableTrait;
 
-    /** @var array<string, bool> */
-    public array $byref_uses = [];
-
     /**
      * @param list<FunctionLikeParameter> $params
      * @param array<string, bool> $byref_uses
@@ -33,14 +30,13 @@ final class TClosure extends TNamedObject
         ?array $params = null,
         ?Union $return_type = null,
         ?bool $is_pure = null,
-        array $byref_uses = [],
+        public array $byref_uses = [],
         array $extra_types = [],
         bool $from_docblock = false,
     ) {
         $this->params = $params;
         $this->return_type = $return_type;
         $this->is_pure = $is_pure;
-        $this->byref_uses = $byref_uses;
         parent::__construct(
             $value,
             false,
@@ -52,7 +48,8 @@ final class TClosure extends TNamedObject
 
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
-        return false;
+        // it can, if it's just 'Closure'
+        return $this->params === null && $this->return_type === null && $this->is_pure === null;
     }
 
     /**

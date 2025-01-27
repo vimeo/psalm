@@ -341,7 +341,6 @@ class ClassTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [
                     'UndefinedClass',
-                    'MixedInferredReturnType',
                     'InvalidArgument',
                 ],
             ],
@@ -356,7 +355,6 @@ class ClassTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [
                     'UndefinedClass',
-                    'MixedInferredReturnType',
                     'InvalidArgument',
                 ],
             ],
@@ -451,7 +449,7 @@ class ClassTest extends TestCase
                         }
                     }',
             ],
-            'classAliasOnNonexistantClass' => [
+            'classAliasOnNonexistentClass' => [
                 'code' => '<?php
                     if (!class_exists(\PHPUnit\Framework\TestCase::class)) {
                         /** @psalm-suppress UndefinedClass */
@@ -466,7 +464,9 @@ class ClassTest extends TestCase
             ],
             'classAliasNoException' => [
                 'code' => '<?php
-                    class_alias("Bar\F1", "Bar\F2");
+                    namespace {
+                        class_alias("Bar\F1", "Bar\F2");
+                    }
 
                     namespace Bar {
                         class F1 {
@@ -985,6 +985,29 @@ class ClassTest extends TestCase
                     echo A::HELLO;',
                 'error_message' => 'UndefinedConstant',
             ],
+            'consistentNamesConstructor' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class A
+                    {
+                        public function __construct(
+                            string $name,
+                            string $email,
+                        ) {}
+                    }
+
+                    class B extends A
+                    {
+                        public function __construct(
+                            string $names,
+                            string $email,
+                        ) {}
+                    }
+                    ',
+                'error_message' => 'ParamNameMismatch',
+            ],
             'overridePublicAccessLevelToPrivate' => [
                 'code' => '<?php
                     class A {
@@ -1133,7 +1156,7 @@ class ClassTest extends TestCase
                     class A extends A {}',
                 'error_message' => 'CircularReference',
             ],
-            'preventAbstractInstantiationDefiniteClasss' => [
+            'preventAbstractInstantiationDefiniteClass' => [
                 'code' => '<?php
                     abstract class A {}
 

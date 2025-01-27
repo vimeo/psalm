@@ -32,6 +32,11 @@ use function gc_collect_cycles;
 
 use const PHP_BINARY;
 use const PHP_EOL;
+use const SIGALRM;
+use const SIGTERM;
+use const STREAM_IPPROTO_IP;
+use const STREAM_PF_UNIX;
+use const STREAM_SOCK_STREAM;
 
 /**
  * Adapted with relatively few changes from

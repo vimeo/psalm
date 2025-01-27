@@ -1967,7 +1967,7 @@ class ClassTemplateExtendsTest extends TestCase
 
                     foreach ($bat as $num) {}',
             ],
-            'implictIteratorTemplating' => [
+            'implicitIteratorTemplating' => [
                 'code' => '<?php
                     /**
                      * @template-implements IteratorAggregate<int, int>
@@ -2091,7 +2091,7 @@ class ClassTemplateExtendsTest extends TestCase
                         }
                     }',
             ],
-            'extendsArryObjectGetIterator' => [
+            'extendsArrayObjectGetIterator' => [
                 'code' => '<?php
                     class Obj {}
 

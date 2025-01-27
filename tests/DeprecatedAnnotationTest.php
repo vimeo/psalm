@@ -101,6 +101,24 @@ class DeprecatedAnnotationTest extends TestCase
                             public $property;
                         }
                 '],
+            'suppressDeprecatedClassOnTemplateType' => [
+                'code' => '<?php
+                    /**
+                     * @deprecated
+                     */
+                    class TheDeprecatedClass {}
+
+                    /**
+                     * @template T
+                     */
+                    class TheParentClass {}
+
+                    /**
+                     * @extends TheParentClass<TheDeprecatedClass>
+                     * @psalm-suppress DeprecatedClass
+                     */
+                    class TheChildClass extends TheParentClass {}
+                '],
         ];
     }
 
@@ -264,10 +282,10 @@ class DeprecatedAnnotationTest extends TestCase
                         /**
                          * @deprecated
                          */
-                        public static bool $deprecatedPropery = false;
+                        public static bool $deprecatedProperty = false;
                     }
 
-                    Bar::$deprecatedPropery;
+                    Bar::$deprecatedProperty;
                     ',
                 'error_message' => 'DeprecatedProperty',
             ],

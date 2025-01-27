@@ -11,8 +11,6 @@ use SimpleXMLElement;
 
 use function getcwd;
 
-use const DIRECTORY_SEPARATOR;
-
 class TestConfig extends Config
 {
     private static ?ProjectFileFilter $cached_project_files = null;
@@ -32,7 +30,7 @@ class TestConfig extends Config
         $this->ignore_internal_falsable_issues = true;
         $this->ignore_internal_nullable_issues = true;
 
-        $this->base_dir = (string) getcwd() . DIRECTORY_SEPARATOR;
+        $this->base_dir = (string) getcwd();
 
         if (!self::$cached_project_files) {
             self::$cached_project_files = ProjectFileFilter::loadFromXMLElement(

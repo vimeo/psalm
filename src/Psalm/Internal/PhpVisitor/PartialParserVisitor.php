@@ -33,37 +33,21 @@ use const PREG_SET_ORDER;
  */
 final class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
 {
-    /** @var array<int, array{0: int, 1: int, 2: int, 3: int, 4: int, 5: string}> */
-    private array $offset_map;
-
     private bool $must_rescan = false;
 
     private int $non_method_changes;
 
-    private string $a_file_contents;
-
-    private string $b_file_contents;
-
-    private int $a_file_contents_length;
-
-    private Parser $parser;
-
-    private Collecting $error_handler;
+    private readonly int $a_file_contents_length;
 
     /** @param array<int, array{0: int, 1: int, 2: int, 3: int, 4: int, 5: string}> $offset_map */
     public function __construct(
-        Parser $parser,
-        Collecting $error_handler,
-        array $offset_map,
-        string $a_file_contents,
-        string $b_file_contents,
+        private readonly Parser $parser,
+        private readonly Collecting $error_handler,
+        private readonly array $offset_map,
+        private readonly string $a_file_contents,
+        private readonly string $b_file_contents,
     ) {
-        $this->parser = $parser;
-        $this->error_handler = $error_handler;
-        $this->offset_map = $offset_map;
-        $this->a_file_contents = $a_file_contents;
         $this->a_file_contents_length = strlen($a_file_contents);
-        $this->b_file_contents = $b_file_contents;
         $this->non_method_changes = count($offset_map);
     }
 
@@ -119,7 +103,7 @@ final class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
                             if ($a_e2 > $stmt_end_pos) {
                                 $this->must_rescan = true;
 
-                                return PhpParser\NodeTraverser::STOP_TRAVERSAL;
+                                return self::STOP_TRAVERSAL;
                             }
 
                             $end_offset = $b_e2 - $a_e2;
@@ -155,7 +139,7 @@ final class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
                         if (!$method_contents) {
                             $this->must_rescan = true;
 
-                            return PhpParser\NodeTraverser::STOP_TRAVERSAL;
+                            return self::STOP_TRAVERSAL;
                         }
 
                         $error_handler = new Collecting();
@@ -220,7 +204,7 @@ final class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
                             ) {
                                 $this->must_rescan = true;
 
-                                return PhpParser\NodeTraverser::STOP_TRAVERSAL;
+                                return self::STOP_TRAVERSAL;
                             }
 
                             // changes "): {" to ") {"
@@ -243,7 +227,7 @@ final class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
                             ) {
                                 $this->must_rescan = true;
 
-                                return PhpParser\NodeTraverser::STOP_TRAVERSAL;
+                                return self::STOP_TRAVERSAL;
                             }
                         }
 
@@ -302,7 +286,7 @@ final class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
 
                     $this->must_rescan = true;
 
-                    return PhpParser\NodeTraverser::STOP_TRAVERSAL;
+                    return self::STOP_TRAVERSAL;
                 }
 
                 if ($node->stmts) {
@@ -333,7 +317,7 @@ final class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
 
             $this->must_rescan = true;
 
-            return PhpParser\NodeTraverser::STOP_TRAVERSAL;
+            return self::STOP_TRAVERSAL;
         }
 
         if ($start_offset !== 0 || $end_offset !== 0 || $line_offset !== 0) {

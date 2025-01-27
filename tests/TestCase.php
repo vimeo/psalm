@@ -14,6 +14,7 @@ use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
+use Psalm\Internal\VersionUtils;
 use Psalm\IssueBuffer;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Type\Union;
@@ -24,8 +25,11 @@ use function count;
 use function define;
 use function defined;
 use function getcwd;
+use function implode;
 use function ini_set;
 use function is_string;
+use function preg_match;
+use function preg_quote;
 
 use const ARRAY_FILTER_USE_KEY;
 use const DIRECTORY_SEPARATOR;
@@ -34,10 +38,23 @@ class TestCase extends BaseTestCase
 {
     protected static string $src_dir_path;
 
+    /**
+     * caused by phpunit using setUp() instead of __construct
+     * could perhaps use psalm-plugin-phpunit once https://github.com/psalm/psalm-plugin-phpunit/issues/129
+     * to remove this suppression
+     *
+     * @psalm-suppress PropertyNotSetInConstructor
+     */
     protected ProjectAnalyzer $project_analyzer;
 
+    /**
+     * @psalm-suppress PropertyNotSetInConstructor
+     */
     protected FakeFileProvider $file_provider;
 
+    /**
+     * @psalm-suppress PropertyNotSetInConstructor
+     */
     protected Config $testConfig;
 
     public static function setUpBeforeClass(): void
@@ -45,11 +62,11 @@ class TestCase extends BaseTestCase
         ini_set('memory_limit', '-1');
 
         if (!defined('PSALM_VERSION')) {
-            define('PSALM_VERSION', '4.0.0');
+            define('PSALM_VERSION', VersionUtils::getPsalmVersion());
         }
 
         if (!defined('PHP_PARSER_VERSION')) {
-            define('PHP_PARSER_VERSION', '4.0.0');
+            define('PHP_PARSER_VERSION', VersionUtils::getPhpParserVersion());
         }
 
         parent::setUpBeforeClass();
@@ -141,6 +158,31 @@ class TestCase extends BaseTestCase
     protected function getTestName(bool $withDataSet = true): string
     {
         return $this->getName($withDataSet);
+    }
+
+    public static function assertHasIssue(string $expected, string $message = ''): void
+    {
+        $issue_messages = [];
+        $res = false;
+        $issues = IssueBuffer::getIssuesData();
+        foreach ($issues as $file_issues) {
+            foreach ($file_issues as $issue) {
+                $full_issue_message = $issue->type . ' - ' . $issue->file_name . ':' . $issue->line_from . ':' . $issue->column_from . ' - ' . $issue->message;
+                $issue_messages[] = $full_issue_message;
+                if (preg_match('/\b' . preg_quote($expected, '/') . '\b/', $full_issue_message)) {
+                    $res = true;
+                }
+            }
+        }
+        if (!$message) {
+            $message = "Failed asserting that issue with \"$expected\" was emitted.";
+            if (count($issue_messages)) {
+                $message .= "\n" . 'Other issues reported:' . "\n  - " . implode("\n  - ", $issue_messages);
+            } else {
+                $message .= ' No issues reported.';
+            }
+        }
+        self::assertTrue($res, $message);
     }
 
     public static function assertArrayKeysAreStrings(array $array, string $message = ''): void

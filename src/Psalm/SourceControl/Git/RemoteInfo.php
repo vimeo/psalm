@@ -14,12 +14,12 @@ final class RemoteInfo
     /**
      * Remote name.
      */
-    protected ?string $name = null;
+    private ?string $name = null;
 
     /**
      * Remote URL.
      */
-    protected ?string $url = null;
+    private ?string $url = null;
 
     public function toArray(): array
     {

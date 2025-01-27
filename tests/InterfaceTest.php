@@ -397,7 +397,7 @@ class InterfaceTest extends TestCase
 
                     $blah = (new B())->blah();',
             ],
-            'interfaceExtendsTraversible' => [
+            'interfaceExtendsTraversable' => [
                 'code' => '<?php
                     /**
                      * @extends IteratorAggregate<mixed, mixed>

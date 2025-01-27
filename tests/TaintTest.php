@@ -179,6 +179,23 @@ class TaintTest extends TestCase
                         }
                     }',
             ],
+            'untaintedInputAfterIntCast' => [
+                'code' => '<?php
+                    class A {
+                        public function getUserId() : int {
+                            return (int) $_GET["user_id"];
+                        }
+
+                        public function getAppendedUserId() : string {
+                            return "aaaa" . $this->getUserId();
+                        }
+
+                        public function deleteUser(PDO $pdo) : void {
+                            $userId = $this->getAppendedUserId();
+                            $pdo->exec("delete from users where user_id = " . $userId);
+                        }
+                    }',
+            ],
             'specializedCoreFunctionCall' => [
                 'code' => '<?php
                     $a = (string) ($data["user_id"] ?? "");
@@ -683,6 +700,21 @@ class TaintTest extends TestCase
                     $value = $_GET["value"];
                     $result = fetch($value);',
             ],
+            'NoTaintForIntTypeCastUsingAnnotatedSink' => [
+                'code' => '<?php // --taint-analysis
+                    function fetch($id): string
+                    {
+                        return query("SELECT * FROM table WHERE id=" . (int)$id);
+                    }
+                    /**
+                     * @return string
+                     * @psalm-taint-sink sql $sql
+                     * @psalm-taint-specialize
+                     */
+                    function query(string $sql) {}
+                    $value = $_GET["value"];
+                    $result = fetch($value);',
+            ],
             'dontTaintArrayWithDifferentOffsetUpdated' => [
                 'code' => '<?php
                     function foo() {
@@ -714,9 +746,9 @@ class TaintTest extends TestCase
                     $mysqli = new mysqli();
 
                     $a = $mysqli->escape_string($_GET["a"]);
-                    $b = mysqli_escape_string($_GET["b"]);
+                    $b = mysqli_escape_string($mysqli, $_GET["b"]);
                     $c = $mysqli->real_escape_string($_GET["c"]);
-                    $d = mysqli_real_escape_string($_GET["d"]);
+                    $d = mysqli_real_escape_string($mysqli, $_GET["d"]);
 
                     $mysqli->query("$a$b$c$d");',
             ],
@@ -875,40 +907,6 @@ class TaintTest extends TestCase
                             $pdo->exec("delete from users where user_id = " . $userId);
                         }
                     }',
-                'error_message' => 'TaintedSql',
-            ],
-            'taintedInputAfterIntCast' => [
-                'code' => '<?php
-                    class A {
-                        public function getUserId() : int {
-                            return (int) $_GET["user_id"];
-                        }
-
-                        public function getAppendedUserId() : string {
-                            return "aaaa" . $this->getUserId();
-                        }
-
-                        public function deleteUser(PDO $pdo) : void {
-                            $userId = $this->getAppendedUserId();
-                            $pdo->exec("delete from users where user_id = " . $userId);
-                        }
-                    }',
-                'error_message' => 'TaintedSql',
-            ],
-            'TaintForIntTypeCastUsingAnnotatedSink' => [
-                'code' => '<?php // --taint-analysis
-                    function fetch($id): string
-                    {
-                        return query("SELECT * FROM table WHERE id=" . (int)$id);
-                    }
-                    /**
-                     * @return string
-                     * @psalm-taint-sink sql $sql
-                     * @psalm-taint-specialize
-                     */
-                    function query(string $sql) {}
-                    $value = $_GET["value"];
-                    $result = fetch($value);',
                 'error_message' => 'TaintedSql',
             ],
             'taintedInputFromReturnTypeWithBranch' => [
@@ -2331,6 +2329,14 @@ class TaintTest extends TestCase
                     ',
                 'error_message' => 'TaintedShell',
             ],
+            'shellExecBacktickConcat' => [
+                'code' => '<?php
+
+                    $input = $_GET["input"];
+                    $x = `ls $input`;
+                    ',
+                'error_message' => 'TaintedShell',
+            ],
             /*
             // TODO: Stubs do not support this type of inference even with $this->message = $message.
             // Most uses of getMessage() would be with caught exceptions, so this is not representative of real code.
@@ -2453,12 +2459,14 @@ class TaintTest extends TestCase
             ],
             'assertMysqliOnlyEscapesSqlTaints3' => [
                 'code' => '<?php
-                    echo mysqli_escape_string($_GET["a"]);',
+                    $mysqli = new mysqli();
+                    echo mysqli_escape_string($mysqli, $_GET["a"]);',
                 'error_message' => 'TaintedHtml',
             ],
             'assertMysqliOnlyEscapesSqlTaints4' => [
                 'code' => '<?php
-                    echo mysqli_real_escape_string($_GET["a"]);',
+                    $mysqli = new mysqli();
+                    echo mysqli_real_escape_string($mysqli, $_GET["a"]);',
                 'error_message' => 'TaintedHtml',
             ],
             'assertDb2OnlyEscapesSqlTaints' => [
@@ -2578,6 +2586,69 @@ class TaintTest extends TestCase
                 'code' => '<?php
                     time_sleep_until($_GET["timestamp"]);',
                 'error_message' => 'TaintedSleep',
+            ],
+            'taintedExtract' => [
+                'code' => '<?php
+                    $array = $_GET;
+                    extract($array);',
+                'error_message' => 'TaintedExtract',
+            ],
+            'extractPost' => [
+                'code' => '<?php
+                    extract($_POST);',
+                'error_message' => 'TaintedExtract',
+            ],
+            'taintedExecuteQueryFunction' => [
+                'code' => '<?php
+                    $userId = $_GET["user_id"];
+                    $query = "delete from users where user_id = " . $userId;
+                    $link = mysqli_connect("localhost", "my_user", "my_password", "world");
+                    $result = mysqli_execute_query($link, $query);',
+                'error_message' => 'TaintedSql',
+            ],
+            'taintedExecuteQueryMethod' => [
+                'code' => '<?php
+                    $userId = $_GET["user_id"];
+                    $query = "delete from users where user_id = " . $userId;
+                    $mysqli = new mysqli("localhost", "my_user", "my_password", "world");
+                    $result = $mysqli->execute_query($query);',
+                'error_message' => 'TaintedSql',
+            ],
+            'taintedRegisterShutdownFunction' => [
+                'code' => '<?php
+                    $foo = $_GET["foo"];
+                    register_shutdown_function($foo);',
+                'error_message' => 'TaintedCallable',
+            ],
+            'taintedRegisterTickFunction' => [
+                'code' => '<?php
+                    $foo = $_GET["foo"];
+                    register_tick_function($foo);',
+                'error_message' => 'TaintedCallable',
+            ],
+            'taintedForwardStaticCall' => [
+                'code' => '<?php
+                    $foo = $_GET["foo"];
+                    class B
+                    {
+                        public static function test($foo) {
+                            forward_static_call($foo, "one", "two");
+                        }
+                    }
+                    B::test($foo);',
+                'error_message' => 'TaintedCallable',
+            ],
+            'taintedForwardStaticCallArray' => [
+                'code' => '<?php
+                    $foo = $_GET["foo"];
+                    class B
+                    {
+                        public static function test($foo) {
+                            forward_static_call_array($foo, array("one", "two"));
+                        }
+                    }
+                    B::test($foo);',
+                'error_message' => 'TaintedCallable',
             ],
         ];
     }

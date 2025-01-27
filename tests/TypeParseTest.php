@@ -129,7 +129,7 @@ class TypeParseTest extends TestCase
         $this->assertSame('array<int|string, string>', (string) Type::parseString('array<int|string, string>'));
     }
 
-    public function testNonEmptyArrray(): void
+    public function testNonEmptyArray(): void
     {
         $this->assertSame('non-empty-array<array-key, int>', (string) Type::parseString('non-empty-array<int>'));
     }
@@ -154,7 +154,7 @@ class TypeParseTest extends TestCase
         $this->assertSame('I1&I2|null', (string) Type::parseString('null|I1&I2'));
     }
 
-    public function testInteratorAndTraversable(): void
+    public function testIteratorAndTraversable(): void
     {
         $this->assertSame('Iterator<mixed, int>&Traversable', (string) Type::parseString('Iterator<int>&Traversable'));
     }
@@ -356,6 +356,11 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame('array{\'\\"\': int, \'\\\'\': string}', (string) Type::parseString('array{\'"\': int, \'\\\'\': string}'));
         $this->assertSame('array{\'\\"\': int, \'\\\'\': string}', (string) Type::parseString('array{"\\"": int, "\\\'": string}'));
+    }
+
+    public function testTKeyedArrayWithClassConstantValueType(): void
+    {
+        $this->assertSame('list{A::X|A::Y, B::X}', (string) Type::parseString('list{A::X|A::Y, B::X}'));
     }
 
     public function testTKeyedArrayWithClassConstantKey(): void
@@ -935,6 +940,14 @@ class TypeParseTest extends TestCase
         );
     }
 
+    public function testClassStringMapOf(): void
+    {
+        $this->assertSame(
+            'class-string-map<T as Foo, T>',
+            Type::parseString('class-string-map<T of Foo, T>')->getId(false),
+        );
+    }
+
     public function testVeryLargeType(): void
     {
         $very_large_type = 'array{a: Closure():(array<array-key, mixed>|null), b?: Closure():array<array-key, mixed>, c?: Closure():array<array-key, mixed>, d?: Closure():array<array-key, mixed>, e?: Closure():(array{f: null|string, g: null|string, h: null|string, i: string, j: mixed, k: mixed, l: mixed, m: mixed, n: bool, o?: array{0: string}}|null), p?: Closure():(array{f: null|string, g: null|string, h: null|string, i: string, j: mixed, k: mixed, l: mixed, m: mixed, n: bool, o?: array{0: string}}|null), q: string, r?: Closure():(array<array-key, mixed>|null), s: array<array-key, mixed>}|null';
@@ -1143,6 +1156,14 @@ class TypeParseTest extends TestCase
         $docblock_type = Type::parseString('int-mask-of<value-of<A::FOO>>');
 
         $this->assertSame('int-mask-of<value-of<A::FOO>>', $docblock_type->getId());
+    }
+
+    public function testUnionOfClassStringAndClassStringWithIntersection(): void
+    {
+        $this->assertSame(
+            'class-string<IFoo>',
+            (string) Type::parseString('class-string<IFoo>|class-string<IFoo&IBar>'),
+        );
     }
 
     public function testReflectionTypeParse(): void

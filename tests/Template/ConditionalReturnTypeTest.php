@@ -463,6 +463,31 @@ class ConditionalReturnTypeTest extends TestCase
                     '$c' => 'string',
                 ],
             ],
+            'InheritFuncNumArgs' => [
+                'code' => '<?php
+                    abstract class A
+                    {
+                        /**
+                         * @psalm-return (func_num_args() is 1 ? string : int)
+                         */
+                        public static function get(bool $a, ?bool $b = null)
+                        {
+                            if ($b) {
+                                return 1;
+                            }
+                            return "";
+                        }
+                    }
+
+                    class B extends A
+                    {
+
+                        public static function getB(bool $a): int
+                        {
+                            return self::get($a, true);
+                        }
+                    }',
+            ],
             'namespaceFuncNumArgs' => [
                 'code' => '<?php
                     namespace Foo;
@@ -654,7 +679,7 @@ class ConditionalReturnTypeTest extends TestCase
                     '$expect_mixed_from_literal' => 'mixed',
                 ],
             ],
-            'isArryCheckOnTemplate' => [
+            'isArrayCheckOnTemplate' => [
                 'code' => '<?php
                     /**
                      * @template TResult as string|list<string>
@@ -761,7 +786,7 @@ class ConditionalReturnTypeTest extends TestCase
                          * @template TSource as self::SOURCE_*
                          * @param TSource $source
                          * @return (TSource is "BODY" ? object|list : array)
-                         * @psalm-taint-source
+                         * @psalm-taint-source input
                          */
                         public function getParams(
                             string $source = self::SOURCE_GET
@@ -887,6 +912,39 @@ class ConditionalReturnTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '7.2',
             ],
+            'ineritedreturnTypeBasedOnPhpVersionId' => [
+                'code' => '<?php
+                    class A {
+                    /**
+                     * @psalm-return (PHP_VERSION_ID is int<70300, max> ? string : int)
+                     */
+                    function getSomething()
+                    {
+                        return mt_rand(1, 10) > 5 ? "a value" : 42;
+                    }
+
+                    /**
+                     * @psalm-return (PHP_VERSION_ID is int<70100, max> ? string : int)
+                     */
+                    function getSomethingElse()
+                    {
+                        return mt_rand(1, 10) > 5 ? "a value" : 42;
+                    }
+                    }
+
+                    class B extends A {}
+
+                    $class = new B();
+                    $something = $class->getSomething();
+                    $somethingElse = $class->getSomethingElse();
+                ',
+                'assertions' => [
+                    '$something' => 'int',
+                    '$somethingElse' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '7.2',
+            ],
             'ineritedConditionalTemplatedReturnType' => [
                 'code' => '<?php
                     /** @template InstanceType */
@@ -952,6 +1010,34 @@ class ConditionalReturnTypeTest extends TestCase
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'nonEmptyLiteralString' => [
+                'code' => '<?php
+                    /**
+                     * @param literal-string $string
+                     * @psalm-return ($string is non-empty-literal-string ? string : int)
+                     */
+                    function getSomething(string $string)
+                    {
+                        if (!$string) {
+                            return 1;
+                        }
+
+                        return "";
+                    }
+
+                    /** @var literal-string $literalString */
+                    $literalString;
+                    $something = getSomething($literalString);
+                    /** @var non-empty-literal-string $nonEmptyliteralString */
+                    $nonEmptyliteralString;
+                    $something2 = getSomething($nonEmptyliteralString);
+                ',
+                'assertions' => [
+                    '$something' => 'int|string',
+                    '$something2' => 'string',
+                ],
+                'ignored_issues' => [],
             ],
         ];
     }

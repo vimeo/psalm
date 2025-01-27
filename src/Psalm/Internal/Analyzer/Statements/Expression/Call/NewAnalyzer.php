@@ -13,6 +13,7 @@ use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodVisibilityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -23,6 +24,7 @@ use Psalm\Internal\DataFlow\TaintSink;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\AbstractInstantiation;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\ImpureMethodCall;
@@ -60,6 +62,7 @@ use Psalm\Type\Union;
 
 use function array_map;
 use function array_values;
+use function count;
 use function in_array;
 use function md5;
 use function preg_match;
@@ -75,7 +78,7 @@ final class NewAnalyzer extends CallAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\New_ $stmt,
         Context $context,
-        TemplateResult $template_result = null,
+        ?TemplateResult $template_result = null,
     ): bool {
         $fq_class_name = null;
 
@@ -158,7 +161,11 @@ final class NewAnalyzer extends CallAnalyzer
             }
         } elseif ($stmt->class instanceof PhpParser\Node\Stmt\Class_) {
             $statements_analyzer->analyze([$stmt->class], $context);
-            $fq_class_name = ClassAnalyzer::getAnonymousClassName($stmt->class, $statements_analyzer->getFilePath());
+            $fq_class_name = ClassAnalyzer::getAnonymousClassName(
+                $stmt->class,
+                $statements_analyzer->getAliases(),
+                $statements_analyzer->getFilePath(),
+            );
         } else {
             self::analyzeConstructorExpression(
                 $statements_analyzer,
@@ -246,6 +253,17 @@ final class NewAnalyzer extends CallAnalyzer
                 new Union([$result_atomic_type]),
             );
 
+            if (strtolower($fq_class_name) === 'stdclass' && $stmt->getArgs() !== []) {
+                IssueBuffer::maybeAdd(
+                    new TooManyArguments(
+                        'stdClass::__construct() has no parameters',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        'stdClass::__construct',
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
+
             if (strtolower($fq_class_name) !== 'stdclass' &&
                 $codebase->classlikes->classExists($fq_class_name)
             ) {
@@ -294,7 +312,7 @@ final class NewAnalyzer extends CallAnalyzer
         string $fq_class_name,
         bool $from_static,
         bool $can_extend,
-        TemplateResult $template_result = null,
+        ?TemplateResult $template_result = null,
     ): void {
         $storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
@@ -337,7 +355,7 @@ final class NewAnalyzer extends CallAnalyzer
         if ($storage->abstract && !$can_extend) {
             if (IssueBuffer::accepts(
                 new AbstractInstantiation(
-                    'Unable to instantiate a abstract class ' . $fq_class_name,
+                    'Unable to instantiate an abstract class ' . $fq_class_name,
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
@@ -420,6 +438,8 @@ final class NewAnalyzer extends CallAnalyzer
 
             $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
+            $method_storage = null;
+
             if ($declaring_method_id) {
                 $method_storage = $codebase->methods->getStorage($declaring_method_id);
 
@@ -491,6 +511,7 @@ final class NewAnalyzer extends CallAnalyzer
             }
 
             $generic_param_types = null;
+            $self_out_candidate = null;
 
             if ($storage->template_types) {
                 foreach ($storage->template_types as $template_name => $base_type) {
@@ -528,9 +549,49 @@ final class NewAnalyzer extends CallAnalyzer
                         'had_template' => true,
                     ]);
                 }
+
+                if ($method_storage && $method_storage->self_out_type) {
+                    $self_out_candidate = $method_storage->self_out_type;
+
+                    if ($template_result->lower_bounds) {
+                        $self_out_candidate = TypeExpander::expandUnion(
+                            $codebase,
+                            $self_out_candidate,
+                            $fq_class_name,
+                            null,
+                            $storage->parent_class,
+                            true,
+                            false,
+                            false,
+                            true,
+                        );
+                    }
+
+                    $self_out_candidate = MethodCallReturnTypeFetcher::replaceTemplateTypes(
+                        $self_out_candidate,
+                        $template_result,
+                        $method_id,
+                        count($stmt->getArgs()),
+                        $codebase,
+                    );
+
+                    $self_out_candidate = TypeExpander::expandUnion(
+                        $codebase,
+                        $self_out_candidate,
+                        $fq_class_name,
+                        $fq_class_name,
+                        $storage->parent_class,
+                        true,
+                        false,
+                        false,
+                        true,
+                    );
+                    $statements_analyzer->node_data->setType($stmt, $self_out_candidate);
+                }
             }
 
-            if ($generic_param_types) {
+            // XXX: what if we need both?
+            if ($generic_param_types && !$self_out_candidate) {
                 $result_atomic_type = new TGenericObject(
                     $fq_class_name,
                     $generic_param_types,

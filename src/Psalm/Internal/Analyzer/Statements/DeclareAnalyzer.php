@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Analyzer\Statements;
 
 use PhpParser;
+use PhpParser\Node\DeclareItem;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -56,7 +57,7 @@ final class DeclareAnalyzer
 
     private static function analyzeStrictTypesDeclaration(
         StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Stmt\DeclareDeclare $declaration,
+        DeclareItem $declaration,
         Context $context,
     ): void {
         if (!$declaration->value instanceof PhpParser\Node\Scalar\LNumber
@@ -80,7 +81,7 @@ final class DeclareAnalyzer
 
     private static function analyzeTicksDeclaration(
         StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Stmt\DeclareDeclare $declaration,
+        DeclareItem $declaration,
     ): void {
         if (!$declaration->value instanceof PhpParser\Node\Scalar\LNumber) {
             IssueBuffer::maybeAdd(
@@ -95,7 +96,7 @@ final class DeclareAnalyzer
 
     private static function analyzeEncodingDeclaration(
         StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Stmt\DeclareDeclare $declaration,
+        DeclareItem $declaration,
     ): void {
         if (!$declaration->value instanceof PhpParser\Node\Scalar\String_) {
             IssueBuffer::maybeAdd(

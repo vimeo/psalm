@@ -94,7 +94,7 @@ final class VersionUtils
                 self::PSALM_PACKAGE => self::getVersion(self::PSALM_PACKAGE),
                 self::PHP_PARSER_PACKAGE => self::getVersion(self::PHP_PARSER_PACKAGE),
             ];
-        } catch (OutOfBoundsException $ex) {
+        } catch (OutOfBoundsException) {
         }
         return null;
     }

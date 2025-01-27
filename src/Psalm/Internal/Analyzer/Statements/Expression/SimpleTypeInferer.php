@@ -12,6 +12,7 @@ use Psalm\Exception\CircularReferenceException;
 use Psalm\FileSource;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\ArithmeticOpAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\TypeCombiner;
@@ -36,7 +37,6 @@ use function array_merge;
 use function array_values;
 use function count;
 use function is_string;
-use function preg_match;
 use function strtolower;
 
 use const PHP_INT_MAX;
@@ -56,7 +56,7 @@ final class SimpleTypeInferer
         NodeDataProvider $nodes,
         PhpParser\Node\Expr $stmt,
         Aliases $aliases,
-        FileSource $file_source = null,
+        ?FileSource $file_source = null,
         ?array $existing_class_constants = null,
         ?string $fq_classlike_name = null,
     ): ?Union {
@@ -144,6 +144,17 @@ final class SimpleTypeInferer
                 $fq_classlike_name,
             );
 
+            if (!$stmt_left_type
+                && $file_source instanceof StatementsAnalyzer
+                && $stmt->left instanceof PhpParser\Node\Expr\ConstFetch) {
+                $stmt_left_type = ConstFetchAnalyzer::getConstType(
+                    $file_source,
+                    $stmt->left->name->toString(),
+                    true,
+                    null,
+                );
+            }
+
             $stmt_right_type = self::infer(
                 $codebase,
                 $nodes,
@@ -153,6 +164,17 @@ final class SimpleTypeInferer
                 $existing_class_constants,
                 $fq_classlike_name,
             );
+
+            if (!$stmt_right_type
+                && $file_source instanceof StatementsAnalyzer
+                && $stmt->right instanceof PhpParser\Node\Expr\ConstFetch) {
+                $stmt_right_type = ConstFetchAnalyzer::getConstType(
+                    $file_source,
+                    $stmt->right->name->toString(),
+                    true,
+                    null,
+                );
+            }
 
             if (!$stmt_left_type || !$stmt_right_type) {
                 return null;
@@ -261,21 +283,26 @@ final class SimpleTypeInferer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\ConstFetch) {
-            $name = strtolower($stmt->name->getFirst());
-            if ($name === 'false') {
+            $name = $stmt->name->getFirst();
+            $name_lowercase = strtolower($name);
+            if ($name_lowercase === 'false') {
                 return Type::getFalse();
             }
 
-            if ($name === 'true') {
+            if ($name_lowercase === 'true') {
                 return Type::getTrue();
             }
 
-            if ($name === 'null') {
+            if ($name_lowercase === 'null') {
                 return Type::getNull();
             }
 
-            if ($stmt->name->getFirst() === '__NAMESPACE__') {
+            if ($name === '__NAMESPACE__') {
                 return Type::getString($aliases->namespace);
+            }
+
+            if ($type = ConstFetchAnalyzer::getGlobalConstType($codebase, $name, $name)) {
+                return $type;
             }
 
             return null;
@@ -355,7 +382,7 @@ final class SimpleTypeInferer
                         }
 
                         return null;
-                    } catch (InvalidArgumentException | CircularReferenceException $e) {
+                    } catch (InvalidArgumentException | CircularReferenceException) {
                         return null;
                     }
                 }
@@ -372,11 +399,11 @@ final class SimpleTypeInferer
             return Type::getString($stmt->value);
         }
 
-        if ($stmt instanceof PhpParser\Node\Scalar\LNumber) {
+        if ($stmt instanceof PhpParser\Node\Scalar\Int_) {
             return Type::getInt(false, $stmt->value);
         }
 
-        if ($stmt instanceof PhpParser\Node\Scalar\DNumber) {
+        if ($stmt instanceof PhpParser\Node\Scalar\Float_) {
             return Type::getFloat($stmt->value);
         }
 
@@ -483,11 +510,7 @@ final class SimpleTypeInferer
 
                     foreach ($array_type->getAtomicTypes() as $array_atomic_type) {
                         if ($array_atomic_type instanceof TKeyedArray) {
-                            if (isset($array_atomic_type->properties[$dim_value])) {
-                                return $array_atomic_type->properties[$dim_value];
-                            }
-
-                            return null;
+                            return $array_atomic_type->properties[$dim_value] ?? null;
                         }
                     }
                 }
@@ -517,7 +540,7 @@ final class SimpleTypeInferer
         NodeDataProvider $nodes,
         PhpParser\Node\Expr\Array_ $stmt,
         Aliases $aliases,
-        FileSource $file_source = null,
+        ?FileSource $file_source = null,
         ?array $existing_class_constants = null,
         ?string $fq_classlike_name = null,
     ): ?Union {
@@ -599,9 +622,9 @@ final class SimpleTypeInferer
         Codebase $codebase,
         NodeDataProvider $nodes,
         ArrayCreationInfo $array_creation_info,
-        PhpParser\Node\Expr\ArrayItem $item,
+        PhpParser\Node\ArrayItem $item,
         Aliases $aliases,
-        FileSource $file_source = null,
+        ?FileSource $file_source = null,
         ?array $existing_class_constants = null,
         ?string $fq_classlike_name = null,
     ): bool {
@@ -644,11 +667,7 @@ final class SimpleTypeInferer
                     $key_type = Type::getString('');
                 }
                 if ($item->key instanceof PhpParser\Node\Scalar\String_
-                    && preg_match('/^(0|[1-9][0-9]*)$/', $item->key->value)
-                    && (
-                        (int) $item->key->value < PHP_INT_MAX ||
-                        $item->key->value === (string) PHP_INT_MAX
-                    )
+                    && ArrayAnalyzer::getLiteralArrayKeyInt($item->key->value) !== false
                 ) {
                     $key_type = Type::getInt(false, (int) $item->key->value);
                 }
@@ -660,9 +679,10 @@ final class SimpleTypeInferer
 
                 if ($key_type->isSingleStringLiteral()) {
                     $item_key_literal_type = $key_type->getSingleStringLiteral();
-                    $item_key_value = $item_key_literal_type->value;
+                    $string_to_int = ArrayAnalyzer::getLiteralArrayKeyInt($item_key_literal_type->value);
+                    $item_key_value = $string_to_int === false ? $item_key_literal_type->value : $string_to_int;
 
-                    if ($item_key_literal_type instanceof TLiteralClassString) {
+                    if (is_string($item_key_value) && $item_key_literal_type instanceof TLiteralClassString) {
                         $array_creation_info->class_strings[$item_key_value] = true;
                     }
                 } elseif ($key_type->isSingleIntLiteral()) {
@@ -706,7 +726,7 @@ final class SimpleTypeInferer
         $array_creation_info->all_list = $array_creation_info->all_list && $item_is_list_item;
 
         if ($item->key instanceof PhpParser\Node\Scalar\String_
-            || $item->key instanceof PhpParser\Node\Scalar\LNumber
+            || $item->key instanceof PhpParser\Node\Scalar\Int_
             || !$item->key
         ) {
             if ($item_key_value !== null

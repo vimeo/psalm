@@ -68,14 +68,15 @@ use function mt_rand;
 use function preg_match;
 use function preg_replace;
 use function spl_object_id;
+use function str_contains;
 use function str_replace;
-use function strpos;
+use function str_starts_with;
 use function strtolower;
 
 /**
  * @internal
  */
-class CallAnalyzer
+abstract class CallAnalyzer
 {
     public static function collectSpecialInformation(
         FunctionLikeAnalyzer $source,
@@ -107,10 +108,6 @@ class CallAnalyzer
                 if ($context->collect_initializations) {
                     if (isset($context->initialized_methods[(string) $method_id])) {
                         return;
-                    }
-
-                    if ($context->initialized_methods === null) {
-                        $context->initialized_methods = [];
                     }
 
                     $context->initialized_methods[(string) $method_id] = true;
@@ -192,10 +189,6 @@ class CallAnalyzer
                 return;
             }
 
-            if ($context->initialized_methods === null) {
-                $context->initialized_methods = [];
-            }
-
             $context->initialized_methods[(string) $declaring_method_id] = true;
 
             $method_storage = $codebase->methods->getStorage($declaring_method_id);
@@ -227,7 +220,7 @@ class CallAnalyzer
                 $local_vars_in_scope = [];
 
                 foreach ($context->vars_in_scope as $var_id => $type) {
-                    if (strpos($var_id, '$this->') === 0) {
+                    if (str_starts_with($var_id, '$this->')) {
                         if ($type->initialized) {
                             $local_vars_in_scope[$var_id] = $context->vars_in_scope[$var_id];
 
@@ -311,7 +304,6 @@ class CallAnalyzer
             $declaring_method_id = $class_storage->declaring_method_ids[$method_name];
 
             $declaring_fq_class_name = $declaring_method_id->fq_class_name;
-            $declaring_method_name = $declaring_method_id->method_name;
 
             if ($declaring_fq_class_name !== $fq_class_name) {
                 $declaring_class_storage = $codebase->classlike_storage_provider->get($declaring_fq_class_name);
@@ -319,11 +311,7 @@ class CallAnalyzer
                 $declaring_class_storage = $class_storage;
             }
 
-            if (!isset($declaring_class_storage->methods[$declaring_method_name])) {
-                throw new UnexpectedValueException('Storage should not be empty here');
-            }
-
-            $method_storage = $declaring_class_storage->methods[$declaring_method_name];
+            $method_storage = $codebase->methods->getStorage($declaring_method_id);
 
             if ($declaring_class_storage->user_defined
                 && !$method_storage->has_docblock_param_types
@@ -675,16 +663,16 @@ class CallAnalyzer
                 }
             } elseif ($var_possibilities->var_id === '$this' && $thisName !== null) {
                 $assertion_var_id = $thisName;
-            } elseif (strpos($var_possibilities->var_id, '$this->') === 0 && $thisName !== null) {
+            } elseif (str_starts_with($var_possibilities->var_id, '$this->') && $thisName !== null) {
                 $assertion_var_id = $thisName . str_replace('$this->', '->', $var_possibilities->var_id);
-            } elseif (strpos($var_possibilities->var_id, 'self::') === 0 && $context->self) {
+            } elseif (str_starts_with($var_possibilities->var_id, 'self::') && $context->self) {
                 $assertion_var_id = $context->self . str_replace('self::', '::', $var_possibilities->var_id);
-            } elseif (strpos($var_possibilities->var_id, '::$') !== false) {
+            } elseif (str_contains($var_possibilities->var_id, '::$')) {
                 // allow assertions to bring external static props into scope
                 $assertion_var_id = $var_possibilities->var_id;
             } elseif (isset($context->vars_in_scope[$var_possibilities->var_id])) {
                 $assertion_var_id = $var_possibilities->var_id;
-            } elseif (strpos($var_possibilities->var_id, '->') !== false) {
+            } elseif (str_contains($var_possibilities->var_id, '->')) {
                 $exploded = explode('->', $var_possibilities->var_id);
 
                 if (count($exploded) < 2) {
@@ -881,7 +869,7 @@ class CallAnalyzer
                     $simplified_clauses,
                 );
 
-                $type_assertions = array_merge($type_assertions, $assert_type_assertions);
+                $type_assertions = [...$type_assertions, ...$assert_type_assertions];
             }
         }
 

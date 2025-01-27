@@ -15,14 +15,10 @@ use Psalm\Internal\LanguageServer\LanguageServer;
  */
 final class TextDocument
 {
-    private ClientHandler $handler;
-
-    private LanguageServer $server;
-
-    public function __construct(ClientHandler $handler, LanguageServer $server)
-    {
-        $this->handler = $handler;
-        $this->server = $server;
+    public function __construct(
+        private readonly ClientHandler $handler,
+        private readonly LanguageServer $server,
+    ) {
     }
 
     /**

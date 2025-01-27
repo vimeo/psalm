@@ -15,6 +15,14 @@ class TypeAnnotationTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'atInArrayKey' => [
+                'code' => '<?php
+
+                /**
+                 * @param list<array{"@a": "test"}> $v
+                 */
+                function a(array $v): void {}',
+            ],
             'typeAliasBeforeClass' => [
                 'code' => '<?php
                     namespace Barrr;
@@ -655,7 +663,7 @@ class TypeAnnotationTest extends TestCase
                     '$output===' => 'list<1|2>',
                 ],
             ],
-            'callableWithReturnTypeTypeAliasWithinBackets' => [
+            'callableWithReturnTypeTypeAliasWithinBrackets' => [
                 'code' => '<?php
                     /** @psalm-type TCallback (callable():int) */
                     class Foo {
@@ -835,6 +843,20 @@ class TypeAnnotationTest extends TestCase
                     '$output===' => 'array{phone: string}',
                 ],
             ],
+            'multilineTypeWithExtraSpace' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type PhoneType = array{
+                     *    phone: string, ' . '
+                     * }
+                     */
+                    class Foo {
+                        /** @var PhoneType */
+                        public static $phone;
+                    }
+                    $output = Foo::$phone;
+                    ',
+            ],
             'combineAliasOfArrayAndArrayCorrectly' => [
                 'code' => '<?php
 
@@ -866,6 +888,73 @@ class TypeAnnotationTest extends TestCase
                             /** @psalm-check-type-exact $_doesNotWork = D<array{b?: bool, c?: string}> */;
                         }
                     }',
+            ],
+            'importFromEnum' => [
+                'code' => <<<'PHP'
+                <?php
+                /** @psalm-type _Foo = array{foo: string} */
+                enum E {}
+                /**
+                 * @psalm-import-type _Foo from E
+                 */
+                class C {
+                    /** @param _Foo $foo */
+                    public function f(array $foo): void {
+                        echo $foo['foo'];
+                    }
+                }
+                PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'importFromTrait' => [
+                'code' => <<<'PHP'
+                <?php
+                /** @psalm-type _Foo = array{foo: string} */
+                trait T {}
+
+                /** @psalm-import-type _Foo from T */
+                class C {
+                    /** @param _Foo $foo */
+                    public function f(array $foo): void {
+                        echo $foo['foo'];
+                    }
+                }
+                PHP,
+            ],
+            'inlineComments' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @psalm-type Foo=array{
+                     *   a: string, // comment
+                     *   b: string, // comment
+                     * }
+                     */
+                    class A {
+                        /**
+                         * @psalm-param Foo $foo
+                         */
+                        public function bar(array $foo): void {}
+                    }
+                PHP,
+            ],
+            'typeWithMultipleSpaces' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @psalm-type Foo      =     string
+                     * @psalm-type Bar           int
+                     */
+                    class A {
+                        /**
+                         * @psalm-param Foo $foo
+                         * @psalm-param Bar $bar
+                         */
+                        public function bar(string $foo, int $bar): void {}
+                    }
+                PHP,
             ],
         ];
     }

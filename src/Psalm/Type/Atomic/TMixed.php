@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Type\Atomic;
 
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type\Atomic;
 
 /**
@@ -13,11 +14,9 @@ use Psalm\Type\Atomic;
  */
 class TMixed extends Atomic
 {
-    public bool $from_loop_isset = false;
-
-    public function __construct(bool $from_loop_isset = false, bool $from_docblock = false)
+    use UnserializeMemoryUsageSuppressionTrait;
+    public function __construct(public bool $from_loop_isset = false, bool $from_docblock = false)
     {
-        $this->from_loop_isset = $from_loop_isset;
         parent::__construct($from_docblock);
     }
 

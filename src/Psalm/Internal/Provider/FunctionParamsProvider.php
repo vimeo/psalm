@@ -8,6 +8,8 @@ use Closure;
 use PhpParser\Node\Arg;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Provider\ParamsProvider\ArrayFilterParamsProvider;
+use Psalm\Internal\Provider\ParamsProvider\ArrayMultisortParamsProvider;
 use Psalm\Plugin\EventHandler\Event\FunctionParamsProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionParamsProviderInterface;
 use Psalm\StatementsSource;
@@ -31,6 +33,9 @@ final class FunctionParamsProvider
     public function __construct()
     {
         self::$handlers = [];
+
+        $this->registerClass(ArrayFilterParamsProvider::class);
+        $this->registerClass(ArrayMultisortParamsProvider::class);
     }
 
     /**
@@ -38,7 +43,7 @@ final class FunctionParamsProvider
      */
     public function registerClass(string $class): void
     {
-        $callable = Closure::fromCallable([$class, 'getFunctionParams']);
+        $callable = $class::getFunctionParams(...);
 
         foreach ($class::getFunctionIds() as $function_id) {
             $this->registerClosure($function_id, $callable);

@@ -102,6 +102,8 @@ class ReturnTypeTest extends TestCase
                             return $str;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'returnTypeNotEmptyCheckInElseIf' => [
                 'code' => '<?php
@@ -120,6 +122,8 @@ class ReturnTypeTest extends TestCase
                             return $str;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'returnTypeNotEmptyCheckInElse' => [
                 'code' => '<?php
@@ -138,6 +142,8 @@ class ReturnTypeTest extends TestCase
                             return $str;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'returnTypeAfterIf' => [
                 'code' => '<?php
@@ -1380,28 +1386,12 @@ class ReturnTypeTest extends TestCase
                     }',
                 'error_message' => 'MissingReturnType',
             ],
-            'mixedInferredReturnType' => [
-                'code' => '<?php
-                    function fooFoo(array $arr): string {
-                        /** @psalm-suppress MixedReturnStatement */
-                        return array_pop($arr);
-                    }',
-                'error_message' => 'MixedInferredReturnType',
-            ],
             'mixedInferredReturnStatement' => [
                 'code' => '<?php
                     function fooFoo(array $arr): string {
                         return array_pop($arr);
                     }',
                 'error_message' => 'MixedReturnStatement',
-            ],
-            'invalidReturnTypeClass' => [
-                'code' => '<?php
-                    function fooFoo(): A {
-                        return new A;
-                    }',
-                'error_message' => 'UndefinedClass',
-                'ignored_issues' => ['MixedInferredReturnType'],
             ],
             'invalidClassOnCall' => [
                 'code' => '<?php
@@ -1414,7 +1404,7 @@ class ReturnTypeTest extends TestCase
 
                     fooFoo()->bar();',
                 'error_message' => 'UndefinedClass',
-                'ignored_issues' => ['MixedInferredReturnType', 'MixedReturnStatement'],
+                'ignored_issues' => ['MixedReturnStatement'],
             ],
             'returnArrayOfNullableInvalid' => [
                 'code' => '<?php
@@ -1923,6 +1913,17 @@ class ReturnTypeTest extends TestCase
                 'error_message' => 'InvalidReturnType',
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'constructorsShouldReturnVoid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class A {
+                        public function __construct() {
+                            return 5;
+                        }
+                    }
+                    PHP,
+                'error_message' => 'InvalidReturnStatement',
             ],
         ];
     }

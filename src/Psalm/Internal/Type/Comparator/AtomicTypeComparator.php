@@ -10,6 +10,7 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TCallableInterface;
 use Psalm\Type\Atomic\TCallableKeyedArray;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
@@ -43,7 +44,6 @@ use function array_merge;
 use function array_values;
 use function assert;
 use function count;
-use function get_class;
 use function strtolower;
 
 /**
@@ -112,10 +112,10 @@ final class AtomicTypeComparator
                 && !$container_type_part->extra_types
                 && $input_type_part instanceof TMixed)
         ) {
-            if (get_class($input_type_part) === TMixed::class
+            if ($input_type_part::class === TMixed::class
                 && (
-                    get_class($container_type_part) === TEmptyMixed::class
-                    || get_class($container_type_part) === TNonEmptyMixed::class
+                    $container_type_part::class === TEmptyMixed::class
+                    || $container_type_part::class === TNonEmptyMixed::class
                 )
             ) {
                 if ($atomic_comparison_result) {
@@ -188,7 +188,8 @@ final class AtomicTypeComparator
         }
 
         if (($container_type_part instanceof TCallable
-                && $input_type_part instanceof TCallable)
+            && $input_type_part instanceof TCallableInterface
+            )
             || ($container_type_part instanceof TClosure
                 && $input_type_part instanceof TClosure)
         ) {
@@ -311,14 +312,14 @@ final class AtomicTypeComparator
             );
         }
 
-        if (get_class($container_type_part) === TNamedObject::class
+        if ($container_type_part::class === TNamedObject::class
             && $input_type_part instanceof TEnumCase
             && $input_type_part->value === $container_type_part->value
         ) {
             return true;
         }
 
-        if (get_class($input_type_part) === TNamedObject::class
+        if ($input_type_part::class === TNamedObject::class
             && $container_type_part instanceof TEnumCase
             && $input_type_part->value === $container_type_part->value
         ) {
@@ -381,8 +382,8 @@ final class AtomicTypeComparator
             return true;
         }
 
-        if (get_class($input_type_part) === TObject::class
-            && get_class($container_type_part) === TObject::class
+        if ($input_type_part::class === TObject::class
+            && $container_type_part::class === TObject::class
         ) {
             return true;
         }
@@ -819,9 +820,9 @@ final class AtomicTypeComparator
             );
         }
 
-        if ((get_class($type1_part) === TArray::class
+        if (($type1_part::class === TArray::class
                 && $type2_part instanceof TNonEmptyArray)
-            || (get_class($type2_part) === TArray::class
+            || ($type2_part::class === TArray::class
                 && $type1_part instanceof TNonEmptyArray)
         ) {
             return UnionTypeComparator::canExpressionTypesBeIdentical(

@@ -46,6 +46,10 @@ abstract class Progress
     {
     }
 
+    public function expand(int $number_of_tasks): void
+    {
+    }
+
     public function taskDone(int $level): void
     {
     }

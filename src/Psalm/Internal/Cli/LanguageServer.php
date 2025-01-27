@@ -35,8 +35,9 @@ use function is_string;
 use function preg_replace;
 use function realpath;
 use function setlocale;
+use function str_contains;
+use function str_starts_with;
 use function strlen;
-use function strpos;
 use function strtolower;
 use function substr;
 
@@ -111,7 +112,7 @@ final class LanguageServer
 
         array_map(
             static function (string $arg) use ($valid_long_options): void {
-                if (strpos($arg, '--') === 0 && $arg !== '--') {
+                if (str_starts_with($arg, '--') && $arg !== '--') {
                     $arg_name = (string) preg_replace('/=.*$/', '', substr($arg, 2), 1);
 
                     if (!in_array($arg_name, $valid_long_options, true)
@@ -260,12 +261,12 @@ final class LanguageServer
             $options['r'] = $options['root'];
         }
 
-        $current_dir = (string)getcwd() . DIRECTORY_SEPARATOR;
+        $current_dir = (string) getcwd();
 
         if (isset($options['r']) && is_string($options['r'])) {
             $root_path = realpath($options['r']);
 
-            if (!$root_path) {
+            if ($root_path === false) {
                 fwrite(
                     STDERR,
                     'Could not locate root directory ' . $current_dir . DIRECTORY_SEPARATOR . $options['r'] . PHP_EOL,
@@ -273,7 +274,7 @@ final class LanguageServer
                 exit(1);
             }
 
-            $current_dir = $root_path . DIRECTORY_SEPARATOR;
+            $current_dir = $root_path;
         }
 
         $vendor_dir = CliUtils::getVendorDir($current_dir);
@@ -284,7 +285,7 @@ final class LanguageServer
             // we ignore the FQN because of a hack in scoper.inc that needs full path
             // phpcs:ignore SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName
             static fn(): ?\Composer\Autoload\ClassLoader =>
-                CliUtils::requireAutoloaders($current_dir, isset($options['r']), $vendor_dir)
+                CliUtils::requireAutoloaders($current_dir, isset($options['r']), $vendor_dir),
         );
 
         if (array_key_exists('v', $options)) {
@@ -317,11 +318,9 @@ final class LanguageServer
 
         $path_to_config = CliUtils::getPathToConfig($options);
 
-        if (isset($options['tcp'])) {
-            if (!is_string($options['tcp'])) {
-                fwrite(STDERR, 'tcp url should be a string' . PHP_EOL);
-                exit(1);
-            }
+        if (isset($options['tcp']) && !is_string($options['tcp'])) {
+            fwrite(STDERR, 'tcp url should be a string' . PHP_EOL);
+            exit(1);
         }
 
         $config = CliUtils::initializeConfig(
@@ -437,7 +436,7 @@ final class LanguageServer
         }
 
         if (is_string($map_folder)) {
-            if (strpos($map_folder, ':') === false) {
+            if (!str_contains($map_folder, ':')) {
                 fwrite(
                     STDERR,
                     'invalid format for --map-folder option' . PHP_EOL,

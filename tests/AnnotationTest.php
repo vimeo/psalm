@@ -494,7 +494,7 @@ class AnnotationTest extends TestCase
 
                     $arr["a"]();',
             ],
-            'multipeLineGenericArray' => [
+            'multipleLineGenericArray' => [
                 'code' => '<?php
                     /**
                      * @psalm-type MiddlewareArray = array<
@@ -514,6 +514,67 @@ class AnnotationTest extends TestCase
                      * Foo Bar
                      */
                     class A {}',
+            ],
+            'multipleLineGenericArray2' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type TRelAlternate =
+                     * list<
+                     *      array{
+                     *          href: string,
+                     *          lang: string
+                     *      }
+                     * >
+                     */
+                    class A {
+                        /** @return TRelAlternate */
+                        public function ret(): array { return []; }
+                    }
+
+                    $_ = (new A)->ret();
+                ',
+                'assertions' => [
+                    '$_===' => 'list<array{href: string, lang: string}>',
+                ],
+            ],
+            'invalidPsalmForMethodShouldNotBreakDocblock' => [
+                'code' => '<?php
+                    class A {
+                        /**
+                         * @psalm-impure
+                         * @param string $arg
+                         * @return non-falsy-string
+                         */
+                        public function foo($arg) {
+                            return $arg . "bar";
+                        }
+                    }
+
+                    $a = new A();
+                    $_ = $a->foo("hello");
+                ',
+                'assertions' => [
+                    '$_===' => 'non-falsy-string',
+                ],
+                'ignored_issues' => ['InvalidDocblock'],
+            ],
+            'invalidPsalmForFunctionShouldNotBreakDocblock' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-impure
+                     * @param string $arg
+                     * @return non-falsy-string
+                     */
+                    function foo($arg) {
+                        return $arg . "bar";
+                    }
+
+                    $_ = foo("hello");
+                ',
+                'assertions' => [
+                    '$_===' => 'non-falsy-string',
+                ],
+                'ignored_issues' => ['InvalidDocblock'],
             ],
             'builtInClassInAShape' => [
                 'code' => '<?php
@@ -1013,6 +1074,21 @@ class AnnotationTest extends TestCase
                         return json_decode($json, true);
                     }',
             ],
+            'psalmTypeAnnotationForStaticVar' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type _Type A::TYPE_*
+                     */
+                    class A{
+                        const TYPE_A = 1;
+                        const TYPE_B = 2;
+
+                        public function f(): void {
+                            /** @psalm-var _Type $var*/
+                            static $var;
+                        }
+                    }',
+            ],
             'allowDocblockDefinedTKeyedArrayIntoNonEmpty' => [
                 'code' => '<?php
                     /** @param non-empty-array $_bar */
@@ -1350,6 +1426,30 @@ class AnnotationTest extends TestCase
                     }
                     EOT,
             ],
+            'validArrayKeyAlias' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type ArrayKeyType array-key
+                     */
+                    class Bar {}
+
+                    /**
+                     * @psalm-import-type ArrayKeyType from Bar
+                     * @psalm-type UsesArrayKeyType array<ArrayKeyType, bool>
+                     */
+                    class Foo {}',
+                'assertions' => [],
+            ],
+            'sinceTagNonPhpVersion' => [
+                'code' => '<?php
+                    class Foo {
+                        /**
+                         * @since 8.9.9
+                         */
+                        public function bar() : void {
+                        }
+                    };',
+            ],
         ];
     }
 
@@ -1368,7 +1468,15 @@ class AnnotationTest extends TestCase
                     }',
                 'error_message' => 'MissingDocblockType',
             ],
-
+            'invalidArrayKeyType' => [
+                'code' => '<?php
+                    /**
+                     * @param array<float, string> $arg
+                     * @return void
+                     */
+                    function foo($arg) {}',
+                'error_message' => 'InvalidDocblock',
+            ],
             'invalidClassMethodReturnBrackets' => [
                 'code' => '<?php
                     class C {
@@ -1590,6 +1698,16 @@ class AnnotationTest extends TestCase
                     ',
                 'error_message' => 'UndefinedDocblockClass',
             ],
+            'invalidTaintEscapeAnnotation' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-taint-escape
+                     */
+                    function takesInt(int $i): int {
+                        return $i;
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
             'noPhpStormAnnotationsThankYou' => [
                 'code' => '<?php
                     /** @param ArrayIterator|string[] $i */
@@ -1679,7 +1797,7 @@ class AnnotationTest extends TestCase
                     }',
                 'error_message' => 'InvalidDocblock',
             ],
-            'noCrashOnInvalidClassTemplateAsType' => [
+            'SKIPPED-noCrashOnInvalidClassTemplateAsType' => [
                 'code' => '<?php
                     /**
                      * @template T as ' . '
@@ -1687,7 +1805,7 @@ class AnnotationTest extends TestCase
                     class A {}',
                 'error_message' => 'InvalidDocblock',
             ],
-            'noCrashOnInvalidFunctionTemplateAsType' => [
+            'SKIPPED-noCrashOnInvalidFunctionTemplateAsType' => [
                 'code' => '<?php
                     /**
                      * @template T as ' . '

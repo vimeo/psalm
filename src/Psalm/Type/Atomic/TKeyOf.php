@@ -16,11 +16,8 @@ use function array_values;
  */
 final class TKeyOf extends TArrayKey
 {
-    public Union $type;
-
-    public function __construct(Union $type, bool $from_docblock = false)
+    public function __construct(public Union $type, bool $from_docblock = false)
     {
-        $this->type = $type;
         parent::__construct($from_docblock);
     }
 

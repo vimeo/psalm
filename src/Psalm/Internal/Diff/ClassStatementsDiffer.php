@@ -8,9 +8,8 @@ use PhpParser;
 use UnexpectedValueException;
 
 use function count;
-use function get_class;
 use function is_string;
-use function strpos;
+use function str_contains;
 use function strtolower;
 use function substr;
 use function trim;
@@ -45,7 +44,7 @@ final class ClassStatementsDiffer extends AstDiffer
                 string $b_code,
                 bool &$body_change = false,
             ) use (&$diff_map): bool {
-                if (get_class($a) !== get_class($b)) {
+                if ($a::class !== $b::class) {
                     return false;
                 }
 
@@ -91,7 +90,6 @@ final class ClassStatementsDiffer extends AstDiffer
                     $start_diff = $b_start - $a_start;
                     $line_diff = $b->getLine() - $a->getLine();
 
-                    /** @psalm-suppress MixedArrayAssignment */
                     $diff_map[] = [$a_start, $a_end, $start_diff, $line_diff];
 
                     return true;
@@ -146,8 +144,8 @@ final class ClassStatementsDiffer extends AstDiffer
                             $a_signature = trim($a_signature);
                             $b_signature = trim($b_signature);
 
-                            if (strpos($a_signature, $b_signature) === false
-                                && strpos($b_signature, $a_signature) === false
+                            if (!str_contains($a_signature, $b_signature)
+                                && !str_contains($b_signature, $a_signature)
                             ) {
                                 $signature_change = true;
                             }
@@ -185,7 +183,6 @@ final class ClassStatementsDiffer extends AstDiffer
                 }
 
                 if (!$signature_change && !$body_change) {
-                    /** @psalm-suppress MixedArrayAssignment */
                     $diff_map[] = [$a_start, $a_end, $b_start - $a_start, $b->getLine() - $a->getLine()];
                 }
 

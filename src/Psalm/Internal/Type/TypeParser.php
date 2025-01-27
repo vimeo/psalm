@@ -9,6 +9,7 @@ use LogicException;
 use Psalm\Codebase;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Type\ParseTree\CallableParamTree;
 use Psalm\Internal\Type\ParseTree\CallableTree;
 use Psalm\Internal\Type\ParseTree\CallableWithReturnTypeTree;
@@ -50,13 +51,16 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TPropertiesOf;
+use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateIndexedAccess;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -85,13 +89,14 @@ use function count;
 use function defined;
 use function end;
 use function explode;
-use function get_class;
 use function in_array;
 use function is_int;
 use function is_numeric;
 use function preg_match;
 use function preg_replace;
 use function reset;
+use function str_contains;
+use function str_starts_with;
 use function stripslashes;
 use function strlen;
 use function strpos;
@@ -125,8 +130,8 @@ final class TypeParser
             // Note: valid identifiers can include class names or $this
             if (!preg_match('@^(\$this|\\\\?[a-zA-Z_\x7f-\xff][\\\\\-0-9a-zA-Z_\x7f-\xff]*)$@', $only_token[0])) {
                 if (!is_numeric($only_token[0])
-                    && strpos($only_token[0], '\'') !== false
-                    && strpos($only_token[0], '"') !== false
+                    && str_contains($only_token[0], '\'')
+                    && str_contains($only_token[0], '"')
                 ) {
                     throw new TypeParseTreeException("Invalid type '$only_token[0]'");
                 }
@@ -394,7 +399,7 @@ final class TypeParser
         }
 
         if (!$parse_tree instanceof Value) {
-            throw new InvalidArgumentException('Unrecognised parse tree type ' . get_class($parse_tree));
+            throw new InvalidArgumentException('Unrecognised parse tree type ' . $parse_tree::class);
         }
 
         if ($parse_tree->value[0] === '"' || $parse_tree->value[0] === '\'') {
@@ -635,20 +640,86 @@ final class TypeParser
             throw new TypeParseTreeException('No generic params provided for type');
         }
 
-        if ($generic_type_value === 'array' || $generic_type_value === 'associative-array') {
+        if ($generic_type_value === 'array'
+            || $generic_type_value === 'associative-array'
+            || $generic_type_value === 'non-empty-array'
+        ) {
+            if ($generic_type_value !== 'non-empty-array') {
+                $generic_type_value = 'array';
+            }
+
             if ($generic_params[0]->isMixed()) {
                 $generic_params[0] = Type::getArrayKey($from_docblock);
             }
 
             if (count($generic_params) !== 2) {
-                throw new TypeParseTreeException('Too many template parameters for array');
+                throw new TypeParseTreeException('Too many template parameters for '.$generic_type_value);
             }
 
-            return new TArray($generic_params, $from_docblock);
+            if ($type_aliases !== []) {
+                $intersection_types = self::resolveTypeAliases(
+                    $codebase,
+                    $generic_params[0]->getAtomicTypes(),
+                );
+
+                if ($intersection_types !== []) {
+                    $generic_params[0] = $generic_params[0]->setTypes($intersection_types);
+                }
+            }
+
+            foreach ($generic_params[0]->getAtomicTypes() as $key => $atomic_type) {
+                if ($atomic_type instanceof TLiteralString
+                    && ($string_to_int = ArrayAnalyzer::getLiteralArrayKeyInt($atomic_type->value)) !== false
+                ) {
+                    $builder = $generic_params[0]->getBuilder();
+                    $builder->removeType($key);
+                    $generic_params[0] = $builder->addType(new TLiteralInt($string_to_int, $from_docblock))->freeze();
+                    continue;
+                }
+
+                if ($atomic_type instanceof TInt
+                    || $atomic_type instanceof TString
+                    || $atomic_type instanceof TArrayKey
+                    || $atomic_type instanceof TClassConstant // @todo resolve and check types
+                    || $atomic_type instanceof TMixed
+                    || $atomic_type instanceof TNever
+                    || $atomic_type instanceof TTemplateParam
+                    || $atomic_type instanceof TTemplateIndexedAccess
+                    || $atomic_type instanceof TTemplateValueOf
+                    || $atomic_type instanceof TTemplateKeyOf
+                    || $atomic_type instanceof TTemplateParamClass
+                    || $atomic_type instanceof TTypeAlias
+                    || $atomic_type instanceof TValueOf
+                    || $atomic_type instanceof TConditional
+                    || $atomic_type instanceof TKeyOf
+                    || !$from_docblock
+                ) {
+                    continue;
+                }
+
+                if ($codebase->register_stub_files || $codebase->register_autoload_files) {
+                    $builder = $generic_params[0]->getBuilder();
+                    $builder->removeType($key);
+
+                    if (count($generic_params[0]->getAtomicTypes()) <= 1) {
+                        $builder = $builder->addType(new TArrayKey($from_docblock));
+                    }
+
+                    $generic_params[0] = $builder->freeze();
+                    continue;
+                }
+
+                throw new TypeParseTreeException('Invalid array key type ' . $atomic_type->getKey());
+            }
+
+            return $generic_type_value === 'array'
+                ? new TArray($generic_params, $from_docblock)
+                : new TNonEmptyArray($generic_params, null, null, 'non-empty-array', $from_docblock)
+            ;
         }
 
         if ($generic_type_value === 'arraylike-object') {
-            $array_acccess = new TGenericObject('ArrayAccess', $generic_params, false, false, [], $from_docblock);
+            $array_access = new TGenericObject('ArrayAccess', $generic_params, false, false, [], $from_docblock);
             $countable = new TNamedObject('Countable', false, false, [], $from_docblock);
             return new TGenericObject(
                 'Traversable',
@@ -656,23 +727,11 @@ final class TypeParser
                 false,
                 false,
                 [
-                    $array_acccess->getKey() => $array_acccess,
+                    $array_access->getKey() => $array_access,
                     $countable->getKey() => $countable,
                 ],
                 $from_docblock,
             );
-        }
-
-        if ($generic_type_value === 'non-empty-array') {
-            if ($generic_params[0]->isMixed()) {
-                $generic_params[0] = Type::getArrayKey($from_docblock);
-            }
-
-            if (count($generic_params) !== 2) {
-                throw new TypeParseTreeException('Too many template parameters for non-empty-array');
-            }
-
-            return new TNonEmptyArray($generic_params, null, null, 'non-empty-array', $from_docblock);
         }
 
         if ($generic_type_value === 'iterable') {
@@ -903,7 +962,7 @@ final class TypeParser
 
                 if (!$atomic_type instanceof TLiteralInt
                     && !($atomic_type instanceof TClassConstant
-                        && strpos($atomic_type->const_name, '*') === false)
+                        && !str_contains($atomic_type->const_name, '*'))
                 ) {
                     throw new TypeParseTreeException(
                         'int-mask types must all be integer values or scalar class constants',
@@ -943,7 +1002,7 @@ final class TypeParser
                     'Invalid reference passed to int-mask-of',
                 );
             } elseif ($param_type instanceof TClassConstant
-                && strpos($param_type->const_name, '*') === false
+                && !str_contains($param_type->const_name, '*')
             ) {
                 throw new TypeParseTreeException(
                     'Class constant passed to int-mask-of must be a wildcard type',
@@ -1214,6 +1273,7 @@ final class TypeParser
         foreach ($parse_tree->children as $child_tree) {
             $is_variadic = false;
             $is_optional = false;
+            $param_name = '';
 
             if ($child_tree instanceof CallableParamTree) {
                 if (isset($child_tree->children[0])) {
@@ -1231,6 +1291,7 @@ final class TypeParser
 
                 $is_variadic = $child_tree->variadic;
                 $is_optional = $child_tree->has_default;
+                $param_name = $child_tree->name ?? '';
             } else {
                 if ($child_tree instanceof Value && strpos($child_tree->value, '$') > 0) {
                     $child_tree->value = (string) preg_replace('/(.+)\$.*/', '$1', $child_tree->value);
@@ -1247,7 +1308,7 @@ final class TypeParser
             }
 
             $param = new FunctionLikeParameter(
-                '',
+                $param_name,
                 false,
                 $tree_type instanceof Union ? $tree_type : new Union([$tree_type]),
                 null,
@@ -1261,7 +1322,7 @@ final class TypeParser
             $params[] = $param;
         }
 
-        $pure = strpos($parse_tree->value, 'pure-') === 0 ? true : null;
+        $pure = str_starts_with($parse_tree->value, 'pure-') ? true : null;
 
         if (in_array(strtolower($parse_tree->value), ['closure', '\closure', 'pure-closure'], true)) {
             return new TClosure('Closure', $params, null, $pure, [], [], $from_docblock);
@@ -1312,7 +1373,7 @@ final class TypeParser
         $array_defining_class = array_keys($template_type_map[$array_param_name])[0];
 
         if ($offset_defining_class !== $array_defining_class
-            && strpos($offset_defining_class, 'fn-') !== 0
+            && !str_starts_with($offset_defining_class, 'fn-')
         ) {
             throw new TypeParseTreeException('Template params are defined in different locations');
         }
@@ -1404,14 +1465,18 @@ final class TypeParser
                     if ($const_name === 'class') {
                         $property_key = $fq_classlike_name;
                         $class_string = true;
-                    } else {
+                    } elseif ($property_branch->value[0] === '"' || $property_branch->value[0] === "'") {
                         $property_key = $property_branch->value;
+                    } else {
+                        throw new TypeParseTreeException(
+                            ':: in array key is only allowed for ::class',
+                        );
                     }
                 } else {
                     $property_key = $property_branch->value;
                 }
                 if ($is_list && (
-                        !is_numeric($property_key)
+                        ArrayAnalyzer::getLiteralArrayKeyInt($property_key) === false
                         || ($had_optional && !$property_maybe_undefined)
                         || $type === 'array'
                         || $type === 'callable-array'
@@ -1459,7 +1524,7 @@ final class TypeParser
             return new TObjectWithProperties($properties, [], [], $from_docblock);
         }
 
-        $callable = strpos($type, 'callable-') === 0;
+        $callable = str_starts_with($type, 'callable-');
         $class = TKeyedArray::class;
         if ($callable) {
             $class = TCallableKeyedArray::class;
@@ -1572,7 +1637,7 @@ final class TypeParser
                 continue;
             }
 
-            if (get_class($intersection_type) === TObject::class) {
+            if ($intersection_type::class === TObject::class) {
                 continue;
             }
 
@@ -1588,7 +1653,7 @@ final class TypeParser
 
             throw new TypeParseTreeException(
                 'Intersection types must be all objects, '
-                . get_class($intersection_type) . ' provided',
+                . $intersection_type::class . ' provided',
             );
         }
 
@@ -1621,7 +1686,9 @@ final class TypeParser
         $normalized_intersection_types = [];
         $modified = false;
         foreach ($intersection_types as $intersection_type) {
-            if (!$intersection_type instanceof TTypeAlias) {
+            if (!$intersection_type instanceof TTypeAlias
+                || !$codebase->classlike_storage_provider->has($intersection_type->declaring_fq_classlike_name)
+            ) {
                 $normalized_intersection_types[] = [$intersection_type];
                 continue;
             }

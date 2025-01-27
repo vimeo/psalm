@@ -18,18 +18,14 @@ use function assert;
 use function getcwd;
 use function is_string;
 
-use const DIRECTORY_SEPARATOR;
-
 /**
  * @internal
  */
 final class EnableCommand extends Command
 {
-    private PluginListFactory $plugin_list_factory;
-
-    public function __construct(PluginListFactory $plugin_list_factory)
-    {
-        $this->plugin_list_factory = $plugin_list_factory;
+    public function __construct(
+        private readonly PluginListFactory $plugin_list_factory,
+    ) {
         parent::__construct();
     }
 
@@ -52,7 +48,7 @@ final class EnableCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
 
-        $current_dir = (string) getcwd() . DIRECTORY_SEPARATOR;
+        $current_dir = (string) getcwd();
 
         $config_file_path = $input->getOption('config');
         if ($config_file_path !== null && !is_string($config_file_path)) {
@@ -67,7 +63,7 @@ final class EnableCommand extends Command
 
         try {
             $plugin_class = $plugin_list->resolvePluginClass($plugin_name);
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException) {
             $io->error('Unknown plugin class ' . $plugin_name);
 
             return 2;

@@ -165,13 +165,10 @@ final class FileReferenceProvider
      */
     private static array $method_param_uses = [];
 
-    private FileProvider $file_provider;
-    public ?FileReferenceCacheProvider $cache = null;
-
-    public function __construct(FileProvider $file_provider, ?FileReferenceCacheProvider $cache = null)
-    {
-        $this->file_provider = $file_provider;
-        $this->cache = $cache;
+    public function __construct(
+        private readonly FileProvider $file_provider,
+        public ?FileReferenceCacheProvider $cache = null,
+    ) {
     }
 
     /**
@@ -182,7 +179,7 @@ final class FileReferenceProvider
         if (self::$deleted_files === null) {
             self::$deleted_files = array_filter(
                 array_keys(self::$file_references),
-                fn(string $file_name): bool => !$this->file_provider->fileExists($file_name)
+                fn(string $file_name): bool => !$this->file_provider->fileExists($file_name),
             );
         }
 
@@ -386,7 +383,7 @@ final class FileReferenceProvider
 
                     try {
                         $referenced_files[] = $codebase->scanner->getClassLikeFilePath($fq_class_name_lc);
-                    } catch (UnexpectedValueException $e) {
+                    } catch (UnexpectedValueException) {
                         if (isset(self::$classlike_files[$fq_class_name_lc])) {
                             $referenced_files[] = self::$classlike_files[$fq_class_name_lc];
                         }
@@ -1233,7 +1230,7 @@ final class FileReferenceProvider
      */
     public function setTypeCoverage(array $mixed_counts): void
     {
-        self::$mixed_counts = array_merge(self::$mixed_counts, $mixed_counts);
+        self::$mixed_counts = [...self::$mixed_counts, ...$mixed_counts];
     }
 
     /**

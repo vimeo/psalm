@@ -157,7 +157,7 @@ class FileProvider
      * @param null|callable(string):bool $filter
      * @return list<string>
      */
-    public function getFilesInDir(string $dir_path, array $file_extensions, callable $filter = null): array
+    public function getFilesInDir(string $dir_path, array $file_extensions, ?callable $filter = null): array
     {
         $file_paths = [];
 
@@ -170,7 +170,7 @@ class FileProvider
             $iterator = new RecursiveCallbackFilterIterator(
                 $iterator,
                 /** @param mixed $_ */
-                static function (string $current, $_, RecursiveIterator $iterator) use ($filter): bool {
+                static function (string $current, mixed $_, RecursiveIterator $iterator) use ($filter): bool {
                     if ($iterator->hasChildren()) {
                         $path = $current . DIRECTORY_SEPARATOR;
                     } else {

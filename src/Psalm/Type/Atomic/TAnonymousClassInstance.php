@@ -11,8 +11,6 @@ namespace Psalm\Type\Atomic;
  */
 final class TAnonymousClassInstance extends TNamedObject
 {
-    public ?string $extends = null;
-
     /**
      * @param string $value the name of the object
      * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties> $extra_types
@@ -20,12 +18,10 @@ final class TAnonymousClassInstance extends TNamedObject
     public function __construct(
         string $value,
         bool $is_static = false,
-        ?string $extends = null,
+        public ?string $extends = null,
         array $extra_types = [],
     ) {
         parent::__construct($value, $is_static, false, $extra_types);
-
-        $this->extends = $extends;
     }
 
     public function toPhpString(
