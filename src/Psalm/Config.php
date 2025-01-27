@@ -1385,6 +1385,12 @@ final class Config
         return $config;
     }
 
+    /** @internal */
+    public static function setInstance(self $config): void
+    {
+        self::$instance = $config;
+    }
+
     public static function getInstance(): Config
     {
         if (self::$instance) {
@@ -2428,9 +2434,7 @@ final class Config
             // as they might be autoloadable once we require the autoloader below
             $codebase->classlikes->forgetMissingClassLikes();
 
-            $this->include_collector->runAndCollect(
-                $this->requireAutoloader(...),
-            );
+            $this->include_collector->runAndCollect($this->requireAutoloader(...));
         }
 
         $this->collectPredefinedConstants();

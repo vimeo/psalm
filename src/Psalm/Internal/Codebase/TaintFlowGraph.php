@@ -498,9 +498,4 @@ final class TaintFlowGraph extends DataFlowGraph
             $this->doesForwardEdgeExist(...),
         );
     }
-
-    private function doesForwardEdgeExist(DataFlowNode $new_source): bool
-    {
-        return isset($this->forward_edges[$new_source->id]);
-    }
 }

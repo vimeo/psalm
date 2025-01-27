@@ -101,7 +101,8 @@ use function substr_count;
 
 use const PHP_VERSION_ID;
 
-/**
+/** 
+ * @psalm-import-type PoolData from Scanner
  * @api
  */
 final class Codebase
@@ -324,6 +325,43 @@ final class Codebase
     }
 
     /**
+     * @internal
+     * @param PoolData $pool_data
+     */
+    public function addThreadData(array $pool_data): void
+    {
+        IssueBuffer::addIssues($pool_data['issues']);
+
+        $this->statements_provider->addChangedMembers(
+            $pool_data['changed_members'],
+        );
+        $this->statements_provider->addUnchangedSignatureMembers(
+            $pool_data['unchanged_signature_members'],
+        );
+        $this->statements_provider->addDiffMap(
+            $pool_data['diff_map'],
+        );
+        $this->statements_provider->addDeletionRanges(
+            $pool_data['deletion_ranges'],
+        );
+        $this->statements_provider->addErrors($pool_data['errors']);
+
+        if ($this->taint_flow_graph && $pool_data['taint_data']) {
+            $this->taint_flow_graph->addGraph($pool_data['taint_data']);
+        }
+
+        $this->file_storage_provider->addMore($pool_data['file_storage']);
+        $this->classlike_storage_provider->addMore($pool_data['classlike_storage']);
+
+        $this->classlikes->addThreadData($pool_data['classlikes_data']);
+
+        if ($this->statements_provider->parser_cache_provider) {
+            $this->statements_provider->parser_cache_provider->addNewFileContentHashes(
+                $pool_data['new_file_content_hashes'],
+            );
+        }
+    }
+    /**
      * @param array<string> $candidate_files
      */
     public function reloadFiles(ProjectAnalyzer $project_analyzer, array $candidate_files, bool $force = false): void
@@ -431,9 +469,9 @@ final class Codebase
     /**
      * Scans all files their related files
      */
-    public function scanFiles(int $threads = 1): void
+    public function scanFiles(): void
     {
-        $has_changes = $this->scanner->scanFiles($this->classlikes, $threads);
+        $has_changes = $this->scanner->scanFiles($this->classlikes);
 
         if ($has_changes) {
             $this->populator->populateCodebase();
@@ -492,6 +530,11 @@ final class Codebase
         }
     }
 
+    /** @internal */
+    public function getProgress(): Progress
+    {
+        return $this->progress;
+    }
     public static function getPsalmTypeFromReflection(?ReflectionType $type): Union
     {
         return Reflection::getPsalmTypeFromReflectionType($type);

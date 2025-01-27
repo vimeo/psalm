@@ -524,8 +524,8 @@ final class CliUtils
 
     public static function checkRuntimeRequirements(): void
     {
-        $required_php_version = 7_04_00;
-        $required_php_version_text = '7.4.0';
+        $required_php_version = 8_01_17;
+        $required_php_version_text = '8.1.17';
 
         // the following list was taken from vendor/composer/platform_check.php
         // It includes both Psalm's requirements (from composer.json) and the

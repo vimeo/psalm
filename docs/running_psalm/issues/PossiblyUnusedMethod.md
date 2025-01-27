@@ -9,6 +9,7 @@ with `@psalm-api`.
 ```php
 <?php
 
+/** @psalm-api */
 class A {
     public function foo() : void {}
     public function bar() : void {}

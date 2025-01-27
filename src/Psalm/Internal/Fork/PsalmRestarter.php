@@ -140,6 +140,14 @@ final class PsalmRestarter extends XdebugHandler
         return $value;
     }
 
+    public const OPCACHE_OPTIONS = [
+        '-dopcache.enable_cli=true',
+        '-dopcache.jit_buffer_size=512M',
+        '-dopcache.jit=1205',
+        '-dopcache.optimization_level=0x7FFEBFFF',
+        '-dopcache.preload=',
+        '-dopcache.log_verbosity_level=0',
+    ];
 
     /**
      * No type hint to allow xdebug-handler v1 and v2 usage
