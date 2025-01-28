@@ -27,7 +27,6 @@ use function Amp\ByteStream\getStdout;
 use function Amp\ByteStream\pipe;
 use function Amp\Future\await;
 use function Amp\async;
-use function array_map;
 use function count;
 use function extension_loaded;
 use function gc_collect_cycles;
@@ -46,7 +45,7 @@ use const PHP_EOL;
  *
  * @internal
  */
-final class ParallelPool implements PoolInterface
+final class Pool
 {
     private readonly WorkerPool $pool;
     private readonly Progress $progress;

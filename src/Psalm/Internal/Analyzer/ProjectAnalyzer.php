@@ -269,11 +269,11 @@ final class ProjectAnalyzer
 
         self::$instance = $this;
 
-        if ($threads > 1) {
-            $this->pool = new Pool($threads, $this);
-        }
         if ($scanThreads > 1) {
-            $this->scanPool = new Pool($scanThreads, $this);
+            $this->scanPool = new Pool($scanThreads, $this, false);
+        }
+        if ($threads > 1) {
+            $this->pool = new Pool($threads, $this, true);
         }
     }
 
