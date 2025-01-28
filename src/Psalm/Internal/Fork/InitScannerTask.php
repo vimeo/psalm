@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Fork;
 
 use Amp\Cancellation;
@@ -9,12 +11,17 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 
+use function Amp\delay;
+use function var_dump;
+
 use const PHP_EOL;
 
 final class InitScannerTask implements Task
 {
     final public function run(Channel $channel, Cancellation $cancellation): mixed
     {
+        var_dump("here");
+        return 'done';
         $analyzer = ProjectAnalyzer::getInstance();
         $analyzer->progress->debug('Initialising forked process for scanning' . PHP_EOL);
 

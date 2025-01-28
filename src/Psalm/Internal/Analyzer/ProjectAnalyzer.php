@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Analyzer;
 
-use Fidry\CpuCoreCounter\CpuCoreCounter;
-use Fidry\CpuCoreCounter\NumberOfCpuCoreNotFound;
 use InvalidArgumentException;
 use Psalm\Codebase;
 use Psalm\Config;

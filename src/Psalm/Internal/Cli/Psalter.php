@@ -48,7 +48,6 @@ use function implode;
 use function in_array;
 use function is_array;
 use function is_dir;
-use function is_numeric;
 use function is_string;
 use function microtime;
 use function pathinfo;

@@ -9,6 +9,8 @@ use Amp\Future;
 use Amp\Parallel\Context\Context;
 use Amp\Parallel\Context\ContextFactory;
 use Amp\Parallel\Context\ProcessContextFactory;
+use Amp\Parallel\Ipc\IpcHub;
+use Amp\Parallel\Ipc\LocalIpcHub;
 use Amp\Parallel\Worker\ContextWorkerFactory;
 use Amp\Parallel\Worker\ContextWorkerPool;
 use Amp\Parallel\Worker\Task;
@@ -20,11 +22,11 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Progress\Progress;
 use Throwable;
 
-use function Amp\async;
 use function Amp\ByteStream\getStderr;
 use function Amp\ByteStream\getStdout;
 use function Amp\ByteStream\pipe;
 use function Amp\Future\await;
+use function Amp\async;
 use function array_map;
 use function count;
 use function extension_loaded;
@@ -32,11 +34,6 @@ use function gc_collect_cycles;
 
 use const PHP_BINARY;
 use const PHP_EOL;
-use const SIGALRM;
-use const SIGTERM;
-use const STREAM_IPPROTO_IP;
-use const STREAM_PF_UNIX;
-use const STREAM_SOCK_STREAM;
 
 /**
  * Adapted with relatively few changes from
@@ -56,7 +53,7 @@ final class ParallelPool implements PoolInterface
     /**
      * @param int<2, max> $threads
      */
-    public function __construct(private readonly int $threads, ProjectAnalyzer $project_analyzer)
+    public function __construct(private readonly int $threads, ProjectAnalyzer $project_analyzer, bool $fork)
     {
         // TODO: disable xdebug
         $additional_options = [];
@@ -71,7 +68,22 @@ final class ParallelPool implements PoolInterface
         $this->pool = new ContextWorkerPool(
             $threads,
             new ContextWorkerFactory(
-                contextFactory: new class($additional_options) implements ContextFactory {
+                contextFactory: $fork ? new class() implements ContextFactory {
+                    /**
+                     * @param positive-int $childConnectTimeout Number of seconds the child will attempt to connect to the parent
+                     *      before failing.
+                     * @param IpcHub $ipcHub Optional IpcHub instance.
+                     */
+                    public function __construct(
+                        private readonly int $childConnectTimeout = 5,
+                        private readonly IpcHub $ipcHub = new LocalIpcHub(),
+                    ) {
+                    }
+                    public function start(string|array $script, ?Cancellation $cancellation = null): Context
+                    {
+                        return ForkContext::start($script, $this->ipcHub, $cancellation, $this->childConnectTimeout);
+                    }
+                } : new class($additional_options) implements ContextFactory {
                     private ProcessContextFactory $factory;
                     public function __construct(array $additional_options)
                     {
@@ -86,7 +98,7 @@ final class ParallelPool implements PoolInterface
                         async(pipe(...), $context->getStderr(), getStderr())->ignore();
                         return $context;
                     }
-                }
+                },
             ),
         );
 
@@ -99,7 +111,7 @@ final class ParallelPool implements PoolInterface
     public function run(
         array $process_task_data_iterator,
         string $main_task,
-        ?Closure $task_done_closure = null
+        ?Closure $task_done_closure = null,
     ): void {
         $total = count($process_task_data_iterator);
         $this->progress->debug("Processing ".$total." tasks...".PHP_EOL);

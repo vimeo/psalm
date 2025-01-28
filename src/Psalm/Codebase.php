@@ -101,7 +101,7 @@ use function substr_count;
 
 use const PHP_VERSION_ID;
 
-/** 
+/**
  * @psalm-import-type PoolData from Scanner
  * @api
  */

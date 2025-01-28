@@ -7,7 +7,8 @@ namespace Psalm\Internal\Fork;
 use Closure;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 
-interface PoolInterface {
+interface PoolInterface
+{
 
     /**
      * @param int<2, max> $threads
@@ -34,7 +35,7 @@ interface PoolInterface {
     public function run(
         array $process_task_data_iterator,
         string $main_task,
-        ?Closure $task_done_closure = null
+        ?Closure $task_done_closure = null,
     ): void;
 
 

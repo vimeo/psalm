@@ -6,7 +6,6 @@ namespace Psalm\Internal\Cli;
 
 use AssertionError;
 use Composer\XdebugHandler\XdebugHandler;
-use Fidry\CpuCoreCounter\CpuCoreCounter;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\CliUtils;
 use Psalm\Internal\Composer;
@@ -39,9 +38,7 @@ use function implode;
 use function in_array;
 use function ini_set;
 use function is_array;
-use function is_numeric;
 use function is_string;
-use function max;
 use function microtime;
 use function preg_last_error_msg;
 use function preg_replace;
