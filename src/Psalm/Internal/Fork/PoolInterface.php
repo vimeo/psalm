@@ -14,8 +14,6 @@ interface PoolInterface {
      */
     public function __construct(int $threads, ProjectAnalyzer $project_analyzer);
 
-
-
     /**
      * @template TFinalResult
      * @template TResult as array

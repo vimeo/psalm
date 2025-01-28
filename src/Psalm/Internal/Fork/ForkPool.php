@@ -7,8 +7,10 @@ namespace Psalm\Internal\Fork;
 use Closure;
 use Exception;
 use Psalm\Config;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Throwable;
 
+use function Amp\Socket\createSocketPair;
 use function array_fill_keys;
 use function array_keys;
 use function array_map;
@@ -68,7 +70,7 @@ use const STREAM_SOCK_STREAM;
  *
  * @internal
  */
-final class Pool
+final class ForkPool implements PoolInterface
 {
     private const EXIT_SUCCESS = 0;
     private const EXIT_FAILURE = 1;
@@ -76,7 +78,7 @@ final class Pool
     /** @var int[] */
     private array $child_pid_list = [];
 
-    /** @var resource[] */
+    /** @var ResourceSocket[] */
     private array $read_streams = [];
 
     /**
@@ -95,21 +97,7 @@ final class Pool
      * A closure to execute when a task is done
      * @psalm-suppress MixedAssignment
      */
-    public function __construct(
-        private readonly Config $config,
-        array $process_task_data_iterator,
-        Closure $startup_closure,
-        Closure $task_closure,
-        Closure $shutdown_closure,
-        private readonly ?Closure $task_done_closure = null,
-    ) {
-        $pool_size = count($process_task_data_iterator);
-
-        assert(
-            $pool_size > 1,
-            'The pool size must be >= 2 to use the fork pool.',
-        );
-
+    public function __construct(private readonly int $threads, ProjectAnalyzer $project_analyzer) {
         if (!extension_loaded('pcntl') || !extension_loaded('posix')) {
             echo
                 'The pcntl & posix extensions must be loaded in order for Psalm to be able to use multiple processes.'
@@ -132,9 +120,9 @@ final class Pool
 
         // Fork as many times as requested to get the given
         // pool size
-        for ($proc_id = 0; $proc_id < $pool_size; ++$proc_id) {
+        for ($proc_id = 0; $proc_id < $threads; ++$proc_id) {
             // Create an IPC socket pair.
-            $sockets = stream_socket_pair(STREAM_PF_UNIX, STREAM_SOCK_STREAM, STREAM_IPPROTO_IP);
+            $sockets = createSocketPair();
             if (!$sockets) {
                 error_log('unable to create stream socket pair');
                 exit(self::EXIT_FAILURE);
@@ -150,7 +138,7 @@ final class Pool
             if ($pid > 0) {
                 $is_parent = true;
                 $this->child_pid_list[] = $pid;
-                $this->read_streams[] = self::streamForParent($sockets);
+                $this->read_streams[] = $sockets[0];
                 continue;
             }
 
@@ -163,20 +151,14 @@ final class Pool
 
         // If we're the parent, return
         if ($is_parent) {
+            $this->runAll(new InitStartupTask($project_analyzer));
+            $this->runAll(new InitScannerTask());
+    
             return;
         }
 
         // Get the write stream for the child.
         $write_stream = self::streamForChild($sockets);
-
-        // Execute anything the children wanted to execute upon
-        // starting up
-        $startup_closure();
-
-        // Get the work for this process
-        $task_data_iterator = array_values($process_task_data_iterator)[$proc_id];
-
-        $task_done_buffer = '';
 
         try {
             foreach ($task_data_iterator as $i => $task_data) {
