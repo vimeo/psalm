@@ -289,14 +289,13 @@ final class Scanner
         }
 
         $project_analyzer = ProjectAnalyzer::getInstance();
-        $pool_size = $this->is_forked ? 1 : $project_analyzer->threads;
 
         $this->progress->expand(count($files_to_scan));
-        if ($pool_size > 1) {
+        if ($project_analyzer->scanPool !== null) {
             $cnt = count($files_to_scan);
             $this->progress->debug("Sending {$cnt} files to pool for scanning" . PHP_EOL);
 
-            $pool = ProjectAnalyzer::getInstance()->pool;
+            $pool = $project_analyzer->scanPool;
             $pool->runAll(new InitScannerTask);
 
             $pool->run(

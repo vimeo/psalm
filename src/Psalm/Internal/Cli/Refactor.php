@@ -6,6 +6,7 @@ namespace Psalm\Internal\Cli;
 
 use AssertionError;
 use Composer\XdebugHandler\XdebugHandler;
+use Fidry\CpuCoreCounter\CpuCoreCounter;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\CliUtils;
 use Psalm\Internal\Composer;
@@ -83,7 +84,7 @@ final class Refactor
         $valid_short_options = ['f:', 'm', 'h', 'r:', 'c:'];
         $valid_long_options = [
             'help', 'debug', 'debug-by-line', 'debug-emitted-issues', 'config:', 'root:',
-            'threads:', 'move:', 'into:', 'rename:', 'to:',
+            'scan-threads:', 'threads:', 'move:', 'into:', 'rename:', 'to:',
         ];
 
         // get options from command line
@@ -310,9 +311,10 @@ final class Refactor
             chdir($current_dir);
         }
 
-        $threads = isset($options['threads']) && is_numeric($options['threads'])
-            ? (int)$options['threads']
-            : max(1, ProjectAnalyzer::getCpuCount() - 2);
+        $in_ci = CliUtils::runningInCI();
+
+        $threads = Psalm::getThreads($options, $config, $in_ci, false);
+        $scanThreads = Psalm::getThreads($options, $config, $in_ci, true);
 
         $providers = new Providers(
             new FileProvider(),
@@ -338,6 +340,7 @@ final class Refactor
             new ReportOptions(),
             [],
             $threads,
+            $scanThreads,
             $progress,
         );
 

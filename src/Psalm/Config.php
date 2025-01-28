@@ -464,6 +464,7 @@ final class Config
     public array $internal_stubs = [];
 
     public ?int $threads = null;
+    public ?int $scan_threads = null;
 
     /**
      * A list of php extensions supported by Psalm.
@@ -1380,6 +1381,11 @@ final class Config
 
         if (isset($config_xml['threads'])) {
             $config->threads = (int)$config_xml['threads'];
+            $config->scan_threads = $config->threads;
+        }
+
+        if (isset($config_xml['scanThreads'])) {
+            $config->scan_threads = (int)$config_xml['scanThreads'];
         }
 
         return $config;

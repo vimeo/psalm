@@ -264,6 +264,7 @@ final class LanguageServer extends Dispatcher
             null,
             [],
             1,
+            1,
             $progress,
             $codebase,
         );

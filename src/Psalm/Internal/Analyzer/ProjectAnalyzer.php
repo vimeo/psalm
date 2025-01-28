@@ -165,7 +165,9 @@ final class ProjectAnalyzer
     private array $to_refactor = [];
 
     /** @internal */
-    public Pool $pool;
+    public ?Pool $pool = null;
+    /** @internal */
+    public ?Pool $scanPool = null;
 
     /**
      * @var array<int, class-string<CodeIssue>>
@@ -206,7 +208,8 @@ final class ProjectAnalyzer
         Providers $providers,
         public ?ReportOptions $stdout_report_options = null,
         public array $generated_report_options = [],
-        public int $threads = 1,
+        int $threads = 1,
+        public int $scanThreads = 1,
         ?Progress $progress = null,
         ?Codebase $codebase = null,
     ) {
@@ -270,6 +273,9 @@ final class ProjectAnalyzer
 
         if ($threads > 1) {
             $this->pool = new Pool($threads, $this);
+        }
+        if ($scanThreads > 1) {
+            $this->scanPool = new Pool($scanThreads, $this);
         }
     }
 
@@ -370,16 +376,6 @@ final class ProjectAnalyzer
         $server->logInfo("Initializing: Loading Reference Cache...");
         $this->file_reference_provider->loadReferenceCache();
         $this->codebase->enterServerMode();
-
-        $cpu_count = self::getCpuCount();
-
-        // let's not go crazy
-        $usable_cpus = $cpu_count - 2;
-
-        if ($usable_cpus > 1) {
-            $this->threads = $usable_cpus;
-            $this->pool = new Pool($usable_cpus, $this);
-        }
 
         $server->logInfo("Initializing: Initialize Plugins...");
         $this->config->initializePlugins($this);
@@ -1319,18 +1315,6 @@ final class ProjectAnalyzer
         $file_analyzer->interface_analyzers_to_analyze = [];
 
         return $function_analyzer;
-    }
-
-    /**
-     * Adapted from https://gist.github.com/divinity76/01ef9ca99c111565a72d3a8a6e42f7fb
-     * returns number of cpu cores
-     * Copyleft 2018, license: WTFPL
-     *
-     * @throws NumberOfCpuCoreNotFound
-     */
-    public static function getCpuCount(): int
-    {
-        return (new CpuCoreCounter())->getCount();
     }
 
     /**
