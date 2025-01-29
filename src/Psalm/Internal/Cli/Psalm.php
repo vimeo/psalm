@@ -422,6 +422,14 @@ final class Psalm
     /** @return int<1, max> */
     public static function getThreads(array $options, Config $config, bool $in_ci, bool $for_scan): int
     {
+        if (defined('PHP_WINDOWS_VERSION_MAJOR')) {
+            // No support desired for Windows at the moment
+            return 1;
+        } elseif (!extension_loaded('pcntl')) {
+            // Psalm requires pcntl for multi-threads support
+            return 1;
+        }
+
         if ($for_scan) {
             if (isset($options['scanThreads'])) {
                 $threads = max(1, (int)$options['scanThreads']);
