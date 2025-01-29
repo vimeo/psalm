@@ -16,7 +16,7 @@ use Psalm\IssueBuffer;
 /**
  * @internal
  * @psalm-import-type WorkerData from Analyzer
- * @implements Task<void, void, WorkerData>
+ * @implements Task<WorkerData, void, void>
  */
 final class ShutdownAnalyzerTask implements Task
 {
@@ -25,8 +25,6 @@ final class ShutdownAnalyzerTask implements Task
      */
     public function run(Channel $channel, Cancellation $cancellation): mixed
     {
-        $channel->send($channel->receive($cancellation));
-
         return self::getPoolData();
     }
 

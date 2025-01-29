@@ -10,8 +10,10 @@ use Amp\Sync\Channel;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 
-
-/** @internal */
+/**
+ * @internal
+ * @implements Task<null, void, void>
+ */
 final class InitAnalyzerTask implements Task
 {
     public function run(Channel $channel, Cancellation $cancellation): mixed

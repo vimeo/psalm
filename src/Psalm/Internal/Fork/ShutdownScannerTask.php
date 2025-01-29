@@ -16,7 +16,7 @@ use const PHP_EOL;
 /**
  * @internal
  * @psalm-import-type PoolData from Scanner
- * @implements Task<void, void, PoolData>
+ * @implements Task<PoolData, void, void>
  */
 final class ShutdownScannerTask implements Task
 {

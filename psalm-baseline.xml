@@ -1367,18 +1367,48 @@
       <code><![CDATA[$this->type_description]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
+  <file src="src/Psalm/Internal/Fork/ForkContext.php">
+    <InternalClass>
+      <code><![CDATA[new ContextChannel($ipcChannel)]]></code>
+      <code><![CDATA[new ExitFailure($exception)]]></code>
+      <code><![CDATA[new ExitFailure($exception)]]></code>
+      <code><![CDATA[new ExitSuccess($returnValue instanceof Future ? $returnValue->await() : $returnValue)]]></code>
+    </InternalClass>
+    <InternalMethod>
+      <code><![CDATA[getResult]]></code>
+      <code><![CDATA[new ContextChannel($ipcChannel)]]></code>
+      <code><![CDATA[new ExitFailure($exception)]]></code>
+      <code><![CDATA[new ExitFailure($exception)]]></code>
+      <code><![CDATA[new ExitSuccess($returnValue instanceof Future ? $returnValue->await() : $returnValue)]]></code>
+    </InternalMethod>
+    <MixedAssignment>
+      <code><![CDATA[$callable]]></code>
+      <code><![CDATA[$returnValue]]></code>
+    </MixedAssignment>
+    <MixedFunctionCall>
+      <code><![CDATA[$callable(new ContextChannel($ipcChannel))]]></code>
+    </MixedFunctionCall>
+    <MixedReturnStatement>
+      <code><![CDATA[$data->getResult()]]></code>
+    </MixedReturnStatement>
+    <UnusedVariable>
+      <code><![CDATA[$argc]]></code>
+    </UnusedVariable>
+  </file>
   <file src="src/Psalm/Internal/Fork/Pool.php">
-    <PossiblyFalseArgument>
-      <code><![CDATA[$buffer]]></code>
-    </PossiblyFalseArgument>
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[!$sockets]]></code>
-    </RiskyTruthyFalsyComparison>
+    <ArgumentTypeCoercion>
+      <code><![CDATA[$this->childConnectTimeout]]></code>
+    </ArgumentTypeCoercion>
   </file>
   <file src="src/Psalm/Internal/Fork/PsalmRestarter.php">
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$this->tmpIni]]></code>
     </RiskyTruthyFalsyComparison>
+  </file>
+  <file src="src/Psalm/Internal/Fork/ScannerTask.php">
+    <PossiblyUnusedMethod>
+      <code><![CDATA[__construct]]></code>
+    </PossiblyUnusedMethod>
   </file>
   <file src="src/Psalm/Internal/LanguageServer/Client/Progress/LegacyProgress.php">
     <RiskyTruthyFalsyComparison>

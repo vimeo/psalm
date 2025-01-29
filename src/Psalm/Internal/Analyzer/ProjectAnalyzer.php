@@ -199,7 +199,9 @@ final class ProjectAnalyzer
         Providers $providers,
         public ?ReportOptions $stdout_report_options = null,
         public array $generated_report_options = [],
+        /** @var int<1, max> */
         public int $threads = 1,
+        /** @var int<1, max> */
         public int $scanThreads = 1,
         ?Progress $progress = null,
         ?Codebase $codebase = null,

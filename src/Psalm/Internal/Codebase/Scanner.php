@@ -10,6 +10,7 @@ use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\ErrorHandler;
 use Psalm\Internal\Fork\InitScannerTask;
 use Psalm\Internal\Fork\Pool;
+use Psalm\Internal\Fork\ScannerTask;
 use Psalm\Internal\Fork\ShutdownScannerTask;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
@@ -291,42 +292,32 @@ final class Scanner
         }
 
         if (!$this->is_forked && $pool_size > 1 && count($files_to_scan) > 512) {
-            $pool_size = ceil(min($pool_size, count($files_to_scan) / 256));
+            $pool_size = (int) ceil(min($pool_size, count($files_to_scan) / 256));
         } else {
             $pool_size = 1;
         }
 
         $this->progress->expand(count($files_to_scan));
         if ($pool_size > 1) {
-            $process_file_paths = [];
-
-            $i = 0;
-
-            foreach ($files_to_scan as $file_path) {
-                $process_file_paths[$i % $pool_size][] = $file_path;
-                ++$i;
-            }
-
             $this->progress->debug('Forking process for scanning' . PHP_EOL);
 
             // Run scanning one file at a time, splitting the set of
             // files up among a given number of child processes.
             $pool = new Pool(
-                $this->config,
-                $process_file_paths,
-                InitScannerTask::runStatic(...),
-                $this->scanAPath(...),
-                ShutdownScannerTask::getPoolData(...),
-                function (): void {
-                    $this->progress->taskDone(0);
-                },
+                $pool_size,
+                $this->progress,
             );
+
+            $pool->runAll(new InitScannerTask);
+            $pool->run($files_to_scan, ScannerTask::class, function (): void {
+                $this->progress->taskDone(0);
+            });
 
             // Wait for all tasks to complete and collect the results.
             /**
              * @var array<int, PoolData>
              */
-            $forked_pool_data = $pool->wait();
+            $forked_pool_data = $pool->runAll(new ShutdownScannerTask);
 
             foreach ($forked_pool_data as $pool_data) {
                 IssueBuffer::addIssues($pool_data['issues']);

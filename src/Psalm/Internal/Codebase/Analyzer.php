@@ -17,6 +17,7 @@ use Psalm\Internal\FileManipulation\ClassDocblockManipulator;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\FileManipulation\FunctionDocblockManipulator;
 use Psalm\Internal\FileManipulation\PropertyDocblockManipulator;
+use Psalm\Internal\Fork\AnalyzerTask;
 use Psalm\Internal\Fork\InitAnalyzerTask;
 use Psalm\Internal\Fork\Pool;
 use Psalm\Internal\Fork\ShutdownAnalyzerTask;
@@ -37,7 +38,6 @@ use function array_values;
 use function count;
 use function explode;
 use function implode;
-use function intdiv;
 use function ksort;
 use function number_format;
 use function pathinfo;
@@ -300,60 +300,22 @@ final class Analyzer
 
         $codebase = $project_analyzer->getCodebase();
 
-        $task_done_closure = $this->taskDoneClosure(...);
+        $task_done_closure = $this->progress->taskDone(...);
 
         if ($pool_size > 1 && count($this->files_to_analyze) > $pool_size) {
-            $shuffle_count = $pool_size + 1;
-
-            $file_paths = array_values($this->files_to_analyze);
-
-            $count = count($file_paths);
-            /** @var int<0, max> */
-            $middle = intdiv($count, $shuffle_count);
-            $remainder = $count % $shuffle_count;
-
-            $new_file_paths = [];
-
-            for ($i = 0; $i < $shuffle_count; $i++) {
-                for ($j = 0; $j < $middle; $j++) {
-                    if ($j * $shuffle_count + $i < $count) {
-                        $new_file_paths[] = $file_paths[$j * $shuffle_count + $i];
-                    }
-                }
-
-                if ($remainder) {
-                    $new_file_paths[] = $file_paths[$middle * $shuffle_count + $remainder - 1];
-                    $remainder--;
-                }
-            }
-
-            $process_file_paths = [];
-
-            $i = 0;
-
-            foreach ($new_file_paths as $file_path) {
-                $process_file_paths[$i % $pool_size][] = $file_path;
-                ++$i;
-            }
-
             // Run analysis one file at a time, splitting the set of
             // files up among a given number of child processes.
             $pool = new Pool(
-                $this->config,
-                $process_file_paths,
-                InitAnalyzerTask::runStatic(...),
-                fn(int $_, string $file_path) => self::analysisWorker($this->config, $this->progress, $file_path),
-                ShutdownAnalyzerTask::getPoolData(...),
-                $task_done_closure,
+                $pool_size,
+                $project_analyzer->progress,
             );
 
             $this->progress->debug('Forking analysis' . "\n");
 
             // Wait for all tasks to complete and collect the results.
-            /**
-             * @var array<int, WorkerData>
-             */
-            $forked_pool_data = $pool->wait();
+            $pool->runAll(new InitAnalyzerTask);
+            $pool->run($this->files_to_analyze, AnalyzerTask::class, $task_done_closure);
+            $forked_pool_data = $pool->runAll(new ShutdownAnalyzerTask);
 
             $this->progress->debug('Collecting forked analysis results' . "\n");
 
@@ -467,10 +429,7 @@ final class Analyzer
             }
         } else {
             foreach ($this->files_to_analyze as $file_path => $_) {
-                self::analysisWorker($this->config, $this->progress, $file_path);
-
-                $issues = IssueBuffer::getIssuesDataForFile($file_path);
-                $task_done_closure($issues);
+                $task_done_closure(self::analysisWorker($this->config, $this->progress, $file_path));
             }
         }
     }
@@ -1501,32 +1460,9 @@ final class Analyzer
     }
 
     /**
-     * @param list<IssueData> $issues
-     */
-    private function taskDoneClosure(array $issues): void
-    {
-        $has_error = false;
-        $has_info = false;
-
-        foreach ($issues as $issue) {
-            switch ($issue->severity) {
-                case IssueData::SEVERITY_INFO:
-                    $has_info = true;
-                    break;
-                default:
-                    $has_error = true;
-                    break;
-            }
-        }
-
-        $this->progress->taskDone($has_error ? 2 : ($has_info ? 1 : 0));
-    }
-
-    /**
      * @internal
-     * @return list<IssueData>
      */
-    public static function analysisWorker(Config $config, Progress $progress, string $file_path): array
+    public static function analysisWorker(Config $config, Progress $progress, string $file_path): int
     {
         $extension = pathinfo($file_path, PATHINFO_EXTENSION);
 
@@ -1534,7 +1470,11 @@ final class Analyzer
 
         $filetype_analyzers = $config->getFiletypeAnalyzers();
         if (isset($filetype_analyzers[$extension])) {
-            $file_analyzer = new $filetype_analyzers[$extension](ProjectAnalyzer::getInstance(), $file_path, $file_name);
+            $file_analyzer = new $filetype_analyzers[$extension](
+                ProjectAnalyzer::getInstance(),
+                $file_path,
+                $file_name
+            );
         } else {
             $file_analyzer = new FileAnalyzer(ProjectAnalyzer::getInstance(), $file_path, $file_name);
         }
@@ -1546,6 +1486,20 @@ final class Analyzer
         $file_analyzer->clearSourceBeforeDestruction();
         unset($file_analyzer);
 
-        return IssueBuffer::getIssuesDataForFile($file_path);
+        $has_error = false;
+        $has_info = false;
+
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            switch ($issue->severity) {
+                case IssueData::SEVERITY_INFO:
+                    $has_info = true;
+                    break;
+                default:
+                    $has_error = true;
+                    break;
+            }
+        }
+
+        return $has_error ? 2 : ($has_info ? 1 : 0);
     }
 }

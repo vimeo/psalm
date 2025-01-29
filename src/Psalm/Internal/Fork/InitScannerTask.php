@@ -13,7 +13,10 @@ use Psalm\Internal\Provider\FileStorageProvider;
 
 use const PHP_EOL;
 
-/** @internal */
+/**
+ * @internal
+ * @implements Task<null, void, void>
+ */
 final class InitScannerTask implements Task
 {
     final public function run(Channel $channel, Cancellation $cancellation): mixed

@@ -1394,14 +1394,6 @@ final class Config
         return $config;
     }
 
-    /**
-     * @psalm-suppress PropertyTypeCoercion
-     * @internal */
-    public static function setInstance(self $config): void
-    {
-        self::$instance = $config;
-    }
-
     public static function getInstance(): Config
     {
         if (self::$instance) {

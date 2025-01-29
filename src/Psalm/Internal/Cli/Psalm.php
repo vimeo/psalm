@@ -419,11 +419,12 @@ final class Psalm
         }
     }
 
+    /** @return int<1, max> */
     public static function getThreads(array $options, Config $config, bool $in_ci, bool $for_scan): int
     {
         if ($for_scan) {
             if (isset($options['scanThreads'])) {
-                $threads = (int)$options['scanThreads'];
+                $threads = max(1, (int)$options['scanThreads']);
             } elseif (isset($options['debug']) || $in_ci) {
                 $threads = 1;
             } elseif ($config->scan_threads) {
@@ -433,7 +434,7 @@ final class Psalm
             }
         } else {
             if (isset($options['threads'])) {
-                $threads = (int)$options['threads'];
+                $threads = max(1, (int)$options['threads']);
             } elseif (isset($options['debug']) || $in_ci) {
                 $threads = 1;
             } elseif ($config->threads) {
@@ -991,6 +992,7 @@ final class Psalm
 
         $overcommit = null;
         try {
+            /** @psalm-suppress RiskyTruthyFalsyComparison */
             $overcommit = trim(file_get_contents('/proc/sys/vm/overcommit_memory') ?: '');
         } catch (Throwable) {
         }

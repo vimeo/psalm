@@ -9,7 +9,10 @@ use Amp\Parallel\Worker\Task;
 use Amp\Sync\Channel;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 
-/** @internal */
+/**
+ * @internal
+ * @implements Task<null, void, void>
+ */
 final class ScannerTask implements Task
 {
     public function __construct(private string $file)
