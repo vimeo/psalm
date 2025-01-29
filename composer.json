@@ -26,6 +26,7 @@
         "composer-runtime-api": "^2",
         "amphp/amp": "^3",
         "amphp/byte-stream": "^2",
+        "amphp/parallel": "^2.3",
         "composer/semver": "^1.4 || ^2.0 || ^3.0",
         "composer/xdebug-handler": "^2.0 || ^3.0",
         "dnoegel/php-xdg-base-dir": "^0.1.1",
