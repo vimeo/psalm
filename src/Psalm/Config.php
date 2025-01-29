@@ -464,6 +464,7 @@ final class Config
     public array $internal_stubs = [];
 
     public ?int $threads = null;
+    public ?int $scan_threads = null;
 
     /**
      * A list of php extensions supported by Psalm.
@@ -1380,9 +1381,20 @@ final class Config
 
         if (isset($config_xml['threads'])) {
             $config->threads = (int)$config_xml['threads'];
+            $config->scan_threads = $config->threads;
+        }
+
+        if (isset($config_xml['scanThreads'])) {
+            $config->scan_threads = (int)$config_xml['scanThreads'];
         }
 
         return $config;
+    }
+
+    /** @internal */
+    public static function setInstance(self $config): void
+    {
+        self::$instance = $config;
     }
 
     public static function getInstance(): Config
@@ -2428,9 +2440,7 @@ final class Config
             // as they might be autoloadable once we require the autoloader below
             $codebase->classlikes->forgetMissingClassLikes();
 
-            $this->include_collector->runAndCollect(
-                $this->requireAutoloader(...),
-            );
+            $this->include_collector->runAndCollect($this->requireAutoloader(...));
         }
 
         $this->collectPredefinedConstants();
