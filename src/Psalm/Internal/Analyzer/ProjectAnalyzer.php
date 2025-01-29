@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Analyzer;
 
-use Fidry\CpuCoreCounter\CpuCoreCounter;
-use Fidry\CpuCoreCounter\NumberOfCpuCoreNotFound;
 use InvalidArgumentException;
 use Psalm\Codebase;
 use Psalm\Config;
@@ -65,11 +63,9 @@ use function array_merge;
 use function array_shift;
 use function clearstatcache;
 use function count;
-use function defined;
 use function dirname;
 use function end;
 use function explode;
-use function extension_loaded;
 use function file_exists;
 use function fwrite;
 use function implode;

@@ -86,6 +86,7 @@ use function json_decode;
 use function libxml_clear_errors;
 use function libxml_get_errors;
 use function libxml_use_internal_errors;
+use function max;
 use function mkdir;
 use function phpversion;
 use function preg_match;
@@ -463,7 +464,9 @@ final class Config
      */
     public array $internal_stubs = [];
 
+    /** @var ?int<1, max> */
     public ?int $threads = null;
+    /** @var ?int<1, max> */
     public ?int $scan_threads = null;
 
     /**
@@ -1380,18 +1383,20 @@ final class Config
         }
 
         if (isset($config_xml['threads'])) {
-            $config->threads = (int)$config_xml['threads'];
+            $config->threads = max(1, (int)$config_xml['threads']);
             $config->scan_threads = $config->threads;
         }
 
         if (isset($config_xml['scanThreads'])) {
-            $config->scan_threads = (int)$config_xml['scanThreads'];
+            $config->scan_threads = max(1, (int)$config_xml['scanThreads']);
         }
 
         return $config;
     }
 
-    /** @internal */
+    /**
+     * @psalm-suppress PossiblyUnusedMethod, PropertyTypeCoercion
+     * @internal */
     public static function setInstance(self $config): void
     {
         self::$instance = $config;

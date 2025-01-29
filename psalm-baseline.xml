@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="dev-master@e9e270f363bd05ea3790890de3f04f6726ea5643">
+<files psalm-version="6.x-dev@d3c7ca5430b3a75d8fab6439af1eefe119d12512">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$comment_block->tags['variablesfrom'][0]]]></code>
@@ -1106,7 +1106,6 @@
       <code><![CDATA[!$paths_to_check]]></code>
       <code><![CDATA[$baseline_file_path]]></code>
       <code><![CDATA[$cache_directory]]></code>
-      <code><![CDATA[$config->threads]]></code>
       <code><![CDATA[$find_references_to]]></code>
       <code><![CDATA[empty($baselineFile)]]></code>
       <code><![CDATA[getenv('PSALM_SHEPHERD')]]></code>
@@ -2006,6 +2005,9 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/IssueBuffer.php">
+    <PossiblyUnusedMethod>
+      <code><![CDATA[getServer]]></code>
+    </PossiblyUnusedMethod>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$report_options->output_path]]></code>
       <code><![CDATA[$parent_issue_type]]></code>
