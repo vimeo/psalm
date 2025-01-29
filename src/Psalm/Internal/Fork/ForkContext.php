@@ -156,7 +156,7 @@ final class ForkContext extends AbstractContext
             ), E_USER_ERROR);
         }
 
-        EventLoop::run();
+        //EventLoop::run();
     }
 
     private bool $exited = false;

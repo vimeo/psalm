@@ -10,6 +10,7 @@ use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\ErrorHandler;
 use Psalm\Internal\Fork\InitScannerTask;
+use Psalm\Internal\Fork\InitStartupTask;
 use Psalm\Internal\Fork\ScannerTask;
 use Psalm\Internal\Fork\ShutdownScannerTask;
 use Psalm\Internal\Provider\FileProvider;
@@ -296,6 +297,7 @@ final class Scanner
             $cnt = count($files_to_scan);
             $this->progress->debug("Sending {$cnt} files to pool for scanning" . PHP_EOL);
 
+            $pool->runAll(new InitStartupTask($project_analyzer));
             $pool->runAll(new InitScannerTask);
 
             $pool->run(

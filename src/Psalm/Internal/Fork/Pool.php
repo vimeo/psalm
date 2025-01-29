@@ -106,9 +106,6 @@ final class Pool
             ),
         );
 
-        $this->runAll(new InitStartupTask($project_analyzer));
-        $this->runAll(new InitScannerTask());
-
         $this->progress = $project_analyzer->progress;
     }
 
