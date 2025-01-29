@@ -16,6 +16,7 @@ use Psalm\IssueBuffer;
 
 use function cli_get_process_title;
 use function define;
+use function defined;
 use function function_exists;
 use function gc_collect_cycles;
 use function gc_disable;
@@ -39,8 +40,13 @@ final class InitStartupTask implements Task
     }
     final public function run(Channel $channel, Cancellation $cancellation): mixed
     {
-        define('PSALM_VERSION', VersionUtils::getPsalmVersion());
-        define('PHP_PARSER_VERSION', VersionUtils::getPhpParserVersion());
+        if (!defined('PSALM_VERSION')) {
+            define('PSALM_VERSION', VersionUtils::getPsalmVersion());
+        }
+
+        if (!defined('PHP_PARSER_VERSION')) {
+            define('PHP_PARSER_VERSION', VersionUtils::getPhpParserVersion());
+        }
 
         CliUtils::checkRuntimeRequirements();
         gc_collect_cycles();

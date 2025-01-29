@@ -11,9 +11,6 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 
-use function Amp\delay;
-use function var_dump;
-
 use const PHP_EOL;
 
 final class InitScannerTask implements Task

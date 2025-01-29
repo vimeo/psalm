@@ -33,7 +33,6 @@ use function posix_kill;
 use function posix_strerror;
 use function sprintf;
 use function trigger_error;
-use function var_dump;
 
 use const E_USER_ERROR;
 

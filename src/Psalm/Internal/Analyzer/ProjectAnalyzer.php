@@ -162,10 +162,8 @@ final class ProjectAnalyzer
      */
     private array $to_refactor = [];
 
-    /** @internal */
-    public ?Pool $pool = null;
-    /** @internal */
-    public ?Pool $scanPool = null;
+    private ?Pool $pool = null;
+    private ?Pool $scanPool = null;
 
     /**
      * @var array<int, class-string<CodeIssue>>
@@ -206,8 +204,8 @@ final class ProjectAnalyzer
         Providers $providers,
         public ?ReportOptions $stdout_report_options = null,
         public array $generated_report_options = [],
-        int $threads = 1,
-        public int $scanThreads = 1,
+        public readonly int $threads = 1,
+        public readonly int $scanThreads = 1,
         ?Progress $progress = null,
         ?Codebase $codebase = null,
     ) {
@@ -268,13 +266,22 @@ final class ProjectAnalyzer
         }
 
         self::$instance = $this;
+    }
 
-        if ($scanThreads > 1) {
-            $this->scanPool = new Pool($scanThreads, $this, false);
+    public function getAnalysisPool(): ?Pool
+    {
+        if ($this->threads > 1) {
+            return $this->pool ??= new Pool($this->threads, $this, true);
         }
-        if ($threads > 1) {
-            $this->pool = new Pool($threads, $this, true);
+        return null;
+    }
+
+    public function getScanPool(): ?Pool
+    {
+        if ($this->scanThreads > 1) {
+            return $this->scanPool ??= new Pool($this->scanThreads, $this, false);
         }
+        return null;
     }
 
     private function clearCacheDirectoryIfConfigOrComposerLockfileChanged(): void

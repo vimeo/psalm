@@ -373,7 +373,7 @@ final class LanguageServer extends Dispatcher
         $this->logInfo("Initializing: Getting code base...");
         $progress->update('getting code base');
 
-        $this->logInfo("Initializing: Scanning files ({$this->project_analyzer->threads} Threads)...");
+        $this->logInfo("Initializing: Scanning files...");
         $progress->update('scanning files');
         $this->codebase->scanFiles();
 

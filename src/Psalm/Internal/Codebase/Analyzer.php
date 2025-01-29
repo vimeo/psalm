@@ -321,8 +321,9 @@ final class Analyzer
 
         $codebase = $project_analyzer->getCodebase();
 
-        if ($project_analyzer->threads > 1 && count($this->files_to_analyze) > $project_analyzer->threads) {
-            $shuffle_count = $project_analyzer->threads + 1;
+        $pool = $project_analyzer->getAnalysisPool();
+        if ($pool !== null) {
+            $shuffle_count = $pool->threads + 1;
 
             $file_paths = array_values($this->files_to_analyze);
 
@@ -351,13 +352,13 @@ final class Analyzer
 
             $this->progress->debug('Forking analysis' . "\n");
 
-            $project_analyzer->pool->run(
+            $pool->run(
                 $new_file_paths,
                 AnalyzerTask::class,
                 $this->taskDoneClosure(...),
             );
 
-            $forked_pool_data = $project_analyzer->pool->runAll(new ShutdownAnalyzerTask);
+            $forked_pool_data = $pool->runAll(new ShutdownAnalyzerTask);
 
             $this->progress->debug('Collecting forked analysis results' . "\n");
 

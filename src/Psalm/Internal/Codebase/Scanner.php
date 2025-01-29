@@ -291,11 +291,11 @@ final class Scanner
         $project_analyzer = ProjectAnalyzer::getInstance();
 
         $this->progress->expand(count($files_to_scan));
-        if ($project_analyzer->scanPool !== null) {
+        $pool = $project_analyzer->getScanPool();
+        if ($pool !== null) {
             $cnt = count($files_to_scan);
             $this->progress->debug("Sending {$cnt} files to pool for scanning" . PHP_EOL);
 
-            $pool = $project_analyzer->scanPool;
             $pool->runAll(new InitScannerTask);
 
             $pool->run(
