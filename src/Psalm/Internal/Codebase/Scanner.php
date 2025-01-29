@@ -292,13 +292,10 @@ final class Scanner
         $project_analyzer = ProjectAnalyzer::getInstance();
 
         $this->progress->expand(count($files_to_scan));
-        $pool = $project_analyzer->getScanPool();
+        $pool = $this->is_forked ? null : $project_analyzer->getScanPool();
         if ($pool !== null) {
             $cnt = count($files_to_scan);
             $this->progress->debug("Sending {$cnt} files to pool for scanning" . PHP_EOL);
-
-            $pool->runAll(new InitStartupTask($project_analyzer));
-            $pool->runAll(new InitScannerTask);
 
             $pool->run(
                 $files_to_scan,
@@ -311,11 +308,8 @@ final class Scanner
                 $this->addThreadData($pool_data['scanner_data']);
             }
         } else {
-            $i = 0;
-
             foreach ($files_to_scan as $file_path => $_) {
                 $this->scanAPath($file_path);
-                ++$i;
             }
         }
 

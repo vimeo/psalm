@@ -13,6 +13,8 @@ use Psalm\Exception\UnsupportedIssueToFixException;
 use Psalm\FileManipulation;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\Fork\InitScannerTask;
+use Psalm\Internal\Fork\InitStartupTask;
 use Psalm\Internal\Fork\Pool;
 use Psalm\Internal\LanguageServer\LanguageServer;
 use Psalm\Internal\MethodIdentifier;
@@ -279,7 +281,13 @@ final class ProjectAnalyzer
     public function getScanPool(): ?Pool
     {
         if ($this->scanThreads > 1) {
-            return $this->scanPool ??= new Pool($this->scanThreads, $this, false);
+            if ($this->scanPool === null) {
+                $pool = new Pool($this->scanThreads, $this, false);
+                $pool->runAll(new InitStartupTask($this));
+                $pool->runAll(new InitScannerTask);
+                $this->scanPool = $pool;
+            }
+            return $this->scanPool;
         }
         return null;
     }
