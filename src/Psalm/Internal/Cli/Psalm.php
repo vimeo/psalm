@@ -1319,7 +1319,10 @@ final class Psalm
                 If set, requires JIT acceleration to be available in order to run Psalm, exiting immediately if it cannot be enabled.
 
             --threads=INT
-                If greater than one, Psalm will run analysis on multiple threads, speeding things up.
+                If greater than one, Psalm will run the scan and analysis on multiple threads, speeding things up.
+
+            --scan-threads=INT
+                If greater than one, Psalm will run the scan on multiple threads, speeding things up (if specified, takes priority over the --threads flag).
 
             --no-diff
                 Turns off Psalm’s diff mode, checks all files regardless of whether they’ve changed.
