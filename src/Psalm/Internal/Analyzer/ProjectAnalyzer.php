@@ -204,6 +204,7 @@ final class ProjectAnalyzer
         public ?ReportOptions $stdout_report_options = null,
         public array $generated_report_options = [],
         public int $threads = 1,
+        public int $scanThreads = 1,
         ?Progress $progress = null,
         ?Codebase $codebase = null,
     ) {
@@ -364,15 +365,6 @@ final class ProjectAnalyzer
         $this->file_reference_provider->loadReferenceCache();
         $this->codebase->enterServerMode();
 
-        $cpu_count = self::getCpuCount();
-
-        // let's not go crazy
-        $usable_cpus = $cpu_count - 2;
-
-        if ($usable_cpus > 1) {
-            $this->threads = $usable_cpus;
-        }
-
         $server->logInfo("Initializing: Initialize Plugins...");
         $this->config->initializePlugins($this);
 
@@ -484,7 +476,7 @@ final class ProjectAnalyzer
 
             $this->config->initializePlugins($this);
 
-            $this->codebase->scanFiles($this->threads);
+            $this->codebase->scanFiles($this->scanThreads);
 
             $this->codebase->infer_types_from_usage = true;
         } else {
@@ -508,7 +500,7 @@ final class ProjectAnalyzer
 
                     $this->config->initializePlugins($this);
 
-                    $this->codebase->scanFiles($this->threads);
+                    $this->codebase->scanFiles($this->scanThreads);
                 } else {
                     $diff_no_files = true;
                 }
@@ -885,7 +877,7 @@ final class ProjectAnalyzer
 
         $this->config->initializePlugins($this);
 
-        $this->codebase->scanFiles($this->threads);
+        $this->codebase->scanFiles($this->scanThreads);
 
         $this->config->visitStubFiles($this->codebase, $this->progress);
 
@@ -995,7 +987,7 @@ final class ProjectAnalyzer
 
         $this->config->initializePlugins($this);
 
-        $this->codebase->scanFiles($this->threads);
+        $this->codebase->scanFiles($this->scanThreads);
 
         $this->config->visitStubFiles($this->codebase, $this->progress);
 
@@ -1039,7 +1031,7 @@ final class ProjectAnalyzer
         $this->config->initializePlugins($this);
 
 
-        $this->codebase->scanFiles($this->threads);
+        $this->codebase->scanFiles($this->scanThreads);
 
         $this->config->visitStubFiles($this->codebase, $this->progress);
 
