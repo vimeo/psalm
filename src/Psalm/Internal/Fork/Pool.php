@@ -21,9 +21,7 @@ use Psalm\Progress\Progress;
 use Throwable;
 
 use function Amp\Future\await;
-use function array_is_list;
 use function array_map;
-use function assert;
 use function count;
 use function gc_collect_cycles;
 
