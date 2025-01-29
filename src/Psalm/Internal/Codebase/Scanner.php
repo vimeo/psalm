@@ -7,10 +7,10 @@ namespace Psalm\Internal\Codebase;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
-use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\ErrorHandler;
+use Psalm\Internal\Fork\InitScannerTask;
 use Psalm\Internal\Fork\Pool;
-use Psalm\Internal\Provider\ClassLikeStorageProvider;
+use Psalm\Internal\Fork\ShutdownScannerTask;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
@@ -314,48 +314,9 @@ final class Scanner
             $pool = new Pool(
                 $this->config,
                 $process_file_paths,
-                function (): void {
-                    $this->progress->debug('Initialising forked process for scanning' . PHP_EOL);
-
-                    $project_analyzer = ProjectAnalyzer::getInstance();
-                    $codebase = $project_analyzer->getCodebase();
-                    $statements_provider = $codebase->statements_provider;
-
-                    $codebase->scanner->isForked();
-                    FileStorageProvider::deleteAll();
-                    ClassLikeStorageProvider::deleteAll();
-
-                    $statements_provider->resetDiffs();
-
-                    $this->progress->debug('Have initialised forked process for scanning' . PHP_EOL);
-                },
+                InitScannerTask::runStatic(...),
                 $this->scanAPath(...),
-                /**
-                 * @return PoolData
-                 */
-                function () {
-                    $this->progress->debug('Collecting data from forked scanner process' . PHP_EOL);
-                    $project_analyzer = ProjectAnalyzer::getInstance();
-                    $codebase = $project_analyzer->getCodebase();
-                    $statements_provider = $codebase->statements_provider;
-
-                    return [
-                        'classlikes_data' => $codebase->classlikes->getThreadData(),
-                        'scanner_data' => $codebase->scanner->getThreadData(),
-                        'issues' => IssueBuffer::getIssuesData(),
-                        'changed_members' => $statements_provider->getChangedMembers(),
-                        'unchanged_signature_members' => $statements_provider->getUnchangedSignatureMembers(),
-                        'diff_map' => $statements_provider->getDiffMap(),
-                        'deletion_ranges' => $statements_provider->getDeletionRanges(),
-                        'errors' => $statements_provider->getErrors(),
-                        'classlike_storage' => $codebase->classlike_storage_provider->getAll(),
-                        'file_storage' => $codebase->file_storage_provider->getAll(),
-                        'new_file_content_hashes' => $statements_provider->parser_cache_provider
-                            ? $statements_provider->parser_cache_provider->getNewFileContentHashes()
-                            : [],
-                        'taint_data' => $codebase->taint_flow_graph,
-                    ];
-                },
+                ShutdownScannerTask::getPoolData(...),
                 function (): void {
                     $this->progress->taskDone(0);
                 },
@@ -758,7 +719,7 @@ final class Scanner
         $this->is_forked = true;
     }
 
-    private function scanAPath(int $_, string $file_path): void
+    public function scanAPath(int $_, string $file_path): void
     {
         $this->scanFile(
             $file_path,

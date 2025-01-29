@@ -1395,7 +1395,7 @@ final class Config
     }
 
     /**
-     * @psalm-suppress PossiblyUnusedMethod, PropertyTypeCoercion
+     * @psalm-suppress PropertyTypeCoercion
      * @internal */
     public static function setInstance(self $config): void
     {
