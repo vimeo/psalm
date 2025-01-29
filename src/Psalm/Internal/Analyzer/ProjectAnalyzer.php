@@ -1304,28 +1304,6 @@ final class ProjectAnalyzer
     }
 
     /**
-     * Adapted from https://gist.github.com/divinity76/01ef9ca99c111565a72d3a8a6e42f7fb
-     * returns number of cpu cores
-     * Copyleft 2018, license: WTFPL
-     *
-     * @throws NumberOfCpuCoreNotFound
-     */
-    public static function getCpuCount(): int
-    {
-        if (defined('PHP_WINDOWS_VERSION_MAJOR')) {
-            // No support desired for Windows at the moment
-            return 1;
-        }
-
-        if (!extension_loaded('pcntl')) {
-            // Psalm requires pcntl for multi-threads support
-            return 1;
-        }
-
-        return (new CpuCoreCounter())->getCount();
-    }
-
-    /**
      * @return array<int, string>
      * @psalm-pure
      */
