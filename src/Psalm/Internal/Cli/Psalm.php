@@ -991,7 +991,7 @@ final class Psalm
 
         $overcommit = null;
         try {
-            $overcommit = trim(file_get_contents('/proc/sys/vm/overcommit_memory'));
+            $overcommit = trim(file_get_contents('/proc/sys/vm/overcommit_memory') ?: '');
         } catch (Throwable) {
         }
 
