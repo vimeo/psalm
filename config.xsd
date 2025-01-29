@@ -43,11 +43,10 @@
         <xs:attribute name="ensureArrayIntOffsetsExist" type="xs:boolean" default="false" />
         <xs:attribute name="ensureArrayStringOffsetsExist" type="xs:boolean" default="false" />
         <xs:attribute name="ensureOverrideAttribute" type="xs:boolean" default="false" />
-        <xs:attribute name="findUnusedCode" type="xs:boolean" default="false" />
+        <xs:attribute name="findUnusedCode" type="xs:boolean" default="true" />
         <xs:attribute name="findUnusedVariablesAndParams" type="xs:boolean" default="false" />
         <xs:attribute name="findUnusedPsalmSuppress" type="xs:boolean" default="false" />
-        <!-- TODO: Update default to true in Psalm 6 -->
-        <xs:attribute name="findUnusedBaselineEntry" type="xs:boolean" default="false" />
+        <xs:attribute name="findUnusedBaselineEntry" type="xs:boolean" default="true" />
         <xs:attribute name="findUnusedIssueHandlerSuppression" type="xs:boolean" default="true" />
         <xs:attribute name="hideExternalErrors" type="xs:boolean" default="false" />
         <xs:attribute name="hoistConstants" type="xs:boolean" default="false" />
