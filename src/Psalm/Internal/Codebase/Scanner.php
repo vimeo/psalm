@@ -314,9 +314,6 @@ final class Scanner
             });
 
             // Wait for all tasks to complete and collect the results.
-            /**
-             * @var array<int, PoolData>
-             */
             $forked_pool_data = $pool->runAll(new ShutdownScannerTask);
 
             foreach ($forked_pool_data as $pool_data) {
