@@ -416,9 +416,6 @@ final class Psalm
         }
     }
 
-    /**
-     * @throws NumberOfCpuCoreNotFound
-     */
     public static function getThreads(array $options, Config $config, bool $in_ci, bool $for_scan): int
     {
         if ($for_scan) {
