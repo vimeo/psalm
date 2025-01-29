@@ -37,6 +37,7 @@ use Psalm\Report\ReportOptions;
 use ReflectionClass;
 use RuntimeException;
 use Symfony\Component\Filesystem\Path;
+use Throwable;
 
 use function array_filter;
 use function array_key_exists;
@@ -51,6 +52,7 @@ use function count;
 use function defined;
 use function extension_loaded;
 use function file_exists;
+use function file_get_contents;
 use function file_put_contents;
 use function function_exists;
 use function fwrite;
@@ -79,6 +81,7 @@ use function str_repeat;
 use function str_starts_with;
 use function strlen;
 use function substr;
+use function trim;
 use function wordwrap;
 
 use const DIRECTORY_SEPARATOR;
@@ -984,6 +987,34 @@ final class Psalm
         if (isset($options['force-jit']) && !$hasJit) {
             $progress->write('Exiting because JIT was requested but is not available.' . PHP_EOL . PHP_EOL);
             exit(1);
+        }
+
+        $overcommit = null;
+        try {
+            $overcommit = trim(file_get_contents('/proc/sys/vm/overcommit_memory'));
+        } catch (Throwable) {
+        }
+
+        if ($overcommit === '2') {
+            $err = 'ERROR: VM overcommiting is disabled.' . PHP_EOL . PHP_EOL
+                . "TL;DR: to fix, run these two commands:" . PHP_EOL . PHP_EOL
+                . "echo 1 | sudo tee /proc/sys/vm/overcommit_memory" . PHP_EOL
+                . "echo vm.overcommit_memory=1 | sudo tee /etc/sysctl.d/40-psalm.conf   # For persistence" . PHP_EOL
+                . PHP_EOL
+                . "Explanation: disabling VM overcommitting *WILL* cause failures when running Psalm "
+                . "in multithreaded mode during analysis," . PHP_EOL
+                . 'as Psalm relies very heavily on the copy-on-write semantics of fork(), which are currently disabled.'
+                . PHP_EOL . PHP_EOL . PHP_EOL
+                . "Please enable VM overcommitting to greatly speed up Psalm and avoid crashes in multithreaded mode."
+                . PHP_EOL . PHP_EOL . PHP_EOL
+                . "This warning may be ignored by setting the PSALM_IGNORE_NO_OVERCOMMIT=1 environment variable "
+                . "(not recommended)."
+                . PHP_EOL . PHP_EOL;
+            
+            fwrite(STDERR, $err);
+            if (getenv('PSALM_IGNORE_NO_OVERCOMMIT') !== '1') {
+                exit(1);
+            }
         }
     }
 
