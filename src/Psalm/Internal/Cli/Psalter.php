@@ -48,7 +48,6 @@ use function implode;
 use function in_array;
 use function is_array;
 use function is_dir;
-use function is_numeric;
 use function is_string;
 use function microtime;
 use function pathinfo;
@@ -87,7 +86,7 @@ final class Psalter
     private const LONG_OPTIONS = [
         'help', 'debug', 'debug-by-line', 'debug-emitted-issues', 'config:', 'file:', 'root:',
         'plugin:', 'issues:', 'list-supported-issues', 'php-version:', 'dry-run', 'safe-types',
-        'find-unused-code', 'threads:', 'codeowner:',
+        'find-unused-code', 'threads:', 'scan-threads:', 'codeowner:',
         'allow-backwards-incompatible-changes:',
         'add-newline-between-docblock-annotations:',
         'no-cache',
@@ -263,8 +262,11 @@ final class Psalter
             $current_dir = $config->base_dir;
             chdir($current_dir);
         }
+        
+        $in_ci = CliUtils::runningInCI();
 
-        $threads = isset($options['threads']) && is_numeric($options['threads']) ? (int)$options['threads'] : 1;
+        $threads = Psalm::getThreads($options, $config, $in_ci, false);
+        $scanThreads = Psalm::getThreads($options, $config, $in_ci, true);
 
         if (isset($options['no-cache'])) {
             $providers = new Providers(
@@ -304,6 +306,7 @@ final class Psalter
             $stdout_report_options,
             [],
             $threads,
+            $scanThreads,
             $progress,
         );
 

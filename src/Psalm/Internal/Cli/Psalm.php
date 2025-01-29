@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Cli;
 
 use Composer\Autoload\ClassLoader;
+use Fidry\CpuCoreCounter\CpuCoreCounter;
 use Psalm\Config;
 use Psalm\Config\Creator;
 use Psalm\ErrorBaseline;
@@ -146,6 +147,7 @@ final class Psalm
         'show-snippet:',
         'stats',
         'threads:',
+        'scan-threads:',
         'update-baseline',
         'use-baseline:',
         'use-ini-defaults',
@@ -271,11 +273,12 @@ final class Psalm
             $options['long-progress'] = true;
         }
 
-        $threads = self::detectThreads($options, $config, $in_ci);
+        $threads = self::getThreads($options, $config, $in_ci, false);
+        $scanThreads = self::getThreads($options, $config, $in_ci, true);
 
         $progress = self::initProgress($options, $config, $in_ci);
 
-        self::restart($options, $threads, $progress);
+        self::restart($options, $threads, $scanThreads, $progress);
 
         if (isset($options['debug-emitted-issues'])) {
             $config->debug_emitted_issues = true;
@@ -353,6 +356,7 @@ final class Psalm
                     : true,
             ),
             $threads,
+            $scanThreads,
             $progress,
         );
 
@@ -410,6 +414,32 @@ final class Psalm
         } else {
             self::autoGenerateConfig($project_analyzer, $current_dir, $init_source_dir, $vendor_dir);
         }
+    }
+
+    public static function getThreads(array $options, Config $config, bool $in_ci, bool $for_scan): int
+    {
+        if ($for_scan) {
+            if (isset($options['scanThreads'])) {
+                $threads = (int)$options['scanThreads'];
+            } elseif (isset($options['debug']) || $in_ci) {
+                $threads = 1;
+            } elseif ($config->scan_threads) {
+                $threads = $config->scan_threads;
+            } else {
+                $threads = max(1, (new CpuCoreCounter())->getCount());
+            }
+        } else {
+            if (isset($options['threads'])) {
+                $threads = (int)$options['threads'];
+            } elseif (isset($options['debug']) || $in_ci) {
+                $threads = 1;
+            } elseif ($config->threads) {
+                $threads = $config->threads;
+            } else {
+                $threads = max(1, (new CpuCoreCounter())->getCount());
+            }
+        }
+        return $threads;
     }
 
     private static function initOutputFormat(array $options): string
@@ -880,7 +910,7 @@ final class Psalm
         return $current_dir;
     }
 
-    private static function restart(array $options, int $threads, Progress $progress): void
+    private static function restart(array $options, int $threads, int $scanThreads, Progress $progress): void
     {
         $ini_handler = new PsalmRestarter('PSALM');
 
@@ -897,7 +927,7 @@ final class Psalm
             }
         }
 
-        if ($threads > 1
+        if (($threads > 1 || $scanThreads > 1)
             && extension_loaded('grpc')
             && (ini_get('grpc.enable_fork_support') === '1' && ini_get('grpc.poll_strategy') === 'epoll1') === false
         ) {
@@ -955,20 +985,6 @@ final class Psalm
             $progress->write('Exiting because JIT was requested but is not available.' . PHP_EOL . PHP_EOL);
             exit(1);
         }
-    }
-
-    private static function detectThreads(array $options, Config $config, bool $in_ci): int
-    {
-        if (isset($options['threads'])) {
-            $threads = (int)$options['threads'];
-        } elseif (isset($options['debug']) || $in_ci) {
-            $threads = 1;
-        } elseif ($config->threads) {
-            $threads = $config->threads;
-        } else {
-            $threads = max(1, ProjectAnalyzer::getCpuCount() - 1);
-        }
-        return $threads;
     }
 
     /** @psalm-suppress UnusedParam $argv is being reported as unused */
@@ -1303,7 +1319,10 @@ final class Psalm
                 If set, requires JIT acceleration to be available in order to run Psalm, exiting immediately if it cannot be enabled.
 
             --threads=INT
-                If greater than one, Psalm will run analysis on multiple threads, speeding things up.
+                If greater than one, Psalm will run the scan and analysis on multiple threads, speeding things up.
+
+            --scan-threads=INT
+                If greater than one, Psalm will run the scan on multiple threads, speeding things up (if specified, takes priority over the --threads flag).
 
             --no-diff
                 Turns off Psalm’s diff mode, checks all files regardless of whether they’ve changed.

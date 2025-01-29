@@ -48,6 +48,7 @@ class SymbolLookupTest extends TestCase
             null,
             [],
             1,
+            1,
             null,
             $this->codebase,
         );
