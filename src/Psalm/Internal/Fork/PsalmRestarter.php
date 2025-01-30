@@ -32,6 +32,7 @@ final class PsalmRestarter extends XdebugHandler
 {
     public const MIN_PHP_VERSION_WINDOWS_JIT = 8_04_03;
     private const REQUIRED_OPCACHE_SETTINGS = [
+        'enable' => 1,
         'enable_cli' => 1,
         'jit' => 1205,
         'validate_timestamps' => 0,
@@ -51,6 +52,7 @@ final class PsalmRestarter extends XdebugHandler
         'optimization_level' => '0x7FFEBFFF',
         'preload' => '',
         'log_verbosity_level' => 0,
+        'save_comments' => 1,
     ];
 
     private bool $required = false;
@@ -101,11 +103,6 @@ final class PsalmRestarter extends XdebugHandler
                     return true;
                 }
             }
-        }
-
-        // opcache.save_comments is required for json mapper (used in language server) to work
-        if ($opcache_loaded && in_array(ini_get('opcache.save_comments'), ['0', 'false', 0, false])) {
-            return true;
         }
 
         return $default || $this->required;
@@ -172,10 +169,6 @@ final class PsalmRestarter extends XdebugHandler
             foreach (self::REQUIRED_OPCACHE_SETTINGS as $key => $value) {
                 $additional_options []= "-dopcache.{$key}={$value}";
             }
-        }
-
-        if ($opcache_loaded) {
-            $additional_options[] = '-dopcache.save_comments=1';
         }
 
         array_splice(
