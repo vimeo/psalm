@@ -438,6 +438,14 @@ Allows you to hard-code a compressor for Psalm's cache. By default, Psalm uses `
 ```
 Allows you to hard-code the number of threads Psalm will use (similar to `--threads` on the command line). This value will be used in place of detecting threads from the host machine, but will be overridden by using `--threads` or `--debug` (which sets threads to 1) on the command line
 
+#### scanThreads
+```xml
+<psalm
+        scanThreads="[int]"
+>
+```
+Allows you to hard-code the number of threads Psalm will use during the scan phase (as opposed to the analysis phase, controlled by the `threads` field) (similar to `--scan-threads` on the command line). This value will be used in place of detecting threads from the host machine, but will be overridden by using `--scan-threads` or `--debug` (which sets threads to 1) on the command line.
+
 #### maxStringLength
 ```xml
 <psalm

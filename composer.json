@@ -26,6 +26,7 @@
         "composer-runtime-api": "^2",
         "amphp/amp": "^3",
         "amphp/byte-stream": "^2",
+        "amphp/parallel": "^2.3",
         "composer/semver": "^1.4 || ^2.0 || ^3.0",
         "composer/xdebug-handler": "^2.0 || ^3.0",
         "dnoegel/php-xdg-base-dir": "^0.1.1",
@@ -75,7 +76,8 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-master": "6.x-dev",
+            "dev-master": "7.x-dev",
+            "dev-6.x": "6.x-dev",
             "dev-5.x": "5.x-dev",
             "dev-4.x": "4.x-dev",
             "dev-3.x": "3.x-dev",

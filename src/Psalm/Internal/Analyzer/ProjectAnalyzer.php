@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Analyzer;
 
-use Fidry\CpuCoreCounter\CpuCoreCounter;
-use Fidry\CpuCoreCounter\NumberOfCpuCoreNotFound;
 use InvalidArgumentException;
 use Psalm\Codebase;
 use Psalm\Config;
@@ -65,11 +63,9 @@ use function array_merge;
 use function array_shift;
 use function clearstatcache;
 use function count;
-use function defined;
 use function dirname;
 use function end;
 use function explode;
-use function extension_loaded;
 use function file_exists;
 use function fwrite;
 use function implode;
@@ -203,7 +199,10 @@ final class ProjectAnalyzer
         Providers $providers,
         public ?ReportOptions $stdout_report_options = null,
         public array $generated_report_options = [],
+        /** @var int<1, max> */
         public int $threads = 1,
+        /** @var int<1, max> */
+        public int $scanThreads = 1,
         ?Progress $progress = null,
         ?Codebase $codebase = null,
     ) {
@@ -364,15 +363,6 @@ final class ProjectAnalyzer
         $this->file_reference_provider->loadReferenceCache();
         $this->codebase->enterServerMode();
 
-        $cpu_count = self::getCpuCount();
-
-        // let's not go crazy
-        $usable_cpus = $cpu_count - 2;
-
-        if ($usable_cpus > 1) {
-            $this->threads = $usable_cpus;
-        }
-
         $server->logInfo("Initializing: Initialize Plugins...");
         $this->config->initializePlugins($this);
 
@@ -484,7 +474,7 @@ final class ProjectAnalyzer
 
             $this->config->initializePlugins($this);
 
-            $this->codebase->scanFiles($this->threads);
+            $this->codebase->scanFiles($this->scanThreads);
 
             $this->codebase->infer_types_from_usage = true;
         } else {
@@ -508,7 +498,7 @@ final class ProjectAnalyzer
 
                     $this->config->initializePlugins($this);
 
-                    $this->codebase->scanFiles($this->threads);
+                    $this->codebase->scanFiles($this->scanThreads);
                 } else {
                     $diff_no_files = true;
                 }
@@ -885,7 +875,7 @@ final class ProjectAnalyzer
 
         $this->config->initializePlugins($this);
 
-        $this->codebase->scanFiles($this->threads);
+        $this->codebase->scanFiles($this->scanThreads);
 
         $this->config->visitStubFiles($this->codebase, $this->progress);
 
@@ -995,7 +985,7 @@ final class ProjectAnalyzer
 
         $this->config->initializePlugins($this);
 
-        $this->codebase->scanFiles($this->threads);
+        $this->codebase->scanFiles($this->scanThreads);
 
         $this->config->visitStubFiles($this->codebase, $this->progress);
 
@@ -1039,7 +1029,7 @@ final class ProjectAnalyzer
         $this->config->initializePlugins($this);
 
 
-        $this->codebase->scanFiles($this->threads);
+        $this->codebase->scanFiles($this->scanThreads);
 
         $this->config->visitStubFiles($this->codebase, $this->progress);
 
@@ -1309,28 +1299,6 @@ final class ProjectAnalyzer
         $file_analyzer->interface_analyzers_to_analyze = [];
 
         return $function_analyzer;
-    }
-
-    /**
-     * Adapted from https://gist.github.com/divinity76/01ef9ca99c111565a72d3a8a6e42f7fb
-     * returns number of cpu cores
-     * Copyleft 2018, license: WTFPL
-     *
-     * @throws NumberOfCpuCoreNotFound
-     */
-    public static function getCpuCount(): int
-    {
-        if (defined('PHP_WINDOWS_VERSION_MAJOR')) {
-            // No support desired for Windows at the moment
-            return 1;
-        }
-
-        if (!extension_loaded('pcntl')) {
-            // Psalm requires pcntl for multi-threads support
-            return 1;
-        }
-
-        return (new CpuCoreCounter())->getCount();
     }
 
     /**

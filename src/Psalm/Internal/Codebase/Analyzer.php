@@ -17,7 +17,10 @@ use Psalm\Internal\FileManipulation\ClassDocblockManipulator;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\FileManipulation\FunctionDocblockManipulator;
 use Psalm\Internal\FileManipulation\PropertyDocblockManipulator;
+use Psalm\Internal\Fork\AnalyzerTask;
+use Psalm\Internal\Fork\InitAnalyzerTask;
 use Psalm\Internal\Fork\Pool;
+use Psalm\Internal\Fork\ShutdownAnalyzerTask;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\IssueBuffer;
@@ -35,7 +38,6 @@ use function array_values;
 use function count;
 use function explode;
 use function implode;
-use function intdiv;
 use function ksort;
 use function number_format;
 use function pathinfo;
@@ -219,29 +221,6 @@ final class Analyzer
         return isset($this->files_with_analysis_results[$file_path]);
     }
 
-    /**
-     * @param  array<string, class-string<FileAnalyzer>> $filetype_analyzers
-     */
-    private function getFileAnalyzer(
-        ProjectAnalyzer $project_analyzer,
-        string $file_path,
-        array $filetype_analyzers,
-    ): FileAnalyzer {
-        $extension = pathinfo($file_path, PATHINFO_EXTENSION);
-
-        $file_name = $this->config->shortenFileName($file_path);
-
-        if (isset($filetype_analyzers[$extension])) {
-            $file_analyzer = new $filetype_analyzers[$extension]($project_analyzer, $file_path, $file_name);
-        } else {
-            $file_analyzer = new FileAnalyzer($project_analyzer, $file_path, $file_name);
-        }
-
-        $this->progress->debug('Getting ' . $file_path . "\n");
-
-        return $file_analyzer;
-    }
-
     public function analyzeFiles(
         ProjectAnalyzer $project_analyzer,
         int $pool_size,
@@ -321,81 +300,22 @@ final class Analyzer
 
         $codebase = $project_analyzer->getCodebase();
 
-        $analysis_worker = $this->analysisWorker(...);
-
-        $task_done_closure = $this->taskDoneClosure(...);
+        $task_done_closure = $this->progress->taskDone(...);
 
         if ($pool_size > 1 && count($this->files_to_analyze) > $pool_size) {
-            $shuffle_count = $pool_size + 1;
-
-            $file_paths = array_values($this->files_to_analyze);
-
-            $count = count($file_paths);
-            /** @var int<0, max> */
-            $middle = intdiv($count, $shuffle_count);
-            $remainder = $count % $shuffle_count;
-
-            $new_file_paths = [];
-
-            for ($i = 0; $i < $shuffle_count; $i++) {
-                for ($j = 0; $j < $middle; $j++) {
-                    if ($j * $shuffle_count + $i < $count) {
-                        $new_file_paths[] = $file_paths[$j * $shuffle_count + $i];
-                    }
-                }
-
-                if ($remainder) {
-                    $new_file_paths[] = $file_paths[$middle * $shuffle_count + $remainder - 1];
-                    $remainder--;
-                }
-            }
-
-            $process_file_paths = [];
-
-            $i = 0;
-
-            foreach ($new_file_paths as $file_path) {
-                $process_file_paths[$i % $pool_size][] = $file_path;
-                ++$i;
-            }
-
             // Run analysis one file at a time, splitting the set of
             // files up among a given number of child processes.
             $pool = new Pool(
-                $this->config,
-                $process_file_paths,
-                static function (): void {
-                    $project_analyzer = ProjectAnalyzer::getInstance();
-                    $codebase = $project_analyzer->getCodebase();
-
-                    $file_reference_provider = $codebase->file_reference_provider;
-
-                    if ($codebase->taint_flow_graph) {
-                        $codebase->taint_flow_graph = new TaintFlowGraph();
-                    }
-
-                    $file_reference_provider->setNonMethodReferencesToClasses([]);
-                    $file_reference_provider->setCallingMethodReferencesToClassMembers([]);
-                    $file_reference_provider->setCallingMethodReferencesToClassProperties([]);
-                    $file_reference_provider->setFileReferencesToClassMembers([]);
-                    $file_reference_provider->setFileReferencesToClassProperties([]);
-                    $file_reference_provider->setCallingMethodReferencesToMissingClassMembers([]);
-                    $file_reference_provider->setFileReferencesToMissingClassMembers([]);
-                    $file_reference_provider->setReferencesToMixedMemberNames([]);
-                    $file_reference_provider->setMethodParamUses([]);
-                },
-                $analysis_worker,
-                $this->getWorkerData(...),
-                $task_done_closure,
+                $pool_size,
+                $project_analyzer->progress,
             );
 
             $this->progress->debug('Forking analysis' . "\n");
 
             // Wait for all tasks to complete and collect the results.
-            /**
-             * @var array<int, WorkerData>
-             */
-            $forked_pool_data = $pool->wait();
+            $pool->runAll(new InitAnalyzerTask);
+            $pool->run($this->files_to_analyze, AnalyzerTask::class, $task_done_closure);
+            $forked_pool_data = $pool->runAll(new ShutdownAnalyzerTask);
 
             $this->progress->debug('Collecting forked analysis results' . "\n");
 
@@ -508,14 +428,8 @@ final class Analyzer
                 }
             }
         } else {
-            $i = 0;
-
             foreach ($this->files_to_analyze as $file_path => $_) {
-                $analysis_worker($i, $file_path);
-                ++$i;
-
-                $issues = IssueBuffer::getIssuesDataForFile($file_path);
-                $task_done_closure($issues);
+                $task_done_closure(self::analysisWorker($this->config, $this->progress, $file_path));
             }
         }
     }
@@ -1546,14 +1460,36 @@ final class Analyzer
     }
 
     /**
-     * @param list<IssueData> $issues
+     * @internal
      */
-    private function taskDoneClosure(array $issues): void
+    public static function analysisWorker(Config $config, Progress $progress, string $file_path): int
     {
+        $extension = pathinfo($file_path, PATHINFO_EXTENSION);
+
+        $file_name = $config->shortenFileName($file_path);
+
+        $filetype_analyzers = $config->getFiletypeAnalyzers();
+        if (isset($filetype_analyzers[$extension])) {
+            $file_analyzer = new $filetype_analyzers[$extension](
+                ProjectAnalyzer::getInstance(),
+                $file_path,
+                $file_name
+            );
+        } else {
+            $file_analyzer = new FileAnalyzer(ProjectAnalyzer::getInstance(), $file_path, $file_name);
+        }
+
+        $progress->debug('Analyzing ' . $file_analyzer->getFilePath() . "\n");
+
+        $file_analyzer->analyze();
+        $file_analyzer->context = null;
+        $file_analyzer->clearSourceBeforeDestruction();
+        unset($file_analyzer);
+
         $has_error = false;
         $has_info = false;
 
-        foreach ($issues as $issue) {
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
             switch ($issue->severity) {
                 case IssueData::SEVERITY_INFO:
                     $has_info = true;
@@ -1564,73 +1500,6 @@ final class Analyzer
             }
         }
 
-        $this->progress->taskDone($has_error ? 2 : ($has_info ? 1 : 0));
-    }
-
-    /**
-     * @return list<IssueData>
-     */
-    private function analysisWorker(int $_, string $file_path): array
-    {
-        $file_analyzer = $this->getFileAnalyzer(
-            ProjectAnalyzer::getInstance(),
-            $file_path,
-            $this->config->getFiletypeAnalyzers(),
-        );
-
-        $this->progress->debug('Analyzing ' . $file_analyzer->getFilePath() . "\n");
-
-        $file_analyzer->analyze();
-        $file_analyzer->context = null;
-        $file_analyzer->clearSourceBeforeDestruction();
-        unset($file_analyzer);
-
-        return IssueBuffer::getIssuesDataForFile($file_path);
-    }
-
-    /** @return WorkerData */
-    private function getWorkerData(): array
-    {
-        $project_analyzer        = ProjectAnalyzer::getInstance();
-        $codebase                = $project_analyzer->getCodebase();
-        $analyzer                = $codebase->analyzer;
-        $file_reference_provider = $codebase->file_reference_provider;
-
-        $this->progress->debug('Gathering data for forked process'."\n");
-
-        // @codingStandardsIgnoreStart
-        return [
-            'issues'                                     => IssueBuffer::getIssuesData(),
-            'fixable_issue_counts'                       => IssueBuffer::getFixableIssues(),
-            'nonmethod_references_to_classes'            => $file_reference_provider->getAllNonMethodReferencesToClasses(),
-            'method_references_to_classes'               => $file_reference_provider->getAllMethodReferencesToClasses(),
-            'file_references_to_class_members'           => $file_reference_provider->getAllFileReferencesToClassMembers(),
-            'method_references_to_class_members'         => $file_reference_provider->getAllMethodReferencesToClassMembers(),
-            'method_dependencies'                        => $file_reference_provider->getAllMethodDependencies(),
-            'file_references_to_class_properties'        => $file_reference_provider->getAllFileReferencesToClassProperties(),
-            'file_references_to_method_returns'          => $file_reference_provider->getAllFileReferencesToMethodReturns(),
-            'method_references_to_class_properties'      => $file_reference_provider->getAllMethodReferencesToClassProperties(),
-            'method_references_to_method_returns'        => $file_reference_provider->getAllMethodReferencesToMethodReturns(),
-            'file_references_to_missing_class_members'   => $file_reference_provider->getAllFileReferencesToMissingClassMembers(),
-            'method_references_to_missing_class_members' => $file_reference_provider->getAllMethodReferencesToMissingClassMembers(),
-            'method_param_uses'                          => $file_reference_provider->getAllMethodParamUses(),
-            'mixed_member_names'                         => $analyzer->getMixedMemberNames(),
-            'file_manipulations'                         => FileManipulationBuffer::getAll(),
-            'mixed_counts'                               => $analyzer->getMixedCounts(),
-            'function_timings'                           => $analyzer->getFunctionTimings(),
-            'analyzed_methods'                           => $analyzer->getAnalyzedMethods(),
-            'file_maps'                                  => $analyzer->getFileMaps(),
-            'class_locations'                            => $file_reference_provider->getAllClassLocations(),
-            'class_method_locations'                     => $file_reference_provider->getAllClassMethodLocations(),
-            'class_property_locations'                   => $file_reference_provider->getAllClassPropertyLocations(),
-            'possible_method_param_types'                => $analyzer->getPossibleMethodParamTypes(),
-            'taint_data'                                 => $codebase->taint_flow_graph,
-            'unused_suppressions'                        => $codebase->track_unused_suppressions ? IssueBuffer::getUnusedSuppressions() : [],
-            'used_suppressions'                          => $codebase->track_unused_suppressions ? IssueBuffer::getUsedSuppressions() : [],
-            'function_docblock_manipulators'             => FunctionDocblockManipulator::getManipulators(),
-            'mutable_classes'                            => $codebase->analyzer->mutable_classes,
-            'issue_handlers'                             => $this->config->getIssueHandlerSuppressions()
-        ];
-        // @codingStandardsIgnoreEnd
+        return $has_error ? 2 : ($has_info ? 1 : 0);
     }
 }

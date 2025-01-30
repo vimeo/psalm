@@ -57,6 +57,7 @@ class DiagnosticTest extends AsyncTestCase
             null,
             [],
             1,
+            1,
             null,
             $this->codebase,
         );
