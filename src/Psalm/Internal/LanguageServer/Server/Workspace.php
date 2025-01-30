@@ -94,6 +94,7 @@ final class Workspace
         }
     }
 
+    // @codingStandardsIgnoreStart
     /**
      * A notification sent from the client to the server to signal the change of configuration settings.
      *
@@ -101,12 +102,14 @@ final class Workspace
      */
     public function didChangeConfiguration($settings): void
     {
+        // @codingStandardsIgnoreEnd
         $this->server->logDebug(
             'workspace/didChangeConfiguration',
         );
         $this->server->client->refreshConfiguration();
     }
 
+    // @codingStandardsIgnoreStart
     /**
      * The workspace/executeCommand request is sent from the client to the server to
      * trigger command execution on the server.
@@ -115,6 +118,7 @@ final class Workspace
      */
     public function executeCommand(string $command, $arguments): void
     {
+        // @codingStandardsIgnoreEnd
         $this->server->logDebug(
             'workspace/executeCommand',
             [
