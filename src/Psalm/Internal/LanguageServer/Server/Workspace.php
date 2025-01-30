@@ -97,9 +97,9 @@ final class Workspace
     /**
      * A notification sent from the client to the server to signal the change of configuration settings.
      *
-     * @psalm-suppress PossiblyUnusedMethod, UnusedParam
+     * @psalm-suppress PossiblyUnusedMethod, UnusedParam, MissingParamType
      */
-    public function didChangeConfiguration(mixed $settings): void
+    public function didChangeConfiguration($settings): void
     {
         $this->server->logDebug(
             'workspace/didChangeConfiguration',
@@ -111,9 +111,9 @@ final class Workspace
      * The workspace/executeCommand request is sent from the client to the server to
      * trigger command execution on the server.
      *
-     * @psalm-suppress PossiblyUnusedMethod
+     * @psalm-suppress PossiblyUnusedMethod, MissingParamType
      */
-    public function executeCommand(string $command, mixed $arguments): void
+    public function executeCommand(string $command, $arguments): void
     {
         $this->server->logDebug(
             'workspace/executeCommand',
