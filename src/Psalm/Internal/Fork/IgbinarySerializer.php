@@ -17,7 +17,7 @@ use function sprintf;
  */
 final class IgbinarySerializer implements Serializer
 {
-    public function serialize($data): string
+    public function serialize(mixed $data): string
     {
         try {
             $data = igbinary_serialize($data);
@@ -37,7 +37,7 @@ final class IgbinarySerializer implements Serializer
         }
     }
 
-    public function unserialize(string $data)
+    public function unserialize(string $data): mixed
     {
         try {
             return igbinary_unserialize($data);
