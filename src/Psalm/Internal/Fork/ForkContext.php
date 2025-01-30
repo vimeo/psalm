@@ -13,6 +13,7 @@ use Amp\Parallel\Context\Internal\ContextChannel;
 use Amp\Parallel\Context\Internal\ExitFailure;
 use Amp\Parallel\Context\Internal\ExitSuccess;
 use Amp\Parallel\Ipc\IpcHub;
+use Amp\Serialization\NativeSerializer;
 use Amp\Serialization\SerializationException;
 use Amp\TimeoutCancellation;
 use Error;
@@ -25,6 +26,7 @@ use TypeError;
 use function Amp\Parallel\Ipc\connect;
 use function count;
 use function define;
+use function extension_loaded;
 use function fwrite;
 use function is_file;
 use function is_string;
@@ -63,6 +65,10 @@ final class ForkContext extends AbstractContext
         ?Cancellation $cancellation = null,
         int $childConnectTimeout = self::DEFAULT_START_TIMEOUT,
     ): self {
+        $serializer = extension_loaded('igbinary')
+            ? new IgbinarySerializer
+            : new NativeSerializer;
+
         $key = $ipcHub->generateKey();
 
         // Fork
@@ -74,10 +80,10 @@ final class ForkContext extends AbstractContext
         if ($pid > 0) {
             try {
                 $socket = $ipcHub->accept($key, $cancellation);
-                $ipcChannel = new StreamChannel($socket, $socket);
+                $ipcChannel = new StreamChannel($socket, $socket, $serializer);
         
                 $socket = $ipcHub->accept($key, $cancellation);
-                $resultChannel = new StreamChannel($socket, $socket);
+                $resultChannel = new StreamChannel($socket, $socket, $serializer);
             } catch (Throwable $exception) {
                 $cancellation?->throwIfRequested();
         
@@ -98,10 +104,10 @@ final class ForkContext extends AbstractContext
 
         try {
             $socket = connect($uri, $key, $connectCancellation);
-            $ipcChannel = new StreamChannel($socket, $socket);
+            $ipcChannel = new StreamChannel($socket, $socket, $serializer);
 
             $socket = connect($uri, $key, $connectCancellation);
-            $resultChannel = new StreamChannel($socket, $socket);
+            $resultChannel = new StreamChannel($socket, $socket, $serializer);
         } catch (Throwable $exception) {
             trigger_error($exception->getMessage(), E_USER_ERROR);
         }

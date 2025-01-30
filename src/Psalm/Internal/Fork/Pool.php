@@ -18,7 +18,7 @@ use Amp\Parallel\Worker\WorkerPool;
 use AssertionError;
 use Closure;
 use Psalm\Progress\Progress;
-use Throwable;
+use Revolt\EventLoop;
 
 use function Amp\Future\await;
 use function array_map;
@@ -95,8 +95,11 @@ final class Pool
             if ($task_done_closure) {
                 $f->map($task_done_closure);
             }
-            $f->catch(fn(Throwable $e) => throw $e);
-            $f->map(function () use (&$cnt, $total): void {
+            $id = EventLoop::delay(10.0, function () use ($file): void {
+                $this->progress->write(PHP_EOL."Processing $file is taking more than 10 seconds...".PHP_EOL);
+            });
+            $f->map(function () use (&$cnt, $total, $id): void {
+                EventLoop::cancel($id);
                 $cnt++;
                 if (!($cnt % 10)) {
                     $percent = (int) (($cnt*100) / $total);
