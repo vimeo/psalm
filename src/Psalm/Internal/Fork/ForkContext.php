@@ -26,6 +26,7 @@ use TypeError;
 use function Amp\Parallel\Ipc\connect;
 use function count;
 use function define;
+use function extension_loaded;
 use function fwrite;
 use function is_file;
 use function is_string;
@@ -64,7 +65,7 @@ final class ForkContext extends AbstractContext
         ?Cancellation $cancellation = null,
         int $childConnectTimeout = self::DEFAULT_START_TIMEOUT,
     ): self {
-        $serializer = extension_loaded('igbinary') 
+        $serializer = extension_loaded('igbinary')
             ? new IgbinarySerializer
             : new NativeSerializer;
 
