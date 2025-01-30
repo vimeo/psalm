@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Codebase;
 
+use Amp\Future;
 use InvalidArgumentException;
 use PhpParser;
 use Psalm\CodeLocation;
@@ -31,6 +32,7 @@ use SebastianBergmann\Diff\Differ;
 use SebastianBergmann\Diff\Output\StrictUnifiedDiffOutputBuilder;
 use UnexpectedValueException;
 
+use function Amp\Future\await;
 use function array_filter;
 use function array_intersect_key;
 use function array_merge;
@@ -313,13 +315,15 @@ final class Analyzer
             $this->progress->debug('Forking analysis' . "\n");
 
             // Wait for all tasks to complete and collect the results.
-            $pool->runAll(new InitAnalyzerTask);
+            await($pool->runAll(new InitAnalyzerTask));
             $pool->run($this->files_to_analyze, AnalyzerTask::class, $task_done_closure);
             $forked_pool_data = $pool->runAll(new ShutdownAnalyzerTask);
 
             $this->progress->debug('Collecting forked analysis results' . "\n");
 
-            foreach ($forked_pool_data as $pool_data) {
+            foreach (Future::iterate($forked_pool_data) as $pool_data) {
+                $pool_data = $pool_data->await();
+
                 IssueBuffer::addIssues($pool_data['issues']);
                 IssueBuffer::addFixableIssues($pool_data['fixable_issue_counts']);
 

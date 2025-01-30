@@ -21,12 +21,6 @@ final class InitScannerTask implements Task
 {
     final public function run(Channel $channel, Cancellation $cancellation): mixed
     {
-        self::runStatic();
-        return null;
-    }
-
-    public static function runStatic(): void
-    {
         $analyzer = ProjectAnalyzer::getInstance();
         $analyzer->progress->debug('Initialising forked process for scanning' . PHP_EOL);
 
@@ -40,5 +34,7 @@ final class InitScannerTask implements Task
         $statements_provider->resetDiffs();
 
         $analyzer->progress->debug('Have initialised forked process for scanning' . PHP_EOL);
+
+        return null;
     }
 }

@@ -25,13 +25,6 @@ final class ShutdownScannerTask implements Task
      */
     public function run(Channel $channel, Cancellation $cancellation): mixed
     {
-        return self::getPoolData();
-    }
-    /**
-     * @return PoolData
-     */
-    public static function getPoolData(): array
-    {
         $project_analyzer = ProjectAnalyzer::getInstance();
         $project_analyzer->progress->debug('Collecting data from forked scanner process' . PHP_EOL);
 

@@ -110,7 +110,7 @@ final class Pool
     /**
      * @template T
      * @param Task<T, void, void> $task
-     * @return array<int, T>
+     * @return array<int, Future<T>>
      */
     public function runAll(Task $task): array
     {
@@ -123,8 +123,6 @@ final class Pool
         for ($x = 0; $x < $this->threads; $x++) {
             $workers []= $this->pool->getWorker();
         }
-        return await(
-            array_map(fn(Worker $w): Future => $w->submit($task)->getFuture(), $workers),
-        );
+        return array_map(fn(Worker $w): Future => $w->submit($task)->getFuture(), $workers);
     }
 }

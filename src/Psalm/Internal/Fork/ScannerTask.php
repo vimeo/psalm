@@ -20,6 +20,6 @@ final class ScannerTask implements Task
     }
     public function run(Channel $channel, Cancellation $cancellation): mixed
     {
-        return ProjectAnalyzer::getInstance()->getCodebase()->scanner->scanAPath(0, $this->file);
+        return ProjectAnalyzer::getInstance()->getCodebase()->scanner->scanAPath($this->file);
     }
 }

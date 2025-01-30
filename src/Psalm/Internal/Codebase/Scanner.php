@@ -25,6 +25,7 @@ use ReflectionClass;
 use Throwable;
 use UnexpectedValueException;
 
+use function Amp\Future\await;
 use function array_filter;
 use function array_merge;
 use function array_pop;
@@ -308,7 +309,7 @@ final class Scanner
                 $this->progress,
             );
 
-            $pool->runAll(new InitScannerTask);
+            await($pool->runAll(new InitScannerTask));
             $pool->run($files_to_scan, ScannerTask::class, function (): void {
                 $this->progress->taskDone(0);
             });
@@ -317,6 +318,8 @@ final class Scanner
             $forked_pool_data = $pool->runAll(new ShutdownScannerTask);
 
             foreach ($forked_pool_data as $pool_data) {
+                $pool_data = $pool_data->await();
+
                 IssueBuffer::addIssues($pool_data['issues']);
 
                 $this->codebase->statements_provider->addChangedMembers(
@@ -351,12 +354,9 @@ final class Scanner
                 }
             }
         } else {
-            $i = 0;
-
             foreach ($files_to_scan as $file_path => $_) {
+                $this->scanAPath($file_path);
                 $this->progress->taskDone(0);
-                $this->scanAPath($i, $file_path);
-                ++$i;
             }
         }
 
@@ -707,7 +707,7 @@ final class Scanner
         $this->is_forked = true;
     }
 
-    public function scanAPath(int $_, string $file_path): void
+    public function scanAPath(string $file_path): void
     {
         $this->scanFile(
             $file_path,

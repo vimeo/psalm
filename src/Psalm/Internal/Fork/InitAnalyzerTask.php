@@ -18,11 +18,6 @@ final class InitAnalyzerTask implements Task
 {
     public function run(Channel $channel, Cancellation $cancellation): mixed
     {
-        self::runStatic();
-        return null;
-    }
-    public static function runStatic(): void
-    {
         $project_analyzer = ProjectAnalyzer::getInstance();
         $codebase = $project_analyzer->getCodebase();
 
@@ -41,5 +36,6 @@ final class InitAnalyzerTask implements Task
         $file_reference_provider->setFileReferencesToMissingClassMembers([]);
         $file_reference_provider->setReferencesToMixedMemberNames([]);
         $file_reference_provider->setMethodParamUses([]);
+        return null;
     }
 }

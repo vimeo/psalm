@@ -25,14 +25,6 @@ final class ShutdownAnalyzerTask implements Task
      */
     public function run(Channel $channel, Cancellation $cancellation): mixed
     {
-        return self::getPoolData();
-    }
-
-    /**
-     * @return WorkerData
-     */
-    public static function getPoolData(): array
-    {
         $project_analyzer        = ProjectAnalyzer::getInstance();
         $codebase                = $project_analyzer->getCodebase();
         $analyzer                = $codebase->analyzer;
