@@ -12,6 +12,10 @@
     "authors": [
         {
             "name": "Matthew Brown"
+        },
+        {
+            "name": "Daniil Gentili",
+            "email": "daniil@daniil.it"
         }
     ],
     "require": {
