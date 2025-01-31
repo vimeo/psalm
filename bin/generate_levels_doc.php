@@ -25,7 +25,7 @@ foreach ($issue_types as $issue_type) {
 }
 
 foreach ($grouped_issues as &$i) {
-    ksort($i);
+    sort($i);
 } unset($i);
 
 $result = "<!-- begin list -->\n## Always treated as errors\n\n";
