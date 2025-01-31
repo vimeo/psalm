@@ -249,6 +249,14 @@ When `true`, Psalm will attempt to find all unused variables, the equivalent of 
 ```
 When `true`, Psalm will attempt to find all unused code (including unused variables), the equivalent of running with `--find-unused-code`. Defaults to `false`.
 
+#### disallowLiteralKeysOnUnshapedArrays
+```xml
+<psalm
+  disallowLiteralKeysOnUnshapedArrays="[bool]"
+>
+```
+When `true`, Psalm will emit issues when using literal keys on unshaped arrays (useful to enforce usage of shaped arrays). Defaults to `false`.
+
 #### findUnusedPsalmSuppress
 ```xml
 <psalm

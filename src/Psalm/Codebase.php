@@ -248,6 +248,8 @@ final class Codebase
 
     public bool $track_unused_suppressions = false;
 
+    public bool $literal_array_key_check = false;
+
     /** @internal */
     public function __construct(
         public Config $config,
