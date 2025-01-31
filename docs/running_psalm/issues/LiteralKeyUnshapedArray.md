@@ -21,9 +21,9 @@ function takesGenericArr(array $arr): void {
  * @param array{flagA: bool, flagB: bool} $arr
  */
 function takesShapedArr(array $arr): void {
-    // Error: LiteralKeyUnshapedArray
+    // OK
     $flagA = $arr['flagA'];
-    // Error: LiteralKeyUnshapedArray
+    // OK
     $flagB = $arr['flagB'];
 }
 ```
