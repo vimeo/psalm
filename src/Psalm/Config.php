@@ -392,6 +392,8 @@ final class Config
 
     public bool $limit_method_complexity = false;
 
+    public bool $literal_array_key_check = false;
+
     public int $max_graph_size = 200;
 
     public int $max_avg_path_length = 70;
@@ -1098,6 +1100,11 @@ final class Config
             $attribute_text = (string) $config_xml['findUnusedCode'];
             $config->find_unused_code = $attribute_text === 'true' || $attribute_text === '1';
             $config->find_unused_variables = $config->find_unused_code;
+        }
+
+        if (isset($config_xml['disallowLiteralKeysOnUnshapedArrays'])) {
+            $attribute_text = (string) $config_xml['disallowLiteralKeysOnUnshapedArrays'];
+            $config->literal_array_key_check = $attribute_text === 'true' || $attribute_text === '1';
         }
 
         if (isset($config_xml['findUnusedVariablesAndParams'])) {

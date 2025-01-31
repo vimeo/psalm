@@ -23,6 +23,7 @@ use Psalm\FileSource;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
@@ -854,6 +855,7 @@ final class AssertionFinder
                 $first_var_name,
                 $source,
                 $this_class_name,
+                $codebase && $codebase->literal_array_key_check,
             );
         } elseif (self::hasNonEmptyCountCheck($expr)) {
             if ($first_var_name) {
@@ -3716,7 +3718,20 @@ final class AssertionFinder
         ?string $first_var_name,
         FileSource $source,
         ?string $this_class_name,
+        bool $check_literal_keys,
     ): array {
+        if ($check_literal_keys
+            && $first_var_type
+            && $source instanceof StatementsAnalyzer
+            && ($second_var_type = $source->node_data->getType($expr->getArgs()[1]->value))
+        ) {
+            ArrayFetchAnalyzer::validateArrayOffset(
+                $source,
+                $expr,
+                $second_var_type,
+                $first_var_type,
+            );
+        }
         $if_types = [];
 
         $literal_assertions = [];

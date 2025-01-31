@@ -43,11 +43,11 @@
         <xs:attribute name="ensureArrayIntOffsetsExist" type="xs:boolean" default="false" />
         <xs:attribute name="ensureArrayStringOffsetsExist" type="xs:boolean" default="false" />
         <xs:attribute name="ensureOverrideAttribute" type="xs:boolean" default="false" />
-        <xs:attribute name="findUnusedCode" type="xs:boolean" default="false" />
+        <xs:attribute name="findUnusedCode" type="xs:boolean" default="true" />
+        <xs:attribute name="disallowLiteralKeysOnUnshapedArrays" type="xs:boolean" default="false" />
         <xs:attribute name="findUnusedVariablesAndParams" type="xs:boolean" default="false" />
         <xs:attribute name="findUnusedPsalmSuppress" type="xs:boolean" default="false" />
-        <!-- TODO: Update default to true in Psalm 6 -->
-        <xs:attribute name="findUnusedBaselineEntry" type="xs:boolean" default="false" />
+        <xs:attribute name="findUnusedBaselineEntry" type="xs:boolean" default="true" />
         <xs:attribute name="findUnusedIssueHandlerSuppression" type="xs:boolean" default="true" />
         <xs:attribute name="hideExternalErrors" type="xs:boolean" default="false" />
         <xs:attribute name="hoistConstants" type="xs:boolean" default="false" />
@@ -309,6 +309,7 @@
             <xs:element name="LessSpecificImplementedReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="LessSpecificReturnStatement" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="LessSpecificReturnType" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="LiteralKeyUnshapedArray" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="LoopInvalidation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MethodSignatureMismatch" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MethodSignatureMustOmitReturnType" type="IssueHandlerType" minOccurs="0" />

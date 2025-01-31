@@ -1268,6 +1268,10 @@ final class Psalm
             $project_analyzer->getCodebase()->reportUnusedVariables();
         }
 
+        if ($config->literal_array_key_check) {
+            $project_analyzer->getCodebase()->literal_array_key_check = true;
+        }
+
         if ($config->run_taint_analysis || $run_taint_analysis) {
             $project_analyzer->trackTaintedInputs();
         }

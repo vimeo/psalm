@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Analyzer\Statements\Expression\Fetch;
 
 use PhpParser;
+use PhpParser\Node\Expr;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
@@ -29,6 +30,7 @@ use Psalm\Issue\EmptyArrayAccess;
 use Psalm\Issue\InvalidArrayAccess;
 use Psalm\Issue\InvalidArrayAssignment;
 use Psalm\Issue\InvalidArrayOffset;
+use Psalm\Issue\LiteralKeyUnshapedArray;
 use Psalm\Issue\MixedArrayAccess;
 use Psalm\Issue\MixedArrayAssignment;
 use Psalm\Issue\MixedArrayOffset;
@@ -544,6 +546,15 @@ final class ArrayFetchAnalyzer
                 $offset_type->removeType('null');
                 $offset_type->addType(Type::getAtomicStringFromLiteral(''));
             }
+        }
+
+        if ($codebase->literal_array_key_check && !$in_assignment) {
+            self::validateArrayOffset(
+                $statements_analyzer,
+                $stmt,
+                $array_type,
+                $offset_type,
+            );
         }
 
         if ($offset_type->isNullable() && !$context->inside_isset) {
@@ -1758,6 +1769,36 @@ final class ArrayFetchAnalyzer
 
                 $array_access_type = Type::getMixed();
             }
+        }
+    }
+
+    public static function validateArrayOffset(
+        StatementsAnalyzer $statements_analyzer,
+        Expr $stmt,
+        Type\Union|Type\MutableUnion $array_type,
+        Type\Union|Type\MutableUnion $offset_type,
+    ): void {
+        $literal_offsets = array_keys($offset_type->getLiteralStrings());
+        if (!$literal_offsets) {
+            return;
+        }
+
+        foreach ($array_type->getAtomicTypes() as $t) {
+            if ($t instanceof TKeyedArray) {
+                return;
+            }
+            if ($t instanceof TArray && $t->type_params[0]->allLiterals()) {
+                return;
+            }
+        }
+        if (IssueBuffer::accepts(
+            new LiteralKeyUnshapedArray(
+                'Literal offset ' . implode('|', $literal_offsets) . ' was used on unshaped array '.$array_type,
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
+            ),
+            $statements_analyzer->getSuppressedIssues(),
+        )) {
+            // fall through
         }
     }
 

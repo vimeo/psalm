@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="6.x-dev@d3c7ca5430b3a75d8fab6439af1eefe119d12512">
+<files psalm-version="6.x-dev@897f124d9f0034b025e246809077e828f3537f7f">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$comment_block->tags['variablesfrom'][0]]]></code>
@@ -52,6 +52,9 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Config.php">
+    <ComplexMethod>
+      <code><![CDATA[fromXmlAndPaths]]></code>
+    </ComplexMethod>
     <PossiblyNullArgument>
       <code><![CDATA[$deprecated_element_xml]]></code>
     </PossiblyNullArgument>
@@ -427,6 +430,7 @@
       <code><![CDATA[$expr->getArgs()[0]]]></code>
       <code><![CDATA[$expr->getArgs()[0]]]></code>
       <code><![CDATA[$expr->getArgs()[0]]]></code>
+      <code><![CDATA[$expr->getArgs()[1]]]></code>
       <code><![CDATA[$expr->getArgs()[1]]]></code>
       <code><![CDATA[$expr->getArgs()[1]]]></code>
       <code><![CDATA[$get_debug_type_expr->getArgs()[0]]]></code>
