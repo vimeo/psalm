@@ -44,6 +44,7 @@
         <xs:attribute name="ensureArrayStringOffsetsExist" type="xs:boolean" default="false" />
         <xs:attribute name="ensureOverrideAttribute" type="xs:boolean" default="false" />
         <xs:attribute name="findUnusedCode" type="xs:boolean" default="true" />
+        <xs:attribute name="disallowLiteralKeysOnUnshapedArrays" type="xs:boolean" default="false" />
         <xs:attribute name="findUnusedVariablesAndParams" type="xs:boolean" default="false" />
         <xs:attribute name="findUnusedPsalmSuppress" type="xs:boolean" default="false" />
         <xs:attribute name="findUnusedBaselineEntry" type="xs:boolean" default="true" />
