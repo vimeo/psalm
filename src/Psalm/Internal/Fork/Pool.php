@@ -101,8 +101,10 @@ final class Pool
                 /** @psalm-suppress MixedAssignment, MixedOperand */
                 $seconds += 10;
             });
-            $f->map(function () use (&$cnt, $total, $id): void {
+            $f->finally(static function () use ($id): void {
                 EventLoop::cancel($id);
+            });
+            $f->map(function () use (&$cnt, $total): void {
                 $cnt++;
                 if (!($cnt % 10)) {
                     $percent = (int) (($cnt*100) / $total);
