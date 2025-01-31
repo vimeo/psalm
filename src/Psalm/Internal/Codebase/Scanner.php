@@ -292,14 +292,14 @@ final class Scanner
             return false;
         }
 
-        if (!$this->is_forked && $pool_size > 1 && count($files_to_scan) > 512) {
+        /*if (!$this->is_forked && $pool_size > 1 && count($files_to_scan) > 512) {
             $pool_size = (int) ceil(min($pool_size, count($files_to_scan) / 256));
         } else {
             $pool_size = 1;
-        }
+        }*/
 
         $this->progress->expand(count($files_to_scan));
-        if ($pool_size > 1) {
+        if (!$this->is_forked && $pool_size > 1 && count($files_to_scan) > $pool_size) {
             $this->progress->debug('Forking process for scanning' . PHP_EOL);
 
             // Run scanning one file at a time, splitting the set of

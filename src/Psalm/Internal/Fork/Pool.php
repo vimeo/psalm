@@ -97,7 +97,7 @@ final class Pool
             }
             $id = EventLoop::repeat(10.0, function () use ($file): void {
                 static $seconds = 10;
-                $this->progress->write(PHP_EOL."Processing $file is took $seconds seconds...".PHP_EOL);
+                $this->progress->write(PHP_EOL."Processing $file is taking $seconds seconds...".PHP_EOL);
                 /** @psalm-suppress MixedAssignment, MixedOperand */
                 $seconds += 10;
             });
