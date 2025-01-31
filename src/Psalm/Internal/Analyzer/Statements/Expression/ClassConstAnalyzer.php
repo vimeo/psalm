@@ -717,6 +717,10 @@ final class ClassConstAnalyzer
         assert($context->self !== null);
         $class_storage = $statements_analyzer->getCodebase()->classlike_storage_provider->get($context->self);
 
+        if ($class_storage->has_visitor_issues) {
+            return;
+        }
+
         foreach ($stmt->consts as $const) {
             ExpressionAnalyzer::analyze($statements_analyzer, $const->value, $context);
             $const_storage = $class_storage->constants[$const->name->name];
