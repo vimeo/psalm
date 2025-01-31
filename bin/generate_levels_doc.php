@@ -34,9 +34,15 @@ foreach ($grouped_issues[-1] as $issue_type) {
     $result .= ' - [' . $issue_type . '](issues/' . $issue_type . '.md)' . "\n";
 }
 
+$result .= "## Errors that only appear at level 1\n\n";
+
+foreach ($grouped_issues[1] as $issue_type) {
+    $result .= ' - [' . $issue_type . '](issues/' . $issue_type . '.md)' . "\n";
+}
+
 $result .= "\n";
 
-foreach ([7, 6, 5, 4, 3, 2] as $level) {
+foreach ([2, 3, 4, 5, 6, 7] as $level) {
     $result .= '## Errors ignored at level ' . ($level + 1) . ($level < 7 ? ' and higher' : '') . "\n\n";
 
     $result .= 'These issues are treated as errors at level ' . $level . ' and below.' . "\n\n";
@@ -46,12 +52,6 @@ foreach ([7, 6, 5, 4, 3, 2] as $level) {
     }
 
     $result .= "\n";
-}
-
-$result .= "## Errors that only appear at level 1\n\n";
-
-foreach ($grouped_issues[1] as $issue_type) {
-    $result .= ' - [' . $issue_type . '](issues/' . $issue_type . '.md)' . "\n";
 }
 
 $result .= "## Feature-specific errors\n\n";
