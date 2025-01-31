@@ -184,6 +184,7 @@ abstract class Atomic implements TypeNode, Stringable
                 return new TFloat();
 
             case 'string':
+            case 'uppercase-string': // TODO implement TUppercaseString
                 return new TString();
 
             case 'bool':
@@ -270,6 +271,7 @@ abstract class Atomic implements TypeNode, Stringable
                 return Type::getNonEmptyListAtomic(Type::getMixed(false, $from_docblock));
 
             case 'non-empty-string':
+            case 'non-empty-uppercase-string': // TODO implement TNonEmptyUppercaseString
                 return new TNonEmptyString();
 
             case 'truthy-string':
