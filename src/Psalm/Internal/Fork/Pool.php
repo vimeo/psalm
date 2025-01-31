@@ -95,11 +95,16 @@ final class Pool
             if ($task_done_closure) {
                 $f->map($task_done_closure);
             }
-            $id = EventLoop::delay(10.0, function () use ($file): void {
-                $this->progress->write(PHP_EOL."Processing $file is taking more than 10 seconds...".PHP_EOL);
+            $id = EventLoop::repeat(10.0, function () use ($file): void {
+                static $seconds = 10;
+                $this->progress->write(PHP_EOL."Processing $file is taking $seconds seconds...".PHP_EOL);
+                /** @psalm-suppress MixedAssignment, MixedOperand */
+                $seconds += 10;
             });
-            $f->map(function () use (&$cnt, $total, $id): void {
+            $f->finally(static function () use ($id): void {
                 EventLoop::cancel($id);
+            });
+            $f->map(function () use (&$cnt, $total): void {
                 $cnt++;
                 if (!($cnt % 10)) {
                     $percent = (int) (($cnt*100) / $total);
