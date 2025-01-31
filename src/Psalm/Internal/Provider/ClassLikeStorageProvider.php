@@ -104,19 +104,24 @@ final class ClassLikeStorageProvider
         foreach ($more as $k => $storage) {
             if (isset(self::$storage[$k])) {
                 $duplicate_storage = self::$storage[$k];
-                IssueBuffer::maybeAdd(
-                    new DuplicateClass(
-                        'Class ' . $k . ' has already been defined'
-                        . ($duplicate_storage->location
-                            ? ' in ' . $duplicate_storage->location->file_path
-                            : ''),
-                        $duplicate_storage->location,
-                    ),
-                );
+                $duplicate_location = $duplicate_storage->location ?? $duplicate_storage->stmt_location;
+                $location = $storage->location ?? $storage->stmt_location;
+                if ($duplicate_location !== null
+                    && $location !== null
+                    && $duplicate_location->getHash() !== $location->getHash()
+                ) {
+                    IssueBuffer::maybeAdd(
+                        new DuplicateClass(
+                            'Class ' . $k . ' has already been defined'
+                            . ' in ' . $location->file_path,
+                            $location,
+                        ),
+                    );
 
-                //$storage->file_storage->has_visitor_issues = true;
+                    //$storage->file_storage->has_visitor_issues = true;
 
-                $duplicate_storage->has_visitor_issues = true;
+                    $duplicate_storage->has_visitor_issues = true;
+                }
                 continue;
             }
             self::$new_storage[$k] = $storage;
