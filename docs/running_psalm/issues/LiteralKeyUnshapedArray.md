@@ -8,7 +8,7 @@ Useful to enforce usage of [shaped arrays](https://psalm.dev/docs/annotating_cod
 <?php
 
 /**
- * @var array<string, bool> $arr
+ * @param array<string, bool> $arr
  */
 function takesGenericArr(array $arr): void {
     // Error: LiteralKeyUnshapedArray
@@ -18,7 +18,7 @@ function takesGenericArr(array $arr): void {
 }
 
 /**
- * @var array{flagA: bool, flagB: bool} $arr
+ * @param array{flagA: bool, flagB: bool} $arr
  */
 function takesShapedArr(array $arr): void {
     // Error: LiteralKeyUnshapedArray
