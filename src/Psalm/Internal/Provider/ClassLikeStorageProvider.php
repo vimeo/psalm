@@ -6,6 +6,8 @@ namespace Psalm\Internal\Provider;
 
 use InvalidArgumentException;
 use LogicException;
+use Psalm\Issue\DuplicateClass;
+use Psalm\IssueBuffer;
 use Psalm\Storage\ClassLikeStorage;
 
 use function strtolower;
@@ -99,8 +101,27 @@ final class ClassLikeStorageProvider
      */
     public function addMore(array $more): void
     {
-        self::$new_storage = [...self::$new_storage, ...$more];
-        self::$storage = [...self::$storage, ...$more];
+        foreach ($more as $k => $storage) {
+            if (isset(self::$storage[$k])) {
+                $duplicate_storage = self::$storage[$k];
+                IssueBuffer::maybeAdd(
+                    new DuplicateClass(
+                        'Class ' . $k . ' has already been defined'
+                        . ($duplicate_storage->location
+                            ? ' in ' . $duplicate_storage->location->file_path
+                            : ''),
+                        $duplicate_storage->location,
+                    ),
+                );
+
+                //$storage->file_storage->has_visitor_issues = true;
+
+                $duplicate_storage->has_visitor_issues = true;
+                continue;
+            }
+            self::$new_storage[$k] = $storage;
+            self::$storage[$k] = $storage;
+        }
     }
 
     public function makeNew(string $fq_classlike_name_lc): void
