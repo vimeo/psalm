@@ -3197,6 +3197,18 @@ class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'disallowVoidNeverTypeForParam' => [
+                'code' => '<?php
+                    /**
+                     * this is just one example where psalm uses isVoid and isNever, which is why void|never should not be collapsed to null
+                     * @param void|never $i
+                     * @return int
+                     */
+                    function takesAnInt($i) {
+                        return rand(10, 15);
+                    }',
+                'error_message' => 'ReservedWord',
+            ],
             'extractVarCheckInvalid' => [
                 'code' => '<?php
                     function takesInt(int $i): void {}
