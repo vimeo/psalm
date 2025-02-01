@@ -1273,7 +1273,7 @@ final class ArgumentAnalyzer
             if ($input_type->isFalsable() && !$input_type->ignore_falsable_issues) {
                 IssueBuffer::maybeAdd(
                     new PossiblyFalseArgument(
-                        'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be false, possibly ' .
+                        'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be false, ' .
                         $param_type->getId() . ' value expected',
                         $arg_location,
                         $cased_method_id,
