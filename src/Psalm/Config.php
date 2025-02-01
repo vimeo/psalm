@@ -41,6 +41,7 @@ use Psalm\Plugin\PluginFileExtensionsInterface;
 use Psalm\Plugin\PluginInterface;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
+use Psalm\Type\TaintKindRegistry;
 use RuntimeException;
 use SimpleXMLElement;
 use Symfony\Component\Filesystem\Path;
@@ -732,6 +733,11 @@ class Config
     /** @var list<string> */
     public array $config_warnings = [];
 
+    /**
+     * @readonly
+     */
+    public TaintKindRegistry $taint_kind_registry;
+
     /** @internal */
     protected function __construct()
     {
@@ -740,6 +746,7 @@ class Config
         $this->universal_object_crates = [
             strtolower(stdClass::class),
         ];
+        $this->taint_kind_registry = new TaintKindRegistry();
     }
 
     /**
