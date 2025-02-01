@@ -1147,7 +1147,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $var_type = $param_type;
 
             if ($function_param->is_variadic) {
-                if ($storage->allow_named_arg_calls) {
+                if ($codebase->analysis_php_version_id >= 8_00_00 && $storage->allow_named_arg_calls) {
                     $var_type = new Union([
                         new TArray([Type::getArrayKey(), $param_type]),
                     ], [

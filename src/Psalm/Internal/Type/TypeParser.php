@@ -1288,7 +1288,7 @@ final class TypeParser
                 }
 
                 $is_variadic = $child_tree->variadic;
-                $is_optional = $child_tree->has_default;
+                $is_optional = $child_tree->has_default || $is_variadic;
                 $param_name = $child_tree->name ?? '';
             } else {
                 if ($child_tree instanceof Value && strpos($child_tree->value, '$') > 0) {

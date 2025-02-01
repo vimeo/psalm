@@ -87,8 +87,23 @@ class ArgTest extends TestCase
 
                     /** @return array<array-key, string> */
                     function Baz(string ...$c) {
-                        Foo(...$c);
+                        if ($c !== array()) {
+                            Foo(...array_values($c));
+                        }
+
                         return $c;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'unpackArgNonNamed' => [
+                'code' => '<?php
+                    function Foo(string $a, string ...$b) : void {}
+
+                    /** @param non-empty-array<int, string> $c */
+                    function Baz($c): void {
+                        Foo(...$c);
                     }',
             ],
             'unpackByRefArg' => [
@@ -100,8 +115,43 @@ class ArgTest extends TestCase
                     example(...$z);',
                 'assertions' => [
                     '$y' => 'int',
-                    '$z' => 'array<int, int>',
+                    '$z' => 'list<int>',
                 ],
+            ],
+            'namedArgAfterUnpack' => [
+                'code' => '<?php
+                    function Foo(string $a, string $b) : void {}
+
+                    /**
+                     * @param non-empty-array<int, string> $c
+                     */
+                    function Baz($c): void {
+                        Foo(...$c, b: "hello");
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['TooManyArguments'],
+                'php_version' => '8.0',
+            ],
+            'unpackIntKeyedArg' => [
+                'code' => '<?php
+                    function Foo(string $a, string ...$b) : void {}
+
+                    /** @param non-empty-list<string> $c */
+                    function Baz($c) : void {
+                        Foo("hello", ...$c);
+                    }',
+            ],
+            'unpackStringKeyedArg' => [
+                'code' => '<?php
+                    function Foo(string $a, string ...$b) : void {}
+
+                    /** @param array<string, string> $c */
+                    function Baz($c) : void {
+                        Foo("hello", ...$c);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'callMapClassOptionalArg' => [
                 'code' => '<?php
@@ -249,6 +299,9 @@ class ArgTest extends TestCase
                             email: $input["email"],
                         );
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'useNamedArgumentsSimple' => [
                 'code' => '<?php
@@ -256,6 +309,9 @@ class ArgTest extends TestCase
 
                     takesArguments(name: "hello", age: 5);
                     takesArguments(age: 5, name: "hello");',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'useNamedArgumentsSpread' => [
                 'code' => '<?php
@@ -265,7 +321,7 @@ class ArgTest extends TestCase
                     takesArguments(...$args);',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.0',
+                'php_version' => '8.1',
             ],
             'useNamedVariadicArguments' => [
                 'code' => '<?php
@@ -283,7 +339,7 @@ class ArgTest extends TestCase
                     takesArguments(...["age" => 5]);',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.0',
+                'php_version' => '8.1',
             ],
             'variadicArgsOptional' => [
                 'code' => '<?php
@@ -375,6 +431,20 @@ class ArgTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'unpackArgPossiblyPositionalArrayKeyOrdering' => [
+                'code' => '<?php
+                    function Foo(string $a, string ...$b) : void {}
+
+                    /** @return array<array-key, string> */
+                    function Baz(string ...$c) {
+                        Foo(...$c);
+                        return $c;
+                    }',
+                // possibly positional after named
+                'error_message' => 'PossiblyInvalidArgument',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'arrayPushArgumentUnpackingWithBadArg' => [
                 'code' => '<?php
                     $a = [];
@@ -384,6 +454,40 @@ class ArgTest extends TestCase
 
                     array_push($a, ...$b);',
                 'error_message' => 'InvalidArgument',
+            ],
+            'inCallmapVariadicParamCalledNamedInvalid' => [
+                'code' => '<?php
+                    /**
+                     * @var array $a
+                     * @var array $b
+                     */
+                    array_intersect(arrays: $a, array: $b);',
+                'error_message' => 'NamedArgumentNotAllowed',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inCallmapVariadicParamCalledNamedInvalidCorrectOrder' => [
+                'code' => '<?php
+                    /**
+                     * @var array $a
+                     * @var array $b
+                     */
+                    array_intersect(array: $b, arrays: $a);',
+                'error_message' => 'NamedArgumentNotAllowed',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inCallmapVariadicParamWrongNameCalledNamedInvalid' => [
+                'code' => '<?php
+                    /**
+                     * @var array $a
+                     * @var array $b
+                     * @var array $c
+                     */
+                    array_intersect(hello: $a, array: $b);',
+                'error_message' => 'NamedArgumentNotAllowed',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'possiblyInvalidArgument' => [
                 'code' => '<?php
@@ -464,6 +568,20 @@ class ArgTest extends TestCase
                     }',
                 'error_message' => 'InvalidNamedArgument',
             ],
+            'invalidNamedArgumentPHP7' => [
+                'code' => '<?php
+                    /**
+                     * @param int $a
+                     * @param string $b
+                     * @return void
+                     */
+                    function foo($a, $b) {}
+
+                    foo(b: "hello", a: 15);',
+                'error_message' => 'NamedArgumentNotAllowed',
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
             'usePositionalArgAfterNamed' => [
                 'code' => '<?php
                     final class Person
@@ -521,6 +639,45 @@ class ArgTest extends TestCase
                     }',
                 'error_message' => 'NamedArgumentNotAllowed',
             ],
+            'unpackGenericArg' => [
+                'code' => '<?php
+                    function Foo(string $a, string ...$b) : void {}
+
+                    /** @param array<string> $c */
+                    function Baz($c) : void {
+                        Foo(...$c);
+                    }',
+                // possibly positional after named
+                'error_message' => 'PossiblyInvalidArgument',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'unpackGenericStringArgHasExistingNamed' => [
+                'code' => '<?php
+                    function Foo(string $a, string ...$b) : void {}
+
+                    /** @param array<string, string> $c */
+                    function Baz($c) : void {
+                        Foo(a: "hello", ...$c);
+                    }',
+                // "a" could be there twice
+                'error_message' => 'InvalidNamedArgument',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'unpackGenericArrayHasExistingNamed' => [
+                'code' => '<?php
+                    function Foo(string $a, string ...$b) : void {}
+
+                    /** @param array<string> $c */
+                    function Baz($c) : void {
+                        Foo(a: "hello", ...$c);
+                    }',
+                // possibly positional after named
+                'error_message' => 'InvalidNamedArgument',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'noNamedArgsFunction' => [
                 'code' => '<?php
                     /** @no-named-arguments */
@@ -547,7 +704,7 @@ class ArgTest extends TestCase
                     }',
                 'error_message' => 'MixedArgument',
                 'ignored_issues' => [],
-                'php_version' => '8.0',
+                'php_version' => '8.1',
             ],
             'arrayWithoutAllNamedParametersSuppressMixed' => [
                 'code' => '<?php
@@ -568,7 +725,7 @@ class ArgTest extends TestCase
                     }',
                 'error_message' => 'TooFewArguments',
                 'ignored_issues' => [],
-                'php_version' => '8.0',
+                'php_version' => '8.1',
             ],
             'wrongTypeVariadicArguments' => [
                 'code' => '<?php
@@ -578,6 +735,31 @@ class ArgTest extends TestCase
                 'error_message' => 'InvalidScalarArgument',
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'positionalArgAfterUnpackNotNamed' => [
+                'code' => '<?php
+                    function Foo(string $a, string $b) : void {}
+
+                    /**
+                     * @param array{0: string} $c
+                     */
+                    function Baz($c): void {
+                        Foo(...$c, "hello");
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'positionalArgAfterUnpackGenericArrayNotNamed' => [
+                'code' => '<?php
+                    function Foo(string $a, string $b) : void {}
+
+                    /**
+                     * @param non-empty-array<int, string> $c
+                     */
+                    function Baz($c): void {
+                        Foo(...$c, "hello");
+                    }',
+                'error_message' => 'InvalidArgument',
+                'ignored_issues' => ['TooManyArguments'],
             ],
             'byrefVarSetsPossible' => [
                 'code' => '<?php
@@ -638,6 +820,8 @@ class ArgTest extends TestCase
                     }
                 ',
                 'error_message' => 'LessSpecificReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'preventUnpackingPossiblyIterable' => [
                 'code' => '<?php
@@ -649,7 +833,7 @@ class ArgTest extends TestCase
                 ',
                 'error_message' => 'PossiblyInvalidArgument',
             ],
-            'SKIPPED-preventUnpackingPossiblyArray' => [
+            'preventUnpackingPossiblyArray' => [
                 'code' => '<?php
                     function foo(int $arg1, int $arg2): void {}
 
@@ -658,6 +842,7 @@ class ArgTest extends TestCase
                     foo(...$test);
                 ',
                 'error_message' => 'PossiblyInvalidArgument',
+                'ignored_issues' => ['TooFewArguments'],
             ],
             'noNamedArguments' => [
                 'code' => '<?php
@@ -687,7 +872,7 @@ class ArgTest extends TestCase
                 ',
                 'error_message' => 'NamedArgumentNotAllowed',
                 'ignored_issues' => [],
-                'php_version' => '8.0',
+                'php_version' => '8.1',
             ],
             'variadicArgumentWithNoNamedArgumentsPreventsPassingArrayWithStringKey' => [
                 'code' => '<?php
@@ -703,6 +888,8 @@ class ArgTest extends TestCase
                     foo(...["a" => 0]);
                 ',
                 'error_message' => 'NamedArgumentNotAllowed',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'unpackNonArrayKeyIterable' => [
                 'code' => '<?php
@@ -777,6 +964,8 @@ class ArgTest extends TestCase
                 );
                 ',
                 'error_message' => 'TooFewArguments',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'SealedRefuseUnsealed' => [
                 'code' => '<?php
@@ -802,6 +991,30 @@ class ArgTest extends TestCase
                     a($sealedExtraKeys);
                 ',
                 'error_message' => 'InvalidArgument - src'  . DIRECTORY_SEPARATOR . 'somefile.php:8:23 - Argument 1 of a expects array{test: string}, but array{somethingElse: \'test\', test: \'str\'} with additional array shape fields (somethingElse) was provided',
+            ],
+            'unpackTooFewFallback' => [
+                'code' => '<?php
+                    function Foo(string $a, string $b) : void {}
+
+                    /** @param array{a: string}&array<string, string> $c */
+                    function Baz($c) :void  {
+                        Foo(...$c);
+                    }
+                ',
+                'error_message' => 'TooFewArguments',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'unpackTooFewGenericArray' => [
+                'code' => '<?php
+                    function Foo(string $a, string $b) : void {}
+
+                    /** @param array<int, string> $c */
+                    function Baz($c) :void  {
+                        Foo("hello", ...$c);
+                    }
+                ',
+                'error_message' => 'TooFewArguments',
             ],
             'callbackArgsCountMismatch' => [
                 'code' => '<?php

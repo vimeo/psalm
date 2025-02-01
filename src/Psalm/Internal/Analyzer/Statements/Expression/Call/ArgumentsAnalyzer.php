@@ -27,8 +27,10 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\InvalidNamedArgument;
 use Psalm\Issue\InvalidPassByReference;
+use Psalm\Issue\PossiblyInvalidArgument;
 use Psalm\Issue\PossiblyUndefinedVariable;
 use Psalm\Issue\TooFewArguments;
 use Psalm\Issue\TooManyArguments;
@@ -49,6 +51,8 @@ use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNumericString;
+use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
@@ -60,6 +64,7 @@ use function array_slice;
 use function array_values;
 use function count;
 use function in_array;
+use function is_numeric;
 use function is_string;
 use function max;
 use function min;
@@ -558,6 +563,7 @@ final class ArgumentsAnalyzer
         $cased_method_id = (string) $method_id;
 
         $is_variadic = false;
+        $required_args_count = 0;
 
         $fq_class_name = null;
 
@@ -607,9 +613,11 @@ final class ArgumentsAnalyzer
             }
         }
 
-        if ($function_params && !$is_variadic) {
-            foreach ($function_params as $function_param) {
-                $is_variadic = $is_variadic || $function_param->is_variadic;
+        foreach ($function_params as $function_param) {
+            $is_variadic = $is_variadic || $function_param->is_variadic;
+
+            if (!$function_param->is_optional && !$function_param->is_variadic) {
+                $required_args_count++;
             }
         }
 
@@ -706,8 +714,15 @@ final class ArgumentsAnalyzer
         $arg_function_params = [];
         $matched_args = [];
         $named_args_was_used = false;
+        $unpacked_arg_was_used = false;
+        $generic_named_used = false;
 
+        $args_provided_max = 0;
+        $args_provided_min = 0;
+        $has_unpacked_non_keyed_array = false;
         foreach ($args as $argument_offset => $arg) {
+            $args_provided_max++;
+            $args_provided_min++;
             if ($named_args_was_used && !$arg->name) {
                 IssueBuffer::maybeAdd(
                     new InvalidNamedArgument(
@@ -717,9 +732,31 @@ final class ArgumentsAnalyzer
                     ),
                     $statements_analyzer->getSuppressedIssues(),
                 );
+            } elseif ($generic_named_used && ($arg->name || $arg->unpack)) {
+                IssueBuffer::maybeAdd(
+                    new InvalidNamedArgument(
+                        'Possibly the named parameter has already been used from unpack',
+                        new CodeLocation($statements_analyzer, $arg),
+                        (string)$method_id,
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
+
+            // this would be a fatal error in all PHP versions (7, 8, 8.3)
+            if ($unpacked_arg_was_used && !$arg->name && !$arg->unpack) {
+                IssueBuffer::maybeAdd(
+                    new InvalidArgument(
+                        'Cannot use positional argument after argument unpacking',
+                        new CodeLocation($statements_analyzer, $arg),
+                        (string) $method_id,
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
             }
 
             if ($arg->unpack) {
+                $unpacked_arg_was_used = true;
                 if ($function_param_count > $argument_offset) {
                     for ($i = $argument_offset; $i < $function_param_count; $i++) {
                         $arg_function_params[$argument_offset][] = $function_params[$i];
@@ -728,57 +765,171 @@ final class ArgumentsAnalyzer
 
                 if (($arg_value_type = $statements_analyzer->node_data->getType($arg->value))
                     && $arg_value_type->hasArray()) {
-                    /**
-                     * @var TArray|TKeyedArray
-                     */
+                    $named_args_was_used_before_array = $named_args_was_used;
+
                     $array_type = $arg_value_type->getArray();
 
-                    if ($array_type instanceof TKeyedArray) {
-                        $array_type = $array_type->getGenericArrayType();
-                        $key_types = $array_type->type_params[0]->getAtomicTypes();
+                    if ($array_type instanceof TCallableArray ||
+                        $array_type instanceof TCallableKeyedArray
+                    ) {
+                        $args_provided_max++;
+                        $args_provided_min++;
+                        $has_unpacked_non_keyed_array = true;
+                    } elseif ($array_type instanceof TKeyedArray) {
+                        $always_defined_count = 0;
+                        foreach ($array_type->properties as $key => $value) {
+                            if (!$value->possibly_undefined) {
+                                $always_defined_count++;
+                            }
 
-                        foreach ($key_types as $key_type) {
-                            if (!$key_type instanceof TLiteralString
-                                || ($function_storage && !$function_storage->allow_named_arg_calls)) {
+                            if (!is_numeric($key)) {
+                                $named_args_was_used = true;
                                 continue;
                             }
 
-                            $param_found = false;
-
-                            foreach ($function_params as $candidate_param) {
-                                if ($candidate_param->name === $key_type->value || $candidate_param->is_variadic) {
-                                    if ($candidate_param->name === $key_type->value) {
-                                        if (isset($matched_args[$candidate_param->name])) {
-                                            IssueBuffer::maybeAdd(
-                                                new InvalidNamedArgument(
-                                                    'Parameter $' . $key_type->value . ' has already been used in '
-                                                    . ($cased_method_id ?: $method_id),
-                                                    new CodeLocation($statements_analyzer, $arg),
-                                                    (string)$method_id,
-                                                ),
-                                                $statements_analyzer->getSuppressedIssues(),
-                                            );
-                                        }
-
-                                        $matched_args[$candidate_param->name] = true;
-                                    }
-
-                                    $param_found = true;
-                                    break;
-                                }
-                            }
-
-                            if (!$param_found) {
+                            if ($named_args_was_used) {
                                 IssueBuffer::maybeAdd(
-                                    new InvalidNamedArgument(
-                                        'Parameter $' . $key_type->value . ' does not exist on function '
-                                            . ($cased_method_id ?: $method_id),
+                                    new PossiblyInvalidArgument(
+                                        'Possibly used positional argument after named argument',
                                         new CodeLocation($statements_analyzer, $arg),
                                         (string)$method_id,
                                     ),
                                     $statements_analyzer->getSuppressedIssues(),
                                 );
                             }
+                        }
+
+                        if (!$array_type->isSealed()) {
+                            $has_unpacked_non_keyed_array = true;
+                            $args_provided_max = $function_param_count + 10_00_00_00_00;
+                        } else {
+                            // since we ++ already for the type in the beginning
+                            $args_provided_max += count($array_type->properties) - 1;
+                        }
+
+                        $args_provided_min += $always_defined_count - 1;
+
+                        $array_type = $array_type->getGenericArrayType();
+                    } elseif ($array_type instanceof TNonEmptyArray) {
+                        $has_unpacked_non_keyed_array = true;
+
+                        // any high value
+                        $args_provided_max = $function_param_count + 10_00_00_00_00;
+
+                        $args_provided_min += $array_type->count ? ($array_type->count - 1) : 0;
+                    } else {
+                        if (isset($array_type->type_params[1])
+                            && $array_type->type_params[1] instanceof Union
+                            && $array_type->type_params[1]->isNever()) {
+                            $args_provided_max--;
+                        } else {
+                            $args_provided_max = $function_param_count + 10_00_00_00_00;
+                        }
+
+                        // array could be empty
+                        $args_provided_min--;
+                        $has_unpacked_non_keyed_array = true;
+                    }
+
+                    $key_types = Type::getArrayKey();
+                    if ($array_type instanceof Type\Atomic\TClassStringMap) {
+                        $key_types = Type::getNonFalsyString();
+                    } elseif ($array_type instanceof TCallableKeyedArray) {
+                        $key_types = Type::getInt();
+                    } elseif (isset($array_type->type_params[0])) {
+                        $key_types = $array_type->type_params[0];
+                    }
+
+                    if ($key_types->isString()) {
+                        $named_args_was_used = true;
+                    } elseif ($named_args_was_used) {
+                        IssueBuffer::maybeAdd(
+                            new InvalidNamedArgument(
+                                'Cannot use positional argument after named argument',
+                                new CodeLocation($statements_analyzer, $arg),
+                                (string)$method_id,
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                        );
+                    } elseif (!$key_types->isInt()) {
+                        // e.g. array-key or a mix of literal strings with int or just int|string
+                        IssueBuffer::maybeAdd(
+                            new PossiblyInvalidArgument(
+                                'Possibly used positional argument after named argument',
+                                new CodeLocation($statements_analyzer, $arg),
+                                (string)$method_id,
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                        );
+
+                        $named_args_was_used = true;
+                    }
+
+                    foreach ($key_types->getAtomicTypes() as $key_type) {
+                        if ($function_storage && !$function_storage->allow_named_arg_calls) {
+                            continue;
+                        }
+
+                        if ($key_type instanceof TString
+                            && !$key_type instanceof TNumericString
+                            && !$key_type instanceof TLiteralString
+                            && !$generic_named_used) {
+                            // only report an error if the named args were used before this array
+                            // since array keys are unique, this isn't an issue within the array
+                            if ($named_args_was_used_before_array && $argument_offset !== 0) {
+                                IssueBuffer::maybeAdd(
+                                    new InvalidNamedArgument(
+                                        'Possibly the generic named parameter from unpack has already been used',
+                                        new CodeLocation($statements_analyzer, $arg),
+                                        (string)$method_id,
+                                    ),
+                                    $statements_analyzer->getSuppressedIssues(),
+                                );
+                            }
+
+                            $generic_named_used = true;
+                            $named_args_was_used = true;
+                        }
+
+                        if (!$key_type instanceof TLiteralString) {
+                            continue;
+                        }
+
+                        $param_found = false;
+
+                        foreach ($function_params as $candidate_param) {
+                            if ($candidate_param->name === $key_type->value || $candidate_param->is_variadic) {
+                                if ($candidate_param->name === $key_type->value) {
+                                    if (isset($matched_args[$candidate_param->name])) {
+                                        IssueBuffer::maybeAdd(
+                                            new InvalidNamedArgument(
+                                                'Parameter $' . $key_type->value . ' has already been used in '
+                                                . ($cased_method_id ?: $method_id),
+                                                new CodeLocation($statements_analyzer, $arg),
+                                                (string)$method_id,
+                                            ),
+                                            $statements_analyzer->getSuppressedIssues(),
+                                        );
+                                    }
+
+                                    $matched_args[$candidate_param->name] = true;
+                                }
+
+                                $param_found = true;
+                                break;
+                            }
+                        }
+
+                        if (!$param_found) {
+                            IssueBuffer::maybeAdd(
+                                new InvalidNamedArgument(
+                                    'Parameter $' . $key_type->value . ' does not exist on function '
+                                    . ($cased_method_id ?: $method_id),
+                                    new CodeLocation($statements_analyzer, $arg),
+                                    (string)$method_id,
+                                ),
+                                $statements_analyzer->getSuppressedIssues(),
+                            );
                         }
                     }
                 }
@@ -826,6 +977,37 @@ final class ArgumentsAnalyzer
                 $arg_function_params[$argument_offset] = [$last_param];
                 $matched_args[$last_param->name] = true;
             }
+        }
+
+        // keyed arrays are reported already as InvalidArgument elsewhere
+        if ($has_unpacked_non_keyed_array && $args_provided_min < $required_args_count && $has_packed_var) {
+            IssueBuffer::maybeAdd(
+                new TooFewArguments(
+                    'Possibly too few arguments for '
+                    . ($cased_method_id ?? (string) $method_id)
+                    . ' - expecting ' . $required_args_count . ' but possibly only'
+                    . ' ' . $args_provided_min . ' provided',
+                    $code_location,
+                    ($cased_method_id ?? (string) $method_id),
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        } elseif ($has_unpacked_non_keyed_array
+                  && $args_provided_max > $function_param_count
+                  && !$is_variadic && $has_packed_var) {
+            // only report it if we don't have TooFewArguments too, as this is less severe of an issue
+            // as it would often together otherwise
+            IssueBuffer::maybeAdd(
+                new TooManyArguments(
+                    'Possibly too many arguments for '
+                    . ($cased_method_id ?? (string) $method_id)
+                    . ' - expecting ' . $function_param_count . ' but saw'
+                    . ' ' . ($args_provided_max > 5000 ? 'unlimited from unpacking' : $args_provided_max),
+                    $code_location,
+                    ($cased_method_id ?? (string) $method_id),
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
         }
 
         foreach ($args as $argument_offset => $arg) {
@@ -1127,12 +1309,20 @@ final class ArgumentsAnalyzer
                 }
 
                 if ($by_ref_type && $function_param->is_variadic && $arg->unpack) {
-                    $by_ref_type = new Union([
-                        new TArray([
-                            Type::getInt(),
-                            $by_ref_type,
-                        ]),
-                    ]);
+                    // string unpacking available since 8.1
+                    if ($codebase->analysis_php_version_id >= 8_01_00
+                        && $method_id
+                        && $codebase->getFunctionLikeStorage($statements_analyzer, $method_id)->allow_named_arg_calls
+                    ) {
+                        $by_ref_type = new Union([
+                            new TArray([
+                                Type::getArrayKey(),
+                                $by_ref_type,
+                            ]),
+                        ]);
+                    } else {
+                        $by_ref_type = new Union([Type::getListAtomic($by_ref_type)]);
+                    }
                 }
             }
 
@@ -1590,7 +1780,8 @@ final class ArgumentsAnalyzer
         ) {
             IssueBuffer::maybeAdd(
                 new TooManyArguments(
-                    'Too many arguments for ' . ($cased_method_id ?: $method_id)
+                    'Too many arguments for '
+                    . ($cased_method_id ?? (string) $method_id)
                     . ' - expecting ' . count($function_params) . ' but saw ' . count($args),
                     $code_location,
                     (string)$method_id,
@@ -1620,6 +1811,14 @@ final class ArgumentsAnalyzer
                             && $atomic_arg_type instanceof TKeyedArray
                             && !$atomic_arg_type->is_list
                         ) {
+                            if ($atomic_arg_type->fallback_params !== null) {
+                                return;
+                            }
+
+                            if (!$atomic_arg_type->allShapeKeysAlwaysDefined()) {
+                                return;
+                            }
+
                             //if we have a single shape, we'll check param names
                             foreach ($atomic_arg_type->properties as $property_name => $_property_type) {
                                 foreach ($function_params as $k => $param) {

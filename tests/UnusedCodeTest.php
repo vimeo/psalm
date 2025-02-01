@@ -75,11 +75,21 @@ class UnusedCodeTest extends TestCase
      * @dataProvider providerInvalidCodeParse
      * @param array<string> $ignored_issues
      */
-    public function testInvalidCode(string $code, string $error_message, array $ignored_issues = []): void
-    {
+    public function testInvalidCode(
+        string $code,
+        string $error_message,
+        array  $ignored_issues = [],
+        ?string $php_version = null
+    ): void {
         if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
         }
+
+        if ($php_version === null) {
+            $php_version = '7.4';
+        }
+
+        $this->project_analyzer->setPhpVersion($php_version, 'tests');
 
         $this->expectException(CodeException::class);
         $this->expectExceptionMessageMatches('/\b' . preg_quote($error_message, '/') . '\b/');
@@ -1366,7 +1376,7 @@ class UnusedCodeTest extends TestCase
     }
 
     /**
-     * @return array<string,array{code:string,error_message:string,ignored_issues?:list<string>}>
+     * @return array<string,array{code:string,error_message:string,ignored_issues?:list<string>, php_version?: string}>
      */
     public function providerInvalidCodeParse(): array
     {
@@ -1747,6 +1757,8 @@ class UnusedCodeTest extends TestCase
                         return $f;
                     }',
                 'error_message' => 'UnusedFunctionCall',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'propertyWrittenButNotRead' => [
                 'code' => '<?php
