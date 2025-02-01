@@ -310,7 +310,7 @@ final class Scanner
         }
 
         if (!$this->is_forked && $pool_size > 1 && count($files_to_scan) > 512) {
-            $pool_size = ceil(min($pool_size, count($files_to_scan) / 256));
+            $pool_size = (int) ceil(min($pool_size, count($files_to_scan) / 256));
         } else {
             $pool_size = 1;
         }
