@@ -622,6 +622,18 @@ class PropertyTypeTest extends TestCase
                     'MixedPropertyFetch',
                 ],
             ],
+            'promotedPropertyOldPhp' => [
+                'code' => '<?php
+                    class User
+                    {
+                        public function __construct(
+                            protected string $name,
+                        ){}
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'sharedPropertyInIf' => [
                 'code' => '<?php
                     class A {
@@ -2972,6 +2984,18 @@ class PropertyTypeTest extends TestCase
                     $a = "hello";
                     $a->foo = "bar";',
                 'error_message' => 'InvalidPropertyAssignment',
+            ],
+            'promotedPropertyOldPhp' => [
+                'code' => '<?php
+                    class User
+                    {
+                        public function __construct(
+                            protected string $name,
+                        ){}
+                    }',
+                'error_message' => 'InvalidPropertyAssignment',
+                'ignored_issues' => [],
+                'php_version' => '7.4',
             ],
             'badFetch' => [
                 'code' => '<?php
