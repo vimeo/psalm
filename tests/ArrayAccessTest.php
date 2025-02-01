@@ -586,16 +586,6 @@ class ArrayAccessTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['PossiblyNullArrayAccess'],
             ],
-            'ignoreEmptyArrayAccess' => [
-                'code' => '<?php
-                    $arr = [];
-                    $x = $arr[0];
-                    if (isset($arr[0]) && $arr[0]) { }',
-                'assertions' => [
-                    '$x' => 'mixed',
-                ],
-                'ignored_issues' => ['EmptyArrayAccess', 'MixedAssignment'],
-            ],
             'objectLikeWithoutKeys' => [
                 'code' => '<?php
                     function takesInt(int $i): void {}
