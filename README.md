@@ -27,7 +27,7 @@ Support contracts can cover full integration of Psalm into existing codebases, s
 
 See [here &raquo;](https://daniil.it) for info, pricing and contact information.  
 
-## Interested in contributing?
+## Would you be interested in contributing?
 
 Have a look at [CONTRIBUTING.md](CONTRIBUTING.md).
 
