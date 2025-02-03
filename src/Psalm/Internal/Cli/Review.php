@@ -154,7 +154,7 @@ final class Review
             self::r($mode($file, $line, $column));
 
             /** @psalm-suppress RiskyTruthyFalsyComparison */
-            if (trim(readline("Press enter to continue, q to exit.") ?: '') === 'q') {
+            if (trim(readline("Press enter to continue, q to exit: ") ?: '') === 'q') {
                 break;
             }
         }
