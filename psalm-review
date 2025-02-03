@@ -1,0 +1,9 @@
+#!/usr/bin/env php
+<?php
+
+namespace Psalm;
+
+use Psalm\Internal\Cli\Review;
+
+require_once __DIR__ . '/src/Psalm/Internal/Cli/Review.php';
+Review::run($argv);

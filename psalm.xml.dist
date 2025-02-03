@@ -26,6 +26,7 @@
         <file name="psalm-language-server"/>
         <file name="psalm-plugin"/>
         <file name="psalm-refactor"/>
+        <file name="psalm-review"/>
         <file name="psalter"/>
         <ignoreFiles>
             <file name="src/Psalm/Internal/PhpTraverser/CustomTraverser.php"/>

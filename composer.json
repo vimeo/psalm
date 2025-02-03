@@ -106,6 +106,7 @@
         "psalm-language-server",
         "psalm-plugin",
         "psalm-refactor",
+        "psalm-review",
         "psalter"
     ],
     "scripts": {
