@@ -33,6 +33,7 @@ use function str_repeat;
 use function strlen;
 use function strpos;
 use function substr;
+use function trim;
 
 use const JSON_THROW_ON_ERROR;
 use const PHP_EOL;
@@ -151,7 +152,11 @@ final class Review
             echo PHP_EOL;
         
             self::r($mode($file, $line, $column));
-            readline();
+
+            /** @psalm-suppress RiskyTruthyFalsyComparison */
+            if (trim(readline("Press enter to continue, q to exit.") ?: '') === 'q') {
+                break;
+            }
         }
     }
 
@@ -164,7 +169,7 @@ final class Review
                 "Will parse the Psalm JSON report in report.json ".
                 "and open the specified IDE at the line and column of the issue, ".
                 "one by one for all issues.".PHP_EOL.
-                "Press enter to go to the next issue.".PHP_EOL.PHP_EOL.
+                "Press enter to go to the next issue, q to quit.".PHP_EOL.PHP_EOL.
                 "The extra arguments may be used to filter only for issues of the specified types, ".
                 "or for all issues except the specified types (with the ~ or - inversion);".PHP_EOL.
                 "rev|inv keywords may be used to start from the end of the report.".PHP_EOL.PHP_EOL,
