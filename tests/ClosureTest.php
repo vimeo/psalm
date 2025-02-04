@@ -1021,6 +1021,19 @@ class ClosureTest extends TestCase
                 );
                 ',
             ],
+            'closureInArray' => [
+                'code' => '<?php
+                    $arr = [
+                        /**
+                         * @param array{last_access: int|string} $item
+                         */
+                        static function (array $item): int|string {
+                            return $item["last_access"];
+                        },
+                    ];
+
+                    $arr[0](["last_access" => 0]);',
+            ],
         ];
     }
 

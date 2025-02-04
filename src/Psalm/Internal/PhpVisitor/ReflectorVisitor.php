@@ -174,6 +174,9 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                   || $node instanceof PhpParser\Node\Arg
                      && ($node->value instanceof PhpParser\Node\Expr\ArrowFunction
                          || $node->value instanceof PhpParser\Node\Expr\Closure)
+                  || $node instanceof PhpParser\Node\ArrayItem
+                     && ($node->value instanceof PhpParser\Node\Expr\ArrowFunction
+                         || $node->value instanceof PhpParser\Node\Expr\Closure)
          ) {
             $doc_comment = null;
             if ($node instanceof PhpParser\Node\Stmt\Function_
@@ -187,7 +190,7 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                 /** @var PhpParser\Node\FunctionLike */
                 $node = $node->expr;
                 $this->closure_statements->attach($node);
-            } elseif ($node instanceof PhpParser\Node\Arg) {
+            } elseif ($node instanceof PhpParser\Node\Arg || $node instanceof PhpParser\Node\ArrayItem) {
                 $doc_comment = $node->getDocComment();
                 /** @var PhpParser\Node\FunctionLike */
                 $node = $node->value;
