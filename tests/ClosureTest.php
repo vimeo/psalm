@@ -1025,9 +1025,9 @@ class ClosureTest extends TestCase
                 'code' => '<?php
                     $arr = [
                         /**
-                         * @param array{last_access: int|string} $item
+                         * @param array{last_access: int} $item
                          */
-                        static function (array $item): int|string {
+                        static function (array $item): int {
                             return $item["last_access"];
                         },
                     ];
