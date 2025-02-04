@@ -217,6 +217,8 @@ class MagicPropertyTest extends TestCase
                     function test(string $k, array $objs): void {
                         $objs[$k]->send_type = "test";
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
             'propertyDocblockAssignmentToMixed' => [
