@@ -674,7 +674,7 @@ class MixinAnnotationTest extends TestCase
                     }
 
                     (new A)->foo = "bar";',
-                'error_message' => 'UndefinedMagicPropertyAssignment',
+                'error_message' => 'UndefinedDocblockClass',
             ],
             'undefinedMixinClassWithMethodCall' => [
                 'code' => '<?php

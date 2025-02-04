@@ -208,7 +208,7 @@ class MagicPropertyTest extends TestCase
                      * @psalm-seal-properties
                      */
                     final class b {
-                        public function __set(string $key, mixed $value) {}
+                        public function __set(string $key, $value) {}
                     }
 
                     /**
