@@ -1193,6 +1193,21 @@ class ForeachTest extends TestCase
                     foreach ($gen as $i) {}
                 PHP,
             ],
+            'generatorWithVoidSend' => [
+                'code' => <<<'PHP'
+                    <?php
+
+                    /**
+                     * @return Generator<string, int, void, void>
+                     */
+                    function test(): Generator {
+                        yield 'test' => 1;
+                    }
+
+                    foreach (test() as $_) {
+                    }
+                PHP,
+            ],
             'nullableGenerator' => [
                 'code' => <<<'PHP'
                     <?php
