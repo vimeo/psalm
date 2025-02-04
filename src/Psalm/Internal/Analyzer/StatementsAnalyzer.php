@@ -595,6 +595,10 @@ final class StatementsAnalyzer extends SourceAnalyzer
             DeclareAnalyzer::analyze($statements_analyzer, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Stmt\HaltCompiler) {
             $context->has_returned = true;
+        } elseif ($stmt instanceof PhpParser\Node\Stmt\Block) {
+            foreach ($stmt->stmts as $sub) {
+                self::analyzeStatement($statements_analyzer, $sub, $context, $global_context);
+            }
         } else {
             if (IssueBuffer::accepts(
                 new UnrecognizedStatement(
