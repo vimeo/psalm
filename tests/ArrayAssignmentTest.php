@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use Psalm\Context;
@@ -1869,7 +1871,7 @@ class ArrayAssignmentTest extends TestCase
                 'code' => '<?php
                     /**
                      * @param array<string, mixed> $array
-                     * @return non-empty-array<string, mixed>
+                     * @return array<string, mixed>
                      */
                     function getArray(array $array): array {
                         if (rand(0, 1)) {
@@ -2117,6 +2119,15 @@ class ArrayAssignmentTest extends TestCase
                         return $queryParams;
                     }',
             ],
+            'AssignListToNonEmptyList' => [
+                'code' => '<?php
+                    /** @var array<int, non-empty-list<string>> $l*/
+                    $l = [];
+                    $l[] = [];',
+                'assertions' => [
+                    '$l===' => 'non-empty-array<int, list<string>>',
+                ],
+            ],
             'stringIntKeys' => [
                 'code' => '<?php
                     /**
@@ -2342,9 +2353,6 @@ class ArrayAssignmentTest extends TestCase
             ],
             'mergeWithDeeplyNestedArray' => [
                 'code' => '<?php
-                    /**
-                     * @psalm-suppress MixedInferredReturnType
-                     */
                     function getTwoPartsLocale(array $cache, string $a, string $b) : string
                     {
                         if (!isset($cache[$b])) {

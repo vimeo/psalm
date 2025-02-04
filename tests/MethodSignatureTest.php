@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use Psalm\Context;
@@ -400,6 +402,15 @@ class MethodSignatureTest extends TestCase
                     '$b' => 'B',
                 ],
             ],
+            'returnIgnoresInlineComments' => [
+                'code' => '<?php
+                    class A {
+                        /** @return bool {@see true}*/
+                        public static function foo():bool {
+                            return true;
+                        }
+                    }',
+            ],
             'allowSomeCovariance' => [
                 'code' => '<?php
                     interface I1 {
@@ -743,7 +754,7 @@ class MethodSignatureTest extends TestCase
                         public function getTraceAsString(): string;
                     }',
             ],
-            'allowExecptionToStringWithNoType' => [
+            'allowExceptionToStringWithNoType' => [
                 'code' => '<?php
                     class E extends Exception {
                         public function __toString() {
@@ -751,7 +762,7 @@ class MethodSignatureTest extends TestCase
                         }
                     }',
             ],
-            'allowExecptionToStringIn71' => [
+            'allowExceptionToStringIn71' => [
                 'code' => '<?php
                     class E extends Exception {
                         public function __toString() : string {
@@ -838,12 +849,12 @@ class MethodSignatureTest extends TestCase
                 'code' => '<?php
                     final class B extends A
                     {
-                        public static function doCretate1(): self
+                        public static function doCreate1(): self
                         {
                             return self::create1();
                         }
 
-                        public static function doCretate2(): self
+                        public static function doCreate2(): self
                         {
                             return self::create2();
                         }
@@ -917,6 +928,9 @@ class MethodSignatureTest extends TestCase
                     {
                         public function a(mixed $a): void {}
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'doesNotRequireInterfaceDestructorsToHaveReturnType' => [
                 'code' => '<?php
@@ -1662,6 +1676,28 @@ class MethodSignatureTest extends TestCase
                     }
                 ',
                 'error_message' => 'MethodSignatureMismatch',
+            ],
+            'methodAnnotationReturnMismatch' => [
+                'code' => '<?php
+                /**
+                * @method array bar()
+                */
+                interface Foo
+                {
+                    public function bar(): string;
+                }',
+                'error_message' => 'MismatchingDocblockReturnType',
+            ],
+            'methodAnnotationParamMismatch' => [
+                'code' => '<?php
+                /**
+                * @method string bar(string $i)
+                */
+                interface Foo
+                {
+                    public function bar(int $i): string;
+                }',
+                'error_message' => 'MismatchingDocblockParamType',
             ],
         ];
     }

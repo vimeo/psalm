@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 use Psalm\Codebase;
@@ -22,27 +24,9 @@ class TNamedObject extends Atomic
 {
     use HasIntersectionTrait;
 
-    /**
-     * @var string
-     */
-    public $value;
+    public string $value;
 
-    /**
-     * @var bool
-     */
-    public $is_static = false;
-
-    /**
-     * @var bool
-     */
-    public $is_static_resolved = false;
-
-    /**
-     * Whether or not this type can represent a child of the class named in $value
-     *
-     * @var bool
-     */
-    public $definite_class = false;
+    public bool $is_static_resolved = false;
 
     /**
      * @param string $value the name of the object
@@ -50,18 +34,19 @@ class TNamedObject extends Atomic
      */
     public function __construct(
         string $value,
-        bool $is_static = false,
-        bool $definite_class = false,
+        public bool $is_static = false,
+        /**
+         * Whether or not this type can represent a child of the class named in $value
+         */
+        public bool $definite_class = false,
         array $extra_types = [],
-        bool $from_docblock = false
+        bool $from_docblock = false,
     ) {
         if ($value[0] === '\\') {
             $value = substr($value, 1);
         }
 
         $this->value = $value;
-        $this->is_static = $is_static;
-        $this->definite_class = $definite_class;
         $this->extra_types = $extra_types;
         parent::__construct($from_docblock);
     }
@@ -148,7 +133,7 @@ class TNamedObject extends Atomic
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        bool $use_phpdoc_format
+        bool $use_phpdoc_format,
     ): string {
         if ($this->value === 'static') {
             return 'static';
@@ -178,7 +163,7 @@ class TNamedObject extends Atomic
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $analysis_php_version_id
+        int $analysis_php_version_id,
     ): ?string {
         if ($this->value === 'static') {
             return $analysis_php_version_id >= 8_00_00 ? 'static' : null;
@@ -206,7 +191,7 @@ class TNamedObject extends Atomic
      */
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
-        ?Codebase $codebase
+        ?Codebase $codebase,
     ): self {
         $intersection = $this->replaceIntersectionTemplateTypesWithArgTypes($template_result, $codebase);
         if (!$intersection) {
@@ -230,7 +215,7 @@ class TNamedObject extends Atomic
         ?string $calling_function = null,
         bool $replace = true,
         bool $add_lower_bound = false,
-        int $depth = 0
+        int $depth = 0,
     ): self {
         $intersection = $this->replaceIntersectionTemplateTypesWithStandins(
             $template_result,
@@ -264,7 +249,7 @@ class TNamedObject extends Atomic
         bool $is_static = false,
         bool $definite_class = false,
         array $extra_types = [],
-        bool $from_docblock = false
+        bool $from_docblock = false,
     ): TNamedObject {
         if ($value === 'Closure') {
             return new TClosure($value, null, null, null, [], $extra_types, $from_docblock);

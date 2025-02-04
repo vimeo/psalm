@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use InvalidArgumentException;
@@ -65,7 +67,7 @@ final class ClassConstAnalyzer
     public static function analyzeFetch(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ClassConstFetch $stmt,
-        Context $context
+        Context $context,
     ): bool {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -279,9 +281,9 @@ final class ClassConstAnalyzer
                     [],
                     $stmt->class->getFirst() === "static",
                 );
-            } catch (InvalidArgumentException $_) {
+            } catch (InvalidArgumentException) {
                 return true;
-            } catch (CircularReferenceException $e) {
+            } catch (CircularReferenceException) {
                 IssueBuffer::maybeAdd(
                     new CircularReference(
                         'Constant ' . $const_id . ' contains a circular reference',
@@ -583,9 +585,9 @@ final class ClassConstAnalyzer
                     $class_visibility,
                     $statements_analyzer,
                 );
-            } catch (InvalidArgumentException $_) {
+            } catch (InvalidArgumentException) {
                 return true;
-            } catch (CircularReferenceException $e) {
+            } catch (CircularReferenceException) {
                 IssueBuffer::maybeAdd(
                     new CircularReference(
                         'Constant ' . $const_id . ' contains a circular reference',
@@ -710,10 +712,14 @@ final class ClassConstAnalyzer
     public static function analyzeAssignment(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\ClassConst $stmt,
-        Context $context
+        Context $context,
     ): void {
         assert($context->self !== null);
         $class_storage = $statements_analyzer->getCodebase()->classlike_storage_provider->get($context->self);
+
+        if ($class_storage->has_visitor_issues) {
+            return;
+        }
 
         foreach ($stmt->consts as $const) {
             ExpressionAnalyzer::analyze($statements_analyzer, $const->value, $context);
@@ -754,7 +760,7 @@ final class ClassConstAnalyzer
 
     public static function analyze(
         ClassLikeStorage $class_storage,
-        Codebase $codebase
+        Codebase $codebase,
     ): void {
         foreach ($class_storage->constants as $const_name => $const_storage) {
             [$parent_classlike_storage, $parent_const_storage] = self::getOverriddenConstant(
@@ -852,7 +858,7 @@ final class ClassConstAnalyzer
         ClassLikeStorage $class_storage,
         ClassConstantStorage $const_storage,
         string $const_name,
-        Codebase $codebase
+        Codebase $codebase,
     ): ?array {
         $parent_classlike_storage = $interface_const_storage = $parent_const_storage = null;
         $interface_overrides = [];

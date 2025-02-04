@@ -12,10 +12,14 @@
     "authors": [
         {
             "name": "Matthew Brown"
+        },
+        {
+            "name": "Daniil Gentili",
+            "email": "daniil@daniil.it"
         }
     ],
     "require": {
-        "php": "^7.4 || ~8.0.0 || ~8.1.0 || ~8.2.0 || ~8.3.0",
+        "php": "~8.1.17 || ~8.2.4 || ~8.3.0 || ~8.4.0",
         "ext-SimpleXML": "*",
         "ext-ctype": "*",
         "ext-dom": "*",
@@ -24,42 +28,41 @@
         "ext-mbstring": "*",
         "ext-tokenizer": "*",
         "composer-runtime-api": "^2",
-        "amphp/amp": "^2.4.2",
-        "amphp/byte-stream": "^1.5",
+        "amphp/amp": "^3",
+        "amphp/byte-stream": "^2",
+        "amphp/parallel": "^2.3",
         "composer/semver": "^1.4 || ^2.0 || ^3.0",
         "composer/xdebug-handler": "^2.0 || ^3.0",
         "dnoegel/php-xdg-base-dir": "^0.1.1",
         "felixfbecker/advanced-json-rpc": "^3.1",
-        "felixfbecker/language-server-protocol": "^1.5.2",
+        "felixfbecker/language-server-protocol": "^1.5.3",
         "fidry/cpu-core-counter": "^0.4.1 || ^0.5.1 || ^1.0.0",
         "netresearch/jsonmapper": "^1.0 || ^2.0 || ^3.0 || ^4.0",
-        "nikic/php-parser": "^4.17",
+        "nikic/php-parser": "^5.0.0",
         "sebastian/diff": "^4.0 || ^5.0 || ^6.0",
         "spatie/array-to-xml": "^2.17.0 || ^3.0",
-        "symfony/console": "^4.1.6 || ^5.0 || ^6.0 || ^7.0",
-        "symfony/filesystem": "^5.4 || ^6.0 || ^7.0"
-    },
-    "conflict": {
-      "nikic/php-parser": "4.17.0"
+        "symfony/console": "^6.0 || ^7.0",
+        "symfony/filesystem": "^6.0 || ^7.0"
     },
     "provide": {
         "psalm/psalm": "self.version"
     },
     "require-dev": {
         "ext-curl": "*",
-        "amphp/phpunit-util": "^2.0",
+        "amphp/phpunit-util": "^3",
         "bamarni/composer-bin-plugin": "^1.4",
         "brianium/paratest": "^6.9",
+        "dg/bypass-finals": "^1.5",
         "mockery/mockery": "^1.5",
         "nunomaduro/mock-final-classes": "^1.1",
         "php-parallel-lint/php-parallel-lint": "^1.2",
         "phpstan/phpdoc-parser": "^1.6",
         "phpunit/phpunit": "^9.6",
         "psalm/plugin-mockery": "^1.1",
-        "psalm/plugin-phpunit": "^0.18",
+        "psalm/plugin-phpunit": "^0.19",
         "slevomat/coding-standard": "^8.4",
         "squizlabs/php_codesniffer": "^3.6",
-        "symfony/process": "^4.4 || ^5.0 || ^6.0 || ^7.0"
+        "symfony/process": "^6.0 || ^7.0"
     },
     "suggest": {
         "ext-igbinary": "^2.0.5 is required, used to serialize caching data",
@@ -77,7 +80,9 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-master": "5.x-dev",
+            "dev-master": "7.x-dev",
+            "dev-6.x": "6.x-dev",
+            "dev-5.x": "5.x-dev",
             "dev-4.x": "4.x-dev",
             "dev-3.x": "3.x-dev",
             "dev-2.x": "2.x-dev",
@@ -109,7 +114,7 @@
         "lint": "@php parallel-lint ./src ./tests",
         "phpunit": [
             "Composer\\Config::disableProcessTimeout",
-            "@php paratest --runner=WrapperRunner"
+            "paratest -f --runner=WrapperRunner"
         ],
         "phpunit-std": [
             "Composer\\Config::disableProcessTimeout",
@@ -117,7 +122,7 @@
         ],
         "verify-callmap": "@php phpunit tests/Internal/Codebase/InternalCallMapHandlerTest.php",
         "psalm": "@php ./psalm",
-        "psalm-set-baseline": "@php ./psalm --set-baseline=psalm-baseline.xml",
+        "psalm-set-baseline": "@php ./psalm --set-baseline",
         "tests": [
             "@lint",
             "@cs",
@@ -135,8 +140,8 @@
         "tests": "Runs all available tests."
     },
     "support": {
-      "docs": "https://psalm.dev/docs",
-      "issues": "https://github.com/vimeo/psalm/issues",
-      "source": "https://github.com/vimeo/psalm"
+        "docs": "https://psalm.dev/docs",
+        "issues": "https://github.com/vimeo/psalm/issues",
+        "source": "https://github.com/vimeo/psalm"
     }
 }

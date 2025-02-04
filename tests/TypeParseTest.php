@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use Psalm\Codebase;
@@ -127,7 +129,7 @@ class TypeParseTest extends TestCase
         $this->assertSame('array<int|string, string>', (string) Type::parseString('array<int|string, string>'));
     }
 
-    public function testNonEmptyArrray(): void
+    public function testNonEmptyArray(): void
     {
         $this->assertSame('non-empty-array<array-key, int>', (string) Type::parseString('non-empty-array<int>'));
     }
@@ -152,7 +154,7 @@ class TypeParseTest extends TestCase
         $this->assertSame('I1&I2|null', (string) Type::parseString('null|I1&I2'));
     }
 
-    public function testInteratorAndTraversable(): void
+    public function testIteratorAndTraversable(): void
     {
         $this->assertSame('Iterator<mixed, int>&Traversable', (string) Type::parseString('Iterator<int>&Traversable'));
     }
@@ -485,7 +487,7 @@ class TypeParseTest extends TestCase
     public function testTKeyedCallableArrayNonList(): void
     {
         $this->assertSame(
-            'callable-array{0: class-string, 1: string}',
+            'callable-array{class-string, string}',
             (string)Type::parseString('callable-array{0: class-string, 1: string}'),
         );
     }
@@ -935,6 +937,14 @@ class TypeParseTest extends TestCase
         $this->assertSame(
             'class-string-map<T as Foo, T>',
             Type::parseString('class-string-map<T as Foo, T>')->getId(false),
+        );
+    }
+
+    public function testClassStringMapOf(): void
+    {
+        $this->assertSame(
+            'class-string-map<T as Foo, T>',
+            Type::parseString('class-string-map<T of Foo, T>')->getId(false),
         );
     }
 

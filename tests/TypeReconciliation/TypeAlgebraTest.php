@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\TypeReconciliation;
 
 use Psalm\Tests\TestCase;
@@ -858,7 +860,6 @@ class TypeAlgebraTest extends TestCase
                         return "LTR";
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedInferredReturnType'],
             ],
             'grandParentInstanceofConfusion' => [
                 'code' => '<?php

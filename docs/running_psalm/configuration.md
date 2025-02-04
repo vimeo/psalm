@@ -213,7 +213,7 @@ When `true`, Psalm will check that the developer has caught every exception in g
   ignoreInternalFunctionFalseReturn="[bool]"
 >
 ```
-When `true`, Psalm ignores possibly-false issues stemming from return values of internal functions (like `preg_split`) that may return false, but do so rarely. Defaults to `true`.
+When `true`, Psalm ignores possibly-false issues stemming from return values of internal functions (like `preg_split`) that may return false, but do so rarely. Defaults to `false`.
 
 #### ignoreInternalFunctionNullReturn
 
@@ -222,7 +222,7 @@ When `true`, Psalm ignores possibly-false issues stemming from return values of 
   ignoreInternalFunctionNullReturn="[bool]"
 >
 ```
-When `true`, Psalm ignores possibly-null issues stemming from return values of internal array functions (like `current`) that may return null, but do so rarely. Defaults to `true`.
+When `true`, Psalm ignores possibly-null issues stemming from return values of internal array functions (like `current`) that may return null, but do so rarely. Defaults to `false`.
 
 #### inferPropertyTypesFromConstructor
 
@@ -248,6 +248,14 @@ When `true`, Psalm will attempt to find all unused variables, the equivalent of 
 >
 ```
 When `true`, Psalm will attempt to find all unused code (including unused variables), the equivalent of running with `--find-unused-code`. Defaults to `false`.
+
+#### disallowLiteralKeysOnUnshapedArrays
+```xml
+<psalm
+  disallowLiteralKeysOnUnshapedArrays="[bool]"
+>
+```
+When `true`, Psalm will emit issues when using literal keys on unshaped arrays (useful to enforce usage of shaped arrays). Defaults to `false`.
 
 #### findUnusedPsalmSuppress
 ```xml
@@ -438,16 +446,24 @@ Allows you to hard-code a compressor for Psalm's cache. By default, Psalm uses `
 ```
 Allows you to hard-code the number of threads Psalm will use (similar to `--threads` on the command line). This value will be used in place of detecting threads from the host machine, but will be overridden by using `--threads` or `--debug` (which sets threads to 1) on the command line
 
+#### scanThreads
+```xml
+<psalm
+        scanThreads="[int]"
+>
+```
+Allows you to hard-code the number of threads Psalm will use during the scan phase (as opposed to the analysis phase, controlled by the `threads` field) (similar to `--scan-threads` on the command line). This value will be used in place of detecting threads from the host machine, but will be overridden by using `--scan-threads` or `--debug` (which sets threads to 1) on the command line.
+
 #### maxStringLength
 ```xml
 <psalm
   maxStringLength="1000"
 >
 ```
-This setting controls the maximum length of literal strings that will be transformed into a literal string type during Psalm analysis.  
-Strings longer than this value (by default 1000 bytes) will be transformed in a generic `non-empty-string` type, instead.  
+This setting controls the maximum length of literal strings that will be transformed into a literal string type during Psalm analysis.
+Strings longer than this value (by default 1000 bytes) will be transformed in a generic `non-empty-string` type, instead.
 
-Please note that changing this setting might introduce unwanted side effects and those side effects won't be considered as bugs.  
+Please note that changing this setting might introduce unwanted side effects and those side effects won't be considered as bugs.
 
 #### maxShapedArraySize
 ```xml
@@ -455,10 +471,10 @@ Please note that changing this setting might introduce unwanted side effects and
   maxShapedArraySize="100"
 >
 ```
-This setting controls the maximum size of shaped arrays that will be transformed into a shaped `array{key1: "value", key2: T}` type during Psalm analysis.  
-Arrays bigger than this value (100 by default) will be transformed in a generic `non-empty-array` type, instead.  
+This setting controls the maximum size of shaped arrays that will be transformed into a shaped `array{key1: "value", key2: T}` type during Psalm analysis.
+Arrays bigger than this value (100 by default) will be transformed in a generic `non-empty-array` type, instead.
 
-Please note that changing this setting might introduce unwanted side effects and those side effects won't be considered as bugs.  
+Please note that changing this setting might introduce unwanted side effects and those side effects won't be considered as bugs.
 
 #### restrictReturnTypes
 
@@ -474,20 +490,20 @@ the inferred return type.
 This code:
 ```php
 function getOne(): int // declared type: int
-{ 
+{
     return 1; // inferred type: 1 (int literal)
 }
 ```
 Will give this error: `LessSpecificReturnType - The inferred return type '1' for
-a is more specific than the declared return type 'int'`
+getOne is more specific than the declared return type 'int'`
 
 To fix the error, you should specify the more specific type in the doc-block:
 ```php
 /**
  * @return 1
  */
-function getOne(): int 
-{ 
+function getOne(): int
+{
     return 1;
 }
 ```
@@ -519,6 +535,11 @@ class PremiumCar extends StandardCar {
 #### findUnusedBaselineEntry
 
 Emits [UnusedBaselineEntry](issues/UnusedBaselineEntry.md) when a baseline entry
+is not being used to suppress an issue.
+
+#### findUnusedIssueHandlerSuppression
+
+Emits [UnusedIssueHandlerSuppression](issues/UnusedIssueHandlerSuppression.md) when a suppressed issue handler
 is not being used to suppress an issue.
 
 ## Project settings

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Report;
 
 use Psalm\Config;
@@ -9,7 +11,7 @@ use Psalm\Report;
 
 use function file_exists;
 use function file_get_contents;
-use function strpos;
+use function str_starts_with;
 
 /**
  * SARIF report format suitable for import into any SARIF compatible solution
@@ -48,7 +50,7 @@ final class SarifReport extends Report
                 ],
                 'properties' => [
                     'tags' => [
-                        (strpos($issue_data->type, 'Tainted') === 0) ? 'security' : 'maintainability',
+                        (str_starts_with($issue_data->type, 'Tainted')) ? 'security' : 'maintainability',
                     ],
                 ],
                 'helpUri' => $issue_data->link,

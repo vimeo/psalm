@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\SourceControl\Git;
 
 /**
@@ -11,52 +13,38 @@ final class CommitInfo
 {
     /**
      * Commit ID.
-     *
-     * @var null|string
      */
-    protected $id;
+    private ?string $id = null;
 
     /**
      * Author name.
-     *
-     * @var null|string
      */
-    protected $author_name;
+    private ?string $author_name = null;
 
     /**
      * Author email.
-     *
-     * @var null|string
      */
-    protected $author_email;
+    private ?string $author_email = null;
 
     /**
      * Committer name.
-     *
-     * @var null|string
      */
-    protected $committer_name;
+    private ?string $committer_name = null;
 
     /**
      * Committer email.
-     *
-     * @var null|string
      */
-    protected $committer_email;
+    private ?string $committer_email = null;
 
     /**
      * Commit message.
-     *
-     * @var null|string
      */
-    protected $message;
+    private ?string $message = null;
 
     /**
      * Commit message.
-     *
-     * @var null|int
      */
-    protected $date;
+    private ?int $date = null;
 
     public function toArray(): array
     {

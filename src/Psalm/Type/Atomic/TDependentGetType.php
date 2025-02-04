@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 /**
@@ -10,18 +12,10 @@ namespace Psalm\Type\Atomic;
 final class TDependentGetType extends TString
 {
     /**
-     * Used to hold information as to what this refers to
-     *
-     * @var string
-     */
-    public $typeof;
-
-    /**
      * @param string $typeof the variable id
      */
-    public function __construct(string $typeof)
+    public function __construct(public string $typeof)
     {
-        $this->typeof = $typeof;
         parent::__construct(false);
     }
 

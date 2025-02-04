@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type;
 
 use InvalidArgumentException;
@@ -46,7 +48,6 @@ use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
@@ -73,6 +74,8 @@ use function key;
 use function ksort;
 use function preg_match;
 use function preg_quote;
+use function str_contains;
+use function str_ends_with;
 use function str_split;
 use function strlen;
 use function strpos;
@@ -114,7 +117,7 @@ class Reconciler
         array $template_type_map = [],
         bool $inside_loop = false,
         ?CodeLocation $code_location = null,
-        bool $negated = false
+        bool $negated = false,
     ): array {
         if (!$new_types) {
             return [$existing_types, $existing_references];
@@ -339,7 +342,7 @@ class Reconciler
             if ($type_changed || $failed_reconciliation) {
                 $changed_var_ids[$key] = true;
 
-                if (substr($key, -1) === ']'
+                if (str_ends_with($key, ']')
                     && !$has_inverted_isset
                     && !$has_inverted_key_exists
                     && !$has_empty
@@ -370,7 +373,7 @@ class Reconciler
                                 }
                                 // Set references pointing to $new_key to point
                                 // to the first other reference from the same group
-                                $new_primary_reference = key($reference_graph[$references_to_fix[0]]);
+                                $new_primary_reference = (string) key($reference_graph[$references_to_fix[0]]);
                                 unset($existing_references[$new_primary_reference]);
                                 foreach ($existing_references as $existing_reference => $existing_referenced) {
                                     if ($existing_referenced === $new_key) {
@@ -468,7 +471,7 @@ class Reconciler
                         $divider = array_shift($key_parts);
 
                         if ($divider === '[') {
-                            $array_key = array_shift($key_parts);
+                            $array_key = (string) array_shift($key_parts);
                             array_shift($key_parts);
 
                             if ($array_key[0] === '\'' || $array_key[0] === '"') {
@@ -479,7 +482,7 @@ class Reconciler
 
                             $new_base_key = $base_key . '[' . $array_key . ']';
 
-                            if (is_string($array_key) && strpos($array_key, '\'') !== false) {
+                            if (is_string($array_key) && str_contains($array_key, '\'')) {
                                 $new_types[$base_key][] = [new HasStringArrayAccess()];
                             } else {
                                 $new_types[$base_key][] = [new HasIntOrStringArrayAccess()];
@@ -667,7 +670,7 @@ class Reconciler
         bool $has_inverted_key_exists,
         bool $has_empty,
         bool $inside_loop,
-        bool &$has_object_array_access
+        bool &$has_object_array_access,
     ): ?Union {
         $key_parts = self::breakUpPathIntoParts($key);
 
@@ -711,7 +714,7 @@ class Reconciler
             $divider = array_shift($key_parts);
 
             if ($divider === '[') {
-                $array_key = array_shift($key_parts);
+                $array_key = (string) array_shift($key_parts);
                 array_shift($key_parts);
 
                 $new_base_key = $base_key . '[' . $array_key . ']';
@@ -724,9 +727,7 @@ class Reconciler
                     while ($atomic_types) {
                         $existing_key_type_part = array_shift($atomic_types);
 
-                        if ($existing_key_type_part instanceof TList) {
-                            $existing_key_type_part = $existing_key_type_part->getKeyedArray();
-                        }
+
 
                         if ($existing_key_type_part instanceof TTemplateParam) {
                             $atomic_types = array_merge($atomic_types, $existing_key_type_part->as->getAtomicTypes());
@@ -827,7 +828,7 @@ class Reconciler
 
                 $base_key = $new_base_key;
             } elseif ($divider === '->' || $divider === '::$') {
-                $property_name = array_shift($key_parts);
+                $property_name = (string) array_shift($key_parts);
                 $new_base_key = $base_key . $divider . $property_name;
 
                 if (!isset($existing_keys[$new_base_key])) {
@@ -855,7 +856,7 @@ class Reconciler
                             if (!$codebase->classOrInterfaceExists($existing_key_type_part->value)) {
                                 $class_property_type = Type::getMixed();
                             } else {
-                                if (substr($property_name, -2) === '()') {
+                                if (str_ends_with($property_name, '()')) {
                                     $method_id = new MethodIdentifier(
                                         $existing_key_type_part->value,
                                         strtolower(substr($property_name, 0, -2)),
@@ -944,7 +945,7 @@ class Reconciler
     private static function getPropertyType(
         Codebase $codebase,
         string $fq_class_name,
-        string $property_name
+        string $property_name,
     ): ?Union {
         $property_id = $fq_class_name . '::$' . $property_name;
 
@@ -953,11 +954,7 @@ class Reconciler
                 $fq_class_name,
             );
 
-            if (isset($declaring_class_storage->pseudo_property_get_types['$' . $property_name])) {
-                return $declaring_class_storage->pseudo_property_get_types['$' . $property_name];
-            }
-
-            return null;
+            return $declaring_class_storage->pseudo_property_get_types['$' . $property_name] ?? null;
         }
 
         $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
@@ -994,18 +991,17 @@ class Reconciler
     }
 
     /**
-     * @param Union|MutableUnion $existing_var_type
      * @param  string[]     $suppressed_issues
      */
     protected static function triggerIssueForImpossible(
-        $existing_var_type,
+        Union|MutableUnion $existing_var_type,
         string $old_var_type_string,
         string $key,
         Assertion $assertion,
         bool $redundant,
         bool $negated,
         CodeLocation $code_location,
-        array $suppressed_issues
+        array $suppressed_issues,
     ): void {
         $assertion_string = (string)$assertion;
         $not = $assertion_string[0] === '!';
@@ -1127,7 +1123,7 @@ class Reconciler
         array $key_parts,
         array &$existing_types,
         array &$changed_var_ids,
-        Union $result_type
+        Union $result_type,
     ): void {
         array_pop($key_parts);
         $array_key = array_pop($key_parts);
@@ -1157,18 +1153,15 @@ class Reconciler
             ;
         }
 
-        $base_key = implode($key_parts);
+        $base_key = implode('', $key_parts);
 
         $result_type = $result_type->setPossiblyUndefined(
             $result_type->possibly_undefined || count($array_key_offsets) > 1,
         );
 
         foreach ($array_key_offsets as $array_key_offset) {
-            if (isset($existing_types[$base_key]) && $array_key_offset !== false) {
+            if (isset($existing_types[$base_key])) {
                 foreach ($existing_types[$base_key]->getAtomicTypes() as $base_atomic_type) {
-                    if ($base_atomic_type instanceof TList) {
-                        $base_atomic_type = $base_atomic_type->getKeyedArray();
-                    }
                     if ($base_atomic_type instanceof TKeyedArray
                     || ($base_atomic_type instanceof TArray
                         && !$base_atomic_type->isEmptyArray())

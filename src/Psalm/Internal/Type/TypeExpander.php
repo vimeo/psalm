@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Type;
 
 use Psalm\Codebase;
@@ -23,7 +25,6 @@ use Psalm\Type\Atomic\TIntMaskOf;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyOf;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TNamedObject;
@@ -43,7 +44,6 @@ use function array_map;
 use function array_merge;
 use function array_values;
 use function count;
-use function get_class;
 use function is_string;
 use function reset;
 use function strtolower;
@@ -55,20 +55,19 @@ final class TypeExpander
 {
     /**
      * @psalm-suppress InaccessibleProperty We just created the type
-     * @param string|TNamedObject|TTemplateParam|null $static_class_type
      */
     public static function expandUnion(
         Codebase $codebase,
         Union $return_type,
         ?string $self_class,
-        $static_class_type,
+        string|TNamedObject|TTemplateParam|null $static_class_type,
         ?string $parent_class,
         bool $evaluate_class_constants = true,
         bool $evaluate_conditional_types = false,
         bool $final = false,
         bool $expand_generic = false,
         bool $expand_templates = false,
-        bool $throw_on_unresolvable_constant = false
+        bool $throw_on_unresolvable_constant = false,
     ): Union {
         $new_return_type_parts = [];
 
@@ -112,7 +111,6 @@ final class TypeExpander
     }
 
     /**
-     * @param string|TNamedObject|TTemplateParam|null $static_class_type
      * @param-out Atomic $return_type
      * @return non-empty-list<Atomic>
      * @psalm-suppress ConflictingReferenceConstraint, ReferenceConstraintViolation The output type is always Atomic
@@ -122,14 +120,14 @@ final class TypeExpander
         Codebase $codebase,
         Atomic &$return_type,
         ?string $self_class,
-        $static_class_type,
+        string|TNamedObject|TTemplateParam|null $static_class_type,
         ?string $parent_class,
         bool $evaluate_class_constants = true,
         bool $evaluate_conditional_types = false,
         bool $final = false,
         bool $expand_generic = false,
         bool $expand_templates = false,
-        bool $throw_on_unresolvable_constant = false
+        bool $throw_on_unresolvable_constant = false,
     ): array {
         if ($return_type instanceof TEnumCase) {
             return [$return_type];
@@ -157,10 +155,7 @@ final class TypeExpander
                     );
 
                     if ($extra_type instanceof TNamedObject && $extra_type->extra_types) {
-                        $new_intersection_types = array_merge(
-                            $new_intersection_types,
-                            $extra_type->extra_types,
-                        );
+                        $new_intersection_types = [...$new_intersection_types, ...$extra_type->extra_types];
                         $extra_type = $extra_type->setIntersectionTypes([]);
                     }
                     $extra_types[$extra_type->getKey()] = $extra_type;
@@ -255,7 +250,7 @@ final class TypeExpander
                         $return_type->const_name,
                         ReflectionProperty::IS_PRIVATE,
                     );
-                } catch (CircularReferenceException $e) {
+                } catch (CircularReferenceException) {
                     $class_constant = null;
                 }
 
@@ -309,28 +304,6 @@ final class TypeExpander
                 $more_recursively_fleshed_out_types = self::expandAtomic(
                     $codebase,
                     $replacement_atomic_type,
-                    $self_class,
-                    $static_class_type,
-                    $parent_class,
-                    $evaluate_class_constants,
-                    $evaluate_conditional_types,
-                    $final,
-                    $expand_generic,
-                    $expand_templates,
-                    $throw_on_unresolvable_constant,
-                );
-
-                $recursively_fleshed_out_types = [
-                    ...$more_recursively_fleshed_out_types,
-                    ...$recursively_fleshed_out_types,
-                ];
-            }
-
-            /** @psalm-suppress DeprecatedProperty For backwards compatibility, we have to keep this here. */
-            foreach ($return_type->extra_types ?? [] as $alias) {
-                $more_recursively_fleshed_out_types = self::expandAtomic(
-                    $codebase,
-                    $alias,
                     $self_class,
                     $static_class_type,
                     $parent_class,
@@ -452,9 +425,7 @@ final class TypeExpander
                 $throw_on_unresolvable_constant,
             );
         }
-        if ($return_type instanceof TList) {
-            $return_type = $return_type->getKeyedArray();
-        }
+
 
         if ($return_type instanceof TArray
             || $return_type instanceof TGenericObject
@@ -608,21 +579,19 @@ final class TypeExpander
     }
 
     /**
-     * @param string|TNamedObject|TTemplateParam|null $static_class_type
      * @param-out TNamedObject|TTemplateParam $return_type
-     * @return TNamedObject|TTemplateParam
      */
     private static function expandNamedObject(
         Codebase $codebase,
         TNamedObject &$return_type,
         ?string $self_class,
-        $static_class_type,
+        string|TNamedObject|TTemplateParam|null $static_class_type,
         ?string $parent_class,
         bool $final = false,
-        bool &$expand_generic = false
-    ) {
+        bool &$expand_generic = false,
+    ): TNamedObject|TTemplateParam {
         if ($expand_generic
-            && get_class($return_type) === TNamedObject::class
+            && $return_type::class === TNamedObject::class
             && !$return_type->extra_types
             && $codebase->classOrInterfaceExists($return_type->value)
         ) {
@@ -722,21 +691,20 @@ final class TypeExpander
     }
 
     /**
-     * @param string|TNamedObject|TTemplateParam|null $static_class_type
      * @return non-empty-list<Atomic>
      */
     private static function expandConditional(
         Codebase $codebase,
         TConditional &$return_type,
         ?string $self_class,
-        $static_class_type,
+        string|TNamedObject|TTemplateParam|null $static_class_type,
         ?string $parent_class,
         bool $evaluate_class_constants = true,
         bool $evaluate_conditional_types = false,
         bool $final = false,
         bool $expand_generic = false,
         bool $expand_templates = false,
-        bool $throw_on_unresolvable_constant = false
+        bool $throw_on_unresolvable_constant = false,
     ): array {
         $new_as_type = self::expandUnion(
             $codebase,
@@ -934,14 +902,13 @@ final class TypeExpander
     }
 
     /**
-     * @param string|TNamedObject|TTemplateParam|null $static_class_type
      * @return non-empty-list<Atomic>
      */
     private static function expandPropertiesOf(
         Codebase $codebase,
         TPropertiesOf &$return_type,
         ?string $self_class,
-        $static_class_type
+        string|TNamedObject|TTemplateParam|null $static_class_type,
     ): array {
         if ($self_class) {
             $return_type = $return_type->replaceClassLike(
@@ -1018,21 +985,20 @@ final class TypeExpander
 
     /**
      * @param TKeyOf|TValueOf $return_type
-     * @param string|TNamedObject|TTemplateParam|null $static_class_type
      * @return non-empty-list<Atomic>
      */
     private static function expandKeyOfValueOf(
         Codebase $codebase,
         Atomic &$return_type,
         ?string $self_class,
-        $static_class_type,
+        string|TNamedObject|TTemplateParam|null $static_class_type,
         ?string $parent_class,
         bool $evaluate_class_constants = true,
         bool $evaluate_conditional_types = false,
         bool $final = false,
         bool $expand_generic = false,
         bool $expand_templates = false,
-        bool $throw_on_unresolvable_constant = false
+        bool $throw_on_unresolvable_constant = false,
     ): array {
         // Expand class constants to their atomics
         $type_atomics = [];
@@ -1075,7 +1041,7 @@ final class TypeExpander
                     false,
                     $return_type instanceof TValueOf,
                 );
-            } catch (CircularReferenceException $e) {
+            } catch (CircularReferenceException) {
                 return [$return_type];
             }
 

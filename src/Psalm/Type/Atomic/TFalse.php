@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 /**
@@ -10,7 +12,7 @@ namespace Psalm\Type\Atomic;
 final class TFalse extends TBool
 {
     /** @var false */
-    public $value = false;
+    public bool $value = false;
 
     public function getKey(bool $include_extra = true): string
     {

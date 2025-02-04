@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call\StaticMethod;
 
 use Exception;
@@ -73,7 +75,7 @@ final class AtomicStaticCallAnalyzer
         bool &$moved_call,
         bool &$has_mock,
         bool &$has_existing_method,
-        ?TemplateResult $inferred_template_result = null
+        ?TemplateResult $inferred_template_result = null,
     ): void {
         $intersection_types = [];
 
@@ -308,7 +310,7 @@ final class AtomicStaticCallAnalyzer
         string $fq_class_name,
         bool &$moved_call,
         bool &$has_existing_method,
-        ?TemplateResult $inferred_template_result = null
+        ?TemplateResult $inferred_template_result = null,
     ): bool {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -893,7 +895,7 @@ final class AtomicStaticCallAnalyzer
         array $args,
         ClassLikeStorage $class_storage,
         MethodStorage $pseudo_method_storage,
-        Context $context
+        Context $context,
     ): ?bool {
         if (ArgumentsAnalyzer::analyze(
             $statements_analyzer,
@@ -948,7 +950,7 @@ final class AtomicStaticCallAnalyzer
                     new CodeLocation($statements_analyzer, $stmt),
                     $context,
                 );
-            } catch (Exception $e) {
+            } catch (Exception) {
                 // do nothing
             }
         }
@@ -996,7 +998,7 @@ final class AtomicStaticCallAnalyzer
         PhpParser\Node\Expr\StaticCall $stmt,
         Context $context,
         Atomic $lhs_type_part,
-        bool $ignore_nullable_issues
+        bool $ignore_nullable_issues,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
         $config = $codebase->config;
@@ -1071,7 +1073,7 @@ final class AtomicStaticCallAnalyzer
     private static function findPseudoMethodAndClassStorages(
         Codebase $codebase,
         ClassLikeStorage $static_class_storage,
-        string $method_name_lc
+        string $method_name_lc,
     ): ?array {
         if ($pseudo_method_storage = $static_class_storage->pseudo_static_methods[$method_name_lc] ?? null) {
             return [$pseudo_method_storage, $static_class_storage];
@@ -1108,7 +1110,7 @@ final class AtomicStaticCallAnalyzer
         PhpParser\Node\Identifier $stmt_name,
         Context $context,
         string $virtual_var_name = 'this',
-        bool $always_set_node_type = false
+        bool $always_set_node_type = false,
     ): bool {
         $old_data_provider = $statements_analyzer->node_data;
 

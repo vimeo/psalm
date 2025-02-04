@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\LanguageServer;
 
 use LanguageServerProtocol\Position;
@@ -45,6 +47,7 @@ class CompletionTest extends TestCase
             $providers,
             null,
             [],
+            1,
             1,
             null,
             $this->codebase,

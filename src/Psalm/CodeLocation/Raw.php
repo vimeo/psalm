@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\CodeLocation;
 
 use Psalm\CodeLocation;
@@ -8,14 +10,14 @@ use function substr;
 use function substr_count;
 
 /** @psalm-immutable */
-class Raw extends CodeLocation
+final class Raw extends CodeLocation
 {
     public function __construct(
         string $file_contents,
         string $file_path,
         string $file_name,
         int $file_start,
-        int $file_end
+        int $file_end,
     ) {
         $this->file_start = $file_start;
         $this->file_end = $file_end;

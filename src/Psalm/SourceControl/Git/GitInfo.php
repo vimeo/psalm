@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\SourceControl\Git;
 
 use Psalm\SourceControl\SourceControlInfo;
@@ -30,38 +32,20 @@ use Psalm\SourceControl\SourceControlInfo;
 final class GitInfo extends SourceControlInfo
 {
     /**
-     * Branch name.
-     *
-     * @var string
-     */
-    protected $branch;
-
-    /**
-     * Head.
-     *
-     * @var CommitInfo
-     */
-    protected $head;
-
-    /**
-     * Remote.
-     *
-     * @var RemoteInfo[]
-     */
-    protected $remotes;
-
-    /**
      * Constructor.
      *
      * @param string $branch  branch name
      * @param CommitInfo $head    HEAD commit
      * @param RemoteInfo[]  $remotes remote repositories
      */
-    public function __construct(string $branch, CommitInfo $head, array $remotes)
-    {
-        $this->branch = $branch;
-        $this->head = $head;
-        $this->remotes = $remotes;
+    public function __construct(
+        protected string $branch,
+        protected CommitInfo $head,
+        /**
+         * Remote.
+         */
+        protected array $remotes,
+    ) {
     }
 
     public function toArray(): array

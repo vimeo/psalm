@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\Loop;
 
 use Psalm\Tests\TestCase;
@@ -428,7 +430,7 @@ class ForeachTest extends TestCase
                     'MixedAssignment',
                 ],
             ],
-            'noMixedAssigmentWithIfAssertion' => [
+            'noMixedAssignmentWithIfAssertion' => [
                 'code' => '<?php
                     $object = new stdClass();
                     $reflection = new ReflectionClass($object);
@@ -441,7 +443,7 @@ class ForeachTest extends TestCase
                         }
                     }',
             ],
-            'noMixedAssigmentWithAssertion' => [
+            'noMixedAssignmentWithAssertion' => [
                 'code' => '<?php
                     $object = new stdClass();
                     $reflection = new ReflectionClass($object);

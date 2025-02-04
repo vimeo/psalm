@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use DateTime;
@@ -1349,7 +1351,7 @@ class PropertyTypeTest extends TestCase
                         }
                     }',
             ],
-            'allowMixedAssignmetWhenDesired' => [
+            'allowMixedAssignmentWhenDesired' => [
                 'code' => '<?php
                     class A {
                         /**
@@ -1755,7 +1757,7 @@ class PropertyTypeTest extends TestCase
                     class B extends A {}
                     class C extends B {}',
             ],
-            'unitializedPropertySuppressPropertyNotSetInConstructor' => [
+            'uninitializedPropertySuppressPropertyNotSetInConstructor' => [
                 'code' => '<?php
                     class A {
                         /** @var string */
@@ -1773,7 +1775,7 @@ class PropertyTypeTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['PropertyNotSetInConstructor'],
             ],
-            'unitializedPropertySuppressPropertyNotSetInAbstractConstructor' => [
+            'uninitializedPropertySuppressPropertyNotSetInAbstractConstructor' => [
                 'code' => '<?php
                     abstract class A {
                           /** @readonly */
@@ -2415,7 +2417,7 @@ class PropertyTypeTest extends TestCase
 
                     echo (new A)->foo;',
             ],
-            'promotedPublicPropertyWitoutDefault' => [
+            'promotedPublicPropertyWithoutDefault' => [
                 'code' => '<?php
                     class A {
                         public function __construct(public int $foo) {}
@@ -3484,7 +3486,7 @@ class PropertyTypeTest extends TestCase
                     Y::$b = 5;',
                 'error_message' => 'InvalidPropertyAssignmentValue',
             ],
-            'unitializedProperty' => [
+            'uninitializedProperty' => [
                 'code' => '<?php
                     class A {
                         /** @var string */
@@ -3497,7 +3499,7 @@ class PropertyTypeTest extends TestCase
                     }',
                 'error_message' => 'UninitializedProperty',
             ],
-            'unitializedPropertyWithoutType' => [
+            'uninitializedPropertyWithoutType' => [
                 'code' => '<?php
                     class A {
                         public $foo;
@@ -3510,7 +3512,7 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'UninitializedProperty',
                 'ignored_issues' => ['MixedArgument', 'MissingPropertyType'],
             ],
-            'unitializedObjectProperty' => [
+            'uninitializedObjectProperty' => [
                 'code' => '<?php
                     class Foo {
                         /** @var int */

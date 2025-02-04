@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
@@ -1398,7 +1400,6 @@ class UnusedVariableTest extends TestCase
             'usedInUndefinedFunction' => [
                 'code' => '<?php
                     /**
-                     * @psalm-suppress MixedInferredReturnType
                      * @psalm-suppress MixedReturnStatement
                      */
                     function test(): string {
@@ -2314,7 +2315,7 @@ class UnusedVariableTest extends TestCase
                         $d += $l;
                     }',
             ],
-            'mixedArrayAccessMighBeObject' => [
+            'mixedArrayAccessMightBeObject' => [
                 'code' => '<?php
                     function takesResults(array $arr) : void {
                         /**

@@ -65,7 +65,7 @@ class CacheTest extends TestCase
      * @dataProvider provideCacheInteractions
      */
     public function testCacheInteractions(
-        array $interactions
+        array $interactions,
     ): void {
         $config = Config::loadFromXML(
             __DIR__ . DIRECTORY_SEPARATOR . 'test_base_dir',
@@ -301,7 +301,6 @@ class CacheTest extends TestCase
                         'src/A.php' => [
                             "UndefinedThisPropertyFetch: Instance property A::\$foo is not defined",
                             "MixedReturnStatement: Could not infer a return type",
-                            "MixedInferredReturnType: Could not verify return type 'string' for A::bar",
                         ],
                     ],
                 ],

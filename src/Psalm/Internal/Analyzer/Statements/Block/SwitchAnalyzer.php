@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
@@ -26,7 +28,7 @@ final class SwitchAnalyzer
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Switch_ $stmt,
-        Context $context
+        Context $context,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -217,10 +219,10 @@ final class SwitchAnalyzer
             $context->assigned_var_ids += $switch_scope->new_assigned_var_ids;
         }
 
-        $context->vars_possibly_in_scope = array_merge(
-            $context->vars_possibly_in_scope,
-            $switch_scope->new_vars_possibly_in_scope,
-        );
+        $context->vars_possibly_in_scope = [
+            ...$context->vars_possibly_in_scope,
+            ...$switch_scope->new_vars_possibly_in_scope,
+        ];
 
         //a switch can't return in all options without a default
         $context->has_returned = $all_options_returned && $has_default;

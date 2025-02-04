@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use Psalm\Config;
@@ -676,7 +678,7 @@ class ArrayAccessTest extends TestCase
                     '$e' => 'DOMElement|null',
                 ],
             ],
-            'getOnArrayAcccess' => [
+            'getOnArrayAccess' => [
                 'code' => '<?php
                     /** @param ArrayAccess<int, string> $a */
                     function foo(ArrayAccess $a) : string {

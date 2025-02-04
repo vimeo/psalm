@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Algebra;
 
 use PhpParser;
@@ -34,7 +36,7 @@ final class FormulaGenerator
         FileSource $source,
         ?Codebase $codebase = null,
         bool $inside_negation = false,
-        bool $cache = true
+        bool $cache = true,
     ): array {
         if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd ||
             $conditional instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
@@ -149,7 +151,6 @@ final class FormulaGenerator
                         $redefined = false;
 
                         if ($var[0] === '=') {
-                            /** @var string */
                             $var = substr($var, 1);
                             $redefined = true;
                         }
@@ -420,7 +421,6 @@ final class FormulaGenerator
                 $redefined = false;
 
                 if ($var[0] === '=') {
-                    /** @var string */
                     $var = substr($var, 1);
                     $redefined = true;
                 }

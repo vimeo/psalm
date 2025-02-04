@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\Template;
 
 use Psalm\Tests\TestCase;
@@ -1197,7 +1199,7 @@ class FunctionTemplateAssertTest extends TestCase
                     }',
                 'error_message' => 'string, string',
             ],
-            'SKIPPED-noCrashWhenOnUnparseableTemplatedAssertion' => [
+            'SKIPPED-noCrashWhenOnUnparsableTemplatedAssertion' => [
                 'code' => '<?php
                     /**
                      * @template TCandidateKey as array-key

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Issue;
 
 use Psalm\CodeLocation;
@@ -17,10 +19,9 @@ final class MixedArgument extends ArgumentIssue implements MixedIssue
         string $message,
         CodeLocation $code_location,
         ?string $function_id = null,
-        ?CodeLocation $origin_location = null
+        ?CodeLocation $origin_location = null,
     ) {
-        $this->code_location = $code_location;
-        $this->message = $message;
+        parent::__construct($message, $code_location);
         $this->function_id = $function_id ? strtolower($function_id) : null;
         $this->origin_location = $origin_location;
     }

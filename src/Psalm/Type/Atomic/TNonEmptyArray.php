@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 use Psalm\Type\Union;
@@ -10,23 +12,8 @@ use Psalm\Type\Union;
  *
  * @psalm-immutable
  */
-class TNonEmptyArray extends TArray
+final class TNonEmptyArray extends TArray
 {
-    /**
-     * @var positive-int|null
-     */
-    public $count;
-
-    /**
-     * @var positive-int|null
-     */
-    public $min_count;
-
-    /**
-     * @var string
-     */
-    public $value = 'non-empty-array';
-
     /**
      * @param array{Union, Union} $type_params
      * @param positive-int|null $count
@@ -34,14 +21,11 @@ class TNonEmptyArray extends TArray
      */
     public function __construct(
         array $type_params,
-        ?int $count = null,
-        ?int $min_count = null,
-        string $value = 'non-empty-array',
-        bool $from_docblock = false
+        public ?int $count = null,
+        public ?int $min_count = null,
+        public string $value = 'non-empty-array',
+        bool $from_docblock = false,
     ) {
-        $this->count = $count;
-        $this->min_count = $min_count;
-        $this->value = $value;
         parent::__construct($type_params, $from_docblock);
     }
 

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
@@ -152,7 +154,7 @@ class ReadonlyPropertyTest extends TestCase
                     }',
                 'error_message' => 'InaccessibleProperty',
             ],
-            'readonlyPropertySetInConstructorAndAlsoAnotherMethodInSublass' => [
+            'readonlyPropertySetInConstructorAndAlsoAnotherMethodInSubclass' => [
                 'code' => '<?php
                     class A {
                         /**

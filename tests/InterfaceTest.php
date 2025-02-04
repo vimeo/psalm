@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
@@ -395,7 +397,7 @@ class InterfaceTest extends TestCase
 
                     $blah = (new B())->blah();',
             ],
-            'interfaceExtendsTraversible' => [
+            'interfaceExtendsTraversable' => [
                 'code' => '<?php
                     /**
                      * @extends IteratorAggregate<mixed, mixed>

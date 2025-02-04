@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Scope;
 
 use Psalm\Context;
@@ -11,10 +13,6 @@ use Psalm\Type\Union;
 final class LoopScope
 {
     public int $iteration_count = 0;
-
-    public Context $loop_context;
-
-    public Context $loop_parent_context;
 
     /**
      * @var array<string, Union>
@@ -51,10 +49,8 @@ final class LoopScope
      */
     public array $final_actions = [];
 
-    public function __construct(Context $loop_context, Context $parent_context)
+    public function __construct(public Context $loop_context, public Context $loop_parent_context)
     {
-        $this->loop_context = $loop_context;
-        $this->loop_parent_context = $parent_context;
     }
 
     public function __destruct()

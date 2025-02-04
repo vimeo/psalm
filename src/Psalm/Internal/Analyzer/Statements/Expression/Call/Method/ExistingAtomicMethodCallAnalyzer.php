@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 
 use PhpParser;
@@ -49,7 +51,7 @@ use function count;
 use function explode;
 use function in_array;
 use function is_string;
-use function strpos;
+use function str_starts_with;
 use function strtolower;
 
 /**
@@ -73,7 +75,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         ?string $lhs_var_id,
         MethodIdentifier $method_id,
         AtomicMethodCallAnalysisResult $result,
-        ?TemplateResult $inferred_template_result = null
+        ?TemplateResult $inferred_template_result = null,
     ): Union {
         $config = $codebase->config;
 
@@ -204,7 +206,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
 
         try {
             $method_storage = $codebase->methods->getStorage($declaring_method_id ?? $method_id);
-        } catch (UnexpectedValueException $e) {
+        } catch (UnexpectedValueException) {
             $method_storage = null;
         }
 
@@ -445,7 +447,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                     $possibilities = array_filter(
                         $possibilities,
                         static fn(Possibilities $assertion): bool => !(is_string($assertion->var_id)
-                            && strpos($assertion->var_id, '$this->') === 0
+                            && str_starts_with($assertion->var_id, '$this->')
                         ),
                     );
                 }
@@ -468,7 +470,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                     $possibilities = array_filter(
                         $possibilities,
                         static fn(Possibilities $assertion): bool => !(is_string($assertion->var_id)
-                            && strpos($assertion->var_id, '$this->') === 0
+                            && str_starts_with($assertion->var_id, '$this->')
                         ),
                     );
                 }
@@ -543,7 +545,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         PhpParser\Node\Expr\MethodCall $stmt,
         PhpParser\Node\Identifier $stmt_name,
         Context $context,
-        string $fq_class_name
+        string $fq_class_name,
     ): ?Union {
         $method_name = strtolower($stmt_name->name);
         if (!in_array($method_name, ['__get', '__set'], true)) {

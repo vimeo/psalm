@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\Traits;
 
 use Psalm\Config;
@@ -69,7 +71,7 @@ trait InvalidCodeAnalysisWithIssuesTestTrait
         string $code,
         string $error_message,
         array  $error_levels = [],
-        string $php_version = '7.4'
+        string $php_version = '7.4',
     ): void {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'PHP80-') !== false) {

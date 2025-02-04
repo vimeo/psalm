@@ -496,7 +496,7 @@ class ReflectionProperty implements Reflector
     public function isDefault(): bool {}
 
     /**
-     * @return int-mask-of<self::IS_>
+     * @return int-mask-of<self::IS_*>
      * @psalm-pure
      */
     public function getModifiers(): int {}
