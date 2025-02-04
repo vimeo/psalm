@@ -1608,6 +1608,10 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/ReflectorVisitor.php">
+    <ArgumentTypeCoercion>
+      <code><![CDATA[$node]]></code>
+      <code><![CDATA[$node]]></code>
+    </ArgumentTypeCoercion>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$this->aliases->uses_start]]></code>
       <code><![CDATA[!$this->aliases->uses_start]]></code>
