@@ -208,7 +208,7 @@ class MagicPropertyTest extends TestCase
                      * @psalm-seal-properties
                      */
                     final class b {
-                        public function __set(string $key, $value) {}
+                        public function __set(string $key, mixed $value) {}
                     }
 
                     /**
@@ -217,6 +217,7 @@ class MagicPropertyTest extends TestCase
                     function test(string $k, array $objs): void {
                         $objs[$k]->send_type = "test";
                     }',
+                'php_version' => '8.0',
             ],
             'propertyDocblockAssignmentToMixed' => [
                 'code' => '<?php
