@@ -131,6 +131,14 @@ krsort($customMaps);
 
 foreach ($customMaps as $version => &$data) {
     foreach ($data as $func => &$params) {
+        if ($version < 80 && (str_starts_with($func, 'array_udiff')
+            || str_starts_with($func, 'array_uintersect')
+            || str_starts_with($func, 'array_intersect_u')
+            || str_starts_with($func, 'array_diff_u')
+        )) {
+            $params = $customMaps[80][$func];
+            continue;
+        }
         if (isset($baseMaps[$version][$func])) {
             $baseParams = $baseMaps[$version][$func];
             $params = assertEntryParameters($func, $baseParams, $params);

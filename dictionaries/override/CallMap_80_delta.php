@@ -426,22 +426,6 @@ return array (
         '...arrays=' => 'array<array-key, mixed>',
       ),
     ),
-    'array_intersect_uassoc' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>',
-        'arr1' => 'array<array-key, mixed>',
-        'arr2' => 'array<array-key, mixed>',
-        'callback_key_compare_func' => 'callable(mixed, mixed):int',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>',
-        'array' => 'array<array-key, mixed>',
-        '...rest=' => 'array<array-key, mixed>',
-      ),
-    ),
     'array_key_exists' => 
     array (
       'old' => 
