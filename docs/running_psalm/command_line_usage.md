@@ -54,7 +54,13 @@ Psalm now offers a `psalm-review` tool which allows you to manually review issue
 ./vendor/bin/psalm-review report.json code|phpstorm|code-server [ inv|rev|[~-]IssueType1 ] [ [~-]IssueType2 ] ...
 ```
 
-`psalm-review` parse the Psalm JSON report in report.json (generated using `vendor/bin/psalm --report=report.json`) and open the specified IDE at the line and column of the issue, one by one for all issues; press enter to go to the next issue, `q` to quit.  
+The tool may also be run using the main `psalm` entry point, useful for example when working with the phar:
+
+```bash
+./vendor/bin/psalm.phar --review report.json code|phpstorm|code-server [ inv|rev|[~-]IssueType1 ] [ [~-]IssueType2 ] ...
+```
+
+`psalm-review` parses the Psalm JSON report in report.json (generated using `vendor/bin/psalm --report=report.json`) and open the specified IDE at the line and column of the issue, one by one for all issues; press enter to go to the next issue, `q` to quit.  
 
 The extra arguments may be used to filter only for issues of the specified types, or for all issues except the specified types (with the `~` or `-` inversion).  
 
