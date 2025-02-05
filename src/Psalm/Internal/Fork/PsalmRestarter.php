@@ -103,6 +103,12 @@ final class PsalmRestarter extends XdebugHandler
                     return true;
                 }
             }
+
+            $requiredMemoryConsumption = $this->getRequiredMemoryConsumption();
+
+            if ((int)ini_get('opcache.memory_consumption') < $requiredMemoryConsumption) {
+                return true;
+            }
         }
 
         return $default || $this->required;
@@ -169,6 +175,12 @@ final class PsalmRestarter extends XdebugHandler
             foreach (self::REQUIRED_OPCACHE_SETTINGS as $key => $value) {
                 $additional_options []= "-dopcache.{$key}={$value}";
             }
+
+            $requiredMemoryConsumption = $this->getRequiredMemoryConsumption();
+
+            if ((int)ini_get('opcache.memory_consumption') < $requiredMemoryConsumption) {
+                $additional_options []= "-dopcache.memory_consumption={$requiredMemoryConsumption}";
+            }
         }
 
         array_splice(
@@ -180,5 +192,24 @@ final class PsalmRestarter extends XdebugHandler
         assert(count($command) > 1);
 
         parent::restart($command);
+    }
+
+    /**
+     * @return positive-int
+     */
+    private function getRequiredMemoryConsumption(): int
+    {
+        // Reserve for byte-codes
+        $result = 256;
+
+        if (isset(self::REQUIRED_OPCACHE_SETTINGS['jit_buffer_size'])) {
+            $result += self::REQUIRED_OPCACHE_SETTINGS['jit_buffer_size'] / 1024 / 1024;
+        }
+
+        if (isset(self::REQUIRED_OPCACHE_SETTINGS['interned_strings_buffer'])) {
+            $result += self::REQUIRED_OPCACHE_SETTINGS['interned_strings_buffer'];
+        }
+
+        return $result;
     }
 }
