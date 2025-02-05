@@ -39,7 +39,6 @@ use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
-use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTrue;
@@ -217,7 +216,7 @@ final class ConstantTypeResolver
                     }
 
                     if (!$spread_array instanceof TKeyedArray) {
-                        return new TArray([Type::getArrayKey(), Type::getMixed()]);
+                        return Type::getArrayAtomic();
                     }
 
                     foreach ($spread_array->properties as $k => $spread_array_type) {
@@ -253,7 +252,7 @@ final class ConstantTypeResolver
                         $auto_key = ((int) $key_type->value) + 1;
                     }
                 } else {
-                    return new TArray([Type::getArrayKey(), Type::getMixed()]);
+                    return Type::getArrayAtomic();
                 }
 
                 $value_type = new Union([self::resolve(
@@ -267,10 +266,7 @@ final class ConstantTypeResolver
             }
 
             if (empty($properties)) {
-                $resolved_type = new TArray([
-                    new Union([new TNever()]),
-                    new Union([new TNever()]),
-                ]);
+                $resolved_type = Type::getEmptyArrayAtomic();
             } else {
                 $resolved_type = new TKeyedArray($properties, null, null, $is_list);
             }

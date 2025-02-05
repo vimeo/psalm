@@ -429,35 +429,49 @@ abstract class Type
         return new Union([$type]);
     }
 
+    private static ?Union $array = null;
     /**
      * @psalm-pure
+     * @psalm-suppress ImpureStaticProperty Used for caching
      */
     public static function getArray(): Union
     {
-        $type = new TArray(
-            [
-                new Union([new TArrayKey]),
-                new Union([new TMixed]),
-            ],
-        );
-
-        return new Union([$type]);
+        return self::$array ??= new Union([self::getArrayAtomic()]);
     }
 
+    private static ?TArray $arrayAtomic = null;
     /**
      * @psalm-pure
+     * @psalm-suppress ImpureStaticProperty Used for caching
+     */
+    public static function getArrayAtomic(): TArray
+    {
+        return self::$arrayAtomic ??= new TArray(
+            [
+                self::getArrayKey(),
+                self::getMixed(),
+            ],
+        );
+    }
+
+    private static ?Union $emptyArray = null;
+    /**
+     * @psalm-pure
+     * @psalm-suppress ImpureStaticProperty Used for caching
      */
     public static function getEmptyArray(): Union
     {
-        return new Union([self::getEmptyArrayAtomic()]);
+        return self::$emptyArray ??= new Union([self::getEmptyArrayAtomic()]);
     }
 
+    private static ?TArray $emptyArrayAtomic = null;
     /**
      * @psalm-pure
+     * @psalm-suppress ImpureStaticProperty Used for caching
      */
     public static function getEmptyArrayAtomic(): TArray
     {
-        return new TArray(
+        return self::$emptyArrayAtomic ??= new TArray(
             [
                 new Union([new TNever()]),
                 new Union([new TNever()]),

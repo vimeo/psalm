@@ -100,7 +100,7 @@ class ArrayFilterParamsProvider implements FunctionParamsProviderInterface
             $first_arg_type = $event->getContext()->vars_in_scope[$extended_var_id] ?? null;
         }
 
-        $fallback = new TArray([Type::getArrayKey(), Type::getMixed()]);
+        $fallback = Type::getArrayAtomic();
         if (!$first_arg_type || $first_arg_type->isMixed()) {
             $first_arg_array = $fallback;
         } else {

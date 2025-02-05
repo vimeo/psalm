@@ -377,7 +377,7 @@ final class MutableUnion implements TypeNode
                         && !isset($this->types['array'])
                     ) {
                         $this->removeType('iterable');
-                        $this->types['array'] = new TArray([Type::getArrayKey(), Type::getMixed()]);
+                        $this->types['array'] = Type::getArrayAtomic();
                     }
 
                     if ($old_type_part instanceof TArray
