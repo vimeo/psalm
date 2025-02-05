@@ -371,6 +371,10 @@ final class Config
      * @var array<lowercase-string, bool>
      */
     public array $forbidden_functions = [];
+    /**
+     * @var array<string, bool>
+     */
+    public array $forbidden_constants = [];
 
     public bool $find_unused_code = true;
 
@@ -1296,6 +1300,13 @@ final class Config
             /** @var SimpleXMLElement $forbidden_function */
             foreach ($config_xml->forbiddenFunctions->function as $forbidden_function) {
                 $config->forbidden_functions[strtolower((string) $forbidden_function['name'])] = true;
+            }
+        }
+
+        if (isset($config_xml->forbiddenConstants) && isset($config_xml->forbiddenConstants->constant)) {
+            /** @var SimpleXMLElement $forbidden_function */
+            foreach ($config_xml->forbiddenConstants->constant as $forbidden_function) {
+                $config->forbidden_constants[(string) $forbidden_function['name']] = true;
             }
         }
 
