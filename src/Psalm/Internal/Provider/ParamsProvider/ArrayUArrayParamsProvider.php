@@ -12,6 +12,7 @@ use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
 
 use function array_fill;
+use function assert;
 use function count;
 use function max;
 
