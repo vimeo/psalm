@@ -242,7 +242,7 @@ final class ProjectAnalyzer
             );
 
             foreach ($file_paths as $file_path) {
-                $this->addProjectFile($file_path);
+                $this->project_files[$file_path] = $file_path;
             }
         }
 
@@ -254,12 +254,12 @@ final class ProjectAnalyzer
             );
 
             foreach ($file_paths as $file_path) {
-                $this->addExtraFile($file_path);
+                $this->extra_files[$file_path] = $file_path;
             }
         }
 
         foreach ($this->config->getProjectFiles() as $file_path) {
-            $this->addProjectFile($file_path);
+            $this->project_files[$file_path] = $file_path;
         }
 
         self::$instance = $this;
