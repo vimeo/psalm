@@ -301,6 +301,8 @@ final class LanguageServer
             // extensions bellow are incompatible with JIT
             'pcov',
             'blackfire',
+            // Issues w/ parallel forking
+            'uv',
         ]);
 
         $disableXdebug = !isset($options['disable-xdebug'])

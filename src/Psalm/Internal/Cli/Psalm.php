@@ -960,6 +960,8 @@ final class Psalm
             // extensions that are incompatible with JIT (they are also usually make Psalm slow)
             'pcov',
             'blackfire',
+            // Issues w/ parallel forking
+            'uv',
         ]);
 
         $skipJit = defined('PHP_WINDOWS_VERSION_MAJOR') && PHP_VERSION_ID < PsalmRestarter::MIN_PHP_VERSION_WINDOWS_JIT;
