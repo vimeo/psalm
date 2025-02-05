@@ -120,6 +120,33 @@ class ForbiddenCodeTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testForbiddenCodeConstantViaConstant(): void
+    {
+        $this->expectExceptionMessage('ForbiddenCode');
+        $this->expectException(CodeException::class);
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <forbiddenConstants>
+                        <constant name="FILTER_VALIDATE_URL" />
+                    </forbiddenConstants>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                filter_var("http://example.com/image.jpg", FILTER_VALIDATE_URL);',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     public function testAllowedPrintFunction(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(

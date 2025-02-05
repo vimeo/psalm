@@ -15,6 +15,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Provider\NodeDataProvider;
+use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
 use Psalm\Type;
@@ -58,6 +59,18 @@ final class ConstFetchAnalyzer
                 break;
 
             default:
+                if (isset($statements_analyzer->getCodebase()->config->forbidden_constants[$const_name])) {
+                    IssueBuffer::maybeAdd(
+                        new ForbiddenCode(
+                            'You have forbidden the use of ' . $const_name,
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+        
+                    return;
+                }
+    
                 $const_type = self::getConstType(
                     $statements_analyzer,
                     $const_name,
