@@ -236,6 +236,8 @@ final class Psalter
             'uopz',
             'pcov',
             'blackfire',
+            // Issues w/ parallel forking
+            'uv',
         ]);
 
         // If Xdebug is enabled, restart without it
