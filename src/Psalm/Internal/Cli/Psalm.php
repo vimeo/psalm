@@ -48,6 +48,7 @@ use function array_shift;
 use function array_slice;
 use function array_sum;
 use function array_values;
+use function assert;
 use function chdir;
 use function count;
 use function defined;
@@ -1041,6 +1042,7 @@ final class Psalm
 
         if (isset($options['review'])) {
             require_once __DIR__ . '/Review.php';
+            assert($argv !== null);
             array_shift($argv);
             Review::run($argv);
             exit;
