@@ -909,16 +909,6 @@ final class ProjectAnalyzer
         $this->codebase->addFilesToAnalyze($files_to_scan);
     }
 
-    public function addProjectFile(string $file_path): void
-    {
-        $this->project_files[$file_path] = $file_path;
-    }
-
-    public function addExtraFile(string $file_path): void
-    {
-        $this->extra_files[$file_path] = $file_path;
-    }
-
     /**
      * @return list<string>
      */
