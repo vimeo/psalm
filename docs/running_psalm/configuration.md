@@ -655,6 +655,15 @@ Optional. Allows you to specify a list of functions that should emit the [`Forbi
 </forbiddenFunctions>
 ```
 
+#### &lt;forbiddenConstants&gt;
+Optional. Allows you to specify a list of constants that should emit the [`ForbiddenCode`](issues/ForbiddenCode.md) issue type.
+
+```xml
+<forbiddenConstants>
+  <constant name="FILTER_VALIDATE_URL" />
+</forbiddenConstants>
+```
+
 ## Accessing Psalm configuration in plugins
 
 Plugins can access or modify the global configuration in plugins using

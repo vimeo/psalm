@@ -17,6 +17,7 @@
             <xs:element name="stubs" type="StubsType" minOccurs="0" maxOccurs="1" />
             <xs:element name="plugins" type="PluginsType" minOccurs="0" maxOccurs="1" />
             <xs:element name="forbiddenFunctions" type="ExitFunctionsType" minOccurs="0" maxOccurs="1" />
+            <xs:element name="forbiddenConstants" type="ConstantType" minOccurs="0" maxOccurs="1" />
             <xs:element name="issueHandlers" type="IssueHandlersType" minOccurs="0" maxOccurs="1" />
             <xs:element name="ignoreExceptions" type="ExceptionsType" minOccurs="0" maxOccurs="1" />
             <xs:element name="globals" type="GlobalsType" minOccurs="0" maxOccurs="1" />
@@ -175,6 +176,13 @@
     <xs:complexType name="ExitFunctionsType">
         <xs:sequence>
             <xs:element name="function" maxOccurs="unbounded" type="NameAttributeType" />
+        </xs:sequence>
+        <xs:anyAttribute processContents="skip" />
+    </xs:complexType>
+
+    <xs:complexType name="ConstantType">
+        <xs:sequence>
+            <xs:element name="constant" maxOccurs="unbounded" type="NameAttributeType" />
         </xs:sequence>
         <xs:anyAttribute processContents="skip" />
     </xs:complexType>
