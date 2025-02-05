@@ -319,38 +319,6 @@ return array (
         '...arrays=' => 'array<array-key, mixed>',
       ),
     ),
-    'array_diff_uassoc' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>',
-        'arr1' => 'array<array-key, mixed>',
-        'arr2' => 'array<array-key, mixed>',
-        'callback_data_comp_func' => 'callable(mixed, mixed):int',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>',
-        'array' => 'array<array-key, mixed>',
-        '...rest=' => 'array<array-key, mixed>',
-      ),
-    ),
-    'array_diff_ukey' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>',
-        'arr1' => 'array<array-key, mixed>',
-        'arr2' => 'array<array-key, mixed>',
-        'callback_key_comp_func' => 'callable(mixed, mixed):int',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>',
-        'array' => 'array<array-key, mixed>',
-        '...rest=' => 'array<array-key, mixed>',
-      ),
-    ),
     'array_fill' => 
     array (
       'old' => 
@@ -459,22 +427,6 @@ return array (
       ),
     ),
     'array_intersect_uassoc' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>',
-        'arr1' => 'array<array-key, mixed>',
-        'arr2' => 'array<array-key, mixed>',
-        'callback_key_compare_func' => 'callable(mixed, mixed):int',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>',
-        'array' => 'array<array-key, mixed>',
-        '...rest=' => 'array<array-key, mixed>',
-      ),
-    ),
-    'array_intersect_ukey' => 
     array (
       'old' => 
       array (
@@ -778,104 +730,6 @@ return array (
       array (
         0 => 'float|int',
         'array' => 'array<array-key, mixed>',
-      ),
-    ),
-    'array_udiff' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>',
-        'arr1' => 'array<array-key, mixed>',
-        'arr2' => 'array<array-key, mixed>',
-        'callback_data_comp_func' => 'callable(mixed, mixed):int',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>',
-        'array' => 'array<array-key, mixed>',
-        '...rest=' => 'array<array-key, mixed>',
-      ),
-    ),
-    'array_udiff_assoc' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>',
-        'arr1' => 'array<array-key, mixed>',
-        'arr2' => 'array<array-key, mixed>',
-        'callback_key_comp_func' => 'callable(mixed, mixed):int',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>',
-        'array' => 'array<array-key, mixed>',
-        '...rest=' => 'array<array-key, mixed>',
-      ),
-    ),
-    'array_udiff_uassoc' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>',
-        'arr1' => 'array<array-key, mixed>',
-        'arr2' => 'array<array-key, mixed>',
-        'callback_data_comp_func' => 'callable(mixed, mixed):int',
-        'callback_key_comp_func' => 'callable(mixed, mixed):int',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>',
-        'array' => 'array<array-key, mixed>',
-        '...rest=' => 'array<array-key, mixed>',
-      ),
-    ),
-    'array_uintersect' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>',
-        'arr1' => 'array<array-key, mixed>',
-        'arr2' => 'array<array-key, mixed>',
-        'callback_data_compare_func' => 'callable(mixed, mixed):int',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>',
-        'array' => 'array<array-key, mixed>',
-        '...rest=' => 'array<array-key, mixed>',
-      ),
-    ),
-    'array_uintersect_assoc' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>',
-        'arr1' => 'array<array-key, mixed>',
-        'arr2' => 'array<array-key, mixed>',
-        'callback_data_compare_func' => 'callable(mixed, mixed):int',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>',
-        'array' => 'array<array-key, mixed>',
-        '...rest=' => 'array<array-key, mixed>',
-      ),
-    ),
-    'array_uintersect_uassoc' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>',
-        'arr1' => 'array<array-key, mixed>',
-        'arr2' => 'array<array-key, mixed>',
-        'callback_data_compare_func' => 'callable(mixed, mixed):int',
-        'callback_key_compare_func' => 'callable(mixed, mixed):int',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>',
-        'array' => 'array<array-key, mixed>',
-        '...rest=' => 'array<array-key, mixed>',
       ),
     ),
     'array_unique' => 
