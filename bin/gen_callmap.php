@@ -142,6 +142,19 @@ foreach ($customMaps as $version => &$data) {
         ) {
             unset($data[$func]);
         }
+        if (str_starts_with($func, 'array_udiff')
+            || str_starts_with($func, 'array_uintersect')
+            || str_starts_with($func, 'array_intersect_u')
+            || str_starts_with($func, 'array_diff_u')
+        ) {
+            if ($version < 80) {
+                $params = $customMaps[80][$func];
+                continue;
+            } else if (!str_ends_with($func, "'1")) {
+                unset($params['...rest=']);
+                $params['...rest'] = 'array<array-key, mixed>|callable(mixed, mixed):int';
+            }
+        }
     } unset($params);
     $data = normalizeCallMap($data);
 } unset($data);
