@@ -23,8 +23,10 @@ final class ArrayType
 
     /**
      * @return (
-     *     $type is TArrayKey ? self : (
-     *         $type is TArray ? self : null
+     *     $type is TKeyedArray ? self : (
+     *         $type is TNonEmptyArray ? self : (
+     *             $type is TArray ? self : null
+     *         )
      *     )
      * )
      */
