@@ -620,12 +620,7 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
                         // Possible, can be empty
                         $redundant = false;
                         $existing_var_type->removeType('array');
-                        $existing_var_type->addType(new TArray(
-                            [
-                                new Union([new TNever()]),
-                                new Union([new TNever()]),
-                            ],
-                        ));
+                        $existing_var_type->addType(Type::getEmptyArrayAtomic());
                     }
                 }
             } elseif (!$array_atomic_type instanceof TArray || !$array_atomic_type->isEmptyArray()) {
