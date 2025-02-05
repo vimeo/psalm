@@ -44,9 +44,11 @@ use function array_key_exists;
 use function array_keys;
 use function array_map;
 use function array_merge;
+use function array_shift;
 use function array_slice;
 use function array_sum;
 use function array_values;
+use function assert;
 use function chdir;
 use function count;
 use function defined;
@@ -159,6 +161,7 @@ final class Psalm
         'generate-json-map:',
         'generate-stubs:',
         'alter',
+        'review',
         'language-server',
         'refactor',
         'shepherd::',
@@ -1037,6 +1040,14 @@ final class Psalm
             exit;
         }
 
+        if (isset($options['review'])) {
+            require_once __DIR__ . '/Review.php';
+            assert($argv !== null);
+            array_shift($argv);
+            Review::run($argv);
+            exit;
+        }
+
         if (isset($options['language-server'])) {
             require_once __DIR__ . '/LanguageServer.php';
             LanguageServer::run($argv);
@@ -1506,6 +1517,9 @@ final class Psalm
 
             --alter
                 Run Psalter
+
+            --review
+                Run the psalm-review tool
 
             --language-server
                 Run Psalm Language Server

@@ -257,7 +257,7 @@ final class CastAnalyzer
                         $permissible_atomic_types[] = $type;
                     } elseif ($type instanceof TObjectWithProperties) {
                         $array_type = $type->properties === []
-                            ? new TArray([Type::getArrayKey(), Type::getMixed()])
+                            ? Type::getArrayAtomic()
                             : new TKeyedArray(
                                 $type->properties,
                                 null,

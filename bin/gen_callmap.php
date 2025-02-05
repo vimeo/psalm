@@ -150,9 +150,23 @@ foreach ($customMaps as $version => &$data) {
             if ($version < 80) {
                 $params = $customMaps[80][$func];
                 continue;
-            } else if (!str_ends_with($func, "'1")) {
+            } elseif (!str_ends_with($func, "'1")) {
                 unset($params['...rest=']);
-                $params['...rest'] = 'array<array-key, mixed>|callable(mixed, mixed):int';
+                unset($params['...rest']);
+                if (str_starts_with($func, 'array_diff_u')
+                    || str_starts_with($func, 'array_intersect_u')
+                ) {
+                    $params['...rest'] = "array<array-key, mixed>|callable(string, string):int|".
+                        "callable(int, int):int|callable(array-key, array-key):int";
+                } elseif ($func === 'array_udiff_uassoc'
+                    || $func === 'array_uintersect_uassoc') {
+                    $params['arr2'] = "array<array-key, mixed>";
+                    $params['value_compare_func'] = "callable(mixed, mixed):int";
+                    $params['key_compare_func'] = "callable(string, string):int|callable(int, int):int|".
+                        "callable(array-key, array-key):int";
+                } else {
+                    $params['...rest'] = "array<array-key, mixed>|callable(mixed, mixed):int";
+                }
             }
         }
     } unset($params);

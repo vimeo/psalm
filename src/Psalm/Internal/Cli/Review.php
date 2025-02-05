@@ -154,7 +154,7 @@ final class Review
             self::r($mode($file, $line, $column));
 
             /** @psalm-suppress RiskyTruthyFalsyComparison */
-            if (trim(readline("Press enter to continue, q to exit: ") ?: '') === 'q') {
+            if (trim(readline("Press enter to continue, q to quit: ") ?: '') === 'q') {
                 break;
             }
         }
@@ -164,7 +164,10 @@ final class Review
     {
         fputs(
             STDERR,
-            PHP_EOL . "Usage: psalm-review report.json code|phpstorm|code-server " .
+            PHP_EOL . "Usage:" . PHP_EOL . PHP_EOL .
+                "psalm-review report.json code|phpstorm|code-server " .
+                "[ inv|rev|[~-]IssueType1 ] [ [~-]IssueType2 ] ... " . PHP_EOL .
+                "psalm --review report.json code|phpstorm|code-server " .
                 "[ inv|rev|[~-]IssueType1 ] [ [~-]IssueType2 ] ... " . PHP_EOL . PHP_EOL .
                 "Will parse the Psalm JSON report in report.json ".
                 "and open the specified IDE at the line and column of the issue, ".

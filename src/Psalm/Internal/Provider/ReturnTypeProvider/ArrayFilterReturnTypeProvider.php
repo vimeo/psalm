@@ -60,7 +60,7 @@ final class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderI
             return Type::getMixed();
         }
 
-        $fallback = new TArray([Type::getArrayKey(), Type::getMixed()]);
+        $fallback = Type::getArrayAtomic();
         $array_arg = $call_args[0]->value ?? null;
         if (!$array_arg) {
             $first_arg_array = $fallback;

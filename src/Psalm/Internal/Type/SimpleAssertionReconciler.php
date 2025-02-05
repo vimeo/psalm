@@ -1764,7 +1764,7 @@ final class SimpleAssertionReconciler extends Reconciler
 
         if ($existing_var_type->hasMixed() || $existing_var_type->hasTemplate()) {
             return new Union([
-                new TArray([Type::getArrayKey(), Type::getMixed()]),
+                Type::getArrayAtomic(),
                 new TNamedObject('Countable'),
             ]);
         }
