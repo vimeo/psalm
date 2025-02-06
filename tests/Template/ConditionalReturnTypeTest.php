@@ -1043,7 +1043,7 @@ class ConditionalReturnTypeTest extends TestCase
                 'code' => '<?php
                     /**
                      * @param string|int $stringOrInt
-                     * @psalm-return ($string is non-empty-string|int ? string : int)
+                     * @psalm-return ($stringOrInt is (non-empty-string|int) ? string : int)
                      */
                     function getSomething($stringOrInt)
                     {
@@ -1053,14 +1053,15 @@ class ConditionalReturnTypeTest extends TestCase
                         return "";
                     }
                     /** @var string $string */
-                    $string;
+                    $string = "";
                     $something = getSomething($string);
+
                     /** @var non-empty-string $nonEmptyString */
-                    $nonEmptyString;
+                    $nonEmptyString = "test";
                     $something2 = getSomething($nonEmptyString);
                 ',
                 'assertions' => [
-                    '$something' => 'int|string',
+                    '$something' => 'int',
                     '$something2' => 'string',
                 ],
                 'ignored_issues' => [],

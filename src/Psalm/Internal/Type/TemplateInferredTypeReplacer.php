@@ -455,12 +455,6 @@ final class TemplateInferredTypeReplacer
                     null,
                     false,
                     false,
-                ) && null === Type::intersectUnionTypes(
-                    new Union([$candidate_atomic_type]),
-                    $conditional_type,
-                    $codebase,
-                    false,
-                    false,
                 )) {
                     $matching_else_types[] = $candidate_atomic_type;
                 }
