@@ -446,16 +446,7 @@ final class TemplateInferredTypeReplacer
                         || $conditional_type->getId() !== 'float')
                 ) {
                     $matching_if_types[] = $candidate_atomic_type;
-                } elseif (!UnionTypeComparator::isContainedBy(
-                    $codebase,
-                    $conditional_type,
-                    new Union([$candidate_atomic_type]),
-                    false,
-                    false,
-                    null,
-                    false,
-                    false,
-                ) && null === Type::intersectUnionTypes(
+                } elseif (null === Type::intersectUnionTypes(
                     new Union([$candidate_atomic_type]),
                     $conditional_type,
                     $codebase,
