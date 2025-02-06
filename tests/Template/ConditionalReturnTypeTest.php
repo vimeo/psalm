@@ -951,7 +951,7 @@ class ConditionalReturnTypeTest extends TestCase
                     interface ContainerInterface
                     {
                         /**
-                         * @template TRequestedInstance extends InstanceType
+                         * @template TRequestedInstance
                          * @param class-string<TRequestedInstance>|string $name
                          * @return ($name is class-string ? TRequestedInstance : InstanceType)
                          */

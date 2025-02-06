@@ -27,6 +27,7 @@ use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -193,6 +194,10 @@ final class NegatedAssertionReconciler extends Reconciler
             $existing_var_type->removeType('array-key');
             $existing_var_type->addType(new TString);
         } elseif ($assertion_type instanceof TNonEmptyString
+            && $existing_var_type->hasString()
+        ) {
+            // do nothing
+        } elseif ($assertion_type instanceof TNonEmptyNonspecificLiteralString
             && $existing_var_type->hasString()
         ) {
             // do nothing

@@ -23650,7 +23650,7 @@ return array (
       ),
       'new' => 
       array (
-        0 => 'Redis|false|string',
+        0 => 'false|string',
         'key' => 'string',
         'start' => 'int',
         'end' => 'int',
@@ -23746,7 +23746,7 @@ return array (
       ),
       'new' => 
       array (
-        0 => 'Redis|bool',
+        0 => 'bool',
         'key' => 'string',
         'start' => 'int',
         'end' => 'int',
@@ -23762,7 +23762,7 @@ return array (
       ),
       'new' => 
       array (
-        0 => 'Redis|false|int|string',
+        0 => 'false|int|string',
         'subcommand' => 'string',
         'key' => 'string',
       ),
@@ -23861,7 +23861,7 @@ return array (
       ),
       'new' => 
       array (
-        0 => 'Redis|int',
+        0 => 'int',
         'key' => 'string',
         'elements' => 'array<array-key, mixed>',
       ),
@@ -23928,7 +23928,7 @@ return array (
       ),
       'new' => 
       array (
-        0 => 'Redis|array<array-key, mixed>|bool',
+        0 => 'array<array-key, mixed>|bool',
         'patterns' => 'array<array-key, mixed>',
       ),
     ),
@@ -24214,7 +24214,7 @@ return array (
       ),
       'new' => 
       array (
-        0 => 'Redis|array<array-key, mixed>|bool',
+        0 => 'array<array-key, mixed>|bool',
         'channels' => 'array<array-key, mixed>',
       ),
     ),
@@ -24228,7 +24228,7 @@ return array (
       ),
       'new' => 
       array (
-        0 => 'Redis|bool',
+        0 => 'bool',
         'key' => 'string',
         '...other_keys=' => 'string',
       ),
@@ -24264,7 +24264,7 @@ return array (
       ),
       'new' => 
       array (
-        0 => 'Redis|false|string',
+        0 => 'false|string',
         'key' => 'string',
         'id' => 'string',
         'values' => 'array<array-key, mixed>',
@@ -24287,7 +24287,7 @@ return array (
       ),
       'new' => 
       array (
-        0 => 'Redis|array<array-key, mixed>|bool',
+        0 => 'array<array-key, mixed>|bool',
         'key' => 'string',
         'group' => 'string',
         'consumer' => 'string',
@@ -24306,7 +24306,7 @@ return array (
       ),
       'new' => 
       array (
-        0 => 'Redis|false|int',
+        0 => 'false|int',
         'key' => 'string',
         'ids' => 'array<array-key, mixed>',
       ),
@@ -24367,7 +24367,7 @@ return array (
       ),
       'new' => 
       array (
-        0 => 'Redis|array<array-key, mixed>|false',
+        0 => 'array<array-key, mixed>|false',
         'key' => 'string',
         'group' => 'string',
         'start=' => 'null|string',
@@ -24388,7 +24388,7 @@ return array (
       ),
       'new' => 
       array (
-        0 => 'Redis|array<array-key, mixed>|bool',
+        0 => 'array<array-key, mixed>|bool',
         'key' => 'string',
         'start' => 'string',
         'end' => 'string',
@@ -24406,7 +24406,7 @@ return array (
       ),
       'new' => 
       array (
-        0 => 'Redis|array<array-key, mixed>|bool',
+        0 => 'array<array-key, mixed>|bool',
         'streams' => 'array<array-key, mixed>',
         'count=' => 'int',
         'block=' => 'int',
@@ -24425,7 +24425,7 @@ return array (
       ),
       'new' => 
       array (
-        0 => 'Redis|array<array-key, mixed>|bool',
+        0 => 'array<array-key, mixed>|bool',
         'group' => 'string',
         'consumer' => 'string',
         'streams' => 'array<array-key, mixed>',
@@ -24445,7 +24445,7 @@ return array (
       ),
       'new' => 
       array (
-        0 => 'Redis|array<array-key, mixed>|bool',
+        0 => 'array<array-key, mixed>|bool',
         'key' => 'string',
         'end' => 'string',
         'start' => 'string',
@@ -24465,7 +24465,7 @@ return array (
       ),
       'new' => 
       array (
-        0 => 'Redis|false|int',
+        0 => 'false|int',
         'key' => 'string',
         'threshold' => 'string',
         'approx=' => 'bool',
@@ -24484,7 +24484,7 @@ return array (
       ),
       'new' => 
       array (
-        0 => 'Redis|array<array-key, mixed>|false',
+        0 => 'array<array-key, mixed>|false',
         'keys' => 'array<array-key, mixed>',
         'weights=' => 'array<array-key, mixed>|null',
         'options=' => 'array<array-key, mixed>|null',
@@ -24597,7 +24597,7 @@ return array (
       ),
       'new' => 
       array (
-        0 => 'Redis|array<array-key, mixed>|false',
+        0 => 'array<array-key, mixed>|false',
         'key' => 'string',
         '&iterator' => 'int|null',
         'pattern=' => 'null|string',
@@ -24615,7 +24615,7 @@ return array (
       ),
       'new' => 
       array (
-        0 => 'Redis|array<array-key, mixed>|false',
+        0 => 'array<array-key, mixed>|false',
         'keys' => 'array<array-key, mixed>',
         'weights=' => 'array<array-key, mixed>|null',
         'options=' => 'array<array-key, mixed>|null',
