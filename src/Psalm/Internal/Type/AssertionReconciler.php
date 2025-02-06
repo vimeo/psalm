@@ -817,7 +817,8 @@ final class AssertionReconciler extends Reconciler
         }
 
         // Lowercase-string and non-empty-string are compatible but none is contained into the other completely
-        if (($type_2_atomic instanceof TLowercaseString && $type_1_atomic instanceof TNonEmptyNonspecificLiteralString) ||
+        if (($type_2_atomic instanceof TLowercaseString
+            && $type_1_atomic instanceof TNonEmptyNonspecificLiteralString) ||
             ($type_2_atomic instanceof TNonEmptyNonspecificLiteralString && $type_1_atomic instanceof TLowercaseString)
         ) {
             $matching_atomic_type = new TNonEmptyLowercaseString();

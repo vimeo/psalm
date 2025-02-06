@@ -1165,7 +1165,9 @@ final class TypeCombiner
                         }
 
                         if ($has_empty_string) {
-                            $combination->value_types['string'] = new TString();
+                            $combination->value_types['string'] = $type instanceof TNonEmptyNonspecificLiteralString
+                                ? new TNonspecificLiteralString()
+                                : new TString();
                         } elseif ($has_non_lowercase_string && $type::class !== TNonEmptyString::class) {
                             $combination->value_types['string'] = new TNonEmptyString();
                         } else {
