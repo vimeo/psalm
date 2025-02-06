@@ -70182,7 +70182,7 @@ return array (
   ),
   'redis::multi' => 
   array (
-    0 => 'bool',
+    0 => 'Redis',
     'value=' => 'int',
   ),
   'redis::object' => 
@@ -70261,7 +70261,7 @@ return array (
   ),
   'redis::pipeline' => 
   array (
-    0 => 'bool',
+    0 => 'Redis',
   ),
   'redis::popen' => 
   array (

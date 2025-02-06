@@ -23752,19 +23752,6 @@ return array (
         'end' => 'int',
       ),
     ),
-    'redis::multi' => 
-    array (
-      'old' => 
-      array (
-        0 => 'Redis',
-        'value=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'value=' => 'int',
-      ),
-    ),
     'redis::object' => 
     array (
       'old' => 
@@ -23890,17 +23877,6 @@ return array (
       array (
         0 => 'string',
         'message=' => 'null|string',
-      ),
-    ),
-    'redis::pipeline' => 
-    array (
-      'old' => 
-      array (
-        0 => 'Redis',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
       ),
     ),
     'redis::popen' => 

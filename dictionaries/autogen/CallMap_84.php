@@ -39412,7 +39412,7 @@ return array (
   ),
   'redis::multi' => 
   array (
-    0 => 'bool',
+    0 => 'Redis|bool',
     'value=' => 'int',
   ),
   'redis::object' => 
@@ -39491,7 +39491,7 @@ return array (
   ),
   'redis::pipeline' => 
   array (
-    0 => 'bool',
+    0 => 'Redis|bool',
   ),
   'redis::popen' => 
   array (
