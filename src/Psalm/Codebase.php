@@ -150,6 +150,10 @@ final class Codebase
      */
     public bool $register_stub_files = false;
 
+    public bool $all_functions_global = false;
+
+    public bool $all_constants_global = false;
+
     public bool $find_unused_variables = false;
 
     public Scanner $scanner;

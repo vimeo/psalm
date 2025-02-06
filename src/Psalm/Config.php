@@ -398,6 +398,10 @@ final class Config
 
     public bool $literal_array_key_check = false;
 
+    public bool $all_functions_global = false;
+
+    public bool $all_constants_global = false;
+
     public int $max_graph_size = 200;
 
     public int $max_avg_path_length = 70;
@@ -1109,6 +1113,16 @@ final class Config
         if (isset($config_xml['disallowLiteralKeysOnUnshapedArrays'])) {
             $attribute_text = (string) $config_xml['disallowLiteralKeysOnUnshapedArrays'];
             $config->literal_array_key_check = $attribute_text === 'true' || $attribute_text === '1';
+        }
+
+        if (isset($config_xml['allFunctionsGlobal'])) {
+            $attribute_text = (string) $config_xml['allFunctionsGlobal'];
+            $config->all_functions_global = $attribute_text === 'true' || $attribute_text === '1';
+        }
+
+        if (isset($config_xml['allConstantsGlobal'])) {
+            $attribute_text = (string) $config_xml['allConstantsGlobal'];
+            $config->all_constants_global = $attribute_text === 'true' || $attribute_text === '1';
         }
 
         if (isset($config_xml['findUnusedVariablesAndParams'])) {
