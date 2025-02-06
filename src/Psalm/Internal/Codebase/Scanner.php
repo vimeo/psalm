@@ -523,7 +523,9 @@ final class Scanner
                 $this->queueClassLikeForScanning($fq_classlike_name, false, false);
             }
 
-            if ($this->codebase->register_autoload_files) {
+            if ($this->codebase->register_autoload_files
+                || $this->codebase->all_functions_global
+            ) {
                 foreach ($file_storage->functions as $function_storage) {
                     if ($function_storage->cased_name
                         && !$this->codebase->functions->hasStubbedFunction($function_storage->cased_name)
@@ -534,7 +536,10 @@ final class Scanner
                         );
                     }
                 }
-
+            }
+            if ($this->codebase->register_autoload_files
+                || $this->codebase->all_constants_global
+            ) {
                 foreach ($file_storage->constants as $name => $type) {
                     $this->codebase->addGlobalConstantType($name, $type);
                 }
