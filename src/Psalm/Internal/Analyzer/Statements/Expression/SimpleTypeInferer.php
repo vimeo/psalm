@@ -92,11 +92,11 @@ final class SimpleTypeInferer
                         return Type::getString($result);
                     }
 
-                    if ($left->isSingle() && $left->getSingleAtomic() instanceof TNonEmptyString) {
+                    if ($left->isSingle() && $left->isNonEmptyString()) {
                         return new Union([new TNonEmptyString()]);
                     }
 
-                    if ($right->isSingle() && $right->getSingleAtomic() instanceof TNonEmptyString) {
+                    if ($right->isSingle() && $right->isNonEmptyString()) {
                         return new Union([new TNonEmptyString()]);
                     }
                 }
