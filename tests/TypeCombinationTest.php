@@ -177,7 +177,7 @@ class TypeCombinationTest extends TestCase
 
                     $_ = $key !== "" ? "test{$key}]" : "test";
                 ',
-            ]
+            ],
         ];
     }
 
