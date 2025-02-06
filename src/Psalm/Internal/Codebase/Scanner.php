@@ -381,7 +381,7 @@ final class Scanner
             }
 
             if ($this->codebase->all_constants_global || $this->config->hasStubFile($scanned_file)) {
-                $file_storage ??= $this->file_storage_provider->get($scanned_file);
+                $file_storage = $this->file_storage_provider->get($scanned_file);
 
                 foreach ($file_storage->constants as $name => $type) {
                     $this->codebase->addGlobalConstantType($name, $type);
