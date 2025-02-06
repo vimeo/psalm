@@ -301,7 +301,7 @@ final class ConcatAnalyzer
             if ($known_operand->isSingle()) {
                 $known_operands_atomic = $known_operand->getSingleAtomic();
 
-                if ($known_operands_atomic instanceof TNonEmptyString) {
+                if ($known_operand->isNonEmptyString()) {
                     $result_type = Type::getNonEmptyString();
                 }
 

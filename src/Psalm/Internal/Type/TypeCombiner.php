@@ -1066,7 +1066,10 @@ final class TypeCombiner
                 ) {
                     $combination->value_types['string'] = new TNonEmptyString();
                 } elseif (isset($combination->value_types['string'])
-                    && $combination->value_types['string'] instanceof TNonEmptyString
+                    && (
+                        $combination->value_types['string'] instanceof TNonEmptyString
+                        || $combination->value_types['string'] instanceof TNonEmptyNonspecificLiteralString
+                    )
                     && $type->value !== ''
                 ) {
                     // do nothing
@@ -1141,7 +1144,7 @@ final class TypeCombiner
                         } else {
                             $combination->value_types['string'] = $type;
                         }
-                    } elseif ($type instanceof TNonEmptyString) {
+                    } elseif ($type instanceof TNonEmptyString || $type instanceof TNonEmptyNonspecificLiteralString) {
                         $has_empty_string = false;
 
                         foreach ($combination->strings as $string_type) {

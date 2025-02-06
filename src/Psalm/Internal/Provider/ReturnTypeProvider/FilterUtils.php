@@ -29,6 +29,7 @@ use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNonFalsyString;
 use Psalm\Type\Atomic\TNull;
@@ -1174,7 +1175,9 @@ final class FilterUtils
                 }
 
                 foreach ($input_type->getAtomicTypes() as $atomic_type) {
-                    if ($atomic_type instanceof TNonEmptyString) {
+                    if ($atomic_type instanceof TNonEmptyString
+                        || $atomic_type instanceof TNonEmptyNonspecificLiteralString
+                    ) {
                         $filter_types[] = $atomic_type;
                     } elseif ($atomic_type instanceof TString) {
                         if (self::hasFlag($flags_int_used, FILTER_FLAG_HOSTNAME)) {
@@ -1260,7 +1263,10 @@ final class FilterUtils
                         [FILTER_SANITIZE_ENCODED, FILTER_SANITIZE_SPECIAL_CHARS, FILTER_DEFAULT],
                         true,
                     )
-                        && $atomic_type instanceof TNonEmptyString
+                        && (
+                            $atomic_type instanceof TNonEmptyString
+                            || $atomic_type instanceof TNonEmptyNonspecificLiteralString
+                        )
                         && (self::hasFlag($flags_int_used, FILTER_FLAG_STRIP_LOW)
                             || self::hasFlag($flags_int_used, FILTER_FLAG_STRIP_HIGH)
                             || self::hasFlag($flags_int_used, FILTER_FLAG_STRIP_BACKTICK)
@@ -1275,7 +1281,9 @@ final class FilterUtils
                         continue;
                     }
 
-                    if ($atomic_type instanceof TNonEmptyString) {
+                    if ($atomic_type instanceof TNonEmptyString
+                        || $atomic_type instanceof TNonEmptyNonspecificLiteralString
+                    ) {
                         $filter_types[] = new TNonEmptyString();
                         continue;
                     }
