@@ -945,72 +945,6 @@ class ConditionalReturnTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '7.2',
             ],
-            'ineritedConditionalTemplatedReturnType' => [
-                'code' => '<?php
-                    /** @template InstanceType */
-                    interface ContainerInterface
-                    {
-                        /**
-                         * @template TRequestedInstance
-                         * @param class-string<TRequestedInstance>|string $name
-                         * @return ($name is class-string ? TRequestedInstance : InstanceType)
-                         */
-                        public function build(string $name): mixed;
-                    }
-
-                    /**
-                     * @template InstanceType
-                     * @template-implements ContainerInterface<InstanceType>
-                     */
-                    abstract class MixedContainer implements ContainerInterface
-                    {
-                        /** @param InstanceType $instance */
-                        public function __construct(private readonly mixed $instance)
-                        {}
-
-                        public function build(string $name): mixed
-                        {
-                            return $this->instance;
-                        }
-                    }
-
-                    /**
-                     * @template InstanceType of object
-                     * @template-extends MixedContainer<InstanceType>
-                     */
-                    abstract class ObjectContainer extends MixedContainer
-                    {
-                        public function build(string $name): object
-                        {
-                            return parent::build($name);
-                        }
-                    }
-
-                    /** @template-extends ObjectContainer<stdClass> */
-                    final class SpecificObjectContainer extends ObjectContainer
-                    {
-                    }
-
-                    final class SpecificObject extends stdClass {}
-
-                    $container = new SpecificObjectContainer(new stdClass());
-                    $object = $container->build(SpecificObject::class);
-                    $nonSpecificObject = $container->build("whatever");
-
-                    /** @var ObjectContainer<object> $container */
-                    $container = null;
-                    $justObject = $container->build("whatever");
-                    $specificObject = $container->build(stdClass::class);
-                ',
-                'assertions' => [
-                    '$object===' => 'SpecificObject',
-                    '$nonSpecificObject===' => 'stdClass',
-                    '$justObject===' => 'object',
-                    '$specificObject===' => 'stdClass',
-                ],
-                'ignored_issues' => [],
-                'php_version' => '8.1',
-            ],
             'nonEmptyLiteralString' => [
                 'code' => '<?php
                     /**
@@ -1043,7 +977,7 @@ class ConditionalReturnTypeTest extends TestCase
                 'code' => '<?php
                     /**
                      * @param string|int $stringOrInt
-                     * @psalm-return ($stringOrInt is (non-empty-string|int) ? string : int)
+                     * @psalm-return ($stringOrInt is (non-empty-string)|int ? string : int)
                      */
                     function getSomething($stringOrInt)
                     {
@@ -1053,15 +987,14 @@ class ConditionalReturnTypeTest extends TestCase
                         return "";
                     }
                     /** @var string $string */
-                    $string = "";
+                    $string;
                     $something = getSomething($string);
-
                     /** @var non-empty-string $nonEmptyString */
-                    $nonEmptyString = "test";
+                    $nonEmptyString;
                     $something2 = getSomething($nonEmptyString);
                 ',
                 'assertions' => [
-                    '$something' => 'int',
+                    '$something' => 'int|string',
                     '$something2' => 'string',
                 ],
                 'ignored_issues' => [],

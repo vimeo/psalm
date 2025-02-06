@@ -803,8 +803,26 @@ abstract class Type
 
             //if a type is contained by the other, the intersection is the narrowest type
             if (!$intersection_performed) {
-                $type_1_in_2 = UnionTypeComparator::isContainedBy($codebase, $type_1, $type_2);
-                $type_2_in_1 = UnionTypeComparator::isContainedBy($codebase, $type_2, $type_1);
+                $type_1_in_2 = UnionTypeComparator::isContainedBy(
+                    $codebase,
+                    $type_1,
+                    $type_2,
+                    false,
+                    false,
+                    null,
+                    $allow_interface_equality,
+                    $allow_float_int_equality,
+                );
+                $type_2_in_1 = UnionTypeComparator::isContainedBy(
+                    $codebase,
+                    $type_2,
+                    $type_1,
+                    false,
+                    false,
+                    null,
+                    $allow_interface_equality,
+                    $allow_float_int_equality,
+                );
                 if ($type_1_in_2) {
                     $intersection_performed = true;
                     $combined_type = $type_1->getBuilder();
