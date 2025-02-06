@@ -81,6 +81,10 @@ foreach (glob(__DIR__."/../dictionaries/autogen/CallMap_*.php") as $file) {
         }
     } unset($t);
 
+    foreach ($baseMaps[$version] as $func => &$ret) {
+        $ret[0] = str_ireplace('Redis|', '', $ret[0]);
+    } unset($ret);
+
     $baseMaps[$version] = normalizeCallMap($baseMaps[$version]);
     $allFuncs += $baseMaps[$version];
     writeCallMap($file, $baseMaps[$version]);
