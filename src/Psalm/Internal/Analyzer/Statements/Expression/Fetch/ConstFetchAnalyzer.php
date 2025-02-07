@@ -106,7 +106,8 @@ final class ConstFetchAnalyzer
                 } elseif ($context->check_consts) {
                     IssueBuffer::maybeAdd(
                         new UndefinedConstant(
-                            'Const ' . $const_name . ' is not defined, consider enabling the allConstantsGlobal config option if scanning legacy codebases',
+                            'Const ' . $const_name . ' is not defined'.
+                                ', consider enabling the allConstantsGlobal config option if scanning legacy codebases',
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
                         $statements_analyzer->getSuppressedIssues(),
