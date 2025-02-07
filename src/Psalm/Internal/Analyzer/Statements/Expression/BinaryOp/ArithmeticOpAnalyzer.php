@@ -831,7 +831,11 @@ final class ArithmeticOpAnalyzer
                                 $new_type = new TIntRange(null, $left_type_part->value + $sum);
                             }
                         } elseif ($left_type_part instanceof TLiteralInt) {
-                            $new_type = new TLiteralInt($left_type_part->value + $sum);
+                            if ($context->inside_assignment) {
+                                $new_type = new TInt();
+                            } else {
+                                $new_type = new TLiteralInt($left_type_part->value + $sum);
+                            }
                         } elseif ($left_type_part instanceof TIntRange) {
                             $start = $left_type_part->min_bound === null ? null : $left_type_part->min_bound + $sum;
                             $end = $left_type_part->max_bound === null ? null : $left_type_part->max_bound + $sum;
