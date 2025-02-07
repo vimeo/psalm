@@ -77,7 +77,6 @@ use function mkdir;
 use function number_format;
 use function preg_match;
 use function rename;
-use function sprintf;
 use function str_ends_with;
 use function str_starts_with;
 use function strlen;
@@ -87,6 +86,7 @@ use function substr;
 use function usort;
 
 use const PHP_EOL;
+use const PHP_VERSION;
 use const PSALM_VERSION;
 use const STDERR;
 
@@ -280,7 +280,7 @@ final class ProjectAnalyzer
             clearstatcache(true, $cache_directory);
             if (is_dir($cache_directory)) {
                 $this->progress->debug(
-                    'Composer lockfile change detected, clearing cache directory ' . $cache_directory . "\n",
+                    'Composer lockfile change detected, clearing cache directory ' . $cache_directory . PHP_EOL,
                 );
 
                 Config::removeCacheDirectory($cache_directory);
@@ -297,7 +297,7 @@ final class ProjectAnalyzer
             clearstatcache(true, $cache_directory);
             if (is_dir($cache_directory)) {
                 $this->progress->debug(
-                    'Config change detected, clearing cache directory ' . $cache_directory . "\n",
+                    'Config change detected, clearing cache directory ' . $cache_directory . PHP_EOL,
                 );
 
                 Config::removeCacheDirectory($cache_directory);
@@ -350,7 +350,7 @@ final class ProjectAnalyzer
         $now_time = microtime(true);
 
         $this->progress->debug(
-            'Visiting autoload files took ' . number_format($now_time - $start_time, 3) . 's' . "\n",
+            'Visiting autoload files took ' . number_format($now_time - $start_time, 3) . 's' . PHP_EOL,
         );
     }
 
@@ -411,12 +411,11 @@ final class ProjectAnalyzer
             $codebase->config->php_extensions_supported_by_psalm_callmaps,
         );
 
-        $message = sprintf(
-            "Target PHP version: %d.%d %s",
-            $codebase->getMajorAnalysisPhpVersion(),
-            $codebase->getMinorAnalysisPhpVersion(),
-            $source,
-        );
+        $message = "Target PHP version: "
+            .$codebase->getMajorAnalysisPhpVersion()."."
+            .$codebase->getMinorAnalysisPhpVersion()." "
+            .$source
+        ;
 
         $enabled_extensions_names = array_keys(array_filter($codebase->config->php_extensions));
         if (count($enabled_extensions_names) > 0) {
@@ -427,7 +426,9 @@ final class ProjectAnalyzer
             $message .= ' (unsupported extensions: ' . implode(', ', $unsupported_php_extensions) . ')';
         }
 
-        return "$message.\n";
+        $message .= '.'.PHP_EOL.PHP_EOL."Running on PHP ".PHP_VERSION.'.'.PHP_EOL.PHP_EOL;
+
+        return $message;
     }
 
     public function check(string $base_dir, bool $is_diff = false): void
@@ -479,8 +480,8 @@ final class ProjectAnalyzer
             $this->codebase->infer_types_from_usage = true;
         } else {
             $this->codebase->diff_run = true;
-            $this->progress->debug(count($diff_files) . ' changed files: ' . "\n");
-            $this->progress->debug('    ' . implode("\n    ", $diff_files) . "\n");
+            $this->progress->debug(count($diff_files) . ' changed files: ' . PHP_EOL);
+            $this->progress->debug('    ' . implode(PHP_EOL."    ", $diff_files) . PHP_EOL);
 
             $this->codebase->analyzer->addFilesToShowResults($this->project_files);
 
@@ -528,7 +529,7 @@ final class ProjectAnalyzer
             $removed_parser_files = $this->parser_cache_provider->deleteOldParserCaches($start_checks);
 
             if ($removed_parser_files) {
-                $this->progress->debug('Removed ' . $removed_parser_files . ' old parser caches' . "\n");
+                $this->progress->debug('Removed ' . $removed_parser_files . ' old parser caches' . PHP_EOL);
             }
         }
     }
@@ -851,14 +852,14 @@ final class ProjectAnalyzer
             $selection_start = $selection_bounds[0] - $snippet_bounds[0];
             $selection_length = $selection_bounds[1] - $selection_bounds[0];
 
-            echo $location->file_name . ':' . $location->getLineNumber() . "\n" .
+            echo $location->file_name . ':' . $location->getLineNumber() . PHP_EOL .
                 (
                     $this->stdout_report_options->use_color
                     ? substr($snippet, 0, $selection_start) .
                     "\e[97;42m" . substr($snippet, $selection_start, $selection_length) .
                     "\e[0m" . substr($snippet, $selection_length + $selection_start)
                     : $snippet
-                ) . "\n" . "\n";
+                ) . PHP_EOL . PHP_EOL;
         }
     }
 
@@ -947,7 +948,7 @@ final class ProjectAnalyzer
             }
 
             if (!$config->isInProjectDirs($file_path)) {
-                $this->progress->debug('skipping ' . $file_path . "\n");
+                $this->progress->debug('skipping ' . $file_path . PHP_EOL);
 
                 continue;
             }
@@ -960,7 +961,7 @@ final class ProjectAnalyzer
 
     public function checkFile(string $file_path): void
     {
-        $this->progress->debug('Checking ' . $file_path . "\n");
+        $this->progress->debug('Checking ' . $file_path . PHP_EOL);
 
         $this->config->visitPreloadedStubFiles($this->codebase, $this->progress);
 
@@ -1003,7 +1004,7 @@ final class ProjectAnalyzer
         $this->codebase->scanner->addFilesToShallowScan($this->extra_files);
 
         foreach ($paths_to_check as $path) {
-            $this->progress->debug('Checking ' . $path . "\n");
+            $this->progress->debug('Checking ' . $path . PHP_EOL);
 
             if (is_dir($path)) {
                 $this->checkDirWithConfig($path, $this->config, true);

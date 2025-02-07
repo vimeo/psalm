@@ -524,9 +524,6 @@ final class CliUtils
 
     public static function checkRuntimeRequirements(): void
     {
-        $required_php_version = 8_01_17;
-        $required_php_version_text = '8.1.17';
-
         // the following list was taken from vendor/composer/platform_check.php
         // It includes both Psalm's requirements (from composer.json) and the
         // requirements of our dependencies `netresearch/jsonmapper` and
@@ -545,9 +542,21 @@ final class CliUtils
         ];
         $issues = [];
 
-        if (PHP_VERSION_ID < $required_php_version) {
-            $issues[] = 'Psalm requires a PHP version ">= ' . $required_php_version_text . '".'
+        $major_minor = PHP_VERSION_ID - (PHP_VERSION_ID % 100);
+        foreach ([
+            8_01_31 => '8.1.31',
+            8_02_27 => '8.2.27',
+            8_03_16 => '8.3.16',
+            8_04_03 => '8.4.3',
+        ] as $version => $txt) {
+            $version_m = $version - ($version % 100);
+            if ($version_m === $major_minor) {
+                if (PHP_VERSION_ID < $version) {
+                    $issues[] = 'Psalm requires a PHP version ">= ' . $txt . '".'
                         . ' You are running ' . PHP_VERSION . '.';
+                }
+                break;
+            }
         }
 
         $missing_extensions = array_filter(
