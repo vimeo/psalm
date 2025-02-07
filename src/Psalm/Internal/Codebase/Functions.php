@@ -154,7 +154,7 @@ final class Functions
     }
 
     /**
-     * @return array<string, FunctionStorage>
+     * @param array<string, FunctionStorage> $stubs
      */
     public function addGlobalFunctions(array $stubs): void
     {

@@ -590,7 +590,7 @@ final class Codebase
     }
 
     /**
-     * @return array<string, Union>
+     * @param array<string, Union> $stubs
      */
     public function addGlobalConstantTypes(array $stubs): void
     {

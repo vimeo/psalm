@@ -355,8 +355,8 @@ final class Scanner
                     );
                 }
 
-                $this->codebase->addGlobalConstantTypes($pool['global_constants']);
-                $this->codebase->functions->addGlobalFunctions($pool['global_functions']);
+                $this->codebase->addGlobalConstantTypes($pool_data['global_constants']);
+                $this->codebase->functions->addGlobalFunctions($pool_data['global_functions']);
             }
         } else {
             foreach ($files_to_scan as $file_path => $_) {
