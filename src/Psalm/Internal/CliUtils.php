@@ -543,7 +543,12 @@ final class CliUtils
         $issues = [];
 
         $major_minor = PHP_VERSION_ID - (PHP_VERSION_ID % 100);
-        foreach ([8_01_31 => '8.1.31', 8_02_27 => '8.2.27', 8_03_16 => '8.3.16', 8_04_03 => '8.4.3'] as $version => $txt) {
+        foreach ([
+            8_01_31 => '8.1.31',
+            8_02_27 => '8.2.27',
+            8_03_16 => '8.3.16',
+            8_04_03 => '8.4.3',
+        ] as $version => $txt) {
             $version_m = $version - ($version % 100);
             if ($version_m === $major_minor) {
                 if (PHP_VERSION_ID < $version) {
