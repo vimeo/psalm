@@ -1284,6 +1284,8 @@ final class Psalm
         if ($config->literal_array_key_check) {
             $project_analyzer->getCodebase()->literal_array_key_check = true;
         }
+        $project_analyzer->getCodebase()->all_constants_global = $config->all_constants_global;
+        $project_analyzer->getCodebase()->all_functions_global = $config->all_functions_global;
 
         if ($config->run_taint_analysis || $run_taint_analysis) {
             $project_analyzer->trackTaintedInputs();

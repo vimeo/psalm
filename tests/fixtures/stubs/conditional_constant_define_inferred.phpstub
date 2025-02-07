@@ -1,6 +1,9 @@
 <?php
 
-if (!defined('CODE_DIR')) {
-   $codeDir = 1;
+/** @return int */
+function getInteger(): int { return 1; }
+
+if (!defined('CODE_DIR') && !defined('PSALM_VERSION')) {
+   $codeDir = getInteger();
    define('CODE_DIR', $codeDir);
 }

@@ -612,7 +612,8 @@ abstract class CallAnalyzer
             } else {
                 IssueBuffer::maybeAdd(
                     new UndefinedFunction(
-                        'Function ' . $cased_function_id . ' does not exist',
+                        'Function ' . $cased_function_id . ' does not exist'
+                            .', consider enabling the allFunctionsGlobal config option if scanning legacy codebases',
                         $code_location,
                         $function_id,
                     ),

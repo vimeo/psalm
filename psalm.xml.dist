@@ -11,6 +11,8 @@
     xsi:schemaLocation="https://getpsalm.org/schema/config config.xsd"
     limitMethodComplexity="true"
     errorBaseline="psalm-baseline.xml"
+    allFunctionsGlobal="true"
+    allConstantsGlobal="true"
     findUnusedPsalmSuppress="true"
     findUnusedBaselineEntry="true"
     findUnusedIssueHandlerSuppression="true"

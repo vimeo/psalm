@@ -38,6 +38,7 @@ use SplObjectStorage;
 use UnexpectedValueException;
 
 use function array_pop;
+use function defined;
 use function end;
 use function explode;
 use function in_array;
@@ -288,7 +289,11 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
 
                 $fq_const_name = Type::getFQCLNFromString($const->name->name, $this->aliases);
 
-                if ($this->codebase->register_stub_files || $this->codebase->register_autoload_files) {
+                if (($this->codebase->register_stub_files
+                    || $this->codebase->register_autoload_files
+                    || $this->codebase->all_constants_global
+                    ) && (!defined($fq_const_name) || !$const_type->isMixed())
+                ) {
                     $this->codebase->addGlobalConstantType($fq_const_name, $const_type);
                 }
 

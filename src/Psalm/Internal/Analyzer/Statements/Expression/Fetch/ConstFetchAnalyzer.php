@@ -106,7 +106,8 @@ final class ConstFetchAnalyzer
                 } elseif ($context->check_consts) {
                     IssueBuffer::maybeAdd(
                         new UndefinedConstant(
-                            'Const ' . $const_name . ' is not defined',
+                            'Const ' . $const_name . ' is not defined'.
+                                ', consider enabling the allConstantsGlobal config option if scanning legacy codebases',
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
                         $statements_analyzer->getSuppressedIssues(),
@@ -151,10 +152,12 @@ final class ConstFetchAnalyzer
             || array_key_exists($const_name, $predefined_constants)
         ) {
             switch ($const_name) {
-                case 'PHP_VERSION':
                 case 'DIRECTORY_SEPARATOR':
                 case 'PATH_SEPARATOR':
                 case 'PHP_EOL':
+                    return Type::getSingleLetter();
+
+                case 'PHP_VERSION':
                     return Type::getNonEmptyString();
 
                 case 'PEAR_EXTENSION_DIR':

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="6.x-dev@897f124d9f0034b025e246809077e828f3537f7f">
+<files psalm-version="6.x-dev@d5ee11cc5a050760e4ac0b0801f43c3780a66fda">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$comment_block->tags['variablesfrom'][0]]]></code>
@@ -61,6 +61,9 @@
     <PossiblyNullReference>
       <code><![CDATA[addAttribute]]></code>
     </PossiblyNullReference>
+    <PossiblyUnusedMethod>
+      <code><![CDATA[hasStubFile]]></code>
+    </PossiblyUnusedMethod>
     <PropertyTypeCoercion>
       <code><![CDATA[$this]]></code>
     </PropertyTypeCoercion>
@@ -1262,7 +1265,6 @@
   <file src="src/Psalm/Internal/Codebase/Scanner.php">
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$composer_file_path]]></code>
-      <code><![CDATA[$function_storage->cased_name]]></code>
       <code><![CDATA[$function_storage->cased_name]]></code>
     </RiskyTruthyFalsyComparison>
   </file>

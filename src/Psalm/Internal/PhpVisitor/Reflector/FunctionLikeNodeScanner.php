@@ -489,7 +489,8 @@ final class FunctionLikeNodeScanner
             && $function_id
             && $storage instanceof FunctionStorage
         ) {
-            if ($this->codebase->register_stub_files
+            if ($this->codebase->all_functions_global
+                || $this->codebase->register_stub_files
                 || ($this->codebase->register_autoload_files
                     && !$this->codebase->functions->hasStubbedFunction($function_id))
             ) {
@@ -914,7 +915,10 @@ final class FunctionLikeNodeScanner
 
             $storage = $this->storage = new FunctionStorage();
 
-            if ($this->codebase->register_stub_files || $this->codebase->register_autoload_files) {
+            if ($this->codebase->register_stub_files
+                || $this->codebase->register_autoload_files
+                || $this->codebase->all_functions_global
+            ) {
                 if (isset($this->file_storage->functions[$function_id])
                     && ($this->codebase->register_stub_files
                         || !$this->codebase->functions->hasStubbedFunction($function_id))

@@ -150,6 +150,10 @@ final class Codebase
      */
     public bool $register_stub_files = false;
 
+    public bool $all_functions_global = false;
+
+    public bool $all_constants_global = false;
+
     public bool $find_unused_variables = false;
 
     public Scanner $scanner;
@@ -583,6 +587,14 @@ final class Codebase
     public function getStubbedConstantType(string $const_id): ?Union
     {
         return self::$stubbed_constants[$const_id] ?? null;
+    }
+
+    /**
+     * @param array<string, Union> $stubs
+     */
+    public function addGlobalConstantTypes(array $stubs): void
+    {
+        self::$stubbed_constants += $stubs;
     }
 
     /**

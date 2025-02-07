@@ -20,7 +20,9 @@ use Psalm\IssueBuffer;
 use Psalm\Progress\Progress;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
+use Psalm\Storage\FunctionStorage;
 use Psalm\Type;
+use Psalm\Type\Union;
 use ReflectionClass;
 use Throwable;
 use UnexpectedValueException;
@@ -78,7 +80,9 @@ use const PHP_EOL;
  *     classlike_storage:array<string, ClassLikeStorage>,
  *     file_storage:array<lowercase-string, FileStorage>,
  *     new_file_content_hashes: array<string, string>,
- *     taint_data: ?TaintFlowGraph
+ *     taint_data: ?TaintFlowGraph,
+ *     global_constants: array<string, Union>,
+ *     global_functions: array<lowercase-string, FunctionStorage>
  * }
  */
 
@@ -352,6 +356,9 @@ final class Scanner
                         $pool_data['new_file_content_hashes'],
                     );
                 }
+
+                $this->codebase->addGlobalConstantTypes($pool_data['global_constants']);
+                $this->codebase->functions->addGlobalFunctions($pool_data['global_functions']);
             }
         } else {
             foreach ($files_to_scan as $file_path => $_) {
@@ -362,27 +369,6 @@ final class Scanner
 
         if ($this->codebase->statements_provider->parser_cache_provider) {
             $this->codebase->statements_provider->parser_cache_provider->saveFileContentHashes();
-        }
-
-        foreach ($files_to_scan as $scanned_file) {
-            if ($this->config->hasStubFile($scanned_file)) {
-                $file_storage = $this->file_storage_provider->get($scanned_file);
-
-                foreach ($file_storage->functions as $function_storage) {
-                    if ($function_storage->cased_name
-                        && !$this->codebase->functions->hasStubbedFunction($function_storage->cased_name)
-                    ) {
-                        $this->codebase->functions->addGlobalFunction(
-                            $function_storage->cased_name,
-                            $function_storage,
-                        );
-                    }
-                }
-
-                foreach ($file_storage->constants as $name => $type) {
-                    $this->codebase->addGlobalConstantType($name, $type);
-                }
-            }
         }
 
         $this->file_reference_provider->addClassLikeFiles($this->classlike_files);
@@ -519,7 +505,9 @@ final class Scanner
                 $this->queueClassLikeForScanning($fq_classlike_name, false, false);
             }
 
-            if ($this->codebase->register_autoload_files) {
+            if ($this->codebase->register_autoload_files
+                || $this->codebase->all_functions_global
+            ) {
                 foreach ($file_storage->functions as $function_storage) {
                     if ($function_storage->cased_name
                         && !$this->codebase->functions->hasStubbedFunction($function_storage->cased_name)
@@ -530,7 +518,10 @@ final class Scanner
                         );
                     }
                 }
-
+            }
+            if ($this->codebase->register_autoload_files
+                || $this->codebase->all_constants_global
+            ) {
                 foreach ($file_storage->constants as $name => $type) {
                     $this->codebase->addGlobalConstantType($name, $type);
                 }

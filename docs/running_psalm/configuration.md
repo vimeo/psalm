@@ -257,6 +257,23 @@ When `true`, Psalm will attempt to find all unused code (including unused variab
 ```
 When `true`, Psalm will emit issues when using literal keys on unshaped arrays (useful to enforce usage of shaped arrays). Defaults to `false`.
 
+#### allFunctionsGlobal
+```xml
+<psalm
+  allFunctionsGlobal="[bool]"
+>
+```
+When `true`, Psalm will treat all functions declared in scanned files as available to all files, even if they aren't loaded by the Composer autoloader (useful for legacy codebases which make heavy use of `require`/`include`, instead of Composer's autoloader). Defaults to `false`.
+
+#### allConstantsGlobal
+```xml
+<psalm
+  allConstantsGlobal="[bool]"
+>
+```
+
+When `true`, Psalm will treat all constants declared in scanned files as available to all files, even if they aren't loaded by the Composer autoloader (useful for legacy codebases which make heavy use of `require`/`include`, instead of Composer's autoloader). Defaults to `false`.
+
 #### findUnusedPsalmSuppress
 ```xml
 <psalm
