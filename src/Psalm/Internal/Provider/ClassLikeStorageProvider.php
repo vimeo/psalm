@@ -121,8 +121,9 @@ final class ClassLikeStorageProvider
                     //$storage->file_storage->has_visitor_issues = true;
 
                     $duplicate_storage->has_visitor_issues = true;
+
+                    continue;
                 }
-                continue;
             }
             self::$new_storage[$k] = $storage;
             self::$storage[$k] = $storage;
