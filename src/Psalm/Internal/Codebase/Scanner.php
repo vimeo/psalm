@@ -20,7 +20,9 @@ use Psalm\IssueBuffer;
 use Psalm\Progress\Progress;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
+use Psalm\Storage\FunctionStorage;
 use Psalm\Type;
+use Psalm\Type\Union;
 use ReflectionClass;
 use Throwable;
 use UnexpectedValueException;
@@ -80,7 +82,7 @@ use const PHP_EOL;
  *     new_file_content_hashes: array<string, string>,
  *     taint_data: ?TaintFlowGraph,
  *     global_constants: array<string, Union>,
- *     global_functions: array<string, FunctionStorage>
+ *     global_functions: array<lowercase-string, FunctionStorage>
  * }
  */
 
