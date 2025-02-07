@@ -151,10 +151,12 @@ final class ConstFetchAnalyzer
             || array_key_exists($const_name, $predefined_constants)
         ) {
             switch ($const_name) {
-                case 'PHP_VERSION':
                 case 'DIRECTORY_SEPARATOR':
                 case 'PATH_SEPARATOR':
                 case 'PHP_EOL':
+                    return Type::getSingleLetter();
+
+                case 'PHP_VERSION':
                     return Type::getNonEmptyString();
 
                 case 'PEAR_EXTENSION_DIR':
