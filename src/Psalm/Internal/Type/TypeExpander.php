@@ -673,7 +673,18 @@ final class TypeExpander
             }
             $return_type = $return_type->setIntersectionTypes($return_type_types)
                 ->setIsStatic(true, true);
-        } elseif ($return_type->is_static && is_string($static_class_type) && $final) {
+        } elseif ($return_type->is_static
+            && is_string($static_class_type)
+            && $final
+            && (
+                $return_type->value === $self_class
+                || ($self_class !== null &&
+                    ($codebase->classExtends($return_type->value, $self_class)
+                        || $codebase->classExtends($self_class, $return_type->value)
+                    )
+                )
+            )
+        ) {
             $return_type = $return_type->setValueIsStatic(
                 $static_class_type,
                 false,
