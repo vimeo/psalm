@@ -191,7 +191,7 @@ final class ExpressionScanner
                     if (($codebase->register_stub_files
                         || $codebase->register_autoload_files
                         || $codebase->all_constants_global
-                        ) && (!defined($const_name) || $const_type->isMixed())
+                        ) && (!defined($const_name) || !$const_type->isMixed())
                     ) {
                         $codebase->addGlobalConstantType($const_name, $const_type);
                     }
