@@ -1029,7 +1029,7 @@ class ReportOutputTest extends TestCase
             ERROR: MixedReturnStatement - somefile.php:3:10 - Could not infer a return type (see https://psalm.dev/138)
 
 
-            ERROR: UndefinedConstant - somefile.php:8:6 - Const CHANGE_ME is not defined (see https://psalm.dev/020)
+            ERROR: UndefinedConstant - somefile.php:8:6 - Const CHANGE_ME is not defined, consider enabling the allConstantsGlobal config option if scanning legacy codebases (see https://psalm.dev/020)
 
 
             INFO: PossiblyUndefinedGlobalVariable - somefile.php:17:6 - Possibly undefined global variable $a, first seen on line 11 (see https://psalm.dev/126)
@@ -1087,14 +1087,15 @@ class ReportOutputTest extends TestCase
             <<<'EOF'
             FILE: somefile.php
 
-            +----------+------+---------------------------------+--------------------------------------------------------------+
-            | SEVERITY | LINE | ISSUE                           | DESCRIPTION                                                  |
-            +----------+------+---------------------------------+--------------------------------------------------------------+
-            | ERROR    | 3    | UndefinedVariable               | Cannot find referenced variable $as_you_____type             |
-            | ERROR    | 3    | MixedReturnStatement            | Could not infer a return type                                |
-            | ERROR    | 8    | UndefinedConstant               | Const CHANGE_ME is not defined, consider enabling the allConstantsGlobal config option if scanning legacy codebases |
-            | INFO     | 17   | PossiblyUndefinedGlobalVariable | Possibly undefined global variable $a, first seen on line 11 |
-            +----------+------+---------------------------------+--------------------------------------------------------------+
+            +----------+------+---------------------------------+------------------------------------------------------------------------+
+            | SEVERITY | LINE | ISSUE                           | DESCRIPTION                                                            |
+            +----------+------+---------------------------------+------------------------------------------------------------------------+
+            | ERROR    | 3    | UndefinedVariable               | Cannot find referenced variable $as_you_____type                       |
+            | ERROR    | 3    | MixedReturnStatement            | Could not infer a return type                                          |
+            | ERROR    | 8    | UndefinedConstant               | Const CHANGE_ME is not defined, consider enabling the allConstantsGlob |
+            |          |      |                                 | al config option if scanning legacy codebases                          |
+            | INFO     | 17   | PossiblyUndefinedGlobalVariable | Possibly undefined global variable $a, first seen on line 11           |
+            +----------+------+---------------------------------+------------------------------------------------------------------------+
 
             EOF,
             $this->toUnixLineEndings(IssueBuffer::getOutput(IssueBuffer::getIssuesData(), $compact_report_options)),
