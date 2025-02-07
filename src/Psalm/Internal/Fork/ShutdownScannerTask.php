@@ -47,6 +47,8 @@ final class ShutdownScannerTask implements Task
                 ? $statements_provider->parser_cache_provider->getNewFileContentHashes()
                 : [],
             'taint_data' => $codebase->taint_flow_graph,
+            'global_constants' => $codebase->getAllStubbedConstants(),
+            'global_functions' => $codebase->functions->getAllStubbedFunctions(),
         ];
     }
 }

@@ -592,6 +592,14 @@ final class Codebase
     /**
      * @return array<string, Union>
      */
+    public function addGlobalConstantTypes(array $stubs): void
+    {
+        self::$stubbed_constants += $stubs;
+    }
+
+    /**
+     * @return array<string, Union>
+     */
     public function getAllStubbedConstants(): array
     {
         return self::$stubbed_constants;

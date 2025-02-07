@@ -153,6 +153,14 @@ final class Functions
         self::$stubbed_functions[strtolower($function_id)] = $storage;
     }
 
+    /**
+     * @return array<string, FunctionStorage>
+     */
+    public function addGlobalFunctions(array $stubs): void
+    {
+        self::$stubbed_functions += $stubs;
+    }
+
     public function hasStubbedFunction(string $function_id): bool
     {
         return isset(self::$stubbed_functions[strtolower($function_id)]);
