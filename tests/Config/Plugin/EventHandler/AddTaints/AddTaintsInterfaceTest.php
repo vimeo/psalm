@@ -368,4 +368,40 @@ class AddTaintsInterfaceTest extends TestCase
 
         $this->analyzeFile($file_path, new Context());
     }
+
+    public function testAddTaintsActiveRecordListItem(): void
+    {
+        $this->setupProjectAnalyzerWithActiveRecordPlugin();
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php // --taint-analysis
+
+            namespace app\models;
+
+            class User {
+                public $name;
+
+                /**
+                 * @psalm-return list<User>
+                 */
+                public static function findAll(): array {
+                    $mockUser = new self();
+                    $mockUser->name = "<h1>Micky Mouse</h1>";
+
+                    return [$mockUser];
+                }
+            }
+
+            $users = User::findAll();
+            echo $users[0]->name;
+            ',
+        );
+
+        $this->expectTaintedHtml();
+
+        $this->analyzeFile($file_path, new Context());
+    }
 }

@@ -2,6 +2,7 @@
 
 namespace Psalm\Example\Plugin;
 
+use PhpParser\Node\ArrayItem;
 use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Expr;
 use Psalm\Plugin\EventHandler\AddTaintsInterface;
@@ -68,7 +69,6 @@ class TaintActiveRecords implements AddTaintsInterface
             return false;
         }
 
-
         return strpos($type->value, 'app\models\\') === 0;
     }
 
@@ -76,7 +76,7 @@ class TaintActiveRecords implements AddTaintsInterface
     /**
      * Return next node that should be followed for active record search
      */
-    private static function getParentNode(Expr $expr): ?Expr
+    private static function getParentNode(ArrayItem|Expr $expr): ?Expr
     {
         // Model properties are always accessed by a property fetch
         if ($expr instanceof PropertyFetch) {
