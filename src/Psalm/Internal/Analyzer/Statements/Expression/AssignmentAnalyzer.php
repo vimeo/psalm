@@ -610,7 +610,7 @@ final class AssignmentAnalyzer
         ?Union &$comment_type,
         ?DocblockTypeLocation &$comment_type_location,
         array $not_ignored_docblock_var_ids,
-        array &$removed_taints
+        array &$removed_taints,
     ): void {
         if (!$doc_comment) {
             return;
@@ -1697,7 +1697,7 @@ final class AssignmentAnalyzer
         Union $assign_value_type,
         ?string $var_id,
         Context $context,
-        array $removed_taints
+        array $removed_taints,
     ): void {
         if (is_string($assign_var->name)) {
             if ($var_id) {
@@ -1845,7 +1845,7 @@ final class AssignmentAnalyzer
         PhpParser\Node\Expr $assign_var,
         ?string $extended_var_id,
         Union $assign_value_type,
-        Context $context
+        Context $context,
     ): Union {
         if ($extended_var_id) {
             $assignment_node = DataFlowNode::getForAssignment(
@@ -1882,7 +1882,7 @@ final class AssignmentAnalyzer
         Union &$assign_value_type,
         string $var_id,
         Context $context,
-        array $removed_taints
+        array $removed_taints,
     ): void {
         if (!$statements_analyzer->data_flow_graph
             || !$context->vars_in_scope[$var_id]->parent_nodes) {

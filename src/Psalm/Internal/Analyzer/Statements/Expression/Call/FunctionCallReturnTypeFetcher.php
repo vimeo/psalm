@@ -743,7 +743,7 @@ final class FunctionCallReturnTypeFetcher
     public static function taintUsingStorage(
         FunctionLikeStorage $function_storage,
         TaintFlowGraph $graph,
-        DataFlowNode $function_call_node
+        DataFlowNode $function_call_node,
     ): void {
         // Docblock-defined taints should override inherited
         $added_taints = [];

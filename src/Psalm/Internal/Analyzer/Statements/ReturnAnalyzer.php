@@ -583,7 +583,7 @@ final class ReturnAnalyzer
         string $cased_method_id,
         Union $inferred_type,
         FunctionLikeStorage $storage,
-        Context $context
+        Context $context,
     ): void {
         if (!$statements_analyzer->data_flow_graph instanceof TaintFlowGraph
             || !$stmt->expr
