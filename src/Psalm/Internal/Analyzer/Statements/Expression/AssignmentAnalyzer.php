@@ -1689,9 +1689,6 @@ final class AssignmentAnalyzer
         }
     }
 
-    /**
-     * @param list<string> $removed_taints
-     */
     private static function analyzeAssignmentToVariable(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
