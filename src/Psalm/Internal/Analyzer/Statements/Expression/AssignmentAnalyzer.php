@@ -537,7 +537,6 @@ final class AssignmentAnalyzer
                 $assign_value_type,
                 $var_id,
                 $context,
-                $removed_taints,
             );
         } elseif ($assign_var instanceof PhpParser\Node\Expr\List_
             || $assign_var instanceof PhpParser\Node\Expr\Array_
@@ -597,7 +596,7 @@ final class AssignmentAnalyzer
     }
 
     /**
-     * @param array<string> $removed_taints
+     * @param list<string> $removed_taints
      */
     private static function analyzeDocComment(
         StatementsAnalyzer $statements_analyzer,
@@ -641,6 +640,8 @@ final class AssignmentAnalyzer
                     new CodeLocation($statements_analyzer->getSource(), $assign_var),
                 ),
             );
+
+            return;
         } catch (DocblockParseException $e) {
             IssueBuffer::maybeAdd(
                 new InvalidDocblock(
@@ -648,6 +649,8 @@ final class AssignmentAnalyzer
                     new CodeLocation($statements_analyzer->getSource(), $assign_var),
                 ),
             );
+
+            return;
         }
 
         foreach ($var_comments as $var_comment) {
@@ -784,8 +787,8 @@ final class AssignmentAnalyzer
     }
 
     /**
-     * @param  array<string> $removed_taints
-     * @param  array<string> $added_taints
+     * @param list<string> $removed_taints
+     * @param list<string> $added_taints
      */
     private static function taintAssignment(
         Union &$type,
@@ -1697,7 +1700,6 @@ final class AssignmentAnalyzer
         Union $assign_value_type,
         ?string $var_id,
         Context $context,
-        array $removed_taints,
     ): void {
         if (is_string($assign_var->name)) {
             if ($var_id) {
@@ -1769,7 +1771,6 @@ final class AssignmentAnalyzer
                         }
                     }
                 }
-
 
                 if (isset($context->references_possibly_from_confusing_scope[$var_id])) {
                     IssueBuffer::maybeAdd(
@@ -1872,7 +1873,7 @@ final class AssignmentAnalyzer
     }
 
     /**
-     * @var array<string> $removed_taints
+     * @param list<string> $removed_taints
      */
     private static function analyzeAssignValueDataFlow(
         StatementsAnalyzer $statements_analyzer,

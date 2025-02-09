@@ -984,7 +984,7 @@ final class AtomicPropertyFetchAnalyzer
 
         $type = $type->setParentNodes([$localized_property_node->id => $localized_property_node], true);
 
-        $taints = array_diff($added_taints, $removed_taints);
+        $taints = array_diff($added_taints ?? [], $removed_taints ?? []);
         if ($taints !== [] && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
             $taint_source = TaintSource::fromNode($localized_property_node);
             $taint_source->taints = $taints;

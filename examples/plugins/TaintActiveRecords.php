@@ -27,6 +27,12 @@ class TaintActiveRecords implements AddTaintsInterface
     public static function addTaints(AddRemoveTaintsEvent $event): array
     {
         $expr = $event->getExpr();
+
+        // Model properties are accessed by property fetch, so abort here
+        if ($expr instanceof ArrayItem) {
+            return [];
+        }
+
         $statements_source = $event->getStatementsSource();
 
         // For all property fetch expressions, walk through the full fetch path
