@@ -162,6 +162,7 @@ final class AssignmentAnalyzer
             $var_id,
             $assign_value_type,
             $doc_comment,
+            $var_comments,
             $comment_type,
             $comment_type_location,
             $not_ignored_docblock_var_ids,
@@ -596,6 +597,7 @@ final class AssignmentAnalyzer
     }
 
     /**
+     * @param list<VarDocblockComment> $var_comments
      * @param list<string> $removed_taints
      */
     private static function analyzeDocComment(
@@ -606,6 +608,7 @@ final class AssignmentAnalyzer
         ?string $var_id,
         ?Union $assign_value_type,
         ?Doc $doc_comment,
+        array &$var_comments,
         ?Union &$comment_type,
         ?DocblockTypeLocation &$comment_type_location,
         array $not_ignored_docblock_var_ids,
