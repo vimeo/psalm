@@ -945,7 +945,7 @@ class PluginTest extends TestCase
 
         $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -1003,7 +1003,7 @@ class PluginTest extends TestCase
 
         $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,

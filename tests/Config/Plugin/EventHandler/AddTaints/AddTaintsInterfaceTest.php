@@ -116,7 +116,7 @@ class AddTaintsInterfaceTest extends TestCase
     {
         $this->setupProjectAnalyzerWithTaintBadDataPlugin();
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -135,7 +135,7 @@ class AddTaintsInterfaceTest extends TestCase
     {
         $this->setupProjectAnalyzerWithTaintBadDataPlugin();
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -155,7 +155,7 @@ class AddTaintsInterfaceTest extends TestCase
     {
         $this->setupProjectAnalyzerWithTaintBadDataPlugin();
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -177,7 +177,7 @@ class AddTaintsInterfaceTest extends TestCase
     {
         $this->setupProjectAnalyzerWithTaintBadDataPlugin();
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -200,7 +200,7 @@ class AddTaintsInterfaceTest extends TestCase
     {
         $this->setupProjectAnalyzerWithTaintBadDataPlugin();
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         // Test that taints are merged and not replaced by later return stmts
         $this->addFile(
@@ -228,7 +228,7 @@ class AddTaintsInterfaceTest extends TestCase
     {
         $this->setupProjectAnalyzerWithTaintBadDataPlugin();
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -254,7 +254,7 @@ class AddTaintsInterfaceTest extends TestCase
     {
         $this->setupProjectAnalyzerWithTaintBadDataPlugin();
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -279,7 +279,7 @@ class AddTaintsInterfaceTest extends TestCase
     {
         $this->setupProjectAnalyzerWithTaintBadDataPlugin();
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -310,7 +310,7 @@ class AddTaintsInterfaceTest extends TestCase
     {
         $this->setupProjectAnalyzerWithActiveRecordPlugin();
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -336,7 +336,7 @@ class AddTaintsInterfaceTest extends TestCase
     {
         $this->setupProjectAnalyzerWithActiveRecordPlugin();
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
