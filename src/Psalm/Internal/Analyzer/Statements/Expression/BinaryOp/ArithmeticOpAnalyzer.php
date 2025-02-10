@@ -823,6 +823,8 @@ final class ArithmeticOpAnalyzer
                             }
                         }
                     } elseif ($parent instanceof VirtualPlus || $parent instanceof VirtualMinus) {
+                        // This seems arbitrary defined as 1/-1, to facilitate loops
+                        // and may need a better handling if there's issues
                         $sum = $parent instanceof VirtualPlus ? 1 : -1;
                         if ($context && $context->inside_loop && $left_type_part instanceof TLiteralInt) {
                             if ($parent instanceof VirtualPlus) {
