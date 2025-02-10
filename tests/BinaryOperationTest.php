@@ -592,6 +592,44 @@ class BinaryOperationTest extends TestCase
                     '$b' => 'float',
                 ],
             ],
+            'intArithmeticAssignmentAdditionFromFunction' => [
+                'code' => '<?php
+                    function intFunc(): int {
+                        return 5;
+                    }
+                    $a = 1;
+                    $a += intFunc();',
+                'assertions' => [
+                    '$a===' => 'int',
+                ],
+            ],
+            'intArithmeticAssignmentAddition' => [
+                'code' => '<?php
+                    $a = 1;
+                    $a += 5;',
+                'assertions' => [
+                    '$a===' => '6',
+                ],
+            ],
+            'intArithmeticAssignmentSubtractionFromFunction' => [
+                'code' => '<?php
+                    function intFunc(): int {
+                        return 5;
+                    }
+                    $a = 8;
+                    $a -= intFunc();',
+                'assertions' => [
+                    '$a===' => 'int',
+                ],
+            ],
+            'intArithmeticAssignmentSubtraction' => [
+                'code' => '<?php
+                    $a = 8;
+                    $a -= 5;',
+                'assertions' => [
+                    '$a===' => '3',
+                ],
+            ],
             'exponent' => [
                 'code' => '<?php
                     $b = 4 ** 5;',

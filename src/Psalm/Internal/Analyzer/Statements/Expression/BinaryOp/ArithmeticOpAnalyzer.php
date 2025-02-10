@@ -823,6 +823,8 @@ final class ArithmeticOpAnalyzer
                             }
                         }
                     } elseif ($parent instanceof VirtualPlus || $parent instanceof VirtualMinus) {
+                        // This seems arbitrary defined as 1/-1, to facilitate loops
+                        // and may need a better handling if there's issues
                         $sum = $parent instanceof VirtualPlus ? 1 : -1;
                         if ($context && $context->inside_loop && $left_type_part instanceof TLiteralInt) {
                             if ($parent instanceof VirtualPlus) {
@@ -831,7 +833,11 @@ final class ArithmeticOpAnalyzer
                                 $new_type = new TIntRange(null, $left_type_part->value + $sum);
                             }
                         } elseif ($left_type_part instanceof TLiteralInt) {
-                            $new_type = new TLiteralInt($left_type_part->value + $sum);
+                            if ($context && $context->inside_assignment) {
+                                $new_type = new TInt();
+                            } else {
+                                $new_type = new TLiteralInt($left_type_part->value + $sum);
+                            }
                         } elseif ($left_type_part instanceof TIntRange) {
                             $start = $left_type_part->min_bound === null ? null : $left_type_part->min_bound + $sum;
                             $end = $left_type_part->max_bound === null ? null : $left_type_part->max_bound + $sum;
