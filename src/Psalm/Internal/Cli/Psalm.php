@@ -91,7 +91,6 @@ use const JSON_THROW_ON_ERROR;
 use const LC_CTYPE;
 use const PHP_EOL;
 use const PHP_URL_SCHEME;
-use const PHP_VERSION_ID;
 use const STDERR;
 
 // phpcs:disable PSR1.Files.SideEffects
@@ -964,11 +963,6 @@ final class Psalm
             'uv',
         ]);
 
-        $skipJit = defined('PHP_WINDOWS_VERSION_MAJOR') && PHP_VERSION_ID < PsalmRestarter::MIN_PHP_VERSION_WINDOWS_JIT;
-        if ($skipJit) {
-            $ini_handler->disableExtensions(['opcache', 'Zend OPcache']);
-        }
-
         // If Xdebug is enabled, restart without it
         $ini_handler->check();
 
@@ -986,17 +980,10 @@ final class Psalm
                     . PHP_EOL . PHP_EOL);
             }
         } else {
-            if ($skipJit) {
-                $progress->write(PHP_EOL
-                    . 'JIT acceleration: OFF (disabled on Windows and PHP < 8.4)' . PHP_EOL
-                    . 'Install PHP 8.4+ to make use of JIT on Windows for a 20%+ performance boost!'
-                    . PHP_EOL . PHP_EOL);
-            } else {
-                $progress->write(PHP_EOL
-                    . 'JIT acceleration: OFF (opcache not installed or not enabled)' . PHP_EOL
-                    . 'Install and enable the opcache extension to make use of JIT for a 20%+ performance boost!'
-                    . PHP_EOL . PHP_EOL);
-            }
+            $progress->write(PHP_EOL
+                . 'JIT acceleration: OFF (opcache not installed or not enabled)' . PHP_EOL
+                . 'Install and enable the opcache extension to make use of JIT for a 20%+ performance boost!'
+                . PHP_EOL . PHP_EOL);
         }
         if (isset($options['force-jit']) && !$hasJit) {
             $progress->write('Exiting because JIT was requested but is not available.' . PHP_EOL . PHP_EOL);
