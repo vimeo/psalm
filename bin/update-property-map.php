@@ -11,7 +11,6 @@ declare(strict_types=1);
 //
 // What we are currently missing is properly parsing of <xi:include> directives.
 
-use PhpParser\Lexer\Emulative;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\Namespace_;
 use PhpParser\NodeTraverser;
@@ -29,11 +28,7 @@ foreach ([__DIR__ . '/../../../autoload.php', __DIR__ . '/../vendor/autoload.php
     }
 }
 
-$lexer = new Emulative();
-$parser = (new ParserFactory)->create(
-    ParserFactory::PREFER_PHP7,
-    $lexer,
-);
+$parser = (new ParserFactory)->createForNewestSupportedVersion();
 $traverser = new NodeTraverser();
 $traverser->addVisitor(new NameResolver);
 
@@ -117,7 +112,11 @@ foreach ($files as $file) {
     $simple->registerXPathNamespace('docbook', 'http://docbook.org/ns/docbook');
     foreach ($simple->xpath('//docbook:classsynopsis') as $classSynopsis) {
         $classSynopsis->registerXPathNamespace('docbook', 'http://docbook.org/ns/docbook');
-        $class = strtolower((string) $classSynopsis->xpath('./docbook:ooclass/docbook:classname')[0]);
+        try {
+            $class = strtolower((string) $classSynopsis->xpath('./docbook:ooclass/docbook:classname')[0]);
+        } catch (Throwable) {
+            continue;
+        }
         if (isset($stubbedClasses[$class])) {
             continue;
         }

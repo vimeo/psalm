@@ -422,7 +422,7 @@ function fclose(&$stream) : bool
  * @param T $string
  * @return (T is non-empty-string ? non-empty-string : string)
  */
-function sodium_bin2base64(string $string, int $id): string
+function sodium_bin2base64(string $string, int $id): string {}
 
 /**
  * @psalm-pure
