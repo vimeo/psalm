@@ -70,8 +70,8 @@ final class LanguageClient
                     /** @var object $config */
                     [$config] = $this->workspace->requestConfiguration('psalm');
                     $this->configurationRefreshed((array) $config);
-                } catch (Throwable) {
-                    $this->server->logError('There was an error getting configuration');
+                } catch (Throwable $e) {
+                    $this->server->logError('There was an error getting configuration: ' . $e->getMessage());
                 }
             });
         }

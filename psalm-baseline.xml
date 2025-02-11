@@ -1426,14 +1426,6 @@
       <code><![CDATA[$findUnusedVariables]]></code>
     </PossiblyUnusedProperty>
   </file>
-  <file src="src/Psalm/Internal/LanguageServer/LanguageClient.php">
-    <InvalidArrayAccess>
-      <code><![CDATA[$config]]></code>
-    </InvalidArrayAccess>
-    <InvalidArrayOffset>
-      <code><![CDATA[[$config]]]></code>
-    </InvalidArrayOffset>
-  </file>
   <file src="src/Psalm/Internal/LanguageServer/LanguageServer.php">
     <MixedAssignment>
       <code><![CDATA[$result]]></code>

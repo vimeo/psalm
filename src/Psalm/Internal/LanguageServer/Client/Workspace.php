@@ -30,11 +30,11 @@ final class Workspace
      * @param string $section The configuration section asked for.
      * @param string|null $scopeUri The scope to get the configuration section for.
      */
-    public function requestConfiguration(string $section, ?string $scopeUri = null): object
+    public function requestConfiguration(string $section, ?string $scopeUri = null): array
     {
         $this->server->logDebug("workspace/configuration");
 
-        /** @var object */
+        /** @var array */
         return $this->handler->request('workspace/configuration', [
             'items' => [
                 [
