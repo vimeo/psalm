@@ -180,6 +180,8 @@ final class ClassLikeStorage implements HasAttributesInterface
      */
     public array $pseudo_static_methods = [];
 
+    public bool $has_children = false;
+
     /**
      * Maps pseudo method names to the original declaring method identifier
      * The key is the method name in lowercase, and the value is the original `MethodIdentifier` instance

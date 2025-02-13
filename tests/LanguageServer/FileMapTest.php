@@ -17,7 +17,7 @@ use Psalm\Tests\TestConfig;
 
 use function count;
 
-class FileMapTest extends TestCase
+final class FileMapTest extends TestCase
 {
     protected Codebase $codebase;
 

@@ -11,7 +11,7 @@ use function realpath;
 
 use const DIRECTORY_SEPARATOR;
 
-class CliUtilsTest extends TestCase
+final class CliUtilsTest extends TestCase
 {
     /**
      * @var list<string>

@@ -9,7 +9,7 @@ use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use const DIRECTORY_SEPARATOR;
 
-class SwitchTypeTest extends TestCase
+final class SwitchTypeTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;

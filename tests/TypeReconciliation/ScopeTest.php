@@ -10,7 +10,7 @@ use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use const DIRECTORY_SEPARATOR;
 
-class ScopeTest extends TestCase
+final class ScopeTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;

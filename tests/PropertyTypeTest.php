@@ -13,7 +13,7 @@ use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use const DIRECTORY_SEPARATOR;
 
-class PropertyTypeTest extends TestCase
+final class PropertyTypeTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;

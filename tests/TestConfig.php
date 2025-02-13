@@ -11,7 +11,7 @@ use SimpleXMLElement;
 
 use function getcwd;
 
-class TestConfig extends Config
+final class TestConfig extends Config
 {
     private static ?ProjectFileFilter $cached_project_files = null;
 

@@ -10,7 +10,7 @@ use Psalm\Test\Config\Plugin\Hook\FooMethodProvider;
 use SimpleXMLElement;
 
 /** @psalm-suppress UnusedClass */
-class MethodPlugin implements PluginEntryPointInterface
+final class MethodPlugin implements PluginEntryPointInterface
 {
     public function __invoke(RegistrationInterface $registration, ?SimpleXMLElement $config = null): void
     {

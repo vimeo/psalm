@@ -36,7 +36,7 @@ use const PHP_BINARY;
  *
  * This is primarily intended to test the code in `psalm`, `src/psalm.php` and related files.
  */
-class PsalmEndToEndTest extends TestCase
+final class PsalmEndToEndTest extends TestCase
 {
     use PsalmRunnerTrait;
 

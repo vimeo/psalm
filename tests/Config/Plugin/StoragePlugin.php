@@ -10,7 +10,7 @@ use Psalm\Tests\Config\Plugin\Hook\CustomArrayMapFunctionStorageProvider;
 use SimpleXMLElement;
 
 /** @psalm-suppress UnusedClass */
-class StoragePlugin implements PluginEntryPointInterface
+final class StoragePlugin implements PluginEntryPointInterface
 {
     public function __invoke(RegistrationInterface $registration, ?SimpleXMLElement $config = null): void
     {

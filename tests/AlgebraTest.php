@@ -25,7 +25,7 @@ use Psalm\Type\Atomic\TString;
 
 use function spl_object_id;
 
-class AlgebraTest extends TestCase
+final class AlgebraTest extends TestCase
 {
     public function testNegateFormula(): void
     {

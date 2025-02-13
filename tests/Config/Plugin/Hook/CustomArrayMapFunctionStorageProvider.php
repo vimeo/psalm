@@ -19,7 +19,7 @@ use function array_keys;
 use function array_map;
 use function count;
 
-class CustomArrayMapFunctionStorageProvider implements DynamicFunctionStorageProviderInterface
+final class CustomArrayMapFunctionStorageProvider implements DynamicFunctionStorageProviderInterface
 {
     public static function getFunctionIds(): array
     {

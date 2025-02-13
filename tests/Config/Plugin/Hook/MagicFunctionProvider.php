@@ -14,7 +14,7 @@ use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
 use Psalm\Type\Union;
 
-class MagicFunctionProvider implements
+final class MagicFunctionProvider implements
     FunctionExistenceProviderInterface,
     FunctionParamsProviderInterface,
     FunctionReturnTypeProviderInterface

@@ -14,7 +14,7 @@ use Psalm\Tests\TestConfig;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
-class ValueTest extends TestCase
+final class ValueTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;

@@ -7,7 +7,7 @@ namespace Psalm\Tests;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
-class DocblockInheritanceTest extends TestCase
+final class DocblockInheritanceTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;

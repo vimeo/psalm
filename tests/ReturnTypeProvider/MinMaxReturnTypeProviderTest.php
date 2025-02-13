@@ -7,7 +7,7 @@ namespace Psalm\Tests\ReturnTypeProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
-class MinMaxReturnTypeProviderTest extends TestCase
+final class MinMaxReturnTypeProviderTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
 

@@ -12,7 +12,7 @@ use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use const DIRECTORY_SEPARATOR;
 
-class ArrayAccessTest extends TestCase
+final class ArrayAccessTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;

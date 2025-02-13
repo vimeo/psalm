@@ -9,7 +9,7 @@ use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use const DIRECTORY_SEPARATOR;
 
-class BasenameTest extends TestCase
+final class BasenameTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
 

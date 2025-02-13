@@ -7,7 +7,7 @@ namespace Psalm\Tests;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
-class ClassLoadOrderTest extends TestCase
+final class ClassLoadOrderTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;

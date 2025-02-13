@@ -10,7 +10,7 @@ use Psalm\Test\Config\Plugin\Hook\MagicFunctionProvider;
 use SimpleXMLElement;
 
 /** @psalm-suppress UnusedClass */
-class FunctionPlugin implements PluginEntryPointInterface
+final class FunctionPlugin implements PluginEntryPointInterface
 {
     public function __invoke(RegistrationInterface $registration, ?SimpleXMLElement $config = null): void
     {

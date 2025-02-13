@@ -7,7 +7,7 @@ namespace Psalm\Tests;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
-class PureCallableTest extends TestCase
+final class PureCallableTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;

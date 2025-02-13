@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\FileManipulation;
 
-class MissingReturnTypeTest extends FileManipulationTestCase
+final class MissingReturnTypeTest extends FileManipulationTestCase
 {
     public function providerValidCodeParse(): array
     {

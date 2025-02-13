@@ -1,7 +1,7 @@
 <?php
 
 /** @psalm-stub-override */
-class Exception
+final class Exception
 {
     /** @psalm-stub-override */
     public function foobarIt(): void

@@ -1,7 +1,7 @@
 <?php
 namespace ClassAliasStubTest;
 
-class A
+final class A
 {
     /**
      * @var string
@@ -22,8 +22,8 @@ interface I
 {
 }
 
-class_alias('ClassAliasStubTest\\A', 'ClassAliasStubTest\\B');
-class_alias(A::class, C::class);
+final class_alias('ClassAliasStubTest\\A', 'ClassAliasStubTest\\B');
+final class_alias(A::class, C::class);
 
 $arr = [
     [A::class, D::class],

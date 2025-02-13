@@ -47,7 +47,7 @@ use function unlink;
 
 use const DIRECTORY_SEPARATOR;
 
-class ConfigTest extends TestCase
+final class ConfigTest extends TestCase
 {
     protected static TestConfig $config;
 

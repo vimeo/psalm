@@ -8,7 +8,7 @@ use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
-class KeyOfTemplateTest extends TestCase
+final class KeyOfTemplateTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;

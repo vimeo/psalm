@@ -11,7 +11,7 @@ use function dirname;
 
 use const DIRECTORY_SEPARATOR;
 
-class CreatorTest extends TestCase
+final class CreatorTest extends TestCase
 {
     public static function setUpBeforeClass(): void
     {

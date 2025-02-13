@@ -7,7 +7,7 @@ namespace Psalm\Tests;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
-class CoreStubsTest extends TestCase
+final class CoreStubsTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;

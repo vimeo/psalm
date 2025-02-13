@@ -22,7 +22,7 @@ use function preg_quote;
 
 use const DIRECTORY_SEPARATOR;
 
-class ErrorAfterUpdateTest extends TestCase
+final class ErrorAfterUpdateTest extends TestCase
 {
     public function setUp(): void
     {

@@ -9,7 +9,7 @@ use Psalm\Plugin\EventHandler\BeforeFileAnalysisInterface;
 use Psalm\Plugin\EventHandler\Event\AfterFileAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\BeforeFileAnalysisEvent;
 
-class FileProvider implements
+final class FileProvider implements
     AfterFileAnalysisInterface,
     BeforeFileAnalysisInterface
 {

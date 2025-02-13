@@ -3,7 +3,7 @@ namespace Foo;
 
 const BAR = 'bat';
 
-class SystemClass
+final class SystemClass
 {
     const HELLO = 'hello';
 

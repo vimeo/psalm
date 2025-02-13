@@ -10,7 +10,7 @@ use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use const DIRECTORY_SEPARATOR;
 
-class RedundantConditionTest extends TestCase
+final class RedundantConditionTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;

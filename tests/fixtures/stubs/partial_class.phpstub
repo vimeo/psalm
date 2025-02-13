@@ -1,7 +1,7 @@
 <?php
 namespace Foo;
 
-class PartiallyStubbedClass
+final class PartiallyStubbedClass
 {
     /**
      * @param class-string    $a

@@ -10,7 +10,7 @@ use UnexpectedValueException;
 
 use function strtolower;
 
-class ClassLikeStorageInstanceCacheProvider extends ClassLikeStorageCacheProvider
+final class ClassLikeStorageInstanceCacheProvider extends ClassLikeStorageCacheProvider
 {
     /** @var array<lowercase-string, ClassLikeStorage> */
     private array $cache = [];

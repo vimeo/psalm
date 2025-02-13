@@ -1,6 +1,6 @@
 <?php
 
-class DomainException extends LogicException
+final class DomainException extends LogicException
 {
     /**
      * Construct the exception. Note: The message is NOT binary safe.

@@ -32,7 +32,7 @@ use const SORT_STRING;
 /**
  * @internal
  */
-class ArrayMultisortParamsProvider implements FunctionParamsProviderInterface
+final class ArrayMultisortParamsProvider implements FunctionParamsProviderInterface
 {
     /**
      * @return array<lowercase-string>

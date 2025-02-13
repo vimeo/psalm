@@ -7,7 +7,7 @@ namespace Psalm\Tests;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
-class EnumTest extends TestCase
+final class EnumTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;

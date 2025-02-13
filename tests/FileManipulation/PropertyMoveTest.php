@@ -15,7 +15,7 @@ use Psalm\Tests\TestConfig;
 
 use function strpos;
 
-class PropertyMoveTest extends TestCase
+final class PropertyMoveTest extends TestCase
 {
     protected ProjectAnalyzer $project_analyzer;
 

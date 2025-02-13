@@ -15,7 +15,7 @@ use function getcwd;
 
 use const DIRECTORY_SEPARATOR;
 
-class IssueSuppressionTest extends TestCase
+final class IssueSuppressionTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;

@@ -10,7 +10,7 @@ use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use const PHP_VERSION_ID;
 
-class DateTimeTest extends TestCase
+final class DateTimeTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
 

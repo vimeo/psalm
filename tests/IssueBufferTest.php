@@ -17,7 +17,7 @@ use function microtime;
 use function ob_get_clean;
 use function ob_start;
 
-class IssueBufferTest extends TestCase
+final class IssueBufferTest extends TestCase
 {
 
     public function testFinishDoesNotCorruptInternalState(): void

@@ -30,7 +30,7 @@ use function is_string;
 use const ARRAY_FILTER_USE_KEY;
 use const DIRECTORY_SEPARATOR;
 
-class AsyncTestCase extends BaseAsyncTestCase
+abstract class AsyncTestCase extends BaseAsyncTestCase
 {
     protected static string $src_dir_path;
     protected ProjectAnalyzer $project_analyzer;

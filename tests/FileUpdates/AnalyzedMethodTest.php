@@ -20,7 +20,7 @@ use function strpos;
 
 use const DIRECTORY_SEPARATOR;
 
-class AnalyzedMethodTest extends TestCase
+final class AnalyzedMethodTest extends TestCase
 {
     public function setUp(): void
     {

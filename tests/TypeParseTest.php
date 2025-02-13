@@ -26,7 +26,7 @@ use function mb_substr;
 use function print_r;
 use function stripos;
 
-class TypeParseTest extends TestCase
+final class TypeParseTest extends TestCase
 {
     public function setUp(): void
     {

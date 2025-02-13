@@ -5,7 +5,7 @@ use Psalm\Plugin\RegistrationInterface;
 
 require_once __DIR__ . '/extending_plugin.phpstub';
 
-class ExtendingPluginRegistration implements PluginEntryPointInterface
+final class ExtendingPluginRegistration implements PluginEntryPointInterface
 {
     public function __invoke(RegistrationInterface $r, ?SimpleXMLElement $config = null): void
     {

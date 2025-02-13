@@ -13,7 +13,7 @@ use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use const DIRECTORY_SEPARATOR;
 
-class MagicMethodAnnotationTest extends TestCase
+final class MagicMethodAnnotationTest extends TestCase
 {
     use InvalidCodeAnalysisWithIssuesTestTrait;
     use InvalidCodeAnalysisTestTrait;

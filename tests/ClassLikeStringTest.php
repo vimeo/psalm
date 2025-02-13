@@ -10,7 +10,7 @@ use Psalm\Exception\CodeException;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
-class ClassLikeStringTest extends TestCase
+final class ClassLikeStringTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;

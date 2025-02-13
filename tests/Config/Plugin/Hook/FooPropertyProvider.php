@@ -13,7 +13,7 @@ use Psalm\Plugin\EventHandler\PropertyVisibilityProviderInterface;
 use Psalm\Type;
 use Psalm\Type\Union;
 
-class FooPropertyProvider implements
+final class FooPropertyProvider implements
     PropertyExistenceProviderInterface,
     PropertyVisibilityProviderInterface,
     PropertyTypeProviderInterface

@@ -16,7 +16,7 @@ use function trim;
 
 use const DIRECTORY_SEPARATOR;
 
-class TaintTest extends TestCase
+final class TaintTest extends TestCase
 {
     /**
      * @dataProvider providerValidCodeParse

@@ -7,7 +7,7 @@ namespace Psalm\Tests\Template;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
-class ConditionalReturnTypeTest extends TestCase
+final class ConditionalReturnTypeTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
 

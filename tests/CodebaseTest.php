@@ -28,7 +28,7 @@ use function getcwd;
 
 use const DIRECTORY_SEPARATOR;
 
-class CodebaseTest extends TestCase
+final class CodebaseTest extends TestCase
 {
     private Codebase $codebase;
 

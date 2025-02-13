@@ -1,6 +1,6 @@
 <?php
 namespace Foo\Bar;
 
-class Baz
+final class Baz
 {
 }

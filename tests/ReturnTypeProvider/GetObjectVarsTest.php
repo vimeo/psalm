@@ -7,7 +7,7 @@ namespace Psalm\Tests\ReturnTypeProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
-class GetObjectVarsTest extends TestCase
+final class GetObjectVarsTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
 

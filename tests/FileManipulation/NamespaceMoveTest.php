@@ -15,7 +15,7 @@ use Psalm\Tests\TestConfig;
 
 use function strpos;
 
-class NamespaceMoveTest extends TestCase
+final class NamespaceMoveTest extends TestCase
 {
     protected ProjectAnalyzer $project_analyzer;
 

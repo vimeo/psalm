@@ -20,7 +20,7 @@ use function strpos;
 
 use const DIRECTORY_SEPARATOR;
 
-class UnusedCodeTest extends TestCase
+final class UnusedCodeTest extends TestCase
 {
     protected ProjectAnalyzer $project_analyzer;
 

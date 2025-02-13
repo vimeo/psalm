@@ -17,7 +17,7 @@ use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 
-class FunctionLikeDocblockParserTest extends BaseTestCase
+final class FunctionLikeDocblockParserTest extends BaseTestCase
 {
     public string $test_cased_function_id = 'hello_world';
 

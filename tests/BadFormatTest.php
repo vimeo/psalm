@@ -7,7 +7,7 @@ namespace Psalm\Tests;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
 
-class BadFormatTest extends TestCase
+final class BadFormatTest extends TestCase
 {
     public function testMissingSemicolon(): void
     {

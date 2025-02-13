@@ -32,7 +32,7 @@ use function substr;
 
 use const DIRECTORY_SEPARATOR;
 
-class StubTest extends TestCase
+final class StubTest extends TestCase
 {
     protected static TestConfig $config;
 

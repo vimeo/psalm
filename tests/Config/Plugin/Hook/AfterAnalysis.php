@@ -7,7 +7,7 @@ namespace Psalm\Test\Config\Plugin\Hook;
 use Psalm\Plugin\EventHandler\AfterAnalysisInterface;
 use Psalm\Plugin\EventHandler\Event\AfterAnalysisEvent;
 
-class AfterAnalysis implements AfterAnalysisInterface
+final class AfterAnalysis implements AfterAnalysisInterface
 {
     /**
      * Called after analysis is complete

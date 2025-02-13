@@ -10,7 +10,7 @@ use Psalm\DocComment;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Internal\Scanner\ParsedDocblock;
 
-class DocCommentTest extends BaseTestCase
+final class DocCommentTest extends BaseTestCase
 {
     public function setUp(): void
     {

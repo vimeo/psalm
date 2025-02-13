@@ -39,7 +39,7 @@ use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Union;
 
-class ReconcilerTest extends TestCase
+final class ReconcilerTest extends TestCase
 {
     protected FileAnalyzer $file_analyzer;
 

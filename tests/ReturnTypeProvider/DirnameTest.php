@@ -11,7 +11,7 @@ use function addslashes;
 
 use const DIRECTORY_SEPARATOR;
 
-class DirnameTest extends TestCase
+final class DirnameTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
 

@@ -9,7 +9,7 @@ use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 use Psalm\Type;
 
-class ArrayAssignmentTest extends TestCase
+final class ArrayAssignmentTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;

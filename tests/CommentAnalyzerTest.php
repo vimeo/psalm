@@ -11,7 +11,7 @@ use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Internal\Scanner\FileScanner;
 
-class CommentAnalyzerTest extends BaseTestCase
+final class CommentAnalyzerTest extends BaseTestCase
 {
     public function setUp(): void
     {

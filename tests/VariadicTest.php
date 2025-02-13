@@ -17,7 +17,7 @@ use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 use function dirname;
 use function getcwd;
 
-class VariadicTest extends TestCase
+final class VariadicTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
 

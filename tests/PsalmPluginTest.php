@@ -21,7 +21,7 @@ use Symfony\Component\Console\Tester\CommandTester;
 use function preg_quote;
 
 /** @group PluginManager */
-class PsalmPluginTest extends TestCase
+final class PsalmPluginTest extends TestCase
 {
     use MockeryPHPUnitIntegration;
 

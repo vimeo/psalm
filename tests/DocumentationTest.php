@@ -54,7 +54,7 @@ use const FILE_IGNORE_NEW_LINES;
 use const FILE_SKIP_EMPTY_LINES;
 use const LIBXML_NONET;
 
-class DocumentationTest extends TestCase
+final class DocumentationTest extends TestCase
 {
     /**
      * a list of all files containing annotation documentation

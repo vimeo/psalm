@@ -19,7 +19,7 @@ use Psalm\Type;
 
 use function count;
 
-class CompletionTest extends TestCase
+final class CompletionTest extends TestCase
 {
     protected Codebase $codebase;
 

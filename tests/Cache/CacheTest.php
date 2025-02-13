@@ -24,7 +24,7 @@ use function str_replace;
 
 use const DIRECTORY_SEPARATOR;
 
-class CacheTest extends TestCase
+final class CacheTest extends TestCase
 {
     public function setUp(): void
     {

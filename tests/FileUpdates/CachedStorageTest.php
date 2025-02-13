@@ -21,7 +21,7 @@ use function strpos;
 
 use const DIRECTORY_SEPARATOR;
 
-class CachedStorageTest extends TestCase
+final class CachedStorageTest extends TestCase
 {
     public function setUp(): void
     {

@@ -10,7 +10,7 @@ use Psalm\Test\Config\Plugin\Hook\AfterAnalysis;
 use SimpleXMLElement;
 
 /** @psalm-suppress UnusedClass */
-class AfterAnalysisPlugin implements PluginEntryPointInterface
+final class AfterAnalysisPlugin implements PluginEntryPointInterface
 {
     public function __invoke(RegistrationInterface $registration, ?SimpleXMLElement $config = null): void
     {

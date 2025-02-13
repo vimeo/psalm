@@ -10,7 +10,7 @@ use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TLiteralInt;
 
-class IntRangeTest extends TestCase
+final class IntRangeTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;

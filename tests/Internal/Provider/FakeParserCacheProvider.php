@@ -6,7 +6,7 @@ namespace Psalm\Tests\Internal\Provider;
 
 use Psalm\Internal\Provider\ParserCacheProvider;
 
-class FakeParserCacheProvider extends ParserCacheProvider
+final class FakeParserCacheProvider extends ParserCacheProvider
 {
     public function __construct()
     {

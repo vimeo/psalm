@@ -10,7 +10,7 @@ use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
-class ArrayKeyExistsTest extends TestCase
+final class ArrayKeyExistsTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;

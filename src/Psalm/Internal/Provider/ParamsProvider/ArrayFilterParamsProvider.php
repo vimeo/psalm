@@ -29,7 +29,7 @@ use const ARRAY_FILTER_USE_KEY;
 /**
  * @internal
  */
-class ArrayFilterParamsProvider implements FunctionParamsProviderInterface
+final class ArrayFilterParamsProvider implements FunctionParamsProviderInterface
 {
     /**
      * @return array<lowercase-string>

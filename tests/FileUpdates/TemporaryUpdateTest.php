@@ -25,7 +25,7 @@ use function getcwd;
 
 use const DIRECTORY_SEPARATOR;
 
-class TemporaryUpdateTest extends TestCase
+final class TemporaryUpdateTest extends TestCase
 {
     protected Codebase $codebase;
 

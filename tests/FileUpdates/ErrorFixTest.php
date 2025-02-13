@@ -21,7 +21,7 @@ use function getcwd;
 
 use const DIRECTORY_SEPARATOR;
 
-class ErrorFixTest extends TestCase
+final class ErrorFixTest extends TestCase
 {
     public function setUp(): void
     {

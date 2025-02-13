@@ -11,7 +11,7 @@ use Psalm\Internal\Provider\FileReferenceCacheProvider;
  * Used to determine which files reference other files, necessary for using the --diff
  * option from the command line.
  */
-class FakeFileReferenceCacheProvider extends FileReferenceCacheProvider
+final class FakeFileReferenceCacheProvider extends FileReferenceCacheProvider
 {
     private ?array $cached_file_references = null;
 
