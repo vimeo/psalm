@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 $long_options = [
     'foreign-map-a:',
     'foreign-map-b:',
@@ -22,12 +24,12 @@ $removed_foreign_functions = array_diff_key($foreign_a, $foreign_b);
 // in the between local maps
 $useful_foreign_functions = array_diff_key(
     array_intersect_key(get_changed_functions($foreign_a, $foreign_b), $local_a),
-    get_changed_functions($local_a, $local_b)
+    get_changed_functions($local_a, $local_b),
 );
 
 $new_local = array_diff_key(
     array_merge($added_foreign_functions, $local_b, $useful_foreign_functions),
-    $removed_foreign_functions
+    $removed_foreign_functions,
 );
 
 uksort($new_local, static fn($a, $b) => strtolower($a) <=> strtolower($b));
@@ -53,7 +55,8 @@ foreach ($new_local as $name => $data) {
 }
 
 
-function get_changed_functions(array $a, array $b) {
+function get_changed_functions(array $a, array $b)
+{
     $changed_functions = [];
 
     foreach (array_intersect_key($a, $b) as $function_name => $a_data) {
