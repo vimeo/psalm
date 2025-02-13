@@ -81,6 +81,13 @@ final class MutableUnion implements TypeNode
     public bool $failed_reconciliation = false;
 
     /**
+     * Whether or not to ignore issues with possibly-null values when using foreach
+     *
+     * @var bool
+     */
+    public $ignore_nullable_issues_foreach = false;
+
+    /**
      * Whether or not to ignore issues with possibly-null values
      */
     public bool $ignore_nullable_issues = false;
@@ -349,6 +356,10 @@ final class MutableUnion implements TypeNode
 
         if ($new_type && $new_type->ignore_nullable_issues) {
             $this->ignore_nullable_issues = true;
+        }
+
+        if ($new_type && $new_type->ignore_nullable_issues_foreach) {
+            $this->ignore_nullable_issues_foreach = true;
         }
 
         if ($new_type && $new_type->ignore_falsable_issues) {
