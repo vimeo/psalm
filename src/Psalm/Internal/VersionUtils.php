@@ -40,7 +40,7 @@ final class VersionUtils
         return self::getVersions()[self::PHP_PARSER_PACKAGE];
     }
 
-    /** @psalm-suppress UnusedMethod called from bin/build-phar.sh */
+    /** @psalm-suppress UnusedMethod called from bin/ci/build-phar.sh */
     public static function dump(): void
     {
         $versions = self::loadComposerVersions();

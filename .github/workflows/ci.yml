@@ -186,4 +186,4 @@ jobs:
           COMPOSER_ROOT_VERSION: dev-master
 
       - name: Run unit tests
-        run: bin/tests-github-actions.sh
+        run: bin/ci/tests-github-actions.sh
