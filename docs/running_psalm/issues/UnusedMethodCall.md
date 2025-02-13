@@ -1,6 +1,6 @@
 # UnusedMethodCall
 
-Emitted when `--find-dead-code` is turned on and Psalm finds a method call whose return value is not used anywhere
+Emitted when `--find-unused-code` is turned on and Psalm finds a method call whose return value is not used anywhere
 
 ```php
 <?php
