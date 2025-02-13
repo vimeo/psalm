@@ -11,7 +11,6 @@ declare(strict_types=1);
 //
 // What we are currently missing is properly parsing of <xi:include> directives.
 
-use PhpParser\Lexer\Emulative;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\Namespace_;
 use PhpParser\NodeTraverser;
@@ -115,7 +114,7 @@ foreach ($files as $file) {
         $classSynopsis->registerXPathNamespace('docbook', 'http://docbook.org/ns/docbook');
         try {
             $class = strtolower((string) $classSynopsis->xpath('./docbook:ooclass/docbook:classname')[0]);
-        } catch (\Throwable) {
+        } catch (Throwable) {
             continue;
         }
         if (isset($stubbedClasses[$class])) {

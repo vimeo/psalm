@@ -862,7 +862,7 @@ final class ClassLikes
                     }
                     $this->checkMethodParamReferences($classlike_storage);
                 }
-                if (!$classlike_storage->public_api 
+                if (!$classlike_storage->public_api
                     && !$classlike_storage->has_children
                     && !$classlike_storage->abstract
                     && !$classlike_storage->final
@@ -871,7 +871,8 @@ final class ClassLikes
                 ) {
                     IssueBuffer::maybeAdd(
                         new ClassMustBeFinal(
-                            'Class ' . $classlike_storage->name . ' is never extended and is not part of the public API, and thus must be made final.',
+                            'Class ' . $classlike_storage->name
+                                . ' is never extended and is not part of the public API, and thus must be made final.',
                             $classlike_storage->location,
                             $classlike_storage->name,
                         ),
