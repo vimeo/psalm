@@ -1,5 +1,5 @@
 <?php
-final class SomeClass
+class SomeClass
 {
     /**
      * @return void

@@ -3,7 +3,7 @@
 namespace NS;
 
 /** @psalm-stub-override */
-final class MissingClass
+class MissingClass
 {
 
 }

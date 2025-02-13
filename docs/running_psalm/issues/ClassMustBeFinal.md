@@ -21,8 +21,6 @@ Non-final classes are bad for multiple reasons:
 
 In general, the number of non-final classes in the codebase should be reduced as much as possible, both to speed up code execution and avoid unexpected bugs.  
 
-**Note**: if non-`final` classes are needed for mocking in unit tests, simply use [dg/bypass-finals](https://packagist.org/packages/dg/bypass-finals) in your unit tests to allow mocking `final` classes.  
-
 ## How to fix
 
 Recommended, make the class `final`:    
@@ -32,6 +30,8 @@ Recommended, make the class `final`:
 
 final class A {}
 ```
+
+The above can also be automated using `vendor/bin/psalm --alter --issues=ClassMustBeFinal`.  
 
 If inheritance should still be allowed, reduce the surface covered by the backwards compatibility promise by making the class abstract (containing **only** the logic that should be overridable), and move any non-overridable logic to a new `A` class:
 
@@ -43,5 +43,6 @@ abstract class A {}
 final class NewA extends A {}
 ```
 
+**Note**: if non-`final` classes are needed for mocking in unit tests, simply use [dg/bypass-finals](https://packagist.org/packages/dg/bypass-finals) in your unit tests to allow mocking `final` classes.  
 
 An alternative, not recommended for the [above reasons](#why-this-is-bad), is to make the class part of the public API of your library with `@api`.  

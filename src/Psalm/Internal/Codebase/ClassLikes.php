@@ -877,7 +877,17 @@ final class ClassLikes
                             $classlike_storage->name,
                         ),
                         $classlike_storage->suppressed_issues,
+                        true,
                     );
+                    
+                    if ($codebase->alter_code
+                        && isset($project_analyzer->getIssuesToFix()['ClassMustBeFinal'])
+                    ) {
+                        $idx = $classlike_storage->stmt_location->getSelectionBounds()[0];
+                        FileManipulationBuffer::add($classlike_storage->stmt_location->file_path, [
+                            new FileManipulation($idx, $idx, 'final ', true)
+                        ]);
+                    }
                 }
 
                 $this->findPossibleMethodParamTypes($classlike_storage);

@@ -1,7 +1,7 @@
 <?php
 
 /** @template T */
-final class A {
+class A {
     /**
      * @param int $id
      * @param ?int $lockMode

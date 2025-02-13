@@ -217,7 +217,7 @@ final class IssueSuppressionTest extends TestCase
             $file_path,
             '<?php
                 /** @psalm-suppress PossiblyUnusedProperty */
-                class Foo {
+                final class Foo {
                     public string $bar = "baz";
                 }
 
@@ -238,7 +238,7 @@ final class IssueSuppressionTest extends TestCase
         $this->addFile(
             $file_path,
             '<?php
-                class Foo {
+                final class Foo {
                     /** @psalm-suppress PossiblyUnusedProperty */
                     public string $bar = "baz";
                 }

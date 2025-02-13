@@ -2,7 +2,7 @@
 
 namespace Doctrine\ORM;
 
-final class EntityManager implements EntityManagerInterface
+class EntityManager implements EntityManagerInterface
 {
     /**
      * @template T
