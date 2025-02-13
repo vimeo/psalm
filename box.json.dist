@@ -7,7 +7,9 @@
     "map": [
         {"build/phar-versions.php" : "phar-versions.php"}
     ],
-    "files-bin": ["config.xsd"],
+    "alias": "psalm_phar",
+    "timestamp": "2020-10-20T10:01:11+00:00",
+    "files-bin": ["config.xsd", "vendor-bin/box/composer.lock"],
     "directories-bin" : [
         "assets",
         "dictionaries",
