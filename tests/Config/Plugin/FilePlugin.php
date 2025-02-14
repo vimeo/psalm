@@ -10,7 +10,7 @@ use Psalm\Test\Config\Plugin\Hook\FileProvider;
 use SimpleXMLElement;
 
 /** @psalm-suppress UnusedClass */
-class FilePlugin implements PluginEntryPointInterface
+final class FilePlugin implements PluginEntryPointInterface
 {
     public function __invoke(RegistrationInterface $registration, ?SimpleXMLElement $config = null): void
     {

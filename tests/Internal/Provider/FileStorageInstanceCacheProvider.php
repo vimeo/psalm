@@ -9,7 +9,7 @@ use Psalm\Storage\FileStorage;
 
 use function strtolower;
 
-class FileStorageInstanceCacheProvider extends FileStorageCacheProvider
+final class FileStorageInstanceCacheProvider extends FileStorageCacheProvider
 {
     /** @var array<lowercase-string, FileStorage> */
     private array $cache = [];

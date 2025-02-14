@@ -9,7 +9,7 @@ use Psalm\Plugin\PluginFileExtensionsInterface;
 use SimpleXMLElement;
 use stdClass;
 
-class FileTypeSelfRegisteringPlugin implements PluginFileExtensionsInterface
+final class FileTypeSelfRegisteringPlugin implements PluginFileExtensionsInterface
 {
     public const FLAG_SCANNER_TWICE = 1;
     public const FLAG_ANALYZER_TWICE = 2;

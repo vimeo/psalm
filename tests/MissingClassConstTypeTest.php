@@ -8,7 +8,7 @@ use Psalm\Issue\MissingClassConstType;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
-class MissingClassConstTypeTest extends TestCase
+final class MissingClassConstTypeTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;

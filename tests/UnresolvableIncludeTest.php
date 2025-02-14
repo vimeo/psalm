@@ -7,7 +7,7 @@ namespace Psalm\Tests;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
 
-class UnresolvableIncludeTest extends TestCase
+final class UnresolvableIncludeTest extends TestCase
 {
     /**
      * @dataProvider providerUnresolvableInclude

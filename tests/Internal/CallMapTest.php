@@ -15,7 +15,7 @@ use function uksort;
  * @psalm-type TCallMap=array<string, array<int|string, string>>
  * @psalm-type TCallMaps=array<int, array<string, array<int|string, string>>>
  */
-class CallMapTest extends TestCase
+final class CallMapTest extends TestCase
 {
     protected const DICTIONARY_PATH = 'dictionaries';
 

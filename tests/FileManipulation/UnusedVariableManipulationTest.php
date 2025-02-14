@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\FileManipulation;
 
-class UnusedVariableManipulationTest extends FileManipulationTestCase
+final class UnusedVariableManipulationTest extends FileManipulationTestCase
 {
     public function providerValidCodeParse(): array
     {

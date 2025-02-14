@@ -29,7 +29,7 @@ use function unlink;
 
 use const JSON_THROW_ON_ERROR;
 
-class ReportOutputTest extends TestCase
+final class ReportOutputTest extends TestCase
 {
     public function setUp(): void
     {

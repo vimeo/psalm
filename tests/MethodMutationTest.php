@@ -8,7 +8,7 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\MethodIdentifier;
 
-class MethodMutationTest extends TestCase
+final class MethodMutationTest extends TestCase
 {
     public function testControllerMutation(): void
     {

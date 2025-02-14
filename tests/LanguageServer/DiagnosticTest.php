@@ -27,7 +27,7 @@ use Psalm\Tests\TestConfig;
 use function getcwd;
 use function rand;
 
-class DiagnosticTest extends AsyncTestCase
+final class DiagnosticTest extends AsyncTestCase
 {
     protected Codebase $codebase;
     private int $increment = 0;

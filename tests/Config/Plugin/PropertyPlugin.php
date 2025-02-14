@@ -10,7 +10,7 @@ use Psalm\Test\Config\Plugin\Hook\FooPropertyProvider;
 use SimpleXMLElement;
 
 /** @psalm-suppress UnusedClass */
-class PropertyPlugin implements PluginEntryPointInterface
+final class PropertyPlugin implements PluginEntryPointInterface
 {
     public function __invoke(RegistrationInterface $registration, ?SimpleXMLElement $config = null): void
     {

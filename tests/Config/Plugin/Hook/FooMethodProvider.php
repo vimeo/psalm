@@ -15,7 +15,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
-class FooMethodProvider implements
+final class FooMethodProvider implements
     MethodExistenceProviderInterface,
     MethodParamsProviderInterface,
     MethodReturnTypeProviderInterface

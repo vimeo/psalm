@@ -15,7 +15,7 @@ use Psalm\Storage\FunctionStorage;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 
-class FileScannerTest extends TestCase
+final class FileScannerTest extends TestCase
 {
     /**
      * @dataProvider providerScan

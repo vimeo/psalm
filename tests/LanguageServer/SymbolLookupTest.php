@@ -19,7 +19,7 @@ use Psalm\Tests\Internal\Provider\ProjectCacheProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 
-class SymbolLookupTest extends TestCase
+final class SymbolLookupTest extends TestCase
 {
     protected Codebase $codebase;
 

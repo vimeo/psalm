@@ -16,7 +16,7 @@ use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 
 use function substr;
 
-class JsonOutputTest extends TestCase
+final class JsonOutputTest extends TestCase
 {
     public function setUp(): void
     {

@@ -5,7 +5,7 @@ declare(strict_types=1);
 use Psalm\Config\IssueHandler;
 use Psalm\Issue\CodeIssue;
 
-require_once(dirname(__DIR__) . '/vendor/autoload.php');
+require_once(dirname(__DIR__, 2) . '/vendor/autoload.php');
 
 $issue_types = IssueHandler::getAllIssueTypes();
 
@@ -60,7 +60,7 @@ foreach ($grouped_issues[-2] as $issue_type) {
     $result .= ' - [' . $issue_type . '](issues/' . $issue_type . '.md)' . "\n";
 }
 
-$f = dirname(__DIR__).'/docs/running_psalm/error_levels.md';
+$f = dirname(__DIR__, 2).'/docs/running_psalm/error_levels.md';
 $content = file_get_contents($f);
 
 $content = explode('<!-- begin list -->', $content)[0].$result;

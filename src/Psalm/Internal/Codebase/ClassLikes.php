@@ -24,6 +24,7 @@ use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\StatementsProvider;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Issue\ClassMustBeFinal;
 use Psalm\Issue\PossiblyUnusedMethod;
 use Psalm\Issue\PossiblyUnusedParam;
 use Psalm\Issue\PossiblyUnusedProperty;
@@ -860,6 +861,34 @@ final class ClassLikes
                         );
                     }
                     $this->checkMethodParamReferences($classlike_storage);
+                }
+                if (!$classlike_storage->public_api
+                    && !$classlike_storage->has_children
+                    && !$classlike_storage->abstract
+                    && !$classlike_storage->final
+                    && !$classlike_storage->is_enum
+                    && !$classlike_storage->is_interface
+                ) {
+                    IssueBuffer::maybeAdd(
+                        new ClassMustBeFinal(
+                            'Class ' . $classlike_storage->name
+                                . ' is never extended and is not part of the public API, and thus must be made final.',
+                            $classlike_storage->location,
+                            $classlike_storage->name,
+                        ),
+                        $classlike_storage->suppressed_issues,
+                        true,
+                    );
+                    
+                    if ($codebase->alter_code
+                        && $classlike_storage->stmt_location !== null
+                        && isset($project_analyzer->getIssuesToFix()['ClassMustBeFinal'])
+                    ) {
+                        $idx = $classlike_storage->stmt_location->getSelectionBounds()[0];
+                        FileManipulationBuffer::add($classlike_storage->stmt_location->file_path, [
+                            new FileManipulation($idx, $idx, 'final ', true),
+                        ]);
+                    }
                 }
 
                 $this->findPossibleMethodParamTypes($classlike_storage);

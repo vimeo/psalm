@@ -19,7 +19,7 @@ use function array_diff_key;
 use function array_keys;
 use function array_map;
 
-class TypeComparatorTest extends TestCase
+final class TypeComparatorTest extends TestCase
 {
     public function setUp(): void
     {

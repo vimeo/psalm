@@ -22,7 +22,7 @@ use function unlink;
 use const PHP_EOL;
 
 /** @group PluginManager */
-class ConfigFileTest extends TestCase
+final class ConfigFileTest extends TestCase
 {
     private string $file_path;
 

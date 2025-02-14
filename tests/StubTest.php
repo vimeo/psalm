@@ -32,7 +32,7 @@ use function substr;
 
 use const DIRECTORY_SEPARATOR;
 
-class StubTest extends TestCase
+final class StubTest extends TestCase
 {
     protected static TestConfig $config;
 
@@ -1292,7 +1292,7 @@ class StubTest extends TestCase
         $this->addFile(
             $file_path,
             '<?php
-                class MyClass extends \SomeVendor\VendorClass {
+                final class MyClass extends \SomeVendor\VendorClass {
                     public function foo() : void {}
                 }
 

@@ -16,7 +16,7 @@ use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 use function dirname;
 use function getcwd;
 
-class ForbiddenCodeTest extends TestCase
+final class ForbiddenCodeTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;

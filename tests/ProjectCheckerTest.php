@@ -35,7 +35,7 @@ use function realpath;
 
 use const DIRECTORY_SEPARATOR;
 
-class ProjectCheckerTest extends TestCase
+final class ProjectCheckerTest extends TestCase
 {
     protected static TestConfig $config;
 
@@ -242,7 +242,7 @@ class ProjectCheckerTest extends TestCase
 
 namespace Vimeo\Test\DummyProject;
 
-class Bat
+final class Bat
 {
     public function __construct()
     {

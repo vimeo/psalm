@@ -12,7 +12,7 @@ use function getcwd;
 
 use const DIRECTORY_SEPARATOR;
 
-class ConstantTest extends TestCase
+final class ConstantTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;

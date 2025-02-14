@@ -19,7 +19,7 @@ use function max;
 /**
  * @internal
  */
-class ArrayUArrayParamsProvider implements FunctionParamsProviderInterface
+final class ArrayUArrayParamsProvider implements FunctionParamsProviderInterface
 {
 
     /**

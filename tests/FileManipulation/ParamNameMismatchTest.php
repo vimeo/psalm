@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\FileManipulation;
 
-class ParamNameMismatchTest extends FileManipulationTestCase
+final class ParamNameMismatchTest extends FileManipulationTestCase
 {
     public function providerValidCodeParse(): array
     {

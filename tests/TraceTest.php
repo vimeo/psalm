@@ -6,7 +6,7 @@ namespace Psalm\Tests;
 
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 
-class TraceTest extends TestCase
+final class TraceTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
 

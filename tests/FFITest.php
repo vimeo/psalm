@@ -11,7 +11,7 @@ use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
  *
  * https://www.php.net/manual/en/book.ffi.php
  */
-class FFITest extends TestCase
+final class FFITest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
 

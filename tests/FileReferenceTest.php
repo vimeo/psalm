@@ -15,7 +15,7 @@ use UnexpectedValueException;
 use function count;
 use function strpos;
 
-class FileReferenceTest extends TestCase
+final class FileReferenceTest extends TestCase
 {
     protected ProjectAnalyzer $project_analyzer;
 

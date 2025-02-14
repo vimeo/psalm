@@ -9,7 +9,7 @@ use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Report\ByIssueLevelAndTypeReport;
 use Psalm\Report\ReportOptions;
 
-class ByIssueLevelAndTypeReportTest extends TestCase
+final class ByIssueLevelAndTypeReportTest extends TestCase
 {
     public function testItGeneratesReport(): void
     {

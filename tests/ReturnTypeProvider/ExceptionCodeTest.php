@@ -7,7 +7,7 @@ namespace Psalm\Tests\ReturnTypeProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
-class ExceptionCodeTest extends TestCase
+final class ExceptionCodeTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
 

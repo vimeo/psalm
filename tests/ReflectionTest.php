@@ -6,7 +6,7 @@ namespace Psalm\Tests;
 
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
-class ReflectionTest extends TestCase
+final class ReflectionTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
 

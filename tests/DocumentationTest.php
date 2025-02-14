@@ -54,7 +54,7 @@ use const FILE_IGNORE_NEW_LINES;
 use const FILE_SKIP_EMPTY_LINES;
 use const LIBXML_NONET;
 
-class DocumentationTest extends TestCase
+final class DocumentationTest extends TestCase
 {
     /**
      * a list of all files containing annotation documentation
@@ -307,6 +307,11 @@ class DocumentationTest extends TestCase
                     $ignored_issues = ['UnusedVariable'];
                     break;
 
+
+                case 'ClassMustBeFinal':
+                    $ignored_issues = ['UnusedClass'];
+                    break;
+
                 case 'AmbiguousConstantInheritance':
                 case 'DeprecatedConstant':
                 case 'DuplicateEnumCase':
@@ -331,7 +336,8 @@ class DocumentationTest extends TestCase
                 $blocks[0],
                 $issue_name,
                 $ignored_issues,
-                strpos($issue_name, 'Unused') !== false
+                $issue_name === 'ClassMustBeFinal'
+                    || strpos($issue_name, 'Unused') !== false
                     || strpos($issue_name, 'Unevaluated') !== false
                     || strpos($issue_name, 'Unnecessary') !== false,
                 $php_version,

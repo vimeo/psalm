@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\FileManipulation;
 
-class RedundantCastManipulationTest extends FileManipulationTestCase
+final class RedundantCastManipulationTest extends FileManipulationTestCase
 {
     public function providerValidCodeParse(): array
     {

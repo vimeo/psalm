@@ -33,7 +33,7 @@ $traverser->addVisitor(new NameResolver);
 
 $stubbedClasses = [];
 foreach (new RecursiveDirectoryIterator(
-    __DIR__ . '/../stubs',
+    __DIR__ . '/../../stubs',
     FilesystemIterator::CURRENT_AS_PATHNAME|FilesystemIterator::SKIP_DOTS,
 ) as $file) {
     if (is_dir($file)) {
@@ -47,7 +47,7 @@ foreach (new RecursiveDirectoryIterator(
 }
 unset($file, $contents, $stmts);
 
-$docDir = realpath(__DIR__ . '/../build/doc-en');
+$docDir = realpath(__DIR__ . '/../../build/doc-en');
 
 if (false === $docDir) {
     echo 'PHP doc not found!' . PHP_EOL;

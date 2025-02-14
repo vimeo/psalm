@@ -34,7 +34,7 @@ use const INPUT_SERVER;
 /**
  * @internal
  */
-class FilterInputReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class FilterInputReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>

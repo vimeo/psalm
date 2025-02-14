@@ -50,7 +50,7 @@ use const PHP_VERSION;
 use const PHP_VERSION_ID;
 
 /** @group callmap */
-class InternalCallMapHandlerTest extends TestCase
+final class InternalCallMapHandlerTest extends TestCase
 {
     /**
      * Regex patterns for callmap entries that should be skipped.

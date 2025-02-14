@@ -14,7 +14,7 @@ use Revolt\EventLoop;
 /**
  * A fake duplex protocol stream
  */
-class MockProtocolStream implements ProtocolReader, ProtocolWriter, EmitterInterface
+final class MockProtocolStream implements ProtocolReader, ProtocolWriter, EmitterInterface
 {
     use EmitterTrait;
     /**

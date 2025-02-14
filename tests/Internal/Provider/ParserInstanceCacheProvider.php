@@ -9,7 +9,7 @@ use Psalm\Internal\Provider\ParserCacheProvider;
 
 use function microtime;
 
-class ParserInstanceCacheProvider extends ParserCacheProvider
+final class ParserInstanceCacheProvider extends ParserCacheProvider
 {
     /**
      * @var array<string, string>

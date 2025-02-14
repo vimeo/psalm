@@ -19,7 +19,7 @@ use function count;
 
 use const LIBXML_NOBLANKS;
 
-class ErrorBaselineTest extends TestCase
+final class ErrorBaselineTest extends TestCase
 {
     use MockeryPHPUnitIntegration;
 

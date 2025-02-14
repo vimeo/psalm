@@ -40,7 +40,7 @@ use function sprintf;
 
 use const DIRECTORY_SEPARATOR;
 
-class PluginTest extends TestCase
+final class PluginTest extends TestCase
 {
     protected static TestConfig $config;
 

@@ -11,7 +11,7 @@ use Psalm\Type\Atomic;
 
 use function array_reverse;
 
-class TypeCombinationTest extends TestCase
+final class TypeCombinationTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
 

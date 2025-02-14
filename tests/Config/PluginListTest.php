@@ -16,7 +16,7 @@ use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\TestCase;
 
 /** @group PluginManager */
-class PluginListTest extends TestCase
+final class PluginListTest extends TestCase
 {
     use MockeryPHPUnitIntegration;
 
