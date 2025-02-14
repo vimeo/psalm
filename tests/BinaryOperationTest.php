@@ -195,7 +195,7 @@ final class BinaryOperationTest extends TestCase
     public function testStrictTrueEquivalence(): void
     {
         $config = Config::getInstance();
-        $config->strict_binary_operands = true;
+        $config->allow_bool_to_literal_bool_comparison = false;
 
         $this->addFile(
             'somefile.php',
@@ -218,7 +218,7 @@ final class BinaryOperationTest extends TestCase
     public function testStringFalseInequivalence(): void
     {
         $config = Config::getInstance();
-        $config->strict_binary_operands = true;
+        $config->allow_bool_to_literal_bool_comparison = false;
 
         $this->addFile(
             'somefile.php',
