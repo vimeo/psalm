@@ -19,6 +19,7 @@ final class PreventFloatAssignmentChecker implements AfterExpressionAnalysisInte
      *
      * @return null
      */
+    #[\Override]
     public static function afterExpressionAnalysis(AfterExpressionAnalysisEvent $event): ?bool
     {
         $expr = $event->getExpr();

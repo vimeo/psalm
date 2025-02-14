@@ -7,6 +7,7 @@ namespace Psalm\Internal\Fork;
 use Amp\Cancellation;
 use Amp\Parallel\Worker\Task;
 use Amp\Sync\Channel;
+use Override;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Codebase\Analyzer;
 
@@ -20,6 +21,7 @@ final class AnalyzerTask implements Task
     public function __construct(private string $file)
     {
     }
+    #[Override]
     public function run(Channel $channel, Cancellation $cancellation): int
     {
         $pa = ProjectAnalyzer::getInstance();

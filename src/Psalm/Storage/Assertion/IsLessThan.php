@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Storage\Assertion;
 
+use Override;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 
@@ -17,6 +18,7 @@ final class IsLessThan extends Assertion
     {
     }
 
+    #[Override]
     public function getNegation(): Assertion
     {
         return new IsGreaterThanOrEqualTo($this->value);
@@ -27,6 +29,7 @@ final class IsLessThan extends Assertion
         return '<' . $this->value;
     }
 
+    #[Override]
     public function isNegationOf(Assertion $assertion): bool
     {
         return $assertion instanceof IsGreaterThanOrEqualTo && $this->value === $assertion->value;

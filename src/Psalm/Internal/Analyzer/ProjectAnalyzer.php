@@ -31,6 +31,7 @@ use Psalm\Issue\LessSpecificReturnType;
 use Psalm\Issue\MismatchingDocblockParamType;
 use Psalm\Issue\MismatchingDocblockReturnType;
 use Psalm\Issue\MissingClosureReturnType;
+use Psalm\Issue\MissingOverrideAttribute;
 use Psalm\Issue\MissingParamType;
 use Psalm\Issue\MissingPropertyType;
 use Psalm\Issue\MissingReturnType;
@@ -166,6 +167,7 @@ final class ProjectAnalyzer
      */
     private const SUPPORTED_ISSUES_TO_FIX = [
         ClassMustBeFinal::class,
+        MissingOverrideAttribute::class,
         InvalidFalsableReturnType::class,
         InvalidNullableReturnType::class,
         InvalidReturnType::class,

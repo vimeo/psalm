@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use Override;
 use PHPUnit\Framework\TestCase as BaseTestCase;
 use PhpParser\Comment\Doc;
 use Psalm\Aliases;
@@ -13,6 +14,7 @@ use Psalm\Internal\Scanner\FileScanner;
 
 final class CommentAnalyzerTest extends BaseTestCase
 {
+    #[Override]
     public function setUp(): void
     {
         RuntimeCaches::clearAll();

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Type;
 
 use InvalidArgumentException;
+use Override;
 use Psalm\Codebase;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -605,6 +606,7 @@ abstract class Atomic implements TypeNode, Stringable
             );
     }
 
+    #[Override]
     public function visit(TypeVisitor $visitor): bool
     {
         foreach ($this->getChildNodeKeys() as $key) {
@@ -633,6 +635,7 @@ abstract class Atomic implements TypeNode, Stringable
     /**
      * @phpcsSuppress SlevomatCodingStandard.TypeHints.ParameterTypeHint.MissingAnyTypeHint
      */
+    #[Override]
     public static function visitMutable(MutableTypeVisitor $visitor, &$node, bool $cloned): bool
     {
         foreach ($node->getChildNodeKeys() as $key) {
@@ -688,6 +691,7 @@ abstract class Atomic implements TypeNode, Stringable
         return [];
     }
 
+    #[Override]
     final public function __toString(): string
     {
         return $this->getId();

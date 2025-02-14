@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\PhpVisitor;
 
+use Override;
 use PhpParser;
 use PhpParser\ErrorHandler\Collecting;
 use PhpParser\Parser;
@@ -51,6 +52,7 @@ final class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
         $this->non_method_changes = count($offset_map);
     }
 
+    #[Override]
     public function enterNode(PhpParser\Node $node, bool &$traverseChildren = true): int|PhpParser\Node|null
     {
         /** @var array{startFilePos: int, endFilePos: int, startLine: int} */

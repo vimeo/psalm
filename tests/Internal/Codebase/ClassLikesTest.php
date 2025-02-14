@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\Internal\Codebase;
 
+use Override;
 use Psalm\Internal\Codebase\ClassLikes;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Storage\ClassLikeStorage;
@@ -15,6 +16,7 @@ final class ClassLikesTest extends TestCase
 
     private ClassLikeStorageProvider $storage_provider;
 
+    #[Override]
     public function setUp(): void
     {
         parent::setUp();

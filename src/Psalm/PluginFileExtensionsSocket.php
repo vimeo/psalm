@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm;
 
 use LogicException;
+use Override;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Plugin\FileExtensionsInterface;
@@ -43,6 +44,7 @@ final class PluginFileExtensionsSocket implements FileExtensionsInterface
      * @param string $fileExtension e.g. `'html'`
      * @param class-string<FileScanner> $className
      */
+    #[Override]
     public function addFileTypeScanner(string $fileExtension, string $className): void
     {
         if (!class_exists($className) || !is_a($className, FileScanner::class, true)) {
@@ -79,6 +81,7 @@ final class PluginFileExtensionsSocket implements FileExtensionsInterface
      * @param string $fileExtension e.g. `'html'`
      * @param class-string<FileAnalyzer> $className
      */
+    #[Override]
     public function addFileTypeAnalyzer(string $fileExtension, string $className): void
     {
         if (!class_exists($className) || !is_a($className, FileAnalyzer::class, true)) {

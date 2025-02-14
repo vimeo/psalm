@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Analyzer;
 
 use InvalidArgumentException;
+use Override;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
@@ -1052,11 +1053,13 @@ final class StatementsAnalyzer extends SourceAnalyzer
         $this->vars_to_initialize[$var_id] = $branch_point;
     }
 
+    #[Override]
     public function getFileAnalyzer(): FileAnalyzer
     {
         return $this->file_analyzer;
     }
 
+    #[Override]
     public function getCodebase(): Codebase
     {
         return $this->codebase;
@@ -1142,6 +1145,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
     }
 
     /** @psalm-mutation-free */
+    #[Override]
     public function getFQCLN(): ?string
     {
         if ($this->fake_this_class) {
@@ -1159,6 +1163,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
     /**
      * @return NodeDataProvider
      */
+    #[Override]
     public function getNodeTypeProvider(): NodeTypeProvider
     {
         return $this->node_data;

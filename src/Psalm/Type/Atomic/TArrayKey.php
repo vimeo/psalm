@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Psalm\Type\Atomic;
 
+use Override;
+
 /**
  * Denotes the `array-key` type, used for something that could be the offset of an `array`.
  *
@@ -11,6 +13,7 @@ namespace Psalm\Type\Atomic;
  */
 class TArrayKey extends Scalar
 {
+    #[Override]
     public function getKey(bool $include_extra = true): string
     {
         return 'array-key';
@@ -19,6 +22,7 @@ class TArrayKey extends Scalar
     /**
      * @param  array<lowercase-string, string> $aliased_classes
      */
+    #[Override]
     public function toPhpString(
         ?string $namespace,
         array $aliased_classes,
@@ -28,6 +32,7 @@ class TArrayKey extends Scalar
         return null;
     }
 
+    #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
@@ -36,6 +41,7 @@ class TArrayKey extends Scalar
     /**
      * @param array<lowercase-string, string> $aliased_classes
      */
+    #[Override]
     public function toNamespacedString(
         ?string $namespace,
         array $aliased_classes,

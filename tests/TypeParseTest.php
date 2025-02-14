@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use Override;
 use Psalm\Codebase;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -28,6 +29,7 @@ use function stripos;
 
 final class TypeParseTest extends TestCase
 {
+    #[Override]
     public function setUp(): void
     {
         RuntimeCaches::clearAll();

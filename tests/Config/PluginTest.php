@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests\Config;
 
 use InvalidArgumentException;
+use Override;
 use PHPUnit\Framework\MockObject\MockObject;
 use Psalm\Config;
 use Psalm\Context;
@@ -44,6 +45,7 @@ final class PluginTest extends TestCase
 {
     protected static TestConfig $config;
 
+    #[Override]
     public static function setUpBeforeClass(): void
     {
         // hack to isolate Psalm from PHPUnit cli arguments
@@ -61,6 +63,7 @@ final class PluginTest extends TestCase
         }
     }
 
+    #[Override]
     public function setUp(): void
     {
         RuntimeCaches::clearAll();
@@ -512,6 +515,7 @@ final class PluginTest extends TestCase
              * @return void
              * @phpcsSuppress SlevomatCodingStandard.TypeHints.ReturnTypeHint
              */
+            #[Override]
             public static function afterCodebasePopulated(AfterCodebasePopulatedEvent $event)
             {
             }
@@ -894,6 +898,7 @@ final class PluginTest extends TestCase
                 self::$m = $m;
             }
 
+            #[Override]
             public static function afterEveryFunctionCallAnalysis(AfterEveryFunctionCallAnalysisEvent $event): void
             {
                 $function_id = $event->getFunctionId();

@@ -17,6 +17,7 @@ use Amp\Serialization\NativeSerializer;
 use Amp\Serialization\SerializationException;
 use Amp\TimeoutCancellation;
 use Error;
+use Override;
 use ParseError;
 use Revolt\EventLoop;
 use RuntimeException;
@@ -185,6 +186,7 @@ final class ForkContext extends AbstractContext
         $this->close();
     }
 
+    #[Override]
     public function receive(?Cancellation $cancellation = null): mixed
     {
         if ($this->exited) {
@@ -194,6 +196,7 @@ final class ForkContext extends AbstractContext
         return parent::receive($cancellation);
     }
 
+    #[Override]
     public function send(mixed $data): void
     {
         if ($this->exited) {
@@ -203,6 +206,7 @@ final class ForkContext extends AbstractContext
         parent::send($data);
     }
 
+    #[Override]
     public function close(): void
     {
         if (!$this->exited) {
@@ -212,6 +216,7 @@ final class ForkContext extends AbstractContext
         parent::close();
     }
 
+    #[Override]
     public function join(?Cancellation $cancellation = null): mixed
     {
         $data = $this->receiveExitResult($cancellation);

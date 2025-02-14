@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests\LanguageServer;
 
 use Amp\DeferredFuture;
+use Override;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -32,6 +33,7 @@ final class DiagnosticTest extends AsyncTestCase
     protected Codebase $codebase;
     private int $increment = 0;
 
+    #[Override]
     public function setUp(): void
     {
         parent::setUp();

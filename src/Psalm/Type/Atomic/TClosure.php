@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Type\Atomic;
 
+use Override;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
@@ -46,6 +47,7 @@ final class TClosure extends TNamedObject
         );
     }
 
+    #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         // it can, if it's just 'Closure'
@@ -55,6 +57,7 @@ final class TClosure extends TNamedObject
     /**
      * @return static
      */
+    #[Override]
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase,
@@ -77,6 +80,7 @@ final class TClosure extends TNamedObject
     /**
      * @return static
      */
+    #[Override]
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
         Codebase $codebase,
@@ -126,6 +130,7 @@ final class TClosure extends TNamedObject
         );
     }
 
+    #[Override]
     protected function getChildNodeKeys(): array
     {
         return [...parent::getChildNodeKeys(), ...$this->getCallableChildNodeKeys()];

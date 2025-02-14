@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use ArgumentCountError;
+use Override;
 use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\RedundantFunctionCall;
 use Psalm\Issue\TooFewArguments;
@@ -39,6 +40,7 @@ final class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInter
     /**
      * @return array<lowercase-string>
      */
+    #[Override]
     public static function getFunctionIds(): array
     {
         return [
@@ -47,6 +49,7 @@ final class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInter
         ];
     }
 
+    #[Override]
     public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): ?Union
     {
         $statements_source = $event->getStatementsSource();

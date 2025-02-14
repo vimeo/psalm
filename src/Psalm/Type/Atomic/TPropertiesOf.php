@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Type\Atomic;
 
+use Override;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type\Atomic;
 
@@ -75,11 +76,13 @@ final class TPropertiesOf extends Atomic
         };
     }
 
+    #[Override]
     protected function getChildNodeKeys(): array
     {
         return ['classlike_type'];
     }
 
+    #[Override]
     public function getKey(bool $include_extra = true): string
     {
         return self::tokenNameForFilter($this->visibility_filter) . '<' . $this->classlike_type . '>';
@@ -88,6 +91,7 @@ final class TPropertiesOf extends Atomic
     /**
      * @param  array<lowercase-string, string> $aliased_classes
      */
+    #[Override]
     public function toPhpString(
         ?string $namespace,
         array $aliased_classes,
@@ -97,6 +101,7 @@ final class TPropertiesOf extends Atomic
         return $this->getKey();
     }
 
+    #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;

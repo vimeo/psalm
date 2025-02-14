@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Report;
 
+use Override;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Report;
@@ -21,6 +22,7 @@ final class CompactReport extends Report
     /**
      * @psalm-suppress PossiblyNullReference
      */
+    #[Override]
     public function create(): string
     {
         /** @var BufferedOutput|null $buffer */

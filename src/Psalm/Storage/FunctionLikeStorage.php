@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Storage;
 
+use Override;
 use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Issue\CodeIssue;
@@ -266,11 +267,13 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
     /**
      * @return list<AttributeStorage>
      */
+    #[Override]
     public function getAttributeStorages(): array
     {
         return $this->attributes;
     }
 
+    #[Override]
     public function __toString(): string
     {
         return $this->getCompletionSignature();

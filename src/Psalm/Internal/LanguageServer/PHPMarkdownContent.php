@@ -7,6 +7,7 @@ namespace Psalm\Internal\LanguageServer;
 use JsonSerializable;
 use LanguageServerProtocol\MarkupContent;
 use LanguageServerProtocol\MarkupKind;
+use Override;
 use ReturnTypeWillChange;
 
 use function get_object_vars;
@@ -36,6 +37,7 @@ final class PHPMarkdownContent extends MarkupContent implements JsonSerializable
      * This is needed because VSCode Does not like nulls
      * meaning if a null is sent then this will not compute
      */
+    #[Override]
     #[ReturnTypeWillChange]
     public function jsonSerialize(): mixed
     {

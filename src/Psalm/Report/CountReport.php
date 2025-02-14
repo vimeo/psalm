@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Report;
 
+use Override;
 use Psalm\Report;
 
 use function array_key_exists;
@@ -11,6 +12,7 @@ use function uksort;
 
 final class CountReport extends Report
 {
+    #[Override]
     public function create(): string
     {
         $issue_type_counts = [];

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use Override;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
@@ -36,6 +37,7 @@ final class StubTest extends TestCase
 {
     protected static TestConfig $config;
 
+    #[Override]
     public static function setUpBeforeClass(): void
     {
         self::$config = new TestConfig();
@@ -49,6 +51,7 @@ final class StubTest extends TestCase
         }
     }
 
+    #[Override]
     public function setUp(): void
     {
         RuntimeCaches::clearAll();

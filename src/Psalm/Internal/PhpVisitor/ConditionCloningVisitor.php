@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\PhpVisitor;
 
+use Override;
 use PhpParser\Node;
 use PhpParser\Node\Expr;
 use PhpParser\NodeVisitorAbstract;
@@ -22,6 +23,7 @@ final class ConditionCloningVisitor extends NodeVisitorAbstract
     /**
      * @return Node\Expr
      */
+    #[Override]
     public function enterNode(Node $node): Node
     {
         /** @var Expr $node */

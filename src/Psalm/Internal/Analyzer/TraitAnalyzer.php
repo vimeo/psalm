@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Analyzer;
 
+use Override;
 use PhpParser\Node\Stmt\Trait_;
 use Psalm\Aliases;
 use Psalm\Context;
@@ -31,12 +32,14 @@ final class TraitAnalyzer extends ClassLikeAnalyzer
     }
 
     /** @psalm-mutation-free */
+    #[Override]
     public function getNamespace(): ?string
     {
         return $this->aliases->namespace;
     }
 
     /** @psalm-mutation-free */
+    #[Override]
     public function getAliases(): Aliases
     {
         return $this->aliases;
@@ -46,6 +49,7 @@ final class TraitAnalyzer extends ClassLikeAnalyzer
      * @psalm-mutation-free
      * @return array<lowercase-string, string>
      */
+    #[Override]
     public function getAliasedClassesFlipped(): array
     {
         return [];
@@ -55,6 +59,7 @@ final class TraitAnalyzer extends ClassLikeAnalyzer
      * @psalm-mutation-free
      * @return array<string, string>
      */
+    #[Override]
     public function getAliasedClassesFlippedReplaceable(): array
     {
         return [];

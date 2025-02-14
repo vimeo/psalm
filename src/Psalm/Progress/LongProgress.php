@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Progress;
 
 use LogicException;
+use Override;
 
 use function floor;
 use function sprintf;
@@ -30,40 +31,47 @@ class LongProgress extends Progress
     ) {
     }
 
+    #[Override]
     public function startScanningFiles(): void
     {
         $this->fixed_size = false;
         $this->write("\n" . 'Scanning files...' . ($this->in_ci ? '' : "\n\n"));
     }
 
+    #[Override]
     public function startAnalyzingFiles(): void
     {
         $this->fixed_size = true;
         $this->write("\n\n" . 'Analyzing files...' . "\n\n");
     }
 
+    #[Override]
     public function startAlteringFiles(): void
     {
         $this->fixed_size = true;
         $this->write('Altering files...' . "\n");
     }
 
+    #[Override]
     public function alterFileDone(string $file_name): void
     {
         $this->write('Altered ' . $file_name . "\n");
     }
 
+    #[Override]
     public function start(int $number_of_tasks): void
     {
         $this->number_of_tasks = $number_of_tasks;
         $this->progress = 0;
     }
 
+    #[Override]
     public function expand(int $number_of_tasks): void
     {
         $this->number_of_tasks += $number_of_tasks;
     }
 
+    #[Override]
     public function taskDone(int $level): void
     {
         if ($this->number_of_tasks === null) {
@@ -103,6 +111,7 @@ class LongProgress extends Progress
         $this->write(PHP_EOL);
     }
 
+    #[Override]
     public function finish(): void
     {
         $this->write(PHP_EOL);

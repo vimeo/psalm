@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use Mockery;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Mockery\MockInterface;
+use Override;
 use Psalm\Config;
 use Psalm\Internal\PluginManager\ComposerLock;
 use Psalm\Internal\PluginManager\ConfigFile;
@@ -26,6 +27,7 @@ final class PluginListTest extends TestCase
 
     private MockInterface $composer_lock;
 
+    #[Override]
     public function setUp(): void
     {
         RuntimeCaches::clearAll();

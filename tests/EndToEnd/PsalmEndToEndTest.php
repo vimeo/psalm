@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests\EndToEnd;
 
 use Exception;
+use Override;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Process\Process;
 
@@ -42,6 +43,7 @@ final class PsalmEndToEndTest extends TestCase
 
     private static string $tmpDir;
 
+    #[Override]
     public static function setUpBeforeClass(): void
     {
         self::$tmpDir = tempnam(sys_get_temp_dir(), 'PsalmEndToEndTest_');
@@ -60,12 +62,14 @@ final class PsalmEndToEndTest extends TestCase
         $process->mustRun();
     }
 
+    #[Override]
     public static function tearDownAfterClass(): void
     {
         self::recursiveRemoveDirectory(self::$tmpDir);
         parent::tearDownAfterClass();
     }
 
+    #[Override]
     public function setUp(): void
     {
         mkdir(self::$tmpDir . '/src');
@@ -77,6 +81,7 @@ final class PsalmEndToEndTest extends TestCase
         parent::setUp();
     }
 
+    #[Override]
     public function tearDown(): void
     {
         @unlink(self::$tmpDir . '/psalm.xml');

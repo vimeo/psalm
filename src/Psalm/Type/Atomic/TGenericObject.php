@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Type\Atomic;
 
+use Override;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
@@ -60,6 +61,7 @@ final class TGenericObject extends TNamedObject
         );
     }
 
+    #[Override]
     public function getKey(bool $include_extra = true): string
     {
         $s = '';
@@ -77,6 +79,7 @@ final class TGenericObject extends TNamedObject
         return $this->value . '<' . substr($s, 0, -2) . '>' . $extra_types;
     }
 
+    #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
@@ -85,6 +88,7 @@ final class TGenericObject extends TNamedObject
     /**
      * @param  array<lowercase-string, string> $aliased_classes
      */
+    #[Override]
     public function toPhpString(
         ?string $namespace,
         array $aliased_classes,
@@ -99,6 +103,7 @@ final class TGenericObject extends TNamedObject
         return substr($result, $intersection+1);
     }
 
+    #[Override]
     public function equals(Atomic $other_type, bool $ensure_source_equality): bool
     {
         if (!$other_type instanceof self) {
@@ -118,11 +123,13 @@ final class TGenericObject extends TNamedObject
         return true;
     }
 
+    #[Override]
     public function getAssertionString(): string
     {
         return $this->value;
     }
 
+    #[Override]
     protected function getChildNodeKeys(): array
     {
         return [...parent::getChildNodeKeys(), 'type_params'];
@@ -131,6 +138,7 @@ final class TGenericObject extends TNamedObject
     /**
      * @return static
      */
+    #[Override]
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
         Codebase $codebase,
@@ -182,6 +190,7 @@ final class TGenericObject extends TNamedObject
     /**
      * @return static
      */
+    #[Override]
     public function replaceTemplateTypesWithArgTypes(TemplateResult $template_result, ?Codebase $codebase): self
     {
         $type_params = $this->replaceTypeParamsTemplateTypesWithArgTypes(

@@ -34,6 +34,7 @@ final class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
 {
     final public const VIEW_CLASS = 'Your\\View\\Class';
 
+    #[\Override]
     public function analyze(?Context $file_context = null, ?Context $global_context = null): void
     {
         $codebase = $this->project_analyzer->getCodebase();

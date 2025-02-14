@@ -14,6 +14,7 @@ final class SafeArrayKeyChecker implements RemoveTaintsInterface
      *
      * @return list<string>
      */
+    #[\Override]
     public static function removeTaints(AddRemoveTaintsEvent $event): array
     {
         $item = $event->getExpr();

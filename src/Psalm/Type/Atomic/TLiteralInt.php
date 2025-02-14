@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Psalm\Type\Atomic;
 
+use Override;
+
 /**
  * Denotes an integer value where the exact numeric value is known.
  *
@@ -16,11 +18,13 @@ final class TLiteralInt extends TInt
         parent::__construct($from_docblock);
     }
 
+    #[Override]
     public function getKey(bool $include_extra = true): string
     {
         return 'int(' . $this->value . ')';
     }
 
+    #[Override]
     public function getId(bool $exact = true, bool $nested = false): string
     {
         if (!$exact) {
@@ -30,6 +34,7 @@ final class TLiteralInt extends TInt
         return (string) $this->value;
     }
 
+    #[Override]
     public function getAssertionString(): string
     {
         return 'int(' . $this->value . ')';
@@ -38,6 +43,7 @@ final class TLiteralInt extends TInt
     /**
      * @param  array<lowercase-string, string> $aliased_classes
      */
+    #[Override]
     public function toNamespacedString(
         ?string $namespace,
         array $aliased_classes,

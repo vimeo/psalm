@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Psalm\Type\Atomic;
 
+use Override;
+
 use function substr;
 
 /**
@@ -20,6 +22,7 @@ final class TIntMask extends TInt
         parent::__construct($from_docblock);
     }
 
+    #[Override]
     public function getKey(bool $include_extra = true): string
     {
         $s = '';
@@ -31,6 +34,7 @@ final class TIntMask extends TInt
         return 'int-mask<' . substr($s, 0, -2) . '>';
     }
 
+    #[Override]
     public function getId(bool $exact = true, bool $nested = false): string
     {
         $s = '';
@@ -45,6 +49,7 @@ final class TIntMask extends TInt
     /**
      * @param  array<lowercase-string, string> $aliased_classes
      */
+    #[Override]
     public function toNamespacedString(
         ?string $namespace,
         array $aliased_classes,
@@ -64,6 +69,7 @@ final class TIntMask extends TInt
         return 'int-mask<' . substr($s, 0, -2) . '>';
     }
 
+    #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;

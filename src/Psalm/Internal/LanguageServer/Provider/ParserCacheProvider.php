@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\LanguageServer\Provider;
 
+use Override;
 use PhpParser;
 use Psalm\Internal\Provider\ParserCacheProvider as InternalParserCacheProvider;
 
@@ -38,6 +39,7 @@ final class ParserCacheProvider extends InternalParserCacheProvider
     {
     }
 
+    #[Override]
     public function loadStatementsFromCache(
         string $file_path,
         int $file_modified_time,
@@ -56,6 +58,7 @@ final class ParserCacheProvider extends InternalParserCacheProvider
     /**
      * @return list<PhpParser\Node\Stmt>|null
      */
+    #[Override]
     public function loadExistingStatementsFromCache(string $file_path): ?array
     {
         return $this->statements_cache[$file_path] ?? null;
@@ -64,6 +67,7 @@ final class ParserCacheProvider extends InternalParserCacheProvider
     /**
      * @param  list<PhpParser\Node\Stmt>        $stmts
      */
+    #[Override]
     public function saveStatementsToCache(
         string $file_path,
         string $file_content_hash,
@@ -75,16 +79,19 @@ final class ParserCacheProvider extends InternalParserCacheProvider
         $this->file_content_hash[$file_path] = $file_content_hash;
     }
 
+    #[Override]
     public function loadExistingFileContentsFromCache(string $file_path): ?string
     {
         return $this->file_contents_cache[$file_path] ?? null;
     }
 
+    #[Override]
     public function cacheFileContents(string $file_path, string $file_contents): void
     {
         $this->file_contents_cache[$file_path] = $file_contents;
     }
 
+    #[Override]
     public function deleteOldParserCaches(float $time_before): int
     {
         $this->existing_file_content_hashes = null;
@@ -97,6 +104,7 @@ final class ParserCacheProvider extends InternalParserCacheProvider
         return 0;
     }
 
+    #[Override]
     public function saveFileContentHashes(): void
     {
     }

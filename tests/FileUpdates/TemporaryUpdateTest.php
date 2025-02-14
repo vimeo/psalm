@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\FileUpdates;
 
+use Override;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -29,6 +30,7 @@ final class TemporaryUpdateTest extends TestCase
 {
     protected Codebase $codebase;
 
+    #[Override]
     public function setUp(): void
     {
         parent::setUp();

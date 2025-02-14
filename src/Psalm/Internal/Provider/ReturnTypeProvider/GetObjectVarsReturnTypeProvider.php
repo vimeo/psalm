@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use Override;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassAnalyzer;
@@ -31,6 +32,7 @@ use function strtolower;
  */
 final class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
+    #[Override]
     public static function getFunctionIds(): array
     {
         return ['get_object_vars'];
@@ -152,6 +154,7 @@ final class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProvide
         return self::$fallback;
     }
 
+    #[Override]
     public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): ?Union
     {
         $statements_source = $event->getStatementsSource();

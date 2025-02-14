@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Test\Config\Plugin\Hook;
 
+use Override;
 use Psalm\Plugin\EventHandler\Event\MethodExistenceProviderEvent;
 use Psalm\Plugin\EventHandler\Event\MethodParamsProviderEvent;
 use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
@@ -23,11 +24,13 @@ final class FooMethodProvider implements
     /**
      * @return array<string>
      */
+    #[Override]
     public static function getClassLikeNames(): array
     {
         return ['Ns\Foo'];
     }
 
+    #[Override]
     public static function doesMethodExist(MethodExistenceProviderEvent $event): ?bool
     {
         $method_name_lowercase = $event->getMethodNameLowercase();
@@ -41,6 +44,7 @@ final class FooMethodProvider implements
     /**
      * @return ?array<int, FunctionLikeParameter>
      */
+    #[Override]
     public static function getMethodParams(MethodParamsProviderEvent $event): ?array
     {
         $method_name_lowercase = $event->getMethodNameLowercase();
@@ -51,6 +55,7 @@ final class FooMethodProvider implements
         return null;
     }
 
+    #[Override]
     public static function getMethodReturnType(MethodReturnTypeProviderEvent $event): ?Union
     {
         $method_name_lowercase = $event->getMethodNameLowercase();

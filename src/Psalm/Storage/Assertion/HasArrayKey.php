@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Storage\Assertion;
 
+use Override;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use UnexpectedValueException;
@@ -18,6 +19,7 @@ final class HasArrayKey extends Assertion
     {
     }
 
+    #[Override]
     public function getNegation(): Assertion
     {
         throw new UnexpectedValueException('This should never be called');
@@ -28,6 +30,7 @@ final class HasArrayKey extends Assertion
         return 'has-array-key-' . $this->key;
     }
 
+    #[Override]
     public function isNegationOf(Assertion $assertion): bool
     {
         return false;

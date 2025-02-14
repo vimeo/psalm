@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use Override;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
@@ -24,6 +25,7 @@ final class UnusedCodeTest extends TestCase
 {
     protected ProjectAnalyzer $project_analyzer;
 
+    #[Override]
     public function setUp(): void
     {
         RuntimeCaches::clearAll();

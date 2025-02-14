@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Codebase;
 
+use Override;
 use Psalm\CodeLocation;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\DataFlow\Path;
@@ -25,6 +26,7 @@ final class VariableUseGraph extends DataFlowGraph
     /** @var array<string, list<CodeLocation>> */
     private array $origin_locations_by_id = [];
 
+    #[Override]
     public function addNode(DataFlowNode $node): void
     {
         $this->nodes[$node->id] = $node;
@@ -34,6 +36,7 @@ final class VariableUseGraph extends DataFlowGraph
      * @param array<string> $added_taints
      * @param array<string> $removed_taints
      */
+    #[Override]
     public function addPath(
         DataFlowNode $from,
         DataFlowNode $to,

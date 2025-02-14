@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests\TypeReconciliation;
 
 use Countable;
+use Override;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -45,6 +46,7 @@ final class ReconcilerTest extends TestCase
 
     protected StatementsAnalyzer $statements_analyzer;
 
+    #[Override]
     public function setUp(): void
     {
         parent::setUp();

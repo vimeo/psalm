@@ -14,6 +14,7 @@ use function strtolower;
 
 final class ClassUnqualifier implements AfterClassLikeExistenceCheckInterface
 {
+    #[\Override]
     public static function afterClassLikeExistenceCheck(
         AfterClassLikeExistenceCheckEvent $event
     ): void {

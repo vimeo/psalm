@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 
 final class TraceTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
 
+    #[Override]
     public function providerInvalidCodeParse(): iterable
     {
         return [

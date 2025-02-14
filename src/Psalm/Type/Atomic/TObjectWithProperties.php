@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Type\Atomic;
 
+use Override;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
@@ -83,6 +84,7 @@ final class TObjectWithProperties extends TObject
         return $cloned;
     }
 
+    #[Override]
     public function getId(bool $exact = true, bool $nested = false): string
     {
         $extra_types = '';
@@ -125,6 +127,7 @@ final class TObjectWithProperties extends TObject
     /**
      * @param  array<lowercase-string, string> $aliased_classes
      */
+    #[Override]
     public function toNamespacedString(
         ?string $namespace,
         array $aliased_classes,
@@ -163,6 +166,7 @@ final class TObjectWithProperties extends TObject
     /**
      * @param  array<lowercase-string, string> $aliased_classes
      */
+    #[Override]
     public function toPhpString(
         ?string $namespace,
         array $aliased_classes,
@@ -172,11 +176,13 @@ final class TObjectWithProperties extends TObject
         return $this->getKey();
     }
 
+    #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
     }
 
+    #[Override]
     public function equals(Atomic $other_type, bool $ensure_source_equality): bool
     {
         if (!$other_type instanceof self) {
@@ -207,6 +213,7 @@ final class TObjectWithProperties extends TObject
     /**
      * @return static
      */
+    #[Override]
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
         Codebase $codebase,
@@ -267,6 +274,7 @@ final class TObjectWithProperties extends TObject
     /**
      * @return static
      */
+    #[Override]
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase,
@@ -293,11 +301,13 @@ final class TObjectWithProperties extends TObject
         );
     }
 
+    #[Override]
     protected function getChildNodeKeys(): array
     {
         return ['properties', 'extra_types'];
     }
 
+    #[Override]
     public function getAssertionString(): string
     {
         return $this->getKey();

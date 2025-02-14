@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests\LanguageServer;
 
 use LanguageServerProtocol\Position;
+use Override;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -23,6 +24,7 @@ final class CompletionTest extends TestCase
 {
     protected Codebase $codebase;
 
+    #[Override]
     public function setUp(): void
     {
         parent::setUp();

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\TypeReconciliation;
 
+use Override;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Tests\TestCase;
@@ -15,6 +16,7 @@ final class ArrayKeyExistsTest extends TestCase
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
 
+    #[Override]
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -525,6 +527,7 @@ final class ArrayKeyExistsTest extends TestCase
         ];
     }
 
+    #[Override]
     public function providerInvalidCodeParse(): iterable
     {
         return [

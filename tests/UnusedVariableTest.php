@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
@@ -14,12 +15,14 @@ final class UnusedVariableTest extends TestCase
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
 
+    #[Override]
     public function setUp(): void
     {
         parent::setUp();
         $this->project_analyzer->getCodebase()->reportUnusedVariables();
     }
 
+    #[Override]
     public function providerValidCodeParse(): array
     {
         return [
@@ -2609,6 +2612,7 @@ final class UnusedVariableTest extends TestCase
         ];
     }
 
+    #[Override]
     public function providerInvalidCodeParse(): array
     {
         return [

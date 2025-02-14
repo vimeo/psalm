@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\SourceControl\Git;
 
+use Override;
 use Psalm\SourceControl\SourceControlInfo;
 
 /**
@@ -48,6 +49,7 @@ final class GitInfo extends SourceControlInfo
     ) {
     }
 
+    #[Override]
     public function toArray(): array
     {
         $remotes = [];

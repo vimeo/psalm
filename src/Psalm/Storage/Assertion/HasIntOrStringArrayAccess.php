@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Storage\Assertion;
 
+use Override;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use UnexpectedValueException;
@@ -14,6 +15,7 @@ use UnexpectedValueException;
 final class HasIntOrStringArrayAccess extends Assertion
 {
     use UnserializeMemoryUsageSuppressionTrait;
+    #[Override]
     public function getNegation(): Assertion
     {
         throw new UnexpectedValueException('This should never be called');
@@ -24,6 +26,7 @@ final class HasIntOrStringArrayAccess extends Assertion
         return 'has-string-or-int-array-access';
     }
 
+    #[Override]
     public function isNegationOf(Assertion $assertion): bool
     {
         return false;
