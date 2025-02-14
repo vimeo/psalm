@@ -5,8 +5,8 @@ set -x
 
 SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
 SCRIPT_DIR="$(realpath "$SCRIPT_DIR")"
-PSALM="$(readlink -f "$SCRIPT_DIR/../psalm")"
-PSALM_PHAR="$(readlink -f "$SCRIPT_DIR/../build/psalm.phar")"
+PSALM="$(readlink -f "$SCRIPT_DIR/../../psalm")"
+PSALM_PHAR="$(readlink -f "$SCRIPT_DIR/../../build/psalm.phar")"
 
 cd /tmp/
 rm -Rf testing-with-real-projects

@@ -74,7 +74,7 @@ jobs:
           # env:
           #   COMPOSER_ROOT_VERSION: dev-master
 
-      - run: bin/build-phar.sh
+      - run: bin/ci/build-phar.sh
         env:
           GPG_SIGNING: 1
           GPG_SECRET_KEY: ${{ secrets.GPG_SECRET_KEY }}
@@ -90,7 +90,7 @@ jobs:
           tag: ${{ github.ref }}
           
       - name: Release psalm/phar
-        run: bin/github-deploy-phar.sh
+        run: bin/ci/github-deploy-phar.sh
         env:
           PHAR_REPO_TOKEN: ${{ secrets.PHAR_REPO_TOKEN }}
 

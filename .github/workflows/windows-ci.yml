@@ -100,7 +100,7 @@ jobs:
           COMPOSER_ROOT_VERSION: dev-master
 
       - name: Generate test suits
-        run: php bin/generate_testsuites.php $env:CHUNK_COUNT
+        run: php bin/ci/generate_testsuites.php $env:CHUNK_COUNT
 
       - name: Run unit tests
         run: vendor/bin/paratest --processes=$env:PARALLEL_PROCESSES --testsuite=chunk_$env:CHUNK_NUMBER --log-junit build/phpunit/phpunit.xml
