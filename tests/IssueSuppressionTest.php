@@ -22,6 +22,16 @@ final class IssueSuppressionTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
 
     #[Override]
+    protected function makeConfig(): Config
+    {
+        $config = parent::makeConfig();
+        $config->disable_suppress_all = false;
+
+        return $config;
+    }
+
+
+    #[Override]
     public function setUp(): void
     {
         parent::setUp();

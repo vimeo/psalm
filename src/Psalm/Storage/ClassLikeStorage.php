@@ -445,7 +445,7 @@ final class ClassLikeStorage implements HasAttributesInterface
 
     public function hasSealedProperties(Config $config): bool
     {
-        return $this->sealed_properties ?? $config->seal_all_properties;
+        return $this->sealed_properties ?? ($this->name === 'FFI' ? false : $config->seal_all_properties);
     }
 
     public function hasSealedMethods(Config $config): bool
