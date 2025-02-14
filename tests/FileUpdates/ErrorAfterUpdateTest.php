@@ -364,7 +364,7 @@ final class ErrorAfterUpdateTest extends TestCase
                         (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
-                            class A {
+                            final class A {
                                 /** @var string */
                                 public $foo = "bar";
 
@@ -377,7 +377,7 @@ final class ErrorAfterUpdateTest extends TestCase
                         (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
-                            class A {
+                            final class A {
                                 /** @var string */
                                 public $foo;
 
@@ -395,7 +395,7 @@ final class ErrorAfterUpdateTest extends TestCase
                         (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
-                            class A {
+                            final class A {
                                 use T;
 
                                 /** @var string */
@@ -414,7 +414,7 @@ final class ErrorAfterUpdateTest extends TestCase
                         (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
-                            class A {
+                            final class A {
                                 use T;
 
                                 /** @var string */
@@ -438,7 +438,7 @@ final class ErrorAfterUpdateTest extends TestCase
                         (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
-                            class A {
+                            final class A {
                                 use T;
                             }
 
@@ -457,7 +457,7 @@ final class ErrorAfterUpdateTest extends TestCase
                         (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
-                            class A {
+                            final class A {
                                 use T;
 
                                 /** @var string */
@@ -484,7 +484,7 @@ final class ErrorAfterUpdateTest extends TestCase
                         (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
-                            class A {
+                            final class A {
                                 /** @var string */
                                 public $foo;
 
@@ -503,7 +503,7 @@ final class ErrorAfterUpdateTest extends TestCase
                         (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
-                            class A {
+                            final class A {
                                 /** @var string */
                                 public $foo;
 
@@ -548,7 +548,7 @@ final class ErrorAfterUpdateTest extends TestCase
                         (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                             namespace Foo;
 
-                            class B extends A {}
+                            final class B extends A {}
 
                             echo (new B)->foo;',
                     ],
@@ -568,13 +568,13 @@ final class ErrorAfterUpdateTest extends TestCase
                                 public function __construct() {}
                             }
 
-                            class C extends A {}
+                            final class C extends A {}
 
                             new C();',
                         (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                             namespace Foo;
 
-                            class B extends A {
+                            final class B extends A {
                                 public function __construct() {}
                             }
 
@@ -593,7 +593,7 @@ final class ErrorAfterUpdateTest extends TestCase
                         (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                             namespace Foo;
 
-                            class B extends A {
+                            final class B extends A {
                                 public function __construct() {}
                             }
 
@@ -608,7 +608,7 @@ final class ErrorAfterUpdateTest extends TestCase
                         (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
-                            class A {}
+                            final class A {}
 
                             new A();',
                     ],
@@ -698,7 +698,7 @@ final class ErrorAfterUpdateTest extends TestCase
                         (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
-                            class A {
+                            final class A {
                                 public static function foo() : void {}
                                 public static function bar() : void {}
                             }',
@@ -710,7 +710,7 @@ final class ErrorAfterUpdateTest extends TestCase
                         (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
-                            class A {
+                            final class A {
                                 public static function foo() : void {}
                                 public static function bar() : void {}
                             }',
@@ -730,7 +730,7 @@ final class ErrorAfterUpdateTest extends TestCase
                                 public function foo(string $s) : void {}
                             }
 
-                            class B extends A {
+                            final class B extends A {
                                 public function foo(string $s) : void {
                                     echo $s;
                                 }
@@ -746,7 +746,7 @@ final class ErrorAfterUpdateTest extends TestCase
                                 public function foo(string $s) : void {}
                             }
 
-                            class B extends A {
+                            final class B extends A {
                             }
 
                             (new B)->foo("hello");',
@@ -760,11 +760,11 @@ final class ErrorAfterUpdateTest extends TestCase
                         (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
-                            class A {
+                            final class A {
                                 public function foo() : void {}
                             }
 
-                            class B {
+                            final class B {
                                 public function bar() : void {
                                     (new A)->foo();
                                 }
@@ -776,11 +776,11 @@ final class ErrorAfterUpdateTest extends TestCase
                         (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
-                            class A {
+                            final class A {
                                 public function foo() : void {}
                             }
 
-                            class B {
+                            final class B {
                                 public function bar() : void {
                                     new A();
                                 }
@@ -797,7 +797,7 @@ final class ErrorAfterUpdateTest extends TestCase
                         (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
-                            class A {
+                            final class A {
                                 /** @var string */
                                 public $foo = "hello";
                             }
@@ -808,7 +808,7 @@ final class ErrorAfterUpdateTest extends TestCase
                         (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
-                            class A {
+                            final class A {
                                 /** @var string */
                                 public $foo = "hello";
                             }
@@ -824,12 +824,12 @@ final class ErrorAfterUpdateTest extends TestCase
                         (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
-                            class A {
+                            final class A {
                                 /** @var string */
                                 public $foo = "hello";
                             }
 
-                            class B {
+                            final class B {
                                 public function bar() : void {
                                     echo (new A)->foo;
                                 }
@@ -841,12 +841,12 @@ final class ErrorAfterUpdateTest extends TestCase
                         (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
-                            class A {
+                            final class A {
                                 /** @var string */
                                 public $foo = "hello";
                             }
 
-                            class B {
+                            final class B {
                                 public function bar() : void {
                                     new A();
                                 }
@@ -873,7 +873,7 @@ final class ErrorAfterUpdateTest extends TestCase
                         (string) getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => '<?php
                             namespace Foo;
 
-                            class AChild extends A {
+                            final class AChild extends A {
                                 /** @var string */
                                 public $foo;
 
@@ -900,7 +900,7 @@ final class ErrorAfterUpdateTest extends TestCase
                         (string) getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => '<?php
                             namespace Foo;
 
-                            class AChild extends A {
+                            final class AChild extends A {
                                 /** @var string */
                                 public $foo;
 
