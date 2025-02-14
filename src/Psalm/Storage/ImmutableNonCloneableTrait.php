@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Storage;
 
-use Override;
-
 /**
  * @psalm-immutable
  */
