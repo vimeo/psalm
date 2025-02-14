@@ -881,6 +881,7 @@ final class ClassLikes
                     );
                     
                     if ($codebase->alter_code
+                        && $classlike_storage->stmt_location !== null
                         && isset($project_analyzer->getIssuesToFix()['ClassMustBeFinal'])
                     ) {
                         $idx = $classlike_storage->stmt_location->getSelectionBounds()[0];
