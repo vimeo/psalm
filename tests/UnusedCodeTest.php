@@ -174,6 +174,24 @@ final class UnusedCodeTest extends TestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'nonFinalClassWithChildren' => [
+                'code' => '<?php
+                    class a {}
+                    /** @api */
+                    final class b extends a {}',
+            ],
+            'apiNonFinalClass' => [
+                'code' => '<?php
+                    /** @api */
+                    class a {}',
+            ],
+            'abstractClass' => [
+                'code' => '<?php
+                    abstract class a {}
+                    trait c {}
+                    final class b extends a {}
+                    new b;',
+            ],
             'magicCall' => [
                 'code' => '<?php
                     final class A {
@@ -1953,6 +1971,12 @@ final class UnusedCodeTest extends TestCase
                     function f(): void {}
                     PHP,
                 'error_message' => 'UnusedDocblockParam',
+            ],
+            'nonFinalClass' => [
+                'code' => '<?php
+                    class a {}
+                    new a;',
+                'error_message' => 'ClassMustBeFinal',
             ],
         ];
     }

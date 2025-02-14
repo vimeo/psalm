@@ -307,6 +307,11 @@ final class DocumentationTest extends TestCase
                     $ignored_issues = ['UnusedVariable'];
                     break;
 
+
+                case 'ClassMustBeFinal':
+                    $ignored_issues = ['UnusedClass'];
+                    break;
+
                 case 'AmbiguousConstantInheritance':
                 case 'DeprecatedConstant':
                 case 'DuplicateEnumCase':
@@ -331,7 +336,8 @@ final class DocumentationTest extends TestCase
                 $blocks[0],
                 $issue_name,
                 $ignored_issues,
-                strpos($issue_name, 'Unused') !== false
+                $issue_name === 'ClassMustBeFinal'
+                    || strpos($issue_name, 'Unused') !== false
                     || strpos($issue_name, 'Unevaluated') !== false
                     || strpos($issue_name, 'Unnecessary') !== false,
                 $php_version,
