@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\Cache;
 
+use Override;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -26,6 +27,7 @@ use const DIRECTORY_SEPARATOR;
 
 final class CacheTest extends TestCase
 {
+    #[Override]
     public function setUp(): void
     {
         parent::setUp();
@@ -33,6 +35,7 @@ final class CacheTest extends TestCase
         RuntimeCaches::clearAll();
     }
 
+    #[Override]
     public function tearDown(): void
     {
         RuntimeCaches::clearAll();

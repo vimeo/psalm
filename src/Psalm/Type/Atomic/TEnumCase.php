@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Psalm\Type\Atomic;
 
+use Override;
+
 /**
  * Denotes an enum with a specific value
  *
@@ -16,16 +18,19 @@ final class TEnumCase extends TNamedObject
         parent::__construct($fq_enum_name);
     }
 
+    #[Override]
     public function getKey(bool $include_extra = true): string
     {
         return 'enum(' . $this->value . '::' . $this->case_name . ')';
     }
 
+    #[Override]
     public function getId(bool $exact = true, bool $nested = false): string
     {
         return 'enum(' . $this->value . '::' . $this->case_name . ')';
     }
 
+    #[Override]
     public function toPhpString(
         ?string $namespace,
         array $aliased_classes,
@@ -35,6 +40,7 @@ final class TEnumCase extends TNamedObject
         return $this->value;
     }
 
+    #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
@@ -43,6 +49,7 @@ final class TEnumCase extends TNamedObject
     /**
      * @param  array<lowercase-string, string> $aliased_classes
      */
+    #[Override]
     public function toNamespacedString(
         ?string $namespace,
         array $aliased_classes,

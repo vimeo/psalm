@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Plugin;
 
 use BadMethodCallException;
+use Override;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\VersionUtils;
@@ -48,6 +49,7 @@ final class Shepherd implements AfterAnalysisInterface
     /**
      * Called after analysis is complete
      */
+    #[Override]
     public static function afterAnalysis(
         AfterAnalysisEvent $event,
     ): void {

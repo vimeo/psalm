@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\Config;
 
+use Override;
 use Psalm\Config;
 use Psalm\Exception\ConfigException;
 use Psalm\Internal\PluginManager\ConfigFile;
@@ -26,6 +27,7 @@ final class ConfigFileTest extends TestCase
 {
     private string $file_path;
 
+    #[Override]
     public function setUp(): void
     {
         RuntimeCaches::clearAll();
@@ -34,6 +36,7 @@ final class ConfigFileTest extends TestCase
         $this->file_path = $temp_name;
     }
 
+    #[Override]
     public function tearDown(): void
     {
         @unlink($this->file_path);

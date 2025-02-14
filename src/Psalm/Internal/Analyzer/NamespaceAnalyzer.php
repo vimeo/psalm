@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Analyzer;
 
 use InvalidArgumentException;
+use Override;
 use PhpParser;
 use PhpParser\Node\Stmt\Namespace_;
 use Psalm\Context;
@@ -112,6 +113,7 @@ final class NamespaceAnalyzer extends SourceAnalyzer
         }
     }
 
+    #[Override]
     public function getNamespace(): string
     {
         return $this->namespace_name;
@@ -139,6 +141,7 @@ final class NamespaceAnalyzer extends SourceAnalyzer
         throw new InvalidArgumentException('Given $visibility not supported');
     }
 
+    #[Override]
     public function getFileAnalyzer(): FileAnalyzer
     {
         return $this->source;

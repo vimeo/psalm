@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use Override;
 use Psalm\Config;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
@@ -13,6 +14,7 @@ final class OverrideTest extends TestCase
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
 
+    #[Override]
     protected function makeConfig(): Config
     {
         $config = parent::makeConfig();
@@ -20,6 +22,7 @@ final class OverrideTest extends TestCase
         return $config;
     }
 
+    #[Override]
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -103,6 +106,7 @@ final class OverrideTest extends TestCase
         ];
     }
 
+    #[Override]
     public function providerInvalidCodeParse(): iterable
     {
         return [

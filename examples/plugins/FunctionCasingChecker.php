@@ -23,6 +23,7 @@ use function strtolower;
  */
 final class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface, AfterMethodCallAnalysisInterface
 {
+    #[\Override]
     public static function afterMethodCallAnalysis(AfterMethodCallAnalysisEvent $event): void
     {
         $expr = $event->getExpr();
@@ -60,6 +61,7 @@ final class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface,
         }
     }
 
+    #[\Override]
     public static function afterFunctionCallAnalysis(AfterFunctionCallAnalysisEvent $event): void
     {
         $expr = $event->getExpr();

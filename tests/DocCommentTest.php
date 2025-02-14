@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use Override;
 use PHPUnit\Framework\TestCase as BaseTestCase;
 use PhpParser\Comment\Doc;
 use Psalm\DocComment;
@@ -12,6 +13,7 @@ use Psalm\Internal\Scanner\ParsedDocblock;
 
 final class DocCommentTest extends BaseTestCase
 {
+    #[Override]
     public function setUp(): void
     {
         RuntimeCaches::clearAll();

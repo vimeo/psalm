@@ -6,6 +6,7 @@ namespace Psalm\Internal\Fork;
 
 use Amp\Serialization\SerializationException;
 use Amp\Serialization\Serializer;
+use Override;
 use Throwable;
 
 use function igbinary_serialize;
@@ -17,6 +18,7 @@ use function sprintf;
  */
 final class IgbinarySerializer implements Serializer
 {
+    #[Override]
     public function serialize(mixed $data): string
     {
         try {
@@ -37,6 +39,7 @@ final class IgbinarySerializer implements Serializer
         }
     }
 
+    #[Override]
     public function unserialize(string $data): mixed
     {
         try {

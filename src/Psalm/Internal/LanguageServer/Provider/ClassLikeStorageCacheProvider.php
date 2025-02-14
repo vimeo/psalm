@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\LanguageServer\Provider;
 
+use Override;
 use Psalm\Internal\Provider\ClassLikeStorageCacheProvider as InternalClassLikeStorageCacheProvider;
 use Psalm\Storage\ClassLikeStorage;
 use UnexpectedValueException;
@@ -22,6 +23,7 @@ final class ClassLikeStorageCacheProvider extends InternalClassLikeStorageCacheP
     {
     }
 
+    #[Override]
     public function writeToCache(ClassLikeStorage $storage, ?string $file_path, ?string $file_contents): void
     {
         $fq_classlike_name_lc = strtolower($storage->name);
@@ -31,6 +33,7 @@ final class ClassLikeStorageCacheProvider extends InternalClassLikeStorageCacheP
     /**
      * @param lowercase-string $fq_classlike_name_lc
      */
+    #[Override]
     public function getLatestFromCache(
         string $fq_classlike_name_lc,
         ?string $file_path,

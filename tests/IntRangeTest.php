@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use Override;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
@@ -24,6 +25,7 @@ final class IntRangeTest extends TestCase
         $this->assertEquals(10, $range->max_bound);
     }
 
+    #[Override]
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -1035,6 +1037,7 @@ final class IntRangeTest extends TestCase
         ];
     }
 
+    #[Override]
     public function providerInvalidCodeParse(): iterable
     {
         return [

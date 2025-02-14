@@ -6,6 +6,7 @@ namespace Psalm\Tests\LanguageServer;
 
 use LanguageServerProtocol\Position;
 use LanguageServerProtocol\Range;
+use Override;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
@@ -23,6 +24,7 @@ final class SymbolLookupTest extends TestCase
 {
     protected Codebase $codebase;
 
+    #[Override]
     public function setUp(): void
     {
         parent::setUp();

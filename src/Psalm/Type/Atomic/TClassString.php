@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Type\Atomic;
 
+use Override;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
@@ -50,6 +51,7 @@ class TClassString extends TString
         $cloned->as_type = $as_type;
         return $cloned;
     }
+    #[Override]
     public function getKey(bool $include_extra = true): string
     {
         if ($this->is_interface) {
@@ -63,6 +65,7 @@ class TClassString extends TString
         return $key . ($this->as === 'object' ? '' : '<' . $this->as_type . '>');
     }
 
+    #[Override]
     public function getId(bool $exact = true, bool $nested = false): string
     {
         if ($this->is_interface) {
@@ -76,6 +79,7 @@ class TClassString extends TString
         return ($this->is_loaded ? 'loaded-' : '') . $key . ($this->as === 'object' ? '' : '<' . $this->as_type . '>');
     }
 
+    #[Override]
     public function getAssertionString(): string
     {
         return 'class-string';
@@ -84,6 +88,7 @@ class TClassString extends TString
     /**
      * @param  array<lowercase-string, string> $aliased_classes
      */
+    #[Override]
     public function toPhpString(
         ?string $namespace,
         array $aliased_classes,
@@ -96,6 +101,7 @@ class TClassString extends TString
     /**
      * @param array<lowercase-string, string> $aliased_classes
      */
+    #[Override]
     public function toNamespacedString(
         ?string $namespace,
         array $aliased_classes,
@@ -125,11 +131,13 @@ class TClassString extends TString
         return 'class-string<\\' . $this->as . '>';
     }
 
+    #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
     }
 
+    #[Override]
     protected function getChildNodeKeys(): array
     {
         return $this->as_type ? ['as_type'] : [];
@@ -138,6 +146,7 @@ class TClassString extends TString
     /**
      * @return static
      */
+    #[Override]
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
         Codebase $codebase,

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Storage;
 
+use Override;
 use Psalm\Type\Atomic;
 use Stringable;
 
@@ -19,6 +20,7 @@ abstract class Assertion implements Stringable
 
     abstract public function isNegationOf(self $assertion): bool;
 
+    #[Override]
     abstract public function __toString(): string;
 
     public function isNegation(): bool

@@ -18,6 +18,7 @@ final class EchoChecker implements AfterStatementAnalysisInterface
      *
      * @return null|false
      */
+    #[\Override]
     public static function afterStatementAnalysis(AfterStatementAnalysisEvent $event): ?bool
     {
         $stmt = $event->getStmt();

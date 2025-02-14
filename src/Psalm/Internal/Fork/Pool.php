@@ -17,6 +17,7 @@ use Amp\Parallel\Worker\Worker;
 use Amp\Parallel\Worker\WorkerPool;
 use AssertionError;
 use Closure;
+use Override;
 use Psalm\Progress\Progress;
 use Revolt\EventLoop;
 
@@ -59,6 +60,7 @@ final class Pool
                         private readonly IpcHub $ipcHub = new LocalIpcHub(),
                     ) {
                     }
+                    #[Override]
                     public function start(string|array $script, ?Cancellation $cancellation = null): Context
                     {
                         return ForkContext::start($script, $this->ipcHub, $cancellation, $this->childConnectTimeout);

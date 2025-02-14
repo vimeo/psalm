@@ -15,6 +15,7 @@ use function strpos;
 final class InternalChecker implements AfterClassLikeAnalysisInterface
 {
     /** @return null|false */
+    #[\Override]
     public static function afterStatementAnalysis(AfterClassLikeAnalysisEvent $event): ?bool
     {
         $storage = $event->getClasslikeStorage();

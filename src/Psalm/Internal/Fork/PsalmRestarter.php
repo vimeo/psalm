@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Fork;
 
 use Composer\XdebugHandler\XdebugHandler;
+use Override;
 
 use function array_filter;
 use function array_merge;
@@ -75,6 +76,7 @@ final class PsalmRestarter extends XdebugHandler
      * @param bool $default
      * @phpcsSuppress SlevomatCodingStandard.TypeHints.ParameterTypeHint.MissingNativeTypeHint
      */
+    #[Override]
     protected function requiresRestart($default): bool
     {
         $this->required = (bool) array_filter(
@@ -146,6 +148,7 @@ final class PsalmRestarter extends XdebugHandler
      * @param non-empty-list<string> $command
      * @phpcsSuppress SlevomatCodingStandard.TypeHints.ParameterTypeHint.MissingNativeTypeHint
      */
+    #[Override]
     protected function restart($command): void
     {
         if ($this->required && $this->tmpIni) {

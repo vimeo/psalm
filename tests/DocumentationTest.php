@@ -7,6 +7,7 @@ namespace Psalm\Tests;
 use DOMAttr;
 use DOMDocument;
 use DOMXPath;
+use Override;
 use PHPUnit\Framework\Constraint\Constraint;
 use Psalm\Config;
 use Psalm\Config\IssueHandler;
@@ -137,6 +138,7 @@ final class DocumentationTest extends TestCase
         return $issue_code;
     }
 
+    #[Override]
     public function setUp(): void
     {
         RuntimeCaches::clearAll();
@@ -420,16 +422,19 @@ final class DocumentationTest extends TestCase
                 $this->inner = $inner;
             }
 
+            #[Override]
             public function toString(): string
             {
                 return $this->inner->toString();
             }
 
+            #[Override]
             protected function matches(mixed $other): bool
             {
                 return $this->inner->matches($other);
             }
 
+            #[Override]
             protected function failureDescription(mixed $other): string
             {
                 return $this->exporter()->shortenedExport($other) . ' ' . $this->toString();

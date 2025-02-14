@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Analyzer;
 
+use Override;
 use PhpParser;
 use PhpParser\Node\Expr\ArrowFunction;
 use PhpParser\Node\Expr\Closure;
@@ -1715,6 +1716,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
      * @psalm-mutation-free
      * @return array<lowercase-string, string>
      */
+    #[Override]
     public function getAliasedClassesFlipped(): array
     {
         if ($this->source instanceof NamespaceAnalyzer ||
@@ -1731,6 +1733,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
      * @psalm-mutation-free
      * @return array<string, string>
      */
+    #[Override]
     public function getAliasedClassesFlippedReplaceable(): array
     {
         if ($this->source instanceof NamespaceAnalyzer ||
@@ -1747,6 +1750,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
      * @psalm-mutation-free
      * @return array<string, array<string, Union>>|null
      */
+    #[Override]
     public function getTemplateTypeMap(): ?array
     {
         if ($this->source instanceof ClassLikeAnalyzer) {
@@ -1757,11 +1761,13 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         return $this->storage->template_types;
     }
 
+    #[Override]
     public function isStatic(): bool
     {
         return $this->is_static;
     }
 
+    #[Override]
     public function getCodebase(): Codebase
     {
         return $this->codebase;
@@ -1772,6 +1778,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
      *
      * @return array<string>
      */
+    #[Override]
     public function getSuppressedIssues(): array
     {
         return $this->suppressed_issues;
@@ -1780,6 +1787,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     /**
      * @param array<int, string> $new_issues
      */
+    #[Override]
     public function addSuppressedIssues(array $new_issues): void
     {
         if (isset($new_issues[0])) {
@@ -1792,6 +1800,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     /**
      * @param array<int, string> $new_issues
      */
+    #[Override]
     public function removeSuppressedIssues(array $new_issues): void
     {
         if (isset($new_issues[0])) {
@@ -1971,38 +1980,47 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 true,
             );
 
-            if ($codebase->analysis_php_version_id >= 8_03_00) {
-                $has_override_attribute = array_filter(
-                    $storage->attributes,
-                    static fn(AttributeStorage $s): bool => $s->fq_class_name === 'Override',
+            $has_override_attribute = array_filter(
+                $storage->attributes,
+                static fn(AttributeStorage $s): bool => $s->fq_class_name === 'Override',
+            );
+
+            if ($has_override_attribute
+                && (!$overridden_method_ids || $storage->cased_name === '__construct')
+            ) {
+                IssueBuffer::maybeAdd(
+                    new InvalidOverride(
+                        'Method ' . $storage->cased_name . ' does not match any parent method',
+                        $codeLocation,
+                    ),
+                    $this->getSuppressedIssues(),
                 );
+            }
 
-                if ($has_override_attribute
-                    && (!$overridden_method_ids || $storage->cased_name === '__construct')
+            if (!$has_override_attribute
+                && $codebase->config->ensure_override_attribute
+                && $overridden_method_ids
+                && $storage->cased_name !== '__construct'
+                && ($storage->cased_name !== '__toString'
+                    || isset($appearing_class_storage->direct_class_interfaces['stringable']))
+            ) {
+                IssueBuffer::maybeAdd(
+                    new MissingOverrideAttribute(
+                        'Method ' . $storage->cased_name . ' should have the "Override" attribute',
+                        $codeLocation,
+                    ),
+                    $this->getSuppressedIssues(),
+                    true,
+                );
+                    
+                if ($codebase->alter_code
+                    && $storage->stmt_location !== null
+                    && isset($this->getProjectAnalyzer()->getIssuesToFix()['MissingOverrideAttribute'])
                 ) {
-                    IssueBuffer::maybeAdd(
-                        new InvalidOverride(
-                            'Method ' . $storage->cased_name . ' does not match any parent method',
-                            $codeLocation,
-                        ),
-                        $this->getSuppressedIssues(),
-                    );
-                }
-
-                if (!$has_override_attribute
-                    && $codebase->config->ensure_override_attribute
-                    && $overridden_method_ids
-                    && $storage->cased_name !== '__construct'
-                    && ($storage->cased_name !== '__toString'
-                       || isset($appearing_class_storage->direct_class_interfaces['stringable']))
-                ) {
-                    IssueBuffer::maybeAdd(
-                        new MissingOverrideAttribute(
-                            'Method ' . $storage->cased_name . ' should have the "Override" attribute',
-                            $codeLocation,
-                        ),
-                        $this->getSuppressedIssues(),
-                    );
+                    $idx = $storage->stmt_location->getSelectionBounds()[0];
+                    FileManipulationBuffer::add($storage->stmt_location->file_path, [
+                        new FileManipulation($idx, $idx, "#[\\Override]\n", true),
+                    ]);
                 }
             }
 

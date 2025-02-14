@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use Override;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\MethodParamsProviderEvent;
@@ -16,6 +17,7 @@ use Psalm\Type;
  */
 final class PdoStatementSetFetchMode implements MethodParamsProviderInterface
 {
+    #[Override]
     public static function getClassLikeNames(): array
     {
         return ['PDOStatement'];
@@ -24,6 +26,7 @@ final class PdoStatementSetFetchMode implements MethodParamsProviderInterface
     /**
      * @return ?array<int, FunctionLikeParameter>
      */
+    #[Override]
     public static function getMethodParams(MethodParamsProviderEvent $event): ?array
     {
         $statements_source = $event->getStatementsSource();

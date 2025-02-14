@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Amp\PHPUnit\AsyncTestCase as BaseAsyncTestCase;
+use Override;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
@@ -37,6 +38,7 @@ abstract class AsyncTestCase extends BaseAsyncTestCase
     protected FakeFileProvider $file_provider;
     protected Config $testConfig;
 
+    #[Override]
     public static function setUpBeforeClass(): void
     {
         ini_set('memory_limit', '-1');
@@ -58,6 +60,7 @@ abstract class AsyncTestCase extends BaseAsyncTestCase
         return new TestConfig();
     }
 
+    #[Override]
     public function setUp(): void
     {
         parent::setUp();
@@ -81,6 +84,7 @@ abstract class AsyncTestCase extends BaseAsyncTestCase
         $this->project_analyzer->setPhpVersion('7.4', 'tests');
     }
 
+    #[Override]
     public function tearDown(): void
     {
         unset($this->project_analyzer, $this->file_provider, $this->testConfig);

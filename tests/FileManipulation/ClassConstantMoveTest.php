@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\FileManipulation;
 
+use Override;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
@@ -19,6 +20,7 @@ final class ClassConstantMoveTest extends TestCase
 {
     protected ProjectAnalyzer $project_analyzer;
 
+    #[Override]
     public function setUp(): void
     {
         RuntimeCaches::clearAll();

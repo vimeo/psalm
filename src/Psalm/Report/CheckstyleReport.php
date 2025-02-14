@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Psalm\Report;
 
+use Override;
 use Psalm\Report;
 
 use function sprintf;
 
 final class CheckstyleReport extends Report
 {
+    #[Override]
     public function create(): string
     {
         $output = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";

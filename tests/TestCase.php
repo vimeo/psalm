@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use Override;
 use PHPUnit\Framework\TestCase as BaseTestCase;
 use Psalm\Config;
 use Psalm\Context;
@@ -57,6 +58,7 @@ class TestCase extends BaseTestCase
      */
     protected Config $testConfig;
 
+    #[Override]
     public static function setUpBeforeClass(): void
     {
         ini_set('memory_limit', '-1');
@@ -78,6 +80,7 @@ class TestCase extends BaseTestCase
         return new TestConfig();
     }
 
+    #[Override]
     public function setUp(): void
     {
         parent::setUp();
@@ -101,6 +104,7 @@ class TestCase extends BaseTestCase
         $this->project_analyzer->setPhpVersion('7.4', 'tests');
     }
 
+    #[Override]
     public function tearDown(): void
     {
         unset($this->project_analyzer, $this->file_provider, $this->testConfig);

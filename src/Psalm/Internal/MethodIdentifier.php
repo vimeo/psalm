@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal;
 
 use InvalidArgumentException;
+use Override;
 use Psalm\Storage\ImmutableNonCloneableTrait;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Stringable;
@@ -65,6 +66,7 @@ final class MethodIdentifier implements Stringable
     }
 
     /** @return non-empty-string */
+    #[Override]
     public function __toString(): string
     {
         return $this->fq_class_name . '::' . $this->method_name;

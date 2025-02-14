@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Psalm\Type\Atomic;
 
+use Override;
+
 /**
  * Denotes a `class-string` corresponding to a template parameter previously specified in a `@template` tag.
  *
@@ -28,17 +30,20 @@ final class TTemplateParamClass extends TClassString
         );
     }
 
+    #[Override]
     public function getKey(bool $include_extra = true): string
     {
         return 'class-string<' . $this->param_name . '>';
     }
 
+    #[Override]
     public function getId(bool $exact = true, bool $nested = false): string
     {
         return 'class-string<' . $this->param_name . ':' . $this->defining_class
             . ' as ' . ($this->as_type ? $this->as_type->getId($exact) : $this->as) . '>';
     }
 
+    #[Override]
     public function getAssertionString(): string
     {
         return 'class-string<' . $this->param_name . '>';
@@ -47,6 +52,7 @@ final class TTemplateParamClass extends TClassString
     /**
      * @param  array<lowercase-string, string> $aliased_classes
      */
+    #[Override]
     public function toNamespacedString(
         ?string $namespace,
         array $aliased_classes,

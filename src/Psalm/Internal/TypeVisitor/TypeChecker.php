@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\TypeVisitor;
 
 use InvalidArgumentException;
+use Override;
 use Psalm\CodeLocation;
 use Psalm\CodeLocation\DocblockTypeLocation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
@@ -71,6 +72,7 @@ final class TypeChecker extends TypeVisitor
     /**
      * @return self::STOP_TRAVERSAL|self::DONT_TRAVERSE_CHILDREN|null
      */
+    #[Override]
     protected function enterNode(TypeNode $type): ?int
     {
         if (!$type instanceof Atomic && !$type instanceof Union && !$type instanceof MutableUnion) {

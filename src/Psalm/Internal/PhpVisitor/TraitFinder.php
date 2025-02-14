@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\PhpVisitor;
 
+use Override;
 use PhpParser;
 use ReflectionClass;
 use Throwable;
@@ -29,6 +30,7 @@ final class TraitFinder extends PhpParser\NodeVisitorAbstract
     ) {
     }
 
+    #[Override]
     public function enterNode(PhpParser\Node $node, bool &$traverseChildren = true): ?int
     {
         if ($node instanceof PhpParser\Node\Stmt\Trait_) {

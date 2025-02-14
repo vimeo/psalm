@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Storage;
 
+use Override;
 use Psalm\Aliases;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
@@ -398,6 +399,7 @@ final class ClassLikeStorage implements HasAttributesInterface
     /**
      * @return list<AttributeStorage>
      */
+    #[Override]
     public function getAttributeStorages(): array
     {
         return $this->attributes;

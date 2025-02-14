@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Psalm\Type\Atomic;
 
+use Override;
+
 /**
  * Denotes an anonymous class (i.e. `new class{}`) with potential methods
  *
@@ -24,6 +26,7 @@ final class TAnonymousClassInstance extends TNamedObject
         parent::__construct($value, $is_static, false, $extra_types);
     }
 
+    #[Override]
     public function toPhpString(
         ?string $namespace,
         array $aliased_classes,
@@ -36,6 +39,7 @@ final class TAnonymousClassInstance extends TNamedObject
     /**
      * @param  array<lowercase-string, string> $aliased_classes
      */
+    #[Override]
     public function toNamespacedString(
         ?string $namespace,
         array $aliased_classes,

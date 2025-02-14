@@ -7,6 +7,7 @@ namespace Psalm\Internal\Fork;
 use Amp\Cancellation;
 use Amp\Parallel\Worker\Task;
 use Amp\Sync\Channel;
+use Override;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 
@@ -16,6 +17,7 @@ use Psalm\Internal\Codebase\TaintFlowGraph;
  */
 final class InitAnalyzerTask implements Task
 {
+    #[Override]
     public function run(Channel $channel, Cancellation $cancellation): mixed
     {
         $project_analyzer = ProjectAnalyzer::getInstance();

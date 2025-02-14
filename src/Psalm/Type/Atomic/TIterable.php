@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Type\Atomic;
 
+use Override;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
@@ -55,6 +56,7 @@ final class TIterable extends Atomic
         parent::__construct($from_docblock);
     }
 
+    #[Override]
     public function getKey(bool $include_extra = true): string
     {
         if ($include_extra && $this->extra_types) {
@@ -64,11 +66,13 @@ final class TIterable extends Atomic
         return 'iterable';
     }
 
+    #[Override]
     public function getAssertionString(): string
     {
         return 'iterable';
     }
 
+    #[Override]
     public function getId(bool $exact = true, bool $nested = false): string
     {
         $s = '';
@@ -88,6 +92,7 @@ final class TIterable extends Atomic
     /**
      * @param  array<lowercase-string, string> $aliased_classes
      */
+    #[Override]
     public function toPhpString(
         ?string $namespace,
         array $aliased_classes,
@@ -97,11 +102,13 @@ final class TIterable extends Atomic
         return $analysis_php_version_id >= 7_01_00 ? 'iterable' : null;
     }
 
+    #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return $this->type_params[0]->isMixed() && $this->type_params[1]->isMixed();
     }
 
+    #[Override]
     public function equals(Atomic $other_type, bool $ensure_source_equality): bool
     {
         if (!$other_type instanceof self) {
@@ -121,6 +128,7 @@ final class TIterable extends Atomic
         return true;
     }
 
+    #[Override]
     protected function getChildNodeKeys(): array
     {
         return ['type_params', 'extra_types'];
@@ -129,6 +137,7 @@ final class TIterable extends Atomic
     /**
      * @return static
      */
+    #[Override]
     public function replaceTemplateTypesWithArgTypes(TemplateResult $template_result, ?Codebase $codebase): self
     {
         $type_params = $this->replaceTypeParamsTemplateTypesWithArgTypes(
@@ -148,6 +157,7 @@ final class TIterable extends Atomic
     /**
      * @return static
      */
+    #[Override]
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
         Codebase $codebase,

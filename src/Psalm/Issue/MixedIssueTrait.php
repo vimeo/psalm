@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Issue;
 
+use Override;
 use Psalm\CodeLocation;
 
 trait MixedIssueTrait
@@ -22,6 +23,7 @@ trait MixedIssueTrait
         $this->origin_location = $origin_location;
     }
 
+    #[Override]
     public function getMixedOriginMessage(): string
     {
         return $this->message
@@ -30,6 +32,7 @@ trait MixedIssueTrait
                 : '');
     }
 
+    #[Override]
     public function getOriginalLocation(): ?CodeLocation
     {
         return $this->origin_location;

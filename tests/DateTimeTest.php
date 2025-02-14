@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Exception;
+use Override;
 use Psalm\Context;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
@@ -80,6 +81,7 @@ final class DateTimeTest extends TestCase
         $this->assertSame('DateTimeImmutable|false', $context->vars_in_scope['$b']->getId(false));
     }
 
+    #[Override]
     public function providerValidCodeParse(): iterable
     {
         return [

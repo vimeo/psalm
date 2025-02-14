@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\LanguageServer;
 
+use Override;
 use Psalm\Internal\LanguageServer\EmitterInterface;
 use Psalm\Internal\LanguageServer\EmitterTrait;
 use Psalm\Internal\LanguageServer\Message;
@@ -20,6 +21,7 @@ final class MockProtocolStream implements ProtocolReader, ProtocolWriter, Emitte
     /**
      * Sends a Message to the client
      */
+    #[Override]
     public function write(Message $msg): void
     {
         EventLoop::queue(function () use ($msg): void {

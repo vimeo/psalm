@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\TypeVisitor;
 
+use Override;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TLiteralFloat;
@@ -20,6 +21,7 @@ final class ContainsLiteralVisitor extends TypeVisitor
 {
     private bool $contains_literal = false;
 
+    #[Override]
     protected function enterNode(TypeNode $type): ?int
     {
         if ($type instanceof TLiteralString

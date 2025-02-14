@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Analyzer;
 
+use Override;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -51,6 +52,7 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
 
 
     /** @psalm-mutation-free */
+    #[Override]
     public function getTemplateTypeMap(): ?array
     {
         return $this->source->getTemplateTypeMap();

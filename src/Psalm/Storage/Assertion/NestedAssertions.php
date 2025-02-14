@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Storage\Assertion;
 
+use Override;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 
@@ -22,6 +23,7 @@ final class NestedAssertions extends Assertion
     {
     }
 
+    #[Override]
     public function getNegation(): Assertion
     {
         return new NotNestedAssertions($this->assertions);
@@ -32,6 +34,7 @@ final class NestedAssertions extends Assertion
         return '@' . json_encode($this->assertions, JSON_THROW_ON_ERROR);
     }
 
+    #[Override]
     public function isNegationOf(Assertion $assertion): bool
     {
         return false;

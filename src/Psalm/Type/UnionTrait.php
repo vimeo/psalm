@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Type;
 
 use InvalidArgumentException;
+use Override;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Internal\TypeVisitor\CanContainObjectTypeVisitor;
@@ -1581,6 +1582,7 @@ trait UnionTrait
         return $this->types === [];
     }
 
+    #[Override]
     public function visit(TypeVisitor $visitor): bool
     {
         foreach ($this->types as $type) {

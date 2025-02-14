@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Codebase;
 
+use Override;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -68,6 +69,7 @@ final class TaintFlowGraph extends DataFlowGraph
     /** @var array<string, array<string, true>> */
     private array $specializations = [];
 
+    #[Override]
     public function addNode(DataFlowNode $node): void
     {
         $this->nodes[$node->id] = $node;

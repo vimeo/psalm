@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Psalm\Storage;
 
+use Override;
+
 /**
  * Suppresses memory usage when unserializing objects.
  *
@@ -16,6 +18,7 @@ namespace Psalm\Storage;
  */
 trait UnserializeMemoryUsageSuppressionTrait
 {
+    #[Override]
     public function __unserialize(array $properties): void
     {
         /** @psalm-suppress MixedAssignment */
