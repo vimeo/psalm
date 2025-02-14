@@ -30,6 +30,8 @@ final class TestConfig extends Config
         $this->cache_directory = null;
         $this->ignore_internal_falsable_issues = true;
         $this->ignore_internal_nullable_issues = true;
+        $this->ensure_override_attribute = true;
+        $this->strict_binary_operands = false;
 
         $this->base_dir = (string) getcwd();
 
