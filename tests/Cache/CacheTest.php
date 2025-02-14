@@ -128,7 +128,7 @@ final class CacheTest extends TestCase
                     'files' => [
                         'src/A.php' => <<<'PHP'
                             <?php
-                            class A {
+                            final class A {
                                 public function do(B $b): void
                                 {
                                     $b->do();
@@ -137,7 +137,7 @@ final class CacheTest extends TestCase
                             PHP,
                         'src/B.php' => <<<'PHP'
                             <?php
-                            class B {
+                            final class B {
                                 public function do(): void
                                 {
                                     echo 'B';
@@ -165,7 +165,7 @@ final class CacheTest extends TestCase
                     'files' => [
                         'src/A.php' => <<<'PHP'
                             <?php
-                            class A {
+                            final class A {
                                 public function foo(B $b): int
                                 {
                                     return $b->value;
@@ -174,7 +174,7 @@ final class CacheTest extends TestCase
                             PHP,
                         'src/B.php' => <<<'PHP'
                             <?php
-                            class B {
+                            final class B {
                                 public ?int $value = 0;
                             }
                             PHP,
@@ -190,7 +190,7 @@ final class CacheTest extends TestCase
                     'files' => [
                         'src/B.php' => <<<'PHP'
                             <?php
-                            class B {
+                            final class B {
                                 public int $value = 0;
                             }
                             PHP,
@@ -210,7 +210,7 @@ final class CacheTest extends TestCase
                             /**
                              * @template T
                              */
-                            class A {
+                            final class A {
                                 /**
                                  * @param T $baz
                                  */
@@ -222,7 +222,7 @@ final class CacheTest extends TestCase
                         'src/B.php' => <<<'PHP'
                             <?php
 
-                            class B {
+                            final class B {
                                 public function foo(): void
                                 {
                                     (new A)->foo(1);
@@ -240,7 +240,7 @@ final class CacheTest extends TestCase
                             /**
                              * @template K
                              */
-                            class A {
+                            final class A {
                                 /**
                                  * @param T $baz
                                  */
@@ -268,7 +268,7 @@ final class CacheTest extends TestCase
                     'files' => [
                         'src/A.php' => <<<'PHP'
                             <?php
-                            class A {
+                            final class A {
                                 public function __construct(private string $foo)
                                 {
                                 }
@@ -285,7 +285,7 @@ final class CacheTest extends TestCase
                     'files' => [
                         'src/A.php' => <<<'PHP'
                             <?php
-                            class A
+                            final class A
                             {
                                 public function __construct()
                                 {

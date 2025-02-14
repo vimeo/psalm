@@ -886,7 +886,7 @@ final class ClassLikes
                     ) {
                         $idx = $classlike_storage->stmt_location->getSelectionBounds()[0];
                         FileManipulationBuffer::add($classlike_storage->stmt_location->file_path, [
-                            new FileManipulation($idx, $idx, 'final ', true)
+                            new FileManipulation($idx, $idx, 'final ', true),
                         ]);
                     }
                 }

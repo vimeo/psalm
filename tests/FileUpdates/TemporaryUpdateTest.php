@@ -1714,11 +1714,11 @@ final class TemporaryUpdateTest extends TestCase
                         (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
-                            class A {}',
+                            final class A {}',
                         (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                             namespace Foo;
 
-                            class B {}',
+                            final class B {}',
                         (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'user.php' => '<?php
                             namespace Foo;
 
@@ -1728,18 +1728,18 @@ final class TemporaryUpdateTest extends TestCase
                         (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
-                            class A {}',
+                            final class A {}',
                         (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                             namespace Foo;
 
-                            class B {}',
+                            final class B {}',
                         (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'user.php' => '<?php
                             namespace Foo;
 
                             new B();',
                     ],
                 ],
-                'error_positions' => [[84], [84]],
+                'error_positions' => [[90], [90]],
                 'ignored_issues' => [],
                 'test_save' => false,
                 'check_unused_code' => true,
@@ -1750,7 +1750,7 @@ final class TemporaryUpdateTest extends TestCase
                         (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
-                            class A {
+                            final class A {
                                 public function foo() : void {}
 
                                 public function bar() : void {}
@@ -1764,7 +1764,7 @@ final class TemporaryUpdateTest extends TestCase
                         (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
-                            class A {
+                            final class A {
                                 public function foo() : void {
                                 }
 
@@ -1776,7 +1776,7 @@ final class TemporaryUpdateTest extends TestCase
                             (new A())->foo();',
                     ],
                 ],
-                'error_positions' => [[201], [234]],
+                'error_positions' => [[207], [240]],
                 'ignored_issues' => [],
                 'test_save' => false,
                 'check_unused_code' => true,
@@ -1787,7 +1787,7 @@ final class TemporaryUpdateTest extends TestCase
                         (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
-                            class Z {
+                            final class Z {
                                 const ONE = "1";
                                 const TWO = "2";
 
@@ -1796,7 +1796,7 @@ final class TemporaryUpdateTest extends TestCase
                         (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                             namespace Foo;
 
-                            class B {
+                            final class B {
                                 public function doFoo() : void {
                                     echo Z::ONE;
                                     Z::foo();
@@ -1812,7 +1812,7 @@ final class TemporaryUpdateTest extends TestCase
                         (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
-                            class Z {
+                            final class Z {
                                 const ONE = "1";
                                 const TWO = "2";
                                 const THREE = "3";
@@ -1822,7 +1822,7 @@ final class TemporaryUpdateTest extends TestCase
                         (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                             namespace Foo;
 
-                            class B {
+                            final class B {
                                 public function doFoo() : void {
                                     echo Z::ONE;
                                     Z::foo();
