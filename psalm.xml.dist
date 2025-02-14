@@ -36,7 +36,7 @@
             <file name="tests/Internal/CallMapTest.php"/>
             <file name="vendor/symfony/console/Command/Command.php"/>
             <directory name="tests/fixtures"/>
-            <file name="vendor/felixfbecker/advanced-json-rpc/lib/Dispatcher.php" />
+            <file name="vendor/danog/advanced-json-rpc/lib/Dispatcher.php" />
             <directory name="vendor/netresearch/jsonmapper" />
             <directory name="vendor/phpunit" />
             <directory name="vendor/mockery/mockery"/>
