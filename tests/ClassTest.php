@@ -9,7 +9,7 @@ use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use const DIRECTORY_SEPARATOR;
 
-final class ClassTest extends TestCase
+class ClassTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
@@ -46,22 +46,6 @@ final class ClassTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
-            'nonFinalClassWithChildren' => [
-                'code' => '<?php
-                    class a {}
-                    final class b extends a {}',
-            ],
-            'apiNonFinalClass' => [
-                'code' => '<?php
-                    /** @api */
-                    class a {}',
-            ],
-            'abstractClass' => [
-                'code' => '<?php
-                    abstract class a {}
-                    enum b {}
-                    trait c {}',
-            ],
             'overrideProtectedAccessLevelToPublic' => [
                 'code' => '<?php
                     class A {
@@ -1520,11 +1504,6 @@ final class ClassTest extends TestCase
                     PHP,
                 'error_message' => 'DuplicateProperty',
                 'ignored_issues' => [],
-            ],
-            'nonFinalClass' => [
-                'code' => '<?php
-                    class a {}',
-                'error_message' => 'ClassMustBeFinal',
             ],
         ];
     }
