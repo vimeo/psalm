@@ -11,7 +11,6 @@ use Override;
  */
 trait ImmutableNonCloneableTrait
 {
-    #[Override]
     private function __clone()
     {
     }

@@ -18,7 +18,6 @@ use Override;
  */
 trait UnserializeMemoryUsageSuppressionTrait
 {
-    #[Override]
     public function __unserialize(array $properties): void
     {
         /** @psalm-suppress MixedAssignment */

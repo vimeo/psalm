@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="dev-master@d577f78e60d7aff42e42af7825c0c978b094a558">
+<files psalm-version="6.x-dev@c48158beaa48190a4ddcd84bae16f4f909895143">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$comment_block->tags['variablesfrom'][0]]]></code>
@@ -2401,9 +2401,9 @@
       <code><![CDATA[Config]]></code>
     </InvalidExtendClass>
     <MethodSignatureMismatch>
+      <code><![CDATA[#[Override]]]></code>
+      <code><![CDATA[#[Override]]]></code>
       <code><![CDATA[public function __construct()]]></code>
-      <code><![CDATA[public function getComposerFilePathForClassLike(string $fq_classlike_name): bool]]></code>
-      <code><![CDATA[public function getProjectDirectories(): array]]></code>
     </MethodSignatureMismatch>
   </file>
   <file src="tests/TypeParseTest.php">

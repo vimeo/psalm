@@ -2280,6 +2280,7 @@ final class Config
             $stubsDir . 'CoreImmutableClasses.phpstub',
             $stubsDir . 'Reflection.phpstub',
             $stubsDir . 'SPL.phpstub',
+            $stubsDir . 'CoreGenericAttributes.phpstub',
         ];
 
         if ($codebase->analysis_php_version_id >= 7_04_00) {
@@ -2287,7 +2288,6 @@ final class Config
         }
 
         if ($codebase->analysis_php_version_id >= 8_00_00) {
-            $this->internal_stubs[] = $stubsDir . 'CoreGenericAttributes.phpstub';
             $this->internal_stubs[] = $stubsDir . 'Php80.phpstub';
         }
 

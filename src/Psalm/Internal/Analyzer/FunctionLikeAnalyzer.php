@@ -2000,13 +2000,15 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             if (!$has_override_attribute
                 && $codebase->config->ensure_override_attribute
                 && $overridden_method_ids
-                && $storage->cased_name !== '__construct'
+                && ($storage->defining_fqcln === null
+                    || !$codebase->classlike_storage_provider->get($storage->defining_fqcln)->is_trait
+                ) && $storage->cased_name !== '__construct'
                 && ($storage->cased_name !== '__toString'
                     || isset($appearing_class_storage->direct_class_interfaces['stringable']))
             ) {
                 IssueBuffer::maybeAdd(
                     new MissingOverrideAttribute(
-                        'Method ' . $storage->cased_name . ' should have the "Override" attribute',
+                        'Method ' . $method_id . ' should have the "Override" attribute',
                         $codeLocation,
                     ),
                     $this->getSuppressedIssues(),
