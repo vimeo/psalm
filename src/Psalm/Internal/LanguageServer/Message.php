@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\LanguageServer;
 
 use AdvancedJsonRpc\Message as MessageBody;
+use Override;
 use Stringable;
 
 use function array_pop;
@@ -52,6 +53,7 @@ final class Message implements Stringable
         $this->headers = $headers;
     }
 
+    #[Override]
     public function __toString(): string
     {
 

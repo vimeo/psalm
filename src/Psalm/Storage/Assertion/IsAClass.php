@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Storage\Assertion;
 
+use Override;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type\Atomic;
@@ -19,11 +20,13 @@ final class IsAClass extends Assertion
     {
     }
 
+    #[Override]
     public function getNegation(): Assertion
     {
         return new IsNotAClass($this->type, $this->allow_string);
     }
 
+    #[Override]
     public function getAtomicType(): Atomic
     {
         return $this->type;
@@ -34,6 +37,7 @@ final class IsAClass extends Assertion
         return 'isa-' . ($this->allow_string ? 'string-' : '') . $this->type;
     }
 
+    #[Override]
     public function isNegationOf(Assertion $assertion): bool
     {
         return $assertion instanceof IsNotAClass

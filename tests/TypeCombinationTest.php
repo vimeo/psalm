@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use Override;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 use Psalm\Type;
@@ -41,6 +42,7 @@ final class TypeCombinationTest extends TestCase
         );
     }
 
+    #[Override]
     public function providerValidCodeParse(): iterable
     {
         return [

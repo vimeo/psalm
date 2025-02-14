@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Provider\ParamsProvider;
 
+use Override;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Plugin\EventHandler\Event\FunctionParamsProviderEvent;
@@ -25,6 +26,7 @@ final class ArrayUArrayParamsProvider implements FunctionParamsProviderInterface
     /**
      * @return array<lowercase-string>
      */
+    #[Override]
     public static function getFunctionIds(): array
     {
         return [
@@ -47,6 +49,7 @@ final class ArrayUArrayParamsProvider implements FunctionParamsProviderInterface
     /**
      * @return ?list<FunctionLikeParameter>
      */
+    #[Override]
     public static function getFunctionParams(FunctionParamsProviderEvent $event): ?array
     {
         $statements_source = $event->getStatementsSource();

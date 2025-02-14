@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\PhpVisitor;
 
+use Override;
 use PhpParser\Node;
 use PhpParser\Node\Expr\YieldFrom;
 use PhpParser\Node\Expr\Yield_;
@@ -27,6 +28,7 @@ final class YieldTypeCollector extends NodeVisitorAbstract
     ) {
     }
 
+    #[Override]
     public function enterNode(Node $node): ?int
     {
         if ($node instanceof Yield_) {

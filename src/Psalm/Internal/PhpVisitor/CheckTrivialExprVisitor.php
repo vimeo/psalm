@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\PhpVisitor;
 
+use Override;
 use PhpParser;
 
 /**
@@ -48,6 +49,7 @@ final class CheckTrivialExprVisitor extends PhpParser\NodeVisitorAbstract
         return false;
     }
 
+    #[Override]
     public function enterNode(PhpParser\Node $node): ?int
     {
         if ($node instanceof PhpParser\Node\Expr) {

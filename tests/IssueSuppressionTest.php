@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use Override;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
@@ -20,6 +21,7 @@ final class IssueSuppressionTest extends TestCase
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
 
+    #[Override]
     public function setUp(): void
     {
         parent::setUp();
@@ -252,6 +254,7 @@ final class IssueSuppressionTest extends TestCase
         IssueBuffer::processUnusedSuppressions($this->project_analyzer->getCodebase()->file_provider);
     }
 
+    #[Override]
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -408,6 +411,7 @@ final class IssueSuppressionTest extends TestCase
         ];
     }
 
+    #[Override]
     public function providerInvalidCodeParse(): iterable
     {
         return [

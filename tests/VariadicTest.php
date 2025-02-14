@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use Override;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
@@ -75,6 +76,7 @@ final class VariadicTest extends TestCase
     /**
      * @return iterable<string,array{code: string}>
      */
+    #[Override]
     public function providerValidCodeParse(): iterable
     {
         return [

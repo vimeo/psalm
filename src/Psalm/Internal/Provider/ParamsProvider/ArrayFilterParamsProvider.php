@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Provider\ParamsProvider;
 
+use Override;
 use PhpParser\Node\Expr\ConstFetch;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
@@ -34,6 +35,7 @@ final class ArrayFilterParamsProvider implements FunctionParamsProviderInterface
     /**
      * @return array<lowercase-string>
      */
+    #[Override]
     public static function getFunctionIds(): array
     {
         return [
@@ -44,6 +46,7 @@ final class ArrayFilterParamsProvider implements FunctionParamsProviderInterface
     /**
      * @return ?list<FunctionLikeParameter>
      */
+    #[Override]
     public static function getFunctionParams(FunctionParamsProviderEvent $event): ?array
     {
         $call_args = $event->getCallArgs();

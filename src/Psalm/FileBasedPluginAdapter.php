@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm;
 
+use Override;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Plugin\PluginEntryPointInterface;
@@ -36,6 +37,7 @@ final class FileBasedPluginAdapter implements PluginEntryPointInterface
         $this->path = $path;
     }
 
+    #[Override]
     public function __invoke(RegistrationInterface $registration, ?SimpleXMLElement $config = null): void
     {
         $fq_class_name = $this->getPluginClassForPath($this->path);

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\Internal;
 
+use Override;
 use PHPUnit\Framework\TestCase;
 use Psalm\Internal\CliUtils;
 
@@ -18,12 +19,14 @@ final class CliUtilsTest extends TestCase
      */
     private array $argv = [];
 
+    #[Override]
     protected function setUp(): void
     {
         global $argv;
         $this->argv = $argv;
     }
 
+    #[Override]
     protected function tearDown(): void
     {
         global $argv;

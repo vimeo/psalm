@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Type\Atomic;
 
+use Override;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
@@ -149,6 +150,7 @@ class TKeyedArray extends Atomic
             && $this->properties[0]->equals($this->fallback_params[1], true, true, false);
     }
 
+    #[Override]
     public function getId(bool $exact = true, bool $nested = false): string
     {
         $property_strings = [];
@@ -207,6 +209,7 @@ class TKeyedArray extends Atomic
     /**
      * @param  array<lowercase-string, string> $aliased_classes
      */
+    #[Override]
     public function toNamespacedString(
         ?string $namespace,
         array $aliased_classes,
@@ -279,6 +282,7 @@ class TKeyedArray extends Atomic
     /**
      * @param  array<lowercase-string, string> $aliased_classes
      */
+    #[Override]
     public function toPhpString(
         ?string $namespace,
         array $aliased_classes,
@@ -288,6 +292,7 @@ class TKeyedArray extends Atomic
         return 'array';
     }
 
+    #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
@@ -483,6 +488,7 @@ class TKeyedArray extends Atomic
         return true;
     }
 
+    #[Override]
     public function getKey(bool $include_extra = true): string
     {
         return 'array';
@@ -491,6 +497,7 @@ class TKeyedArray extends Atomic
     /**
      * @return static
      */
+    #[Override]
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
         Codebase $codebase,
@@ -600,6 +607,7 @@ class TKeyedArray extends Atomic
     /**
      * @return static
      */
+    #[Override]
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase,
@@ -630,11 +638,13 @@ class TKeyedArray extends Atomic
         return $this;
     }
 
+    #[Override]
     protected function getChildNodeKeys(): array
     {
         return ['properties', 'fallback_params'];
     }
 
+    #[Override]
     public function equals(Atomic $other_type, bool $ensure_source_equality): bool
     {
         if ($other_type::class !== static::class) {
@@ -672,6 +682,7 @@ class TKeyedArray extends Atomic
         return true;
     }
 
+    #[Override]
     public function getAssertionString(): string
     {
         return $this->is_list ? 'list' : 'array';

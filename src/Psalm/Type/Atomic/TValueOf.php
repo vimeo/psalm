@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Type\Atomic;
 
+use Override;
 use Psalm\Codebase;
 use Psalm\Storage\EnumCaseStorage;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
@@ -54,12 +55,14 @@ final class TValueOf extends Atomic
         ));
     }
 
+    #[Override]
     protected function getChildNodeKeys(): array
     {
         return ['type'];
     }
 
 
+    #[Override]
     public function getKey(bool $include_extra = true): string
     {
         return 'value-of<' . $this->type . '>';
@@ -68,6 +71,7 @@ final class TValueOf extends Atomic
     /**
      * @param  array<lowercase-string, string> $aliased_classes
      */
+    #[Override]
     public function toPhpString(
         ?string $namespace,
         array $aliased_classes,
@@ -77,11 +81,13 @@ final class TValueOf extends Atomic
         return null;
     }
 
+    #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
     }
 
+    #[Override]
     public function getAssertionString(): string
     {
         return 'mixed';

@@ -7,6 +7,7 @@ namespace Psalm\Internal\Fork;
 use Amp\Cancellation;
 use Amp\Parallel\Worker\Task;
 use Amp\Sync\Channel;
+use Override;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Codebase\Scanner;
 use Psalm\IssueBuffer;
@@ -23,6 +24,7 @@ final class ShutdownScannerTask implements Task
     /**
      * @return PoolData
      */
+    #[Override]
     public function run(Channel $channel, Cancellation $cancellation): mixed
     {
         $project_analyzer = ProjectAnalyzer::getInstance();

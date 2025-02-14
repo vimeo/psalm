@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Provider\ParamsProvider;
 
+use Override;
 use PhpParser\Node\Expr\ConstFetch;
 use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Expr\MethodCall;
@@ -37,6 +38,7 @@ final class ArrayMultisortParamsProvider implements FunctionParamsProviderInterf
     /**
      * @return array<lowercase-string>
      */
+    #[Override]
     public static function getFunctionIds(): array
     {
         return [
@@ -47,6 +49,7 @@ final class ArrayMultisortParamsProvider implements FunctionParamsProviderInterf
     /**
      * @return ?list<FunctionLikeParameter>
      */
+    #[Override]
     public static function getFunctionParams(FunctionParamsProviderEvent $event): ?array
     {
         $call_args = $event->getCallArgs();

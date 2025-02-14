@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use Override;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\IncludeCollector;
@@ -41,6 +42,7 @@ final class ProjectCheckerTest extends TestCase
 
     protected ProjectAnalyzer $project_analyzer;
 
+    #[Override]
     public static function setUpBeforeClass(): void
     {
         // hack to stop Psalm seeing the phpunit arguments
@@ -58,6 +60,7 @@ final class ProjectCheckerTest extends TestCase
         }
     }
 
+    #[Override]
     public function setUp(): void
     {
         RuntimeCaches::clearAll();
@@ -129,6 +132,7 @@ final class ProjectCheckerTest extends TestCase
              * @return void
              * @phpcsSuppress SlevomatCodingStandard.TypeHints.ReturnTypeHint
              */
+            #[Override]
             public static function afterCodebasePopulated(AfterCodebasePopulatedEvent $event)
             {
                 self::$called = true;

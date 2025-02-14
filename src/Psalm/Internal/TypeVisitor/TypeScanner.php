@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\TypeVisitor;
 
+use Override;
 use Psalm\Internal\Codebase\Scanner;
 use Psalm\Storage\FileStorage;
 use Psalm\Type\Atomic\TClassConstant;
@@ -29,6 +30,7 @@ final class TypeScanner extends TypeVisitor
     ) {
     }
 
+    #[Override]
     protected function enterNode(TypeNode $type): ?int
     {
         if ($type instanceof TNamedObject) {

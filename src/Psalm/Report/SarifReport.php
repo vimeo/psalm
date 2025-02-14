@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Report;
 
+use Override;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\DataFlowNodeData;
 use Psalm\Internal\Json\Json;
@@ -20,6 +21,7 @@ use function str_starts_with;
  */
 final class SarifReport extends Report
 {
+    #[Override]
     public function create(): string
     {
         $report = [

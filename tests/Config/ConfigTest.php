@@ -6,6 +6,7 @@ namespace Psalm\Tests\Config;
 
 use Composer\Autoload\ClassLoader;
 use ErrorException;
+use Override;
 use Psalm\CodeLocation\Raw;
 use Psalm\Config;
 use Psalm\Config\IssueHandler;
@@ -56,6 +57,7 @@ final class ConfigTest extends TestCase
     /** @var callable(int, string, string=, int=, array=):bool|null */
     protected $original_error_handler = null;
 
+    #[Override]
     public static function setUpBeforeClass(): void
     {
         self::$config = new TestConfig();
@@ -69,6 +71,7 @@ final class ConfigTest extends TestCase
         }
     }
 
+    #[Override]
     public function setUp(): void
     {
         RuntimeCaches::clearAll();
@@ -1351,6 +1354,7 @@ final class ConfigTest extends TestCase
         );
     }
 
+    #[Override]
     public function tearDown(): void
     {
         set_error_handler($this->original_error_handler);

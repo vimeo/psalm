@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Psalm\Progress;
 
+use Override;
+
 use function max;
 use function microtime;
 use function str_repeat;
@@ -20,6 +22,7 @@ class DefaultProgress extends LongProgress
     /** @var float the last time when the progress bar UI was updated */
     private float $previous_update_time = 0.0;
 
+    #[Override]
     public function taskDone(int $level): void
     {
         if ($this->fixed_size && $this->number_of_tasks > self::TOO_MANY_FILES) {
@@ -95,6 +98,7 @@ class DefaultProgress extends LongProgress
         return $progress_bar;
     }
 
+    #[Override]
     public function finish(): void
     {
         if ($this->number_of_tasks > self::TOO_MANY_FILES) {

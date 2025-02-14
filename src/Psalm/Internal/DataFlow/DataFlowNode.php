@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\DataFlow;
 
+use Override;
 use Psalm\CodeLocation;
 use Stringable;
 
@@ -114,6 +115,7 @@ class DataFlowNode implements Stringable
         );
     }
 
+    #[Override]
     public function __toString(): string
     {
         return $this->id;

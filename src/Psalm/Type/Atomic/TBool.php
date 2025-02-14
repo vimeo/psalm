@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Psalm\Type\Atomic;
 
+use Override;
+
 /**
  * Denotes the `bool` type where the exact value is unknown.
  *
@@ -11,6 +13,7 @@ namespace Psalm\Type\Atomic;
  */
 class TBool extends Scalar
 {
+    #[Override]
     public function getKey(bool $include_extra = true): string
     {
         return 'bool';
@@ -19,6 +22,7 @@ class TBool extends Scalar
     /**
      * @param  array<lowercase-string, string> $aliased_classes
      */
+    #[Override]
     public function toPhpString(
         ?string $namespace,
         array $aliased_classes,

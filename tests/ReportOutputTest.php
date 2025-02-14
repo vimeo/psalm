@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use DOMDocument;
+use Override;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\IssueData;
@@ -31,6 +32,7 @@ use const JSON_THROW_ON_ERROR;
 
 final class ReportOutputTest extends TestCase
 {
+    #[Override]
     public function setUp(): void
     {
         // `TestCase::setUp()` creates its own ProjectAnalyzer and Config instance, but we don't want to do that in this

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Psalm\Type\Atomic;
 
+use Override;
+
 /**
  * Denotes a floating point value where the exact numeric value is known.
  *
@@ -16,11 +18,13 @@ final class TLiteralFloat extends TFloat
         parent::__construct($from_docblock);
     }
 
+    #[Override]
     public function getKey(bool $include_extra = true): string
     {
         return 'float(' . $this->value . ')';
     }
 
+    #[Override]
     public function getId(bool $exact = true, bool $nested = false): string
     {
         if (!$exact) {
@@ -33,6 +37,7 @@ final class TLiteralFloat extends TFloat
     /**
      * @param  array<lowercase-string, string> $aliased_classes
      */
+    #[Override]
     public function toNamespacedString(
         ?string $namespace,
         array $aliased_classes,

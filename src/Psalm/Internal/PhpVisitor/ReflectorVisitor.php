@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\PhpVisitor;
 
 use LogicException;
+use Override;
 use PhpParser;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Name;
@@ -103,6 +104,7 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
         $this->closure_statements = new SplObjectStorage();
     }
 
+    #[Override]
     public function enterNode(PhpParser\Node $node): ?int
     {
         foreach ($node->getComments() as $comment) {
@@ -501,6 +503,7 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
     /**
      * @return null
      */
+    #[Override]
     public function leaveNode(PhpParser\Node $node)
     {
         if ($node instanceof PhpParser\Node\Stmt\Namespace_) {
@@ -616,30 +619,35 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
     }
 
     /** @psalm-mutation-free */
+    #[Override]
     public function getFilePath(): string
     {
         return $this->file_path;
     }
 
     /** @psalm-mutation-free */
+    #[Override]
     public function getFileName(): string
     {
         return $this->file_scanner->getFileName();
     }
 
     /** @psalm-mutation-free */
+    #[Override]
     public function getRootFilePath(): string
     {
         return $this->file_scanner->getRootFilePath();
     }
 
     /** @psalm-mutation-free */
+    #[Override]
     public function getRootFileName(): string
     {
         return $this->file_scanner->getRootFileName();
     }
 
     /** @psalm-mutation-free */
+    #[Override]
     public function getAliases(): Aliases
     {
         return $this->aliases;
@@ -648,6 +656,7 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
     /**
      * @phpcsSuppress SlevomatCodingStandard.TypeHints.ReturnTypeHint.MissingAnyTypeHint
      */
+    #[Override]
     public function afterTraverse(array $nodes)
     {
         $this->file_storage->type_aliases = $this->type_aliases;

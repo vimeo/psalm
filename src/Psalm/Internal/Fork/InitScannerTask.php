@@ -7,6 +7,7 @@ namespace Psalm\Internal\Fork;
 use Amp\Cancellation;
 use Amp\Parallel\Worker\Task;
 use Amp\Sync\Channel;
+use Override;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
@@ -19,6 +20,7 @@ use const PHP_EOL;
  */
 final class InitScannerTask implements Task
 {
+    #[Override]
     final public function run(Channel $channel, Cancellation $cancellation): mixed
     {
         $analyzer = ProjectAnalyzer::getInstance();

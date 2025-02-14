@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\ReturnTypeProvider;
 
+use Override;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
@@ -15,6 +16,7 @@ final class DirnameTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
 
+    #[Override]
     public function providerValidCodeParse(): iterable
     {
         $input = 'a' . DIRECTORY_SEPARATOR . 'b' . DIRECTORY_SEPARATOR . 'c';

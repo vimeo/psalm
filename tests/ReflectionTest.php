@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use Override;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 final class ReflectionTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
 
+    #[Override]
     public function providerValidCodeParse(): iterable
     {
         yield 'ReflectionClass::isSubclassOf' => [

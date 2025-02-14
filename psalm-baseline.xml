@@ -3491,9 +3491,9 @@
       <code><![CDATA[Config]]></code>
     </InvalidExtendClass>
     <MethodSignatureMismatch>
+      <code><![CDATA[#[Override]]]></code>
+      <code><![CDATA[#[Override]]]></code>
       <code><![CDATA[public function __construct()]]></code>
-      <code><![CDATA[public function getComposerFilePathForClassLike(string $fq_classlike_name): bool]]></code>
-      <code><![CDATA[public function getProjectDirectories(): array]]></code>
     </MethodSignatureMismatch>
   </file>
   <file src="tests/TypeParseTest.php">

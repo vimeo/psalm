@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\Internal\Provider;
 
+use Override;
 use PhpParser;
 use Psalm\Internal\Provider\ParserCacheProvider;
 
@@ -35,6 +36,7 @@ final class ParserInstanceCacheProvider extends ParserCacheProvider
     {
     }
 
+    #[Override]
     public function loadStatementsFromCache(string $file_path, int $file_modified_time, string $file_content_hash): ?array
     {
         if (isset($this->statements_cache[$file_path])
@@ -50,6 +52,7 @@ final class ParserInstanceCacheProvider extends ParserCacheProvider
     /**
      * @return list<PhpParser\Node\Stmt>|null
      */
+    #[Override]
     public function loadExistingStatementsFromCache(string $file_path): ?array
     {
         if (isset($this->statements_cache[$file_path])) {
@@ -62,6 +65,7 @@ final class ParserInstanceCacheProvider extends ParserCacheProvider
     /**
      * @param  list<PhpParser\Node\Stmt>        $stmts
      */
+    #[Override]
     public function saveStatementsToCache(string $file_path, string $file_content_hash, array $stmts, bool $touch_only): void
     {
         $this->statements_cache[$file_path] = $stmts;
@@ -69,6 +73,7 @@ final class ParserInstanceCacheProvider extends ParserCacheProvider
         $this->file_content_hash[$file_path] = $file_content_hash;
     }
 
+    #[Override]
     public function loadExistingFileContentsFromCache(string $file_path): ?string
     {
         if (isset($this->file_contents_cache[$file_path])) {
@@ -78,11 +83,13 @@ final class ParserInstanceCacheProvider extends ParserCacheProvider
         return null;
     }
 
+    #[Override]
     public function cacheFileContents(string $file_path, string $file_contents): void
     {
         $this->file_contents_cache[$file_path] = $file_contents;
     }
 
+    #[Override]
     public function deleteOldParserCaches(float $time_before): int
     {
         $this->existing_file_content_hashes = null;
@@ -95,6 +102,7 @@ final class ParserInstanceCacheProvider extends ParserCacheProvider
         return 0;
     }
 
+    #[Override]
     public function saveFileContentHashes(): void
     {
     }

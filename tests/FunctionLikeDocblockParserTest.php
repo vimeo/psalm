@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use Override;
 use PHPUnit\Framework\TestCase as BaseTestCase;
 use PhpParser\Comment\Doc;
 use PhpParser\Node\Scalar\String_;
@@ -23,6 +24,7 @@ final class FunctionLikeDocblockParserTest extends BaseTestCase
 
     public CodeLocation $test_code_location;
 
+    #[Override]
     public function setUp(): void
     {
         RuntimeCaches::clearAll();

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\FileUpdates;
 
+use Override;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
@@ -22,6 +23,7 @@ use const DIRECTORY_SEPARATOR;
 
 final class AnalyzedMethodTest extends TestCase
 {
+    #[Override]
     public function setUp(): void
     {
         parent::setUp();

@@ -23,6 +23,7 @@ final class StringChecker implements AfterExpressionAnalysisInterface
      *
      * @return null|false
      */
+    #[\Override]
     public static function afterExpressionAnalysis(AfterExpressionAnalysisEvent $event): ?bool
     {
         $expr = $event->getExpr();

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests\Internal\Codebase;
 
 use InvalidArgumentException;
+use Override;
 use PHPUnit\Framework\AssertionFailedError;
 use PHPUnit\Framework\ExpectationFailedException;
 use Psalm\Codebase;
@@ -226,6 +227,7 @@ final class InternalCallMapHandlerTest extends TestCase
 
     private static Codebase $codebase;
 
+    #[Override]
     public static function setUpBeforeClass(): void
     {
         $project_analyzer = new ProjectAnalyzer(

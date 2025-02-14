@@ -12,6 +12,7 @@
     limitMethodComplexity="true"
     errorBaseline="psalm-baseline.xml"
     allFunctionsGlobal="true"
+    ensureOverrideAttribute="true"
     allConstantsGlobal="true"
     findUnusedPsalmSuppress="true"
     findUnusedBaselineEntry="true"
