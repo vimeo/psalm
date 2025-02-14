@@ -56,6 +56,12 @@ final class ClassTest extends TestCase
                     /** @api */
                     class a {}',
             ],
+            'abstractClass' => [
+                'code' => '<?php
+                    abstract class a {}
+                    enum b {}
+                    trait c {}',
+            ],
             'overrideProtectedAccessLevelToPublic' => [
                 'code' => '<?php
                     class A {
