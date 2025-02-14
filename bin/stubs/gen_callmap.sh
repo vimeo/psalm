@@ -10,8 +10,8 @@ done
 wait
 
 for f in $VERSIONS; do
-    docker run --rm -it -v $PWD:/app psalm_test_$f php /app/bin/gen_base_callmap.php
+    docker run --rm -it -v $PWD:/app psalm_test_$f php /app/bin/stubs/gen_base_callmap.php
 done
 
-php bin/gen_callmap.php
-php bin/gen_callmap.php
+php bin/stubs/gen_callmap.php
+php bin/stubs/gen_callmap.php

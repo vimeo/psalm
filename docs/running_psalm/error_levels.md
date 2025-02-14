@@ -136,6 +136,7 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
 
 These issues are treated as errors at level 2 and below.
 
+ - [ClassMustBeFinal](issues/ClassMustBeFinal.md)
  - [DeprecatedClass](issues/DeprecatedClass.md)
  - [DeprecatedConstant](issues/DeprecatedConstant.md)
  - [DeprecatedFunction](issues/DeprecatedFunction.md)

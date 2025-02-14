@@ -116,6 +116,6 @@ foreach (get_declared_classes() as $class) {
 $payload = '<?php // phpcs:ignoreFile
 
 return '.var_export($callmap, true).';';
-$f = __DIR__.'/../dictionaries/autogen/CallMap_'.PHP_MAJOR_VERSION.PHP_MINOR_VERSION.'.php';
+$f = __DIR__.'/../../dictionaries/autogen/CallMap_'.PHP_MAJOR_VERSION.PHP_MINOR_VERSION.'.php';
 
 file_put_contents($f, $payload);

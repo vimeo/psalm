@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 use Psalm\Config\IssueHandler;
 
-require_once(dirname(__DIR__) . '/vendor/autoload.php');
+require_once(dirname(__DIR__, 2) . '/vendor/autoload.php');
 
 $issue_types = IssueHandler::getAllIssueTypes();
 
