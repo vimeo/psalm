@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require __DIR__ . '/gen_callmap_utils.php';
+
 $long_options = [
     'foreign-map-a:',
     'foreign-map-b:',
@@ -52,18 +54,4 @@ foreach ($new_local as $name => $data) {
     }
 
     echo '],' . "\n";
-}
-
-
-function get_changed_functions(array $a, array $b)
-{
-    $changed_functions = [];
-
-    foreach (array_intersect_key($a, $b) as $function_name => $a_data) {
-        if (json_encode($b[$function_name]) !== json_encode($a_data)) {
-            $changed_functions[$function_name] = $b[$function_name];
-        }
-    }
-
-    return $changed_functions;
 }

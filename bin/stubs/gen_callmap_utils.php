@@ -228,3 +228,23 @@ function writeCallMap(string $file, array $callMap): void
 
 return '.var_export($callMap, true).';');
 }
+
+/**
+ * @template K as array-key
+ * @template V
+ * @param array<K, V> $a
+ * @param array<K, V> $b
+ * @return array<K, V>
+ */
+function get_changed_functions(array $a, array $b): array
+{
+    $changed_functions = [];
+
+    foreach (array_intersect_key($a, $b) as $function_name => $a_data) {
+        if (json_encode($b[$function_name]) !== json_encode($a_data)) {
+            $changed_functions[$function_name] = $b[$function_name];
+        }
+    }
+
+    return $changed_functions;
+}
