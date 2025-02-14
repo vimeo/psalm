@@ -130,10 +130,10 @@
             "@psalm",
             "@phpunit"
         ],
-        "gen_callmap": "./bin/gen_callmap.sh",
-        "gen_propertymap": "@php ./bin/update-property-map.php",
-        "generate_issues_list_doc": "@php ./bin/generate_issues_list_doc.php",
-        "generate_levels_doc": "@php ./bin/generate_levels_doc.php",
+        "gen_callmap": "./bin/stubs/gen_callmap.sh",
+        "gen_propertymap": "@php ./bin/stubs/update-property-map.php",
+        "generate_issues_list_doc": "@php ./bin/docs/generate_issues_list_doc.php",
+        "generate_levels_doc": "@php ./bin/docs/generate_levels_doc.php",
         "build": [
             "@gen_callmap",
             "@gen_propertymap",

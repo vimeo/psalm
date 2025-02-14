@@ -11,8 +11,6 @@ declare(strict_types=1);
 //
 // What we are currently missing is properly parsing of <xi:include> directives.
 
-use PhpParser\Node\Stmt\Class_;
-use PhpParser\Node\Stmt\Namespace_;
 use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitor\NameResolver;
 use PhpParser\ParserFactory;
@@ -21,31 +19,17 @@ set_error_handler(function ($num, $str, $file, $line, $context = null): void {
     throw new ErrorException($str, 0, $num, $file, $line);
 });
 
-foreach ([__DIR__ . '/../../../autoload.php', __DIR__ . '/../vendor/autoload.php'] as $file) {
+foreach ([__DIR__ . '/../../../../autoload.php', __DIR__ . '/../../vendor/autoload.php'] as $file) {
     if (file_exists($file)) {
         require $file;
         break;
     }
 }
+require __DIR__ . '/gen_callmap_utils.php';
 
 $parser = (new ParserFactory)->createForNewestSupportedVersion();
 $traverser = new NodeTraverser();
 $traverser->addVisitor(new NameResolver);
-
-function extractClassesFromStatements(array $statements): array
-{
-    $classes = [];
-    foreach ($statements as $statement) {
-        if ($statement instanceof Class_) {
-            $classes[strtolower($statement->namespacedName->toString())] = true;
-        }
-        if ($statement instanceof Namespace_) {
-            $classes += extractClassesFromStatements($statement->stmts);
-        }
-    }
-
-    return $classes;
-}
 
 $stubbedClasses = [];
 foreach (new RecursiveDirectoryIterator(
@@ -159,22 +143,6 @@ foreach ($files as $file) {
             $classes[$class][$property] = $type;
         }
     }
-}
-
-function serializeArray(array $array, string $prefix): string
-{
-    uksort($array, fn(string $first, string $second): int => strtolower($first) <=> strtolower($second));
-    $result = "[\n";
-    $localPrefix = $prefix . '    ';
-    foreach ($array as $key => $value) {
-        $result .= $localPrefix . var_export((string) $key, true) . ' => ' .
-            (is_array($value)
-            ? serializeArray($value, $localPrefix)
-            : var_export($value, true)) . ",\n";
-    }
-    $result .= $prefix . ']';
-
-    return $result;
 }
 
 $serialized = serializeArray($classes, '');

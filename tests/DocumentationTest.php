@@ -433,7 +433,7 @@ final class DocumentationTest extends TestCase
 
     /**
      * Tests that issues.md contains the expected links to issue documentation.
-     * issues.md can be generated automatically with bin/generate_documentation_issues_list.php.
+     * issues.md can be generated automatically with bin/docs/generate_documentation_issues_list.php.
      */
     public function testIssuesIndex(): void
     {

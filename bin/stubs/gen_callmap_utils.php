@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use PhpParser\Node\Stmt\Class_;
+use PhpParser\Node\Stmt\Namespace_;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Type;
@@ -227,4 +229,55 @@ function writeCallMap(string $file, array $callMap): void
     file_put_contents($file, '<?php // phpcs:ignoreFile
 
 return '.var_export($callMap, true).';');
+}
+
+/**
+ * @template K as array-key
+ * @template V
+ * @param array<K, V> $a
+ * @param array<K, V> $b
+ * @return array<K, V>
+ */
+function get_changed_functions(array $a, array $b): array
+{
+    $changed_functions = [];
+
+    foreach (array_intersect_key($a, $b) as $function_name => $a_data) {
+        if (json_encode($b[$function_name]) !== json_encode($a_data)) {
+            $changed_functions[$function_name] = $b[$function_name];
+        }
+    }
+
+    return $changed_functions;
+}
+
+function extractClassesFromStatements(array $statements): array
+{
+    $classes = [];
+    foreach ($statements as $statement) {
+        if ($statement instanceof Class_) {
+            $classes[strtolower($statement->namespacedName->toString())] = true;
+        }
+        if ($statement instanceof Namespace_) {
+            $classes += extractClassesFromStatements($statement->stmts);
+        }
+    }
+
+    return $classes;
+}
+
+function serializeArray(array $array, string $prefix): string
+{
+    uksort($array, fn(string $first, string $second): int => strtolower($first) <=> strtolower($second));
+    $result = "[\n";
+    $localPrefix = $prefix . '    ';
+    foreach ($array as $key => $value) {
+        $result .= $localPrefix . var_export((string) $key, true) . ' => ' .
+            (is_array($value)
+            ? serializeArray($value, $localPrefix)
+            : var_export($value, true)) . ",\n";
+    }
+    $result .= $prefix . ']';
+
+    return $result;
 }
