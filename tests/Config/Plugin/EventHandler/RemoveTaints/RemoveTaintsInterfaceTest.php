@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\Config\Plugin\EventHandler\RemoveTaints;
 
+use Override;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
@@ -28,7 +29,7 @@ final class RemoveTaintsInterfaceTest extends TestCase
 {
     protected static TestConfig $config;
 
-    #[\Override]
+    #[Override]
     public static function setUpBeforeClass(): void
     {
         self::$config = new TestConfig();
@@ -55,7 +56,7 @@ final class RemoveTaintsInterfaceTest extends TestCase
         );
     }
 
-    #[\Override]
+    #[Override]
     public function setUp(): void
     {
         RuntimeCaches::clearAll();

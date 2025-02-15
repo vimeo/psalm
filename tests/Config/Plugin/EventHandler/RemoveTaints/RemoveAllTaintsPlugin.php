@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\Config\Plugin\EventHandler\RemoveTaints;
 
+use Override;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\RemoveTaintsInterface;
 use Psalm\Type\TaintKindGroup;
@@ -18,7 +19,7 @@ final class RemoveAllTaintsPlugin implements RemoveTaintsInterface
      *
      * @return list<string>
      */
-    #[\Override]
+    #[Override]
     public static function removeTaints(AddRemoveTaintsEvent $event): array
     {
         return TaintKindGroup::ALL_INPUT;

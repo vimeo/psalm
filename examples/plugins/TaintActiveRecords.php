@@ -1,16 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Example\Plugin;
 
+use Override;
 use PhpParser\Node\ArrayItem;
-use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Expr;
+use PhpParser\Node\Expr\PropertyFetch;
 use Psalm\Plugin\EventHandler\AddTaintsInterface;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\TaintKindGroup;
 use Psalm\Type\Union;
+
+use function strpos;
 
 /**
  * Marks all property fetches of models inside namespace \app\models as tainted.
@@ -24,7 +29,7 @@ final class TaintActiveRecords implements AddTaintsInterface
      *
      * @return list<string>
      */
-    #[\Override]
+    #[Override]
     public static function addTaints(AddRemoveTaintsEvent $event): array
     {
         $expr = $event->getExpr();

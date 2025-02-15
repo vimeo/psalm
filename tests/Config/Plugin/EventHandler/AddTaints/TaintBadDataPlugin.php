@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Example\Plugin;
 
+use Override;
 use PhpParser\Node\Expr\Variable;
 use Psalm\Plugin\EventHandler\AddTaintsInterface;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
@@ -22,7 +23,7 @@ final class TaintBadDataPlugin implements AddTaintsInterface
      *
      * @return list<string>
      */
-    #[\Override]
+    #[Override]
     public static function addTaints(AddRemoveTaintsEvent $event): array
     {
         $expr = $event->getExpr();
