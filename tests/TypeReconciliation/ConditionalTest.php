@@ -1235,7 +1235,8 @@ final class ConditionalTest extends TestCase
             'thingInstanceOfThis' => [
                 'code' => '<?php
                     abstract class A {
-                        public function equals(mixed $other): void {
+                        /** @psalm-param mixed $other */
+                        public function equals($other): void {
                             if ($other instanceof $this) {
                                 /** @psalm-check-type $other = A&static */
                                 return;
