@@ -17,13 +17,14 @@ use Psalm\Type\Union;
  * ActiveRecords are model-representation of database entries, which can always
  * contain user-input and therefor should be tainted.
  */
-class TaintActiveRecords implements AddTaintsInterface
+final class TaintActiveRecords implements AddTaintsInterface
 {
     /**
      * Called to see what taints should be added
      *
      * @return list<string>
      */
+    #[\Override]
     public static function addTaints(AddRemoveTaintsEvent $event): array
     {
         $expr = $event->getExpr();

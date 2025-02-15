@@ -15,13 +15,14 @@ use Psalm\Type\TaintKindGroup;
  *
  * @psalm-suppress UnusedClass
  */
-class TaintBadDataPlugin implements AddTaintsInterface
+final class TaintBadDataPlugin implements AddTaintsInterface
 {
     /**
      * Called to see what taints should be added
      *
      * @return list<string>
      */
+    #[\Override]
     public static function addTaints(AddRemoveTaintsEvent $event): array
     {
         $expr = $event->getExpr();
