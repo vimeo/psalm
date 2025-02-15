@@ -928,6 +928,64 @@ final class PluginTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testAddTaints(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="6"
+                    runTaintAnalysis="true"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <plugins>
+                        <plugin filename="examples/plugins/TaintActiveRecords.php" />
+                    </plugins>
+                </psalm>',
+            ),
+        );
+
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php // --taint-analysis
+
+            namespace app\models;
+
+            class User {
+                public $name;
+
+                /**
+                 * @psalm-return list<User>
+                 */
+                public static function findAll(): array {
+                    $mockUser = new self();
+                    $mockUser->name = "<h1>Micky Mouse</h1>";
+
+                    return [$mockUser];
+                }
+            }
+
+            foreach (User::findAll() as $user) {
+                echo $user->name;
+            }
+            ',
+        );
+
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessageMatches('/TaintedHtml/');
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     public function testRemoveTaints(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(

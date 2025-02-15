@@ -43,6 +43,7 @@ use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_diff;
 use function array_merge;
 use function array_values;
 use function count;
@@ -266,6 +267,7 @@ final class FunctionCallReturnTypeFetcher
             $statements_analyzer,
             $stmt,
             $function_id,
+            $function_name->toCodeString(),
             $function_storage,
             $stmt_type,
             $template_result,
@@ -535,6 +537,7 @@ final class FunctionCallReturnTypeFetcher
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\FuncCall $stmt,
         string $function_id,
+        string $cased_function_id,
         FunctionLikeStorage $function_storage,
         Union &$stmt_type,
         TemplateResult $template_result,
@@ -560,13 +563,12 @@ final class FunctionCallReturnTypeFetcher
 
         $function_call_node = DataFlowNode::getForMethodReturn(
             $function_id,
-            $function_id,
+            $cased_function_id,
             $statements_analyzer->data_flow_graph instanceof TaintFlowGraph
                 ? ($function_storage->signature_return_type_location ?: $function_storage->location)
                 : ($function_storage->return_type_location ?: $function_storage->location),
             $function_storage->specialize_call ? $node_location : null,
         );
-
         $statements_analyzer->data_flow_graph->addNode($function_call_node);
 
         $codebase = $statements_analyzer->getCodebase();
@@ -617,9 +619,11 @@ final class FunctionCallReturnTypeFetcher
             $stmt_type = $stmt_type->addParentNodes([$function_call_node->id => $function_call_node]);
         }
 
-        if ($function_storage->return_source_params
-            && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph
-        ) {
+        if (!$statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+            return $function_call_node;
+        }
+
+        if ($function_storage->return_source_params) {
             $removed_taints = $function_storage->removed_taints;
 
             if ($function_id === 'preg_replace' && count($stmt->getArgs()) > 2) {
@@ -673,17 +677,7 @@ final class FunctionCallReturnTypeFetcher
             );
         }
 
-        if ($function_storage->taint_source_types && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
-            $method_node = TaintSource::getForMethodReturn(
-                $function_id,
-                $function_id,
-                $node_location,
-            );
-
-            $method_node->taints = $function_storage->taint_source_types;
-
-            $statements_analyzer->data_flow_graph->addSource($method_node);
-        }
+        self::taintUsingStorage($function_storage, $statements_analyzer->data_flow_graph, $function_call_node);
 
         return $function_call_node;
     }
@@ -743,6 +737,30 @@ final class FunctionCallReturnTypeFetcher
                     $removed_taints,
                 );
             }
+        }
+    }
+
+    public static function taintUsingStorage(
+        FunctionLikeStorage $function_storage,
+        TaintFlowGraph $graph,
+        DataFlowNode $function_call_node,
+    ): void {
+        // Docblock-defined taints should override inherited
+        $added_taints = [];
+        if ($function_storage->taint_source_types !== []) {
+            $added_taints = $function_storage->taint_source_types;
+        } elseif ($function_storage->added_taints !== []) {
+            $added_taints = $function_storage->added_taints;
+        }
+
+        $taints = array_diff(
+            $added_taints,
+            $function_storage->removed_taints,
+        );
+        if ($taints !== []) {
+            $taint_source = TaintSource::fromNode($function_call_node);
+            $taint_source->taints = $taints;
+            $graph->addSource($taint_source);
         }
     }
 

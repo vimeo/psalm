@@ -11,11 +11,13 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\TaintSink;
+use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type\TaintKind;
 
+use function array_diff;
 use function in_array;
 
 /**
@@ -61,6 +63,13 @@ final class EvalAnalyzer
 
                 $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
                 $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+
+                $taints = array_diff($added_taints, $removed_taints);
+                if ($taints !== []) {
+                    $taint_source = TaintSource::fromNode($eval_param_sink);
+                    $taint_source->taints = $taints;
+                    $statements_analyzer->data_flow_graph->addSource($taint_source);
+                }
 
                 foreach ($expr_type->parent_nodes as $parent_node) {
                     $statements_analyzer->data_flow_graph->addPath(

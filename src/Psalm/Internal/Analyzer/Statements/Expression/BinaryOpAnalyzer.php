@@ -18,6 +18,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\ImpureMethodCall;
@@ -34,6 +35,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_diff;
 use function in_array;
 use function strlen;
 
@@ -170,6 +172,13 @@ final class BinaryOpAnalyzer
 
                 $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
                 $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+
+                $taints = array_diff($added_taints, $removed_taints);
+                if ($taints !== [] && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+                    $taint_source = TaintSource::fromNode($new_parent_node);
+                    $taint_source->taints = $taints;
+                    $statements_analyzer->data_flow_graph->addSource($taint_source);
+                }
 
                 if ($stmt_left_type && $stmt_left_type->parent_nodes) {
                     foreach ($stmt_left_type->parent_nodes as $parent_node) {
