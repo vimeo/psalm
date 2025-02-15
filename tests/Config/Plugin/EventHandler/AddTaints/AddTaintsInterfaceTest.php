@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\Config\Plugin\EventHandler\AddTaints;
 
+use Override;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
@@ -24,10 +25,11 @@ use function getcwd;
 
 use const DIRECTORY_SEPARATOR;
 
-class AddTaintsInterfaceTest extends TestCase
+final class AddTaintsInterfaceTest extends TestCase
 {
     protected static TestConfig $config;
 
+    #[Override]
     public static function setUpBeforeClass(): void
     {
         self::$config = new TestConfig();
@@ -106,6 +108,7 @@ class AddTaintsInterfaceTest extends TestCase
         $this->expectExceptionMessage('TaintedHtml');
     }
 
+    #[Override]
     public function setUp(): void
     {
         RuntimeCaches::clearAll();

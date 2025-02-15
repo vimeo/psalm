@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Example\Plugin;
 
+use Override;
 use PhpParser\Node\ArrayItem;
-use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Expr;
+use PhpParser\Node\Expr\PropertyFetch;
 use Psalm\Plugin\EventHandler\AddTaintsInterface;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type\Atomic;
@@ -12,18 +15,21 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\TaintKindGroup;
 use Psalm\Type\Union;
 
+use function strpos;
+
 /**
  * Marks all property fetches of models inside namespace \app\models as tainted.
  * ActiveRecords are model-representation of database entries, which can always
  * contain user-input and therefor should be tainted.
  */
-class TaintActiveRecords implements AddTaintsInterface
+final class TaintActiveRecords implements AddTaintsInterface
 {
     /**
      * Called to see what taints should be added
      *
      * @return list<string>
      */
+    #[Override]
     public static function addTaints(AddRemoveTaintsEvent $event): array
     {
         $expr = $event->getExpr();
