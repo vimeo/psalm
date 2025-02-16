@@ -24,6 +24,19 @@ class GetObjectVarsTest extends TestCase
             'assertions' => ['$ret' => 'array{prop: string}'],
         ];
 
+        yield 'retrurnsNotMixed' => [
+            'code' => '<?php
+                /**
+                 * @param object{g: bool} $o
+                 */
+                function f(object $o, bool $b): bool {
+                    if ($o->g && $b) {
+                        return $o->g;
+                    }
+                    return true;
+                }',
+        ];
+
         yield 'returnsSealedArrayForFinalClass' => [
             'code' => '<?php
                 final class C {
