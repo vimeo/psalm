@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Example\Plugin;
 
+use Override;
 use PhpParser\Node\Expr\Variable;
 use Psalm\Plugin\EventHandler\AddTaintsInterface;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
@@ -15,13 +16,14 @@ use Psalm\Type\TaintKindGroup;
  *
  * @psalm-suppress UnusedClass
  */
-class TaintBadDataPlugin implements AddTaintsInterface
+final class TaintBadDataPlugin implements AddTaintsInterface
 {
     /**
      * Called to see what taints should be added
      *
      * @return list<string>
      */
+    #[Override]
     public static function addTaints(AddRemoveTaintsEvent $event): array
     {
         $expr = $event->getExpr();
