@@ -753,7 +753,7 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      *
      * @since 5.1.0
      */
-    public function attach($object, $data = null) {}
+    public function attach($object, $info = null) {}
 
     /**
      * Removes an object from the storage
