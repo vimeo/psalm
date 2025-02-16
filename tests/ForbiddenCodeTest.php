@@ -23,6 +23,16 @@ final class ForbiddenCodeTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     #[Override]
+    public static function setUpBeforeClass(): void
+    {
+        parent::setUpBeforeClass();
+
+        // hack to isolate Psalm from PHPUnit cli arguments
+        global $argv;
+        $argv = [];
+    }
+
+    #[Override]
     public function providerInvalidCodeParse(): iterable
     {
         return [
