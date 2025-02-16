@@ -43,7 +43,7 @@
         <xs:attribute name="checkForThrowsInGlobalScope" type="xs:boolean" default="false" />
         <xs:attribute name="ensureArrayIntOffsetsExist" type="xs:boolean" default="false" />
         <xs:attribute name="ensureArrayStringOffsetsExist" type="xs:boolean" default="false" />
-        <xs:attribute name="ensureOverrideAttribute" type="xs:boolean" default="false" />
+        <xs:attribute name="ensureOverrideAttribute" type="xs:boolean" default="true" />
         <xs:attribute name="findUnusedCode" type="xs:boolean" default="true" />
         <xs:attribute name="disallowLiteralKeysOnUnshapedArrays" type="xs:boolean" default="false" />
         <xs:attribute name="allFunctionsGlobal" type="xs:boolean" default="false" />
@@ -61,7 +61,8 @@
         <xs:attribute name="memoizeMethodCallResults" type="xs:boolean" default="false" />
         <xs:attribute name="rememberPropertyAssignmentsAfterCall" type="xs:boolean" default="true" />
         <xs:attribute name="resolveFromConfigFile" type="xs:boolean" default="true" />
-        <xs:attribute name="strictBinaryOperands" type="xs:boolean" default="false" />
+        <xs:attribute name="strictBinaryOperands" type="xs:boolean" default="true" />
+        <xs:attribute name="allowBoolToLiteralBoolComparison" type="xs:boolean" default="true" />
         <xs:attribute name="throwExceptionOnError" type="xs:boolean" default="false" />
         <xs:attribute name="disableVarParsing" type="xs:boolean" default="false" />
         <xs:attribute name="errorLevel" type="xs:integer" default="2" />
@@ -72,8 +73,8 @@
         <xs:attribute name="usePhpDocMethodsWithoutMagicCall" type="xs:boolean" default="false" />
         <xs:attribute name="usePhpDocPropertiesWithoutMagicCall" type="xs:boolean" default="false" />
         <xs:attribute name="skipChecksOnUnresolvableIncludes" type="xs:boolean" default="false" />
-        <xs:attribute name="sealAllMethods" type="xs:boolean" default="false" />
-        <xs:attribute name="sealAllProperties" type="xs:boolean" default="false" />
+        <xs:attribute name="sealAllMethods" type="xs:boolean" default="true" />
+        <xs:attribute name="sealAllProperties" type="xs:boolean" default="true" />
         <xs:attribute name="runTaintAnalysis" type="xs:boolean" default="false" />
         <xs:attribute name="usePhpStormMetaPath" type="xs:boolean" default="true" />
         <xs:attribute name="allowInternalNamedArgumentCalls" type="xs:boolean" default="true" />
@@ -81,7 +82,7 @@
         <xs:attribute name="reportInfo" type="xs:boolean" default="true" />
         <xs:attribute name="restrictReturnTypes" type="xs:boolean" default="false" />
         <xs:attribute name="limitMethodComplexity" type="xs:boolean" default="false" />
-        <xs:attribute name="disableSuppressAll" type="xs:boolean" default="false" />
+        <xs:attribute name="disableSuppressAll" type="xs:boolean" default="true" />
         <xs:attribute name="triggerErrorExits" type="TriggerErrorExitsType" default="default" />
         <xs:attribute name="threads" type="xs:integer" />
         <xs:attribute name="scanThreads" type="xs:integer" />

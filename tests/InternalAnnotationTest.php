@@ -228,6 +228,9 @@ final class InternalAnnotationTest extends TestCase
             'magicPropertyGetInternalImplicit' => [
                 'code' => '<?php
                     namespace A {
+                        /**
+                         * @property int $foo
+                         */
                         class Foo {
                             /**
                              * @internal

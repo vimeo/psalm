@@ -134,7 +134,17 @@ Disables parsing of `@var` PHPDocs everywhere except for properties. Setting thi
   strictBinaryOperands="[bool]"
 >
 ```
-If true we force strict typing on numerical and string operations (see https://github.com/vimeo/psalm/issues/24). Defaults to `false`.
+If true we force strict typing on numerical and string operations (see https://github.com/vimeo/psalm/issues/24). Defaults to `true`.
+
+#### allowBoolToLiteralBoolComparison
+
+```xml
+<psalm
+  allowBoolToLiteralBoolComparison="[bool]"
+>
+```
+
+If false, disallows comparing a boolean to a literal boolean (mostly a codestyle rule, not a bug detection rule; see [RedundantIdentityWithTrue](https://psalm.dev/docs/running_psalm/issues/RedundantIdentityWithTrue/)). Defaults to `true`.
 
 #### rememberPropertyAssignmentsAfterCall
 
@@ -161,7 +171,7 @@ When `true`, strings can be used as classes, meaning `$some_string::someMethod()
   disableSuppressAll="[bool]"
 >
 ```
-When `true`, disables wildcard suppression of all issues with `@psalm-suppress all`. Defaults to `false`.
+When `true`, disables wildcard suppression of all issues with `@psalm-suppress all`. Defaults to `true`.
 
 #### memoizeMethodCallResults
 
@@ -247,7 +257,7 @@ When `true`, Psalm will attempt to find all unused variables, the equivalent of 
   findUnusedCode="[bool]"
 >
 ```
-When `true`, Psalm will attempt to find all unused code (including unused variables), the equivalent of running with `--find-unused-code`. Defaults to `false`.
+When `true`, Psalm will attempt to find all unused code (including unused variables), the equivalent of running with `--find-unused-code`. Defaults to `true`.
 
 #### disallowLiteralKeysOnUnshapedArrays
 ```xml
@@ -304,7 +314,7 @@ When `true`, Psalm will complain when referencing an explicit integer offset on 
   ensureOverrideAttribute="[bool]"
 >
 ```
-When `true`, Psalm will report class and interface methods that override a method on a parent, but do not have an `Override` attribute. Defaults to `false`.
+When `true`, Psalm will report class and interface methods that override a method on a parent, but do not have an `Override` attribute. Defaults to `true`.
 
 #### phpVersion
 ```xml
@@ -335,7 +345,7 @@ This defaults to `false`.
 >
 ```
 
-When `true`, Psalm will treat all classes as if they had sealed methods, meaning that if you implement the magic method `__call`, you also have to add `@method` for each magic method. Defaults to false.
+When `true`, Psalm will treat all classes as if they had sealed methods, meaning that if you implement the magic method `__call`, you also have to add `@method` for each magic method. Defaults to true.
 
 #### sealAllProperties
 
@@ -345,7 +355,7 @@ When `true`, Psalm will treat all classes as if they had sealed methods, meaning
 >
 ```
 
-When `true`, Psalm will treat all classes as if they had sealed properties, meaning that Psalm will disallow getting and setting any properties not contained in a list of `@property` (or `@property-read`/`@property-write`) annotations and not explicitly defined as a `property`. Defaults to false.
+When `true`, Psalm will treat all classes as if they had sealed properties, meaning that Psalm will disallow getting and setting any properties not contained in a list of `@property` (or `@property-read`/`@property-write`) annotations and not explicitly defined as a `property`. Defaults to true.
 
 #### runTaintAnalysis
 

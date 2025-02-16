@@ -2204,7 +2204,7 @@ final class AssertionFinder
         ) {
             $config = $source->getCodebase()->config;
 
-            if ($config->strict_binary_operands
+            if (!$config->allow_bool_to_literal_bool_comparison
                 && $var_type->isSingle()
                 && $var_type->hasBool()
                 && !$var_type->from_docblock
@@ -2937,7 +2937,7 @@ final class AssertionFinder
         ) {
             $config = $source->getCodebase()->config;
 
-            if ($config->strict_binary_operands
+            if (!$config->allow_bool_to_literal_bool_comparison
                 && $var_type->isSingle()
                 && $var_type->hasBool()
                 && !$var_type->from_docblock
