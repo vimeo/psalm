@@ -1001,6 +1001,58 @@ final class ConditionalReturnTypeTest extends TestCase
                 ],
                 'ignored_issues' => [],
             ],
+            'literalStringIsNotNonEmpty' => [
+                'code' => '<?php
+                    /**
+                     * @param literal-string $literalString
+                     * @psalm-return ($literalString is non-empty-string ? string : int)
+                     */
+                    function getSomething(string $literalString)
+                    {
+                        if (!$literalString) {
+                            return 1;
+                        }
+                        return "";
+                    }
+                    /** @var literal-string $literalString */
+                    $literalString;
+                    $something = getSomething($literalString);
+                    /** @var non-empty-literal-string $nonEmptyliteralString */
+                    $nonEmptyliteralString;
+                    $something2 = getSomething($nonEmptyliteralString);
+                ',
+                'assertions' => [
+                    '$something' => 'int|string',
+                    '$something2' => 'string',
+                ],
+                'ignored_issues' => [],
+            ],
+            'literalStringIsNotNonEmptyWithUnion' => [
+                'code' => '<?php
+                    /**
+                     * @param literal-string|int $literalStringOrInt
+                     * @psalm-return ($literalStringOrInt is non-empty-string|int ? string : int)
+                     */
+                    function getSomething($literalStringOrInt)
+                    {
+                        if (!$literalStringOrInt) {
+                            return 1;
+                        }
+                        return "";
+                    }
+                    /** @var literal-string $literalString */
+                    $literalString;
+                    $something = getSomething($literalString);
+                    /** @var non-empty-literal-string $nonEmptyliteralString */
+                    $nonEmptyliteralString;
+                    $something2 = getSomething($nonEmptyliteralString);
+                ',
+                'assertions' => [
+                    '$something' => 'int|string',
+                    '$something2' => 'string',
+                ],
+                'ignored_issues' => [],
+            ],
         ];
     }
 }
