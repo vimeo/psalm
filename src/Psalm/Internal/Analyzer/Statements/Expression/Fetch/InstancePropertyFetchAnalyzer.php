@@ -49,6 +49,8 @@ final class InstancePropertyFetchAnalyzer
 
         if (!$stmt->name instanceof PhpParser\Node\Identifier) {
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->name, $context) === false) {
+                $context->inside_general_use = $was_inside_general_use;
+
                 return false;
             }
         }
