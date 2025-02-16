@@ -73,6 +73,7 @@ $docDir = realpath(__DIR__ . '/../build/doc-en');
 if (false === $docDir) {
     echo 'PHP doc not found!' . PHP_EOL;
     echo 'Please execute: git clone git@github.com:php/doc-en.git ' . dirname(__DIR__) . '/build/doc-en';
+    die(1);
 }
 
 $files = new RegexIterator(
