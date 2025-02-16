@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="5.x-dev@a46a07c5ca8bd7b54d1ca814c1f5b5ed38a0ba90">
+<files psalm-version="5.x-dev@690428cb9ff9f2d8b28d099b7e5cbe6cbab8d985">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$comment_block->tags['variablesfrom'][0]]]></code>
@@ -297,18 +297,10 @@
       <code><![CDATA[$source_pos = strpos($source, '*')]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
-  <file src="src/Psalm/Internal/Analyzer/Statements/Block/DoAnalyzer.php">
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[$do_context->branch_point]]></code>
-    </RiskyTruthyFalsyComparison>
-  </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Block/ForAnalyzer.php">
     <ArgumentTypeCoercion>
       <code><![CDATA[$stmt->cond]]></code>
     </ArgumentTypeCoercion>
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[$for_context->branch_point]]></code>
-    </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Block/ForeachAnalyzer.php">
     <ConflictingReferenceConstraint>
@@ -319,7 +311,6 @@
       <code><![CDATA[!$var_comment->var_id]]></code>
       <code><![CDATA[!$var_comment->var_id]]></code>
       <code><![CDATA[$calling_type_params]]></code>
-      <code><![CDATA[$foreach_context->branch_point]]></code>
       <code><![CDATA[$generic_storage->template_types]]></code>
       <code><![CDATA[$statements_analyzer->getTemplateTypeMap()]]></code>
       <code><![CDATA[$var_comment->line_number]]></code>
@@ -350,7 +341,6 @@
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$context->branch_point]]></code>
       <code><![CDATA[$else_context->branch_point]]></code>
-      <code><![CDATA[$else_context->branch_point]]></code>
       <code><![CDATA[$if_scope->assigned_var_ids]]></code>
       <code><![CDATA[$if_scope->new_vars]]></code>
       <code><![CDATA[$if_scope->redefined_vars]]></code>
@@ -378,22 +368,11 @@
       <code><![CDATA[$traverser->traverse([$switch_condition])[0]]]></code>
     </PossiblyUndefinedIntArrayOffset>
     <RiskyTruthyFalsyComparison>
-      <code><![CDATA[$case_context->branch_point]]></code>
       <code><![CDATA[$nested_or_options]]></code>
       <code><![CDATA[$switch_var_id]]></code>
       <code><![CDATA[$switch_var_id]]></code>
       <code><![CDATA[$switch_var_id]]></code>
       <code><![CDATA[$type_statements]]></code>
-    </RiskyTruthyFalsyComparison>
-  </file>
-  <file src="src/Psalm/Internal/Analyzer/Statements/Block/TryAnalyzer.php">
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[$try_context->branch_point]]></code>
-    </RiskyTruthyFalsyComparison>
-  </file>
-  <file src="src/Psalm/Internal/Analyzer/Statements/Block/WhileAnalyzer.php">
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[$while_context->branch_point]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/ArrayAnalyzer.php">
@@ -446,8 +425,6 @@
       <code><![CDATA[$count_inequality_position]]></code>
       <code><![CDATA[$false_position]]></code>
       <code><![CDATA[$false_position]]></code>
-      <code><![CDATA[$first_var_name]]></code>
-      <code><![CDATA[$first_var_name]]></code>
       <code><![CDATA[$first_var_name]]></code>
       <code><![CDATA[$first_var_name]]></code>
       <code><![CDATA[$first_var_name]]></code>
@@ -935,7 +912,6 @@
       <code><![CDATA[$dim_var_id]]></code>
       <code><![CDATA[$dim_var_id]]></code>
       <code><![CDATA[$extended_var_id]]></code>
-      <code><![CDATA[$extended_var_id]]></code>
       <code><![CDATA[$keyed_array_var_id]]></code>
       <code><![CDATA[$keyed_array_var_id]]></code>
     </RiskyTruthyFalsyComparison>
@@ -1363,6 +1339,9 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Fork/PsalmRestarter.php">
+    <MoreSpecificImplementedParamType>
+      <code><![CDATA[$command]]></code>
+    </MoreSpecificImplementedParamType>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$this->tmpIni]]></code>
     </RiskyTruthyFalsyComparison>

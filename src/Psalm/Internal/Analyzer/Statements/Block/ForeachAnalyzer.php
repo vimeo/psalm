@@ -283,9 +283,8 @@ final class ForeachAnalyzer
         $foreach_context->inside_loop = true;
         $foreach_context->break_types[] = 'loop';
 
-        if ($codebase->alter_code) {
-            $foreach_context->branch_point =
-                $foreach_context->branch_point ?: (int) $stmt->getAttribute('startFilePos');
+        if ($codebase->alter_code && $foreach_context->branch_point === null) {
+            $foreach_context->branch_point = (int) $stmt->getAttribute('startFilePos');
         }
 
         if ($stmt->keyVar instanceof PhpParser\Node\Expr\Variable && is_string($stmt->keyVar->name)) {

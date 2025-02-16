@@ -292,9 +292,8 @@ final class IfElseAnalyzer
         }
 
         if ($stmt->else) {
-            if ($codebase->alter_code) {
-                $else_context->branch_point =
-                    $else_context->branch_point ?: (int) $stmt->getAttribute('startFilePos');
+            if ($codebase->alter_code && $else_context->branch_point === null) {
+                $else_context->branch_point = (int) $stmt->getAttribute('startFilePos');
             }
         }
 
