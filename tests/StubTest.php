@@ -16,12 +16,9 @@ use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
-use Psalm\Internal\VersionUtils;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 
 use function assert;
-use function define;
-use function defined;
 use function dirname;
 use function explode;
 use function getcwd;
@@ -40,15 +37,13 @@ final class StubTest extends TestCase
     #[Override]
     public static function setUpBeforeClass(): void
     {
+        parent::setUpBeforeClass();
+
+        // hack to isolate Psalm from PHPUnit cli arguments
+        global $argv;
+        $argv = [];
+
         self::$config = new TestConfig();
-
-        if (!defined('PSALM_VERSION')) {
-            define('PSALM_VERSION', VersionUtils::getPsalmVersion());
-        }
-
-        if (!defined('PHP_PARSER_VERSION')) {
-            define('PHP_PARSER_VERSION', VersionUtils::getPhpParserVersion());
-        }
     }
 
     #[Override]
