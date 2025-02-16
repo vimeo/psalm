@@ -50216,23 +50216,23 @@ return array (
   ),
   'rawurldecode' => 
   array (
-    0 => 'string',
-    'string' => 'string',
+    0 => '\'\'',
+    'string' => '\'\'',
   ),
   'rawurldecode\'1' => 
   array (
-    0 => '\'\'',
-    'string' => '\'\'',
+    0 => 'non-empty-string',
+    'string' => 'non-empty-string',
   ),
   'rawurlencode' => 
   array (
-    0 => 'string',
-    'string' => 'string',
+    0 => '\'\'',
+    'string' => '\'\'',
   ),
   'rawurlencode\'1' => 
   array (
-    0 => '\'\'',
-    'string' => '\'\'',
+    0 => 'non-empty-string',
+    'string' => 'non-empty-string',
   ),
   'readdir' => 
   array (
@@ -73416,8 +73416,8 @@ return array (
   ),
   'urldecode\'1' => 
   array (
-    0 => 'string',
-    'string' => 'string',
+    0 => 'non-empty-string',
+    'string' => 'non-empty-string',
   ),
   'urlencode' => 
   array (
