@@ -572,8 +572,6 @@ final class ArrayAssignmentAnalyzer
 
         $from_countable_object_like = false;
 
-        $new_child_type = null;
-
         $array_atomic_type = null;
         if (!$current_dim && !$context->inside_loop) {
             $atomic_root_types = $root_type->getAtomicTypes();
@@ -638,11 +636,6 @@ final class ArrayAssignmentAnalyzer
                             $array_atomic_type_array,
                             count($atomic_root_type_array->properties),
                         );
-                    } elseif ($atomic_root_type_array->is_list) {
-                        $array_atomic_type = $atomic_root_type_array;
-                        $new_child_type = new Union([$array_atomic_type], [
-                            'parent_nodes' => $root_type->parent_nodes,
-                        ]);
                     } else {
                         assert($array_atomic_type_list !== null);
                         $array_atomic_type = array_fill(
@@ -685,18 +678,16 @@ final class ArrayAssignmentAnalyzer
 
         $array_assignment_type = new Union([$array_atomic_type]);
 
-        if (!$new_child_type) {
-            if ($templated_assignment) {
-                $new_child_type = $root_type;
-            } else {
-                $new_child_type = Type::combineUnionTypes(
-                    $root_type,
-                    $array_assignment_type,
-                    $codebase,
-                    true,
-                    true,
-                );
-            }
+        if ($templated_assignment) {
+            $new_child_type = $root_type;
+        } else {
+            $new_child_type = Type::combineUnionTypes(
+                $root_type,
+                $array_assignment_type,
+                $codebase,
+                true,
+                true,
+            );
         }
 
         if ($from_countable_object_like) {

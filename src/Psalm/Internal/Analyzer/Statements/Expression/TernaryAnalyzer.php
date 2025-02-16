@@ -120,7 +120,7 @@ final class TernaryAnalyzer
 
         // this will see whether any of the clauses in set A conflict with the clauses in set B
         AlgebraAnalyzer::checkForParadox(
-            $context->clauses,
+            $entry_clauses,
             $if_clauses,
             $statements_analyzer,
             $stmt->cond,
@@ -139,7 +139,7 @@ final class TernaryAnalyzer
             $ternary_context_clauses = array_values(
                 array_filter(
                     $ternary_context_clauses,
-                    static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses),
+                    static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses, true),
                 ),
             );
 
