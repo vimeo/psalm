@@ -11,7 +11,6 @@ use Psalm\Report;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Output\BufferedOutput;
 
-use function count;
 use function implode;
 use function str_split;
 use function strlen;
@@ -35,7 +34,7 @@ final class CompactReport extends Report
         $current_file = null;
 
         $output = [];
-        foreach ($this->issues_data as $i => $issue_data) {
+        foreach ($this->issues_data as $issue_data) {
             if (!$this->show_info && $issue_data->severity === IssueData::SEVERITY_INFO) {
                 continue;
             }
@@ -76,12 +75,11 @@ final class CompactReport extends Report
             ]);
 
             $current_file = $issue_data->file_name;
+        }
 
-            // If we're at the end of the issue sets, then wrap up the last table and render it out.
-            if ($i === count($this->issues_data) - 1) {
-                $table->render();
-                $output[] = $buffer->fetch();
-            }
+        if ($buffer !== null) {
+            $table->render();
+            $output[] = $buffer->fetch();
         }
 
         return implode("\n", $output);
