@@ -133,7 +133,7 @@ final class Codebase
 
     public StatementsProvider $statements_provider;
 
-    private readonly Progress $progress;
+    public readonly Progress $progress;
 
     /**
      * @var array<string, Union>
