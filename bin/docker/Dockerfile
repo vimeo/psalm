@@ -1,3 +1,9 @@
+# Not alpine, due to possible performance issues of MUSL malloc.
+#
+# In theory this should not be relevant because PHP uses its own allocator,
+# but some one-time initialization logic inside PHP bypasses it,
+# which means system malloc *is* used more often especially in cases like these.
+
 FROM php:8.4-cli
 
 # This line invalidates cache when master branch changes
@@ -34,4 +40,4 @@ FROM scratch
 COPY --from=0 / /
 
 WORKDIR "/app"
-#ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["/entrypoint.sh"]
