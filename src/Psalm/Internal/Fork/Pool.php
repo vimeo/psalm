@@ -49,8 +49,11 @@ final class Pool
     /**
      * @param int<2, max> $threads
      */
-    public function __construct(public readonly int $threads, private readonly Progress $progress)
-    {
+    public function __construct(
+        public readonly int $threads,
+        private readonly float $timeLimit,
+        private readonly Progress $progress,
+    ) {
         $this->pool = new ContextWorkerPool(
             $threads,
             new ContextWorkerFactory(
@@ -97,11 +100,11 @@ final class Pool
             if ($task_done_closure) {
                 $f->map($task_done_closure);
             }
-            $id = EventLoop::repeat(10.0, function () use ($file): void {
-                static $seconds = 10;
-                $this->progress->write(PHP_EOL."Processing $file is taking $seconds seconds...".PHP_EOL);
+            $id = EventLoop::repeat($this->timeLimit, function () use ($file): void {
+                static $seconds = 0.0;
                 /** @psalm-suppress MixedAssignment, MixedOperand */
-                $seconds += 10;
+                $seconds += $this->timeLimit;
+                $this->progress->write(PHP_EOL."Processing $file is taking $seconds seconds...".PHP_EOL);
             });
             $f->finally(static function () use ($id): void {
                 EventLoop::cancel($id);
