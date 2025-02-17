@@ -302,7 +302,7 @@ final class Config
 
     public bool $strict_binary_operands = true;
 
-    public bool $allow_bool_to_literal_bool_comparison = false;
+    public bool $allow_bool_to_literal_bool_comparison = true;
 
     public bool $remember_property_assignments_after_call = true;
 
