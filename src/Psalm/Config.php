@@ -410,6 +410,8 @@ final class Config
 
     public int $max_shaped_array_size = 100;
 
+    public float $long_scan_warning = 10.0;
+
     /**
      * @var string[]
      */
@@ -1169,6 +1171,11 @@ final class Config
         if (isset($config_xml['maxShapedArraySize'])) {
             $attribute_text = (int)$config_xml['maxShapedArraySize'];
             $config->max_shaped_array_size = $attribute_text;
+        }
+
+        if (isset($config_xml['longScanWarning'])) {
+            $attribute_text = (float)$config_xml['longScanWarning'];
+            $config->long_scan_warning = $attribute_text;
         }
 
         if (isset($config_xml['inferPropertyTypesFromConstructor'])) {

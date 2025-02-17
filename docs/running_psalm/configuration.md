@@ -503,6 +503,17 @@ Arrays bigger than this value (100 by default) will be transformed in a generic 
 
 Please note that changing this setting might introduce unwanted side effects and those side effects won't be considered as bugs.
 
+#### longScanWarning
+```xml
+<psalm
+  longScanWarning="10.0"
+>
+```
+
+Specifies the maximum scan and analysis duration for individual files; files which take longer than the specified amount of seconds (as a floating point, so values smaller than one second are also accepted) will print out a warning to CLI (the scan will **not** be interrupted).  
+
+Only used in multithreaded mode, defaults to 10 seconds.  
+
 #### restrictReturnTypes
 
 ```xml

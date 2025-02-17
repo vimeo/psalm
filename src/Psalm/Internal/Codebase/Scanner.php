@@ -310,6 +310,7 @@ final class Scanner
             // files up among a given number of child processes.
             $pool = new Pool(
                 $pool_size,
+                $this->config->long_scan_warning,
                 $this->progress,
             );
 

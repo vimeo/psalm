@@ -309,6 +309,7 @@ final class Analyzer
             // files up among a given number of child processes.
             $pool = new Pool(
                 $pool_size,
+                $codebase->config->long_scan_warning,
                 $project_analyzer->progress,
             );
 
