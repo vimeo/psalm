@@ -1996,8 +1996,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     && $codebase->config->ensure_override_attribute
                     && $overridden_method_ids
                     && $storage->cased_name !== '__construct'
-                    && ($storage->cased_name !== '__toString'
-                       || isset($appearing_class_storage->direct_class_interfaces['stringable']))
+                    && (array_key_exists($storage->cased_name, $appearing_class_storage->methods)
+                        || array_key_exists('stringable', $appearing_class_storage->direct_class_interfaces)
+                    )
                 ) {
                     IssueBuffer::maybeAdd(
                         new MissingOverrideAttribute(
