@@ -37,7 +37,7 @@
         "danog/advanced-json-rpc": "^3.1",
         "felixfbecker/language-server-protocol": "^1.5.3",
         "fidry/cpu-core-counter": "^0.4.1 || ^0.5.1 || ^1.0.0",
-        "netresearch/jsonmapper": "^1.0 || ^2.0 || ^3.0 || ^4.0",
+        "netresearch/jsonmapper": "^5.0",
         "nikic/php-parser": "^5.0.0",
         "sebastian/diff": "^4.0 || ^5.0 || ^6.0 || ^7.0",
         "spatie/array-to-xml": "^2.17.0 || ^3.0",
