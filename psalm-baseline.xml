@@ -137,29 +137,6 @@
       <code><![CDATA[$glob_index]]></code>
       <code><![CDATA[$glob_index]]></code>
     </InvalidOperand>
-    <MixedArrayAccess>
-      <code><![CDATA[$directory['ignoreTypeStats']]]></code>
-      <code><![CDATA[$directory['name']]]></code>
-      <code><![CDATA[$directory['resolveSymlinks']]]></code>
-      <code><![CDATA[$directory['useStrictTypes']]]></code>
-      <code><![CDATA[$file['name']]]></code>
-      <code><![CDATA[$referenced_class['name']]]></code>
-      <code><![CDATA[$referenced_constant['name']]]></code>
-      <code><![CDATA[$referenced_function['name']]]></code>
-      <code><![CDATA[$referenced_method['name']]]></code>
-      <code><![CDATA[$referenced_property['name']]]></code>
-      <code><![CDATA[$referenced_variable['name']]]></code>
-    </MixedArrayAccess>
-    <MixedAssignment>
-      <code><![CDATA[$directory]]></code>
-      <code><![CDATA[$file]]></code>
-      <code><![CDATA[$referenced_class]]></code>
-      <code><![CDATA[$referenced_constant]]></code>
-      <code><![CDATA[$referenced_function]]></code>
-      <code><![CDATA[$referenced_method]]></code>
-      <code><![CDATA[$referenced_property]]></code>
-      <code><![CDATA[$referenced_variable]]></code>
-    </MixedAssignment>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[explode('::', $method_id)[1]]]></code>
     </PossiblyUndefinedIntArrayOffset>
@@ -167,10 +144,6 @@
       <code><![CDATA[!$directory_path]]></code>
       <code><![CDATA[!$glob_directory_path]]></code>
       <code><![CDATA[!$glob_file_path]]></code>
-      <code><![CDATA[glob($parts[0], GLOB_NOSORT)]]></code>
-      <code><![CDATA[glob($parts[0], GLOB_ONLYDIR | GLOB_NOSORT)]]></code>
-    </RiskyTruthyFalsyComparison>
-    <UndefinedMagicPropertyFetch>
       <code><![CDATA[$e->directory]]></code>
       <code><![CDATA[$e->file]]></code>
       <code><![CDATA[$e->referencedClass]]></code>
@@ -179,7 +152,9 @@
       <code><![CDATA[$e->referencedMethod]]></code>
       <code><![CDATA[$e->referencedProperty]]></code>
       <code><![CDATA[$e->referencedVariable]]></code>
-    </UndefinedMagicPropertyFetch>
+      <code><![CDATA[glob($parts[0], GLOB_NOSORT)]]></code>
+      <code><![CDATA[glob($parts[0], GLOB_ONLYDIR | GLOB_NOSORT)]]></code>
+    </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Context.php">
     <RiskyTruthyFalsyComparison>
@@ -347,9 +322,6 @@
       <code><![CDATA[$inferred_return_type]]></code>
       <code><![CDATA[$return_type]]></code>
     </ImplicitToStringCast>
-    <RedundantIdentityWithTrue>
-      <code><![CDATA[$declared_return_type->explicit_never === true]]></code>
-    </RedundantIdentityWithTrue>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$function->getStmts()]]></code>
       <code><![CDATA[$class_template_params]]></code>
@@ -701,12 +673,6 @@
       <code><![CDATA[$gettype_expr->getArgs()[0]]]></code>
       <code><![CDATA[$gettype_expr->getArgs()[0]]]></code>
     </PossiblyUndefinedIntArrayOffset>
-    <RedundantIdentityWithTrue>
-      <code><![CDATA[$left_assignment === true]]></code>
-      <code><![CDATA[$left_assignment === true]]></code>
-      <code><![CDATA[$right_assignment === true]]></code>
-      <code><![CDATA[$right_assignment === true]]></code>
-    </RedundantIdentityWithTrue>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$var_name]]></code>
       <code><![CDATA[!$var_type]]></code>
@@ -1274,10 +1240,6 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/NamedFunctionCallHandler.php">
-    <RedundantIdentityWithTrue>
-      <code><![CDATA[$type->possibly_undefined === true]]></code>
-      <code><![CDATA[$type->possibly_undefined === true]]></code>
-    </RedundantIdentityWithTrue>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$get_class_name = $statements_analyzer->getFQCLN()]]></code>
       <code><![CDATA[$path_to_file]]></code>
@@ -1379,9 +1341,6 @@
       <code><![CDATA[$new_const_name]]></code>
       <code><![CDATA[$new_const_name]]></code>
     </PossiblyUndefinedIntArrayOffset>
-    <RedundantIdentityWithTrue>
-      <code><![CDATA[$lhs_type_definite_class === true]]></code>
-    </RedundantIdentityWithTrue>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$context->self]]></code>
       <code><![CDATA[$context->calling_method_id]]></code>
@@ -1440,10 +1399,6 @@
       <code><![CDATA[$literal_access]]></code>
       <code><![CDATA[is_int($last_key) ? $last_key : '\'' . $last_key . '\'']]></code>
     </PossiblyInvalidOperand>
-    <RedundantIdentityWithTrue>
-      <code><![CDATA[$offset_type->ignore_falsable_issues === true]]></code>
-      <code><![CDATA[$offset_type->ignore_nullable_issues === true]]></code>
-    </RedundantIdentityWithTrue>
     <ReferenceConstraintViolation>
       <code><![CDATA[$stmt_type]]></code>
       <code><![CDATA[$stmt_type]]></code>
@@ -2440,9 +2395,6 @@
       <code><![CDATA[$option]]></code>
       <code><![CDATA[$option]]></code>
     </PossiblyInvalidOperand>
-    <RedundantIdentityWithTrue>
-      <code><![CDATA[$can_fail === true]]></code>
-    </RedundantIdentityWithTrue>
   </file>
   <file src="src/Psalm/Internal/Provider/ReturnTypeProvider/PdoStatementReturnTypeProvider.php">
     <RiskyTruthyFalsyComparison>
@@ -2458,13 +2410,6 @@
     <InvalidOperand>
       <code><![CDATA[$first_arg_literal ** $second_arg_literal]]></code>
     </InvalidOperand>
-  </file>
-  <file src="src/Psalm/Internal/Provider/ReturnTypeProvider/SprintfReturnTypeProvider.php">
-    <RedundantIdentityWithTrue>
-      <code><![CDATA[$has_splat_args === true]]></code>
-      <code><![CDATA[$has_splat_args === true]]></code>
-      <code><![CDATA[$has_splat_args === true]]></code>
-    </RedundantIdentityWithTrue>
   </file>
   <file src="src/Psalm/Internal/Provider/StatementsProvider.php">
     <InvalidOperand>
@@ -2486,9 +2431,6 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Scanner/DocblockParser.php">
-    <RedundantIdentityWithTrue>
-      <code><![CDATA[$has_r === true]]></code>
-    </RedundantIdentityWithTrue>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$first_line_padding]]></code>
       <code><![CDATA[empty($special[$type])]]></code>
@@ -2573,12 +2515,6 @@
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$intersection_container_type_lower]]></code>
     </RiskyTruthyFalsyComparison>
-  </file>
-  <file src="src/Psalm/Internal/Type/Comparator/UnionTypeComparator.php">
-    <RedundantIdentityWithTrue>
-      <code><![CDATA[$container_param->is_variadic === true]]></code>
-      <code><![CDATA[$input_param->is_variadic === true]]></code>
-    </RedundantIdentityWithTrue>
   </file>
   <file src="src/Psalm/Internal/Type/NegatedAssertionReconciler.php">
     <RiskyTruthyFalsyComparison>
@@ -3318,10 +3254,6 @@
       <code><![CDATA[$expected_key_type]]></code>
       <code><![CDATA[$expected_value_type]]></code>
     </ImplicitToStringCast>
-    <RedundantIdentityWithTrue>
-      <code><![CDATA[$event->isFixable() === true]]></code>
-      <code><![CDATA[$event->isFixable() === true]]></code>
-    </RedundantIdentityWithTrue>
   </file>
   <file src="tests/Config/Plugin/Hook/CustomArrayMapFunctionStorageProvider.php">
     <InvalidOperand>
@@ -3353,37 +3285,6 @@
       <code><![CDATA[$this->config_file]]></code>
       <code><![CDATA[$this->config_file]]></code>
     </InvalidArgument>
-    <MixedMethodCall>
-      <code><![CDATA[andReturns]]></code>
-      <code><![CDATA[andReturns]]></code>
-      <code><![CDATA[andReturns]]></code>
-      <code><![CDATA[andReturns]]></code>
-      <code><![CDATA[andReturns]]></code>
-      <code><![CDATA[andReturns]]></code>
-      <code><![CDATA[andReturns]]></code>
-      <code><![CDATA[andReturns]]></code>
-      <code><![CDATA[andReturns]]></code>
-      <code><![CDATA[andReturns]]></code>
-      <code><![CDATA[andReturns]]></code>
-      <code><![CDATA[byDefault]]></code>
-      <code><![CDATA[byDefault]]></code>
-      <code><![CDATA[byDefault]]></code>
-    </MixedMethodCall>
-    <UndefinedMagicMethod>
-      <code><![CDATA[addPlugin]]></code>
-      <code><![CDATA[getConfig]]></code>
-      <code><![CDATA[getPluginClasses]]></code>
-      <code><![CDATA[getPluginClasses]]></code>
-      <code><![CDATA[getPluginClasses]]></code>
-      <code><![CDATA[getPluginClasses]]></code>
-      <code><![CDATA[getPluginClasses]]></code>
-      <code><![CDATA[getPlugins]]></code>
-      <code><![CDATA[getPlugins]]></code>
-      <code><![CDATA[getPlugins]]></code>
-      <code><![CDATA[getPlugins]]></code>
-      <code><![CDATA[getPlugins]]></code>
-      <code><![CDATA[removePlugin]]></code>
-    </UndefinedMagicMethod>
   </file>
   <file src="tests/DocumentationTest.php">
     <RiskyTruthyFalsyComparison>
@@ -3434,49 +3335,6 @@
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[empty($normalizedEntry['type'])]]></code>
     </RiskyTruthyFalsyComparison>
-  </file>
-  <file src="tests/PsalmPluginTest.php">
-    <MixedMethodCall>
-      <code><![CDATA[andReturns]]></code>
-      <code><![CDATA[andReturns]]></code>
-      <code><![CDATA[andReturns]]></code>
-      <code><![CDATA[andReturns]]></code>
-      <code><![CDATA[andReturns]]></code>
-      <code><![CDATA[andReturns]]></code>
-      <code><![CDATA[andReturns]]></code>
-      <code><![CDATA[andReturns]]></code>
-      <code><![CDATA[andReturns]]></code>
-      <code><![CDATA[andReturns]]></code>
-      <code><![CDATA[andReturns]]></code>
-      <code><![CDATA[andReturns]]></code>
-      <code><![CDATA[andReturns]]></code>
-      <code><![CDATA[andReturns]]></code>
-      <code><![CDATA[andThrows]]></code>
-      <code><![CDATA[andThrows]]></code>
-      <code><![CDATA[byDefault]]></code>
-      <code><![CDATA[byDefault]]></code>
-      <code><![CDATA[byDefault]]></code>
-    </MixedMethodCall>
-    <UndefinedMagicMethod>
-      <code><![CDATA[__invoke]]></code>
-      <code><![CDATA[__invoke]]></code>
-      <code><![CDATA[disable]]></code>
-      <code><![CDATA[enable]]></code>
-      <code><![CDATA[getAvailable]]></code>
-      <code><![CDATA[getAvailable]]></code>
-      <code><![CDATA[getEnabled]]></code>
-      <code><![CDATA[getEnabled]]></code>
-      <code><![CDATA[isEnabled]]></code>
-      <code><![CDATA[isEnabled]]></code>
-      <code><![CDATA[isEnabled]]></code>
-      <code><![CDATA[isEnabled]]></code>
-      <code><![CDATA[resolvePluginClass]]></code>
-      <code><![CDATA[resolvePluginClass]]></code>
-      <code><![CDATA[resolvePluginClass]]></code>
-      <code><![CDATA[resolvePluginClass]]></code>
-      <code><![CDATA[resolvePluginClass]]></code>
-      <code><![CDATA[resolvePluginClass]]></code>
-    </UndefinedMagicMethod>
   </file>
   <file src="tests/TestCase.php">
     <InvalidOperand>

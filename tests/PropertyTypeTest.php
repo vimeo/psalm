@@ -3549,7 +3549,7 @@ final class PropertyTypeTest extends TestCase
             ],
             'noCrashOnMagicCall' => [
                 'code' => '<?php
-                    /** @psalm-no-seal-properties */
+                    /** @method void setA() */
                     class A {
                         /** @var string */
                         private $a;
