@@ -2453,6 +2453,9 @@ final class Codebase
 
         $this->taint_flow_graph->addSource($source);
 
+        /** @psalm-suppress InaccessibleProperty */
+        $expr_type->parent_nodes[$source->id] = $source;
+
         return $expr_type->addParentNodes([$source->id => $source]);
     }
 
