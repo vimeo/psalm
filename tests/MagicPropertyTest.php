@@ -133,6 +133,7 @@ final class MagicPropertyTest extends TestCase
              */
             'magicSetterUndefinedPropertyNoAnnotation' => [
                 'code' => '<?php
+                    /** @psalm-no-seal-properties */
                     class A {
                         public function __get(string $name): ?string {
                             if ($name === "foo") {
@@ -158,6 +159,7 @@ final class MagicPropertyTest extends TestCase
              */
             'magicGetterUndefinedPropertyNoAnnotation' => [
                 'code' => '<?php
+                    /** @psalm-no-seal-properties */
                     class A {
                         public function __get(string $name): ?string {
                             if ($name === "foo") {
@@ -372,6 +374,7 @@ final class MagicPropertyTest extends TestCase
             ],
             'magicPropertyFetchOnProtected' => [
                 'code' => '<?php
+                    /** @psalm-no-seal-properties */
                     class C {
                         /** @var string */
                         protected $foo = "foo";
@@ -394,6 +397,7 @@ final class MagicPropertyTest extends TestCase
             ],
             'dontAssumeNonNullAfterPossibleMagicFetch' => [
                 'code' => '<?php
+                    /** @psalm-no-seal-properties */
                     class C {
                         public function __get(string $name) : string {
                             return "hello";
@@ -410,6 +414,7 @@ final class MagicPropertyTest extends TestCase
             ],
             'accessInMagicGet' => [
                 'code' => '<?php
+                    /** @psalm-no-seal-properties */
                     class X {
                         public function __get(string $name) : string {
                             switch ($name) {
@@ -623,6 +628,7 @@ final class MagicPropertyTest extends TestCase
             ],
             'removeAssertionsAfterCall' => [
                 'code' => '<?php
+                    /** @psalm-no-seal-properties */
                     class C {
                         /**
                          * @return mixed
@@ -1264,6 +1270,8 @@ final class MagicPropertyTest extends TestCase
                 'code' => '<?php
                     /**
                      * @property-read string|null $p
+                     * 
+                     * @psalm-no-seal-properties // For test
                      */
                     class A {
                         public function __get(string $name) {

@@ -1645,6 +1645,8 @@ final class ClassTemplateTest extends TestCase
                     /**
                      * @template P as string
                      * @template V as mixed
+                     * 
+                     * @psalm-no-seal-properties
                      */
                     class PropertyBag {
                         /** @var array<P,V> */

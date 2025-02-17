@@ -99,6 +99,7 @@ final class ClassLoadOrderTest extends TestCase
                 'code' => '<?php
                     namespace Foo;
 
+                    /** @psalm-no-seal-properties */
                     class A {
                         /** @var string */
                         protected $foo = C::DOPE;
