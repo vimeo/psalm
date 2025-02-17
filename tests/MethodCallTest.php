@@ -274,6 +274,7 @@ final class MethodCallTest extends TestCase
             ],
             'magicCall' => [
                 'code' => '<?php
+                    /** @psalm-no-seal-methods */
                     class A {
                         public function __call(string $method_name, array $args) : string {
                             return "hello";
@@ -288,6 +289,7 @@ final class MethodCallTest extends TestCase
             ],
             'canBeCalledOnMagic' => [
                 'code' => '<?php
+                    /** @psalm-no-seal-methods */
                     class A {
                       public function __call(string $method, array $args) {}
                     }
@@ -302,6 +304,7 @@ final class MethodCallTest extends TestCase
             ],
             'canBeCalledOnMagicWithMethod' => [
                 'code' => '<?php
+                    /** @psalm-no-seal-methods */
                     class A {
                       public function __call(string $method, array $args) {}
                     }
@@ -1175,6 +1178,7 @@ final class MethodCallTest extends TestCase
             ],
             'parentMagicMethodCall' => [
                 'code' => '<?php
+                    /** @psalm-no-seal-methods */
                     class Model {
                         /**
                          * @return static

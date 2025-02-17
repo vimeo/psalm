@@ -2545,6 +2545,7 @@ final class PropertyTypeTest extends TestCase
             ],
             'ignoreUndefinedMethodOnUnion' => [
                 'code' => '<?php
+                    /** @psalm-no-seal-properties */
                     class NullObject {
                         /**
                          * @return null
@@ -3548,6 +3549,7 @@ final class PropertyTypeTest extends TestCase
             ],
             'noCrashOnMagicCall' => [
                 'code' => '<?php
+                    /** @method void setA() */
                     class A {
                         /** @var string */
                         private $a;
@@ -3558,7 +3560,7 @@ final class PropertyTypeTest extends TestCase
 
                         public function __call(string $var, array $args) {}
                     }',
-                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:4',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:5',
             ],
             'reportGoodLocationForPropertyError' => [
                 'code' => '<?php

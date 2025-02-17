@@ -300,7 +300,9 @@ final class Config
 
     public ?bool $show_mixed_issues = null;
 
-    public bool $strict_binary_operands = false;
+    public bool $strict_binary_operands = true;
+
+    public bool $allow_bool_to_literal_bool_comparison = true;
 
     public bool $remember_property_assignments_after_call = true;
 
@@ -311,7 +313,7 @@ final class Config
 
     public bool $allow_string_standin_for_class = false;
 
-    public bool $disable_suppress_all = false;
+    public bool $disable_suppress_all = true;
 
     public bool $use_phpdoc_method_without_magic_or_parent = false;
 
@@ -319,9 +321,9 @@ final class Config
 
     public bool $skip_checks_on_unresolvable_includes = false;
 
-    public bool $seal_all_methods = false;
+    public bool $seal_all_methods = true;
 
-    public bool $seal_all_properties = false;
+    public bool $seal_all_properties = true;
 
     public bool $memoize_method_calls = false;
 
@@ -365,7 +367,7 @@ final class Config
 
     public bool $ensure_array_int_offsets_exist = false;
 
-    public bool $ensure_override_attribute = false;
+    public bool $ensure_override_attribute = true;
 
     /**
      * @var array<lowercase-string, bool>
@@ -938,6 +940,7 @@ final class Config
             'resolveFromConfigFile' => 'resolve_from_config_file',
             'allowFileIncludes' => 'allow_includes',
             'strictBinaryOperands' => 'strict_binary_operands',
+            'allowBoolToLiteralBoolComparison' => 'allow_bool_to_literal_bool_comparison',
             'rememberPropertyAssignmentsAfterCall' => 'remember_property_assignments_after_call',
             'disableVarParsing' => 'disable_var_parsing',
             'allowStringToStandInForClass' => 'allow_string_standin_for_class',
