@@ -795,6 +795,20 @@ final class MagicPropertyTest extends TestCase
                         }
                     }',
             ],
+            'propertyFetchWithNullCoalesce' => [
+                'code' => '<?php
+                    /**
+                     * @property-read string|null $p
+                     */
+                    class A {
+                        public function __get(string $name) {
+                            return null;
+                        }
+                        public function f(): string {
+                           return $this->p ?? \'\';
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -1251,6 +1265,21 @@ final class MagicPropertyTest extends TestCase
 
                     echo (new OrganizationObject)->errors;',
                 'error_message' => 'UndefinedMagicPropertyFetch',
+            ],
+            'invalidPropertyFetchWithNullCoalesce' => [
+                'code' => '<?php
+                    /**
+                     * @property-read string|null $p
+                     */
+                    class A {
+                        public function __get(string $name) {
+                            return null;
+                        }
+                        public function f(): string {
+                           return $this->q ?? \'\';
+                        }
+                    }',
+                'error_message' => 'MixedReturnStatement',
             ],
         ];
     }

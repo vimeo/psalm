@@ -15,6 +15,7 @@ use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
+use Psalm\Internal\VersionUtils;
 use Psalm\IssueBuffer;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Type\Union;
@@ -44,11 +45,11 @@ abstract class AsyncTestCase extends BaseAsyncTestCase
         ini_set('memory_limit', '-1');
 
         if (!defined('PSALM_VERSION')) {
-            define('PSALM_VERSION', '5.0.0');
+            define('PSALM_VERSION', VersionUtils::getPsalmVersion());
         }
 
         if (!defined('PHP_PARSER_VERSION')) {
-            define('PHP_PARSER_VERSION', '5.0.0');
+            define('PHP_PARSER_VERSION', VersionUtils::getPhpParserVersion());
         }
 
         parent::setUpBeforeClass();

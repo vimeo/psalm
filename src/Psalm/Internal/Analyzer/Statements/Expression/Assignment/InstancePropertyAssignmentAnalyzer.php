@@ -28,6 +28,7 @@ use Psalm\Internal\Codebase\Methods;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
@@ -78,6 +79,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_diff;
 use function array_merge;
 use function array_pop;
 use function count;
@@ -505,6 +507,13 @@ final class InstancePropertyAssignmentAnalyzer
                 $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
                 $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
+                $taints = array_diff($added_taints, $removed_taints);
+                if ($taints !== [] && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+                    $taint_source = TaintSource::fromNode($property_node);
+                    $taint_source->taints = $taints;
+                    $statements_analyzer->data_flow_graph->addSource($taint_source);
+                }
+
                 $data_flow_graph->addPath(
                     $property_node,
                     $var_node,
@@ -599,6 +608,13 @@ final class InstancePropertyAssignmentAnalyzer
 
         $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
         $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+
+        $taints = array_diff($added_taints, $removed_taints);
+        if ($taints !== [] && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+            $taint_source = TaintSource::fromNode($property_node);
+            $taint_source->taints = $taints;
+            $statements_analyzer->data_flow_graph->addSource($taint_source);
+        }
 
         $data_flow_graph->addPath(
             $localized_property_node,

@@ -1232,6 +1232,19 @@ final class ConditionalTest extends TestCase
                         }
                     }',
             ],
+            'thingInstanceOfThis' => [
+                'code' => '<?php
+                    abstract class A {
+                        /** @psalm-param mixed $other */
+                        public function equals($other): void {
+                            if ($other instanceof $this) {
+                                /** @psalm-check-type $other = A&static */
+                                return;
+                            }
+                        }
+                    }
+                ',
+            ],
             'reconcileCallable' => [
                 'code' => '<?php
                     function reflectCallable(callable $callable): ReflectionFunctionAbstract {

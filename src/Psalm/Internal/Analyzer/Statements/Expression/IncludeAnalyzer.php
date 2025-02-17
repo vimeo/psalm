@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\TaintSink;
+use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Issue\MissingFile;
 use Psalm\Issue\UnresolvableInclude;
@@ -24,6 +25,7 @@ use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type\TaintKind;
 use Symfony\Component\Filesystem\Path;
 
+use function array_diff;
 use function constant;
 use function defined;
 use function dirname;
@@ -133,6 +135,13 @@ final class IncludeAnalyzer
 
             $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
             $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+
+            $taints = array_diff($added_taints, $removed_taints);
+            if ($taints !== []) {
+                $taint_source = TaintSource::fromNode($include_param_sink);
+                $taint_source->taints = $taints;
+                $statements_analyzer->data_flow_graph->addSource($taint_source);
+            }
 
             foreach ($stmt_expr_type->parent_nodes as $parent_node) {
                 $statements_analyzer->data_flow_graph->addPath(

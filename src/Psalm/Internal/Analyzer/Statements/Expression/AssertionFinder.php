@@ -1257,7 +1257,7 @@ final class AssertionFinder
                 return [new IsType(TNamedObject::createFromName($instanceof_class))];
             }
 
-            if ($this_class_name
+            if ($this_class_name !== null
                 && (in_array(strtolower($stmt->class->getFirst()), ['self', 'static'], true))) {
                 $is_static = $stmt->class->getFirst() === 'static';
                 $named_object = new TNamedObject($this_class_name, $is_static);
@@ -1267,6 +1267,12 @@ final class AssertionFinder
                 }
 
                 return [new IsType($named_object)];
+            }
+        } elseif ($stmt->class instanceof PhpParser\Node\Expr\Variable && $stmt->class->name === 'this') {
+            if ($this_class_name !== null) {
+                $named_object = new TNamedObject($this_class_name, true);
+
+                return [new IsIdentical($named_object)];
             }
         } elseif ($source instanceof StatementsAnalyzer) {
             $stmt_class_type = $source->node_data->getType($stmt->class);
@@ -1536,7 +1542,7 @@ final class AssertionFinder
                 }
             }
         }
-        
+
         if (($left_get_class || $left_static_class || $left_variable_class_const)
             && ($right_class_string || $right_class_string_t)
         ) {
@@ -3593,13 +3599,13 @@ final class AssertionFinder
                     $class_node = $second_arg->class;
 
                     if ($class_node->getParts() === ['static']) {
-                        if ($this_class_name) {
+                        if ($this_class_name !== null) {
                             $object = new TNamedObject($this_class_name, true);
 
                             $if_types[$first_var_name] = [[new IsAClass($object, $third_arg_value === 'true')]];
                         }
                     } elseif ($class_node->getParts() === ['self']) {
-                        if ($this_class_name) {
+                        if ($this_class_name !== null) {
                             $object = new TNamedObject($this_class_name);
                             $if_types[$first_var_name] = [[new IsAClass($object, $third_arg_value === 'true')]];
                         }

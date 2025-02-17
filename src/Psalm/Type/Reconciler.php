@@ -55,6 +55,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use ReflectionProperty;
@@ -846,6 +847,9 @@ class Reconciler
 
                         if ($existing_key_type_part instanceof TNull) {
                             $class_property_type = Type::getNull();
+                        } elseif ($existing_key_type_part instanceof TObjectWithProperties) {
+                            $class_property_type =
+                                $existing_key_type_part->properties[$property_name] ?? Type::getMixed();
                         } elseif ($existing_key_type_part instanceof TMixed
                             || $existing_key_type_part instanceof TObject
                             || ($existing_key_type_part instanceof TNamedObject

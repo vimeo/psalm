@@ -19,6 +19,7 @@ use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\TaintSink;
+use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\TemplateResult;
@@ -62,6 +63,7 @@ use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_diff;
 use function array_map;
 use function array_merge;
 use function array_shift;
@@ -852,6 +854,13 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
                 $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
                 $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+
+                $taints = array_diff($added_taints, $removed_taints);
+                if ($taints !== []) {
+                    $taint_source = TaintSource::fromNode($custom_call_sink);
+                    $taint_source->taints = $taints;
+                    $statements_analyzer->data_flow_graph->addSource($taint_source);
+                }
 
                 foreach ($stmt_name_type->parent_nodes as $parent_node) {
                     $statements_analyzer->data_flow_graph->addPath(

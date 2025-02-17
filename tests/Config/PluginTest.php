@@ -15,7 +15,6 @@ use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
-use Psalm\Internal\VersionUtils;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\AfterCodebasePopulatedInterface;
 use Psalm\Plugin\EventHandler\AfterEveryFunctionCallAnalysisInterface;
@@ -29,8 +28,6 @@ use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 use stdClass;
 
-use function define;
-use function defined;
 use function dirname;
 use function get_class;
 use function getcwd;
@@ -48,19 +45,13 @@ final class PluginTest extends TestCase
     #[Override]
     public static function setUpBeforeClass(): void
     {
+        parent::setUpBeforeClass();
+
         // hack to isolate Psalm from PHPUnit cli arguments
         global $argv;
         $argv = [];
 
         self::$config = new TestConfig();
-
-        if (!defined('PSALM_VERSION')) {
-            define('PSALM_VERSION', VersionUtils::getPsalmVersion());
-        }
-
-        if (!defined('PHP_PARSER_VERSION')) {
-            define('PHP_PARSER_VERSION', VersionUtils::getPhpParserVersion());
-        }
     }
 
     #[Override]
@@ -924,6 +915,64 @@ final class PluginTest extends TestCase
             a();
             ',
         );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testAddTaints(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="6"
+                    runTaintAnalysis="true"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <plugins>
+                        <plugin filename="examples/plugins/TaintActiveRecords.php" />
+                    </plugins>
+                </psalm>',
+            ),
+        );
+
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php // --taint-analysis
+
+            namespace app\models;
+
+            class User {
+                public $name;
+
+                /**
+                 * @psalm-return list<User>
+                 */
+                public static function findAll(): array {
+                    $mockUser = new self();
+                    $mockUser->name = "<h1>Micky Mouse</h1>";
+
+                    return [$mockUser];
+                }
+            }
+
+            foreach (User::findAll() as $user) {
+                echo $user->name;
+            }
+            ',
+        );
+
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessageMatches('/TaintedHtml/');
 
         $this->analyzeFile($file_path, new Context());
     }

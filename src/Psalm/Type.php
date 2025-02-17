@@ -35,8 +35,10 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
+use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNonFalsyString;
+use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TNumericString;
@@ -942,6 +944,20 @@ abstract class Type
                 )) {
                     $intersection_atomic = $type_1_atomic;
                     $wider_type = $type_2_atomic;
+                    $intersection_performed = true;
+                } elseif (($type_1_atomic instanceof TNonspecificLiteralString
+                        && $type_2_atomic instanceof TNonEmptyString)
+                    || ($type_1_atomic instanceof TNonEmptyString
+                        && $type_2_atomic instanceof TNonspecificLiteralString)
+                ) {
+                    $intersection_atomic = new TNonEmptyNonspecificLiteralString();
+                    $intersection_performed = true;
+                } elseif (($type_1_atomic instanceof TLowercaseString
+                        && $type_2_atomic instanceof TNonEmptyString)
+                    || ($type_1_atomic instanceof TNonEmptyString
+                        && $type_2_atomic instanceof TLowercaseString)
+                ) {
+                    $intersection_atomic = new TNonEmptyLowercaseString();
                     $intersection_performed = true;
                 }
 
