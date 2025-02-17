@@ -49,6 +49,6 @@ class ArrayBag {
         return $this->arr[$k];
     }
 }
-$a = new A(['bar' => 'foo']);
+$a = new ArrayBag(['bar' => 'foo']);
 echo $a->bar;
 ```
