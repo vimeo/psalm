@@ -2545,6 +2545,7 @@ final class PropertyTypeTest extends TestCase
             ],
             'ignoreUndefinedMethodOnUnion' => [
                 'code' => '<?php
+                    /** @psalm-no-seal-properties */
                     class NullObject {
                         /**
                          * @return null
@@ -3548,6 +3549,7 @@ final class PropertyTypeTest extends TestCase
             ],
             'noCrashOnMagicCall' => [
                 'code' => '<?php
+                    /** @psalm-no-seal-properties */
                     class A {
                         /** @var string */
                         private $a;
