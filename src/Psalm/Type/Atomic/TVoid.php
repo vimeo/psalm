@@ -30,6 +30,6 @@ final class TVoid extends Atomic
 
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
-        return true;
+        return $analysis_php_version_id >= 7_01_00;
     }
 }
