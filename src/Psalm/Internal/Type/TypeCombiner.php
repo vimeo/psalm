@@ -56,6 +56,7 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_filter;
+use function array_find;
 use function array_intersect_key;
 use function array_key_exists;
 use function array_keys;
@@ -1263,7 +1264,7 @@ final class TypeCombiner
             } else {
                 $combination->ints[$type_key] = $type;
 
-                $all_nonnegative = !array_filter(
+                $all_nonnegative = !array_find(
                     $combination->ints,
                     static fn($int): bool => $int->value < 0,
                 );

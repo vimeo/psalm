@@ -684,6 +684,7 @@ final class FunctionLikeNodeScanner
                 }
 
                 if ($attribute->fq_class_name === 'Psalm\\Deprecated'
+                    || $attribute->fq_class_name === 'Deprecated'
                     || $attribute->fq_class_name === 'JetBrains\\PhpStorm\\Deprecated'
                 ) {
                     $storage->deprecated = true;

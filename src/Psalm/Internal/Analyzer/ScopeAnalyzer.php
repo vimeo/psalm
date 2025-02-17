@@ -10,6 +10,7 @@ use Psalm\NodeTypeProvider;
 
 use function array_diff;
 use function array_filter;
+use function array_find;
 use function array_intersect;
 use function array_unique;
 use function array_values;
@@ -130,7 +131,7 @@ final class ScopeAnalyzer
                     $return_is_exit,
                 );
 
-                $all_leave = !array_filter(
+                $all_leave = !array_find(
                     $if_statement_actions,
                     static fn(string $action): bool => $action === self::ACTION_NONE,
                 );
@@ -145,7 +146,7 @@ final class ScopeAnalyzer
 
                 $all_leave = $all_leave
                     && $else_statement_actions
-                    && !array_filter(
+                    && !array_find(
                         $else_statement_actions,
                         static fn(string $action): bool => $action === self::ACTION_NONE,
                     );
@@ -162,7 +163,7 @@ final class ScopeAnalyzer
                         );
 
                         $all_leave = $all_leave
-                            && !array_filter(
+                            && !array_find(
                                 $elseif_control_actions,
                                 static fn(string $action): bool => $action === self::ACTION_NONE,
                             );
@@ -327,7 +328,7 @@ final class ScopeAnalyzer
                     $return_is_exit,
                 );
 
-                $try_leaves = !array_filter(
+                $try_leaves = !array_find(
                     $try_statement_actions,
                     static fn(string $action): bool => $action === self::ACTION_NONE,
                 );
@@ -346,7 +347,7 @@ final class ScopeAnalyzer
                         );
 
                         $all_leave = $all_leave
-                            && !array_filter(
+                            && !array_find(
                                 $catch_actions,
                                 static fn(string $action): bool => $action === self::ACTION_NONE,
                             );

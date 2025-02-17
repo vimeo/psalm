@@ -27,6 +27,7 @@ use function array_combine;
 use function array_diff;
 use function array_diff_key;
 use function array_filter;
+use function array_find;
 use function array_key_exists;
 use function array_keys;
 use function array_merge;
@@ -156,7 +157,7 @@ final class ElseIfAnalyzer
         $active_elseif_types = [];
 
         try {
-            if (array_filter(
+            if (array_find(
                 $entry_clauses,
                 static fn(Clause $clause): bool => (bool) $clause->possibilities,
             )) {

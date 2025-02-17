@@ -40,6 +40,7 @@ use Psalm\Type\Union;
 use ReflectionProperty;
 
 use function array_filter;
+use function array_find;
 use function array_map;
 use function array_merge;
 use function array_values;
@@ -601,7 +602,7 @@ final class TypeExpander
             );
 
             if ($container_class_storage->template_types
-                && array_filter(
+                && array_find(
                     $container_class_storage->template_types,
                     static fn($type_map): bool => !reset($type_map)->hasMixed(),
                 )

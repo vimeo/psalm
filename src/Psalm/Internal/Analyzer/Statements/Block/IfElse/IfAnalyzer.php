@@ -29,7 +29,7 @@ use Psalm\Type\Union;
 
 use function array_combine;
 use function array_diff_key;
-use function array_filter;
+use function array_find;
 use function array_intersect;
 use function array_intersect_key;
 use function array_key_exists;
@@ -71,7 +71,7 @@ final class IfAnalyzer
             $active_if_types,
         );
 
-        if (array_filter(
+        if (array_find(
             $outer_context->clauses,
             static fn(Clause $clause): bool => (bool) $clause->possibilities,
         )) {
@@ -324,7 +324,7 @@ final class IfAnalyzer
         array $assigned_in_conditional_var_ids,
     ): void {
         // this filters out coercions to expected types in ArgumentAnalyzer
-        $assigned_in_conditional_var_ids = array_filter($assigned_in_conditional_var_ids);
+        $assigned_in_conditional_var_ids = array_find($assigned_in_conditional_var_ids);
 
         if (!$assigned_in_conditional_var_ids) {
             return;

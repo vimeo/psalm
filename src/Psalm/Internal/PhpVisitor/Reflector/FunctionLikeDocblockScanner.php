@@ -51,6 +51,7 @@ use Psalm\Type\TaintKindGroup;
 use Psalm\Type\Union;
 
 use function array_filter;
+use function array_find;
 use function array_merge;
 use function array_search;
 use function array_splice;
@@ -293,7 +294,7 @@ final class FunctionLikeDocblockScanner
         }
 
         if ($storage instanceof MethodStorage) {
-            $storage->has_docblock_param_types = (bool) array_filter(
+            $storage->has_docblock_param_types = array_find(
                 $storage->params,
                 static fn(FunctionLikeParameter $p): bool => $p->type !== null && $p->has_docblock_type,
             );
