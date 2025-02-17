@@ -128,7 +128,7 @@ final class MethodComparator
             && (($guide_method_storage->return_type && InternalCallMapHandler::inCallMap($cased_guide_method_id))
                 || $guide_method_storage->signature_return_type
             ) && !$implementer_method_storage->signature_return_type
-            && !array_find(
+            && !array_any(
                 $implementer_method_storage->attributes,
                 static fn(AttributeStorage $s): bool => $s->fq_class_name === 'ReturnTypeWillChange',
             )
@@ -1014,7 +1014,7 @@ final class MethodComparator
 
         if (!$is_contained_by) {
             if ($implementer_signature_return_type === null
-                && array_find(
+                && array_any(
                     $implementer_method_storage->attributes,
                     static fn(AttributeStorage $s): bool => $s->fq_class_name === 'ReturnTypeWillChange',
                 )) {

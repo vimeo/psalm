@@ -157,7 +157,7 @@ final class ElseIfAnalyzer
         $active_elseif_types = [];
 
         try {
-            if (array_find(
+            if (array_any(
                 $entry_clauses,
                 static fn(Clause $clause): bool => (bool) $clause->possibilities,
             )) {
