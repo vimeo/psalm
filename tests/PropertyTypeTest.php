@@ -3560,7 +3560,7 @@ final class PropertyTypeTest extends TestCase
 
                         public function __call(string $var, array $args) {}
                     }',
-                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:4',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:5',
             ],
             'reportGoodLocationForPropertyError' => [
                 'code' => '<?php
