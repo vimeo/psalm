@@ -133,7 +133,7 @@ final class CliUtils
              * @psalm-suppress UnresolvableInclude
              * @var mixed
              */
-            $autoloader = ErrorHandler::runWithExceptionsSuppressed(static fn () => require_once $file);
+            $autoloader = ErrorHandler::runWithExceptionsSuppressed(static fn() => require_once $file);
 
             if (!$first_autoloader
                 && $autoloader instanceof ClassLoader
