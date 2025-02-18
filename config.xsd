@@ -763,6 +763,7 @@
             <xs:enumeration value="mysqli"/>
             <xs:enumeration value="pdo"/>
             <xs:enumeration value="random"/>
+            <xs:enumeration value="rdkafka"/>
             <xs:enumeration value="redis"/>
             <xs:enumeration value="simplexml"/>
             <xs:enumeration value="soap"/>
