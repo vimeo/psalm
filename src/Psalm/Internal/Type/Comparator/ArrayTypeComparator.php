@@ -69,7 +69,8 @@ final class ArrayTypeComparator
             }
 
             if ($all_string_int_literals && $properties) {
-                $input_type_part = new TKeyedArray($properties);
+                $input_type_part = TKeyedArray::make($properties);
+                assert($input_type_part instanceof TKeyedArray);
 
                 return KeyedArrayComparator::isContainedBy(
                     $codebase,

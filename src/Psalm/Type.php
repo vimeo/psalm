@@ -500,9 +500,9 @@ abstract class Type
     /**
      * @psalm-pure
      */
-    public static function getListAtomic(Union $of, bool $from_docblock = false): TKeyedArray
+    public static function getListAtomic(Union $of, bool $from_docblock = false): TKeyedArray|TArray
     {
-        return new TKeyedArray(
+        return TKeyedArray::make(
             [$of->setPossiblyUndefined(true)],
             null,
             [self::getListKey(), $of],
@@ -514,9 +514,9 @@ abstract class Type
     /**
      * @psalm-pure
      */
-    public static function getNonEmptyListAtomic(Union $of, bool $from_docblock = false): TKeyedArray
+    public static function getNonEmptyListAtomic(Union $of, bool $from_docblock = false): TKeyedArray|TArray
     {
-        return new TKeyedArray(
+        return TKeyedArray::make(
             [$of->setPossiblyUndefined(false)],
             null,
             [self::getListKey(), $of],

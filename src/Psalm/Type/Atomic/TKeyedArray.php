@@ -35,17 +35,6 @@ use function str_replace;
 class TKeyedArray extends Atomic
 {
     use UnserializeMemoryUsageSuppressionTrait;
-    /**
-     * If the shape has fallback params then they are here
-     *
-     * @var array{Union, Union}|null
-     */
-    public ?array $fallback_params = null;
-
-    /**
-     * @var bool - if this is a list of sequential elements
-     */
-    public bool $is_list = false;
 
     /** @var non-empty-lowercase-string */
     protected const NAME_ARRAY = 'array';
@@ -54,6 +43,8 @@ class TKeyedArray extends Atomic
 
     /**
      * Constructs a new instance of a generic type
+     * 
+     * @deprecated Please use make()
      *
      * @param non-empty-array<string|int, Union> $properties
      * @param array{Union, Union}|null $fallback_params
@@ -62,22 +53,54 @@ class TKeyedArray extends Atomic
     public function __construct(
         public array $properties,
         public ?array $class_strings = null,
+        /**
+         * If the shape has fallback params then they are here
+         *
+         * @var array{Union, Union}|null
+         */
+        public ?array $fallback_params = null,
+        /**
+         * @var bool - if this is a list of sequential elements
+         */
+        public bool $is_list = false,
+        bool $from_docblock = false,
+    ) {
+        parent::__construct($from_docblock);
+    }
+
+    /**
+     * @psalm-pure
+     * 
+     * @param non-empty-array<string|int, Union> $properties
+     * @param array{Union, Union}|null $fallback_params
+     * @param array<string, bool> $class_strings
+     */
+    public static function make(
+        array $properties,
+        ?array $class_strings = null,
         ?array $fallback_params = null,
         bool $is_list = false,
         bool $from_docblock = false,
-    ) {
+    ): self|TArray {
         if ($is_list && $fallback_params) {
             $fallback_params[0] = Type::getListKey();
         }
-        $this->fallback_params = $fallback_params;
-        $this->is_list = $is_list;
-        if ($this->is_list) {
+        if (count($properties) === 1
+            && $properties[array_key_first($properties)]->isNever()
+            && ($fallback_params === null || $fallback_params[1]->isNever())
+        ) {
+            $never = $properties[array_key_first($properties)];
+            return new TArray([
+                $never, $never
+            ], $from_docblock);
+        }
+        if ($is_list) {
             $last_k = -1;
             $had_possibly_undefined = false;
-            ksort($this->properties);
-            foreach ($this->properties as $k => $v) {
+            ksort($properties);
+            foreach ($properties as $k => $v) {
                 if (is_string($k) || $last_k !== ($k-1) || ($had_possibly_undefined && !$v->possibly_undefined)) {
-                    $this->is_list = false;
+                    $is_list = false;
                     break;
                 }
                 if ($v->possibly_undefined) {
@@ -86,7 +109,8 @@ class TKeyedArray extends Atomic
                 $last_k = $k;
             }
         }
-        parent::__construct($from_docblock);
+
+        return new self($properties, $class_strings, $fallback_params, $is_list, $from_docblock);
     }
 
     /**

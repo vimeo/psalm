@@ -726,7 +726,7 @@ final class FilterUtils
                         $fallback_params = [$keys_union, $values_union];
                     }
 
-                    $from_array[] = new TKeyedArray(
+                    $from_array[] = TKeyedArray::make(
                         $new,
                         $atomic_type->class_strings,
                         $fallback_params,
@@ -1430,7 +1430,7 @@ final class FilterUtils
         if (!$in_array_recursion
             && !self::hasFlag($flags_int_used, FILTER_REQUIRE_ARRAY)
             && self::hasFlag($flags_int_used, FILTER_FORCE_ARRAY)) {
-            $return_type = new Union([new TKeyedArray(
+            $return_type = new Union([TKeyedArray::make(
                 [$return_type],
                 null,
                 null,

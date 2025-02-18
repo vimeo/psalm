@@ -453,6 +453,21 @@ final class ArrayAccessTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'allowEmptyList' => [
+                'code' => '<?php
+                    function test(): void {
+                        $a = [];
+                        /** @psalm-suppress RedundantFunctionCall */
+                        $a = array_values($a);
+
+                        /** @psalm-suppress RedundantConditionGivenDocblockType, NoValue, NullArrayOffset */
+                        if (empty($a)
+                            || count($a) > 1
+                            || empty($a[array_key_first($a)])
+                        ) {
+                        }
+                    }',
+            ],
             'testBuildList' => [
                 'code' => '<?php
                     $a = [];

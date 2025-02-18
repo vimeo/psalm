@@ -1787,7 +1787,7 @@ final class TypeParser
             $fallback_params = [Type::getArrayKey(), Type::getMixed()];
         }
 
-        return new TKeyedArray(
+        return TKeyedArray::make(
             $properties,
             null,
             $fallback_params,
