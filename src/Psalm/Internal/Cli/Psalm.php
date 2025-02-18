@@ -1029,7 +1029,7 @@ final class Psalm
         }
     }
 
-    /** @psalm-suppress UnusedParam $argv is being reported as unused */
+    /** @param array<int, string> $argv */
     private static function forwardCliCall(array $options, array $argv): void
     {
         if (isset($options['alter'])) {
@@ -1040,9 +1040,9 @@ final class Psalm
 
         if (isset($options['review'])) {
             require_once __DIR__ . '/Review.php';
-            assert($argv !== null);
             array_shift($argv);
-            Review::run($argv);
+            /** @psalm-suppress PossiblyNullArgument */
+            Review::run(array_values($argv));
             exit;
         }
 
