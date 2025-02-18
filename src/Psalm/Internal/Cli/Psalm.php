@@ -18,6 +18,7 @@ use Psalm\Internal\Composer;
 use Psalm\Internal\ErrorHandler;
 use Psalm\Internal\Fork\PsalmRestarter;
 use Psalm\Internal\IncludeCollector;
+use Psalm\Internal\Preloader;
 use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileReferenceCacheProvider;
@@ -1018,6 +1019,8 @@ final class Psalm
                 exit(1);
             }
         }
+
+        Preloader::preload();
     }
 
     /** @psalm-suppress UnusedParam $argv is being reported as unused */

@@ -53,6 +53,7 @@
         "amphp/phpunit-util": "^3",
         "bamarni/composer-bin-plugin": "^1.4",
         "brianium/paratest": "^6.9",
+        "danog/class-finder": "^0.4.8",
         "dg/bypass-finals": "^1.5",
         "mockery/mockery": "^1.5",
         "nunomaduro/mock-final-classes": "^1.1",
@@ -133,11 +134,11 @@
         ],
         "gen_callmap": "./bin/stubs/gen_callmap.sh",
         "gen_propertymap": "@php ./bin/stubs/update-property-map.php",
+        "gen_preloader": "@php ./bin/stubs/gen_preloader.php",
         "generate_issues_list_doc": "@php ./bin/docs/generate_issues_list_doc.php",
         "generate_levels_doc": "@php ./bin/docs/generate_levels_doc.php",
         "build": [
-            "@gen_callmap",
-            "@gen_propertymap",
+            "@gen_preloader",
             "@generate_issues_list_doc",
             "@generate_levels_doc"
         ]
