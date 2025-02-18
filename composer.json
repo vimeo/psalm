@@ -140,7 +140,8 @@
         "build": [
             "@gen_preloader",
             "@generate_issues_list_doc",
-            "@generate_levels_doc"
+            "@generate_levels_doc",
+            "@cs-fix"
         ]
     },
     "scripts-descriptions": {
