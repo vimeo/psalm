@@ -18,6 +18,7 @@ use Psalm\Internal\Composer;
 use Psalm\Internal\ErrorHandler;
 use Psalm\Internal\Fork\PsalmRestarter;
 use Psalm\Internal\IncludeCollector;
+use Psalm\Internal\Preloader;
 use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileReferenceCacheProvider;
@@ -48,7 +49,6 @@ use function array_shift;
 use function array_slice;
 use function array_sum;
 use function array_values;
-use function assert;
 use function chdir;
 use function count;
 use function defined;
@@ -1018,9 +1018,11 @@ final class Psalm
                 exit(1);
             }
         }
+
+        Preloader::preload($progress, $hasJit);
     }
 
-    /** @psalm-suppress UnusedParam $argv is being reported as unused */
+    /** @param array<int, string> $argv */
     private static function forwardCliCall(array $options, array $argv): void
     {
         if (isset($options['alter'])) {
@@ -1031,9 +1033,9 @@ final class Psalm
 
         if (isset($options['review'])) {
             require_once __DIR__ . '/Review.php';
-            assert($argv !== null);
             array_shift($argv);
-            Review::run($argv);
+            /** @psalm-suppress PossiblyNullArgument */
+            Review::run(array_values($argv));
             exit;
         }
 

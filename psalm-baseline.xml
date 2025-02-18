@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="6.x-dev@c48158beaa48190a4ddcd84bae16f4f909895143">
+<files psalm-version="6.x-dev@c424cac5d8d8492cb430bcad7aeda4b5d2ca6355">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$comment_block->tags['variablesfrom'][0]]]></code>
@@ -1639,6 +1639,9 @@
       <code><![CDATA[empty($baselineFile)]]></code>
       <code><![CDATA[getenv('PSALM_SHEPHERD')]]></code>
     </RiskyTruthyFalsyComparison>
+    <UnusedPsalmSuppress>
+      <code><![CDATA[PossiblyNullArgument]]></code>
+    </UnusedPsalmSuppress>
   </file>
   <file src="src/Psalm/Internal/Cli/Psalter.php">
     <RiskyTruthyFalsyComparison>
