@@ -1019,13 +1019,7 @@ final class Psalm
             }
         }
 
-        if ($hasJit) {
-            $progress->write("JIT compilation in progress... ");
-        }
-        Preloader::preload();
-        if ($hasJit) {
-            $progress->write("Done.".PHP_EOL.PHP_EOL);
-        }
+        Preloader::preload($progress, $hasJit);
     }
 
     /** @param array<int, string> $argv */
