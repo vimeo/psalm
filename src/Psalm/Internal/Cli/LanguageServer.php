@@ -13,6 +13,7 @@ use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\LanguageServer\ClientConfiguration;
 use Psalm\Internal\LanguageServer\LanguageServer as LanguageServerLanguageServer;
 use Psalm\Internal\LanguageServer\PathMapper;
+use Psalm\Internal\Preloader;
 use Psalm\Report;
 
 use function array_key_exists;
@@ -313,6 +314,8 @@ final class LanguageServer
         if ($disableXdebug) {
             $ini_handler->check();
         }
+
+        Preloader::preload();
 
         setlocale(LC_CTYPE, 'C');
 
