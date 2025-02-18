@@ -1020,7 +1020,13 @@ final class Psalm
             }
         }
 
+        if ($hasJit) {
+            $progress->write("JIT compilation in progress... ");
+        }
         Preloader::preload();
+        if ($hasJit) {
+            $progress->write("Done.".PHP_EOL.PHP_EOL);
+        }
     }
 
     /** @psalm-suppress UnusedParam $argv is being reported as unused */

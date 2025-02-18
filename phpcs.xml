@@ -24,6 +24,7 @@
     <file>tests/</file>
 
     <!-- These are just examples and stub classes/files, so it doesn't really matter if they're PSR-2 compliant. -->
+    <exclude-pattern>src/Psalm/Internal/Preloader.php</exclude-pattern>
     <exclude-pattern>src/Psalm/Internal/Stubs/</exclude-pattern>
     <exclude-pattern>tests/fixtures/</exclude-pattern>
 
