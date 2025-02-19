@@ -3,6 +3,12 @@
 return array (
   'added' => 
   array (
+    'array_find_key' => 
+    array (
+      0 => 'array-key|null',
+      'array' => 'array<array-key, mixed>',
+      'callback' => 'callable',
+    ),
     'sodium_crypto_aead_aes256gcm_keygen' => 
     array (
       0 => 'non-empty-string',

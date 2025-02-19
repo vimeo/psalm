@@ -1843,7 +1843,7 @@ return array (
   ),
   'array_find_key' => 
   array (
-    0 => 'mixed',
+    0 => 'array-key|null',
     'array' => 'array<array-key, mixed>',
     'callback' => 'callable',
   ),
