@@ -94,6 +94,10 @@ final class ElseIfAnalyzer
             $codebase,
         );
 
+        if (count($elseif_clauses) > 200) {
+            $elseif_clauses = [];
+        }
+
         $elseif_clauses_handled = [];
 
         foreach ($elseif_clauses as $clause) {
@@ -103,7 +107,7 @@ final class ElseIfAnalyzer
             foreach ($keys as $key) {
                 foreach ($mixed_var_ids as $mixed_var_id) {
                     if (preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
-                        $elseif_clauses_handled[] = new Clause([], $elseif_cond_id, $elseif_cond_id, true);
+                        $clause = new Clause([], $elseif_cond_id, $elseif_cond_id, true);
                         break 2;
                     }
                 }
@@ -120,7 +124,7 @@ final class ElseIfAnalyzer
             foreach ($c->possibilities as $key => $_value) {
                 foreach ($assigned_in_conditional_var_ids as $conditional_assigned_var_id => $_) {
                     if (preg_match('/^'.preg_quote($conditional_assigned_var_id, '/').'(\[|-|$)/', $key)) {
-                        $entry_clauses[] =  new Clause([], $elseif_cond_id, $elseif_cond_id, true);
+                        $c =  new Clause([], $elseif_cond_id, $elseif_cond_id, true);
                         break 2;
                     }
                 }
@@ -138,20 +142,22 @@ final class ElseIfAnalyzer
             $assigned_in_conditional_var_ids,
         );
 
-        $elseif_context_clauses = [...$entry_clauses, ...$elseif_clauses];
+        $elseif_clauses = Algebra::simplifyCNF($elseif_clauses);
+
+        $elseif_context->clauses = $entry_clauses
+            ? Algebra::simplifyCNF([...$entry_clauses, ...$elseif_clauses])
+            : $elseif_clauses;
 
         if ($elseif_context->reconciled_expression_clauses) {
             $reconciled_expression_clauses = $elseif_context->reconciled_expression_clauses;
 
-            $elseif_context_clauses = array_values(
+            $elseif_context->clauses = array_values(
                 array_filter(
-                    $elseif_context_clauses,
+                    $elseif_context->clauses,
                     static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses, true),
                 ),
             );
         }
-
-        $elseif_context->clauses = Algebra::simplifyCNF($elseif_context_clauses);
 
         $active_elseif_types = [];
 
