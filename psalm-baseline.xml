@@ -2223,10 +2223,6 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/ReflectorVisitor.php">
-    <ArgumentTypeCoercion>
-      <code><![CDATA[$node]]></code>
-      <code><![CDATA[$node]]></code>
-    </ArgumentTypeCoercion>
     <InvalidOperand>
       <code><![CDATA[$e->code_location->getColumn()]]></code>
       <code><![CDATA[$node->getStartLine()]]></code>
