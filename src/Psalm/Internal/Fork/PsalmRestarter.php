@@ -79,7 +79,7 @@ final class PsalmRestarter extends XdebugHandler
     #[Override]
     protected function requiresRestart($default): bool
     {
-        $this->required = array_find(
+        $this->required = array_any(
             $this->disabled_extensions,
             static fn(string $extension): bool => extension_loaded($extension),
         );

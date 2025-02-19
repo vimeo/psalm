@@ -449,7 +449,7 @@ abstract class Atomic implements TypeNode, Stringable
         return $this instanceof TNamedObject
             || ($this instanceof TTemplateParam
                 && ($this->as->hasNamedObjectType()
-                    || array_find(
+                    || array_any(
                         $this->extra_types,
                         static fn($extra_type): bool => $extra_type->isNamedObjectType(),
                     )
@@ -537,7 +537,7 @@ abstract class Atomic implements TypeNode, Stringable
                     )))
                 || (
                     $this->extra_types
-                    && array_find(
+                    && array_any(
                         $this->extra_types,
                         static fn(Atomic $a): bool => $a->hasTraversableInterface($codebase),
                     )
@@ -560,7 +560,7 @@ abstract class Atomic implements TypeNode, Stringable
                     )))
                 || (
                     $this->extra_types
-                    && array_find(
+                    && array_any(
                         $this->extra_types,
                         static fn(Atomic $a): bool => $a->hasCountableInterface($codebase),
                     )
@@ -598,7 +598,7 @@ abstract class Atomic implements TypeNode, Stringable
                     )))
                 || (
                     $this->extra_types
-                    && array_find(
+                    && array_any(
                         $this->extra_types,
                         static fn(Atomic $a): bool => $a->hasArrayAccessInterface($codebase),
                     )

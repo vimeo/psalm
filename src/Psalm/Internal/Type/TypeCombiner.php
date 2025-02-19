@@ -1264,7 +1264,7 @@ final class TypeCombiner
             } else {
                 $combination->ints[$type_key] = $type;
 
-                $all_nonnegative = !array_find(
+                $all_nonnegative = !array_any(
                     $combination->ints,
                     static fn($int): bool => $int->value < 0,
                 );

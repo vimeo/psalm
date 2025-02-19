@@ -602,7 +602,7 @@ final class TypeExpander
             );
 
             if ($container_class_storage->template_types
-                && array_find(
+                && array_any(
                     $container_class_storage->template_types,
                     static fn($type_map): bool => !reset($type_map)->hasMixed(),
                 )

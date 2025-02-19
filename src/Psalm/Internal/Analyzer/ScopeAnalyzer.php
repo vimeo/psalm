@@ -131,7 +131,7 @@ final class ScopeAnalyzer
                     $return_is_exit,
                 );
 
-                $all_leave = !array_find(
+                $all_leave = !array_any(
                     $if_statement_actions,
                     static fn(string $action): bool => $action === self::ACTION_NONE,
                 );
@@ -146,7 +146,7 @@ final class ScopeAnalyzer
 
                 $all_leave = $all_leave
                     && $else_statement_actions
-                    && !array_find(
+                    && !array_any(
                         $else_statement_actions,
                         static fn(string $action): bool => $action === self::ACTION_NONE,
                     );
@@ -163,7 +163,7 @@ final class ScopeAnalyzer
                         );
 
                         $all_leave = $all_leave
-                            && !array_find(
+                            && !array_any(
                                 $elseif_control_actions,
                                 static fn(string $action): bool => $action === self::ACTION_NONE,
                             );
@@ -328,7 +328,7 @@ final class ScopeAnalyzer
                     $return_is_exit,
                 );
 
-                $try_leaves = !array_find(
+                $try_leaves = !array_any(
                     $try_statement_actions,
                     static fn(string $action): bool => $action === self::ACTION_NONE,
                 );
@@ -347,7 +347,7 @@ final class ScopeAnalyzer
                         );
 
                         $all_leave = $all_leave
-                            && !array_find(
+                            && !array_any(
                                 $catch_actions,
                                 static fn(string $action): bool => $action === self::ACTION_NONE,
                             );

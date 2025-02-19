@@ -294,7 +294,7 @@ final class FunctionLikeDocblockScanner
         }
 
         if ($storage instanceof MethodStorage) {
-            $storage->has_docblock_param_types = array_find(
+            $storage->has_docblock_param_types = array_any(
                 $storage->params,
                 static fn(FunctionLikeParameter $p): bool => $p->type !== null && $p->has_docblock_type,
             );

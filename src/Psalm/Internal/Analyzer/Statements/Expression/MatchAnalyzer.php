@@ -283,7 +283,7 @@ final class MatchAnalyzer
                 );
 
                 if (isset($vars_in_scope_reconciled[$switch_var_id])) {
-                    $array_literal_types = array_find(
+                    $array_literal_types = array_any(
                         $vars_in_scope_reconciled[$switch_var_id]->getAtomicTypes(),
                         static fn(Atomic $type): bool => $type instanceof TLiteralInt
                             || $type instanceof TLiteralString
