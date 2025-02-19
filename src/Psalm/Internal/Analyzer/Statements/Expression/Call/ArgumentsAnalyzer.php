@@ -72,6 +72,13 @@ use function strtolower;
  */
 final class ArgumentsAnalyzer
 {
+    public const ARRAY_FILTERLIKE = [
+        'array_filter',
+        'array_find',
+        'array_any',
+        'array_all',
+    ];
+
     /**
      * @param   list<PhpParser\Node\Arg>          $args
      * @param   array<int, FunctionLikeParameter>|null  $function_params
@@ -262,7 +269,7 @@ final class ArgumentsAnalyzer
                 );
             }
 
-            if (($argument_offset === 0 && $method_id === 'array_filter' && count($args) === 2)
+            if (($argument_offset === 0 && in_array($method_id, self::ARRAY_FILTERLIKE) && count($args) === 2)
                 || ($argument_offset > 0 && $method_id === 'array_map' && count($args) >= 2)
             ) {
                 self::handleArrayMapFilterArrayArg(
@@ -384,7 +391,7 @@ final class ArgumentsAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
-        if (($argument_offset === 1 && $method_id === 'array_filter' && count($args) === 2)
+        if (($argument_offset === 1 && in_array($method_id, self::ARRAY_FILTERLIKE) && count($args) === 2)
             || ($argument_offset === 0 && $method_id === 'array_map' && count($args) >= 2)
         ) {
             $function_like_params = [];
@@ -913,8 +920,9 @@ final class ArgumentsAnalyzer
             }
         }
 
-        if ($method_id === 'array_map' || $method_id === 'array_filter') {
-            if ($method_id === 'array_map' && count($args) < 2) {
+        $f = in_array($method_id, self::ARRAY_FILTERLIKE);
+        if ($method_id === 'array_map' || $f) {
+            if (!$f && count($args) < 2) {
                 IssueBuffer::maybeAdd(
                     new TooFewArguments(
                         'Too few arguments for ' . $method_id,
@@ -923,7 +931,7 @@ final class ArgumentsAnalyzer
                     ),
                     $statements_analyzer->getSuppressedIssues(),
                 );
-            } elseif ($method_id === 'array_filter' && count($args) < 1) {
+            } elseif ($f && count($args) < 1) {
                 IssueBuffer::maybeAdd(
                     new TooFewArguments(
                         'Too few arguments for ' . $method_id,

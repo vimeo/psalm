@@ -78,7 +78,7 @@ final class ArrayFunctionArgumentsAnalyzer
                 continue;
             }
 
-            if ($i === 1 && $method_id === 'array_filter') {
+            if ($i === 1 && in_array($method_id, ArgumentsAnalyzer::ARRAY_FILTERLIKE, true)) {
                 break;
             }
 
@@ -110,6 +110,8 @@ final class ArrayFunctionArgumentsAnalyzer
 
             if ($method_id === 'array_filter') {
                 $max_closure_param_count = count($args) > 2 ? 2 : 1;
+            } else if (in_array($method_id, ArgumentsAnalyzer::ARRAY_FILTERLIKE)) {
+                $max_closure_param_count = 2;
             }
 
             $new = [];
