@@ -324,7 +324,7 @@ final class IfAnalyzer
         array $assigned_in_conditional_var_ids,
     ): void {
         // this filters out coercions to expected types in ArgumentAnalyzer
-        $assigned_in_conditional_var_ids = array_any($assigned_in_conditional_var_ids);
+        $assigned_in_conditional_var_ids = array_filter($assigned_in_conditional_var_ids);
 
         if (!$assigned_in_conditional_var_ids) {
             return;
