@@ -1344,7 +1344,7 @@ final class ClassLikeNodeScanner
             $attributes = [];
             foreach ($stmt->attrGroups as $attr_group) {
                 foreach ($attr_group->attrs as $attr) {
-                    $attributes[] = AttributeResolver::resolve(
+                    $attributes[] = $attr = AttributeResolver::resolve(
                         $this->codebase,
                         $this->file_scanner,
                         $this->file_storage,
@@ -1352,6 +1352,13 @@ final class ClassLikeNodeScanner
                         $attr,
                         $this->storage->name ?? null,
                     );
+
+                    if ($attr->fq_class_name === 'Psalm\\Deprecated'
+                        || $attr->fq_class_name === 'JetBrains\\PhpStorm\\Deprecated'
+                        || $attr->fq_class_name === 'Deprecated'
+                    ) {
+                        $deprecated = true;
+                    }
                 }
             }
             $unresolved_node = null;
