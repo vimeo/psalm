@@ -50273,7 +50273,7 @@ return array (
   'readline_completion_function' => 
   array (
     0 => 'bool',
-    'callback' => 'callable(string): array<string>',
+    'callback' => 'callable(string):array<array-key, string>',
   ),
   'readline_info' => 
   array (

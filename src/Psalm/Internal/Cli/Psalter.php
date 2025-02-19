@@ -13,6 +13,7 @@ use Psalm\Internal\Composer;
 use Psalm\Internal\ErrorHandler;
 use Psalm\Internal\Fork\PsalmRestarter;
 use Psalm\Internal\IncludeCollector;
+use Psalm\Internal\Preloader;
 use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileStorageCacheProvider;
@@ -242,6 +243,8 @@ final class Psalter
 
         // If Xdebug is enabled, restart without it
         $ini_handler->check();
+
+        Preloader::preload();
 
         $paths_to_check = CliUtils::getPathsToCheck($options['f'] ?? null);
 
