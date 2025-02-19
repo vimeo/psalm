@@ -91,6 +91,7 @@ use const JSON_THROW_ON_ERROR;
 use const LC_CTYPE;
 use const PHP_EOL;
 use const PHP_URL_SCHEME;
+use const PHP_VERSION;
 use const STDERR;
 
 // phpcs:disable PSR1.Files.SideEffects
@@ -965,6 +966,8 @@ final class Psalm
 
         // If Xdebug is enabled, restart without it
         $ini_handler->check();
+
+        $progress->write(PHP_EOL."Running on PHP ".PHP_VERSION.'.'.PHP_EOL);
 
         $hasJit = false;
         if (function_exists('opcache_get_status')) {
