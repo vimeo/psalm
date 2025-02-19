@@ -34,8 +34,14 @@ foreach (EXCLUDE as $f) {
     clearstatcache(true, $f);
 }
 
-$classes = array_fill_keys(ClassFinder::getClassesInNamespace('PhpParser', ClassFinder::ALLOW_ALL|ClassFinder::RECURSIVE_MODE), true);
-$classes += array_fill_keys(ClassFinder::getClassesInNamespace('Amp', ClassFinder::ALLOW_ALL|ClassFinder::RECURSIVE_MODE), true);
+$classes = array_fill_keys(
+    ClassFinder::getClassesInNamespace('PhpParser', ClassFinder::ALLOW_ALL|ClassFinder::RECURSIVE_MODE),
+    true,
+);
+$classes += array_fill_keys(
+    ClassFinder::getClassesInNamespace('Amp', ClassFinder::ALLOW_ALL|ClassFinder::RECURSIVE_MODE),
+    true,
+);
 
 foreach ($excludes as $f => $content) {
     file_put_contents($f, $content);
