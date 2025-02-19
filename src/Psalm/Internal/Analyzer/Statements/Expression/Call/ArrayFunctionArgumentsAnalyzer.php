@@ -111,7 +111,7 @@ final class ArrayFunctionArgumentsAnalyzer
 
             if ($method_id === 'array_filter') {
                 $max_closure_param_count = count($args) > 2 ? 2 : 1;
-            } elseif (in_array($method_id, ArgumentsAnalyzer::ARRAY_FILTERLIKE)) {
+            } elseif (in_array($method_id, ArgumentsAnalyzer::ARRAY_FILTERLIKE, true)) {
                 $max_closure_param_count = 2;
             }
 
