@@ -779,6 +779,7 @@ final class ClassLikeNodeScanner
 
                 if ($attribute->fq_class_name === 'Psalm\\Deprecated'
                     || $attribute->fq_class_name === 'JetBrains\\PhpStorm\\Deprecated'
+                    || $attribute->fq_class_name === 'Deprecated'
                 ) {
                     $storage->deprecated = true;
                 }
@@ -1497,6 +1498,7 @@ final class ClassLikeNodeScanner
             foreach ($attrs as $attribute) {
                 if ($attribute->fq_class_name === 'Psalm\\Deprecated'
                     || $attribute->fq_class_name === 'JetBrains\\PhpStorm\\Deprecated'
+                    || $attribute->fq_class_name === 'Deprecated'
                 ) {
                     $case->deprecated = true;
                     break;
@@ -1781,6 +1783,7 @@ final class ClassLikeNodeScanner
             foreach ($attrs as $attribute) {
                 if ($attribute->fq_class_name === 'Psalm\\Deprecated'
                     || $attribute->fq_class_name === 'JetBrains\\PhpStorm\\Deprecated'
+                    || $attribute->fq_class_name === 'Deprecated'
                 ) {
                     $property_storage->deprecated = true;
                 }
