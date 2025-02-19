@@ -50,8 +50,8 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\TaintKindGroup;
 use Psalm\Type\Union;
 
+use function array_any;
 use function array_filter;
-use function array_find;
 use function array_merge;
 use function array_search;
 use function array_splice;

@@ -58,6 +58,7 @@ use function array_reduce;
 use function array_reverse;
 use function array_slice;
 use function array_values;
+use function assert;
 use function count;
 use function in_array;
 use function is_string;
@@ -75,6 +76,7 @@ final class ArgumentsAnalyzer
     public const ARRAY_FILTERLIKE = [
         'array_filter',
         'array_find',
+        'array_find_key',
         'array_any',
         'array_all',
     ];
@@ -269,7 +271,7 @@ final class ArgumentsAnalyzer
                 );
             }
 
-            if (($argument_offset === 0 && in_array($method_id, self::ARRAY_FILTERLIKE) && count($args) === 2)
+            if (($argument_offset === 0 && in_array($method_id, self::ARRAY_FILTERLIKE, true) && count($args) === 2)
                 || ($argument_offset > 0 && $method_id === 'array_map' && count($args) >= 2)
             ) {
                 self::handleArrayMapFilterArrayArg(
@@ -391,7 +393,7 @@ final class ArgumentsAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
-        if (($argument_offset === 1 && in_array($method_id, self::ARRAY_FILTERLIKE) && count($args) === 2)
+        if (($argument_offset === 1 && in_array($method_id, self::ARRAY_FILTERLIKE, true) && count($args) === 2)
             || ($argument_offset === 0 && $method_id === 'array_map' && count($args) >= 2)
         ) {
             $function_like_params = [];
@@ -529,7 +531,9 @@ final class ArgumentsAnalyzer
                 $param_storage->type_inferred = true;
             }
 
-            if ($param_storage->type && ($method_id === 'array_map' || $method_id === 'array_filter')) {
+            if ($param_storage->type
+                && ($method_id === 'array_map' || in_array($method_id, self::ARRAY_FILTERLIKE, true))
+            ) {
                 $temp = Type::getMixed();
                 ArrayFetchAnalyzer::taintArrayFetch(
                     $statements_analyzer,
@@ -920,8 +924,9 @@ final class ArgumentsAnalyzer
             }
         }
 
-        $f = in_array($method_id, self::ARRAY_FILTERLIKE);
-        if ($method_id === 'array_map' || $f) {
+        $f = in_array($method_id, self::ARRAY_FILTERLIKE, true);
+        if ($f || $method_id === 'array_map') {
+            assert(is_string($method_id));
             if (!$f && count($args) < 2) {
                 IssueBuffer::maybeAdd(
                     new TooFewArguments(

@@ -8,9 +8,9 @@ use PhpParser;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\NodeTypeProvider;
 
+use function array_any;
 use function array_diff;
 use function array_filter;
-use function array_find;
 use function array_intersect;
 use function array_unique;
 use function array_values;

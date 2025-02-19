@@ -27,9 +27,10 @@ use Psalm\Type;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
+use function array_any;
 use function array_combine;
 use function array_diff_key;
-use function array_find;
+use function array_filter;
 use function array_intersect;
 use function array_intersect_key;
 use function array_key_exists;

@@ -39,8 +39,8 @@ use Psalm\Type\Atomic\TVoid;
 use Psalm\Type\Union;
 use ReflectionProperty;
 
+use function array_any;
 use function array_filter;
-use function array_find;
 use function array_map;
 use function array_merge;
 use function array_values;

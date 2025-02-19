@@ -1351,6 +1351,12 @@ return array (
     'callback=' => 'callable(mixed, array-key=):mixed|null',
     'mode=' => 'int',
   ),
+  'array_find_key' => 
+  array (
+    0 => 'array-key|null',
+    'array' => 'array<array-key, mixed>',
+    'callback' => 'callable',
+  ),
   'array_flip' => 
   array (
     0 => 'array<array-key, int|string>',
