@@ -88,7 +88,6 @@ use function substr;
 use function usort;
 
 use const PHP_EOL;
-use const PHP_VERSION;
 use const PSALM_VERSION;
 use const STDERR;
 
@@ -430,7 +429,7 @@ final class ProjectAnalyzer
             $message .= ' (unsupported extensions: ' . implode(', ', $unsupported_php_extensions) . ')';
         }
 
-        $message .= '.'.PHP_EOL.PHP_EOL."Running on PHP ".PHP_VERSION.'.'.PHP_EOL.PHP_EOL;
+        $message .= '.'.PHP_EOL.PHP_EOL;
 
         return $message;
     }
