@@ -33,7 +33,7 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Reconciler;
 use UnexpectedValueException;
 
-use function array_find;
+use function array_any;
 use function array_map;
 use function array_merge;
 use function array_reverse;

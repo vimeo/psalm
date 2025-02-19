@@ -70,7 +70,7 @@ use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Atomic\TVoid;
 use Stringable;
 
-use function array_find;
+use function array_any;
 use function array_keys;
 use function count;
 use function is_array;

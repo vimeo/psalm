@@ -529,7 +529,7 @@ final class ArgumentsAnalyzer
                 $param_storage->type_inferred = true;
             }
 
-            if ($param_storage->type && ($method_id === 'array_map' || $method_id === 'array_filter')) {
+            if ($param_storage->type && ($method_id === 'array_map' || in_array($method_id, self::ARRAY_FILTERLIKE, true))) {
                 $temp = Type::getMixed();
                 ArrayFetchAnalyzer::taintArrayFetch(
                     $statements_analyzer,

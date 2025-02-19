@@ -23,11 +23,11 @@ use Psalm\Issue\ConflictingReferenceConstraint;
 use Psalm\IssueBuffer;
 use Psalm\Type\Reconciler;
 
+use function array_any;
 use function array_combine;
 use function array_diff;
 use function array_diff_key;
 use function array_filter;
-use function array_find;
 use function array_key_exists;
 use function array_keys;
 use function array_merge;

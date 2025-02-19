@@ -41,7 +41,7 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
-use function array_find;
+use function array_any;
 use function in_array;
 use function str_starts_with;
 use function strtolower;

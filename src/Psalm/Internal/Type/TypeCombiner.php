@@ -55,8 +55,8 @@ use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_any;
 use function array_filter;
-use function array_find;
 use function array_intersect_key;
 use function array_key_exists;
 use function array_keys;
