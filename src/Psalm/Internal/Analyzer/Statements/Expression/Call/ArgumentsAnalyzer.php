@@ -75,6 +75,7 @@ final class ArgumentsAnalyzer
     public const ARRAY_FILTERLIKE = [
         'array_filter',
         'array_find',
+        'array_find_key',
         'array_any',
         'array_all',
     ];
