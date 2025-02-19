@@ -22875,12 +22875,12 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'funcname' => 'callable',
+        'funcname' => 'callable(string): array<string>',
       ),
       'new' => 
       array (
         0 => 'bool',
-        'callback' => 'callable',
+        'callback' => 'callable(string): array<string>',
       ),
     ),
     'readline_info' => 
