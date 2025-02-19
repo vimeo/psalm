@@ -27,6 +27,7 @@ use Psalm\Type;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
+use function array_any;
 use function array_combine;
 use function array_diff_key;
 use function array_filter;
@@ -71,7 +72,7 @@ final class IfAnalyzer
             $active_if_types,
         );
 
-        if (array_filter(
+        if (array_any(
             $outer_context->clauses,
             static fn(Clause $clause): bool => (bool) $clause->possibilities,
         )) {

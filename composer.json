@@ -33,8 +33,8 @@
         "amphp/parallel": "^2.3",
         "composer/semver": "^1.4 || ^2.0 || ^3.0",
         "composer/xdebug-handler": "^2.0 || ^3.0",
-        "dnoegel/php-xdg-base-dir": "^0.1.1",
         "danog/advanced-json-rpc": "^3.1",
+        "dnoegel/php-xdg-base-dir": "^0.1.1",
         "felixfbecker/language-server-protocol": "^1.5.3",
         "fidry/cpu-core-counter": "^0.4.1 || ^0.5.1 || ^1.0.0",
         "netresearch/jsonmapper": "^5.0",
@@ -42,7 +42,8 @@
         "sebastian/diff": "^4.0 || ^5.0 || ^6.0 || ^7.0",
         "spatie/array-to-xml": "^2.17.0 || ^3.0",
         "symfony/console": "^6.0 || ^7.0",
-        "symfony/filesystem": "~6.3.12 || ~6.4.3 || ^7.0.3"
+        "symfony/filesystem": "~6.3.12 || ~6.4.3 || ^7.0.3",
+        "symfony/polyfill-php84": "*"
     },
     "provide": {
         "psalm/psalm": "self.version"

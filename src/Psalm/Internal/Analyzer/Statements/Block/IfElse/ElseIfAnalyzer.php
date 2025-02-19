@@ -23,6 +23,7 @@ use Psalm\Issue\ConflictingReferenceConstraint;
 use Psalm\IssueBuffer;
 use Psalm\Type\Reconciler;
 
+use function array_any;
 use function array_combine;
 use function array_diff;
 use function array_diff_key;
@@ -162,7 +163,7 @@ final class ElseIfAnalyzer
         $active_elseif_types = [];
 
         try {
-            if (array_filter(
+            if (array_any(
                 $entry_clauses,
                 static fn(Clause $clause): bool => (bool) $clause->possibilities,
             )) {

@@ -7,7 +7,7 @@ namespace Psalm\Internal\Fork;
 use Composer\XdebugHandler\XdebugHandler;
 use Override;
 
-use function array_filter;
+use function array_any;
 use function array_merge;
 use function array_splice;
 use function assert;
@@ -79,7 +79,7 @@ final class PsalmRestarter extends XdebugHandler
     #[Override]
     protected function requiresRestart($default): bool
     {
-        $this->required = (bool) array_filter(
+        $this->required = array_any(
             $this->disabled_extensions,
             static fn(string $extension): bool => extension_loaded($extension),
         );
