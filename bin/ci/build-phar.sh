@@ -2,6 +2,8 @@
 
 set -e
 
+php -v
+
 composer bin box install
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
@@ -15,6 +17,8 @@ if [[ ! -f build/phar-versions.php ]] ; then
 fi
 
 vendor/bin/box compile --no-parallel
+
+build/psalm.phar -v
 
 if [[ "$GPG_SIGNING" != '' ]] ; then
     if [[ "$GPG_SECRET_KEY" != '' ]] ; then
