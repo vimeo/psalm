@@ -21,7 +21,7 @@ vendor/bin/box compile --no-parallel
 rm -rf /tmp/psalmTest
 mkdir -p /tmp/psalmTest
 cd /tmp/psalmTest
-composer require danog/async-orm # Just to gen the composer.json
+composer require danog/loop # Just to gen the composer.json
 
 $OLDPWD/build/psalm.phar -v
 
