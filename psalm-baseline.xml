@@ -2984,6 +2984,17 @@
       <code><![CDATA[getMostSpecificTypeFromBounds]]></code>
     </ImpureMethodCall>
   </file>
+  <file src="src/Psalm/Type/Atomic/TCallableKeyedArray.php">
+    <DeprecatedMethod>
+      <code><![CDATA[parent::__construct(
+            $properties,
+            $class_strings,
+            $fallback_params,
+            true,
+            $from_docblock,
+        )]]></code>
+    </DeprecatedMethod>
+  </file>
   <file src="src/Psalm/Type/Atomic/TClassString.php">
     <ImplicitToStringCast>
       <code><![CDATA[$this->as_type]]></code>

@@ -75,7 +75,7 @@ final class ArrayReverseReturnTypeProvider implements FunctionReturnTypeProvider
                     : new Union([$first_arg_array->setProperties(array_reverse($first_arg_array->properties))]);
             }
 
-            return new Union([new TKeyedArray(
+            return new Union([TKeyedArray::make(
                 $first_arg_array->properties,
                 null,
                 $first_arg_array->fallback_params,
