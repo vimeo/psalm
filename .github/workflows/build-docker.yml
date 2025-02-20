@@ -5,6 +5,7 @@ on:
     branches:
       - master
       - 6.x
+      - add_docker_image
   release:
     types:
       - published
@@ -13,27 +14,9 @@ permissions:
   contents: read
 
 jobs:
-  pre_job:
-    permissions:
-      actions: write
-    runs-on: ubuntu-latest
-    outputs:
-      should_skip: ${{ steps.skip_check.outputs.should_skip }}
-    steps:
-      - id: skip_check
-        uses: fkirc/skip-duplicate-actions@v5.3.1
-        with:
-          concurrent_skipping: always
-          cancel_others: true
-          do_not_skip: '["release"]'
-          # list files that may affect or are included into the built phar
-          paths: '["bin/**", "assets/**", "build/**", "dictionaries/**", "src/**", "stubs/**", "psalm", "psalm-language-server", "psalm-plugin", "psalm-refactor", "psalm-review", "psalter", "box.json.dist", "composer.json", "config.xsd", "keys.asc.gpg", "scoper.inc.php"]'
-
   build-phar:
     permissions:
       packages: write
-    needs: pre_job
-    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Set up PHP
@@ -50,12 +33,9 @@ jobs:
           fetch-depth: 0 # required for composer to automatically detect root package version
 
       - name: Upload docker image
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF: ${{ github.ref }}
         run: |
-          bin/ci/waitPackagist.php
-
-          docker build . -t ghcr.io/vimeo/psalm:${{ github.ref_name }} --build-arg PSALM_REV=${{ github.ref_name }} -f bin/docker/Dockerfile
-          
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-
-          docker tag ghcr.io/vimeo/psalm:${{ github.ref_name }} ghcr.io/vimeo/psalm:latest
-          docker push ghcr.io/vimeo/psalm:${{ github.ref_name }} ghcr.io/vimeo/psalm:latest
+          bin/ci/build-docker.php
