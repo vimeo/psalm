@@ -4,7 +4,7 @@
 declare(strict_types=1);
 
 $commit = getenv('GITHUB_SHA');
-$ref = getenv('REF');
+$ref = substr(getenv('REF'), strlen('refs/heads/'));
 $is_tag = getenv('EVENT_NAME') === 'release';
 
 echo "Waiting for commit $commit on $ref...".PHP_EOL;

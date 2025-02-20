@@ -14,9 +14,27 @@ permissions:
   contents: read
 
 jobs:
+  pre_job:
+    permissions:
+      actions: write
+    runs-on: ubuntu-latest
+    outputs:
+      should_skip: ${{ steps.skip_check.outputs.should_skip }}
+    steps:
+      - id: skip_check
+        uses: fkirc/skip-duplicate-actions@v5.3.1
+        with:
+          concurrent_skipping: always
+          cancel_others: true
+          do_not_skip: '["release"]'
+          # list files that may affect or are included into the built phar
+          paths: '["bin/**", "assets/**", "build/**", "dictionaries/**", "src/**", "stubs/**", "psalm", "psalm-language-server", "psalm-plugin", "psalm-refactor", "psalm-review", "psalter", "box.json.dist", "composer.json", "config.xsd", "keys.asc.gpg", "scoper.inc.php"]'
+
   build-docker:
     permissions:
       packages: write
+    needs: pre_job
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Set up PHP
