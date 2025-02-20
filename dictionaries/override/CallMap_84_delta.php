@@ -1,87 +1,87 @@
 <?php // phpcs:ignoreFile
 
 return array (
-  'added' => 
+  'added' =>
   array (
-    'array_find_key' => 
+    'array_find_key' =>
     array (
       0 => 'array-key|null',
       'array' => 'array<array-key, mixed>',
       'callback' => 'callable',
     ),
-    'sodium_crypto_aead_aes256gcm_keygen' => 
+    'sodium_crypto_aead_aes256gcm_keygen' =>
     array (
       0 => 'non-empty-string',
     ),
   ),
-  'changed' => 
+  'changed' =>
   array (
-    'collator::setstrength' => 
+    'collator::setstrength' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'bool',
         'strength' => 'int',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
         'strength' => 'int',
       ),
     ),
-    'collator_set_strength' => 
+    'collator_set_strength' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'bool',
         'object' => 'collator',
         'strength' => 'int',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
         'object' => 'collator',
         'strength' => 'int',
       ),
     ),
-    'dateinterval::createfromdatestring' => 
+    'dateinterval::createfromdatestring' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'DateInterval|false',
         'datetime' => 'string',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'DateInterval',
         'datetime' => 'string',
       ),
     ),
-    'domdocument::registernodeclass' => 
+    'domdocument::registernodeclass' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'bool',
         'baseClass' => 'string',
         'extendedClass' => 'null|string',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
         'baseClass' => 'string',
         'extendedClass' => 'null|string',
       ),
     ),
-    'domimplementation::createdocument' => 
+    'domimplementation::createdocument' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'DOMDocument|false',
         'namespace=' => 'null|string',
         'qualifiedName=' => 'string',
         'doctype=' => 'DOMDocumentType|null',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'DOMDocument',
         'namespace=' => 'null|string',
@@ -89,147 +89,147 @@ return array (
         'doctype=' => 'DOMDocumentType|null',
       ),
     ),
-    'finfo::set_flags' => 
+    'finfo::set_flags' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'bool',
         'flags' => 'int',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
         'flags' => 'int',
       ),
     ),
-    'finfo_set_flags' => 
+    'finfo_set_flags' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'bool',
         'finfo' => 'finfo',
         'flags' => 'int',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
         'finfo' => 'finfo',
         'flags' => 'int',
       ),
     ),
-    'hash_update' => 
+    'hash_update' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'bool',
         'context' => 'HashContext',
         'data' => 'string',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
         'context' => 'HashContext',
         'data' => 'string',
       ),
     ),
-    'highlight_string' => 
+    'highlight_string' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'bool|string',
         'string' => 'string',
         'return=' => 'bool',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'string|true',
         'string' => 'string',
         'return=' => 'bool',
       ),
     ),
-    'imagick::convolveimage' => 
+    'imagick::convolveimage' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'bool',
         'kernel' => 'array<array-key, mixed>',
         'channel=' => 'int',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'bool',
         'kernel' => 'ImagickKernel',
         'channel=' => 'int',
       ),
     ),
-    'imagick::evaluateimages' => 
+    'imagick::evaluateimages' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'bool',
         'evaluate' => 'int',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'Imagick',
         'evaluate' => 'int',
       ),
     ),
-    'imagick::getimageblob' => 
+    'imagick::getimageblob' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'string',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'null|string',
       ),
     ),
-    'imagick::getregistry' => 
+    'imagick::getregistry' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'string',
         'key' => 'string',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'false|string',
         'key' => 'string',
       ),
     ),
-    'imagick::getresourcelimit' => 
+    'imagick::getresourcelimit' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'int',
         'type' => 'int',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'float',
         'type' => 'int',
       ),
     ),
-    'imagick::localcontrastimage' => 
+    'imagick::localcontrastimage' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'void',
         'radius' => 'float',
         'strength' => 'float',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'bool',
         'radius' => 'float',
         'strength' => 'float',
       ),
     ),
-    'imagick::newimage' => 
+    'imagick::newimage' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'bool',
         'columns' => 'int',
@@ -237,7 +237,7 @@ return array (
         'background_color' => 'ImagickPixel|string',
         'format=' => 'string',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'bool',
         'columns' => 'int',
@@ -246,20 +246,20 @@ return array (
         'format=' => 'null|string',
       ),
     ),
-    'imagick::optimizeimagelayers' => 
+    'imagick::optimizeimagelayers' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'bool',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'Imagick',
       ),
     ),
-    'imagick::similarityimage' => 
+    'imagick::similarityimage' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'Imagick',
         'image' => 'Imagick',
@@ -268,7 +268,7 @@ return array (
         'threshold=' => 'float',
         'metric=' => 'int',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'Imagick',
         'image' => 'Imagick',
@@ -278,9 +278,9 @@ return array (
         'metric=' => 'int',
       ),
     ),
-    'imagick::subimagematch' => 
+    'imagick::subimagematch' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'Imagick',
         'image' => 'Imagick',
@@ -289,7 +289,7 @@ return array (
         'threshold=' => 'float',
         'metric=' => 'int',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'Imagick',
         'image' => 'Imagick',
@@ -299,115 +299,115 @@ return array (
         'metric=' => 'int',
       ),
     ),
-    'imagickdraw::getclippath' => 
+    'imagickdraw::getclippath' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'string',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'false|string',
       ),
     ),
-    'imagickkernel::frommatrix' => 
+    'imagickkernel::frommatrix' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'ImagickKernel',
         'matrix' => 'list<list<float>>',
         'origin' => 'array<array-key, mixed>|null',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'ImagickKernel',
         'matrix' => 'list<list<float>>',
         'origin=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'imagickpixel::ispixelsimilar' => 
+    'imagickpixel::ispixelsimilar' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'bool',
         'color' => 'ImagickPixel',
         'fuzz' => 'float',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'bool|null',
         'color' => 'ImagickPixel',
         'fuzz' => 'float',
       ),
     ),
-    'imagickpixel::ispixelsimilarquantum' => 
+    'imagickpixel::ispixelsimilarquantum' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'bool',
         'color' => 'string',
         'fuzz_quantum_range_scaled_by_square_root_of_three' => 'float',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'bool|null',
         'color' => 'string',
         'fuzz_quantum_range_scaled_by_square_root_of_three' => 'float',
       ),
     ),
-    'imagickpixel::issimilar' => 
+    'imagickpixel::issimilar' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'bool',
         'color' => 'ImagickPixel',
         'fuzz_quantum_range_scaled_by_square_root_of_three' => 'float',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'bool|null',
         'color' => 'ImagickPixel',
         'fuzz_quantum_range_scaled_by_square_root_of_three' => 'float',
       ),
     ),
-    'imagickpixeliterator::getcurrentiteratorrow' => 
+    'imagickpixeliterator::getcurrentiteratorrow' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'array<array-key, mixed>',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'array<array-key, mixed>|null',
       ),
     ),
-    'imagickpixeliterator::getnextiteratorrow' => 
+    'imagickpixeliterator::getnextiteratorrow' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'array<array-key, mixed>',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'array<array-key, mixed>|null',
       ),
     ),
-    'intlcalendar::clear' => 
+    'intlcalendar::clear' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'bool',
         'field=' => 'int|null',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
         'field=' => 'int|null',
       ),
     ),
-    'intlcalendar::set' => 
+    'intlcalendar::set' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'bool',
         'year' => 'int',
@@ -417,69 +417,7 @@ return array (
         'minute=' => 'int',
         'second=' => 'int',
       ),
-      'new' => 
-      array (
-        0 => 'true',
-        'year' => 'int',
-        'month' => 'int',
-        'dayOfMonth=' => 'int',
-        'hour=' => 'int',
-        'minute=' => 'int',
-        'second=' => 'int',
-      ),
-    ),
-    'intlcalendar::setfirstdayofweek' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'dayOfWeek' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'true',
-        'dayOfWeek' => 'int',
-      ),
-    ),
-    'intlcalendar::setminimaldaysinfirstweek' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'days' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'true',
-        'days' => 'int',
-      ),
-    ),
-    'intlgregoriancalendar::clear' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'field=' => 'int|null',
-      ),
-      'new' => 
-      array (
-        0 => 'true',
-        'field=' => 'int|null',
-      ),
-    ),
-    'intlgregoriancalendar::set' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'year' => 'int',
-        'month' => 'int',
-        'dayOfMonth=' => 'int',
-        'hour=' => 'int',
-        'minute=' => 'int',
-        'second=' => 'int',
-      ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
         'year' => 'int',
@@ -490,61 +428,123 @@ return array (
         'second=' => 'int',
       ),
     ),
-    'intlgregoriancalendar::setfirstdayofweek' => 
+    'intlcalendar::setfirstdayofweek' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'bool',
         'dayOfWeek' => 'int',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
         'dayOfWeek' => 'int',
       ),
     ),
-    'intlgregoriancalendar::setminimaldaysinfirstweek' => 
+    'intlcalendar::setminimaldaysinfirstweek' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'bool',
         'days' => 'int',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
         'days' => 'int',
       ),
     ),
-    'locale::setdefault' => 
+    'intlgregoriancalendar::clear' =>
     array (
-      'old' => 
+      'old' =>
+      array (
+        0 => 'bool',
+        'field=' => 'int|null',
+      ),
+      'new' =>
+      array (
+        0 => 'true',
+        'field=' => 'int|null',
+      ),
+    ),
+    'intlgregoriancalendar::set' =>
+    array (
+      'old' =>
+      array (
+        0 => 'bool',
+        'year' => 'int',
+        'month' => 'int',
+        'dayOfMonth=' => 'int',
+        'hour=' => 'int',
+        'minute=' => 'int',
+        'second=' => 'int',
+      ),
+      'new' =>
+      array (
+        0 => 'true',
+        'year' => 'int',
+        'month' => 'int',
+        'dayOfMonth=' => 'int',
+        'hour=' => 'int',
+        'minute=' => 'int',
+        'second=' => 'int',
+      ),
+    ),
+    'intlgregoriancalendar::setfirstdayofweek' =>
+    array (
+      'old' =>
+      array (
+        0 => 'bool',
+        'dayOfWeek' => 'int',
+      ),
+      'new' =>
+      array (
+        0 => 'true',
+        'dayOfWeek' => 'int',
+      ),
+    ),
+    'intlgregoriancalendar::setminimaldaysinfirstweek' =>
+    array (
+      'old' =>
+      array (
+        0 => 'bool',
+        'days' => 'int',
+      ),
+      'new' =>
+      array (
+        0 => 'true',
+        'days' => 'int',
+      ),
+    ),
+    'locale::setdefault' =>
+    array (
+      'old' =>
       array (
         0 => 'bool',
         'locale' => 'string',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
         'locale' => 'string',
       ),
     ),
-    'locale_set_default' => 
+    'locale_set_default' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'bool',
         'locale' => 'string',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
         'locale' => 'string',
       ),
     ),
-    'openssl_csr_sign' => 
+    'openssl_csr_sign' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'OpenSSLCertificate|false',
         'csr' => 'OpenSSLCertificateSigningRequest|string',
@@ -554,7 +554,7 @@ return array (
         'options=' => 'array<array-key, mixed>|null',
         'serial=' => 'int',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'OpenSSLCertificate|false',
         'csr' => 'OpenSSLCertificateSigningRequest|string',
@@ -566,24 +566,24 @@ return array (
         'serial_hex=' => 'null|string',
       ),
     ),
-    'pdostatement::setfetchmode' => 
+    'pdostatement::setfetchmode' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'bool',
         'mode' => 'int',
         '...args=' => 'mixed',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
         'mode' => 'int',
         '...args=' => 'mixed',
       ),
     ),
-    'pg_select' => 
+    'pg_select' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'array<array-key, mixed>|false|string',
         'connection' => 'PgSql\\Connection',
@@ -592,7 +592,7 @@ return array (
         'flags=' => 'int',
         'mode=' => 'int',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'array<array-key, mixed>|false|string',
         'connection' => 'PgSql\\Connection',
@@ -602,237 +602,237 @@ return array (
         'mode=' => 'int',
       ),
     ),
-    'phar::copy' => 
+    'phar::copy' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'bool',
         'from' => 'string',
         'to' => 'string',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
         'from' => 'string',
         'to' => 'string',
       ),
     ),
-    'phar::decompressfiles' => 
+    'phar::decompressfiles' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'bool',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
       ),
     ),
-    'phar::delete' => 
+    'phar::delete' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'bool',
         'localName' => 'string',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
         'localName' => 'string',
       ),
     ),
-    'phar::delmetadata' => 
+    'phar::delmetadata' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'bool',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
       ),
     ),
-    'phar::setalias' => 
+    'phar::setalias' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'bool',
         'alias' => 'string',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
         'alias' => 'string',
       ),
     ),
-    'phar::setdefaultstub' => 
+    'phar::setdefaultstub' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'bool',
         'index=' => 'null|string',
         'webIndex=' => 'null|string',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
         'index=' => 'null|string',
         'webIndex=' => 'null|string',
       ),
     ),
-    'phar::setstub' => 
+    'phar::setstub' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'bool',
         'stub' => 'string',
         'length=' => 'int',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
         'stub' => 'string',
         'length=' => 'int',
       ),
     ),
-    'phar::unlinkarchive' => 
+    'phar::unlinkarchive' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'bool',
         'filename' => 'string',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
         'filename' => 'string',
       ),
     ),
-    'phardata::copy' => 
+    'phardata::copy' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'bool',
         'from' => 'string',
         'to' => 'string',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
         'from' => 'string',
         'to' => 'string',
       ),
     ),
-    'phardata::decompressfiles' => 
+    'phardata::decompressfiles' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'bool',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
       ),
     ),
-    'phardata::delete' => 
+    'phardata::delete' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'bool',
         'localName' => 'string',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
         'localName' => 'string',
       ),
     ),
-    'phardata::delmetadata' => 
+    'phardata::delmetadata' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'bool',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
       ),
     ),
-    'phardata::setstub' => 
+    'phardata::setstub' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'bool',
         'stub' => 'string',
         'length=' => 'int',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
         'stub' => 'string',
         'length=' => 'int',
       ),
     ),
-    'pharfileinfo::compress' => 
+    'pharfileinfo::compress' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'bool',
         'compression' => 'int',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
         'compression' => 'int',
       ),
     ),
-    'pharfileinfo::decompress' => 
+    'pharfileinfo::decompress' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'bool',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
       ),
     ),
-    'pharfileinfo::delmetadata' => 
+    'pharfileinfo::delmetadata' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'bool',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
       ),
     ),
-    'resourcebundle::get' => 
+    'resourcebundle::get' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'mixed',
         'index' => 'int|string',
         'fallback=' => 'bool',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'ResourceBundle|array<array-key, mixed>|int|null|string',
         'index' => 'int|string',
         'fallback=' => 'bool',
       ),
     ),
-    'resourcebundle_get' => 
+    'resourcebundle_get' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'mixed|null',
         'bundle' => 'ResourceBundle',
         'index' => 'int|string',
         'fallback=' => 'bool',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'ResourceBundle|array<array-key, mixed>|int|null|string',
         'bundle' => 'ResourceBundle',
@@ -840,141 +840,158 @@ return array (
         'fallback=' => 'bool',
       ),
     ),
-    'splfixedarray::setsize' => 
+    'round' =>
     array (
-      'old' => 
+      'old' =>
+      array (
+        0 => 'float',
+        'num' => 'float|int',
+        'precision=' => 'int',
+        'mode=' => 'int<0, max>',
+      ),
+      'new' =>
+      array (
+        0 => 'float',
+        'num' => 'float|int',
+        'precision=' => 'int',
+        'mode=' => 'RoundingMode|int<0, max>',
+      ),
+    ),
+    'splfixedarray::setsize' =>
+    array (
+      'old' =>
       array (
         0 => 'bool',
         'size' => 'int',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
         'size' => 'int',
       ),
     ),
-    'splheap::insert' => 
+    'splheap::insert' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'bool',
         'value' => 'mixed',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
         'value' => 'mixed',
       ),
     ),
-    'splpriorityqueue::insert' => 
+    'splpriorityqueue::insert' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'bool',
         'value' => 'mixed',
         'priority' => 'mixed',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
         'value' => 'mixed',
         'priority' => 'mixed',
       ),
     ),
-    'splpriorityqueue::recoverfromcorruption' => 
+    'splpriorityqueue::recoverfromcorruption' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'void',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
       ),
     ),
-    'sqlite3result::finalize' => 
+    'sqlite3result::finalize' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'bool',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
       ),
     ),
-    'sqlite3stmt::close' => 
+    'sqlite3stmt::close' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'bool',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
       ),
     ),
-    'stream_bucket_append' => 
+    'stream_bucket_append' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'void',
         'brigade' => 'resource',
         'bucket' => 'object',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'void',
         'brigade' => 'resource',
         'bucket' => 'StreamBucket',
       ),
     ),
-    'stream_bucket_make_writeable' => 
+    'stream_bucket_make_writeable' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'null|object',
         'brigade' => 'resource',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'StreamBucket|null',
         'brigade' => 'resource',
       ),
     ),
-    'stream_bucket_new' => 
+    'stream_bucket_new' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'object',
         'stream' => 'resource',
         'buffer' => 'string',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'StreamBucket',
         'stream' => 'resource',
         'buffer' => 'string',
       ),
     ),
-    'stream_bucket_prepend' => 
+    'stream_bucket_prepend' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'void',
         'brigade' => 'resource',
         'bucket' => 'object',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'void',
         'brigade' => 'resource',
         'bucket' => 'StreamBucket',
       ),
     ),
-    'stream_context_set_option' => 
+    'stream_context_set_option' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'bool',
         'context' => 'mixed',
@@ -982,7 +999,7 @@ return array (
         'option_name=' => 'null|string',
         'value=' => 'mixed',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
         'context' => 'mixed',
@@ -991,91 +1008,91 @@ return array (
         'value=' => 'mixed',
       ),
     ),
-    'stream_context_set_params' => 
+    'stream_context_set_params' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'bool',
         'context' => 'resource',
         'params' => 'array<array-key, mixed>',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
         'context' => 'resource',
         'params' => 'array<array-key, mixed>',
       ),
     ),
-    'trigger_error' => 
+    'trigger_error' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'bool',
         'message' => 'string',
         'error_level=' => '256|512|1024|16384',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
         'message' => 'string',
         'error_level=' => '256|512|1024|16384',
       ),
     ),
-    'user_error' => 
+    'user_error' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'bool',
         'message' => 'string',
         'error_level=' => 'int',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
         'message' => 'string',
         'error_level=' => 'int',
       ),
     ),
-    'xml_set_character_data_handler' => 
+    'xml_set_character_data_handler' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'true',
         'parser' => 'XMLParser',
         'handler' => 'callable',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
         'parser' => 'XMLParser',
         'handler' => 'callable|null',
       ),
     ),
-    'xml_set_default_handler' => 
+    'xml_set_default_handler' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'true',
         'parser' => 'XMLParser',
         'handler' => 'callable',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
         'parser' => 'XMLParser',
         'handler' => 'callable|null',
       ),
     ),
-    'xml_set_element_handler' => 
+    'xml_set_element_handler' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'true',
         'parser' => 'XMLParser',
         'start_handler' => 'callable',
         'end_handler' => 'callable',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
         'parser' => 'XMLParser',
@@ -1083,109 +1100,109 @@ return array (
         'end_handler' => 'callable|null',
       ),
     ),
-    'xml_set_end_namespace_decl_handler' => 
+    'xml_set_end_namespace_decl_handler' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'true',
         'parser' => 'XMLParser',
         'handler' => 'callable',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
         'parser' => 'XMLParser',
         'handler' => 'callable|null',
       ),
     ),
-    'xml_set_external_entity_ref_handler' => 
+    'xml_set_external_entity_ref_handler' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'true',
         'parser' => 'XMLParser',
         'handler' => 'callable',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
         'parser' => 'XMLParser',
         'handler' => 'callable|null',
       ),
     ),
-    'xml_set_notation_decl_handler' => 
+    'xml_set_notation_decl_handler' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'true',
         'parser' => 'XMLParser',
         'handler' => 'callable',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
         'parser' => 'XMLParser',
         'handler' => 'callable|null',
       ),
     ),
-    'xml_set_processing_instruction_handler' => 
+    'xml_set_processing_instruction_handler' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'true',
         'parser' => 'XMLParser',
         'handler' => 'callable',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
         'parser' => 'XMLParser',
         'handler' => 'callable|null',
       ),
     ),
-    'xml_set_start_namespace_decl_handler' => 
+    'xml_set_start_namespace_decl_handler' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'true',
         'parser' => 'XMLParser',
         'handler' => 'callable',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
         'parser' => 'XMLParser',
         'handler' => 'callable|null',
       ),
     ),
-    'xml_set_unparsed_entity_decl_handler' => 
+    'xml_set_unparsed_entity_decl_handler' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'true',
         'parser' => 'XMLParser',
         'handler' => 'callable',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
         'parser' => 'XMLParser',
         'handler' => 'callable|null',
       ),
     ),
-    'xmlreader::close' => 
+    'xmlreader::close' =>
     array (
-      'old' => 
+      'old' =>
       array (
         0 => 'bool',
       ),
-      'new' => 
+      'new' =>
       array (
         0 => 'true',
       ),
     ),
   ),
-  'removed' => 
+  'removed' =>
   array (
   ),
 );

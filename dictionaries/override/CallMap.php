@@ -55120,7 +55120,7 @@ return array (
     0 => 'float',
     'num' => 'float|int',
     'precision=' => 'int',
-    'mode=' => 'int<0, max>',
+    'mode=' => 'RoundingMode|int<0, max>',
   ),
   'rpm_close' => 
   array (
