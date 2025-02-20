@@ -38,7 +38,7 @@ jobs:
           command: vendor/bin/phpcs -d memory_limit=512M
 
   phar-build:
-    executor: php-81
+    executor: php-82
     steps:
       - attach_workspace:
           at: /home/docker/project/
