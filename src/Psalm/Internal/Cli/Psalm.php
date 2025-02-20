@@ -967,7 +967,7 @@ final class Psalm
         // If Xdebug is enabled, restart without it
         $ini_handler->check();
 
-        $progress->write(PHP_EOL."Running on PHP ".PHP_VERSION.'.'.PHP_EOL);
+        $progress->write(PHP_EOL."Running on PHP ".PHP_VERSION.', Psalm '.PSALM_VERSION.'.'.PHP_EOL);
 
         $hasJit = false;
         if (function_exists('opcache_get_status')) {
