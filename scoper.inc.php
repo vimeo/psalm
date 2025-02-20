@@ -57,11 +57,15 @@ return [
     'exclude-namespaces' => [
         'Psalm',
     ],
+    'exclude-functions' => [
+        '/array_/',
+    ],
     'exclude-constants' => [
         'PSALM_VERSION',
         'PHP_PARSER_VERSION',
     ],
     'exclude-files' => [
         'src/spl_object_id.php',
+        '/vendor\/symfony\/polyfill-php8\d/',
     ],
 ];
