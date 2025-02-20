@@ -2,14 +2,11 @@
 	"minimum-stability": "dev",
 	"prefer-stable": true,
 	"require": {
-		"humbug/box": "^4"
+		"humbug/box": "^4.5.1"
 	},
 	"config": {
 		"allow-plugins": {
 			"composer/package-versions-deprecated": true
-		},
-		"platform": {
-			"php": "8.2.14"
 		}
 	}
 }
