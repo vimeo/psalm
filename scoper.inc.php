@@ -3,6 +3,7 @@
 use Composer\Autoload\ClassLoader;
 
 return [
+    'prefix' => 'PsalmPhar',
     'patchers' => [
         function (string $filePath, string $prefix, string $contents): string {
             //

@@ -7,6 +7,9 @@
 	"config": {
 		"allow-plugins": {
 			"composer/package-versions-deprecated": true
+		},
+		"platform": {
+			"php": "8.2.14"
 		}
 	}
 }
