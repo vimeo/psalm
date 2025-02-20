@@ -38,4 +38,4 @@ jobs:
           REF: ${{ github.ref }}
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-          bin/ci/build-docker.php
+          php bin/ci/build-docker.php
