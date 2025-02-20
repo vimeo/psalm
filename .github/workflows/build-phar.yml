@@ -74,6 +74,15 @@ jobs:
           # env:
           #   COMPOSER_ROOT_VERSION: dev-master
 
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer:v2
+          coverage: none
+        env:
+          fail-fast: true
+
       - run: bin/ci/build-phar.sh
         env:
           GPG_SIGNING: 1
