@@ -48,7 +48,7 @@ while (true) {
 $ref = escapeshellarg($ref);
 $composer_branch = escapeshellarg($composer_branch);
 
-passthru("docker build . -t ghcr.io/vimeo/psalm:$ref --build-arg PSALM_REV=$composer_branch -f bin/docker/Dockerfile");
+passthru("docker buildx build --platform linux/amd64,linux/arm64/v8 . -t ghcr.io/vimeo/psalm:$ref --build-arg PSALM_REV=$composer_branch -f bin/docker/Dockerfile");
 passthru("docker push ghcr.io/vimeo/psalm:$ref");
 
 if ($is_tag) {

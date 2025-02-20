@@ -3,8 +3,6 @@ name: Build docker image
 on:
   push:
     branches:
-      - master
-      - 6.x
       - add_docker_image
   release:
     types:
@@ -75,6 +73,13 @@ jobs:
           # DO NOT set this, we need composer to figure out the version itself
           # env:
           #   COMPOSER_ROOT_VERSION: dev-master
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+      # https://github.com/docker/setup-buildx-action
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
 
       - name: Upload docker image
         env:
