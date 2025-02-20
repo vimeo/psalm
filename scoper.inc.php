@@ -63,6 +63,5 @@ return [
     ],
     'exclude-files' => [
         'src/spl_object_id.php',
-        '/vendor\/symfony\/polyfill-php8\d/',
     ],
 ];
