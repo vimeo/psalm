@@ -16,12 +16,18 @@ function r(string $cmd): void
 }
 
 $composer_branch = $is_tag ? $ref : "dev-$ref";
+$dev = $is_tag ? '' : '~dev';
 
 $cur = 0;
 while (true) {
-    $json = json_decode(file_get_contents("https://repo.packagist.org/p/vimeo/psalm.json?v=$cur"), true);
-    if ($json["packages"]["vimeo/psalm"][$composer_branch]["source"]["reference"] === $commit) {
-        return;
+    $json = json_decode(file_get_contents("https://repo.packagist.org/p2/vimeo/psalm$dev.json?v=$cur"), true)["packages"]["vimeo/psalm"];
+    foreach ($json as $v) {
+        if ($v['version'] === $composer_branch) {
+            if ($v['source']['reference'] === $commit) {
+                break 2;
+            }
+            break;
+        }
     }
     sleep(1);
     $cur++;
