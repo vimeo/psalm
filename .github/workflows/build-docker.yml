@@ -50,6 +50,32 @@ jobs:
         with:
           fetch-depth: 0 # required for composer to automatically detect root package version
 
+      - name: Get Composer Cache Directories
+        id: composer-cache
+        run: |
+          echo "files_cache=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+          echo "vcs_cache=$(composer config cache-vcs-dir)" >> $GITHUB_OUTPUT
+
+      - name: Generate composer.lock
+        run: |
+          composer update --no-install
+
+      - name: Cache composer cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ steps.composer-cache.outputs.files_cache }}
+            ${{ steps.composer-cache.outputs.vcs_cache }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Run composer install
+        run: composer install -o
+          # DO NOT set this, we need composer to figure out the version itself
+          # env:
+          #   COMPOSER_ROOT_VERSION: dev-master
+
       - name: Upload docker image
         env:
           EVENT_NAME: ${{ github.event_name }}

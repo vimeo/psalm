@@ -3,6 +3,15 @@
 
 declare(strict_types=1);
 
+use Amp\Process\Process;
+
+use function Amp\ByteStream\getStderr;
+use function Amp\ByteStream\getStdout;
+use function Amp\ByteStream\pipe;
+use function Amp\async;
+
+require 'vendor/autoload.php';
+
 $commit = getenv('GITHUB_SHA');
 $ref = substr(getenv('REF'), strlen('refs/heads/'));
 $is_tag = getenv('EVENT_NAME') === 'release';
@@ -11,8 +20,11 @@ echo "Waiting for commit $commit on $ref...".PHP_EOL;
 
 function r(string $cmd): void
 {
-    echo "> $cmd\n";
-    passthru($cmd);
+    getStderr()->write("> $cmd\n");
+    $cmd = Process::start($cmd);
+    async(pipe(...), $cmd->getStdout(), getStdout())->ignore();
+    async(pipe(...), $cmd->getStderr(), getStderr())->ignore();
+    $cmd->join();
 }
 
 $composer_branch = $is_tag ? $ref : "dev-$ref";
@@ -33,10 +45,13 @@ while (true) {
     $cur++;
 }
 
-passthru("docker build . -t ghcr.io/vimeo/psalm:$branch --build-arg PSALM_REV=$compose_branch -f bin/docker/Dockerfile");
-passthru("docker push ghcr.io/vimeo/psalm:$branch");
+$ref = escapeshellarg($ref);
+$composer_branch = escapeshellarg($composer_branch);
+
+passthru("docker build . -t ghcr.io/vimeo/psalm:$ref --build-arg PSALM_REV=$composer_branch -f bin/docker/Dockerfile");
+passthru("docker push ghcr.io/vimeo/psalm:$ref");
 
 if ($is_tag) {
-    passthru("docker tag ghcr.io/vimeo/psalm:$branch ghcr.io/vimeo/psalm:latest");
+    passthru("docker tag ghcr.io/vimeo/psalm:$ref ghcr.io/vimeo/psalm:latest");
     passthru("docker push ghcr.io/vimeo/psalm:latest");
 }
