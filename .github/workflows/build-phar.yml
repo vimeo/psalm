@@ -93,5 +93,6 @@ jobs:
       - name: Release psalm/phar
         run: bin/ci/github-deploy-phar.sh
         env:
+          EVENT_NAME: ${{ github.event_name }}
           PHAR_REPO_TOKEN: ${{ secrets.PHAR_REPO_TOKEN }}
 
