@@ -3,7 +3,7 @@
 	"description": "Composer-based Psalm Phar",
 	"license": ["MIT"],
 	"require": {
-		"php": "^8.1"
+		"php": "^8.2"
 	},
 	"conflict": {
 		"vimeo/psalm" : "*"
