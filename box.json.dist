@@ -10,7 +10,7 @@
     "alias": "psalm_phar",
     "timestamp": "2025-01-01T10:01:11+00:00",
     "banner": false,
-    "files-bin": ["config.xsd", "vendor-bin/box/composer.lock", "composer.lock"],
+    "files-bin": ["config.xsd", "composer.lock"],
     "directories-bin" : [
         "assets",
         "dictionaries",
