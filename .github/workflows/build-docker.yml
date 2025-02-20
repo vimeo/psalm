@@ -1,6 +1,9 @@
 name: Build docker image
 
 on:
+  push:
+    branches:
+      - add_docker_image
   release:
     types:
       - published
