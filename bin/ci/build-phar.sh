@@ -18,7 +18,15 @@ fi
 
 vendor/bin/box compile --no-parallel
 
-build/psalm.phar -v
+rm -rf /tmp/psalmTest
+mkdir -p /tmp/psalmTest
+cd /tmp/psalmTest
+composer require danog/async-orm # Just to gen the composer.json
+
+$OLDPWD/build/psalm.phar -v
+
+cd $OLDPWD
+rm -rf /tmp/psalmTest
 
 if [[ "$GPG_SIGNING" != '' ]] ; then
     if [[ "$GPG_SECRET_KEY" != '' ]] ; then
