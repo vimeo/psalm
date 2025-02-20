@@ -83,6 +83,8 @@ jobs:
 
       - name: Upload docker image
         run: |
+          bin/ci/waitPackagist.php
+
           docker build . -t ghcr.io/vimeo/psalm:${{ github.ref_name }} --build-arg PSALM_REV=${{ github.ref_name }} -f bin/docker/Dockerfile
           
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
