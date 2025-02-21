@@ -1177,7 +1177,7 @@ class Reconciler
                             $fallback_key_type = $base_atomic_type->type_params[0];
                             $fallback_value_type = $base_atomic_type->type_params[1];
 
-                            $base_atomic_type = new TKeyedArray(
+                            $base_atomic_type = TKeyedArray::make(
                                 [
                                 $array_key_offset => $result_type,
                                 ],
@@ -1208,7 +1208,7 @@ class Reconciler
                                     $base_atomic_type = $base_atomic_type->setProperties($properties);
                                 } else {
                                     // This should actually be a paradox
-                                    $base_atomic_type = new TKeyedArray(
+                                    $base_atomic_type = TKeyedArray::make(
                                         $properties,
                                         null,
                                         $base_atomic_type->fallback_params,

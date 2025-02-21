@@ -328,7 +328,7 @@ final class FunctionCallReturnTypeFetcher
         if (!$call_args) {
             switch ($call_map_key) {
                 case 'hrtime':
-                    $keyed_array = new TKeyedArray([
+                    $keyed_array = TKeyedArray::make([
                         Type::getInt(),
                         Type::getInt(),
                     ], null, null, true);
@@ -407,7 +407,7 @@ final class FunctionCallReturnTypeFetcher
                             return Type::getInt(true);
                         }
 
-                        $keyed_array = new TKeyedArray([
+                        $keyed_array = TKeyedArray::make([
                             Type::getInt(),
                             Type::getInt(),
                         ], null, null, true);

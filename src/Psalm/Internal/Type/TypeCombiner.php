@@ -1498,7 +1498,7 @@ final class TypeCombiner
                         $from_docblock,
                     );
                 } else {
-                    $objectlike = new TKeyedArray(
+                    $objectlike = TKeyedArray::make(
                         $combination->objectlike_entries,
                         array_filter($combination->objectlike_class_string_keys),
                         $sealed || $fallback_key_type === null || $fallback_value_type === null
@@ -1620,7 +1620,7 @@ final class TypeCombiner
                     && $combination->objectlike_sealed
                     && isset($combination->array_type_params[1])
                 ) {
-                    $array_type = new TKeyedArray(
+                    $array_type = TKeyedArray::make(
                         [$generic_type_params[1]],
                         null,
                         [Type::getInt(), $combination->array_type_params[1]],
@@ -1633,7 +1633,7 @@ final class TypeCombiner
                         $properties []= $generic_type_params[1];
                     }
                     assert($properties !== []);
-                    $array_type = new TKeyedArray(
+                    $array_type = TKeyedArray::make(
                         $properties,
                         null,
                         null,
@@ -1650,7 +1650,7 @@ final class TypeCombiner
                     if (!$properties) {
                         $properties []= $generic_type_params[1]->setPossiblyUndefined(true);
                     }
-                    $array_type = new TKeyedArray(
+                    $array_type = TKeyedArray::make(
                         $properties,
                         null,
                         [Type::getListKey(), $generic_type_params[1]],

@@ -828,7 +828,7 @@ final class SimpleAssertionReconciler extends Reconciler
                                 ? $properties[$x]->setPossiblyUndefined(false)
                                 : $array_atomic_type->fallback_params[1];
                         }
-                        $array_atomic_type = new TKeyedArray(
+                        $array_atomic_type = TKeyedArray::make(
                             $properties,
                             null,
                             null,
@@ -1929,7 +1929,7 @@ final class SimpleAssertionReconciler extends Reconciler
                 assert(strpos($assertion, '::class') === (strlen($assertion)-7));
                 [$assertion] = explode('::', $assertion);
 
-                $atomic_type = new TKeyedArray(
+                $atomic_type = TKeyedArray::make(
                     array_merge(
                         $atomic_type->properties,
                         [$assertion => Type::getMixed()],

@@ -119,7 +119,7 @@ final class ArrayAnalyzer
 
         // if this array looks like an object-like array, let's return that instead
         if (count($array_creation_info->property_types) !== 0) {
-            $atomic_type = new TKeyedArray(
+            $atomic_type = TKeyedArray::make(
                 $array_creation_info->property_types,
                 $array_creation_info->class_strings,
                 $array_creation_info->can_create_objectlike

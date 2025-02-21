@@ -120,7 +120,7 @@ final class UnsetAnalyzer
                                         ;
                                     }
                                 } else {
-                                    $root_types []= new TKeyedArray(
+                                    $root_types []= TKeyedArray::make(
                                         $properties,
                                         null,
                                         $atomic_root_type->fallback_params ? [
@@ -135,7 +135,7 @@ final class UnsetAnalyzer
                                 foreach ($atomic_root_type->properties as $key => $type) {
                                     $properties[$key] = $type->setPossiblyUndefined(true);
                                 }
-                                $root_types []= new TKeyedArray(
+                                $root_types []= TKeyedArray::make(
                                     $properties,
                                     null,
                                     $atomic_root_type->fallback_params,

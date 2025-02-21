@@ -600,7 +600,7 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
                             if (!$properties) {
                                 $existing_var_type->addType(Type::getEmptyArrayAtomic());
                             } else {
-                                $existing_var_type->addType(new TKeyedArray(
+                                $existing_var_type->addType(TKeyedArray::make(
                                     $properties,
                                     null,
                                     null,

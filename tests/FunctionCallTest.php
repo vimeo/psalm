@@ -687,7 +687,7 @@ final class FunctionCallTest extends TestCase
                     /** @var string $string */
                     $elements = explode(" ", $string, -5);',
                 'assertions' => [
-                    '$elements' => 'list<never>',
+                    '$elements' => 'array<never, never>',
                 ],
             ],
             'explodeWithDynamicLimit' => [
@@ -742,7 +742,7 @@ final class FunctionCallTest extends TestCase
                      */
                     $elements = explode($delim, $string, -5);',
                 'assertions' => [
-                    '$elements' => 'list<never>',
+                    '$elements' => 'array<never, never>',
                 ],
             ],
             'explodeWithDynamicDelimiterAndLimit' => [
