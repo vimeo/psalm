@@ -133,16 +133,29 @@ final class TConditional extends Atomic
             $template_result,
             $codebase,
         );
-        if ($conditional === $this->conditional_type) {
-            return $this;
-        }
-        return new static(
-            $this->param_name,
-            $this->defining_class,
-            $this->as_type,
-            $conditional,
+        $if_type = TemplateInferredTypeReplacer::replace(
             $this->if_type,
-            $this->else_type,
+            $template_result,
+            $codebase,
         );
+        $else_type = TemplateInferredTypeReplacer::replace(
+            $this->else_type,
+            $template_result,
+            $codebase,
+        );
+        if ($conditional !== $this->conditional_type
+            || $if_type !== $this->if_type
+            || $else_type !== $this->else_type
+        ) {
+            return new static(
+                $this->param_name,
+                $this->defining_class,
+                $this->as_type,
+                $conditional,
+                $if_type,
+                $else_type,
+            );
+        }
+        return $this;
     }
 }
