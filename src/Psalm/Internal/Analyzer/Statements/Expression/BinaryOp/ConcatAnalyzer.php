@@ -5,6 +5,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\BinaryOp;
 use AssertionError;
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
@@ -15,6 +16,7 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\FalseOperand;
 use Psalm\Issue\ImplicitToStringCast;
 use Psalm\Issue\ImpureMethodCall;
@@ -29,6 +31,9 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIntRange;
+use Psalm\Type\Atomic\TLiteralFloat;
+use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TNamedObject;
@@ -40,9 +45,11 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function assert;
 use function count;
 use function reset;
 use function strlen;
@@ -52,7 +59,7 @@ use function strlen;
  */
 final class ConcatAnalyzer
 {
-    private const MAX_LITERALS = 64;
+    private const MAX_LITERALS = 500;
 
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -156,17 +163,26 @@ final class ConcatAnalyzer
 
             // If both types are specific literals, combine them into new literals
             $literal_concat = false;
-
-            if ($left_type->allSpecificLiterals() && $right_type->allSpecificLiterals()) {
+            if ($left_type->allSpecificLiteralsOrRange() && $right_type->allSpecificLiteralsOrRange()) {
                 $left_type_parts = $left_type->getAtomicTypes();
                 $right_type_parts = $right_type->getAtomicTypes();
+
                 $combinations = count($left_type_parts) * count($right_type_parts);
-                if ($combinations < self::MAX_LITERALS) {
+                if ($combinations > self::MAX_LITERALS) {
+                    $left_type_parts = [];
+                    $right_type_parts = [];
+                } else {
+                    $left_type_parts = self::intRangeToInts($codebase, $left_type_parts);
+                    $right_type_parts = self::intRangeToInts($codebase, $right_type_parts);
+                    $combinations = count($left_type_parts) * count($right_type_parts);
+                }
+
+                if ($combinations !== 0 && $combinations <= self::MAX_LITERALS) {
                     $literal_concat = true;
                     $result_type_parts = [];
 
-                    foreach ($left_type->getAtomicTypes() as $left_type_part) {
-                        foreach ($right_type->getAtomicTypes() as $right_type_part) {
+                    foreach ($left_type_parts as $left_type_part) {
+                        foreach ($right_type_parts as $right_type_part) {
                             $literal = $left_type_part->value . $right_type_part->value;
                             if (strlen($literal) >= $config->max_string_length) {
                                 // Literal too long, use non-literal type instead
@@ -486,5 +502,43 @@ final class ConcatAnalyzer
                 );
             }
         }
+    }
+
+    /**
+     * @param array<TLiteralString|TLiteralInt|TLiteralFloat|TFalse|TTrue|TIntRange> $type_parts
+     * @return list<TLiteralString|TLiteralInt|TLiteralFloat|TFalse|TTrue>
+     */
+    private static function intRangeToInts(
+        Codebase $codebase,
+        array $type_parts
+    ): array {
+        $new_type_parts = [];
+        foreach ($type_parts as $atomic) {
+            if ($atomic instanceof TIntRange) {
+                $atomic_from_range = TypeExpander::expandAtomic(
+                    $codebase,
+                    $atomic,
+                    null,
+                    null,
+                    null,
+                );
+
+                if ($atomic_from_range[0] === $atomic || count($atomic_from_range) > self::MAX_LITERALS) {
+                    $new_type_parts = [];
+                    break;
+                }
+
+                foreach ($atomic_from_range as $atomic_int) {
+                    assert($atomic_int instanceof TLiteralInt);
+                    $new_type_parts[] = $atomic_int;
+                }
+
+                continue;
+            }
+
+            $new_type_parts[] = $atomic;
+        }
+
+        return $new_type_parts;
     }
 }

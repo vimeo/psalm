@@ -1140,6 +1140,7 @@ trait UnionTrait
     }
 
     /**
+     * @psalm-suppress PossiblyUnusedMethod
      * @psalm-mutation-free
      * @psalm-assert-if-true array<
      *     array-key,
@@ -1149,6 +1150,37 @@ trait UnionTrait
     public function allSpecificLiterals(): bool
     {
         foreach ($this->types as $atomic_key_type) {
+            if (!$atomic_key_type instanceof TLiteralString
+                && !$atomic_key_type instanceof TLiteralInt
+                && !$atomic_key_type instanceof TLiteralFloat
+                && !$atomic_key_type instanceof TFalse
+                && !$atomic_key_type instanceof TTrue
+            ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @psalm-mutation-free
+     * @psalm-assert-if-true array<
+     *     array-key,
+     *     TLiteralString|TLiteralInt|TLiteralFloat|TFalse|TTrue|TIntRange
+     * > $this->getAtomicTypes()
+     */
+    public function allSpecificLiteralsOrRange(): bool
+    {
+        foreach ($this->types as $atomic_key_type) {
+            if ($atomic_key_type instanceof TIntRange
+                && $atomic_key_type->min_bound !== null
+                && $atomic_key_type->max_bound !== null
+                && ($atomic_key_type->max_bound - $atomic_key_type->min_bound) < 500
+            ) {
+                continue;
+            }
+
             if (!$atomic_key_type instanceof TLiteralString
                 && !$atomic_key_type instanceof TLiteralInt
                 && !$atomic_key_type instanceof TLiteralFloat
