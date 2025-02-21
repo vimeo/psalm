@@ -772,7 +772,10 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                             if ($covariant) {
                                 // If template_covariants is set template_types should also be set
                                 assert($parent_storage->template_types !== null);
-                                $pt_name = array_keys($parent_storage->template_types)[$pt_offset];
+                                $pt_name = array_keys($parent_storage->template_types)[$pt_offset] ?? null;
+                                if ($pt_name === null) {
+                                    continue;
+                                }
                                 if (isset($template_standins->lower_bounds[$pt_name][$parent_class])) {
                                     $lower_bounds[$pt_name][$parent_class] =
                                         TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
