@@ -1798,6 +1798,7 @@ final class ClassTemplateExtendsTest extends TestCase
                 'code' => '<?php
                     /**
                      * @template TData as array
+                     * @psalm-no-seal-properties
                      */
                     abstract class DataBag {
                         /**

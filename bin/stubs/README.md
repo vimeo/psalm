@@ -1,5 +1,3 @@
 # Working with the callmap
 
-```
-bin/gen_callmap.sh
-```
+See [here &raquo;](https://psalm.dev/docs/contributing/editing_callmaps/#intro).

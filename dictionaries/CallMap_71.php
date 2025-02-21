@@ -63624,7 +63624,7 @@ return array (
   'readline_completion_function' => 
   array (
     0 => 'bool',
-    'funcname' => 'callable',
+    'funcname' => 'callable(string):array<array-key, string>',
   ),
   'readline_info' => 
   array (

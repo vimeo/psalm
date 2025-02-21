@@ -28,8 +28,8 @@ final class PluginRegistrationSocket implements RegistrationInterface
      * @internal
      */
     public function __construct(
-        private readonly Config $config,
-        private readonly Codebase $codebase,
+        public readonly Config $config,
+        public readonly Codebase $codebase,
     ) {
     }
 

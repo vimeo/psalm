@@ -952,6 +952,13 @@ abstract class Type
                 ) {
                     $intersection_atomic = new TNonEmptyNonspecificLiteralString();
                     $intersection_performed = true;
+                } elseif (($type_1_atomic instanceof TLowercaseString
+                        && $type_2_atomic instanceof TNonEmptyString)
+                    || ($type_1_atomic instanceof TNonEmptyString
+                        && $type_2_atomic instanceof TLowercaseString)
+                ) {
+                    $intersection_atomic = new TNonEmptyLowercaseString();
+                    $intersection_performed = true;
                 }
 
                 if ($intersection_atomic

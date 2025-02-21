@@ -196,6 +196,7 @@ final class UnusedCodeTest extends TestCase
             ],
             'magicCall' => [
                 'code' => '<?php
+                    /** @psalm-no-seal-methods */
                     final class A {
                         /** @var string */
                         private $value = "default";

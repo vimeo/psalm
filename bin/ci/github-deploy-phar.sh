@@ -27,8 +27,10 @@ git commit -m "Updated Psalm phar to commit ${GITHUB_SHA}"
 tag=${GITHUB_REF/refs\/heads\//}
 tag=${tag/refs\/tags\//}
 
-if [[ "$tag" != 'master' ]] ; then
+if [ "$EVENT_NAME" == "release" ]; then
     git tag "$tag"
+else
+    git checkout "$tag"
 fi
 
 # this script runs on:

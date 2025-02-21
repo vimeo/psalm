@@ -8,6 +8,7 @@ use PhpParser;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\NodeTypeProvider;
 
+use function array_any;
 use function array_diff;
 use function array_filter;
 use function array_intersect;
@@ -130,7 +131,7 @@ final class ScopeAnalyzer
                     $return_is_exit,
                 );
 
-                $all_leave = !array_filter(
+                $all_leave = !array_any(
                     $if_statement_actions,
                     static fn(string $action): bool => $action === self::ACTION_NONE,
                 );
@@ -145,7 +146,7 @@ final class ScopeAnalyzer
 
                 $all_leave = $all_leave
                     && $else_statement_actions
-                    && !array_filter(
+                    && !array_any(
                         $else_statement_actions,
                         static fn(string $action): bool => $action === self::ACTION_NONE,
                     );
@@ -162,7 +163,7 @@ final class ScopeAnalyzer
                         );
 
                         $all_leave = $all_leave
-                            && !array_filter(
+                            && !array_any(
                                 $elseif_control_actions,
                                 static fn(string $action): bool => $action === self::ACTION_NONE,
                             );
@@ -327,7 +328,7 @@ final class ScopeAnalyzer
                     $return_is_exit,
                 );
 
-                $try_leaves = !array_filter(
+                $try_leaves = !array_any(
                     $try_statement_actions,
                     static fn(string $action): bool => $action === self::ACTION_NONE,
                 );
@@ -346,7 +347,7 @@ final class ScopeAnalyzer
                         );
 
                         $all_leave = $all_leave
-                            && !array_filter(
+                            && !array_any(
                                 $catch_actions,
                                 static fn(string $action): bool => $action === self::ACTION_NONE,
                             );

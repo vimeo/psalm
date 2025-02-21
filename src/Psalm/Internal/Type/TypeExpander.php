@@ -39,6 +39,7 @@ use Psalm\Type\Atomic\TVoid;
 use Psalm\Type\Union;
 use ReflectionProperty;
 
+use function array_any;
 use function array_filter;
 use function array_map;
 use function array_merge;
@@ -601,7 +602,7 @@ final class TypeExpander
             );
 
             if ($container_class_storage->template_types
-                && array_filter(
+                && array_any(
                     $container_class_storage->template_types,
                     static fn($type_map): bool => !reset($type_map)->hasMixed(),
                 )

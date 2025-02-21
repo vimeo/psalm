@@ -1,0 +1,58 @@
+<?php
+namespace {
+    /**
+     * @template T of object
+     */
+    class ReflectionClass implements Reflector {
+        /**
+         * @param T|class-string<T> $objectOrClass
+         */
+        public function __construct(object|string $objectOrClass) {}
+
+        /**
+         * @param T $object
+         */
+        public function getLazyInitializer(object $object): ?callable {}
+
+        /**
+         * @param T $object
+         * @return T
+         */
+        public function initializeLazyObject(object $object): object {}
+
+        /**
+         * @param T $object
+         */
+        public function isUninitializedLazyObject(object $object): bool {}
+
+        /**
+         * @param T $object
+         * @return T
+         */
+        public function markLazyObjectAsInitialized(object $object): object {}
+
+        /**
+         * @param callable(T $object): void $initializer
+         * @return T
+         */
+        public function newLazyGhost(callable $initializer, int $options = 0): object {}
+
+        /**
+         * @param callable(T $object): T $factory
+         * @return T
+         */
+        public function newLazyProxy(callable $factory, int $options = 0): object {}
+
+        /**
+         * @param T $object
+         * @param callable(T $object): void $initializer
+         */
+        public function resetAsLazyGhost(object $object, callable $initializer, int $options = 0): void {}
+
+        /**
+         * @param T $object
+         * @param callable(T $object): T $factory
+         */
+        public function resetAsLazyProxy(object $object, callable $factory, int $options = 0): void {}
+    }
+}

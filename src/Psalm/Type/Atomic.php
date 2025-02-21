@@ -70,7 +70,7 @@ use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Atomic\TVoid;
 use Stringable;
 
-use function array_filter;
+use function array_any;
 use function array_keys;
 use function count;
 use function is_array;
@@ -449,7 +449,7 @@ abstract class Atomic implements TypeNode, Stringable
         return $this instanceof TNamedObject
             || ($this instanceof TTemplateParam
                 && ($this->as->hasNamedObjectType()
-                    || array_filter(
+                    || array_any(
                         $this->extra_types,
                         static fn($extra_type): bool => $extra_type->isNamedObjectType(),
                     )
@@ -537,7 +537,7 @@ abstract class Atomic implements TypeNode, Stringable
                     )))
                 || (
                     $this->extra_types
-                    && array_filter(
+                    && array_any(
                         $this->extra_types,
                         static fn(Atomic $a): bool => $a->hasTraversableInterface($codebase),
                     )
@@ -560,7 +560,7 @@ abstract class Atomic implements TypeNode, Stringable
                     )))
                 || (
                     $this->extra_types
-                    && array_filter(
+                    && array_any(
                         $this->extra_types,
                         static fn(Atomic $a): bool => $a->hasCountableInterface($codebase),
                     )
@@ -598,7 +598,7 @@ abstract class Atomic implements TypeNode, Stringable
                     )))
                 || (
                     $this->extra_types
-                    && array_filter(
+                    && array_any(
                         $this->extra_types,
                         static fn(Atomic $a): bool => $a->hasArrayAccessInterface($codebase),
                     )

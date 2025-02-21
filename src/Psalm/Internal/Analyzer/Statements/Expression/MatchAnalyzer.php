@@ -33,7 +33,7 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Reconciler;
 use UnexpectedValueException;
 
-use function array_filter;
+use function array_any;
 use function array_map;
 use function array_merge;
 use function array_reverse;
@@ -283,7 +283,7 @@ final class MatchAnalyzer
                 );
 
                 if (isset($vars_in_scope_reconciled[$switch_var_id])) {
-                    $array_literal_types = array_filter(
+                    $array_literal_types = array_any(
                         $vars_in_scope_reconciled[$switch_var_id]->getAtomicTypes(),
                         static fn(Atomic $type): bool => $type instanceof TLiteralInt
                             || $type instanceof TLiteralString

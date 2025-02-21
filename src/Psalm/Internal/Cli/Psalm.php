@@ -18,6 +18,7 @@ use Psalm\Internal\Composer;
 use Psalm\Internal\ErrorHandler;
 use Psalm\Internal\Fork\PsalmRestarter;
 use Psalm\Internal\IncludeCollector;
+use Psalm\Internal\Preloader;
 use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileReferenceCacheProvider;
@@ -48,7 +49,6 @@ use function array_shift;
 use function array_slice;
 use function array_sum;
 use function array_values;
-use function assert;
 use function chdir;
 use function count;
 use function defined;
@@ -91,6 +91,7 @@ use const JSON_THROW_ON_ERROR;
 use const LC_CTYPE;
 use const PHP_EOL;
 use const PHP_URL_SCHEME;
+use const PHP_VERSION;
 use const STDERR;
 
 // phpcs:disable PSR1.Files.SideEffects
@@ -966,6 +967,8 @@ final class Psalm
         // If Xdebug is enabled, restart without it
         $ini_handler->check();
 
+        $progress->write(PHP_EOL."Running on PHP ".PHP_VERSION.', Psalm '.PSALM_VERSION.'.'.PHP_EOL);
+
         $hasJit = false;
         if (function_exists('opcache_get_status')) {
             if (true === (opcache_get_status()['jit']['on'] ?? false)) {
@@ -1018,9 +1021,11 @@ final class Psalm
                 exit(1);
             }
         }
+
+        Preloader::preload($progress, $hasJit);
     }
 
-    /** @psalm-suppress UnusedParam $argv is being reported as unused */
+    /** @param array<int, string> $argv */
     private static function forwardCliCall(array $options, array $argv): void
     {
         if (isset($options['alter'])) {
@@ -1031,9 +1036,9 @@ final class Psalm
 
         if (isset($options['review'])) {
             require_once __DIR__ . '/Review.php';
-            assert($argv !== null);
             array_shift($argv);
-            Review::run($argv);
+            /** @psalm-suppress PossiblyNullArgument */
+            Review::run(array_values($argv));
             exit;
         }
 

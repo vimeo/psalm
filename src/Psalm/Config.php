@@ -300,7 +300,9 @@ final class Config
 
     public ?bool $show_mixed_issues = null;
 
-    public bool $strict_binary_operands = false;
+    public bool $strict_binary_operands = true;
+
+    public bool $allow_bool_to_literal_bool_comparison = true;
 
     public bool $remember_property_assignments_after_call = true;
 
@@ -311,7 +313,7 @@ final class Config
 
     public bool $allow_string_standin_for_class = false;
 
-    public bool $disable_suppress_all = false;
+    public bool $disable_suppress_all = true;
 
     public bool $use_phpdoc_method_without_magic_or_parent = false;
 
@@ -319,9 +321,9 @@ final class Config
 
     public bool $skip_checks_on_unresolvable_includes = false;
 
-    public bool $seal_all_methods = false;
+    public bool $seal_all_methods = true;
 
-    public bool $seal_all_properties = false;
+    public bool $seal_all_properties = true;
 
     public bool $memoize_method_calls = false;
 
@@ -365,7 +367,7 @@ final class Config
 
     public bool $ensure_array_int_offsets_exist = false;
 
-    public bool $ensure_override_attribute = false;
+    public bool $ensure_override_attribute = true;
 
     /**
      * @var array<lowercase-string, bool>
@@ -407,6 +409,8 @@ final class Config
     public int $max_avg_path_length = 70;
 
     public int $max_shaped_array_size = 100;
+
+    public float $long_scan_warning = 10.0;
 
     /**
      * @var string[]
@@ -938,6 +942,7 @@ final class Config
             'resolveFromConfigFile' => 'resolve_from_config_file',
             'allowFileIncludes' => 'allow_includes',
             'strictBinaryOperands' => 'strict_binary_operands',
+            'allowBoolToLiteralBoolComparison' => 'allow_bool_to_literal_bool_comparison',
             'rememberPropertyAssignmentsAfterCall' => 'remember_property_assignments_after_call',
             'disableVarParsing' => 'disable_var_parsing',
             'allowStringToStandInForClass' => 'allow_string_standin_for_class',
@@ -1166,6 +1171,11 @@ final class Config
         if (isset($config_xml['maxShapedArraySize'])) {
             $attribute_text = (int)$config_xml['maxShapedArraySize'];
             $config->max_shaped_array_size = $attribute_text;
+        }
+
+        if (isset($config_xml['longScanWarning'])) {
+            $attribute_text = (float)$config_xml['longScanWarning'];
+            $config->long_scan_warning = $attribute_text;
         }
 
         if (isset($config_xml['inferPropertyTypesFromConstructor'])) {
@@ -2237,6 +2247,16 @@ final class Config
             $core_generic_files[] = $stringable_path;
         }
 
+        if (PHP_VERSION_ID < 8_04_00 && $codebase->analysis_php_version_id >= 8_04_00) {
+            $stringable_path = dirname(__DIR__, 2) . '/stubs/Php84.phpstub';
+
+            if (!file_exists($stringable_path)) {
+                throw new UnexpectedValueException('Cannot locate PHP 8.4 classes');
+            }
+
+            $core_generic_files[] = $stringable_path;
+        }
+
         $stub_files = array_merge($core_generic_files, $this->preloaded_stub_files);
 
         if (!$stub_files) {
@@ -2298,6 +2318,10 @@ final class Config
         if ($codebase->analysis_php_version_id >= 8_02_00) {
             $this->internal_stubs[] = $stubsDir . 'Php82.phpstub';
             $this->php_extensions['random'] = true; // random is a part of the PHP core starting from PHP 8.2
+        }
+
+        if ($codebase->analysis_php_version_id >= 8_04_00) {
+            $this->internal_stubs[] = $stubsDir . 'Php84.phpstub';
         }
 
         $ext_stubs_dir = $dir_lvl_2 . DIRECTORY_SEPARATOR . "stubs" . DIRECTORY_SEPARATOR . "extensions";

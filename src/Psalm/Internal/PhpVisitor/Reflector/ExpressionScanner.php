@@ -12,6 +12,7 @@ use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\FileIncludeException;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\IncludeAnalyzer;
@@ -202,7 +203,7 @@ final class ExpressionScanner
         $mapping_function_ids = [];
 
         if (($function_id === 'array_map' && isset($node->getArgs()[0]))
-            || ($function_id === 'array_filter' && isset($node->getArgs()[1]))
+            || (in_array($function_id, ArgumentsAnalyzer::ARRAY_FILTERLIKE, true) && isset($node->getArgs()[1]))
         ) {
             $node_arg_value = $function_id === 'array_map' ? $node->getArgs()[0]->value : $node->getArgs()[1]->value;
 

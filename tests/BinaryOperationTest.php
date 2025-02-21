@@ -196,7 +196,7 @@ final class BinaryOperationTest extends TestCase
     public function testStrictTrueEquivalence(): void
     {
         $config = Config::getInstance();
-        $config->strict_binary_operands = true;
+        $config->allow_bool_to_literal_bool_comparison = false;
 
         $this->addFile(
             'somefile.php',
@@ -219,7 +219,7 @@ final class BinaryOperationTest extends TestCase
     public function testStringFalseInequivalence(): void
     {
         $config = Config::getInstance();
-        $config->strict_binary_operands = true;
+        $config->allow_bool_to_literal_bool_comparison = false;
 
         $this->addFile(
             'somefile.php',
@@ -267,23 +267,6 @@ final class BinaryOperationTest extends TestCase
                 /** @var float */
                 $b = 4.1;
                 $a = 5 + $b;',
-        );
-
-        $this->expectException(CodeException::class);
-        $this->expectExceptionMessage('InvalidOperand');
-
-        $this->analyzeFile('somefile.php', new Context());
-    }
-
-    public function testConcatenationWithNumberInStrictMode(): void
-    {
-        $config = Config::getInstance();
-        $config->strict_binary_operands = true;
-
-        $this->addFile(
-            'somefile.php',
-            '<?php
-                    $a = "hi" . 5;',
         );
 
         $this->expectException(CodeException::class);
