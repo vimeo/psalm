@@ -45,10 +45,6 @@ while (true) {
     $cur++;
 }
 
-$is_tag = true;
-$composer_branch = '^6';
-$ref = '6.x';
-
 $ref = escapeshellarg($ref);
 $composer_branch = escapeshellarg($composer_branch);
 
