@@ -53,7 +53,6 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_map;
 use function array_reduce;
 use function array_reverse;
 use function array_slice;

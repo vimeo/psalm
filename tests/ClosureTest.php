@@ -606,6 +606,10 @@ final class ClosureTest extends TestCase
                     class inner {}
                     class b {
                         public inner $key;
+
+                        public function __construct() {
+                            $this->key = new inner;
+                        }
                     }
 
                     /**
