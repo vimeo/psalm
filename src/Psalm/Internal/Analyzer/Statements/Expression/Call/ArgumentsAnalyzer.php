@@ -424,19 +424,21 @@ final class ArgumentsAnalyzer
             $replaced_type = $param->type;
         }
 
+        $new_bounds = $template_result->template_types;
+        foreach ($template_result->lower_bounds as $k => $template_map) {
+            $new_bounds[$k] = [];
+            foreach ($template_map as $kk => $lower_bounds) {
+                $new_bounds[$k][$kk] = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                    $lower_bounds,
+                    $codebase,
+                );
+            }
+        }
         $replace_template_result = new TemplateResult(
-            $template_result->template_types + array_map(
-                static fn(array $template_map): array => array_map(
-                    static fn(array $lower_bounds): Union => TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
-                        $lower_bounds,
-                        $codebase,
-                    ),
-                    $template_map,
-                ),
-                $template_result->lower_bounds,
-            ),
+            $new_bounds,
             [],
         );
+        unset($new_bounds);
 
         $replaced_type = TemplateStandinTypeReplacer::replace(
             $replaced_type,
