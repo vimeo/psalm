@@ -1134,7 +1134,7 @@ final class FunctionLikeNodeScanner
                 }
             }
         } else {
-            throw new UnexpectedValueException('Unrecognized functionlike');
+            throw new UnexpectedValueException("Unrecognized functionlike of type ".($stmt::class));
         }
 
         return [
