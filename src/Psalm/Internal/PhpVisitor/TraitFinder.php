@@ -12,6 +12,7 @@ use Throwable;
 use function count;
 use function end;
 use function explode;
+use function strcasecmp;
 use function trait_exists;
 
 /**
