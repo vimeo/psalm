@@ -33,8 +33,8 @@
         "amphp/parallel": "^2.3",
         "composer/semver": "^1.4 || ^2.0 || ^3.0",
         "composer/xdebug-handler": "^2.0 || ^3.0",
-        "dnoegel/php-xdg-base-dir": "^0.1.1",
         "danog/advanced-json-rpc": "^3.1",
+        "dnoegel/php-xdg-base-dir": "^0.1.1",
         "felixfbecker/language-server-protocol": "^1.5.3",
         "fidry/cpu-core-counter": "^0.4.1 || ^0.5.1 || ^1.0.0",
         "netresearch/jsonmapper": "^5.0",
@@ -42,7 +42,8 @@
         "sebastian/diff": "^4.0 || ^5.0 || ^6.0 || ^7.0",
         "spatie/array-to-xml": "^2.17.0 || ^3.0",
         "symfony/console": "^6.0 || ^7.0",
-        "symfony/filesystem": "~6.3.12 || ~6.4.3 || ^7.0.3"
+        "symfony/filesystem": "~6.3.12 || ~6.4.3 || ^7.0.3",
+        "symfony/polyfill-php84": "*"
     },
     "provide": {
         "psalm/psalm": "self.version"
@@ -52,6 +53,7 @@
         "amphp/phpunit-util": "^3",
         "bamarni/composer-bin-plugin": "^1.4",
         "brianium/paratest": "^6.9",
+        "danog/class-finder": "^0.4.8",
         "dg/bypass-finals": "^1.5",
         "mockery/mockery": "^1.5",
         "nunomaduro/mock-final-classes": "^1.1",
@@ -76,7 +78,8 @@
         },
         "optimize-autoloader": true,
         "sort-packages": true,
-        "platform-check": true
+        "platform-check": true,
+        "autoloader-suffix": "PsalmAutoloader"
     },
     "extra": {
         "branch-alias": {
@@ -132,13 +135,14 @@
         ],
         "gen_callmap": "./bin/stubs/gen_callmap.sh",
         "gen_propertymap": "@php ./bin/stubs/update-property-map.php",
+        "gen_preloader": "@php ./bin/stubs/gen_preloader.php",
         "generate_issues_list_doc": "@php ./bin/docs/generate_issues_list_doc.php",
         "generate_levels_doc": "@php ./bin/docs/generate_levels_doc.php",
         "build": [
-            "@gen_callmap",
-            "@gen_propertymap",
+            "@gen_preloader",
             "@generate_issues_list_doc",
-            "@generate_levels_doc"
+            "@generate_levels_doc",
+            "@cs-fix"
         ]
     },
     "scripts-descriptions": {

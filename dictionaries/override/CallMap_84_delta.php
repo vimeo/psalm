@@ -3,6 +3,12 @@
 return array (
   'added' => 
   array (
+    'array_find_key' => 
+    array (
+      0 => 'array-key|null',
+      'array' => 'array<array-key, mixed>',
+      'callback' => 'callable',
+    ),
     'sodium_crypto_aead_aes256gcm_keygen' => 
     array (
       0 => 'non-empty-string',
@@ -832,6 +838,23 @@ return array (
         'bundle' => 'ResourceBundle',
         'index' => 'int|string',
         'fallback=' => 'bool',
+      ),
+    ),
+    'round' => 
+    array (
+      'old' => 
+      array (
+        0 => 'float',
+        'num' => 'float|int',
+        'precision=' => 'int',
+        'mode=' => 'int<0, max>',
+      ),
+      'new' => 
+      array (
+        0 => 'float',
+        'num' => 'float|int',
+        'precision=' => 'int',
+        'mode=' => 'RoundingMode|int<0, max>',
       ),
     ),
     'splfixedarray::setsize' => 

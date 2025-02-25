@@ -12,6 +12,10 @@ There is a partial callmap file in `dictionaries/override/CallMap.php` folder, a
 a number of delta files that provide information on
 how signatures changed in various PHP versions in `dictionaries/override/CallMap_*_delta.php`. 
 
+To alter info for a function, edit the signatures in `dictionaries/override/CallMap*` (adding the function if missing, copying it from `dictionaries/autogen/CallMap_$latest.php`).  
+
+When editing info for a function, don't forget to alter all revisions of the same function in `dictionaries/override/CallMap_*_delta.php`.
+
 The callmap files in the `override` subfolder are then used, in conjunction with the
 automatically-generated reflection callmaps in `dictionaries/autogen`, to generate the
 final callmaps in `dictionaries/CallMap_*`, which are the actual callmaps in use by Psalm.

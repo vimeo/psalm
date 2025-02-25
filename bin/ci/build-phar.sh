@@ -2,6 +2,8 @@
 
 set -e
 
+php -v
+
 composer bin box install
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
@@ -15,6 +17,16 @@ if [[ ! -f build/phar-versions.php ]] ; then
 fi
 
 vendor/bin/box compile --no-parallel
+
+rm -rf /tmp/psalmTest
+mkdir -p /tmp/psalmTest
+cd /tmp/psalmTest
+composer require danog/loop # Just to gen the composer.json
+
+$OLDPWD/build/psalm.phar -v
+
+cd $OLDPWD
+rm -rf /tmp/psalmTest
 
 if [[ "$GPG_SIGNING" != '' ]] ; then
     if [[ "$GPG_SECRET_KEY" != '' ]] ; then

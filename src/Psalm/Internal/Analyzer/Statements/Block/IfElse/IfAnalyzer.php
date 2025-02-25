@@ -27,6 +27,7 @@ use Psalm\Type;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
+use function array_any;
 use function array_combine;
 use function array_diff_key;
 use function array_filter;
@@ -71,7 +72,7 @@ final class IfAnalyzer
             $active_if_types,
         );
 
-        if (array_filter(
+        if (array_any(
             $outer_context->clauses,
             static fn(Clause $clause): bool => (bool) $clause->possibilities,
         )) {
@@ -169,12 +170,12 @@ final class IfAnalyzer
             $outer_context->removeVarFromConflictingClauses($var_id);
         }
 
-        $if_scope->if_actions = $final_actions = ScopeAnalyzer::getControlActions(
+        $final_actions = ScopeAnalyzer::getControlActions(
             $stmt->stmts,
             $statements_analyzer->node_data,
             [],
         );
-
+        // has a return/throw at end
         $has_ending_statements = $final_actions === [ScopeAnalyzer::ACTION_END];
 
         $has_leaving_statements = $has_ending_statements

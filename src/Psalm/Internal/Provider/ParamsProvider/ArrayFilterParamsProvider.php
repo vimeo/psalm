@@ -6,6 +6,7 @@ namespace Psalm\Internal\Provider\ParamsProvider;
 
 use Override;
 use PhpParser\Node\Expr\ConstFetch;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
@@ -38,9 +39,7 @@ final class ArrayFilterParamsProvider implements FunctionParamsProviderInterface
     #[Override]
     public static function getFunctionIds(): array
     {
-        return [
-            'array_filter',
-        ];
+        return ArgumentsAnalyzer::ARRAY_FILTERLIKE;
     }
 
     /**
@@ -62,25 +61,40 @@ final class ArrayFilterParamsProvider implements FunctionParamsProviderInterface
             return null;
         }
 
+        $function_id = $event->getFunctionId();
         $code_location = $event->getCodeLocation();
-        if ($call_args[1]->value instanceof ConstFetch
-            && strtolower($call_args[1]->value->name->toString()) === 'null'
-            && isset($call_args[2])
-        ) {
-            if ($code_location) {
-                // using e.g. ARRAY_FILTER_USE_KEY as 3rd arg won't have any effect if the 2nd arg is null
-                // as it will still filter on the values
-                IssueBuffer::maybeAdd(
-                    new InvalidArgument(
-                        'The 3rd argument of array_filter is not used, when the 2nd argument is null',
-                        $code_location,
-                        'array_filter',
-                    ),
-                    $statements_source->getSuppressedIssues(),
-                );
-            }
+        if (isset($call_args[2])) {
+            if ($function_id !== 'array_filter') {
+                if ($code_location) {
+                    IssueBuffer::maybeAdd(
+                        new InvalidArgument(
+                            "$function_id only takes two arguments",
+                            $code_location,
+                            $function_id,
+                        ),
+                        $statements_source->getSuppressedIssues(),
+                    );
+                }
 
-            return null;
+                return null;
+            } elseif ($call_args[1]->value instanceof ConstFetch
+                && strtolower($call_args[1]->value->name->toString()) === 'null'
+            ) {
+                if ($code_location) {
+                    // using e.g. ARRAY_FILTER_USE_KEY as 3rd arg won't have any effect if the 2nd arg is null
+                    // as it will still filter on the values
+                    IssueBuffer::maybeAdd(
+                        new InvalidArgument(
+                            'The 3rd argument of array_filter is not used, when the 2nd argument is null',
+                            $code_location,
+                            'array_filter',
+                        ),
+                        $statements_source->getSuppressedIssues(),
+                    );
+                }
+
+                return null;
+            }
         }
 
         // currently only supports literal types and variables (but not function calls)
@@ -200,7 +214,7 @@ final class ArrayFilterParamsProvider implements FunctionParamsProviderInterface
                 $mode = 0;
             }
         } else {
-            $mode = 0;
+            $mode = $function_id === 'array_filter' ? 0 : ARRAY_FILTER_USE_BOTH;
         }
 
         $callback_arg_value = new FunctionLikeParameter(
