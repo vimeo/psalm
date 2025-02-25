@@ -143,34 +143,6 @@ return array (
         'flags=' => 'int|null',
       ),
     ),
-    'imagickpixel::setcolorvaluequantum' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'color' => 'int',
-        'value' => 'float',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'color' => 'int',
-        'value' => 'IMAGICK_QUANTUM_TYPE',
-      ),
-    ),
-    'imagickpixel::setindex' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'index' => 'float',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'index' => 'IMAGICK_QUANTUM_TYPE',
-      ),
-    ),
     'iterator_count' => 
     array (
       'old' => 

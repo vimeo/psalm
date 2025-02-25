@@ -2980,8 +2980,8 @@ return array (
   ),
   'bcround' => 
   array (
-    0 => 'string',
-    'num' => 'string',
+    0 => 'numeric-string',
+    'num' => 'numeric-string',
     'precision=' => 'int',
     'mode=' => 'RoundingMode',
   ),
