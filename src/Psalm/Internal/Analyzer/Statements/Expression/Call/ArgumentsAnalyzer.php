@@ -425,7 +425,7 @@ final class ArgumentsAnalyzer
         }
 
         $replace_template_result = new TemplateResult(
-            array_map(
+            $template_result->template_types + array_map(
                 static fn(array $template_map): array => array_map(
                     static fn(array $lower_bounds): Union => TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
                         $lower_bounds,
