@@ -9,6 +9,13 @@ return array (
       'array' => 'array<array-key, mixed>',
       'callback' => 'callable',
     ),
+    'bcround' => 
+    array (
+      0 => 'numeric-string',
+      'num' => 'numeric-string',
+      'precision=' => 'int',
+      'mode=' => 'RoundingMode',
+    ),
     'sodium_crypto_aead_aes256gcm_keygen' => 
     array (
       0 => 'non-empty-string',
