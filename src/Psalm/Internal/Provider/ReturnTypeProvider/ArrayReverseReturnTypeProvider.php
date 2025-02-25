@@ -65,11 +65,11 @@ final class ArrayReverseReturnTypeProvider implements FunctionReturnTypeProvider
         if ($first_arg_array->is_list) {
             $second_arg = $call_args[1]->value ?? null;
 
-            $preserve_keys =
-                $second_arg &&
-                !(($second_arg_type = $statements_source->node_data->getType($second_arg)) &&
-                $second_arg_type->isFalse());
-            if (!$preserve_keys) {
+            if (!$second_arg
+                || (($second_arg_type = $statements_source->node_data->getType($second_arg))
+                    && $second_arg_type->isFalse()
+                )
+            ) {
                 if ($first_arg_array->fallback_params) {
                     return $first_arg_array->isNonEmpty()
                         ? Type::getNonEmptyList($first_arg_array->getGenericValueType())
