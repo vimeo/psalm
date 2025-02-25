@@ -657,6 +657,8 @@ final class ClosureTest extends TestCase
                     '$b===' => 'list<inner>',
                     '$c===' => 'list<inner>',
                 ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'CallableWithArrayReduce' => [
                 'code' => '<?php

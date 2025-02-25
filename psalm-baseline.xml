@@ -2644,6 +2644,8 @@
   <file src="src/Psalm/Type/Atomic/TConditional.php">
     <ImpureMethodCall>
       <code><![CDATA[replace]]></code>
+      <code><![CDATA[replace]]></code>
+      <code><![CDATA[replace]]></code>
     </ImpureMethodCall>
   </file>
   <file src="src/Psalm/Type/Atomic/TGenericObject.php">
