@@ -780,7 +780,7 @@ final class ClassLikes
             ProjectAnalyzer::getInstance()->getCodebase()->analysis_php_version_id,
         );
 
-        $trait_finder = new TraitFinder(strtolower($fq_trait_name));
+        $trait_finder = new TraitFinder($fq_trait_name);
 
         $traverser = new NodeTraverser();
         $traverser->addVisitor(
@@ -797,7 +797,7 @@ final class ClassLikes
             return $trait_node;
         }
 
-        throw new UnexpectedValueException("Could not locate trait statement for $fq_trait_name");
+        throw new UnexpectedValueException('Could not locate trait statement');
     }
 
     public function addClassAlias(string $fq_class_name, string $alias_name): void

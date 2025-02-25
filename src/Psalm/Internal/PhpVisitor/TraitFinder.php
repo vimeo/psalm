@@ -44,10 +44,10 @@ final class TraitFinder extends PhpParser\NodeVisitorAbstract
                 $fq_trait_name_parts = explode('\\', $this->fq_trait_name);
 
                 /** @psalm-suppress PossiblyNullPropertyFetch */
-                if ($node->name->name !== null && strcasecmp($node->name->name, end($fq_trait_name_parts)) === 0) {
+                if ($node->name->name === end($fq_trait_name_parts)) {
                     $this->matching_trait_nodes[] = $node;
                 }
-            } elseif (strcasecmp($resolved_name, $this->fq_trait_name) === 0) {
+            } elseif ($resolved_name === $this->fq_trait_name) {
                 $this->matching_trait_nodes[] = $node;
             }
         }
