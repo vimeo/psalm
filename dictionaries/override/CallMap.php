@@ -2288,6 +2288,13 @@ return array (
     'modulus' => 'numeric-string',
     'scale=' => 'int|null',
   ),
+  'bcround' => 
+  array (
+    0 => 'numeric-string',
+    'num' => 'numeric-string',
+    'precision=' => 'int',
+    'mode=' => 'RoundingMode',
+  ),
   'bcscale' => 
   array (
     0 => 'int',
