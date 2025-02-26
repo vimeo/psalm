@@ -713,6 +713,98 @@ class EnumTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'positiveIntTemplateType' => [
+                'code' => '<?php
+                    /**
+                     * @implements BackedEnum<positive-int>
+                     */
+                    enum PositiveNumber: int {
+                        case One = 1;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'nonNegativeIntTemplateType' => [
+                'code' => '<?php
+                    /**
+                     * @implements BackedEnum<non-negative-int>
+                     */
+                    enum NonNegativeNumber: int {
+                        case Zero = 0;
+                        case One = 1;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'negativeIntTemplateType' => [
+                'code' => '<?php
+                    /**
+                     * @implements BackedEnum<negative-int>
+                     */
+                    enum NegativeNumber: int {
+                        case MinusOne = -1;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'intRangeTemplateType' => [
+                'code' => '<?php
+                    /**
+                     * @implements BackedEnum<int<0, 1>>
+                     */
+                    enum IntRangeNumber: int {
+                        case Zero = 0;
+                        case One = 1;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'nonEmptyStringTemplateType' => [
+                'code' => '<?php
+                    /**
+                     * @implements BackedEnum<non-empty-string>
+                     */
+                    enum StringEnum: string {
+                        case Zero = "0";
+                        case One = "1";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'validTemplateParameterTypePassedToFromMethod' => [
+                'code' => '<?php
+                    /**
+                     * @implements BackedEnum<non-negative-int>
+                     */
+                    enum NumberEnum: int {
+                        case Zero = 0;
+                        case One = 1;
+                    };
+                
+                    $nonNegativeNumber = NumberEnum::from(0);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'validTemplateParameterTypePassedToTryFromMethod' => [
+                'code' => '<?php
+                    /**
+                     * @implements BackedEnum<positive-int>
+                     */
+                    enum NumberEnum: int {
+                        case One = 1;
+                    };
+                
+                    $negativeNumber = NumberEnum::tryFrom(1);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -1204,6 +1296,157 @@ class EnumTest extends TestCase
                     }
                 ',
                 'error_message' => 'InvalidEnumCaseValue',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'positiveIntTemplateTypeDoesNotMatchEnumValue' => [
+                'code' => '<?php
+                    /**
+                     * @implements BackedEnum<positive-int>
+                     */
+                    enum PositiveNumber: int {
+                        case Zero = 0;
+                        case One = 1;
+                    }',
+                'error_message' => 'InvalidEnumCaseValue',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'nonNegativeIntTemplateTypeDoesNotMatchEnumValue' => [
+                'code' => '<?php
+                    /**
+                     * @implements BackedEnum<non-negative-int>
+                     */
+                    enum NonNegativeNumber: int {
+                        case MinusOne = -1;
+                        case Zero = 0;
+                        case One = 1;
+                    }',
+                'error_message' => 'InvalidEnumCaseValue',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'negativeIntTemplateTypeDoesNotMatchEnumValue' => [
+                'code' => '<?php
+                    /**
+                     * @implements BackedEnum<negative-int>
+                     */
+                    enum NegativeNumber: int {
+                        case MinusOne = -1;
+                        case Zero = 0;
+                        case One = 1;
+                    }',
+                'error_message' => 'InvalidEnumCaseValue',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'intRangeTemplateTypeDoesNotMatchEnumValue' => [
+                'code' => '<?php
+                    /**
+                     * @implements BackedEnum<int<99, 110>>
+                     */
+                    enum IntRangeNumber: int {
+                        case TwoHundred = 200;
+                        case Zero = 0;
+                        case One = 1;
+                        case OneHundred = 100;
+                    }',
+                'error_message' => 'InvalidEnumCaseValue',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'nonEmptyStringTemplateTypeDoesNotMatchEnumValue' => [
+                'code' => '<?php
+                    /**
+                     * @implements BackedEnum<non-empty-string>
+                     */
+                    enum StringEnum: string {
+                        case Zero = "0";
+                        case One = "1";
+                        case Empty = "";
+                    }',
+                'error_message' => 'InvalidEnumCaseValue',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'stringTemplateTypeDoesNotMatchBackingType' => [
+                'code' => '<?php
+                    /**
+                     * @implements BackedEnum<non-empty-string>
+                     */
+                    enum Number: int {
+                        case Zero = 0;
+                        case One = 1;
+                    }',
+                'error_message' => 'InvalidTemplateParam',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'intTemplateTypeDoesNotMatchBackingType' => [
+                'code' => '<?php
+                    /**
+                     * @implements BackedEnum<non-negative-int>
+                     */
+                    enum Number: string {
+                        case Zero = "0";
+                        case One = "1";
+                    }',
+                'error_message' => 'InvalidTemplateParam',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'nonAllowedTemplateType' => [
+                'code' => '<?php
+                    /**
+                     * @implements BackedEnum<float>
+                     */
+                    enum NumberEnum: int {
+                        case Zero = 0;
+                        case One = 1;
+                    }',
+                'error_message' => 'InvalidTemplateParam',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'nonAllowedTemplateUnionType' => [
+                'code' => '<?php
+                    /**
+                     * @implements BackedEnum<string|int>
+                     */
+                    enum NumberEnum: int {
+                        case Zero = 0;
+                        case One = 1;
+                    }',
+                'error_message' => 'InvalidTemplateParam',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'invalidTemplateParameterTypePassedToFromMethod' => [
+                'code' => '<?php
+                    /**
+                     * @implements BackedEnum<non-negative-int>
+                     */
+                    enum NumberEnum: int {
+                        case Zero = 0;
+                        case One = 1;
+                    };
+                
+                    $negativeNumber = NumberEnum::from(-10);',
+                'error_message' => 'InvalidArgument',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'invalidTemplateParameterTypePassedToTryFromMethod' => [
+                'code' => '<?php
+                    /**
+                     * @implements BackedEnum<positive-int>
+                     */
+                    enum NumberEnum: int {
+                        case One = 1;
+                    };
+                
+                    $nonPositiveNumber = NumberEnum::tryFrom(0);',
+                'error_message' => 'InvalidArgument',
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],

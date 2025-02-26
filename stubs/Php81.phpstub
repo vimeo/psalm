@@ -11,19 +11,25 @@ namespace {
         public static function cases(): array;
     }
 
+    /** @template T of int|string */
     interface BackedEnum extends UnitEnum
     {
         /** @var non-empty-string $name */
         public readonly string $name;
+        /** @var T $value */
         public readonly int|string $value;
 
         /**
+         * @template T of int|string
          * @psalm-pure
+         * @param T $value
          */
         public static function from(string|int $value): static;
 
         /**
+         * @template T of int|string
          * @psalm-pure
+         * @param T $value
          */
         public static function tryFrom(string|int $value): ?static;
 

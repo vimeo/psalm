@@ -451,7 +451,7 @@ final class Populator
         $storage->pseudo_property_set_types += $trait_storage->pseudo_property_set_types;
 
         $storage->pseudo_static_methods += $trait_storage->pseudo_static_methods;
-        
+
         $storage->pseudo_methods += $trait_storage->pseudo_methods;
         $storage->declaring_pseudo_method_ids += $trait_storage->declaring_pseudo_method_ids;
     }
@@ -645,11 +645,39 @@ final class Populator
                         }
                     }
                 }
+
+                $defaultTemplate = self::getDefaultTemplateForInterfaceImplementingBackedEnum($storage, $parent_storage)
+                    ?? self::getDefaultTemplateForBackedEnum($storage);
+
+                if ($defaultTemplate !== null) {
+                    /**
+                     * @psalm-suppress TypeDoesNotContainNull It contains it according to the code
+                     */
+                    if ($storage->template_extended_offsets === null) {
+                        $storage->template_extended_offsets = [];
+                    }
+
+                    $storage->template_extended_offsets['BackedEnum'] = $defaultTemplate;
+                }
             } else {
-                foreach ($parent_storage->template_types as $template_name => $template_type_map) {
-                    foreach ($template_type_map as $template_type) {
-                        $default_param = $template_type->setProperties(['from_docblock' => false]);
-                        $storage->template_extended_params[$parent_storage->name][$template_name] = $default_param;
+                $defaultTemplate = self::getDefaultTemplateForInterfaceImplementingBackedEnum($storage, $parent_storage)
+                    ?? self::getDefaultTemplateForBackedEnum($storage);
+
+                if ($defaultTemplate !== null) {
+                    /**
+                     * @psalm-suppress DocblockTypeContradiction It contains it according to the code
+                     */
+                    if ($storage->template_extended_params === null) {
+                        $storage->template_extended_params = [];
+                    }
+
+                    $storage->template_extended_params['BackedEnum'] = $defaultTemplate;
+                } else {
+                    foreach ($parent_storage->template_types as $template_name => $template_type_map) {
+                        foreach ($template_type_map as $template_type) {
+                            $default_param = $template_type->setProperties(['from_docblock' => false]);
+                            $storage->template_extended_params[$parent_storage->name][$template_name] = $default_param;
+                        }
                     }
                 }
 
@@ -668,6 +696,55 @@ final class Populator
                 $parent_storage->template_extended_params,
             );
         }
+    }
+
+    /**
+     * @return array{T: Union}|null
+     */
+    private static function getDefaultTemplateForInterfaceImplementingBackedEnum(
+        ClassLikeStorage $storage,
+        ClassLikeStorage $parent_storage
+    ): ?array {
+        $is_interface = $storage->is_interface;
+
+        if ($is_interface === false || $parent_storage->name !== "BackedEnum") {
+            return null;
+        }
+
+        // it comes from the BackedEnum stub
+        $mapped_name = 'T';
+
+        $t_template_param = new TTemplateParam(
+            $mapped_name,
+            new Union(['int' => new TInt(), 'string' => new TString()]),
+            $storage->name,
+        );
+
+        return [$mapped_name => new Union(['types' => $t_template_param])];
+    }
+
+    /**
+     * This allows a BackedEnum to not implement any template via docblock as the default type is inferred
+     * by the backed type, unless the user wants to define a more specific type for the backed enum.
+     *
+     * @return array{T: Union}|null
+     */
+    private static function getDefaultTemplateForBackedEnum(ClassLikeStorage $storage): ?array
+    {
+        $enum_type = $storage->enum_type;
+
+        if ($enum_type === null || $storage->template_type_implements_count !== null) {
+            return null;
+        }
+
+        // it comes from the BackedEnum stub
+        $mapped_name = 'T';
+
+        if ($enum_type === 'string') {
+            return [$mapped_name => new Union(['string' => new TString()])];
+        }
+
+        return [$mapped_name => new Union(['int' => new TInt()])];
     }
 
     private function populateInterfaceDataFromParentInterface(
