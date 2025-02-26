@@ -10,6 +10,7 @@ use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -23,6 +24,8 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Issue\DeprecatedFunction;
 use Psalm\Issue\ImpureFunctionCall;
+use Psalm\Issue\InternalClass;
+use Psalm\Issue\InternalMethod;
 use Psalm\Issue\InvalidFunctionCall;
 use Psalm\Issue\MixedFunctionCall;
 use Psalm\Issue\NullFunctionCall;
@@ -401,6 +404,30 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     ),
                     $statements_analyzer->getSuppressedIssues(),
                 );
+            }
+
+            if (!$context->collect_initializations
+                && !$context->collect_mutations
+                && $function_call_info->function_id !== null
+            ) {
+                $caller_identifier = $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName();
+                if ($caller_identifier !== null
+                    && !NamespaceAnalyzer::isWithinAny(
+                        $caller_identifier,
+                        $function_call_info->function_storage->internal,
+                    )) {
+                    IssueBuffer::maybeAdd(
+                        new InternalMethod(
+                            'The function ' . $function_call_info->function_id
+                            . ' is internal to '
+                            . InternalClass::listToPhrase($function_call_info->function_storage->internal)
+                            . ' but called from ' . ($caller_identifier ?: 'root namespace'),
+                            $code_location,
+                            $function_call_info->function_id,
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+                }
             }
         }
 

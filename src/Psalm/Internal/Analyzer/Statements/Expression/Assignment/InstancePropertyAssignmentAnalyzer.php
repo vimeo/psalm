@@ -14,7 +14,6 @@ use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
-use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
@@ -33,12 +32,9 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
-use Psalm\Issue\DeprecatedProperty;
 use Psalm\Issue\ImplicitToStringCast;
 use Psalm\Issue\ImpurePropertyAssignment;
 use Psalm\Issue\InaccessibleProperty;
-use Psalm\Issue\InternalClass;
-use Psalm\Issue\InternalProperty;
 use Psalm\Issue\InvalidPropertyAssignment;
 use Psalm\Issue\InvalidPropertyAssignmentValue;
 use Psalm\Issue\LoopInvalidation;
@@ -1257,30 +1253,22 @@ final class InstancePropertyAssignmentAnalyzer
         $declaring_class_storage = $codebase->classlike_storage_provider->get($declaring_property_class);
 
         if (isset($declaring_class_storage->properties[$prop_name])) {
+            AtomicPropertyFetchAnalyzer::checkPropertyDeprecation(
+                $prop_name,
+                $declaring_property_class,
+                $stmt,
+                $statements_analyzer,
+            );
+
+            AtomicPropertyFetchAnalyzer::checkPropertyInternal(
+                $prop_name,
+                $declaring_property_class,
+                $stmt,
+                $statements_analyzer,
+                $context,
+            );
+
             $property_storage = $declaring_class_storage->properties[$prop_name];
-
-            if ($property_storage->deprecated) {
-                IssueBuffer::maybeAdd(
-                    new DeprecatedProperty(
-                        $property_id . ' is marked deprecated',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        $property_id,
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
-            }
-
-            if ($context->self && !NamespaceAnalyzer::isWithinAny($context->self, $property_storage->internal)) {
-                IssueBuffer::maybeAdd(
-                    new InternalProperty(
-                        $property_id . ' is internal to ' . InternalClass::listToPhrase($property_storage->internal)
-                            . ' but called from ' . $context->self,
-                        new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        $property_id,
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
-            }
 
             self::trackPropertyImpurity(
                 $statements_analyzer,

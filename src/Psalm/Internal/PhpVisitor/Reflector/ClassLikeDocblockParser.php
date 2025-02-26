@@ -30,6 +30,7 @@ use function count;
 use function explode;
 use function implode;
 use function in_array;
+use function preg_grep;
 use function preg_last_error_msg;
 use function preg_match;
 use function preg_replace;
@@ -204,7 +205,9 @@ final class ClassLikeDocblockParser
             $info->deprecated = true;
         }
 
-        if (isset($parsed_docblock->tags['internal'])) {
+        if (isset($parsed_docblock->tags['internal'])
+            || (isset($parsed_docblock->tags['access'])
+                && preg_grep('/^private(?>\s|$)/', $parsed_docblock->tags['access']))) {
             $info->internal = true;
         }
 

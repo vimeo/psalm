@@ -191,11 +191,17 @@ final class NamespaceAnalyzer extends SourceAnalyzer
      */
     public static function isWithinAny(string $calling_identifier, array $identifiers): bool
     {
-        if (count($identifiers) === 0) {
+        if ($identifiers === []) {
             return true;
         }
 
         foreach ($identifiers as $identifier) {
+            if ($calling_identifier !== '' && $identifier === '') {
+                // if we have any non-empty, we ignore the empty one
+                // therefore continue instead of return
+                continue;
+            }
+
             if (self::isWithin($calling_identifier, $identifier)) {
                 return true;
             }

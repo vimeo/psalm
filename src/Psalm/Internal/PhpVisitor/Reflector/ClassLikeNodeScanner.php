@@ -650,6 +650,8 @@ final class ClassLikeNodeScanner
                 $storage->internal = $docblock_info->psalm_internal;
             } elseif ($docblock_info->internal && $this->aliases->namespace) {
                 $storage->internal = [NamespaceAnalyzer::getNameSpaceRoot($this->aliases->namespace)];
+            } elseif ($docblock_info->internal) {
+                $storage->internal = [''];
             }
 
             if ($docblock_info->final && !$storage->final) {

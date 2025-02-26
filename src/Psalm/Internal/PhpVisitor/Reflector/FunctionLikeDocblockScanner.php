@@ -118,6 +118,10 @@ final class FunctionLikeDocblockScanner
             $storage->internal = $docblock_info->psalm_internal;
         } elseif ($docblock_info->internal && $aliases->namespace) {
             $storage->internal = [NamespaceAnalyzer::getNameSpaceRoot($aliases->namespace)];
+        } elseif ($docblock_info->internal && $classlike_storage && $classlike_storage->name) {
+            $storage->internal = [NamespaceAnalyzer::getNameSpaceRoot($classlike_storage->name)];
+        } elseif ($docblock_info->internal) {
+            $storage->internal = [''];
         }
 
         if (($storage->internal || ($classlike_storage && $classlike_storage->internal))
