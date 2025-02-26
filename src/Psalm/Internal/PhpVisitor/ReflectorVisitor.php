@@ -240,7 +240,6 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
 
                             if (isset($this->codebase->config->globals[$var_id])) {
                                 $var_type = Type::parseString($this->codebase->config->globals[$var_id]);
-                                /** @psalm-suppress UnusedMethodCall */
                                 $var_type->queueClassLikesForScanning($this->codebase, $this->file_storage);
                             }
                         }
@@ -359,7 +358,6 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                 }
 
                 $var_type = $var_comment->type;
-                /** @psalm-suppress UnusedMethodCall */
                 $var_type->queueClassLikesForScanning($this->codebase, $this->file_storage);
             }
         }

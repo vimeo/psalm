@@ -1460,6 +1460,47 @@ class AnnotationTest extends TestCase
                     function foo($arg) {}',
                 'error_message' => 'InvalidDocblock',
             ],
+            'invalidVoidPure' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @param array<float, string> $arg
+                     * @return void
+                     */
+                    function foo($arg) {}',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'invalidVoidRequireUsage' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-require-usage
+                     * @param array<float, string> $arg
+                     * @return void
+                     */
+                    function foo($arg) {}',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'invalidNeverRequireUsage' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-require-usage
+                     * @return never
+                     */
+                    function foo() {
+                        exit;
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'invalidVoidTaintEscape' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-taint-escape html
+                     * @param array<float, string> $arg
+                     * @return void
+                     */
+                    function foo($arg) {}',
+                'error_message' => 'InvalidDocblock',
+            ],
             'invalidClassMethodReturnBrackets' => [
                 'code' => '<?php
                     class C {
