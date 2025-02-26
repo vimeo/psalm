@@ -548,14 +548,20 @@ class ArrayKeyExistsTest extends TestCase
                     }
 
                     if (array_key_exists("b", $a)) {
+                        /**
+                         * if this suppress is redundant, the test has failed
+                         * it should report this error in all cases
+                         *
+                         * @psalm-suppress PossiblyUndefinedArrayOffset
+                         */
                         echo $a[0];
                     }',
-                'error_message' => 'PossiblyUndefinedArrayOffset',
+                'error_message' => 'RedundantCondition',
             ],
             'dontCreateWeirdString' => [
                 'code' => '<?php
                     /**
-                     * @psalm-param array{inner:string} $options
+                     * @psalm-param array{size?:string} $options
                      */
                     function go(array $options): void {
                         if (!array_key_exists(\'size\', $options)) {

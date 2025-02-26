@@ -307,7 +307,7 @@ class Reconciler
                 throw new UnexpectedValueException('$result_type should not be null');
             }
 
-            if (!$did_type_exist && $result_type->isNever()) {
+            if (!$did_type_exist && $result_type->isNever() && $negated) {
                 continue;
             }
 
@@ -772,9 +772,8 @@ class Reconciler
                             }
                         } elseif ($existing_key_type_part instanceof TClassStringMap) {
                             return Type::getMixed();
-                        } elseif ($existing_key_type_part instanceof TNever
-                            || ($existing_key_type_part instanceof TMixed
-                                && $existing_key_type_part->from_loop_isset)
+                        } elseif ($existing_key_type_part instanceof TMixed
+                            && $existing_key_type_part->from_loop_isset
                         ) {
                             return Type::getMixed($inside_loop);
                         } elseif ($existing_key_type_part instanceof TString) {
@@ -808,6 +807,8 @@ class Reconciler
                                 if ($existing_key_type_part->fallback_params !== null) {
                                     $new_base_type_candidate = $existing_key_type_part
                                         ->fallback_params[1]->setDifferent(true);
+
+                                    $new_base_type_candidate->possibly_undefined = true;
                                 } else {
                                     return null;
                                 }

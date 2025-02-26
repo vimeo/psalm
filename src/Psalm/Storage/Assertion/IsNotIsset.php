@@ -26,6 +26,6 @@ final class IsNotIsset extends Assertion
 
     public function isNegationOf(Assertion $assertion): bool
     {
-        return $assertion instanceof IsNotIsset;
+        return $assertion instanceof IsIsset;
     }
 }

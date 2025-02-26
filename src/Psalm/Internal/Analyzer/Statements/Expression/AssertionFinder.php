@@ -88,6 +88,7 @@ use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TResource;
@@ -238,7 +239,7 @@ final class AssertionFinder
             );
 
             if ($var_name) {
-                $if_types[$var_name] = [[new IsNotType(new TNull())]];
+                $if_types[$var_name] = [[new IsNotType(new TNull())], [new IsIsset]];
             }
 
             //we may throw a RedundantNullsafeMethodCall here in the future if $var_name is never null
@@ -300,12 +301,75 @@ final class AssertionFinder
                 if ($conditional->expr instanceof PhpParser\Node\Expr\Variable
                     && $source instanceof StatementsAnalyzer
                     && ($var_type = $source->node_data->getType($conditional->expr))
-                    && !$var_type->isMixed()
+                    && (!$var_type->isMixed() || $var_type->isAlwaysTruthy())
                     && !$var_type->possibly_undefined
                 ) {
                     $if_types[$var_name] = [[new Falsy()]];
                 } else {
                     $if_types[$var_name] = [[new Empty_()]];
+
+                    if ($conditional->expr instanceof PhpParser\Node\Expr\ArrayDimFetch
+                        && $conditional->expr->dim
+                        && $source instanceof StatementsAnalyzer
+                    ) {
+                        $root_var_type = $source->node_data->getType($conditional->expr->var);
+                        $key_type = $source->node_data->getType($conditional->expr->dim);
+
+                        if ($root_var_type && $root_var_type->isAlwaysFalsy()) {
+                            $if_types[$var_name] = [[new IsType(new TNever)]];
+                        } elseif ($root_var_type) {
+                            if (!$root_var_type->hasMixed() && $root_var_type->hasArray() && $key_type) {
+                                foreach ($root_var_type->getAtomicTypes() as $atomic_root_type) {
+                                    if ($atomic_root_type instanceof TList) {
+                                        $atomic_root_type = $atomic_root_type->getKeyedArray();
+                                    }
+                                    if ($atomic_root_type instanceof TKeyedArray) {
+                                        $key_value = null;
+                                        if ($key_type->isSingleIntLiteral()) {
+                                            $key_value = $key_type->getSingleIntLiteral()->value;
+                                        } elseif ($key_type->isSingleStringLiteral()) {
+                                            $key_value = $key_type->getSingleStringLiteral()->value;
+                                        }
+                                        if ($key_value !== null) {
+                                            $properties = $atomic_root_type->properties;
+                                            if (isset($properties[$key_value])) {
+                                                $var_type = $properties[$key_value];
+                                                if ((!$var_type->isMixed() || $var_type->isAlwaysTruthy())
+                                                     && !$var_type->possibly_undefined
+                                                ) {
+                                                    $if_types[$var_name] = [[new Falsy()]];
+
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            if ($inside_negation && !$root_var_type->isAlwaysTruthy()) {
+                                $root_var_name = ExpressionIdentifier::getExtendedVarId(
+                                    $conditional->expr->var,
+                                    $this_class_name,
+                                    $source,
+                                );
+                                $root_if_types = [];
+                                $root_if_types[$root_var_name] = [[new Truthy()]];
+
+                                return [$if_types, $root_if_types];
+                            }
+                        } elseif ($inside_negation) {
+                            $root_var_name = ExpressionIdentifier::getExtendedVarId(
+                                $conditional->expr->var,
+                                $this_class_name,
+                                $source,
+                            );
+
+                            $root_if_types[$root_var_name] = [[new Truthy()]];
+
+                            return [$if_types, $root_if_types];
+                        }
+                    }
                 }
             }
 
@@ -313,6 +377,7 @@ final class AssertionFinder
         }
 
         if ($conditional instanceof PhpParser\Node\Expr\Isset_) {
+            $root_if_types = [];
             foreach ($conditional->vars as $isset_var) {
                 $var_name = ExpressionIdentifier::getExtendedVarId(
                     $isset_var,
@@ -329,8 +394,82 @@ final class AssertionFinder
                         && !$var_type->possibly_undefined_from_try
                     ) {
                         $if_types[$var_name] = [[new IsNotType(new TNull())]];
+
+                        self::processIrreconcilableFunctionCall(
+                            $var_type,
+                            new Union([new Atomic\TNull()]),
+                            $isset_var,
+                            $source,
+                            $codebase,
+                            $inside_negation,
+                        );
                     } else {
                         $if_types[$var_name] = [[new IsIsset]];
+
+                        if ($isset_var instanceof PhpParser\Node\Expr\ArrayDimFetch
+                            && $isset_var->dim
+                            && $source instanceof StatementsAnalyzer
+                            && !$inside_negation
+                        ) {
+                            $root_var_type = $source->node_data->getType($isset_var->var);
+                            $key_type = $source->node_data->getType($isset_var->dim);
+
+                            if ($root_var_type && $root_var_type->isAlwaysFalsy()) {
+                                $if_types[$var_name] = [[new IsType(new TNever)]];
+                            } elseif ($root_var_type) {
+                                if (!$root_var_type->hasMixed() && $root_var_type->hasArray() && $key_type) {
+                                    foreach ($root_var_type->getAtomicTypes() as $atomic_root_type) {
+                                        if ($atomic_root_type instanceof TList) {
+                                            $atomic_root_type = $atomic_root_type->getKeyedArray();
+                                        }
+                                        if ($atomic_root_type instanceof TKeyedArray) {
+                                            $key_value = null;
+                                            if ($key_type->isSingleIntLiteral()) {
+                                                $key_value = $key_type->getSingleIntLiteral()->value;
+                                            } elseif ($key_type->isSingleStringLiteral()) {
+                                                $key_value = $key_type->getSingleStringLiteral()->value;
+                                            }
+                                            if ($key_value !== null) {
+                                                $properties = $atomic_root_type->properties;
+                                                if (isset($properties[$key_value])) {
+                                                    $var_type = $properties[$key_value];
+                                                    if (!$var_type->isMixed()
+                                                         && !$var_type->possibly_undefined
+                                                         && !$var_type->possibly_undefined_from_try) {
+                                                        // both needed to not end up with an incorrect list type
+                                                        // where null is added incorrectly
+                                                        $if_types[$var_name]= [
+                                                            [new IsNotType(new TNull())],
+                                                            [new IsIsset],
+                                                        ];
+                                                        break;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // non-empty-array{foo?: bar} shapes aren't supported yet in psalm
+                                if (!$root_var_type->isAlwaysTruthy() && !$root_var_type->isArray()) {
+                                    $root_var_name = ExpressionIdentifier::getExtendedVarId(
+                                        $isset_var->var,
+                                        $this_class_name,
+                                        $source,
+                                    );
+
+                                    $root_if_types[$root_var_name] = [[new Truthy()]];
+                                }
+                            } else {
+                                $root_var_name = ExpressionIdentifier::getExtendedVarId(
+                                    $isset_var->var,
+                                    $this_class_name,
+                                    $source,
+                                );
+
+                                $root_if_types[$root_var_name] = [[new IsIsset]];
+                            }
+                        }
                     }
                 } else {
                     // look for any variables we *can* use for an isset assertion
@@ -350,6 +489,10 @@ final class AssertionFinder
                         $if_types[$var_name] = [[new IsEqualIsset]];
                     }
                 }
+            }
+
+            if ($root_if_types) {
+                return [$if_types, $root_if_types];
             }
 
             return $if_types ? [$if_types] : [];
@@ -3857,6 +4000,131 @@ final class AssertionFinder
                     && !strpos($first_var_name, '->')
                     && !strpos($first_var_name, '[')
                 ) {
+                    $second_var_type = $source->node_data->getType($expr->getArgs()[1]->value);
+                    if ($second_var_type
+                        && strpos($first_var_name, '$') === false
+                        && strpos($first_var_name, '::') === false) {
+                        $first_var_name_key = !is_numeric($first_var_name)
+                            ? substr(substr($first_var_name, 1), 0, -1)
+                            : $first_var_name;
+                        foreach ($second_var_type->getAtomicTypes() as $atomic_type) {
+                            if ($atomic_type instanceof TList) {
+                                $atomic_type = $atomic_type->getKeyedArray();
+                            }
+
+                            if ($atomic_type instanceof TArray
+                                || $atomic_type instanceof TKeyedArray
+                            ) {
+                                if ($atomic_type instanceof TKeyedArray) {
+                                    $properties = $atomic_type->properties;
+                                    if (isset($properties[$first_var_name_key])) {
+                                        $var_type = $properties[$first_var_name_key];
+                                        if (!$var_type->possibly_undefined
+                                             && !$var_type->possibly_undefined_from_try) {
+                                            if ($atomic_type->from_docblock) {
+                                                IssueBuffer::maybeAdd(
+                                                    new RedundantConditionGivenDocblockType(
+                                                        'Key ' . $first_var_name
+                                                        . ' always exists in '
+                                                        . $array_root
+                                                        . ' with docblock-defined type '
+                                                        . $second_var_type,
+                                                        new CodeLocation($source, $expr),
+                                                        $array_root . ' ' . $first_var_name,
+                                                    ),
+                                                    $source->getSuppressedIssues(),
+                                                );
+                                            } else {
+                                                IssueBuffer::maybeAdd(
+                                                    new RedundantCondition(
+                                                        'Key ' . $first_var_name
+                                                        . ' always exists in '
+                                                        . $array_root
+                                                        . ' with type '
+                                                        . $second_var_type,
+                                                        new CodeLocation($source, $expr),
+                                                        $array_root . ' ' . $first_var_name,
+                                                    ),
+                                                    $source->getSuppressedIssues(),
+                                                );
+                                            }
+                                        }
+
+                                        break;
+                                    } elseif ($atomic_type->fallback_params === null) {
+                                        if ($atomic_type->from_docblock) {
+                                            IssueBuffer::maybeAdd(
+                                                new RedundantConditionGivenDocblockType(
+                                                    'Key ' . $first_var_name
+                                                    . ' never exists in '
+                                                    . $array_root
+                                                    . ' with docblock-defined type '
+                                                    . $second_var_type,
+                                                    new CodeLocation($source, $expr),
+                                                    $array_root . ' ' . $first_var_name,
+                                                ),
+                                                $source->getSuppressedIssues(),
+                                            );
+                                        } else {
+                                            IssueBuffer::maybeAdd(
+                                                new RedundantCondition(
+                                                    'Key ' . $first_var_name
+                                                    . ' never exists in '
+                                                    . $array_root
+                                                    . ' with type '
+                                                    . $second_var_type,
+                                                    new CodeLocation($source, $expr),
+                                                    $array_root . ' ' . $first_var_name,
+                                                ),
+                                                $source->getSuppressedIssues(),
+                                            );
+                                        }
+
+                                        break;
+                                    }
+
+                                    $key_type = $atomic_type->getGenericKeyType(
+                                        !$atomic_type->allShapeKeysAlwaysDefined(),
+                                    );
+                                } else {
+                                    $key_type = $atomic_type->type_params[0];
+                                }
+
+                                if (!is_numeric($first_var_name_key) && $key_type->isInt()) {
+                                    if ($atomic_type->from_docblock) {
+                                        IssueBuffer::maybeAdd(
+                                            new RedundantConditionGivenDocblockType(
+                                                'Key ' . $first_var_name
+                                                . ' never exists in '
+                                                . $array_root
+                                                . ' with docblock-defined type '
+                                                . $second_var_type,
+                                                new CodeLocation($source, $expr),
+                                                $array_root . ' ' . $first_var_name,
+                                            ),
+                                            $source->getSuppressedIssues(),
+                                        );
+                                    } else {
+                                        IssueBuffer::maybeAdd(
+                                            new RedundantCondition(
+                                                'Key ' . $first_var_name
+                                                . ' never exists in '
+                                                . $array_root
+                                                . ' with type '
+                                                . $second_var_type,
+                                                new CodeLocation($source, $expr),
+                                                $array_root . ' ' . $first_var_name,
+                                            ),
+                                            $source->getSuppressedIssues(),
+                                        );
+                                    }
+
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
                     $if_types[$array_root . '[' . $first_var_name . ']'] = [[new ArrayKeyExists()]];
                 }
             }
