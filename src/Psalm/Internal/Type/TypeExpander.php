@@ -96,6 +96,7 @@ final class TypeExpander
         );
 
         $fleshed_out_type->from_docblock = $return_type->from_docblock;
+        $fleshed_out_type->ignore_nullable_issues_foreach = $return_type->ignore_nullable_issues_foreach;
         $fleshed_out_type->ignore_nullable_issues = $return_type->ignore_nullable_issues;
         $fleshed_out_type->ignore_falsable_issues = $return_type->ignore_falsable_issues;
         $fleshed_out_type->possibly_undefined = $return_type->possibly_undefined;
