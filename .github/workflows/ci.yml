@@ -125,6 +125,7 @@ jobs:
       fail-fast: false
       matrix:
         php-version:
+          - "7.4"
           - "8.0"
           - "8.1"
           - "8.2"
@@ -143,7 +144,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: "${{ matrix.php-version }}"
-          ini-values: zend.assertions=1, assert.exception=1, opcache.enable_cli=1, opcache.jit=function, opcache.jit_buffer_size=512M
+          ini-values: zend.assertions=1, assert.exception=1, opcache.enable_cli=1, opcache.jit=function, opcache.jit_buffer_size=512M, error_reporting=E_ALL
           tools: composer:v2
           coverage: none
           extensions: none, curl, dom, filter, intl, json, libxml, mbstring, opcache, openssl, pcre, phar, reflection, simplexml, spl, tokenizer, xml, xmlwriter

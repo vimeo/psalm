@@ -333,17 +333,31 @@ class BinaryOperationTest extends TestCase
             'modulo' => [
                 'code' => '<?php
                     $a = 25 % 2;
+                    $e = 25 % 1;
+                    $f = "+25" % 2;
+                    $g = 25 % "-2.0";',
+                'assertions' => [
+                    '$a' => 'int',
+                    '$e' => 'int',
+                    '$f' => 'int',
+                    '$g' => 'int',
+                ],
+            ],
+            'moduloPrecisionFloat' => [
+                'code' => '<?php
                     $b = 25.4 % 2;
                     $c = 25 % 2.5;
                     $d = 25.5 % 2.5;
-                    $e = 25 % 1;',
+                    $f = "+25.5" % 2;
+                    $g = 25 % "-2.5";',
                 'assertions' => [
-                    '$a' => 'int',
                     '$b' => 'int',
                     '$c' => 'int',
                     '$d' => 'int',
-                    '$e' => 'int',
+                    '$f' => 'int',
+                    '$g' => 'int',
                 ],
+                'ignored_issues' => ['InvalidOperand'],
             ],
             'numericAddition' => [
                 'code' => '<?php
@@ -601,14 +615,22 @@ class BinaryOperationTest extends TestCase
                 'code' => '<?php
                     $a = ~4;
                     $b = ~4.0;
-                    $c = ~4.4;
+                    $c = ~"4.4";
                     $d = ~"a";',
                 'assertions' => [
                     '$a' => 'int',
                     '$b' => 'int',
-                    '$c' => 'int',
+                    '$c' => 'string',
                     '$d' => 'string',
                 ],
+            ],
+            'bitwiseNotPrecisionFloat' => [
+                'code' => '<?php
+                    $c = ~4.4;',
+                'assertions' => [
+                    '$c' => 'int',
+                ],
+                'ignored_issues' => ['InvalidOperand'],
             ],
             'stringIncrementSuppressed' => [
                 'code' => '<?php
@@ -1175,6 +1197,11 @@ class BinaryOperationTest extends TestCase
                     $a = ~new stdClass;',
                 'error_message' => 'InvalidOperand',
             ],
+            'invalidBitwiseNotPrecisionFloat' => [
+                'code' => '<?php
+                    $c = ~4.4;',
+                'error_message' => 'InvalidOperand',
+            ],
             'possiblyInvalidBitwiseNot' => [
                 'code' => '<?php
                     $a = ~(rand(0, 1) ? 2 : null);',
@@ -1183,6 +1210,56 @@ class BinaryOperationTest extends TestCase
             'invalidBooleanBitwiseNot' => [
                 'code' => '<?php
                     $a = ~true;',
+                'error_message' => 'InvalidOperand',
+            ],
+            'invalidFloatModulo1' => [
+                'code' => '<?php
+                    $b = 25.4 % 2;',
+                'error_message' => 'InvalidOperand',
+            ],
+            'invalidFloatModulo2' => [
+                'code' => '<?php
+                    $c = 25 % 2.5;',
+                'error_message' => 'InvalidOperand',
+            ],
+            'invalidFloatModulo3' => [
+                'code' => '<?php
+                    $d = 25.5 % 2.5;',
+                'error_message' => 'InvalidOperand',
+            ],
+            'invalidFloatModulo4' => [
+                'code' => '<?php
+                    $d = 25 % "+2.5";',
+                'error_message' => 'InvalidOperand',
+            ],
+            'invalidFloatModulo5' => [
+                'code' => '<?php
+                    /** @var float $a */
+                    $b = 25 % $a;',
+                'error_message' => 'InvalidOperand',
+            ],
+            'invalidFloatModulo6' => [
+                'code' => '<?php
+                    /** @var "-15"|"+15.5" $a */
+                    $b = 25 % $a;',
+                'error_message' => 'InvalidOperand',
+            ],
+            'invalidFloatModulo7' => [
+                'code' => '<?php
+                    /** @var 15|"+15.5" $a */
+                    $b = 25 % $a;',
+                'error_message' => 'PossiblyInvalidOperand',
+            ],
+            'invalidFloatModulo8' => [
+                'code' => '<?php
+                    /** @var int|float $a */
+                    $b = 25 % $a;',
+                'error_message' => 'InvalidOperand',
+            ],
+            'invalidFloatModulo9' => [
+                'code' => '<?php
+                    /** @var int|float $a */
+                    $b = $a % 25;',
                 'error_message' => 'InvalidOperand',
             ],
             'substrImpossible' => [

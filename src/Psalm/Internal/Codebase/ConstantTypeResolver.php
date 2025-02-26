@@ -123,19 +123,23 @@ final class ConstantTypeResolver
                     }
 
                     if ($c instanceof UnresolvedDivisionOp) {
+                        if ((float) $right->value === 0.0) {
+                            return new TNever();
+                        }
+
                         return self::getLiteralTypeFromScalarValue($left->value / $right->value);
                     }
 
                     if ($c instanceof UnresolvedBitwiseOr) {
-                        return self::getLiteralTypeFromScalarValue($left->value | $right->value);
+                        return self::getLiteralTypeFromScalarValue((int) $left->value | (int) $right->value);
                     }
 
                     if ($c instanceof UnresolvedBitwiseXor) {
-                        return self::getLiteralTypeFromScalarValue($left->value ^ $right->value);
+                        return self::getLiteralTypeFromScalarValue((int) $left->value ^ (int) $right->value);
                     }
 
                     if ($c instanceof UnresolvedBitwiseAnd) {
-                        return self::getLiteralTypeFromScalarValue($left->value & $right->value);
+                        return self::getLiteralTypeFromScalarValue((int) $left->value & (int) $right->value);
                     }
 
                     return self::getLiteralTypeFromScalarValue($left->value * $right->value);
