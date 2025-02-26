@@ -9,6 +9,9 @@ final class TaintKindGroup
 {
     public const GROUP_INPUT = 'input';
 
+    /**
+     * @deprecated since Psalm 5.x, use `[TaintKindGroup::GROUP_INPUT]` instead
+     */
     public const ALL_INPUT = [
         TaintKind::INPUT_HTML,
         TaintKind::INPUT_HAS_QUOTES,

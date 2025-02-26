@@ -48,6 +48,7 @@ class BadSqlTainter implements AfterExpressionAnalysisInterface
         $expr = $event->getExpr();
         $statements_source = $event->getStatementsSource();
         $codebase = $event->getCodebase();
+        $taint_type_registry = $codebase->config->taint_kind_registry;
         if ($expr instanceof PhpParser\Node\Expr\Variable
             && $expr->name === 'bad_data'
         ) {
@@ -63,7 +64,7 @@ class BadSqlTainter implements AfterExpressionAnalysisInterface
                 $codebase->addTaintSource(
                     $expr_type,
                     $expr_identifier,
-                    TaintKindGroup::ALL_INPUT,
+                    [TaintKindGroup::GROUP_INPUT],
                     new CodeLocation($statements_source, $expr)
                 );
             }

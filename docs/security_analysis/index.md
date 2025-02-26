@@ -39,7 +39,14 @@ Psalm recognises a number of taint types by default, defined in the [Psalm\Type\
 - `user_secret` - used for strings that could contain user-supplied secrets
 - `system_secret` - used for strings that could contain system secrets
 
+Each of these default kind types will be mapped to a corresponding class which inherits from abstract class
+`TaintedInput` - for instance `TaintedHtml`, `TaintedShell`, `TaintedHeader`, etc.
+
 You're also free to define your own taint types when defining custom taint sources – they're just strings.
+Per default those custom types are mapped to the generic class `TaintedCustom`.
+
+However, plugins can utilize [custom taint kinds](custom_taint_kinds.md) to define more specific classes
+for improved semantics and enhanced issue handling in general.
 
 ## Taint Sources
 

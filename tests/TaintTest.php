@@ -6,6 +6,8 @@ use Psalm\Context;
 use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\IssueBuffer;
+use Psalm\Tests\fixtures\Issue\TaintedTestingAnything;
+use Psalm\Type\TaintKindGroup;
 
 use function array_map;
 use function preg_quote;
@@ -2662,5 +2664,161 @@ class TaintTest extends TestCase
                 ],
             ],
         ];
+    }
+
+    /**
+     * @test
+     */
+    public function customTaintedKindIsDetected(): void
+    {
+        // disables issue exceptions - we need all, not just the first
+        $this->testConfig->throw_exception = false;
+        $this->project_analyzer->trackTaintedInputs();
+        // registers test fixture `\Psalm\Tests\fixtures\Issue\TaintedTestingAnything` for
+        // the custom taint kind `testing-anything`; in addition, the group `input` now would
+        // expand to `sql`, `html`, ... including `testing-anything`
+        // (the group assignment is optional)
+        $this->testConfig->taint_kind_registry->defineKinds([
+            'testing-anything' => TaintedTestingAnything::class,
+        ], TaintKindGroup::GROUP_INPUT);
+
+        $code = '<?php
+                /**
+                 * @psalm-taint-source testing-anything
+                 */
+                function getAnythingData(): string {}
+
+                /**
+                 * @psalm-taint-sink testing-anything $value
+                 */
+                function sinkTestingAnything($value): void {}
+                /**
+                 * @psalm-taint-sink testing-anything $value
+                 */
+                function sinkInput($value): void {}
+
+                // trigger tainted `testing-anything`
+                $anything = getAnythingData();
+                sinkTestingAnything($anything);
+                $input = $_GET["inject"];
+                sinkInput($input);
+        ';
+        $filePath = self::$src_dir_path . 'somefile.php';
+        $this->addFile($filePath, $code);
+        $this->analyzeFile($filePath, new Context(), false);
+
+        $actualIssueTypes = array_map(
+            static fn(IssueData $issue): string => $issue->type . '{ ' . trim($issue->snippet) . ' }',
+            IssueBuffer::getIssuesDataForFile($filePath),
+        );
+        $expectedIssuesTypes = [
+            'TaintedTestingAnything{ function sinkTestingAnything($value): void {} }',
+            'TaintedTestingAnything{ function sinkInput($value): void {} }',
+        ];
+
+        self::assertSame($expectedIssuesTypes, $actualIssueTypes);
+    }
+
+    /**
+     * @test
+     */
+    public function customTaintGroupIsUsed(): void
+    {
+        // disables issue exceptions - we need all, not just the first
+        $this->testConfig->throw_exception = false;
+        $this->project_analyzer->trackTaintedInputs();
+        $this->testConfig->taint_kind_registry->defineGroup('custom-input', 'html', 'sql');
+
+        $code = '<?php
+                /**
+                 * @psalm-taint-sink html $value
+                 */
+                function sinkHtml($value): void {}
+                /**
+                 * @psalm-taint-sink sql $value
+                 */
+                function sinkSql($value): void {}
+                /**
+                 * @psalm-taint-sink shell $value
+                 */
+                function sinkShell($value): void {}
+                /**
+                 * @psalm-taint-source custom-input
+                 */
+                function getInput(): string {}
+
+                $input = getInput();
+                sinkHtml($input);
+                sinkSql($input);
+                // not found, since `shell` is not part of the `custom-input` group
+                sinkShell($input);
+        ';
+        $filePath = self::$src_dir_path . 'somefile.php';
+        $this->addFile($filePath, $code);
+        $this->analyzeFile($filePath, new Context(), false);
+
+        $actualIssueTypes = array_map(
+            static fn(IssueData $issue): string => $issue->type . '{ ' . trim($issue->snippet) . ' }',
+            IssueBuffer::getIssuesDataForFile($filePath),
+        );
+        $expectedIssuesTypes = [
+            'TaintedHtml{ function sinkHtml($value): void {} }',
+            'TaintedSql{ function sinkSql($value): void {} }',
+        ];
+
+        self::assertSame($expectedIssuesTypes, $actualIssueTypes);
+    }
+
+    /**
+     * @test
+     */
+    public function customTaintGroupProxyIsUsed(): void
+    {
+        // disables issue exceptions - we need all, not just the first
+        $this->testConfig->throw_exception = false;
+        $this->project_analyzer->trackTaintedInputs();
+        // custom source `input-sql` is a proxy for all kinds of group `input` (which includes kind `sql`),
+        // in case the taint `sql` is detected for a proxied `input-sql` scenario; instead of the default
+        // `TaintedSql` the overridden `TaintedTestingAnything` class would be used
+        $this->testConfig->taint_kind_registry->defineGroupProxy('input-sql', 'input', [
+            'sql' => TaintedTestingAnything::class,
+        ]);
+
+        $code = '<?php
+                /**
+                 * @psalm-taint-source input-sql
+                 * @psalm-taint-specialize
+                 */
+                function fetchAliasFromDatabase(): string {}
+
+                /**
+                 * @psalm-taint-sink sql $query
+                 */
+                function executeDatabaseQuery($query): array {}
+
+                // this would still issue the default `TaintSql`
+                $alias = $_GET["alias"];
+                $query = sprintf("SELECT * FROM comments WHERE alias=\"%s\";", $alias);
+                $rows = executeDatabaseQuery($query);
+
+                // this would issue the custom `TaintedTestingAnything`
+                $alias = fetchAliasFromDatabase();
+                $query = sprintf("SELECT * FROM comments WHERE alias=\"%s\";", $alias);
+                $rows = executeDatabaseQuery($query);
+        ';
+        $filePath = self::$src_dir_path . 'somefile.php';
+        $this->addFile($filePath, $code);
+        $this->analyzeFile($filePath, new Context(), false);
+
+        $actualIssueTypes = array_map(
+            static fn(IssueData $issue): string => $issue->type . '{ ' . trim($issue->snippet) . ' }',
+            IssueBuffer::getIssuesDataForFile($filePath),
+        );
+        $expectedIssuesTypes = [
+            'TaintedTestingAnything{ function executeDatabaseQuery($query): array {} }',
+            'TaintedSql{ function executeDatabaseQuery($query): array {} }',
+        ];
+
+        self::assertSame($expectedIssuesTypes, $actualIssueTypes);
     }
 }

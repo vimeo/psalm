@@ -522,7 +522,7 @@ final class VariableFetchAnalyzer
                     $var_name,
                     null,
                     null,
-                    TaintKindGroup::ALL_INPUT,
+                    [TaintKindGroup::GROUP_INPUT],
                 );
 
                 $statements_analyzer->data_flow_graph->addSource($server_taint_source);
