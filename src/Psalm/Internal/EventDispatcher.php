@@ -42,6 +42,7 @@ use Psalm\Plugin\EventHandler\Event\StringInterpreterEvent;
 use Psalm\Plugin\EventHandler\RemoveTaintsInterface;
 use Psalm\Plugin\EventHandler\StringInterpreterInterface;
 use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\TaintKind;
 
 use function count;
 use function is_bool;
@@ -434,28 +435,28 @@ final class EventDispatcher
     }
 
     /**
-     * @return list<string>
+     * @return int-mask-of<TaintKind::*>
      */
-    public function dispatchAddTaints(AddRemoveTaintsEvent $event): array
+    public function dispatchAddTaints(AddRemoveTaintsEvent $event): int
     {
-        $added_taints = [];
+        $added_taints = 0;
 
         foreach ($this->add_taints_checks as $handler) {
-            $added_taints = [...$added_taints, ...$handler::addTaints($event)];
+            $added_taints |= $handler::addTaints($event);
         }
 
         return $added_taints;
     }
 
     /**
-     * @return list<string>
+     * @return int-mask-of<TaintKind::*>
      */
-    public function dispatchRemoveTaints(AddRemoveTaintsEvent $event): array
+    public function dispatchRemoveTaints(AddRemoveTaintsEvent $event): int
     {
-        $removed_taints = [];
+        $removed_taints = 0;
 
         foreach ($this->remove_taints_checks as $handler) {
-            $removed_taints = [...$removed_taints, ...$handler::removeTaints($event)];
+            $removed_taints |= $handler::removeTaints($event);
         }
 
         return $removed_taints;

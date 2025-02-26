@@ -65,7 +65,6 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_diff;
 use function array_filter;
 use function count;
 use function explode;
@@ -1894,8 +1893,8 @@ final class ArgumentAnalyzer
             );
         }
 
-        $taints = array_diff($added_taints, $removed_taints);
-        if ($taints !== [] && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+        $taints = $added_taints & ~$removed_taints;
+        if ($taints !== 0 && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
             $taint_source = TaintSource::fromNode($argument_value_node);
             $taint_source->taints = $taints;
             $statements_analyzer->data_flow_graph->addSource($taint_source);

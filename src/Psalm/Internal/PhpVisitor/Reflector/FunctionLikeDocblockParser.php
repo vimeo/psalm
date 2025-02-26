@@ -271,15 +271,7 @@ final class FunctionLikeDocblockParser
 
                     if (str_starts_with($taint_type, 'exec_')) {
                         $taint_type = substr($taint_type, 5);
-
-                        if ($taint_type === 'tainted') {
-                            $taint_type = TaintKindGroup::GROUP_INPUT;
-                        }
-
-                        if ($taint_type === 'misc') {
-                            // @todo `text` is semantically not defined in `TaintKind`, maybe drop it
-                            $taint_type = 'text';
-                        }
+                        $taint_type = TaintKindGroup::NAME_TO_TAINT[$taint_type];
 
                         $info->taint_sink_params[] = ['name' => $param_parts[0], 'taint' => $taint_type];
                     }
@@ -295,7 +287,7 @@ final class FunctionLikeDocblockParser
                 }
 
                 if ($param_parts[0]) {
-                    $info->taint_source_types[] = $param_parts[0];
+                    $info->taint_source_types |= TaintKindGroup::NAME_TO_TAINT[$param_parts[0]];
                 } else {
                     IssueBuffer::maybeAdd(
                         new InvalidDocblock(
@@ -314,17 +306,8 @@ final class FunctionLikeDocblockParser
                 }
 
                 if ($param_parts[0]) {
-                    if ($param_parts[0] === 'tainted') {
-                        $param_parts[0] = TaintKindGroup::GROUP_INPUT;
-                    }
-
-                    if ($param_parts[0] === 'misc') {
-                        // @todo `text` is semantically not defined in `TaintKind`, maybe drop it
-                        $param_parts[0] = 'text';
-                    }
-
                     if ($param_parts[0] !== 'none') {
-                        $info->taint_source_types[] = $param_parts[0];
+                        $info->taint_source_types |= TaintKindGroup::NAME_TO_TAINT[$param_parts[0]];
                     }
                 }
             }

@@ -37,9 +37,6 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\TaintKindGroup;
 use Psalm\Type\Union;
 
-use function array_diff;
-use function array_merge;
-use function array_unique;
 use function in_array;
 use function is_string;
 use function time;
@@ -530,7 +527,7 @@ final class VariableFetchAnalyzer
         ) {
             $taints = TaintKindGroup::ALL_INPUT;
         } else {
-            $taints = [];
+            $taints = 0;
         }
 
         // Trigger event to possibly get more/less taints
@@ -539,10 +536,10 @@ final class VariableFetchAnalyzer
 
         $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
         $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
-        $taints = array_unique(array_merge($taints, $added_taints));
-        $taints = array_diff($taints, $removed_taints);
+        $taints |= $added_taints;
+        $taints &= ~$removed_taints;
 
-        if ($taints === []) {
+        if ($taints === 0) {
             return;
         }
 

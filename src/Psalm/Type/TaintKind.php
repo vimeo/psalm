@@ -6,25 +6,28 @@ namespace Psalm\Type;
 
 /**
  * An Enum class holding all the taint types that Psalm recognises
+ *
+ * Not using an enum since real code usages will use only the integer value,
+ * and extracting it with ->value every time is a pain.
  */
 final class TaintKind
 {
-    public const INPUT_CALLABLE = 'callable';
-    public const INPUT_UNSERIALIZE = 'unserialize';
-    public const INPUT_INCLUDE = 'include';
-    public const INPUT_EVAL = 'eval';
-    public const INPUT_LDAP = 'ldap';
-    public const INPUT_SQL = 'sql';
-    public const INPUT_HTML = 'html';
-    public const INPUT_HAS_QUOTES = 'has_quotes';
-    public const INPUT_SHELL = 'shell';
-    public const INPUT_SSRF = 'ssrf';
-    public const INPUT_FILE = 'file';
-    public const INPUT_COOKIE = 'cookie';
-    public const INPUT_HEADER = 'header';
-    public const INPUT_XPATH = 'xpath';
-    public const INPUT_SLEEP = 'sleep';
-    public const INPUT_EXTRACT = 'extract';
-    public const USER_SECRET = 'user_secret';
-    public const SYSTEM_SECRET = 'system_secret';
+    public const INPUT_CALLABLE = (1 << 0);
+    public const INPUT_UNSERIALIZE = (1 << 2);
+    public const INPUT_INCLUDE = (1 << 3);
+    public const INPUT_EVAL = (1 << 4);
+    public const INPUT_LDAP = (1 << 5);
+    public const INPUT_SQL = (1 << 6);
+    public const INPUT_HTML = (1 << 7);
+    public const INPUT_HAS_QUOTES = (1 << 8);
+    public const INPUT_SHELL = (1 << 9);
+    public const INPUT_SSRF = (1 << 10);
+    public const INPUT_FILE = (1 << 11);
+    public const INPUT_COOKIE = (1 << 12);
+    public const INPUT_HEADER = (1 << 13);
+    public const INPUT_XPATH = (1 << 14);
+    public const INPUT_SLEEP = (1 << 15);
+    public const INPUT_EXTRACT = (1 << 16);
+    public const USER_SECRET = (1 << 17);
+    public const SYSTEM_SECRET = (1 << 18);
 }

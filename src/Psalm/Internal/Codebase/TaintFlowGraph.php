@@ -32,12 +32,9 @@ use Psalm\Issue\TaintedUserSecret;
 use Psalm\Issue\TaintedXpath;
 use Psalm\IssueBuffer;
 use Psalm\Type\TaintKind;
+use Psalm\Type\TaintKindGroup;
 
-use function array_diff;
 use function array_filter;
-use function array_intersect;
-use function array_merge;
-use function array_unique;
 use function count;
 use function end;
 use function implode;
@@ -241,13 +238,13 @@ final class TaintFlowGraph extends DataFlowGraph
     }
 
     /**
-     * @param array<string> $source_taints
+     * @param int-mask-of<TaintKind::*> $source_taints
      * @param array<DataFlowNode> $sinks
      * @return array<string, DataFlowNode>
      */
     private function getChildNodes(
         DataFlowNode $generated_source,
-        array $source_taints,
+        int $source_taints,
         array $sinks,
         array $visited_source_ids,
     ): array {
@@ -259,8 +256,8 @@ final class TaintFlowGraph extends DataFlowGraph
 
         foreach ($this->forward_edges[$generated_source->id] as $to_id => $path) {
             $path_type = $path->type;
-            $added_taints = $path->unescaped_taints ?: [];
-            $removed_taints = $path->escaped_taints ?: [];
+            $added_taints = $path->unescaped_taints ?? 0;
+            $removed_taints = $path->escaped_taints ?? 0;
 
             if (!isset($this->nodes[$to_id])) {
                 continue;
@@ -268,16 +265,9 @@ final class TaintFlowGraph extends DataFlowGraph
 
             $destination_node = $this->nodes[$to_id];
 
-            $new_taints = array_unique(
-                array_diff(
-                    array_merge($source_taints, $added_taints),
-                    $removed_taints,
-                ),
-            );
+            $new_taints = ($source_taints | $added_taints) & ~$removed_taints;
 
-            sort($new_taints);
-
-            if (isset($visited_source_ids[$to_id][implode(',', $new_taints)])) {
+            if (isset($visited_source_ids[$to_id][$new_taints])) {
                 continue;
             }
 
@@ -301,7 +291,7 @@ final class TaintFlowGraph extends DataFlowGraph
             }
 
             if (isset($sinks[$to_id])) {
-                $matching_taints = array_intersect($sinks[$to_id]->taints, $new_taints);
+                $matching_taints = $sinks[$to_id]->taints & $new_taints;
 
                 if ($matching_taints && $generated_source->code_location) {
                     if ($sinks[$to_id]->code_location
@@ -316,7 +306,10 @@ final class TaintFlowGraph extends DataFlowGraph
                     $path = $this->getPredecessorPath($generated_source)
                         . ' -> ' . $this->getSuccessorPath($sinks[$to_id]);
 
-                    foreach ($matching_taints as $matching_taint) {
+                    foreach (TaintKindGroup::TAINT_TO_NAME as $matching_taint) {
+                        if (!($matching_taints & $matching_taint)) {
+                            continue;
+                        }
                         $issue = match ($matching_taint) {
                             TaintKind::INPUT_CALLABLE => new TaintedCallable(
                                 'Detected tainted text',

@@ -8,6 +8,7 @@ use Override;
 use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Issue\CodeIssue;
+use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use Stringable;
 
@@ -150,19 +151,19 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
     public bool $specialize_call = false;
 
     /**
-     * @var array<string>
+     * @var int-mask-of<TaintKind::*>
      */
-    public array $taint_source_types = [];
+    public int $taint_source_types = 0;
 
     /**
-     * @var array<string>
+     * @var int-mask-of<TaintKind::*>
      */
-    public array $added_taints = [];
+    public int $added_taints = 0;
 
     /**
-     * @var array<string>
+     * @var int-mask-of<TaintKind::*>
      */
-    public array $removed_taints = [];
+    public int $removed_taints = 0;
 
     /**
      * @var array<Union>

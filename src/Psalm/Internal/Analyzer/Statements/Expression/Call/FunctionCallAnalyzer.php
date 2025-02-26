@@ -63,7 +63,6 @@ use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_diff;
 use function array_map;
 use function array_merge;
 use function array_shift;
@@ -846,7 +845,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     $arg_location,
                 );
 
-                $custom_call_sink->taints = [TaintKind::INPUT_CALLABLE];
+                $custom_call_sink->taints = TaintKind::INPUT_CALLABLE;
 
                 $statements_analyzer->data_flow_graph->addSink($custom_call_sink);
 
@@ -855,8 +854,8 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
                 $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
-                $taints = array_diff($added_taints, $removed_taints);
-                if ($taints !== []) {
+                $taints = $added_taints & ~$removed_taints;
+                if ($taints !== 0) {
                     $taint_source = TaintSource::fromNode($custom_call_sink);
                     $taint_source->taints = $taints;
                     $statements_analyzer->data_flow_graph->addSource($taint_source);

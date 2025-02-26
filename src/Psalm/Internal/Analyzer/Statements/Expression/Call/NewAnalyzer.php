@@ -61,7 +61,6 @@ use Psalm\Type\Atomic\TUnknownClassString;
 use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 
-use function array_diff;
 use function array_map;
 use function array_values;
 use function count;
@@ -733,7 +732,7 @@ final class NewAnalyzer extends CallAnalyzer
                     $arg_location,
                 );
 
-                $custom_call_sink->taints = [TaintKind::INPUT_CALLABLE];
+                $custom_call_sink->taints = TaintKind::INPUT_CALLABLE;
 
                 $statements_analyzer->data_flow_graph->addSink($custom_call_sink);
 
@@ -742,8 +741,8 @@ final class NewAnalyzer extends CallAnalyzer
                 $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
                 $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
-                $taints = array_diff($added_taints, $removed_taints);
-                if ($added_taints !== []) {
+                $taints = $added_taints & ~$removed_taints;
+                if ($added_taints !== 0) {
                     $taint_source = TaintSource::fromNode($custom_call_sink);
                     $taint_source->taints = $taints;
                     $statements_analyzer->data_flow_graph->addSource($taint_source);

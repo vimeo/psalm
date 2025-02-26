@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Scanner;
 
+use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 
 /**
@@ -49,9 +50,9 @@ final class VarDocblockComment
     public bool $allow_private_mutation = false;
 
     /**
-     * @var list<string>
+     * @var int-mask-of<TaintKind::*>
      */
-    public array $removed_taints = [];
+    public int $removed_taints = 0;
 
     /**
      * @var array<int, string>

@@ -53,7 +53,7 @@ final class InternalCallMapHandler
     private static ?array $call_map_callables = [];
 
     /**
-     * @var non-empty-array<string, non-empty-list<list<TaintKind::*>>>|null
+     * @var non-empty-array<string, non-empty-list<int-mask-of<TaintKind::*>>>|null
      */
     private static ?array $taint_sink_map = null;
 
@@ -367,7 +367,7 @@ final class InternalCallMapHandler
         self::$loaded_php_minor_version = $analyzer_minor_version;
 
         /**
-         * @var non-empty-array<string, non-empty-list<list<TaintKind::*>>>
+         * @var non-empty-array<string, non-empty-list<int-mask-of<TaintKind::*>>>
          */
         $taint_map_data = require(dirname(__DIR__, 4) . '/dictionaries/InternalTaintSinkMap.php');
 

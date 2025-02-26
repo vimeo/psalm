@@ -89,7 +89,6 @@ use Psalm\Type\MutableUnion;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_diff;
 use function array_keys;
 use function array_map;
 use function array_pop;
@@ -403,8 +402,8 @@ final class ArrayFetchAnalyzer
                 $var_location,
             );
 
-            $added_taints = [];
-            $removed_taints = [];
+            $added_taints = 0;
+            $removed_taints = 0;
 
             if ($context) {
                 $codebase = $statements_analyzer->getCodebase();
@@ -413,8 +412,8 @@ final class ArrayFetchAnalyzer
                 $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
                 $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
-                $taints = array_diff($added_taints, $removed_taints);
-                if ($taints !== [] && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+                $taints = $added_taints & ~$removed_taints;
+                if ($taints !== 0 && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
                     $taint_source = TaintSource::fromNode($new_parent_node);
                     $taint_source->taints = $taints;
                     $statements_analyzer->data_flow_graph->addSource($taint_source);

@@ -17,7 +17,6 @@ use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type\TaintKind;
 
-use function array_diff;
 use function in_array;
 
 /**
@@ -54,7 +53,7 @@ final class EvalAnalyzer
                     $arg_location,
                 );
 
-                $eval_param_sink->taints = [TaintKind::INPUT_EVAL];
+                $eval_param_sink->taints = TaintKind::INPUT_EVAL;
 
                 $statements_analyzer->data_flow_graph->addSink($eval_param_sink);
 
@@ -64,8 +63,8 @@ final class EvalAnalyzer
                 $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
                 $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
-                $taints = array_diff($added_taints, $removed_taints);
-                if ($taints !== []) {
+                $taints = $added_taints & ~$removed_taints;
+                if ($taints !== 0) {
                     $taint_source = TaintSource::fromNode($eval_param_sink);
                     $taint_source->taints = $taints;
                     $statements_analyzer->data_flow_graph->addSource($taint_source);

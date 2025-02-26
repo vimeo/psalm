@@ -53,9 +53,6 @@ use Psalm\Type\Union;
 use function array_any;
 use function array_filter;
 use function array_merge;
-use function array_search;
-use function array_splice;
-use function array_unique;
 use function array_values;
 use function count;
 use function explode;
@@ -360,22 +357,12 @@ final class FunctionLikeDocblockScanner
             }
         }
 
-        $docblock_info->taint_source_types = array_values(array_unique($docblock_info->taint_source_types));
-        // expand 'input' group to all items, e.g. `['other', 'input']` -> `['other', 'html', 'sql', 'shell', ...]`
-        $inputIndex = array_search(TaintKindGroup::GROUP_INPUT, $docblock_info->taint_source_types, true);
-        if ($inputIndex !== false) {
-            array_splice(
-                $docblock_info->taint_source_types,
-                $inputIndex,
-                1,
-                TaintKindGroup::ALL_INPUT,
-            );
-        }
         // merge taints from doc block to storage, enforce uniqueness and having consecutive index keys
-        $storage->taint_source_types = array_merge($storage->taint_source_types, $docblock_info->taint_source_types);
-        $storage->taint_source_types = array_values(array_unique($storage->taint_source_types));
+        $storage->taint_source_types |= $docblock_info->taint_source_types;
 
-        $storage->added_taints = $docblock_info->added_taints;
+        foreach ($docblock_info->added_taints as $taint) {
+            $storage->added_taints |= TaintKindGroup::NAME_TO_TAINT[$taint];
+        }
 
         foreach ($docblock_info->removed_taints as $removed_taint) {
             if ($removed_taint[0] === '(') {
@@ -394,7 +381,7 @@ final class FunctionLikeDocblockScanner
                     $file_scanner,
                 );
             } else {
-                $storage->removed_taints[] = $removed_taint;
+                $storage->removed_taints |= TaintKindGroup::NAME_TO_TAINT[$removed_taint];
             }
         }
 

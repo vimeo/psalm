@@ -6,6 +6,7 @@ namespace Psalm\Internal\Codebase;
 
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\DataFlow\Path;
+use Psalm\Type\TaintKind;
 
 use function abs;
 use function array_keys;
@@ -27,15 +28,15 @@ abstract class DataFlowGraph
     abstract public function addNode(DataFlowNode $node): void;
 
     /**
-     * @param array<string> $added_taints
-     * @param array<string> $removed_taints
+     * @param int-mask-of<TaintKind::*> $added_taints
+     * @param int-mask-of<TaintKind::*> $removed_taints
      */
     public function addPath(
         DataFlowNode $from,
         DataFlowNode $to,
         string $path_type,
-        ?array $added_taints = null,
-        ?array $removed_taints = null,
+        ?int $added_taints = null,
+        ?int $removed_taints = null,
     ): void {
         $from_id = $from->id;
         $to_id = $to->id;

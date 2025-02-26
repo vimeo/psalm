@@ -77,12 +77,10 @@ final class ExitAnalyzer
                     $call_location,
                 );
 
-                $echo_param_sink->taints = [
-                    TaintKind::INPUT_HTML,
-                    TaintKind::INPUT_HAS_QUOTES,
-                    TaintKind::USER_SECRET,
-                    TaintKind::SYSTEM_SECRET,
-                ];
+                $echo_param_sink->taints = TaintKind::INPUT_HTML
+                    | TaintKind::INPUT_HAS_QUOTES
+                    | TaintKind::USER_SECRET
+                    | TaintKind::SYSTEM_SECRET;
 
                 $statements_analyzer->data_flow_graph->addSink($echo_param_sink);
             }

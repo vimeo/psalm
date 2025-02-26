@@ -65,6 +65,7 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\TaintKind;
 use Psalm\Type\TaintKindGroup;
 use Psalm\Type\Union;
 use ReflectionProperty;
@@ -2143,12 +2144,12 @@ final class Codebase
     }
 
     /**
-     * @param array<string> $taints
+     * @param int-mask-of<TaintKind::*> $taints
      */
     public function addTaintSource(
         Union $expr_type,
         string $taint_id,
-        array $taints = TaintKindGroup::ALL_INPUT,
+        int $taints = TaintKindGroup::ALL_INPUT,
         ?CodeLocation $code_location = null,
     ): Union {
         if (!$this->taint_flow_graph) {
@@ -2169,11 +2170,11 @@ final class Codebase
     }
 
     /**
-     * @param array<string> $taints
+     * @param int-mask-of<TaintKind::*> $taints
      */
     public function addTaintSink(
         string $taint_id,
-        array $taints = TaintKindGroup::ALL_INPUT,
+        int $taints = TaintKindGroup::ALL_INPUT,
         ?CodeLocation $code_location = null,
     ): void {
         if (!$this->taint_flow_graph) {
