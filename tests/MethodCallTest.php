@@ -198,6 +198,60 @@ class MethodCallTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'nullSafeCallNotNullMakesVarNotNull' => [
+                'code' => '<?php
+                    class Foo {
+                        public function check(): bool {
+                            return false;
+                        }
+                        public function do(): void {}
+                    }
+
+                    /** @var ?Foo */
+                    $foo = null;
+
+                    if ($foo?->check() === null) {
+                        /** @psalm-check-type-exact $foo = null */
+                    }
+
+                    /** @var ?Foo */
+                    $foo = null;
+
+                    if ($foo?->check() !== true) {
+                        /** @psalm-check-type-exact $foo = null */
+                    }
+
+                    /** @var ?Foo */
+                    $foo = null;
+
+                    if ($foo?->check() !== false) {
+                        /** @psalm-check-type-exact $foo = null */
+                    }
+
+                    /** @var ?Foo */
+                    $foo = null;
+
+                    if ($foo?->check() !== null) {
+                        /** @psalm-check-type-exact $foo = Foo */
+                    }
+
+                    /** @var ?Foo */
+                    $foo = null;
+
+                    if ($foo?->check() === false) {
+                        /** @psalm-check-type-exact $foo = Foo */
+                    }
+
+                    /** @var ?Foo */
+                    $foo = null;
+
+                    if ($foo?->check() === true) {
+                        /** @psalm-check-type-exact $foo = Foo */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1'
+            ],
             'notInCallMapTest' => [
                 'code' => '<?php
                     new DOMImplementation();',

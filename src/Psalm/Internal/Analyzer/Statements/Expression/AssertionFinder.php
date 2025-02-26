@@ -2087,6 +2087,18 @@ final class AssertionFinder
             $source,
         );
 
+
+        if ($base_conditional instanceof PhpParser\Node\Expr\NullsafeMethodCall) {
+            $vvar_name = ExpressionIdentifier::getExtendedVarId(
+                $base_conditional->var,
+                $this_class_name,
+                $source,
+            );
+            if ($vvar_name !== null) {
+                $if_types[$vvar_name] = [[new IsNotType(new TNull())]];
+            }
+        }
+
         if ($var_name) {
             if ($base_conditional instanceof PhpParser\Node\Expr\Assign) {
                 $var_name = '=' . $var_name;
@@ -2801,6 +2813,17 @@ final class AssertionFinder
             $base_conditional = $conditional->right;
         } else {
             throw new UnexpectedValueException('$null_position value');
+        }
+
+        if ($base_conditional instanceof PhpParser\Node\Expr\NullsafeMethodCall) {
+            $vvar_name = ExpressionIdentifier::getExtendedVarId(
+                $base_conditional->var,
+                $this_class_name,
+                $source,
+            );
+            if ($vvar_name !== null) {
+                $if_types[$vvar_name] = [[new IsNotType(new TNull())]];
+            }
         }
 
         $var_name = ExpressionIdentifier::getExtendedVarId(
