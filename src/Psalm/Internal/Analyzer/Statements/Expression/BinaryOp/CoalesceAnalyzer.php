@@ -44,7 +44,9 @@ final class CoalesceAnalyzer
             || $root_expr instanceof PhpParser\Node\Expr\NullsafeMethodCall
             || $root_expr instanceof PhpParser\Node\Expr\Ternary
         ) {
-            $left_var_id = '$<tmp coalesce var>' . (int) $left_expr->getAttribute('startFilePos');
+            $left_var_id = '$<psalm_coalesce_temp_var>'
+                . (int) $left_expr->getAttribute('startFilePos')
+                . ': array<array-key, mixed>';
 
             $cloned = clone $context;
             $cloned->inside_isset = true;
