@@ -533,9 +533,9 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                     }',
                 'output' => '<?php
                     /**
-                     * @return null|string
+                     * @return string|void
                      *
-                     * @psalm-return \'hello\'|null
+                     * @psalm-return \'hello\'|void
                      */
                     function foo() {
                       if (rand(0, 1)) {
