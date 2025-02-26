@@ -2228,8 +2228,7 @@ class UnusedVariableTest extends TestCase
             'funcGetArgs' => [
                 'code' => '<?php
                     function validate(bool $b, bool $c) : void {
-                        /** @psalm-suppress MixedArgument */
-                        print_r(...func_get_args());
+                        print_r(func_get_args());
                     }',
             ],
             'nullCoalesce' => [

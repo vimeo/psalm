@@ -150,7 +150,8 @@ trait CallableTrait
                     $type_string = $param->type->toNamespacedString($namespace, $aliased_classes, $this_class, false);
                 }
 
-                $params_array[] = ($param->is_variadic ? '...' : '') . $type_string . ($param->is_optional ? '=' : '');
+                $params_array[] = ($param->is_variadic ? '...' : '') . $type_string
+                                  . ($param->is_optional && !$param->is_variadic ? '=' : '');
             }
 
             $param_string = '(' . implode(', ', $params_array) . ')';

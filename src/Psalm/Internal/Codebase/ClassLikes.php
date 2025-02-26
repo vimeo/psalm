@@ -953,6 +953,7 @@ final class ClassLikes
             $source_parts = explode('::', $source);
 
             try {
+                /** @psalm-suppress TooFewArguments */
                 $source_method_storage = $methods->getStorage(
                     new MethodIdentifier(...$source_parts),
                 );

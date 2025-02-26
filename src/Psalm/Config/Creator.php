@@ -162,6 +162,7 @@ final class Creator
             return array_keys($issues_at_level)[0] + 1;
         }
 
+        /** @psalm-suppress TooFewArguments */
         return max(...array_keys($issues_at_level)) + 1;
     }
 

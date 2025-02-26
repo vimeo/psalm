@@ -34,7 +34,7 @@ final class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface,
         }
 
         try {
-            /** @psalm-suppress ArgumentTypeCoercion */
+            /** @psalm-suppress ArgumentTypeCoercion, TooFewArguments */
             $method_id = new MethodIdentifier(...explode('::', $declaring_method_id));
             $function_storage = $codebase->methods->getStorage($method_id);
 
