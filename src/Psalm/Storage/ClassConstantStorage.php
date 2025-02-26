@@ -116,7 +116,7 @@ final class ClassConstantStorage
             $types = $this->type->getAtomicTypes();
             $type = array_values($types)[0];
             if (property_exists($type, 'value')) {
-                /** @psalm-suppress UndefinedPropertyFetch */
+                /** @psalm-suppress UndefinedPropertyFetch, MixedOperand */
                 $value = " = {$type->value};";
             }
         }

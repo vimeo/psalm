@@ -486,7 +486,7 @@ class UnusedVariableTest extends TestCase
                         if (!$token) {
                             $token = rand(1, 10);
                         }
-                        echo "token is $token\n";
+                        echo "token is " . (string) $token;
                     }',
             ],
             'staticVarUsedLater' => [
