@@ -86,7 +86,7 @@ class ParserCacheProvider
         if (isset($file_content_hashes[$file_cache_key])
             && $file_content_hash === $file_content_hashes[$file_cache_key]
             && is_readable($cache_location)
-            && filemtime($cache_location) > $file_modified_time
+            && (int) filemtime($cache_location) > $file_modified_time
         ) {
             $stmts = $this->cache->getItem($cache_location);
 
@@ -317,7 +317,8 @@ class ParserCacheProvider
                     continue;
                 }
 
-                if (filemtime($full_path) < $time_before) {
+                $filemtime = filemtime($full_path);
+                if ($filemtime === false || $filemtime < $time_before) {
                     $this->cache->deleteItem($full_path);
                     ++$removed_count;
                 }
