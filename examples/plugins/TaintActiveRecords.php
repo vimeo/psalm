@@ -27,16 +27,16 @@ final class TaintActiveRecords implements AddTaintsInterface
     /**
      * Called to see what taints should be added
      *
-     * @return list<string>
+     * @return int-mask-of<TaintKind::*>
      */
     #[Override]
-    public static function addTaints(AddRemoveTaintsEvent $event): array
+    public static function addTaints(AddRemoveTaintsEvent $event): int
     {
         $expr = $event->getExpr();
 
         // Model properties are accessed by property fetch, so abort here
         if ($expr instanceof ArrayItem) {
-            return [];
+            return 0;
         }
 
         $statements_source = $event->getStatementsSource();
@@ -55,7 +55,7 @@ final class TaintActiveRecords implements AddTaintsInterface
             }
         } while ($expr = self::getParentNode($expr));
 
-        return [];
+        return 0;
     }
 
     /**

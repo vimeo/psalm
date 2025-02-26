@@ -217,9 +217,8 @@ final class TaintFlowGraph extends DataFlowGraph
 
             foreach ($sources as $source) {
                 $source_taints = $source->taints;
-                sort($source_taints);
 
-                $visited_source_ids[$source->id][implode(',', $source_taints)] = true;
+                $visited_source_ids[$source->id][$source_taints] = true;
 
                 $generated_sources = $this->getSpecializedSources($source);
 
@@ -306,7 +305,7 @@ final class TaintFlowGraph extends DataFlowGraph
                     $path = $this->getPredecessorPath($generated_source)
                         . ' -> ' . $this->getSuccessorPath($sinks[$to_id]);
 
-                    foreach (TaintKindGroup::TAINT_TO_NAME as $matching_taint) {
+                    foreach (TaintKindGroup::TAINT_TO_NAME as $matching_taint => $_) {
                         if (!($matching_taints & $matching_taint)) {
                             continue;
                         }

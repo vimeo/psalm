@@ -9,8 +9,9 @@ namespace Psalm\Type;
  */
 final class TaintKindGroup
 {
-    public const ALL_INPUT = (TaintKind::INPUT_EXTRACT << 1) - 1;
+    public const ALL_INPUT = (1 << 17) - 1;
 
+    /** @var array<int-mask-of<TaintKind::*>, string> */
     public const TAINT_TO_NAME = [
         TaintKind::INPUT_CALLABLE => 'callable',
         TaintKind::INPUT_UNSERIALIZE => 'unserialize',
@@ -30,8 +31,8 @@ final class TaintKindGroup
         TaintKind::INPUT_EXTRACT => 'extract',
         TaintKind::USER_SECRET => 'user_secret',
         TaintKind::SYSTEM_SECRET => 'system_secret',
-        self::ALL_INPUT => 'input',
     ];
+    /** @var array<string, int<0, max>> */
     public const NAME_TO_TAINT = [
         'callable' => TaintKind::INPUT_CALLABLE,
         'unserialize' => TaintKind::INPUT_UNSERIALIZE,
