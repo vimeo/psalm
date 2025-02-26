@@ -24,6 +24,7 @@ use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scanner\FileScanner;
@@ -435,7 +436,6 @@ final class FunctionLikeNodeScanner
 
         $doc_comment = $stmt->getDocComment();
 
-
         if ($classlike_storage && !$classlike_storage->is_trait) {
             $storage->internal = [...$classlike_storage->internal, ...$storage->internal];
         }
@@ -510,7 +510,13 @@ final class FunctionLikeNodeScanner
             && $function_id
             && $storage instanceof FunctionStorage
         ) {
-            if ($this->codebase->register_stub_files
+            if (($this->codebase->register_stub_files
+                 && (!InternalCallMapHandler::hasDelta($function_id)
+                     // if the stub is for a specific PHP version, which is equal or lower than the analyzed version
+                     // as otherwise we would have returned already above
+                     // we also want to use the stub, since it contains the correct types for the current version
+                     || !empty($docblock_info->since_php_major_version)))
+                // if the function is autoloaded we want to register it even if it has a delta, since there's a polyfill
                 || ($this->codebase->register_autoload_files
                     && !$this->codebase->functions->hasStubbedFunction($function_id))
             ) {
@@ -939,10 +945,12 @@ final class FunctionLikeNodeScanner
                     && ($this->codebase->register_stub_files
                         || !$this->codebase->functions->hasStubbedFunction($function_id))
                 ) {
-                    $this->codebase->functions->addGlobalFunction(
-                        $function_id,
-                        $this->file_storage->functions[$function_id],
-                    );
+                    if (!$this->codebase->register_stub_files || !InternalCallMapHandler::hasDelta($function_id)) {
+                        $this->codebase->functions->addGlobalFunction(
+                            $function_id,
+                            $this->file_storage->functions[$function_id],
+                        );
+                    }
 
                     $storage = $this->storage = $this->file_storage->functions[$function_id];
 

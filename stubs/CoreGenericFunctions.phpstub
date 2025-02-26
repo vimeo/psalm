@@ -737,6 +737,8 @@ function join($separator, array $array = []): string
 }
 
 /**
+ * @since 4.0
+ *
  * @psalm-pure
  *
  * @param non-empty-string $separator

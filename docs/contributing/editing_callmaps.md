@@ -12,7 +12,7 @@ There are two full callmaps (`CallMap.php` and `CallMap_historical.php`) in
 `dictionaries` folder, and a number of delta files that provide information on
 how signatures changed in various PHP versions. `CallMap_historical` has
 signatures as they were in PHP 7.0, `CallMap.php` contains current signatures
-(for PHP 8.1 at the time of writing).
+(for PHP 8.3 at the time of writing).
 
 ## Full callmap format
 
