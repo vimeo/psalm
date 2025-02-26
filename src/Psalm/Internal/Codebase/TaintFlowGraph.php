@@ -254,15 +254,13 @@ final class TaintFlowGraph extends DataFlowGraph
         $project_analyzer = ProjectAnalyzer::getInstance();
 
         foreach ($this->forward_edges[$generated_source->id] as $to_id => $path) {
-            $path_type = $path->type;
-            $added_taints = $path->unescaped_taints ?? 0;
-            $removed_taints = $path->escaped_taints ?? 0;
-
             if (!isset($this->nodes[$to_id])) {
                 continue;
             }
 
-            $destination_node = $this->nodes[$to_id];
+            $path_type = $path->type;
+            $added_taints = $path->unescaped_taints;
+            $removed_taints = $path->escaped_taints;
 
             $new_taints = ($source_taints | $added_taints) & ~$removed_taints;
 
@@ -290,20 +288,21 @@ final class TaintFlowGraph extends DataFlowGraph
             }
 
             if (isset($sinks[$to_id])) {
-                $matching_taints = $sinks[$to_id]->taints & $new_taints;
+                $sink = $sinks[$to_id];
+                $matching_taints = $sink->taints & $new_taints;
 
                 if ($matching_taints && $generated_source->code_location) {
-                    if ($sinks[$to_id]->code_location
-                        && $config->reportIssueInFile('TaintedInput', $sinks[$to_id]->code_location->file_path)
+                    if ($sink->code_location
+                        && $config->reportIssueInFile('TaintedInput', $sink->code_location->file_path)
                     ) {
-                        $issue_location = $sinks[$to_id]->code_location;
+                        $issue_location = $sink->code_location;
                     } else {
                         $issue_location = $generated_source->code_location;
                     }
 
                     $issue_trace = $this->getIssueTrace($generated_source);
                     $path = $this->getPredecessorPath($generated_source)
-                        . ' -> ' . $this->getSuccessorPath($sinks[$to_id]);
+                        . ' -> ' . $this->getSuccessorPath($sink);
 
                     foreach (TaintKindGroup::TAINT_TO_NAME as $matching_taint => $_) {
                         if (!($matching_taints & $matching_taint)) {
@@ -431,7 +430,7 @@ final class TaintFlowGraph extends DataFlowGraph
                 }
             }
 
-            $new_destination = clone $destination_node;
+            $new_destination = clone $this->nodes[$to_id];
             $new_destination->previous = $generated_source;
             $new_destination->taints = $new_taints;
             $new_destination->specialized_calls = $generated_source->specialized_calls;
