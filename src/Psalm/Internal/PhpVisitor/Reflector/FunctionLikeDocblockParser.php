@@ -246,7 +246,7 @@ final class FunctionLikeDocblockParser
                 }
 
                 if (count($param_parts) >= 2) {
-                    $info->taint_sink_params[] = ['name' => $param_parts[1], 'taint' => $param_parts[0]];
+                    $info->taint_sink_params[] = ['name' => $param_parts[1], 'taint' => TaintKindGroup::NAME_TO_TAINT[$param_parts[0]]];
                 } else {
                     IssueBuffer::maybeAdd(
                         new InvalidDocblock(

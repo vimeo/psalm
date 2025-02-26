@@ -352,7 +352,7 @@ final class FunctionLikeDocblockScanner
 
             foreach ($storage->params as $param_storage) {
                 if ($param_storage->name === $param_name) {
-                    $param_storage->sinks[] = $taint_sink_param['taint'];
+                    $param_storage->sinks |= $taint_sink_param['taint'];
                 }
             }
         }

@@ -605,18 +605,8 @@ final class ReturnAnalyzer
         $event = new AddRemoveTaintsEvent($stmt->expr, $context, $statements_analyzer, $codebase);
 
         $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
-        $storage->added_taints = array_unique(
-            array_merge(
-                $storage->added_taints,
-                $added_taints,
-            ),
-        );
-        $storage->removed_taints = array_unique(
-            array_merge(
-                $storage->removed_taints,
-                $codebase->config->eventDispatcher->dispatchRemoveTaints($event),
-            ),
-        );
+        $storage->added_taints |= $added_taints;
+        $storage->removed_taints |= $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
         if ($inferred_type->parent_nodes) {
             foreach ($inferred_type->parent_nodes as $parent_node) {
