@@ -234,7 +234,7 @@ RUN sed 's/-O2/-O3/g' -i /usr/local/bin/install-php-extensions && \
 
 RUN apt-get update && apt-get -y --no-install-recommends install git unzip libjemalloc2 && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-ADD bin/docker/php.ini /usr/local/lib/php.ini
+ADD bin/docker/php.ini /usr/local/etc/php/php.ini
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
