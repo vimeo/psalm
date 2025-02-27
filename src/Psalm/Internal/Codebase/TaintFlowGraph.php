@@ -203,6 +203,9 @@ final class TaintFlowGraph extends DataFlowGraph
         $sources = $this->sources;
         $sinks = $this->sinks;
 
+        $this->sinks = [];
+        $this->sources = [];
+
         ksort($this->specializations);
         ksort($this->forward_edges);
 
