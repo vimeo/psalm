@@ -218,7 +218,8 @@ final class TaintFlowGraph extends DataFlowGraph
                 $visited_source_ids[$source->id][$source_taints] = true;
 
                 if (isset($this->forward_edges[$source->id])) {
-                    $new_sources += $this->getChildNodes(
+                    $this->getChildNodes(
+                        $new_sources,
                         $source,
                         $source_taints,
                         $sinks,
@@ -236,7 +237,8 @@ final class TaintFlowGraph extends DataFlowGraph
                     $generated_source->id = $new_id;
                     $generated_source->specialized_calls[$source->specialization_key][$new_id] = true;
         
-                    $new_sources += $this->getChildNodes(
+                    $this->getChildNodes(
+                        $new_sources,
                         $generated_source,
                         $source_taints,
                         $sinks,
@@ -253,7 +255,8 @@ final class TaintFlowGraph extends DataFlowGraph
                             $new_source->id = $new_id;
                             unset($new_source->specialized_calls[$specialization]);
         
-                            $new_sources += $this->getChildNodes(
+                            $this->getChildNodes(
+                                $new_sources,
                                 $new_source,
                                 $source_taints,
                                 $sinks,
@@ -271,7 +274,8 @@ final class TaintFlowGraph extends DataFlowGraph
                             $new_source = clone $source;
                             $new_source->id = $new_id;
         
-                            $new_sources += $this->getChildNodes(
+                            $this->getChildNodes(
+                                $new_sources,
                                 $new_source,
                                 $source_taints,
                                 $sinks,
@@ -283,21 +287,22 @@ final class TaintFlowGraph extends DataFlowGraph
             }
 
             $sources = $new_sources;
+            unset($new_sources);
         }
     }
 
     /**
      * @param array<DataFlowNode> $sinks
-     * @return array<string, DataFlowNode>
+     * @param array<string, DataFlowNode> $new_sources
+     * @param-out array<string, DataFlowNode> $new_sources
      */
     private function getChildNodes(
+        array &$new_sources,
         DataFlowNode $generated_source,
         int $source_taints,
         array $sinks,
         array $visited_source_ids,
-    ): array {
-        $new_sources = [];
-
+    ): void {
         $config = Config::getInstance();
 
         $project_analyzer = ProjectAnalyzer::getInstance();
@@ -488,7 +493,5 @@ final class TaintFlowGraph extends DataFlowGraph
                 ' ' . $new_destination->taints;
             $new_sources[$key] = $new_destination;
         }
-
-        return $new_sources;
     }
 }
