@@ -3,6 +3,7 @@
 use Composer\Autoload\ClassLoader;
 
 return [
+    'prefix' => 'PsalmPhar',
     'patchers' => [
         function (string $filePath, string $prefix, string $contents): string {
             //
@@ -57,16 +58,15 @@ return [
     'exclude-namespaces' => [
         'Psalm',
     ],
+    'exclude-functions' => [
+        '/array_/',
+    ],
     'exclude-constants' => [
         'PSALM_VERSION',
         'PHP_PARSER_VERSION',
     ],
     'exclude-files' => [
         'src/spl_object_id.php',
-        'vendor/symfony/polyfill-php80/Php80.php',
-        'vendor/symfony/polyfill-php80/PhpToken.php',
-        'vendor/symfony/polyfill-php80/Resources/stubs/Attribute.php',
-        'vendor/symfony/polyfill-php80/Resources/stubs/PhpToken.php',
-        'vendor/symfony/polyfill-php80/Resources/stubs/Stringable.php',
+        '/vendor\/symfony\/polyfill-php8\d/',
     ],
 ];

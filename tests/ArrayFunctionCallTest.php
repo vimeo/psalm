@@ -446,6 +446,31 @@ final class ArrayFunctionCallTest extends TestCase
                     '$d' => 'non-empty-array<int|string, int|string>',
                 ],
             ],
+            'arrayReverseListDontPreserveKey' => [
+                'code' => '<?php
+                    /** @return list{0: 1, 1: 1.1, 2: 2, 3: false, 4?: string|true, 5?: true} */
+                    function f(): array {
+                        return [1, 1.1, 2, false, "", true];
+                    }
+                    /** @return list{0: 0, 1: 1, 2: 2, 3?: 3, 4?: 4} */
+                    function g(): array { return [0, 1, 2]; }
+
+                    $r = array_reverse(f());
+                    $s = array_reverse(g());',
+                'assertions' => [
+                    '$r===' => 'list{0: bool|string, 1: 2|bool|string, 2: 2|false|float(1.1), 3: 1|2|float(1.1), 4?: 1|float(1.1), 5?: 1}',
+                    '$s===' => 'list{0: 2|3|4, 1: 1|2|3, 2: 0|1|2, 3?: 0|1, 4?: 0}',
+                ],
+            ],
+            'arrayReverseListInt' => [
+                'code' => '<?php
+                    /** @return list<int> */
+                    function f(): array { return []; }
+                    $a = array_reverse(f());',
+                'assertions' => [
+                    '$a' => 'list<int>',
+                ],
+            ],
             'arrayReverseDontPreserveKeyExplicitArg' => [
                 'code' => '<?php
                     $d = array_reverse(["a", "b", 1, "d" => 4], false);',

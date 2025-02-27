@@ -53,11 +53,11 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_map;
 use function array_reduce;
 use function array_reverse;
 use function array_slice;
 use function array_values;
+use function assert;
 use function count;
 use function in_array;
 use function is_string;
@@ -72,6 +72,14 @@ use function strtolower;
  */
 final class ArgumentsAnalyzer
 {
+    public const ARRAY_FILTERLIKE = [
+        'array_filter',
+        'array_find',
+        'array_find_key',
+        'array_any',
+        'array_all',
+    ];
+
     /**
      * @param   list<PhpParser\Node\Arg>          $args
      * @param   array<int, FunctionLikeParameter>|null  $function_params
@@ -262,7 +270,7 @@ final class ArgumentsAnalyzer
                 );
             }
 
-            if (($argument_offset === 0 && $method_id === 'array_filter' && count($args) === 2)
+            if (($argument_offset === 0 && in_array($method_id, self::ARRAY_FILTERLIKE, true) && count($args) === 2)
                 || ($argument_offset > 0 && $method_id === 'array_map' && count($args) >= 2)
             ) {
                 self::handleArrayMapFilterArrayArg(
@@ -384,7 +392,7 @@ final class ArgumentsAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
-        if (($argument_offset === 1 && $method_id === 'array_filter' && count($args) === 2)
+        if (($argument_offset === 1 && in_array($method_id, self::ARRAY_FILTERLIKE, true) && count($args) === 2)
             || ($argument_offset === 0 && $method_id === 'array_map' && count($args) >= 2)
         ) {
             $function_like_params = [];
@@ -415,19 +423,21 @@ final class ArgumentsAnalyzer
             $replaced_type = $param->type;
         }
 
+        $new_bounds = $template_result->template_types;
+        foreach ($template_result->lower_bounds as $k => $template_map) {
+            $new_bounds[$k] = [];
+            foreach ($template_map as $kk => $lower_bounds) {
+                $new_bounds[$k][$kk] = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                    $lower_bounds,
+                    $codebase,
+                );
+            }
+        }
         $replace_template_result = new TemplateResult(
-            array_map(
-                static fn(array $template_map): array => array_map(
-                    static fn(array $lower_bounds): Union => TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
-                        $lower_bounds,
-                        $codebase,
-                    ),
-                    $template_map,
-                ),
-                $template_result->lower_bounds,
-            ),
+            $new_bounds,
             [],
         );
+        unset($new_bounds);
 
         $replaced_type = TemplateStandinTypeReplacer::replace(
             $replaced_type,
@@ -522,7 +532,9 @@ final class ArgumentsAnalyzer
                 $param_storage->type_inferred = true;
             }
 
-            if ($param_storage->type && ($method_id === 'array_map' || $method_id === 'array_filter')) {
+            if ($param_storage->type
+                && ($method_id === 'array_map' || in_array($method_id, self::ARRAY_FILTERLIKE, true))
+            ) {
                 $temp = Type::getMixed();
                 ArrayFetchAnalyzer::taintArrayFetch(
                     $statements_analyzer,
@@ -913,8 +925,10 @@ final class ArgumentsAnalyzer
             }
         }
 
-        if ($method_id === 'array_map' || $method_id === 'array_filter') {
-            if ($method_id === 'array_map' && count($args) < 2) {
+        $f = in_array($method_id, self::ARRAY_FILTERLIKE, true);
+        if ($f || $method_id === 'array_map') {
+            assert(is_string($method_id));
+            if (!$f && count($args) < 2) {
                 IssueBuffer::maybeAdd(
                     new TooFewArguments(
                         'Too few arguments for ' . $method_id,
@@ -923,7 +937,7 @@ final class ArgumentsAnalyzer
                     ),
                     $statements_analyzer->getSuppressedIssues(),
                 );
-            } elseif ($method_id === 'array_filter' && count($args) < 1) {
+            } elseif ($f && count($args) < 1) {
                 IssueBuffer::maybeAdd(
                     new TooFewArguments(
                         'Too few arguments for ' . $method_id,

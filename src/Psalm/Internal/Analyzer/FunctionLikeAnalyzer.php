@@ -54,7 +54,6 @@ use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Node\Stmt\VirtualWhile;
 use Psalm\Plugin\EventHandler\Event\AfterFunctionLikeAnalysisEvent;
-use Psalm\Storage\AttributeStorage;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
@@ -72,7 +71,6 @@ use UnexpectedValueException;
 
 use function array_combine;
 use function array_diff_key;
-use function array_filter;
 use function array_key_exists;
 use function array_keys;
 use function array_merge;
@@ -1999,10 +1997,13 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 true,
             );
 
-            $has_override_attribute = array_filter(
-                $storage->attributes,
-                static fn(AttributeStorage $s): bool => $s->fq_class_name === 'Override',
-            );
+            $has_override_attribute = false;
+            foreach ($storage->attributes as $s) {
+                if ($s->fq_class_name === 'Override') {
+                    $has_override_attribute = true;
+                    break;
+                }
+            }
 
             if ($has_override_attribute
                 && (!$overridden_method_ids || $storage->cased_name === '__construct')

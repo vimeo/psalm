@@ -1351,6 +1351,12 @@ return array (
     'callback=' => 'callable(mixed, array-key=):mixed|null',
     'mode=' => 'int',
   ),
+  'array_find_key' => 
+  array (
+    0 => 'array-key|null',
+    'array' => 'array<array-key, mixed>',
+    'callback' => 'callable',
+  ),
   'array_flip' => 
   array (
     0 => 'array<array-key, int|string>',
@@ -50273,7 +50279,7 @@ return array (
   'readline_completion_function' => 
   array (
     0 => 'bool',
-    'callback' => 'callable',
+    'callback' => 'callable(string):array<array-key, string>',
   ),
   'readline_info' => 
   array (
@@ -55114,7 +55120,7 @@ return array (
     0 => 'float',
     'num' => 'float|int',
     'precision=' => 'int',
-    'mode=' => 'int<0, max>',
+    'mode=' => 'RoundingMode|int<0, max>',
   ),
   'rpm_close' => 
   array (

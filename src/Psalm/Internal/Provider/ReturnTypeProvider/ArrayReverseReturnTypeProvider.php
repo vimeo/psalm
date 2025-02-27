@@ -6,6 +6,7 @@ namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Override;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
@@ -14,6 +15,8 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Union;
 
 use function array_reverse;
+use function array_values;
+use function count;
 
 /**
  * @internal
@@ -67,12 +70,39 @@ final class ArrayReverseReturnTypeProvider implements FunctionReturnTypeProvider
                     && $second_arg_type->isFalse()
                 )
             ) {
-                return $first_arg_array->fallback_params
-                    ? ($first_arg_array->isNonEmpty()
+                if ($first_arg_array->fallback_params) {
+                    return $first_arg_array->isNonEmpty()
                         ? Type::getNonEmptyList($first_arg_array->getGenericValueType())
-                        : Type::getList($first_arg_array->getGenericValueType())
-                    )
-                    : new Union([$first_arg_array->setProperties(array_reverse($first_arg_array->properties))]);
+                        : Type::getList($first_arg_array->getGenericValueType());
+                }
+
+                $reversed_array_items = [];
+                $num_undefined = 0;
+                $i = 0;
+                foreach (array_reverse($first_arg_array->properties) as $array_item_type) {
+                    $reversed_array_items[] = $array_item_type;
+                    /** @var int<0,max> $j */
+                    $j = $i - $num_undefined;
+                    for (; $j < $i; ++$j) {
+                        $reversed_array_items[$j] = TypeCombiner::combine([
+                            ...array_values($reversed_array_items[$j]->getAtomicTypes()),
+                            ...array_values($array_item_type->getAtomicTypes()),
+                        ]);
+                    }
+                    if ($array_item_type->possibly_undefined) {
+                        ++$num_undefined;
+                    }
+                    ++$i;
+                }
+
+                $max_len = count($reversed_array_items);
+                /** @var int<0,max> $i */
+                $i = $max_len - $num_undefined;
+                for (; $i < $max_len; ++$i) {
+                    $reversed_array_items[$i] = $reversed_array_items[$i]->setPossiblyUndefined(true);
+                }
+
+                return new Union([$first_arg_array->setProperties($reversed_array_items)]);
             }
 
             return new Union([TKeyedArray::make(

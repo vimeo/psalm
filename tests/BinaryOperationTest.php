@@ -275,23 +275,6 @@ final class BinaryOperationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    public function testConcatenationWithNumberInStrictMode(): void
-    {
-        $config = Config::getInstance();
-        $config->strict_binary_operands = true;
-
-        $this->addFile(
-            'somefile.php',
-            '<?php
-                    $a = "hi" . 5;',
-        );
-
-        $this->expectException(CodeException::class);
-        $this->expectExceptionMessage('InvalidOperand');
-
-        $this->analyzeFile('somefile.php', new Context());
-    }
-
     public function testImplicitStringConcatenation(): void
     {
         $config = Config::getInstance();

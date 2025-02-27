@@ -89,6 +89,48 @@ use const PREG_SPLIT_NO_EMPTY;
  */
 final class ArgumentAnalyzer
 {
+    // callable $this
+    // some PHP-internal functions (e.g. array_filter) will call the callback within the current context
+    // unlike user-defined functions which call the callback in their context
+    // however this doesn't apply to all
+    // e.g. header_register_callback will not throw an error immediately like user-land functions
+    // however error log "Could not call the sapi_header_callback" if it's not public
+    // this is NOT a complete list, but just what was easily available and to be extended
+    private const PHP_NATIVE_NON_PUBLIC_CB = [
+        ...ArgumentsAnalyzer::ARRAY_FILTERLIKE,
+        'array_diff_uassoc',
+        'array_diff_ukey',
+        'array_intersect_uassoc',
+        'array_intersect_ukey',
+        'array_map',
+        'array_reduce',
+        'array_udiff',
+        'array_udiff_assoc',
+        'array_udiff_uassoc',
+        'array_uintersect',
+        'array_uintersect_assoc',
+        'array_uintersect_uassoc',
+        'array_walk',
+        'array_walk_recursive',
+        'preg_replace_callback',
+        'preg_replace_callback_array',
+        'call_user_func',
+        'call_user_func_array',
+        'forward_static_call',
+        'forward_static_call_array',
+        'is_callable',
+        'ob_start',
+        'register_shutdown_function',
+        'register_tick_function',
+        'session_set_save_handler',
+        'set_error_handler',
+        'set_exception_handler',
+        'spl_autoload_register',
+        'spl_autoload_unregister',
+        'uasort',
+        'uksort',
+        'usort',
+    ];
     /**
      * @param  array<string, array<string, Union>> $class_generic_params
      * @return false|null
@@ -1332,53 +1374,10 @@ final class ArgumentAnalyzer
                         || ($lhs_atomic instanceof TNamedObject
                             && !$lhs_atomic->definite_class
                             && $lhs_atomic->value === $context->self))) {
-                    // callable $this
-                    // some PHP-internal functions (e.g. array_filter) will call the callback within the current context
-                    // unlike user-defined functions which call the callback in their context
-                    // however this doesn't apply to all
-                    // e.g. header_register_callback will not throw an error immediately like user-land functions
-                    // however error log "Could not call the sapi_header_callback" if it's not public
-                    // this is NOT a complete list, but just what was easily available and to be extended
-                    $php_native_non_public_cb = [
-                        'array_diff_uassoc',
-                        'array_diff_ukey',
-                        'array_filter',
-                        'array_intersect_uassoc',
-                        'array_intersect_ukey',
-                        'array_map',
-                        'array_reduce',
-                        'array_udiff',
-                        'array_udiff_assoc',
-                        'array_udiff_uassoc',
-                        'array_uintersect',
-                        'array_uintersect_assoc',
-                        'array_uintersect_uassoc',
-                        'array_walk',
-                        'array_walk_recursive',
-                        'preg_replace_callback',
-                        'preg_replace_callback_array',
-                        'call_user_func',
-                        'call_user_func_array',
-                        'forward_static_call',
-                        'forward_static_call_array',
-                        'is_callable',
-                        'ob_start',
-                        'register_shutdown_function',
-                        'register_tick_function',
-                        'session_set_save_handler',
-                        'set_error_handler',
-                        'set_exception_handler',
-                        'spl_autoload_register',
-                        'spl_autoload_unregister',
-                        'uasort',
-                        'uksort',
-                        'usort',
-                    ];
-
                     if ($potential_method_id->fq_class_name !== $context->self
                         || ($cased_method_id !== null
                             && !$method_id
-                            && !in_array($cased_method_id, $php_native_non_public_cb, true))
+                            && !in_array($cased_method_id, self::PHP_NATIVE_NON_PUBLIC_CB, true))
                         || ($method_id
                             && $method_id->fq_class_name !== $context->self
                             && $method_id->fq_class_name !== 'Closure')

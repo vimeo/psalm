@@ -684,6 +684,7 @@ final class FunctionLikeNodeScanner
                 }
 
                 if ($attribute->fq_class_name === 'Psalm\\Deprecated'
+                    || $attribute->fq_class_name === 'Deprecated'
                     || $attribute->fq_class_name === 'JetBrains\\PhpStorm\\Deprecated'
                 ) {
                     $storage->deprecated = true;
@@ -1133,7 +1134,7 @@ final class FunctionLikeNodeScanner
                 }
             }
         } else {
-            throw new UnexpectedValueException('Unrecognized functionlike');
+            throw new UnexpectedValueException("Unrecognized functionlike of type ".($stmt::class));
         }
 
         return [
