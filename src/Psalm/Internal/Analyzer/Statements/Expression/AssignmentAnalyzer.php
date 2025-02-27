@@ -85,7 +85,6 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNull;
-use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -513,7 +512,6 @@ final class AssignmentAnalyzer
 
     /**
      * @param list<VarDocblockComment> $var_comments
-     * @param int-mask-of<TaintKind::*> $removed_taints
      * @return null|false
      */
     private static function analyzeAssignment(
@@ -598,7 +596,6 @@ final class AssignmentAnalyzer
 
     /**
      * @param list<VarDocblockComment> $var_comments
-     * @param int-mask-of<TaintKind::*> $removed_taints
      */
     private static function analyzeDocComment(
         StatementsAnalyzer $statements_analyzer,
@@ -789,10 +786,6 @@ final class AssignmentAnalyzer
         }
     }
 
-    /**
-     * @param int-mask-of<TaintKind::*> $removed_taints
-     * @param int-mask-of<TaintKind::*> $added_taints
-     */
     private static function taintAssignment(
         Union &$type,
         DataFlowGraph $data_flow_graph,
@@ -1153,7 +1146,6 @@ final class AssignmentAnalyzer
     /**
      * @param PhpParser\Node\Expr\List_|PhpParser\Node\Expr\Array_ $assign_var
      * @param list<VarDocblockComment> $var_comments
-     * @param int-mask-of<TaintKind::*> $removed_taints
      */
     private static function analyzeDestructuringAssignment(
         StatementsAnalyzer $statements_analyzer,
@@ -1869,9 +1861,6 @@ final class AssignmentAnalyzer
         return $assign_value_type->setParentNodes($parent_nodes);
     }
 
-    /**
-     * @param int-mask-of<TaintKind::*> $removed_taints
-     */
     private static function analyzeAssignValueDataFlow(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,

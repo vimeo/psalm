@@ -11,7 +11,7 @@ final class TaintKindGroup
 {
     public const ALL_INPUT = (1 << 17) - 1;
 
-    /** @var array<int-mask-of<TaintKind::*>, string> */
+    /** @var array<int, string> */
     public const TAINT_TO_NAME = [
         TaintKind::INPUT_CALLABLE => 'callable',
         TaintKind::INPUT_UNSERIALIZE => 'unserialize',

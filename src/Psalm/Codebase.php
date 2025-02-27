@@ -65,7 +65,6 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
-use Psalm\Type\TaintKind;
 use Psalm\Type\TaintKindGroup;
 use Psalm\Type\Union;
 use ReflectionProperty;
@@ -2143,9 +2142,6 @@ final class Codebase
         $this->scanner->queueClassLikeForScanning($fq_classlike_name, $analyze_too, $store_failure, $phantom_classes);
     }
 
-    /**
-     * @param int-mask-of<TaintKind::*> $taints
-     */
     public function addTaintSource(
         Union $expr_type,
         string $taint_id,
@@ -2169,9 +2165,6 @@ final class Codebase
         return $expr_type->addParentNodes([$source->id => $source]);
     }
 
-    /**
-     * @param int-mask-of<TaintKind::*> $taints
-     */
     public function addTaintSink(
         string $taint_id,
         int $taints = TaintKindGroup::ALL_INPUT,

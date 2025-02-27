@@ -61,7 +61,6 @@ use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
-use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 
 use function array_filter;
@@ -921,10 +920,6 @@ final class AtomicPropertyFetchAnalyzer
         }
     }
 
-    /**
-     * @param ?int-mask-of<TaintKind::*> $added_taints
-     * @param ?int-mask-of<TaintKind::*> $removed_taints
-     */
     public static function processUnspecialTaints(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $stmt,

@@ -24,8 +24,6 @@ final class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInter
 {
     /**
      * Called to see what taints should be added
-     *
-     * @return int-mask-of<TaintKind::*>
      */
     #[Override]
     public static function addTaints(AddRemoveTaintsEvent $event): int
@@ -77,8 +75,6 @@ final class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInter
 
     /**
      * Called to see what taints should be removed
-     *
-     * @return int-mask-of<TaintKind::*>
      */
     #[Override]
     public static function removeTaints(AddRemoveTaintsEvent $event): int

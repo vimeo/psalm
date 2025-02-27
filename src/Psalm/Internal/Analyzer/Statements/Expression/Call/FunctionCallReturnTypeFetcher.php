@@ -680,8 +680,6 @@ final class FunctionCallReturnTypeFetcher
 
     /**
      * @param  array<PhpParser\Node\Arg>   $args
-     * @param  int-mask-of<TaintKind::*> $removed_taints
-     * @param  int-mask-of<TaintKind::*> $added_taints
      */
     public static function taintUsingFlows(
         StatementsAnalyzer $statements_analyzer,

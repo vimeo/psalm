@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Scanner;
 
-use Psalm\Type\TaintKind;
-
 /**
  * @internal
  */
@@ -106,13 +104,10 @@ final class FunctionDocblockComment
     public array $removed_taints = [];
 
     /**
-     * @var array<int, array{name:string, taint: int-mask-of<TaintKind::*>}>
+     * @var array<int, array{name:string, taint: int}>
      */
     public array $taint_sink_params = [];
 
-    /**
-     * @var int-mask-of<TaintKind::*>
-     */
     public int $taint_source_types = 0;
 
     /**

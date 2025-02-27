@@ -47,8 +47,6 @@ use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Union;
 
-use function array_merge;
-use function array_unique;
 use function count;
 use function explode;
 use function implode;

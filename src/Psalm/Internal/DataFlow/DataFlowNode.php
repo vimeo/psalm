@@ -6,7 +6,6 @@ namespace Psalm\Internal\DataFlow;
 
 use Override;
 use Psalm\CodeLocation;
-use Psalm\Type\TaintKind;
 use Stringable;
 
 use function strtolower;
@@ -32,9 +31,6 @@ class DataFlowNode implements Stringable
      */
     public array $specialized_calls = [];
 
-    /**
-     * @param int-mask-of<TaintKind::*> $taints
-     */
     public function __construct(
         public string $id,
         public string $label,

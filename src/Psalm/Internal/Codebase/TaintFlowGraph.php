@@ -37,10 +37,8 @@ use Psalm\Type\TaintKindGroup;
 use function array_filter;
 use function count;
 use function end;
-use function implode;
 use function json_encode;
 use function ksort;
-use function sort;
 use function strlen;
 use function substr;
 
@@ -237,7 +235,6 @@ final class TaintFlowGraph extends DataFlowGraph
     }
 
     /**
-     * @param int-mask-of<TaintKind::*> $source_taints
      * @param array<DataFlowNode> $sinks
      * @return array<string, DataFlowNode>
      */
@@ -258,15 +255,13 @@ final class TaintFlowGraph extends DataFlowGraph
                 continue;
             }
 
-            $path_type = $path->type;
-            $added_taints = $path->unescaped_taints;
-            $removed_taints = $path->escaped_taints;
-
-            $new_taints = ($source_taints | $added_taints) & ~$removed_taints;
+            $new_taints = ($source_taints | $path->added_taints) & ~$path->removed_taints;
 
             if (isset($visited_source_ids[$to_id][$new_taints])) {
                 continue;
             }
+
+            $path_type = $path->type;
 
             if (self::shouldIgnoreFetch($path_type, 'arraykey', $generated_source->path_types)) {
                 continue;
@@ -438,7 +433,7 @@ final class TaintFlowGraph extends DataFlowGraph
 
             $key = $to_id .
                 ' ' . json_encode($new_destination->specialized_calls, JSON_THROW_ON_ERROR) .
-                ' ' . json_encode($new_destination->taints, JSON_THROW_ON_ERROR);
+                ' ' . $new_destination->taints;
             $new_sources[$key] = $new_destination;
         }
 
