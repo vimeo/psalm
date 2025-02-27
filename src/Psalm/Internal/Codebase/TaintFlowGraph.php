@@ -485,15 +485,20 @@ final class TaintFlowGraph extends DataFlowGraph
                 }
             }
 
+            $key = $to_id .
+                ' ' . json_encode($generated_source->specialized_calls, JSON_THROW_ON_ERROR) .
+                ' ' . $new_taints;
+
+            if (isset($new_sources[$key])) {
+                continue;
+            }
+
             $new_destination = clone $this->nodes[$to_id];
             $new_destination->taintSource = $generated_source;
             $new_destination->taints = $new_taints;
             $new_destination->specialized_calls = $generated_source->specialized_calls;
             $new_destination->path_types = [...$generated_source->path_types, $path_type];
 
-            $key = $to_id .
-                ' ' . json_encode($new_destination->specialized_calls, JSON_THROW_ON_ERROR) .
-                ' ' . $new_destination->taints;
             $new_sources[$key] = $new_destination;
         }
     }
