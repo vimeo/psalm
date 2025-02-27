@@ -338,11 +338,6 @@ final class MethodCallReturnTypeFetcher
                     }
                 }
 
-                $specialized_parent_nodes = array_filter(
-                    $parent_nodes,
-                    static fn(DataFlowNode $parent_node): bool => (bool) $parent_node->specialization_key,
-                );
-
                 $var_node = DataFlowNode::getForAssignment(
                     $var_id,
                     new CodeLocation($statements_analyzer, $var_expr),
@@ -381,7 +376,11 @@ final class MethodCallReturnTypeFetcher
                     $method_call_nodes[$method_call_node->id] = $method_call_node;
                 }
 
-                foreach ($specialized_parent_nodes as $parent_node) {
+                foreach ($parent_nodes as $parent_node) {
+                    if ($parent_node->specialization_key === null) {
+                        continue;
+                    }
+
                     $universal_method_call_node = DataFlowNode::getForMethodReturn(
                         (string) $method_id,
                         $cased_method_id,
