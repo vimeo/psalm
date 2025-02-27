@@ -12,7 +12,7 @@ final class TaintSource extends DataFlowNode
     public static function fromNode(DataFlowNode $node, int $taints): self
     {
         $v = new self(
-            $node->id,
+            $node->unspecialized_id ?? $node->id,
             $node->label,
             $node->code_location,
             $node->specialization_key,

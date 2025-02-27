@@ -11,6 +11,7 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\DataFlow\TaintSink;
 use Psalm\Internal\DataFlow\TaintSource;
+use Psalm\Internal\Fork\Pool;
 use Psalm\Issue\TaintedCallable;
 use Psalm\Issue\TaintedCookie;
 use Psalm\Issue\TaintedCustom;
@@ -209,6 +210,10 @@ final class TaintFlowGraph extends DataFlowGraph
         ksort($this->specializations);
         ksort($this->forward_edges);
 
+        $config = Config::getInstance();
+
+        $project_analyzer = ProjectAnalyzer::getInstance();
+
         // reprocess resolved descendants up to a maximum nesting level of 40
         for ($i = 0; count($sinks) && count($sources) && $i < 40; $i++) {
             $new_sources = [];
@@ -227,6 +232,8 @@ final class TaintFlowGraph extends DataFlowGraph
                         $source_taints,
                         $sinks,
                         $visited_source_ids,
+                        $config,
+                        $project_analyzer,
                     );
                     continue;
                 }
@@ -246,6 +253,8 @@ final class TaintFlowGraph extends DataFlowGraph
                         $source_taints,
                         $sinks,
                         $visited_source_ids,
+                        $config,
+                        $project_analyzer,
                     );
                 } elseif (isset($this->specializations[$source->id])) {
                     foreach ($this->specializations[$source->id] as $specialization => $_) {
@@ -264,6 +273,8 @@ final class TaintFlowGraph extends DataFlowGraph
                                 $source_taints,
                                 $sinks,
                                 $visited_source_ids,
+                                $config,
+                                $project_analyzer,
                             );
                         }
                     }
@@ -283,6 +294,8 @@ final class TaintFlowGraph extends DataFlowGraph
                                 $source_taints,
                                 $sinks,
                                 $visited_source_ids,
+                                $config,
+                                $project_analyzer,
                             );
                         }
                     }
@@ -305,11 +318,9 @@ final class TaintFlowGraph extends DataFlowGraph
         int $source_taints,
         array $sinks,
         array $visited_source_ids,
+        Config $config,
+        ProjectAnalyzer $project_analyzer,
     ): void {
-        $config = Config::getInstance();
-
-        $project_analyzer = ProjectAnalyzer::getInstance();
-
         foreach ($this->forward_edges[$generated_source->id] as $to_id => $path) {
             if (!isset($this->nodes[$to_id])) {
                 continue;
