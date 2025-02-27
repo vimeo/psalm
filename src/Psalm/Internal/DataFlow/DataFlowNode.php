@@ -21,7 +21,7 @@ class DataFlowNode implements Stringable
     public ?string $specialization_key = null;
 
     /** @var ?self */
-    public ?DataFlowNode $previous = null;
+    public ?DataFlowNode $taintSource = null;
 
     /** @var list<string> */
     public array $path_types = [];
@@ -88,7 +88,6 @@ class DataFlowNode implements Stringable
 
         return new static($id, $var_id, $assignment_location, $specialization_key);
     }
-
     /**
      * @return static
      */
@@ -110,6 +109,34 @@ class DataFlowNode implements Stringable
             $code_location,
             $specialization_key,
         );
+    }
+
+
+    /**
+     * @return static
+     */
+    final public static function getForVariableUse(): self
+    {
+        return new static('variable-use', 'variable use', null);
+    }
+
+
+
+    /**
+     * @return static
+     */
+    final public static function getForUnknownOrigin(): self
+    {
+        return new static('unknown-origin', 'unknown origin', null);
+    }
+
+
+    /**
+     * @return static
+     */
+    final public static function getForClosureUse(): self
+    {
+        return new static('closure-use', 'closure use', null);
     }
 
     #[Override]

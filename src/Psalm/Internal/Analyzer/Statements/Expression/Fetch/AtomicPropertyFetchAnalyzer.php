@@ -926,8 +926,8 @@ final class AtomicPropertyFetchAnalyzer
         Union &$type,
         string $property_id,
         bool $in_assignment,
-        ?int $added_taints,
-        ?int $removed_taints,
+        int $added_taints,
+        int $removed_taints,
     ): void {
         if (!$statements_analyzer->data_flow_graph) {
             return;
@@ -979,8 +979,6 @@ final class AtomicPropertyFetchAnalyzer
 
         $type = $type->setParentNodes([$localized_property_node->id => $localized_property_node], true);
 
-        $added_taints ??= 0;
-        $removed_taints ??= 0;
         $taints = $added_taints & ~$removed_taints;
         if ($taints !== 0 && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
             $taint_source = TaintSource::fromNode($localized_property_node);

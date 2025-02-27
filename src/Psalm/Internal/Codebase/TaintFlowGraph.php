@@ -121,7 +121,7 @@ final class TaintFlowGraph extends DataFlowGraph
 
         $source_descriptor = $source->label . ($location_summary ? ' (' . $location_summary . ')' : '');
 
-        $previous_source = $source->previous;
+        $previous_source = $source->taintSource;
 
         if ($previous_source) {
             if ($previous_source === $source) {
@@ -131,9 +131,9 @@ final class TaintFlowGraph extends DataFlowGraph
             if ($source->code_location
                 && $previous_source->code_location
                 && $previous_source->code_location->getHash() === $source->code_location->getHash()
-                && $previous_source->previous
+                && $previous_source->taintSource
             ) {
-                return $this->getPredecessorPath($previous_source->previous) . ' -> ' . $source_descriptor;
+                return $this->getPredecessorPath($previous_source->taintSource) . ' -> ' . $source_descriptor;
             }
 
             return $this->getPredecessorPath($previous_source) . ' -> ' . $source_descriptor;
@@ -152,7 +152,7 @@ final class TaintFlowGraph extends DataFlowGraph
 
         $sink_descriptor = $sink->label . ($location_summary ? ' (' . $location_summary . ')' : '');
 
-        $next_sink = $sink->previous;
+        $next_sink = $sink->taintSource;
 
         if ($next_sink) {
             if ($next_sink === $sink) {
@@ -162,9 +162,9 @@ final class TaintFlowGraph extends DataFlowGraph
             if ($sink->code_location
                 && $next_sink->code_location
                 && $next_sink->code_location->getHash() === $sink->code_location->getHash()
-                && $next_sink->previous
+                && $next_sink->taintSource
             ) {
-                return $sink_descriptor . ' -> ' . $this->getSuccessorPath($next_sink->previous);
+                return $sink_descriptor . ' -> ' . $this->getSuccessorPath($next_sink->taintSource);
             }
 
             return $sink_descriptor . ' -> ' . $this->getSuccessorPath($next_sink);
@@ -178,7 +178,7 @@ final class TaintFlowGraph extends DataFlowGraph
      */
     public function getIssueTrace(DataFlowNode $source): array
     {
-        $previous_source = $source->previous;
+        $previous_source = $source->taintSource;
 
         $node = [
             'location' => $source->code_location,
@@ -426,7 +426,7 @@ final class TaintFlowGraph extends DataFlowGraph
             }
 
             $new_destination = clone $this->nodes[$to_id];
-            $new_destination->previous = $generated_source;
+            $new_destination->taintSource = $generated_source;
             $new_destination->taints = $new_taints;
             $new_destination->specialized_calls = $generated_source->specialized_calls;
             $new_destination->path_types = [...$generated_source->path_types, $path_type];

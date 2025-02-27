@@ -1086,7 +1086,7 @@ final class AssignmentAnalyzer
 
                             $statements_analyzer->data_flow_graph->addPath(
                                 $byref_node,
-                                new DataFlowNode('variable-use', 'variable use', null),
+                                DataFlowNode::getForVariableUse(),
                                 'variable-use',
                             );
                         }
@@ -1754,7 +1754,7 @@ final class AssignmentAnalyzer
                             // Mark reference to an external scope as used when a value is assigned to it
                             $statements_analyzer->data_flow_graph->addPath(
                                 $assignment_node,
-                                new DataFlowNode('variable-use', 'variable use', null),
+                                DataFlowNode::getForVariableUse(),
                                 'variable-use',
                             );
                         }
@@ -1822,7 +1822,7 @@ final class AssignmentAnalyzer
                 foreach ($assign_value_type->parent_nodes as $parent_node) {
                     $statements_analyzer->data_flow_graph->addPath(
                         $parent_node,
-                        new DataFlowNode('variable-use', 'variable use', null),
+                        DataFlowNode::getForVariableUse(),
                         'variable-use',
                     );
                 }
@@ -1843,7 +1843,7 @@ final class AssignmentAnalyzer
                 new CodeLocation($statements_analyzer->getSource(), $assign_var),
             );
         } else {
-            $assignment_node = new DataFlowNode('unknown-origin', 'unknown origin', null);
+            $assignment_node = DataFlowNode::getForUnknownOrigin();
         }
 
         $parent_nodes = [

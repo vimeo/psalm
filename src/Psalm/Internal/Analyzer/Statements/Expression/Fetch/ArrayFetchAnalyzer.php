@@ -1115,7 +1115,7 @@ final class ArrayFetchAnalyzer
 
                     $data_flow_graph->addPath(
                         $parent_node,
-                        new DataFlowNode('variable-use', 'variable use', null),
+                        DataFlowNode::getForVariableUse(),
                         'variable-use',
                     );
                 }

@@ -32,17 +32,13 @@ final class VariableUseGraph extends DataFlowGraph
         $this->nodes[$node->id] = $node;
     }
 
-    /**
-     * @param null $added_taints
-     * @param null $removed_taints
-     */
     #[Override]
     public function addPath(
         DataFlowNode $from,
         DataFlowNode $to,
         string $path_type,
-        ?int $added_taints = null,
-        ?int $removed_taints = null,
+        int $added_taints = 0,
+        int $removed_taints = 0,
     ): void {
         $from_id = $from->id;
         $to_id = $to->id;

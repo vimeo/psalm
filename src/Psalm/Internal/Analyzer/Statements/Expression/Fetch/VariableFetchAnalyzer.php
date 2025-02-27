@@ -464,41 +464,25 @@ final class VariableFetchAnalyzer
                 if ($context->inside_call || $context->inside_return) {
                     $statements_analyzer->data_flow_graph->addPath(
                         $parent_node,
-                        new DataFlowNode(
-                            'variable-use',
-                            'variable use',
-                            null,
-                        ),
+                        DataFlowNode::getForVariableUse(),
                         'use-inside-call',
                     );
                 } elseif ($context->inside_conditional) {
                     $statements_analyzer->data_flow_graph->addPath(
                         $parent_node,
-                        new DataFlowNode(
-                            'variable-use',
-                            'variable use',
-                            null,
-                        ),
+                        DataFlowNode::getForVariableUse(),
                         'use-inside-conditional',
                     );
                 } elseif ($context->inside_isset) {
                     $statements_analyzer->data_flow_graph->addPath(
                         $parent_node,
-                        new DataFlowNode(
-                            'variable-use',
-                            'variable use',
-                            null,
-                        ),
+                        DataFlowNode::getForVariableUse(),
                         'use-inside-isset',
                     );
                 } else {
                     $statements_analyzer->data_flow_graph->addPath(
                         $parent_node,
-                        new DataFlowNode(
-                            'variable-use',
-                            'variable use',
-                            null,
-                        ),
+                        DataFlowNode::getForVariableUse(),
                         'variable-use',
                     );
                 }

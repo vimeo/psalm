@@ -441,19 +441,19 @@ final class BinaryOpAnalyzer
                 if ($left instanceof PhpParser\Node\Expr\PropertyFetch) {
                     $statements_analyzer->data_flow_graph->addPath(
                         $new_parent_node,
-                        new DataFlowNode('variable-use', 'variable use', null),
+                        DataFlowNode::getForVariableUse(),
                         'used-by-instance-property',
                     );
                 } if ($left instanceof PhpParser\Node\Expr\StaticPropertyFetch) {
                     $statements_analyzer->data_flow_graph->addPath(
                         $new_parent_node,
-                        new DataFlowNode('variable-use', 'variable use', null),
+                        DataFlowNode::getForVariableUse(),
                         'use-in-static-property',
                     );
                 } elseif (!$left instanceof PhpParser\Node\Expr\Variable) {
                     $statements_analyzer->data_flow_graph->addPath(
                         $new_parent_node,
-                        new DataFlowNode('variable-use', 'variable use', null),
+                        DataFlowNode::getForVariableUse(),
                         'variable-use',
                     );
                 }
