@@ -330,10 +330,13 @@ final class MethodCallReturnTypeFetcher
 
                 $parent_nodes = $context->vars_in_scope[$var_id]->parent_nodes;
 
-                $unspecialized_parent_nodes = array_filter(
-                    $parent_nodes,
-                    static fn(DataFlowNode $parent_node): bool => !$parent_node->specialization_key,
-                );
+                $unspecialized_parent_nodes = false;
+                foreach ($parent_nodes as $parent_node) {
+                    if ($parent_node->specialization_key === null) {
+                        $unspecialized_parent_nodes = true;
+                        break;
+                    }
+                }
 
                 $specialized_parent_nodes = array_filter(
                     $parent_nodes,
