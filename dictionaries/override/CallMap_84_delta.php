@@ -840,6 +840,23 @@ return array (
         'fallback=' => 'bool',
       ),
     ),
+    'round' => 
+    array (
+      'old' => 
+      array (
+        0 => 'float',
+        'num' => 'float|int',
+        'precision=' => 'int',
+        'mode=' => 'int<0, max>',
+      ),
+      'new' => 
+      array (
+        0 => 'float',
+        'num' => 'float|int',
+        'precision=' => 'int',
+        'mode=' => 'RoundingMode|int<0, max>',
+      ),
+    ),
     'splfixedarray::setsize' => 
     array (
       'old' => 

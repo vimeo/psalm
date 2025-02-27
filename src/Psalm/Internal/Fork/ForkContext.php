@@ -28,10 +28,18 @@ use function Amp\Parallel\Ipc\connect;
 use function count;
 use function define;
 use function extension_loaded;
+use function fprintf;
 use function fwrite;
 use function is_file;
 use function is_string;
 use function pcntl_fork;
+use function pcntl_waitpid;
+use function pcntl_wexitstatus;
+use function pcntl_wifexited;
+use function pcntl_wifsignaled;
+use function pcntl_wifstopped;
+use function pcntl_wstopsig;
+use function pcntl_wtermsig;
 use function posix_get_last_error;
 use function posix_kill;
 use function posix_strerror;
@@ -41,6 +49,7 @@ use function trigger_error;
 use const E_USER_ERROR;
 use const PHP_EOL;
 use const STDERR;
+use const WNOHANG;
 
 /**
  * @internal
@@ -156,10 +165,11 @@ final class ForkContext extends AbstractContext
                 $resultChannel->send(new ExitFailure($exception));
             }
         } catch (Throwable $exception) {
-            trigger_error(sprintf(
-                "Could not send result to parent: '%s'; be sure to shutdown the child before ending the parent",
+            fprintf(
+                STDERR,
+                "Could not send result to parent: '%s'; be sure to shutdown the child before ending the parent".PHP_EOL,
                 $exception->getMessage(),
-            ), E_USER_ERROR);
+            );
         }
 
         EventLoop::run();
@@ -168,7 +178,7 @@ final class ForkContext extends AbstractContext
         exit(1);
     }
 
-    private bool $exited = false;
+    private ?int $exited = null;
 
     /**
      * @param StreamChannel<TReceive, TSend> $ipcChannel
@@ -189,9 +199,7 @@ final class ForkContext extends AbstractContext
     #[Override]
     public function receive(?Cancellation $cancellation = null): mixed
     {
-        if ($this->exited) {
-            throw new ContextException('The thread has exited');
-        }
+        $this->checkExit();
 
         return parent::receive($cancellation);
     }
@@ -199,18 +207,51 @@ final class ForkContext extends AbstractContext
     #[Override]
     public function send(mixed $data): void
     {
-        if ($this->exited) {
-            throw new ContextException('The thread has exited');
-        }
+        $this->checkExit();
 
         parent::send($data);
     }
 
+    private function checkExit(bool $wait = false): ?int
+    {
+        if ($this->exited === null) {
+            if (pcntl_waitpid($this->pid, $status, $wait ? 0 : WNOHANG) === 0) {
+                return null;
+            }
+
+            $signal = -1;
+            if (pcntl_wifsignaled($status)) {
+                $signal = pcntl_wtermsig($status);
+            } elseif (pcntl_wifexited($status)) {
+                $signal = pcntl_wexitstatus($status) - 128;
+            } elseif (pcntl_wifstopped($status)) {
+                $signal = pcntl_wstopsig($status);
+            }
+            $this->exited = $signal;
+        }
+
+        if (!$this->weKilled && $this->exited > 0) {
+            $signal = $this->exited;
+            if ($signal === 11) {
+                $signal = "11: THIS IS A PHP BUG, please report this to https://github.com/vimeo/psalm/issues".
+                    " AND to https://github.com/php/php-src/issues";
+            }
+            throw new ContextException("Worker exited due to signal $signal!");
+        }
+
+        return $this->exited;
+    }
+
+    private bool $weKilled = false;
+
     #[Override]
     public function close(): void
     {
-        if (!$this->exited) {
+        if ($this->checkExit() === null) {
+            $this->weKilled = true;
             posix_kill($this->pid, 9);
+
+            $this->checkExit(true);
         }
 
         parent::close();
@@ -219,9 +260,11 @@ final class ForkContext extends AbstractContext
     #[Override]
     public function join(?Cancellation $cancellation = null): mixed
     {
-        $data = $this->receiveExitResult($cancellation);
-
-        $this->close();
+        try {
+            $data = $this->receiveExitResult($cancellation);
+        } finally {
+            $this->close();
+        }
 
         return $data->getResult();
     }

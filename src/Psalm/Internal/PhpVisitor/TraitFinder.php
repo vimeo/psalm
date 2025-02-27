@@ -12,6 +12,7 @@ use Throwable;
 use function count;
 use function end;
 use function explode;
+use function strcasecmp;
 use function trait_exists;
 
 /**
@@ -44,10 +45,10 @@ final class TraitFinder extends PhpParser\NodeVisitorAbstract
                 $fq_trait_name_parts = explode('\\', $this->fq_trait_name);
 
                 /** @psalm-suppress PossiblyNullPropertyFetch */
-                if ($node->name->name === end($fq_trait_name_parts)) {
+                if ($node->name->name !== null && strcasecmp($node->name->name, end($fq_trait_name_parts)) === 0) {
                     $this->matching_trait_nodes[] = $node;
                 }
-            } elseif ($resolved_name === $this->fq_trait_name) {
+            } elseif (strcasecmp($resolved_name, $this->fq_trait_name) === 0) {
                 $this->matching_trait_nodes[] = $node;
             }
         }
