@@ -113,20 +113,19 @@ final class VariableUseGraph extends DataFlowGraph
             foreach ($child_nodes as $child_node) {
                 $visited_child_ids[$child_node->id] = true;
 
-                $parent_nodes = $this->getParentNodes(
+                $had_parent_nodes = $this->getParentNodes(
+                    $new_parent_nodes,
                     $child_node,
                     $visited_child_ids,
                 );
 
-                if (!$parent_nodes) {
+                if (!$had_parent_nodes) {
                     if ($child_node->code_location) {
                         $origin_locations[] = $child_node->code_location;
                     }
 
                     continue;
                 }
-
-                $new_parent_nodes = [...$new_parent_nodes, ...$parent_nodes];
             }
 
             $child_nodes = $new_parent_nodes;
@@ -195,18 +194,19 @@ final class VariableUseGraph extends DataFlowGraph
 
     /**
      * @param array<string, bool> $visited_source_ids
-     * @return list<DataFlowNode>
+     * @param list<DataFlowNode> $new_parent_nodes
+     * @param-out list<DataFlowNode> $new_parent_nodes
      */
     private function getParentNodes(
+        array &$new_parent_nodes,
         DataFlowNode $destination,
         array $visited_source_ids,
-    ): array {
-        $new_parent_nodes = [];
-
+    ): bool {
         if (!isset($this->backward_edges[$destination->id])) {
-            return [];
+            return false;
         }
 
+        $had = false;
         foreach ($this->backward_edges[$destination->id] as $from_id => $_) {
             if (isset($visited_source_ids[$from_id])) {
                 continue;
@@ -214,9 +214,10 @@ final class VariableUseGraph extends DataFlowGraph
 
             if (isset($this->nodes[$from_id])) {
                 $new_parent_nodes[] = $this->nodes[$from_id];
+                $had = true;
             }
         }
 
-        return $new_parent_nodes;
+        return $had;
     }
 }
