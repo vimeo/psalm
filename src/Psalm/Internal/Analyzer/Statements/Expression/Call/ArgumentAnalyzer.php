@@ -1895,8 +1895,7 @@ final class ArgumentAnalyzer
 
         $taints = $added_taints & ~$removed_taints;
         if ($taints !== 0 && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
-            $taint_source = TaintSource::fromNode($argument_value_node);
-            $taint_source->taints = $taints;
+            $taint_source = TaintSource::fromNode($argument_value_node, $taints);
             $statements_analyzer->data_flow_graph->addSource($taint_source);
         }
     }

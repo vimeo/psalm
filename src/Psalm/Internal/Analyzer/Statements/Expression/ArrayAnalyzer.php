@@ -444,7 +444,7 @@ final class ArrayAnalyzer
 
                     $taints = $added_taints & ~$removed_taints;
                     if ($taints !== 0 && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
-                        $taint_source = TaintSource::fromNode($new_parent_node);
+                        $taint_source = TaintSource::fromNode($new_parent_node, $taints);
                         $statements_analyzer->data_flow_graph->addSource($taint_source);
                     }
 
@@ -485,8 +485,7 @@ final class ArrayAnalyzer
 
                     $taints = $added_taints & ~$removed_taints;
                     if ($taints !== 0 && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
-                        $taint_source = TaintSource::fromNode($new_parent_node);
-                        $taint_source->taints = $taints;
+                        $taint_source = TaintSource::fromNode($new_parent_node, $taints);
                         $statements_analyzer->data_flow_graph->addSource($taint_source);
                     }
 

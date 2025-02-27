@@ -508,8 +508,7 @@ final class InstancePropertyAssignmentAnalyzer
 
                 $taints = $added_taints & ~$removed_taints;
                 if ($taints !== 0 && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
-                    $taint_source = TaintSource::fromNode($property_node);
-                    $taint_source->taints = $taints;
+                    $taint_source = TaintSource::fromNode($property_node, $taints);
                     $statements_analyzer->data_flow_graph->addSource($taint_source);
                 }
 
@@ -610,8 +609,7 @@ final class InstancePropertyAssignmentAnalyzer
 
         $taints = $added_taints & ~$removed_taints;
         if ($taints !== 0 && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
-            $taint_source = TaintSource::fromNode($property_node);
-            $taint_source->taints = $taints;
+            $taint_source = TaintSource::fromNode($property_node, $taints);
             $statements_analyzer->data_flow_graph->addSource($taint_source);
         }
 

@@ -749,8 +749,7 @@ final class FunctionCallReturnTypeFetcher
 
         $taints = $added_taints & ~$function_storage->removed_taints;
         if ($taints !== 0) {
-            $taint_source = TaintSource::fromNode($function_call_node);
-            $taint_source->taints = $taints;
+            $taint_source = TaintSource::fromNode($function_call_node, $taints);
             $graph->addSource($taint_source);
         }
     }

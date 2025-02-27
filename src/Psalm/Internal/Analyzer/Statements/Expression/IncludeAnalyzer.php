@@ -137,8 +137,7 @@ final class IncludeAnalyzer
 
             $taints = $added_taints & ~$removed_taints;
             if ($taints !== 0) {
-                $taint_source = TaintSource::fromNode($include_param_sink);
-                $taint_source->taints = $taints;
+                $taint_source = TaintSource::fromNode($include_param_sink, $taints);
                 $statements_analyzer->data_flow_graph->addSource($taint_source);
             }
 

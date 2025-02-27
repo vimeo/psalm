@@ -902,8 +902,7 @@ final class AtomicPropertyFetchAnalyzer
 
                 $taints = $added_taints & ~$removed_taints;
                 if ($taints !== 0 && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
-                    $taint_source = TaintSource::fromNode($var_node);
-                    $taint_source->taints = $taints;
+                    $taint_source = TaintSource::fromNode($var_node, $taints);
                     $statements_analyzer->data_flow_graph->addSource($taint_source);
                 }
             }
@@ -981,8 +980,7 @@ final class AtomicPropertyFetchAnalyzer
 
         $taints = $added_taints & ~$removed_taints;
         if ($taints !== 0 && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
-            $taint_source = TaintSource::fromNode($localized_property_node);
-            $taint_source->taints = $taints;
+            $taint_source = TaintSource::fromNode($localized_property_node, $taints);
             $statements_analyzer->data_flow_graph->addSource($taint_source);
         }
     }

@@ -856,8 +856,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
                 $taints = $added_taints & ~$removed_taints;
                 if ($taints !== 0) {
-                    $taint_source = TaintSource::fromNode($custom_call_sink);
-                    $taint_source->taints = $taints;
+                    $taint_source = TaintSource::fromNode($custom_call_sink, $taints);
                     $statements_analyzer->data_flow_graph->addSource($taint_source);
                 }
 

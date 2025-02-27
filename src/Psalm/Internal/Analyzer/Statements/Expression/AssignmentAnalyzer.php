@@ -804,9 +804,7 @@ final class AssignmentAnalyzer
         // become a new taint source
         $taints = $added_taints & ~$removed_taints;
         if ($taints !== 0 && $data_flow_graph instanceof TaintFlowGraph) {
-            $taint_source = TaintSource::fromNode($new_parent_node);
-            $taint_source->taints = $taints;
-            $data_flow_graph->addSource($taint_source);
+            $data_flow_graph->addSource(TaintSource::fromNode($new_parent_node, $taints));
         }
 
         foreach ($parent_nodes as $parent_node) {
