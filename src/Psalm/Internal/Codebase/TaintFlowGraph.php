@@ -34,7 +34,6 @@ use Psalm\IssueBuffer;
 use Psalm\Type\TaintKind;
 use Psalm\Type\TaintKindGroup;
 
-use function array_filter;
 use function count;
 use function end;
 use function json_encode;
@@ -218,15 +217,68 @@ final class TaintFlowGraph extends DataFlowGraph
 
                 $visited_source_ids[$source->id][$source_taints] = true;
 
-                $generated_sources = $this->getSpecializedSources($source);
-
-                foreach ($generated_sources as $generated_source) {
-                    $new_sources = [...$new_sources, ...$this->getChildNodes(
+                if (isset($this->forward_edges[$source->id])) {
+                    $new_sources += $this->getChildNodes(
+                        $source,
+                        $source_taints,
+                        $sinks,
+                        $visited_source_ids,
+                    );
+                    continue;
+                }
+        
+                if ($source->specialization_key !== null && isset($this->specialized_calls[$source->specialization_key])) {
+                    $new_id = substr($source->id, 0, -strlen($source->specialization_key) - 1);
+                    if (!isset($this->forward_edges[$new_id])) {
+                        continue;
+                    }
+                    $generated_source = clone $source;
+                    $generated_source->id = $new_id;
+                    $generated_source->specialized_calls[$source->specialization_key][$new_id] = true;
+        
+                    $new_sources += $this->getChildNodes(
                         $generated_source,
                         $source_taints,
                         $sinks,
                         $visited_source_ids,
-                    )];
+                    );
+                } elseif (isset($this->specializations[$source->id])) {
+                    foreach ($this->specializations[$source->id] as $specialization => $_) {
+                        if (!$source->specialized_calls || isset($source->specialized_calls[$specialization])) {
+                            $new_id = $source->id . '-' . $specialization;
+                            if (!isset($this->forward_edges[$new_id])) {
+                                continue;
+                            }
+                            $new_source = clone $source;
+                            $new_source->id = $new_id;
+                            unset($new_source->specialized_calls[$specialization]);
+        
+                            $new_sources += $this->getChildNodes(
+                                $new_source,
+                                $source_taints,
+                                $sinks,
+                                $visited_source_ids,
+                            );
+                        }
+                    }
+                } else {
+                    foreach ($source->specialized_calls as $key => $map) {
+                        if (isset($map[$source->id])) {
+                            $new_id = $source->id . '-' . $key;
+                            if (!isset($this->forward_edges[$new_id])) {
+                                continue;
+                            }
+                            $new_source = clone $source;
+                            $new_source->id = $new_id;
+        
+                            $new_sources += $this->getChildNodes(
+                                $new_source,
+                                $source_taints,
+                                $sinks,
+                                $visited_source_ids,
+                            );
+                        }
+                    }
                 }
             }
 
@@ -438,57 +490,5 @@ final class TaintFlowGraph extends DataFlowGraph
         }
 
         return $new_sources;
-    }
-
-    /** @return array<int, DataFlowNode> */
-    private function getSpecializedSources(DataFlowNode $source): array
-    {
-        $generated_sources = [];
-
-        if (isset($this->forward_edges[$source->id])) {
-            return [$source];
-        }
-
-        if ($source->specialization_key && isset($this->specialized_calls[$source->specialization_key])) {
-            $generated_source = clone $source;
-
-            $generated_source->id = substr($source->id, 0, -strlen($source->specialization_key) - 1);
-
-            $generated_source->specialized_calls[$source->specialization_key][$generated_source->id] = true;
-
-            $generated_sources[] = $generated_source;
-        } elseif (isset($this->specializations[$source->id])) {
-            foreach ($this->specializations[$source->id] as $specialization => $_) {
-                if (!$source->specialized_calls || isset($source->specialized_calls[$specialization])) {
-                    $new_source = clone $source;
-
-                    $new_source->id = $source->id . '-' . $specialization;
-
-                    unset($new_source->specialized_calls[$specialization]);
-
-                    $generated_sources[] = $new_source;
-                }
-            }
-        } else {
-            foreach ($source->specialized_calls as $key => $map) {
-                if (isset($map[$source->id]) && isset($this->forward_edges[$source->id . '-' . $key])) {
-                    $new_source = clone $source;
-
-                    $new_source->id = $source->id . '-' . $key;
-
-                    $generated_sources[] = $new_source;
-                }
-            }
-        }
-
-        return array_filter(
-            $generated_sources,
-            $this->doesForwardEdgeExist(...),
-        );
-    }
-
-    private function doesForwardEdgeExist(DataFlowNode $new_source): bool
-    {
-        return isset($this->forward_edges[$new_source->id]);
     }
 }
