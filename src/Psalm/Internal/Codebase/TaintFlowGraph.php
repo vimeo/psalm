@@ -11,7 +11,6 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\DataFlow\TaintSink;
 use Psalm\Internal\DataFlow\TaintSource;
-use Psalm\Internal\Fork\Pool;
 use Psalm\Issue\TaintedCallable;
 use Psalm\Issue\TaintedCookie;
 use Psalm\Issue\TaintedCustom;
@@ -39,8 +38,6 @@ use function count;
 use function end;
 use function json_encode;
 use function ksort;
-use function strlen;
-use function substr;
 
 use const JSON_THROW_ON_ERROR;
 
@@ -58,10 +55,11 @@ final class TaintFlowGraph extends DataFlowGraph
     /** @var array<string, TaintSink> */
     private array $sinks = [];
 
-    /** @var array<string, array<string, true>> */
-    private array $specialized_calls = [];
-
-    /** @var array<string, array<string, true>> */
+    /**
+     * Unspecialized ID => (Specialization key => Specialized ID)
+     *
+     * @var array<string, array<string, string>>
+     */
     private array $specializations = [];
 
     #[Override]
@@ -69,9 +67,10 @@ final class TaintFlowGraph extends DataFlowGraph
     {
         $this->nodes[$node->id] = $node;
 
-        if ($node->unspecialized_id && $node->specialization_key) {
-            $this->specialized_calls[$node->specialization_key][$node->unspecialized_id] = true;
-            $this->specializations[$node->unspecialized_id][$node->specialization_key] = true;
+        if ($node->unspecialized_id !== null) {
+            /** @var string $node->specialization_key */
+            $node->is_first_level_and_specialized = true;
+            $this->specializations[$node->unspecialized_id][$node->specialization_key] = $node->id;
         }
     }
 
@@ -87,14 +86,13 @@ final class TaintFlowGraph extends DataFlowGraph
         $this->nodes[$node->id] = $node;
     }
 
-    public function addGraph(self $taint): void
+    public function addGraph(self $other): void
     {
-        $this->sources += $taint->sources;
-        $this->sinks += $taint->sinks;
-        $this->nodes += $taint->nodes;
-        $this->specialized_calls += $taint->specialized_calls;
+        $this->sources += $other->sources;
+        $this->sinks += $other->sinks;
+        $this->nodes += $other->nodes;
 
-        foreach ($taint->forward_edges as $key => $map) {
+        foreach ($other->forward_edges as $key => $map) {
             if (!isset($this->forward_edges[$key])) {
                 $this->forward_edges[$key] = $map;
             } else {
@@ -102,7 +100,7 @@ final class TaintFlowGraph extends DataFlowGraph
             }
         }
 
-        foreach ($taint->specializations as $key => $map) {
+        foreach ($other->specializations as $key => $map) {
             if (!isset($this->specializations[$key])) {
                 $this->specializations[$key] = $map;
             } else {
@@ -207,12 +205,23 @@ final class TaintFlowGraph extends DataFlowGraph
         $this->sinks = [];
         $this->sources = [];
 
-        ksort($this->specializations);
         ksort($this->forward_edges);
 
         $config = Config::getInstance();
 
         $project_analyzer = ProjectAnalyzer::getInstance();
+
+        // Remove all specializations without an outgoing edge
+        foreach ($this->specializations as $k => &$map) {
+            foreach ($map as $kk => $specialized_id) {
+                if (!isset($this->forward_edges[$specialized_id])) {
+                    unset($map[$kk]);
+                }
+            }
+            if (!$map) {
+                unset($this->specializations[$k]);
+            }
+        } unset($map);
 
         // reprocess resolved descendants up to a maximum nesting level of 40
         for ($i = 0; count($sinks) && count($sources) && $i < 40; $i++) {
@@ -225,6 +234,8 @@ final class TaintFlowGraph extends DataFlowGraph
 
                 $visited_source_ids[$source->id][$source_taints] = true;
 
+                // If we have one or more edges starting at this node,
+                // process destinations of those edges.
                 if (isset($this->forward_edges[$source->id])) {
                     $this->getChildNodes(
                         $new_sources,
@@ -238,14 +249,18 @@ final class TaintFlowGraph extends DataFlowGraph
                     continue;
                 }
         
-                if ($source->specialization_key !== null && isset($this->specialized_calls[$source->specialization_key])) {
-                    $new_id = substr($source->id, 0, -strlen($source->specialization_key) - 1);
-                    if (!isset($this->forward_edges[$new_id])) {
+                // If this is a specialized node AND it was added using addNode, de-specialize;
+                // Then, if we have one or more edges starting at the de-specialized node,
+                // process destinations of those edges.
+                if ($source->is_first_level_and_specialized) {
+                    /** @var string $source->unspecialized_id */
+                    if (!isset($this->forward_edges[$source->unspecialized_id])) {
                         continue;
                     }
                     $generated_source = clone $source;
-                    $generated_source->id = $new_id;
-                    $generated_source->specialized_calls[$source->specialization_key][$new_id] = true;
+                    $generated_source->id = $source->unspecialized_id;
+                    $generated_source->is_first_level_and_specialized = false;
+                    $generated_source->processing_specialized_descendants_of[$source->specialization_key][$source->unspecialized_id] = $source->id;
         
                     $this->getChildNodes(
                         $new_sources,
@@ -256,17 +271,38 @@ final class TaintFlowGraph extends DataFlowGraph
                         $config,
                         $project_analyzer,
                     );
+
+                    // If this node has first level specializations (=> is first-level & unspecialized),
+                    // process them all
                 } elseif (isset($this->specializations[$source->id])) {
-                    foreach ($this->specializations[$source->id] as $specialization => $_) {
-                        if (!$source->specialized_calls || isset($source->specialized_calls[$specialization])) {
-                            $new_id = $source->id . '-' . $specialization;
-                            if (!isset($this->forward_edges[$new_id])) {
+                    if ($source->processing_specialized_descendants_of) {
+                        // If processing descendants of a specialized call, accept only descendants.
+                        foreach ($this->specializations[$source->id] as $specialization => $specialized_id) {
+                            if (!isset($source->processing_specialized_descendants_of[$specialization])) {
                                 continue;
                             }
                             $new_source = clone $source;
-                            $new_source->id = $new_id;
-                            unset($new_source->specialized_calls[$specialization]);
-        
+                            $new_source->is_first_level_and_specialized = false;
+                            $new_source->id = $specialized_id;
+                            unset($new_source->processing_specialized_descendants_of[$specialization]);
+            
+                            $this->getChildNodes(
+                                $new_sources,
+                                $new_source,
+                                $source_taints,
+                                $sinks,
+                                $visited_source_ids,
+                                $config,
+                                $project_analyzer,
+                            );
+                        }
+                    } else {
+                        // If not processing descendants, accept all specializations.
+                        foreach ($this->specializations[$source->id] as $specialization => $specialized_id) {
+                            $new_source = clone $source;
+                            $new_source->is_first_level_and_specialized = false;
+                            $new_source->id = $specialized_id;
+
                             $this->getChildNodes(
                                 $new_sources,
                                 $new_source,
@@ -279,14 +315,16 @@ final class TaintFlowGraph extends DataFlowGraph
                         }
                     }
                 } else {
-                    foreach ($source->specialized_calls as $key => $map) {
+                    // Process all descendants 
+                    foreach ($source->processing_specialized_descendants_of as $map) {
                         if (isset($map[$source->id])) {
-                            $new_id = $source->id . '-' . $key;
-                            if (!isset($this->forward_edges[$new_id])) {
+                            $specialized_id = $map[$source->id];
+                            if (!isset($this->forward_edges[$specialized_id])) {
                                 continue;
                             }
                             $new_source = clone $source;
-                            $new_source->id = $new_id;
+                            $new_source->is_first_level_and_specialized = false;
+                            $new_source->id = $specialized_id;
         
                             $this->getChildNodes(
                                 $new_sources,
@@ -347,8 +385,8 @@ final class TaintFlowGraph extends DataFlowGraph
             }
 
             if ($generated_source->code_location
-                && $project_analyzer->canReportIssues($generated_source->code_location->file_path)
-                && !$config->reportIssueInFile('TaintedInput', $generated_source->code_location->file_path)
+            && $project_analyzer->canReportIssues($generated_source->code_location->file_path)
+            && !$config->reportIssueInFile('TaintedInput', $generated_source->code_location->file_path)
             ) {
                 continue;
             }
@@ -359,7 +397,7 @@ final class TaintFlowGraph extends DataFlowGraph
 
                 if ($matching_taints && $generated_source->code_location) {
                     if ($sink->code_location
-                        && $config->reportIssueInFile('TaintedInput', $sink->code_location->file_path)
+                    && $config->reportIssueInFile('TaintedInput', $sink->code_location->file_path)
                     ) {
                         $issue_location = $sink->code_location;
                     } else {
@@ -368,7 +406,7 @@ final class TaintFlowGraph extends DataFlowGraph
 
                     $issue_trace = $this->getIssueTrace($generated_source);
                     $path = $this->getPredecessorPath($generated_source)
-                        . ' -> ' . $this->getSuccessorPath($sink);
+                    . ' -> ' . $this->getSuccessorPath($sink);
 
                     foreach (TaintKindGroup::TAINT_TO_NAME as $matching_taint => $_) {
                         if (!($matching_taints & $matching_taint)) {
@@ -497,17 +535,18 @@ final class TaintFlowGraph extends DataFlowGraph
             }
 
             $key = $to_id .
-                ' ' . json_encode($generated_source->specialized_calls, JSON_THROW_ON_ERROR) .
-                ' ' . $new_taints;
+            ' ' . json_encode($generated_source->processing_specialized_descendants_of, JSON_THROW_ON_ERROR) .
+            ' ' . $new_taints;
 
             if (isset($new_sources[$key])) {
                 continue;
             }
 
             $new_destination = clone $this->nodes[$to_id];
+            $new_destination->is_first_level_and_specialized = false;
             $new_destination->taintSource = $generated_source;
             $new_destination->taints = $new_taints;
-            $new_destination->specialized_calls = $generated_source->specialized_calls;
+            $new_destination->processing_specialized_descendants_of = $generated_source->processing_specialized_descendants_of;
             $new_destination->path_types = [...$generated_source->path_types, $path_type];
 
             $new_sources[$key] = $new_destination;

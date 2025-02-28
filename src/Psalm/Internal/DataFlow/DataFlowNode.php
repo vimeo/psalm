@@ -20,6 +20,8 @@ class DataFlowNode implements Stringable
 
     public ?string $specialization_key = null;
 
+    public bool $is_first_level_and_specialized = false;
+
     /** @var ?self */
     public ?DataFlowNode $taintSource = null;
 
@@ -27,9 +29,9 @@ class DataFlowNode implements Stringable
     public array $path_types = [];
 
     /**
-     * @var array<string, array<string, true>>
+     * @var array<string, array<string, string>>
      */
-    public array $specialized_calls = [];
+    public array $processing_specialized_descendants_of = [];
 
     public function __construct(
         public string $id,
