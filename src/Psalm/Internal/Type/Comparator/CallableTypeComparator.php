@@ -20,6 +20,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TCallableInterface;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TKeyedArray;
@@ -49,15 +50,19 @@ final class CallableTypeComparator
         Atomic $container_type_part,
         ?TypeComparisonResult $atomic_comparison_result,
     ): bool {
-        if ($input_type_part->isCallableType()
-            && !$input_type_part instanceof TCallable // it has stricter checks below
-        ) {
-            if ($container_type_part instanceof TClosure) {
+        if ($container_type_part instanceof TClosure) {
+            if ($input_type_part->isCallableType()
+                && !$input_type_part instanceof TCallable // it has stricter checks below
+            ) {
                 if ($atomic_comparison_result) {
                     $atomic_comparison_result->type_coerced = true;
                 }
                 return false;
             }
+        }
+        if ($input_type_part->isCallableType()
+            && !$input_type_part instanceof TCallable // it has stricter checks below
+        ) {
             return true;
         }
 

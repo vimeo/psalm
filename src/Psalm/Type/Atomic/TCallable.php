@@ -125,6 +125,7 @@ final class TCallable extends Atomic
         return $this->getCallableChildNodeKeys();
     }
 
+    /** @return true */
     #[Override]
     public function isCallableType(): bool
     {

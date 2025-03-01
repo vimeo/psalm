@@ -15,6 +15,7 @@ final class TCallableObject extends TObject
 {
     use HasIntersectionTrait;
 
+    /** @return true */
     #[Override]
     public function isCallableType(): bool
     {
