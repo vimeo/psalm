@@ -294,7 +294,7 @@ final class HighOrderFunctionArgHandler
             }
 
             if ($a instanceof Type\Atomic\TCallableString ||
-                $a instanceof Type\Atomic\TCallableKeyedArray
+                ($a instanceof Type\Atomic\TKeyedArray && $a->is_callable)
             ) {
                 return false;
             }

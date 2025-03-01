@@ -1688,7 +1688,6 @@ final class PreloaderList {
         \Psalm\Type\Atomic\TBool::class,
         \Psalm\Type\Atomic\TCallable::class,
         \Psalm\Type\Atomic\TCallableInterface::class,
-        \Psalm\Type\Atomic\TCallableKeyedArray::class,
         \Psalm\Type\Atomic\TCallableObject::class,
         \Psalm\Type\Atomic\TCallableString::class,
         \Psalm\Type\Atomic\TClassConstant::class,

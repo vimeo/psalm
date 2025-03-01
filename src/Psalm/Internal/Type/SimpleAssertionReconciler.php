@@ -37,7 +37,6 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
-use Psalm\Type\Atomic\TCallableKeyedArray;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassConstant;
@@ -2279,7 +2278,7 @@ final class SimpleAssertionReconciler extends Reconciler
                 //a non-empty-array assertion
                 $array_types[] = $type;
             } elseif ($type instanceof TCallable) {
-                $array_types[] = new TCallableKeyedArray([
+                $array_types[] = TKeyedArray::makeCallable([
                     new Union([new TClassString, new TObject]),
                     Type::getNonEmptyString(),
                 ]);
@@ -2401,7 +2400,7 @@ final class SimpleAssertionReconciler extends Reconciler
 
                 $redundant = false;
             } elseif ($type instanceof TCallable) {
-                $array_types[] = new TCallableKeyedArray([
+                $array_types[] = TKeyedArray::makeCallable([
                     new Union([new TClassString, new TObject]),
                     Type::getNonEmptyString(),
                 ]);
@@ -2624,11 +2623,11 @@ final class SimpleAssertionReconciler extends Reconciler
                 $callable_types[] = $type;
                 $redundant = false;
             } elseif ($type instanceof TArray) {
-                $type = new TCallableKeyedArray($type->type_params);
+                $type = TKeyedArray::makeCallable($type->type_params);
                 $callable_types[] = $type;
                 $redundant = false;
             } elseif ($type instanceof TKeyedArray && count($type->properties) === 2) {
-                $type = new TCallableKeyedArray($type->properties);
+                $type = TKeyedArray::makeCallable($type->properties);
                 $callable_types[] = $type;
                 $redundant = false;
             } elseif ($type instanceof TTemplateParam) {

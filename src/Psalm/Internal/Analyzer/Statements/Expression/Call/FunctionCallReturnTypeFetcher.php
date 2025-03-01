@@ -27,7 +27,6 @@ use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
-use Psalm\Type\Atomic\TCallableKeyedArray;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TFalse;
@@ -364,10 +363,6 @@ final class FunctionCallReturnTypeFetcher
 
                         if (count($atomic_types) === 1) {
                             if (isset($atomic_types['array'])) {
-                                if ($atomic_types['array'] instanceof TCallableKeyedArray) {
-                                    return Type::getInt(false, 2);
-                                }
-
                                 if ($atomic_types['array'] instanceof TNonEmptyArray) {
                                     return new Union([
                                         $atomic_types['array']->count !== null
@@ -377,6 +372,9 @@ final class FunctionCallReturnTypeFetcher
                                 }
 
                                 if ($atomic_types['array'] instanceof TKeyedArray) {
+                                    if ($atomic_types['array']->is_callable) {
+                                        return Type::getInt(false, 2);
+                                    }
                                     $min = $atomic_types['array']->getMinCount();
                                     $max = $atomic_types['array']->getMaxCount();
 

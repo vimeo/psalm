@@ -15,6 +15,8 @@ use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Union;
 
+use function assert;
+
 /**
  * @internal
  */

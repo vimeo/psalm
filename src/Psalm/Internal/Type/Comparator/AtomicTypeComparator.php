@@ -11,7 +11,6 @@ use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableInterface;
-use Psalm\Type\Atomic\TCallableKeyedArray;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassStringMap;
@@ -175,7 +174,7 @@ final class AtomicTypeComparator
             );
         }
 
-        if ($input_type_part instanceof TCallableKeyedArray
+        if ($input_type_part instanceof TKeyedArray && $input_type_part->is_callable
             && $container_type_part instanceof TArray
         ) {
             return ArrayTypeComparator::isContainedBy(
