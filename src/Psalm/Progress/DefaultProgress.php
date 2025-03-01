@@ -6,8 +6,8 @@ namespace Psalm\Progress;
 
 use Override;
 
+use function hrtime;
 use function max;
-use function microtime;
 use function str_repeat;
 use function strlen;
 
