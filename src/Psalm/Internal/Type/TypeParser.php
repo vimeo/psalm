@@ -1576,6 +1576,7 @@ final class TypeParser
                     ? null
                     : [Type::getListKey(), Type::getMixed()]
                 ),
+                $is_list,
                 $from_docblock,
             ) : TKeyedArray::make(
                 $properties,

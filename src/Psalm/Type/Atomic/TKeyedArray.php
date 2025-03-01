@@ -118,6 +118,7 @@ final class TKeyedArray extends Atomic
         array $properties,
         ?array $class_strings = null,
         ?array $fallback_params = null,
+        bool $is_list = false,
         bool $from_docblock = false,
     ): self|TArray {
         if ($fallback_params) {
@@ -133,7 +134,7 @@ final class TKeyedArray extends Atomic
             ], $from_docblock);
         }
 
-        return new self($properties, $class_strings, $fallback_params, true, true, $from_docblock);
+        return new self($properties, $class_strings, $fallback_params, $is_list, true, $from_docblock);
     }
 
     public function setIsCallable(bool $is_callable): self
@@ -248,7 +249,7 @@ final class TKeyedArray extends Atomic
         if ($this->is_list) {
             $key = $this->is_callable ? 'callable-list' : 'list';
         } else {
-            $key = 'array';
+            $key = $this->is_callable ? 'callable-array' : 'array';
             sort($property_strings);
         }
 
@@ -332,7 +333,7 @@ final class TKeyedArray extends Atomic
 
         $params_part = $this->fallback_params !== null ? ',...' : '';
 
-        return  ($this->is_list ? ($this->is_callable ? 'callable-list' : 'list') : 'array')
+        return  ($this->is_list ? ($this->is_callable ? 'callable-list' : 'list') : ($this->is_callable ? 'callable-array' : 'array'))
                 . '{' . implode(', ', $suffixed_properties) . $params_part . '}';
     }
 
