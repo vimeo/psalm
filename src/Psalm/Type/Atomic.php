@@ -458,11 +458,7 @@ abstract class Atomic implements TypeNode, Stringable
 
     public function isCallableType(): bool
     {
-        return $this instanceof TCallable
-            || $this instanceof TCallableObject
-            || $this instanceof TCallableString
-            || ($this instanceof TKeyedArray && $this->is_callable)
-            || $this instanceof TClosure;
+        return false;
     }
 
     public function isIterable(Codebase $codebase): bool

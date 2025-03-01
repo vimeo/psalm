@@ -64,6 +64,12 @@ final class TKeyedArray extends Atomic
         parent::__construct($from_docblock);
     }
 
+    #[Override]
+    public function isCallableType(): bool
+    {
+        return $this->is_callable;
+    }
+
     /**
      * @psalm-pure
      * @param non-empty-array<string|int, Union> $properties
