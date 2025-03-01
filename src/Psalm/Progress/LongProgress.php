@@ -8,6 +8,8 @@ use LogicException;
 use Override;
 
 use function floor;
+use function microtime;
+use function round;
 use function sprintf;
 use function str_repeat;
 use function strlen;
@@ -24,6 +26,9 @@ class LongProgress extends Progress
 
     protected bool $fixed_size = false;
 
+    protected ?Phase $prevPhase = null;
+    protected float $started = 0.0;
+
     public function __construct(
         protected bool $print_errors = true,
         protected bool $print_infos = true,
@@ -32,37 +37,47 @@ class LongProgress extends Progress
     }
 
     #[Override]
-    public function startScanningFiles(): void
+    public function debug(string $message): void
     {
-        $this->fixed_size = false;
-        $this->write("\n" . 'Scanning files...' . ($this->in_ci ? '' : "\n\n"));
     }
 
     #[Override]
-    public function startAnalyzingFiles(): void
+    public function startPhase(Phase $phase): void
     {
-        $this->fixed_size = true;
-        $this->write("\n\n" . 'Analyzing files...' . "\n\n");
+        $this->reportPhaseDuration($phase);
+        $this->write(match ($phase) {
+            Phase::SCAN => "\nScanning files...\n\n",
+            Phase::ANALYSIS => "\nAnalysing files...\n\n",
+            Phase::ALTERING => "\nUpdating files...\n",
+            Phase::TAINT_GRAPH_RESOLUTION => "\n\nResolving taint graph...\n\n",
+        });
+        $this->fixed_size = $phase === Phase::ANALYSIS || $phase === Phase::ALTERING;
     }
 
-    #[Override]
-    public function startAlteringFiles(): void
+    protected function reportPhaseDuration(?Phase $newPhase = null): void
     {
-        $this->fixed_size = true;
-        $this->write('Altering files...' . "\n");
+        if ($this->prevPhase === $newPhase) {
+            return;
+        }
+        $this->progress = 0;
+        $this->number_of_tasks = 0;
+        if ($this->prevPhase !== null) {
+            $took = round(microtime(true) - $this->started, 1);
+            $this->write(match ($this->prevPhase) {
+                Phase::SCAN => "\n\nScan took $took seconds.\n",
+                Phase::ANALYSIS => "\nAnalysis took $took seconds.\n",
+                Phase::ALTERING => "\n\nUpdating files took $took seconds.\n",
+                Phase::TAINT_GRAPH_RESOLUTION => "\n\nTaint graph resolution took $took seconds.\n",
+            });
+        }
+        $this->started = microtime(true);
+        $this->prevPhase = $newPhase;
     }
 
     #[Override]
     public function alterFileDone(string $file_name): void
     {
         $this->write('Altered ' . $file_name . "\n");
-    }
-
-    #[Override]
-    public function start(int $number_of_tasks): void
-    {
-        $this->number_of_tasks = $number_of_tasks;
-        $this->progress = 0;
     }
 
     #[Override]
@@ -114,6 +129,7 @@ class LongProgress extends Progress
     #[Override]
     public function finish(): void
     {
+        $this->reportPhaseDuration(null);
         $this->write(PHP_EOL);
     }
 

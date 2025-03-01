@@ -6,8 +6,8 @@ namespace Psalm\Progress;
 
 use Override;
 
+use function hrtime;
 use function max;
-use function microtime;
 use function str_repeat;
 use function strlen;
 
@@ -106,6 +106,7 @@ class DefaultProgress extends LongProgress
     {
         if ($this->number_of_tasks > self::TOO_MANY_FILES) {
             $this->write(str_repeat(' ', self::NUMBER_OF_COLUMNS + strlen($this->getOverview()) + 1) . "\r");
+            $this->reportPhaseDuration(null);
         } else {
             parent::finish();
         }

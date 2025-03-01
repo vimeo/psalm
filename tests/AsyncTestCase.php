@@ -129,7 +129,7 @@ abstract class AsyncTestCase extends BaseAsyncTestCase
         $file_analyzer->analyze($context);
 
         if ($codebase->taint_flow_graph) {
-            $codebase->taint_flow_graph->connectSinksAndSources();
+            $codebase->taint_flow_graph->connectSinksAndSources($codebase->progress);
         }
 
         if ($track_unused_suppressions) {

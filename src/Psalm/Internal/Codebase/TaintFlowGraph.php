@@ -31,6 +31,8 @@ use Psalm\Issue\TaintedUnserialize;
 use Psalm\Issue\TaintedUserSecret;
 use Psalm\Issue\TaintedXpath;
 use Psalm\IssueBuffer;
+use Psalm\Progress\Phase;
+use Psalm\Progress\Progress;
 use Psalm\Type\TaintKind;
 
 use function array_diff;
@@ -202,8 +204,10 @@ final class TaintFlowGraph extends DataFlowGraph
         return [$node];
     }
 
-    public function connectSinksAndSources(): void
+    public function connectSinksAndSources(Progress $progress): void
     {
+        $progress->startPhase(Phase::TAINT_GRAPH_RESOLUTION);
+
         $visited_source_ids = [];
 
         $sources = $this->sources;
@@ -213,10 +217,11 @@ final class TaintFlowGraph extends DataFlowGraph
         ksort($this->forward_edges);
 
         // reprocess resolved descendants up to a maximum nesting level of 40
-        for ($i = 0; count($sinks) && count($sources) && $i < 40; $i++) {
+        for ($i = 0; count($sinks) && count($sources) && $i < 10000; $i++) {
             $new_sources = [];
 
             ksort($sources);
+            $progress->expand(count($sources));
 
             foreach ($sources as $source) {
                 $source_taints = $source->taints;
@@ -234,6 +239,8 @@ final class TaintFlowGraph extends DataFlowGraph
                         $visited_source_ids,
                     )];
                 }
+
+                $progress->taskDone(0);
             }
 
             $sources = $new_sources;

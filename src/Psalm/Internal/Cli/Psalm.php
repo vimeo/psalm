@@ -13,6 +13,7 @@ use Psalm\Exception\ConfigCreationException;
 use Psalm\Exception\ConfigException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\CliUtils;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\ReferenceMapGenerator;
 use Psalm\Internal\Composer;
 use Psalm\Internal\ErrorHandler;
@@ -388,6 +389,9 @@ final class Psalm
         foreach ($plugins as $plugin_path) {
             $config->addPluginPath($plugin_path);
         }
+
+        // Prime cache
+        InternalCallMapHandler::getCallMap();
 
         if ($paths_to_check === null) {
             $project_analyzer->check($current_dir, $is_diff);

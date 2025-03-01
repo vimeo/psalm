@@ -25,21 +25,29 @@ final class DebugProgress extends Progress
     }
 
     #[Override]
-    public function startScanningFiles(): void
+    public function startPhase(Phase $phase): void
     {
-        $this->write("\n" . 'Scanning files...' . "\n\n");
+        $this->write(match ($phase) {
+            Phase::SCAN => "\nScanning files...\n\n",
+            Phase::ANALYSIS => "\nAnalysing files...\n",
+            Phase::ALTERING => "\nUpdating files...\n",
+            Phase::TAINT_GRAPH_RESOLUTION => "\nResolving taint graph...\n",
+        });
+    }
+    
+    #[Override]
+    public function expand(int $number_of_tasks): void
+    {
     }
 
     #[Override]
-    public function startAnalyzingFiles(): void
+    public function taskDone(int $level): void
     {
-        $this->write("\n" . 'Analyzing files...' . "\n");
     }
 
     #[Override]
-    public function startAlteringFiles(): void
+    public function finish(): void
     {
-        $this->write('Updating files...' . "\n");
     }
 
     #[Override]
