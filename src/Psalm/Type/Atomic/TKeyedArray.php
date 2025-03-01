@@ -31,6 +31,8 @@ use function str_replace;
 /**
  * Represents an 'object-like array' - an array with known keys.
  *
+ * @psalm-api
+ * 
  * @psalm-immutable
  */
 final class TKeyedArray extends Atomic
@@ -40,12 +42,11 @@ final class TKeyedArray extends Atomic
     /**
      * Constructs a new instance of a generic type
      *
-     * @deprecated Please use make()
      * @param non-empty-array<string|int, Union> $properties
      * @param array{Union, Union}|null $fallback_params
      * @param array<string, bool> $class_strings
      */
-    public function __construct(
+    private function __construct(
         public array $properties,
         public ?array $class_strings = null,
         /**

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="6.x-dev@b01cf3ccfa060409e1e112f2ebec95a1eefec2da">
+<files psalm-version="6.x-dev@4258dc813b28c2b03865f34a17ddf072f006b357">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$comment_block->tags['variablesfrom'][0]]]></code>
@@ -2379,6 +2379,18 @@
       <code><![CDATA[$properties[$property]]]></code>
       <code><![CDATA[$property_type]]></code>
     </ImplicitToStringCast>
+    <InvalidArgument>
+      <code><![CDATA[$class_strings]]></code>
+      <code><![CDATA[$class_strings]]></code>
+      <code><![CDATA[$extra_params ?? ($sealed
+                    ? null
+                    : [$is_list ? Type::getListKey() : Type::getArrayKey(), Type::getMixed()]
+                )]]></code>
+      <code><![CDATA[$extra_params ?? ($sealed
+                    ? null
+                    : [Type::getListKey(), Type::getMixed()]
+                )]]></code>
+    </InvalidArgument>
     <InvalidOperand>
       <code><![CDATA[$property_key - 1]]></code>
     </InvalidOperand>
@@ -2607,17 +2619,6 @@
     <ImpureMethodCall>
       <code><![CDATA[getMostSpecificTypeFromBounds]]></code>
     </ImpureMethodCall>
-  </file>
-  <file src="src/Psalm/Type/Atomic/TCallableKeyedArray.php">
-    <DeprecatedMethod>
-      <code><![CDATA[parent::__construct(
-            $properties,
-            $class_strings,
-            $fallback_params,
-            true,
-            $from_docblock,
-        )]]></code>
-    </DeprecatedMethod>
   </file>
   <file src="src/Psalm/Type/Atomic/TClassString.php">
     <ImplicitToStringCast>

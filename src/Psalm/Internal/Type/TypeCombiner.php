@@ -651,7 +651,7 @@ final class TypeCombiner
         }
 
         if ($type instanceof TKeyedArray) {
-            if ($type instanceof TKeyedArray && $type->is_callable && isset($combination->value_types['callable'])) {
+            if ($type->is_callable && isset($combination->value_types['callable'])) {
                 return null;
             }
 
@@ -775,7 +775,7 @@ final class TypeCombiner
                 $combination->all_arrays_lists = true;
             }
 
-            if ($type instanceof TKeyedArray && $type->is_callable) {
+            if ($type->is_callable) {
                 if ($combination->all_arrays_callable !== false) {
                     $combination->all_arrays_callable = true;
                 }

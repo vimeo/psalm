@@ -1574,7 +1574,7 @@ final class TypeParser
                 $class_strings,
                 $extra_params ?? ($sealed
                     ? null
-                    : [$is_list ? Type::getListKey() : Type::getArrayKey(), Type::getMixed()]
+                    : [Type::getListKey(), Type::getMixed()]
                 ),
                 $from_docblock,
             ) : TKeyedArray::make(
