@@ -70,7 +70,7 @@ final class ArrayFillReturnTypeProvider implements FunctionReturnTypeProviderInt
             if (!$result) {
                 return Type::getEmptyArray();
             }
-            return new Union([new TKeyedArray(
+            return new Union([TKeyedArray::make(
                 $result,
                 null,
                 null,

@@ -791,7 +791,7 @@ final class VariableFetchAnalyzer
                 $arr['argc'] = $argc_helper;
             }
 
-            $detailed_type = new TKeyedArray(
+            $detailed_type = TKeyedArray::make(
                 $arr,
                 null,
                 [Type::getNonEmptyString(), Type::getString()],
@@ -814,7 +814,7 @@ final class VariableFetchAnalyzer
                 $values['full_path'] = $str;
             }
 
-            $type = new Union([new TKeyedArray($values)]);
+            $type = new Union([TKeyedArray::make($values)]);
             $parent = new TArray([Type::getNonEmptyString(), $type]);
 
             return new Union([$parent]);

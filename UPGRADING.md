@@ -1,3 +1,29 @@
+# Upgrading from Psalm 6 to Psalm 7
+
+## Changed
+
+- [BC] The return type of Psalm\Type::getListAtomic() changed from Psalm\Type\Atomic\TKeyedArray to the non-covariant Psalm\Type\Atomic\TKeyedArray|Psalm\Type\Atomic\TArray
+
+- [BC] The return type of Psalm\Type::getListAtomic() changed from Psalm\Type\Atomic\TKeyedArray to Psalm\Type\Atomic\TKeyedArray|Psalm\Type\Atomic\TArray
+
+- [BC] The return type of Psalm\Type::getNonEmptyListAtomic() changed from Psalm\Type\Atomic\TKeyedArray to the non-covariant Psalm\Type\Atomic\TKeyedArray|Psalm\Type\Atomic\TArray
+
+- [BC] The return type of Psalm\Type::getNonEmptyListAtomic() changed from Psalm\Type\Atomic\TKeyedArray to Psalm\Type\Atomic\TKeyedArray|Psalm\Type\Atomic\TArray
+
+- [BC] Class Psalm\Type\Atomic\TKeyedArray became final
+
+- [BC] Class Psalm\Type\Atomic\TKeyedArray can only be created using the new `make` or `makeCallable` factory methods, the constructor was rendered private.  
+
+- [BC] Class Psalm\Type\Atomic\TCallableKeyedArray has been deleted, and replaced with a new `is_callable` flag in Psalm\Type\Atomic\TKeyedArray
+
+## Removed
+
+- [BC] Constant Psalm\Type\Atomic\TKeyedArray::NAME_ARRAY was removed
+
+- [BC] Constant Psalm\Type\Atomic\TKeyedArray::NAME_LIST was removed
+
+- [BC] Psalm\Type\Atomic\TKeyedArray#__construct() was made private
+
 # Upgrading from Psalm 5 to Psalm 6
 ## Changed
 

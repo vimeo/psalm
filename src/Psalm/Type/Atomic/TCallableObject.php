@@ -11,9 +11,16 @@ use Override;
  *
  * @psalm-immutable
  */
-final class TCallableObject extends TObject implements TCallableInterface
+final class TCallableObject extends TObject
 {
     use HasIntersectionTrait;
+
+    /** @return true */
+    #[Override]
+    public function isCallableType(): bool
+    {
+        return true;
+    }
 
     public function __construct(bool $from_docblock = false, public ?TCallable $callable = null)
     {

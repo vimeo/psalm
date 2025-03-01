@@ -11,8 +11,13 @@ use Override;
  *
  * @psalm-immutable
  */
-final class TCallableString extends TNonFalsyString implements TCallableInterface
+final class TCallableString extends TNonFalsyString
 {
+    #[Override]
+    public function isCallableType(): bool
+    {
+        return true;
+    }
 
     #[Override]
     public function getKey(bool $include_extra = true): string

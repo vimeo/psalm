@@ -2251,7 +2251,7 @@ final class ArrayFunctionCallTest extends TestCase
                     shuffle($emptyArray);',
                 'assertions' => [
                     '$array' => 'non-empty-list<int>',
-                    '$emptyArray' => 'list<never>',
+                    '$emptyArray' => 'array<never, never>',
                 ],
             ],
             'sort' => [
@@ -2262,7 +2262,7 @@ final class ArrayFunctionCallTest extends TestCase
                     sort($emptyArray);',
                 'assertions' => [
                     '$array' => 'non-empty-list<int>',
-                    '$emptyArray' => 'list<never>',
+                    '$emptyArray' => 'array<never, never>',
                 ],
             ],
             'rsort' => [
@@ -2273,7 +2273,7 @@ final class ArrayFunctionCallTest extends TestCase
                     rsort($emptyArray);',
                 'assertions' => [
                     '$array' => 'non-empty-list<int>',
-                    '$emptyArray' => 'list<never>',
+                    '$emptyArray' => 'array<never, never>',
                 ],
             ],
             'usort' => [
@@ -2285,7 +2285,7 @@ final class ArrayFunctionCallTest extends TestCase
                     usort($emptyArray, "baz");',
                 'assertions' => [
                     '$array' => 'non-empty-list<int>',
-                    '$emptyArray' => 'list<never>',
+                    '$emptyArray' => 'array<never, never>',
                 ],
             ],
             'closureParamConstraintsMet' => [

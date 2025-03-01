@@ -18,7 +18,7 @@ use Psalm\Type\Union;
  *
  * @psalm-immutable
  */
-final class TCallable extends Atomic implements TCallableInterface
+final class TCallable extends Atomic
 {
     use UnserializeMemoryUsageSuppressionTrait;
     use CallableTrait;
@@ -123,5 +123,12 @@ final class TCallable extends Atomic implements TCallableInterface
     protected function getChildNodeKeys(): array
     {
         return $this->getCallableChildNodeKeys();
+    }
+
+    /** @return true */
+    #[Override]
+    public function isCallableType(): bool
+    {
+        return true;
     }
 }

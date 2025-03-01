@@ -20,7 +20,6 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
-use Psalm\Type\Atomic\TCallableKeyedArray;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassString;
@@ -260,7 +259,7 @@ abstract class Atomic implements TypeNode, Stringable
                 );
                 $object = new TObject(true);
                 $string = new TNonEmptyString(true);
-                return new TCallableKeyedArray([
+                return TKeyedArray::makeCallable([
                     new Union([$classString, $object]),
                     new Union([$string]),
                 ]);
@@ -459,11 +458,7 @@ abstract class Atomic implements TypeNode, Stringable
 
     public function isCallableType(): bool
     {
-        return $this instanceof TCallable
-            || $this instanceof TCallableObject
-            || $this instanceof TCallableString
-            || $this instanceof TCallableKeyedArray
-            || $this instanceof TClosure;
+        return false;
     }
 
     public function isIterable(Codebase $codebase): bool

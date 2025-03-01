@@ -46,12 +46,12 @@ final class CallableTypeComparator
      */
     public static function isContainedBy(
         Codebase $codebase,
-        TClosure|TCallableInterface $input_type_part,
+        Atomic $input_type_part,
         Atomic $container_type_part,
         ?TypeComparisonResult $atomic_comparison_result,
     ): bool {
         if ($container_type_part instanceof TClosure) {
-            if ($input_type_part instanceof TCallableInterface
+            if ($input_type_part->isCallableType()
                 && !$input_type_part instanceof TCallable // it has stricter checks below
             ) {
                 if ($atomic_comparison_result) {
@@ -60,7 +60,7 @@ final class CallableTypeComparator
                 return false;
             }
         }
-        if ($input_type_part instanceof TCallableInterface
+        if ($input_type_part->isCallableType()
             && !$input_type_part instanceof TCallable // it has stricter checks below
         ) {
             return true;
