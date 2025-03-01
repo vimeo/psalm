@@ -17,10 +17,13 @@ class DefaultProgress extends LongProgress
 
     // Update the progress bar at most once per 0.1 seconds.
     // This reduces flickering and reduces the amount of time spent writing to STDERR and updating the terminal.
-    private const PROGRESS_BAR_SAMPLE_INTERVAL = 0.1;
+    private const PROGRESS_BAR_SAMPLE_INTERVAL_NANOSECONDS = 100_000_000;
 
-    /** @var float the last time when the progress bar UI was updated */
-    private float $previous_update_time = 0.0;
+    /** the last time when the progress bar UI was updated (seconds) */
+    private int $previous_update_seconds = 0;
+
+    /** the last time when the progress bar UI was updated (nanoseconds) */
+    private int $previous_update_nseconds = 0;
 
     #[Override]
     public function taskDone(int $level): void
@@ -28,21 +31,21 @@ class DefaultProgress extends LongProgress
         if ($this->fixed_size && $this->number_of_tasks > self::TOO_MANY_FILES) {
             ++$this->progress;
 
-            // Source for rate limiting:
-            // https://github.com/phan/phan/blob/9a788581ee1a4e1c35bebf89c435fd8a238c1d17/src/Phan/CLI.php
-            $time = microtime(true);
+            [$seconds, $nseconds] = hrtime();
 
             // If not enough time has elapsed, then don't update the progress bar.
             // Making the update frequency based on time (instead of the number of files)
             // prevents the terminal from rapidly flickering while processing small/empty files,
             // and reduces the time spent writing to stderr.
-            if ($time - $this->previous_update_time < self::PROGRESS_BAR_SAMPLE_INTERVAL) {
-                // Make sure to output the section for 100% completion regardless of limits, to avoid confusion.
-                if ($this->progress !== $this->number_of_tasks) {
-                    return;
-                }
+            // Make sure to output the section for 100% completion regardless of limits, to avoid confusion.
+            if ($seconds === $this->previous_update_seconds
+                && ($nseconds - $this->previous_update_nseconds < self::PROGRESS_BAR_SAMPLE_INTERVAL_NANOSECONDS)
+                && $this->progress !== $this->number_of_tasks
+            ) {
+                return;
             }
-            $this->previous_update_time = $time;
+            $this->previous_update_seconds = $seconds;
+            $this->previous_update_nseconds = $nseconds;
 
             $inner_progress = self::renderInnerProgressBar(
                 self::NUMBER_OF_COLUMNS,
