@@ -32,7 +32,6 @@ use function str_replace;
  * Represents an 'object-like array' - an array with known keys.
  *
  * @psalm-api
- * 
  * @psalm-immutable
  */
 final class TKeyedArray extends Atomic
