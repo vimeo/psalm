@@ -23956,7 +23956,7 @@ return array (
   'idn_to_ascii' => 
   array (
     0 => 'false|string',
-    'domain' => 'string',
+    'domain' => 'non-empty-string',
     'flags=' => 'int',
     'variant=' => 'int',
     '&w_idna_info=' => 'array<array-key, mixed>',
@@ -23964,7 +23964,7 @@ return array (
   'idn_to_utf8' => 
   array (
     0 => 'false|string',
-    'domain' => 'string',
+    'domain' => 'non-empty-string',
     'flags=' => 'int',
     'variant=' => 'int',
     '&w_idna_info=' => 'array<array-key, mixed>',
