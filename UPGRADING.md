@@ -1,3 +1,23 @@
+# Upgrading from Psalm 6 to Psalm 7
+
+## Changed
+
+- [BC] The `startScanningFiles`, `startAnalyzingFiles`, `startAlteringFiles` of `Psalm\Progress\Progress` and subclasses were removed and replaced with a new `startPhase` method, taking a `Psalm\Progress\Phase` enum case.
+
+- [BC] The `start` method was removed, use `expand`, instead; the progress is reset to 0 when changing the current phase.  
+
+- [BC] Method `doesTerminalSupportUtf8` of class `Psalm\Progress\Progress` became final
+
+- [BC] Method debug() of class Psalm\Progress\Progress changed from concrete to abstract
+
+- [BC] Method alterFileDone() of class Psalm\Progress\Progress changed from concrete to abstract
+
+- [BC] Method expand() of class Psalm\Progress\Progress changed from concrete to abstract
+
+- [BC] Method taskDone() of class Psalm\Progress\Progress changed from concrete to abstract
+
+- [BC] Method finish() of class Psalm\Progress\Progress changed from concrete to abstract
+
 # Upgrading from Psalm 5 to Psalm 6
 ## Changed
 

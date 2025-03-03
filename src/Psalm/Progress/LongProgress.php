@@ -47,11 +47,12 @@ class LongProgress extends Progress
         $this->reportPhaseDuration($phase);
         $this->write(match ($phase) {
             Phase::SCAN => "\nScanning files...\n\n",
-            Phase::ANALYSIS => "\nAnalysing files...\n\n",
+            Phase::ANALYSIS => "\nAnalyzing files...\n\n",
             Phase::ALTERING => "\nUpdating files...\n",
             Phase::TAINT_GRAPH_RESOLUTION => "\n\nResolving taint graph...\n\n",
+            Phase::JIT_COMPILATION => "JIT compilation in progress...\n\n",
         });
-        $this->fixed_size = $phase === Phase::ANALYSIS || $phase === Phase::ALTERING;
+        $this->fixed_size = $phase === Phase::ANALYSIS || $phase === Phase::ALTERING || $phase === Phase::JIT_COMPILATION;
     }
 
     protected function reportPhaseDuration(?Phase $newPhase = null): void
@@ -65,9 +66,10 @@ class LongProgress extends Progress
             $took = round(microtime(true) - $this->started, 1);
             $this->write(match ($this->prevPhase) {
                 Phase::SCAN => "\n\nScan took $took seconds.\n",
-                Phase::ANALYSIS => "\nAnalysis took $took seconds.\n",
+                Phase::ANALYSIS => "\n\nAnalysis took $took seconds.\n",
                 Phase::ALTERING => "\n\nUpdating files took $took seconds.\n",
                 Phase::TAINT_GRAPH_RESOLUTION => "\n\nTaint graph resolution took $took seconds.\n",
+                Phase::JIT_COMPILATION => "JIT compilation took $took seconds.\n\n",
             });
         }
         $this->started = microtime(true);
@@ -130,7 +132,6 @@ class LongProgress extends Progress
     public function finish(): void
     {
         $this->reportPhaseDuration(null);
-        $this->write(PHP_EOL);
     }
 
     protected function getOverview(): string

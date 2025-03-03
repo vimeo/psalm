@@ -29,9 +29,10 @@ final class DebugProgress extends Progress
     {
         $this->write(match ($phase) {
             Phase::SCAN => "\nScanning files...\n\n",
-            Phase::ANALYSIS => "\nAnalysing files...\n",
+            Phase::ANALYSIS => "\nAnalyzing files...\n",
             Phase::ALTERING => "\nUpdating files...\n",
             Phase::TAINT_GRAPH_RESOLUTION => "\nResolving taint graph...\n",
+            Phase::JIT_COMPILATION => "\nJIT compilation in progress...\n",
         });
     }
     
