@@ -20,7 +20,6 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
-use Psalm\Type\Atomic\TCallableInterface;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TKeyedArray;
@@ -31,6 +30,7 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_slice;
+use function assert;
 use function count;
 use function end;
 use function strtolower;
@@ -67,6 +67,7 @@ final class CallableTypeComparator
         ) {
             return true;
         }
+        assert($input_type_part instanceof TClosure || $input_type_part instanceof TCallable);
 
         if ($container_type_part->is_pure && !$input_type_part->is_pure) {
             if ($atomic_comparison_result) {

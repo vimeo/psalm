@@ -140,12 +140,20 @@ final class TKeyedArray extends Atomic
 
     /**
      * @param non-empty-array<string|int, Union> $properties
-     * @return static
      */
-    public function setProperties(array $properties): self
+    public function setProperties(array $properties): self|TArray
     {
         if ($properties === $this->properties) {
             return $this;
+        }
+        if (count($properties) === 1
+            && $properties[array_key_first($properties)]->isNever()
+            && ($this->fallback_params === null || $this->fallback_params[1]->isNever())
+        ) {
+            $never = $properties[array_key_first($properties)];
+            return new TArray([
+                $never, $never,
+            ], $this->from_docblock);
         }
         $cloned = clone $this;
         $cloned->properties = $properties;
@@ -169,9 +177,6 @@ final class TKeyedArray extends Atomic
         return $cloned;
     }
 
-    /**
-     * @return static
-     */
     public function makeSealed(): self
     {
         if ($this->fallback_params === null) {
@@ -543,9 +548,6 @@ final class TKeyedArray extends Atomic
         return 'array';
     }
 
-    /**
-     * @return static
-     */
     #[Override]
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
@@ -558,7 +560,7 @@ final class TKeyedArray extends Atomic
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0,
-    ): self {
+    ): self|TArray {
         if ($input_type instanceof TKeyedArray
             && $input_type->is_list
             && $input_type->isSealed()
@@ -581,6 +583,11 @@ final class TKeyedArray extends Atomic
                 ->type_params[1]
                 ->setPossiblyUndefined(!$this->isNonEmpty());
 
+            if ($replaced_list_type->isNever()) {
+                return new TArray([
+                    $replaced_list_type, $replaced_list_type,
+                ], $this->from_docblock);
+            }
             $cloned = clone $this;
             $cloned->properties = [$replaced_list_type];
             $cloned->fallback_params = [$this->fallback_params[1], $replaced_list_type];
@@ -647,20 +654,26 @@ final class TKeyedArray extends Atomic
             return $this;
         }
         $cloned = clone $this;
+        if (count($properties) === 1
+            && $properties[array_key_first($properties)]->isNever()
+            && ($fallback_params === null || $fallback_params[1]->isNever())
+        ) {
+            $never = $properties[array_key_first($properties)];
+            return new TArray([
+                $never, $never,
+            ], $this->from_docblock);
+        }
         $cloned->properties = $properties;
         /** @psalm-suppress PropertyTypeCoercion */
         $cloned->fallback_params = $fallback_params;
         return $cloned;
     }
 
-    /**
-     * @return static
-     */
     #[Override]
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase,
-    ): self {
+    ): self|TArray {
         $properties = $this->properties;
         foreach ($properties as $offset => $property) {
             $properties[$offset] = TemplateInferredTypeReplacer::replace(
@@ -679,6 +692,15 @@ final class TKeyedArray extends Atomic
         }
         if ($properties !== $this->properties || $fallback_params !== $this->fallback_params) {
             $cloned = clone $this;
+            if (count($properties) === 1
+                && $properties[array_key_first($properties)]->isNever()
+                && ($fallback_params === null || $fallback_params[1]->isNever())
+            ) {
+                $never = $properties[array_key_first($properties)];
+                return new TArray([
+                    $never, $never,
+                ], $this->from_docblock);
+            }
             $cloned->properties = $properties;
             /** @psalm-suppress PropertyTypeCoercion */
             $cloned->fallback_params = $fallback_params;

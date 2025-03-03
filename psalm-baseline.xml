@@ -2386,10 +2386,6 @@
                     ? null
                     : [$is_list ? Type::getListKey() : Type::getArrayKey(), Type::getMixed()]
                 )]]></code>
-      <code><![CDATA[$extra_params ?? ($sealed
-                    ? null
-                    : [Type::getListKey(), Type::getMixed()]
-                )]]></code>
     </InvalidArgument>
     <InvalidOperand>
       <code><![CDATA[$property_key - 1]]></code>
@@ -2701,11 +2697,28 @@
     <ImpurePropertyAssignment>
       <code><![CDATA[$key_type->possibly_undefined]]></code>
     </ImpurePropertyAssignment>
+    <InvalidReturnStatement>
+      <code><![CDATA[new TArray([
+                    $never, $never,
+                ], $this->from_docblock)]]></code>
+      <code><![CDATA[new TArray([
+                    $replaced_list_type, $replaced_list_type,
+                ], $this->from_docblock)]]></code>
+      <code><![CDATA[new TArray([
+                $never, $never,
+            ], $this->from_docblock)]]></code>
+    </InvalidReturnStatement>
+    <InvalidReturnType>
+      <code><![CDATA[self|TArray]]></code>
+      <code><![CDATA[self|TArray]]></code>
+    </InvalidReturnType>
     <PossiblyInvalidOperand>
       <code><![CDATA[$name]]></code>
       <code><![CDATA[$name]]></code>
     </PossiblyInvalidOperand>
     <PossiblyUndefinedIntArrayOffset>
+      <code><![CDATA[$fallback_params[1]]]></code>
+      <code><![CDATA[$fallback_params[1]]]></code>
       <code><![CDATA[$this->properties[0]]]></code>
       <code><![CDATA[$this->properties[0]]]></code>
     </PossiblyUndefinedIntArrayOffset>
