@@ -2142,13 +2142,10 @@ final class Codebase
         $this->scanner->queueClassLikeForScanning($fq_classlike_name, $analyze_too, $store_failure, $phantom_classes);
     }
 
-    /**
-     * @param array<string> $taints
-     */
     public function addTaintSource(
         Union $expr_type,
         string $taint_id,
-        array $taints = TaintKindGroup::ALL_INPUT,
+        int $taints = TaintKindGroup::ALL_INPUT,
         ?CodeLocation $code_location = null,
     ): Union {
         if (!$this->taint_flow_graph) {
@@ -2168,12 +2165,9 @@ final class Codebase
         return $expr_type->addParentNodes([$source->id => $source]);
     }
 
-    /**
-     * @param array<string> $taints
-     */
     public function addTaintSink(
         string $taint_id,
-        array $taints = TaintKindGroup::ALL_INPUT,
+        int $taints = TaintKindGroup::ALL_INPUT,
         ?CodeLocation $code_location = null,
     ): void {
         if (!$this->taint_flow_graph) {

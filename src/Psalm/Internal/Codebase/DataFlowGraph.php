@@ -26,16 +26,12 @@ abstract class DataFlowGraph
 
     abstract public function addNode(DataFlowNode $node): void;
 
-    /**
-     * @param array<string> $added_taints
-     * @param array<string> $removed_taints
-     */
     public function addPath(
         DataFlowNode $from,
         DataFlowNode $to,
         string $path_type,
-        ?array $added_taints = null,
-        ?array $removed_taints = null,
+        int $added_taints = 0,
+        int $removed_taints = 0,
     ): void {
         $from_id = $from->id;
         $to_id = $to->id;

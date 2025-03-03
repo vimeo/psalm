@@ -63,7 +63,6 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
-use function array_diff;
 use function array_filter;
 use function array_keys;
 use function array_map;
@@ -826,8 +825,8 @@ final class AtomicPropertyFetchAnalyzer
 
         $data_flow_graph = $statements_analyzer->data_flow_graph;
 
-        $added_taints = [];
-        $removed_taints = [];
+        $added_taints = 0;
+        $removed_taints = 0;
 
         if ($context) {
             $codebase = $statements_analyzer->getCodebase();
@@ -901,10 +900,9 @@ final class AtomicPropertyFetchAnalyzer
 
                 $type = $type->setParentNodes([$property_node->id => $property_node], true);
 
-                $taints = array_diff($added_taints, $removed_taints);
-                if ($taints !== [] && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
-                    $taint_source = TaintSource::fromNode($var_node);
-                    $taint_source->taints = $taints;
+                $taints = $added_taints & ~$removed_taints;
+                if ($taints !== 0 && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+                    $taint_source = TaintSource::fromNode($var_node, $taints);
                     $statements_analyzer->data_flow_graph->addSource($taint_source);
                 }
             }
@@ -921,18 +919,14 @@ final class AtomicPropertyFetchAnalyzer
         }
     }
 
-    /**
-     * @param ?array<string> $added_taints
-     * @param ?array<string> $removed_taints
-     */
     public static function processUnspecialTaints(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $stmt,
         Union &$type,
         string $property_id,
         bool $in_assignment,
-        ?array $added_taints,
-        ?array $removed_taints,
+        int $added_taints,
+        int $removed_taints,
     ): void {
         if (!$statements_analyzer->data_flow_graph) {
             return;
@@ -984,10 +978,9 @@ final class AtomicPropertyFetchAnalyzer
 
         $type = $type->setParentNodes([$localized_property_node->id => $localized_property_node], true);
 
-        $taints = array_diff($added_taints ?? [], $removed_taints ?? []);
-        if ($taints !== [] && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
-            $taint_source = TaintSource::fromNode($localized_property_node);
-            $taint_source->taints = $taints;
+        $taints = $added_taints & ~$removed_taints;
+        if ($taints !== 0 && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+            $taint_source = TaintSource::fromNode($localized_property_node, $taints);
             $statements_analyzer->data_flow_graph->addSource($taint_source);
         }
     }

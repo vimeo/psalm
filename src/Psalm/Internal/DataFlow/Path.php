@@ -14,15 +14,11 @@ final class Path
 {
     use ImmutableNonCloneableTrait;
 
-    /**
-     * @param ?array<string> $unescaped_taints
-     * @param ?array<string> $escaped_taints
-     */
     public function __construct(
         public readonly string $type,
         public readonly int $length,
-        public readonly ?array $unescaped_taints = null,
-        public readonly ?array $escaped_taints = null,
+        public readonly int $added_taints = 0,
+        public readonly int $removed_taints = 0,
     ) {
     }
 }

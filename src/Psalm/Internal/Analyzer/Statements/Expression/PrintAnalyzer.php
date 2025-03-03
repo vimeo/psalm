@@ -47,12 +47,11 @@ final class PrintAnalyzer
                 $call_location,
             );
 
-            $print_param_sink->taints = [
-                TaintKind::INPUT_HTML,
-                TaintKind::INPUT_HAS_QUOTES,
-                TaintKind::USER_SECRET,
-                TaintKind::SYSTEM_SECRET,
-            ];
+            $print_param_sink->taints = TaintKind::INPUT_HTML
+                | TaintKind::INPUT_HAS_QUOTES
+                | TaintKind::USER_SECRET
+                | TaintKind::SYSTEM_SECRET
+            ;
 
             $statements_analyzer->data_flow_graph->addSink($print_param_sink);
         }

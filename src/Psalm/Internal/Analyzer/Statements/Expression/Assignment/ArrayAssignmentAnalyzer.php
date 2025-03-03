@@ -884,7 +884,7 @@ final class ArrayAssignmentAnalyzer
                     $root_var_id,
                     new CodeLocation($statements_analyzer->getSource(), $root_var),
                 ),
-                new DataFlowNode('variable-use', 'variable use', null),
+                DataFlowNode::getForVariableUse(),
                 'variable-use',
             );
         }

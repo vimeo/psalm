@@ -20,26 +20,25 @@ class DataFlowNode implements Stringable
 
     public ?string $specialization_key = null;
 
+    public bool $is_first_level_and_specialized = false;
+
     /** @var ?self */
-    public ?DataFlowNode $previous = null;
+    public ?DataFlowNode $taintSource = null;
 
     /** @var list<string> */
     public array $path_types = [];
 
     /**
-     * @var array<string, array<string, true>>
+     * @var array<string, array<string, string>>
      */
-    public array $specialized_calls = [];
+    public array $processing_specialized_descendants_of = [];
 
-    /**
-     * @param array<string> $taints
-     */
     public function __construct(
         public string $id,
         public string $label,
         public ?CodeLocation $code_location,
         ?string $specialization_key = null,
-        public array $taints = [],
+        public int $taints = 0,
     ) {
         if ($specialization_key) {
             $this->unspecialized_id = $id;
@@ -91,7 +90,6 @@ class DataFlowNode implements Stringable
 
         return new static($id, $var_id, $assignment_location, $specialization_key);
     }
-
     /**
      * @return static
      */
@@ -113,6 +111,34 @@ class DataFlowNode implements Stringable
             $code_location,
             $specialization_key,
         );
+    }
+
+
+    /**
+     * @return static
+     */
+    final public static function getForVariableUse(): self
+    {
+        return new static('variable-use', 'variable use', null);
+    }
+
+
+
+    /**
+     * @return static
+     */
+    final public static function getForUnknownOrigin(): self
+    {
+        return new static('unknown-origin', 'unknown origin', null);
+    }
+
+
+    /**
+     * @return static
+     */
+    final public static function getForClosureUse(): self
+    {
+        return new static('closure-use', 'closure use', null);
     }
 
     #[Override]

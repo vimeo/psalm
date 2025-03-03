@@ -420,7 +420,7 @@ final class NamedFunctionCallHandler
                     foreach ($source->param_nodes as $param_node) {
                         $statements_analyzer->data_flow_graph->addPath(
                             $param_node,
-                            new DataFlowNode('variable-use', 'variable use', null),
+                            DataFlowNode::getForVariableUse(),
                             'variable-use',
                         );
                     }

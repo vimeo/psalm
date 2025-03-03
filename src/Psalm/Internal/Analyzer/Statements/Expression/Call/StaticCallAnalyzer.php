@@ -27,9 +27,9 @@ use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\TaintKindGroup;
 use Psalm\Type\Union;
 
-use function array_merge;
 use function count;
 use function in_array;
 use function md5;
@@ -309,7 +309,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
-        $conditionally_removed_taints = [];
+        $conditionally_removed_taints = 0;
 
         if ($method_storage && $template_result) {
             foreach ($method_storage->conditionally_removed_taints as $conditionally_removed_taint) {
@@ -330,13 +330,13 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 );
 
                 foreach ($expanded_type->getLiteralStrings() as $literal_string) {
-                    $conditionally_removed_taints[] = $literal_string->value;
+                    $conditionally_removed_taints |= TaintKindGroup::NAME_TO_TAINT[$literal_string->value];
                 }
             }
         }
 
-        $added_taints = [];
-        $removed_taints = [];
+        $added_taints = 0;
+        $removed_taints = 0;
 
         if ($context) {
             $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
@@ -357,7 +357,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $assignment_node,
                 'conditionally-escaped',
                 $added_taints,
-                [...$conditionally_removed_taints, ...$removed_taints],
+                $conditionally_removed_taints | $removed_taints,
             );
 
             $return_type_candidate = $return_type_candidate->addParentNodes([$assignment_node->id => $assignment_node]);
@@ -389,7 +389,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $stmt->getArgs(),
                 $node_location,
                 $method_source,
-                array_merge($method_storage->removed_taints, $removed_taints),
+                $method_storage->removed_taints | $removed_taints,
                 $added_taints,
             );
         }

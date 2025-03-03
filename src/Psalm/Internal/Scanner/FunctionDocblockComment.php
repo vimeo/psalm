@@ -104,14 +104,11 @@ final class FunctionDocblockComment
     public array $removed_taints = [];
 
     /**
-     * @var array<int, array{name:string, taint: string}>
+     * @var array<int, array{name:string, taint: int}>
      */
     public array $taint_sink_params = [];
 
-    /**
-     * @var array<string>
-     */
-    public array $taint_source_types = [];
+    public int $taint_source_types = 0;
 
     /**
      * @var array<int, array{name:string}>

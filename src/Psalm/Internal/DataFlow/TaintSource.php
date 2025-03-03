@@ -9,14 +9,16 @@ namespace Psalm\Internal\DataFlow;
  */
 final class TaintSource extends DataFlowNode
 {
-    public static function fromNode(DataFlowNode $node): self
+    public static function fromNode(DataFlowNode $node, int $taints): self
     {
-        return new self(
-            $node->id,
+        $v = new self(
+            $node->unspecialized_id ?? $node->id,
             $node->label,
             $node->code_location,
             $node->specialization_key,
             $node->taints,
         );
+        $v->taints = $taints;
+        return $v;
     }
 }

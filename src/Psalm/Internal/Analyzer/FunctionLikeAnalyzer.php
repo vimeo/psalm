@@ -275,7 +275,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     if ($statements_analyzer->data_flow_graph && $use_assignment) {
                         $statements_analyzer->data_flow_graph->addPath(
                             $use_assignment,
-                            new DataFlowNode('closure-use', 'closure use', null),
+                            DataFlowNode::getForClosureUse(),
                             'closure-use',
                         );
                     }

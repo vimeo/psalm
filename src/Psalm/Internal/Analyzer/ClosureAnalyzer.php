@@ -146,7 +146,7 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
                     foreach ($parent_nodes as $parent_node) {
                         $statements_analyzer->data_flow_graph->addPath(
                             $parent_node,
-                            new DataFlowNode('closure-use', 'closure use', null),
+                            DataFlowNode::getForClosureUse(),
                             'closure-use',
                         );
                     }
@@ -190,7 +190,7 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
                         foreach ($parent_nodes as $parent_node) {
                             $statements_analyzer->data_flow_graph->addPath(
                                 $parent_node,
-                                new DataFlowNode('closure-use', 'closure use', null),
+                                DataFlowNode::getForClosureUse(),
                                 'closure-use',
                             );
                         }

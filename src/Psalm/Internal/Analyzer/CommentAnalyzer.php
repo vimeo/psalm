@@ -24,6 +24,7 @@ use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\MissingDocblockType;
 use Psalm\IssueBuffer;
+use Psalm\Type\TaintKindGroup;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -238,7 +239,11 @@ final class CommentAnalyzer
         if (isset($parsed_docblock->tags['psalm-taint-escape'])) {
             foreach ($parsed_docblock->tags['psalm-taint-escape'] as $param) {
                 $param = trim($param);
-                $var_comment->removed_taints[] = $param;
+                if (!isset(TaintKindGroup::NAME_TO_TAINT[$param])) {
+                    // TODO error out, and add support for conditional taints
+                    continue;
+                }
+                $var_comment->removed_taints |= TaintKindGroup::NAME_TO_TAINT[$param];
             }
         }
 

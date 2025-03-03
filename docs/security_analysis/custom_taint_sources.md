@@ -28,6 +28,7 @@ namespace Psalm\Example\Plugin;
 use PhpParser\Node\Expr\Variable;
 use Psalm\Plugin\EventHandler\AddTaintsInterface;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+use Psalm\Type\TaintKind;
 use Psalm\Type\TaintKindGroup;
 
 /**
@@ -38,9 +39,9 @@ class TaintBadDataPlugin implements AddTaintsInterface
     /**
      * Called to see what taints should be added
      *
-     * @return list<string>
+     * @return int-mask-of<TaintKind::*>
      */
-    public static function addTaints(AddRemoveTaintsEvent $event): array
+    public static function addTaints(AddRemoveTaintsEvent $event): int
     {
         $expr = $event->getExpr();
 
@@ -48,7 +49,7 @@ class TaintBadDataPlugin implements AddTaintsInterface
             return TaintKindGroup::ALL_INPUT;
         }
 
-        return [];
+        return 0;
     }
 }
 ```

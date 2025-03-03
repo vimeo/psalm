@@ -43,7 +43,6 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Union;
 
-use function array_diff;
 use function array_merge;
 use function array_values;
 use function count;
@@ -443,9 +442,9 @@ final class ArrayAnalyzer
                     $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
                     $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
-                    $taints = array_diff($added_taints, $removed_taints);
-                    if ($taints !== [] && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
-                        $taint_source = TaintSource::fromNode($new_parent_node);
+                    $taints = $added_taints & ~$removed_taints;
+                    if ($taints !== 0 && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+                        $taint_source = TaintSource::fromNode($new_parent_node, $taints);
                         $statements_analyzer->data_flow_graph->addSource($taint_source);
                     }
 
@@ -484,10 +483,9 @@ final class ArrayAnalyzer
                     $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
                     $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
-                    $taints = array_diff($added_taints, $removed_taints);
-                    if ($taints !== [] && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
-                        $taint_source = TaintSource::fromNode($new_parent_node);
-                        $taint_source->taints = $taints;
+                    $taints = $added_taints & ~$removed_taints;
+                    if ($taints !== 0 && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+                        $taint_source = TaintSource::fromNode($new_parent_node, $taints);
                         $statements_analyzer->data_flow_graph->addSource($taint_source);
                     }
 

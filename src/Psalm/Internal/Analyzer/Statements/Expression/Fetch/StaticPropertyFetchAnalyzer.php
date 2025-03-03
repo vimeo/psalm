@@ -220,8 +220,8 @@ final class StaticPropertyFetchAnalyzer
                 $stmt_type,
                 $property_id,
                 false,
-                [],
-                [],
+                0,
+                0,
             );
 
             $context->vars_in_scope[$var_id] = $stmt_type;
@@ -405,8 +405,8 @@ final class StaticPropertyFetchAnalyzer
                 $stmt_type,
                 $property_id,
                 false,
-                [],
-                [],
+                0,
+                0,
             );
 
             $context->vars_in_scope[$var_id] = $stmt_type;

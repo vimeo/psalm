@@ -35,7 +35,6 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_diff;
 use function in_array;
 use function strlen;
 
@@ -173,10 +172,9 @@ final class BinaryOpAnalyzer
                 $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
                 $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
-                $taints = array_diff($added_taints, $removed_taints);
-                if ($taints !== [] && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
-                    $taint_source = TaintSource::fromNode($new_parent_node);
-                    $taint_source->taints = $taints;
+                $taints = $added_taints & ~$removed_taints;
+                if ($taints !== 0 && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+                    $taint_source = TaintSource::fromNode($new_parent_node, $taints);
                     $statements_analyzer->data_flow_graph->addSource($taint_source);
                 }
 
@@ -442,19 +440,19 @@ final class BinaryOpAnalyzer
                 if ($left instanceof PhpParser\Node\Expr\PropertyFetch) {
                     $statements_analyzer->data_flow_graph->addPath(
                         $new_parent_node,
-                        new DataFlowNode('variable-use', 'variable use', null),
+                        DataFlowNode::getForVariableUse(),
                         'used-by-instance-property',
                     );
                 } if ($left instanceof PhpParser\Node\Expr\StaticPropertyFetch) {
                     $statements_analyzer->data_flow_graph->addPath(
                         $new_parent_node,
-                        new DataFlowNode('variable-use', 'variable use', null),
+                        DataFlowNode::getForVariableUse(),
                         'use-in-static-property',
                     );
                 } elseif (!$left instanceof PhpParser\Node\Expr\Variable) {
                     $statements_analyzer->data_flow_graph->addPath(
                         $new_parent_node,
-                        new DataFlowNode('variable-use', 'variable use', null),
+                        DataFlowNode::getForVariableUse(),
                         'variable-use',
                     );
                 }

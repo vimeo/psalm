@@ -149,20 +149,11 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
      */
     public bool $specialize_call = false;
 
-    /**
-     * @var array<string>
-     */
-    public array $taint_source_types = [];
+    public int $taint_source_types = 0;
 
-    /**
-     * @var array<string>
-     */
-    public array $added_taints = [];
+    public int $added_taints = 0;
 
-    /**
-     * @var array<string>
-     */
-    public array $removed_taints = [];
+    public int $removed_taints = 0;
 
     /**
      * @var array<Union>
