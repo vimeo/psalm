@@ -117,30 +117,15 @@ final class TKeyedArray extends Atomic
     /**
      * @psalm-pure
      * @param non-empty-array<string|int, Union> $properties
-     * @param array{Union, Union}|null $fallback_params
      * @param array<string, bool> $class_strings
      */
     public static function makeCallable(
         array $properties,
         ?array $class_strings = null,
-        ?array $fallback_params = null,
         bool $is_list = false,
         bool $from_docblock = false,
-    ): self|TArray {
-        if ($fallback_params) {
-            $fallback_params[0] = Type::getListKey();
-        }
-        if (count($properties) === 1
-            && $properties[array_key_first($properties)]->isNever()
-            && ($fallback_params === null || $fallback_params[1]->isNever())
-        ) {
-            $never = $properties[array_key_first($properties)];
-            return new TArray([
-                $never, $never,
-            ], $from_docblock);
-        }
-
-        return new self($properties, $class_strings, $fallback_params, $is_list, true, $from_docblock);
+    ): self {
+        return new self($properties, $class_strings, null, $is_list, true, $from_docblock);
     }
 
     public function setIsCallable(bool $is_callable): self

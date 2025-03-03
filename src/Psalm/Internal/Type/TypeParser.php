@@ -1572,10 +1572,6 @@ final class TypeParser
             ? TKeyedArray::makeCallable(
                 $properties,
                 $class_strings,
-                $extra_params ?? ($sealed
-                    ? null
-                    : [Type::getListKey(), Type::getMixed()]
-                ),
                 $is_list,
                 $from_docblock,
             ) : TKeyedArray::make(

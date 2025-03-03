@@ -1491,9 +1491,6 @@ final class TypeCombiner
                     $objectlike = TKeyedArray::makeCallable(
                         $combination->objectlike_entries,
                         null,
-                        $sealed || $fallback_key_type === null || $fallback_value_type === null
-                            ? null
-                            : [$fallback_key_type, $fallback_value_type],
                         (bool)$combination->all_arrays_lists,
                         $from_docblock,
                     );
