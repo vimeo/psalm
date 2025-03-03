@@ -294,7 +294,7 @@ final class ArrayFunctionArgumentsAnalyzer
 
                         $by_ref_type = new Union([$objectlike_list->setProperties($properties)]);
                     } elseif ($array_type instanceof TArray && $array_type->isEmptyArray()) {
-                        $by_ref_type = new Union([new TKeyedArray([
+                        $by_ref_type = new Union([TKeyedArray::make([
                             $arg_value_type,
                         ], null, null, true)]);
                     } else {

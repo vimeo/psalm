@@ -17,6 +17,7 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
 use function addslashes;
+use function array_key_first;
 use function assert;
 use function count;
 use function implode;
@@ -30,27 +31,12 @@ use function str_replace;
 /**
  * Represents an 'object-like array' - an array with known keys.
  *
+ * @psalm-api
  * @psalm-immutable
  */
-class TKeyedArray extends Atomic
+final class TKeyedArray extends Atomic
 {
     use UnserializeMemoryUsageSuppressionTrait;
-    /**
-     * If the shape has fallback params then they are here
-     *
-     * @var array{Union, Union}|null
-     */
-    public ?array $fallback_params = null;
-
-    /**
-     * @var bool - if this is a list of sequential elements
-     */
-    public bool $is_list = false;
-
-    /** @var non-empty-lowercase-string */
-    protected const NAME_ARRAY = 'array';
-    /** @var non-empty-lowercase-string */
-    protected const NAME_LIST = 'list';
 
     /**
      * Constructs a new instance of a generic type
@@ -59,25 +45,63 @@ class TKeyedArray extends Atomic
      * @param array{Union, Union}|null $fallback_params
      * @param array<string, bool> $class_strings
      */
-    public function __construct(
+    private function __construct(
         public array $properties,
         public ?array $class_strings = null,
+        /**
+         * If the shape has fallback params then they are here
+         *
+         * @var array{Union, Union}|null
+         */
+        public ?array $fallback_params = null,
+        /**
+         * @var bool - if this is a list of sequential elements
+         */
+        public bool $is_list = false,
+        public bool $is_callable = false,
+        bool $from_docblock = false,
+    ) {
+        parent::__construct($from_docblock);
+    }
+
+    #[Override]
+    public function isCallableType(): bool
+    {
+        return $this->is_callable;
+    }
+
+    /**
+     * @psalm-pure
+     * @param non-empty-array<string|int, Union> $properties
+     * @param array{Union, Union}|null $fallback_params
+     * @param array<string, bool> $class_strings
+     */
+    public static function make(
+        array $properties,
+        ?array $class_strings = null,
         ?array $fallback_params = null,
         bool $is_list = false,
         bool $from_docblock = false,
-    ) {
+    ): self|TArray {
         if ($is_list && $fallback_params) {
             $fallback_params[0] = Type::getListKey();
         }
-        $this->fallback_params = $fallback_params;
-        $this->is_list = $is_list;
-        if ($this->is_list) {
+        if (count($properties) === 1
+            && $properties[array_key_first($properties)]->isNever()
+            && ($fallback_params === null || $fallback_params[1]->isNever())
+        ) {
+            $never = $properties[array_key_first($properties)]->setPossiblyUndefined(false);
+            return new TArray([
+                $never, $never,
+            ], $from_docblock);
+        }
+        if ($is_list) {
             $last_k = -1;
             $had_possibly_undefined = false;
-            ksort($this->properties);
-            foreach ($this->properties as $k => $v) {
+            ksort($properties);
+            foreach ($properties as $k => $v) {
                 if (is_string($k) || $last_k !== ($k-1) || ($had_possibly_undefined && !$v->possibly_undefined)) {
-                    $this->is_list = false;
+                    $is_list = false;
                     break;
                 }
                 if ($v->possibly_undefined) {
@@ -86,17 +110,50 @@ class TKeyedArray extends Atomic
                 $last_k = $k;
             }
         }
-        parent::__construct($from_docblock);
+
+        return new self($properties, $class_strings, $fallback_params, $is_list, false, $from_docblock);
+    }
+
+    /**
+     * @psalm-pure
+     * @param non-empty-array<string|int, Union> $properties
+     * @param array<string, bool> $class_strings
+     */
+    public static function makeCallable(
+        array $properties,
+        ?array $class_strings = null,
+        bool $is_list = false,
+        bool $from_docblock = false,
+    ): self {
+        return new self($properties, $class_strings, null, $is_list, true, $from_docblock);
+    }
+
+    public function setIsCallable(bool $is_callable): self
+    {
+        if ($is_callable === $this->is_callable) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->is_callable = $is_callable;
+        return $cloned;
     }
 
     /**
      * @param non-empty-array<string|int, Union> $properties
-     * @return static
      */
-    public function setProperties(array $properties): self
+    public function setProperties(array $properties): self|TArray
     {
         if ($properties === $this->properties) {
             return $this;
+        }
+        if (count($properties) === 1
+            && $properties[array_key_first($properties)]->isNever()
+            && ($this->fallback_params === null || $this->fallback_params[1]->isNever())
+        ) {
+            $never = $properties[array_key_first($properties)]->setPossiblyUndefined(false);
+            return new TArray([
+                $never, $never,
+            ], $this->from_docblock);
         }
         $cloned = clone $this;
         $cloned->properties = $properties;
@@ -120,9 +177,6 @@ class TKeyedArray extends Atomic
         return $cloned;
     }
 
-    /**
-     * @return static
-     */
     public function makeSealed(): self
     {
         if ($this->fallback_params === null) {
@@ -189,9 +243,9 @@ class TKeyedArray extends Atomic
         }
 
         if ($this->is_list) {
-            $key = static::NAME_LIST;
+            $key = $this->is_callable ? 'callable-list' : 'list';
         } else {
-            $key = static::NAME_ARRAY;
+            $key = $this->is_callable ? 'callable-array' : 'array';
             sort($property_strings);
         }
 
@@ -275,8 +329,10 @@ class TKeyedArray extends Atomic
 
         $params_part = $this->fallback_params !== null ? ',...' : '';
 
-        return  ($this->is_list ? static::NAME_LIST : static::NAME_ARRAY)
-                . '{' . implode(', ', $suffixed_properties) . $params_part . '}';
+        return  ($this->is_list
+            ? ($this->is_callable ? 'callable-list' : 'list')
+            : ($this->is_callable ? 'callable-array' : 'array')
+        ) . '{' . implode(', ', $suffixed_properties) . $params_part . '}';
     }
 
     /**
@@ -494,9 +550,6 @@ class TKeyedArray extends Atomic
         return 'array';
     }
 
-    /**
-     * @return static
-     */
     #[Override]
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
@@ -509,7 +562,7 @@ class TKeyedArray extends Atomic
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0,
-    ): self {
+    ): self|TArray {
         if ($input_type instanceof TKeyedArray
             && $input_type->is_list
             && $input_type->isSealed()
@@ -532,6 +585,12 @@ class TKeyedArray extends Atomic
                 ->type_params[1]
                 ->setPossiblyUndefined(!$this->isNonEmpty());
 
+            if ($replaced_list_type->isNever()) {
+                $replaced_list_type = $replaced_list_type->setPossiblyUndefined(false);
+                return new TArray([
+                    $replaced_list_type, $replaced_list_type,
+                ], $this->from_docblock);
+            }
             $cloned = clone $this;
             $cloned->properties = [$replaced_list_type];
             $cloned->fallback_params = [$this->fallback_params[1], $replaced_list_type];
@@ -598,20 +657,26 @@ class TKeyedArray extends Atomic
             return $this;
         }
         $cloned = clone $this;
+        if (count($properties) === 1
+            && $properties[array_key_first($properties)]->isNever()
+            && ($fallback_params === null || $fallback_params[1]->isNever())
+        ) {
+            $never = $properties[array_key_first($properties)]->setPossiblyUndefined(false);
+            return new TArray([
+                $never, $never,
+            ], $this->from_docblock);
+        }
         $cloned->properties = $properties;
         /** @psalm-suppress PropertyTypeCoercion */
         $cloned->fallback_params = $fallback_params;
         return $cloned;
     }
 
-    /**
-     * @return static
-     */
     #[Override]
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase,
-    ): self {
+    ): self|TArray {
         $properties = $this->properties;
         foreach ($properties as $offset => $property) {
             $properties[$offset] = TemplateInferredTypeReplacer::replace(
@@ -630,6 +695,15 @@ class TKeyedArray extends Atomic
         }
         if ($properties !== $this->properties || $fallback_params !== $this->fallback_params) {
             $cloned = clone $this;
+            if (count($properties) === 1
+                && $properties[array_key_first($properties)]->isNever()
+                && ($fallback_params === null || $fallback_params[1]->isNever())
+            ) {
+                $never = $properties[array_key_first($properties)]->setPossiblyUndefined(false);
+                return new TArray([
+                    $never, $never,
+                ], $this->from_docblock);
+            }
             $cloned->properties = $properties;
             /** @psalm-suppress PropertyTypeCoercion */
             $cloned->fallback_params = $fallback_params;

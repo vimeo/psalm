@@ -593,7 +593,7 @@ final class ArithmeticOpAnalyzer
                         $fallback_params = $left_type_part->fallback_params ?: $right_type_part->fallback_params;
                     }
 
-                    $new_keyed_array = new TKeyedArray(
+                    $new_keyed_array = TKeyedArray::make(
                         $properties,
                         null,
                         $fallback_params,

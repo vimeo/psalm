@@ -1167,7 +1167,7 @@ final class ArrayFetchAnalyzer
                     $from_mixed_array = $type->type_params[1]->isMixed();
 
                     // ok, type becomes a TKeyedArray
-                    $type = new TKeyedArray(
+                    $type = TKeyedArray::make(
                         [
                             $single_atomic->value => $from_mixed_array ? Type::getMixed() : Type::getNever(),
                         ],
@@ -1177,7 +1177,7 @@ final class ArrayFetchAnalyzer
                         $from_empty_array ? null : $type->type_params,
                     );
                 } elseif (!$stmt->dim && $from_empty_array && $replacement_type) {
-                    $type = new TKeyedArray(
+                    $type = TKeyedArray::make(
                         [$replacement_type],
                         null,
                         null,
@@ -1728,7 +1728,7 @@ final class ArrayFetchAnalyzer
 
                     if (!$stmt->dim) {
                         if ($type->is_list) {
-                            $type = new TKeyedArray(
+                            $type = TKeyedArray::make(
                                 $type->properties,
                                 null,
                                 [$new_key_type, $generic_params],

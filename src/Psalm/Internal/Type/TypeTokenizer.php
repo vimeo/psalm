@@ -56,6 +56,7 @@ final class TypeTokenizer
         'trait-string' => true,
         'callable-string' => true,
         'callable-array' => true,
+        'callable-list' => true,
         'callable-object' => true,
         'stringable-object' => true,
         'pure-callable' => true,

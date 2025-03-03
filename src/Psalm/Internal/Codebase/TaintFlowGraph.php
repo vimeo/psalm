@@ -31,6 +31,8 @@ use Psalm\Issue\TaintedUnserialize;
 use Psalm\Issue\TaintedUserSecret;
 use Psalm\Issue\TaintedXpath;
 use Psalm\IssueBuffer;
+use Psalm\Progress\Phase;
+use Psalm\Progress\Progress;
 use Psalm\Type\TaintKind;
 use Psalm\Type\TaintKindGroup;
 
@@ -195,8 +197,10 @@ final class TaintFlowGraph extends DataFlowGraph
         return [$node];
     }
 
-    public function connectSinksAndSources(): void
+    public function connectSinksAndSources(Progress $progress): void
     {
+        $progress->startPhase(Phase::TAINT_GRAPH_RESOLUTION);
+
         $visited_source_ids = [];
 
         $sources = $this->sources;
@@ -228,6 +232,7 @@ final class TaintFlowGraph extends DataFlowGraph
             $new_sources = [];
 
             ksort($sources);
+            $progress->expand(count($sources));
 
             foreach ($sources as $source) {
                 $source_taints = $source->taints;
@@ -338,6 +343,8 @@ final class TaintFlowGraph extends DataFlowGraph
                         }
                     }
                 }
+
+                $progress->taskDone(0);
             }
 
             $sources = $new_sources;
