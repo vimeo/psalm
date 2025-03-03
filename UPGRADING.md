@@ -32,6 +32,8 @@
 
 - [BC] Class Psalm\Type\Atomic\TCallableKeyedArray has been deleted, and replaced with a new `is_callable` flag in Psalm\Type\Atomic\TKeyedArray
 
+- [BC] Class Psalm\Type\Atomic\TCallableInterface has been deleted, use `\Psalm\Type\Atomic::isCallableType()` instead
+
 ## Removed
 
 - [BC] Constant Psalm\Type\Atomic\TKeyedArray::NAME_ARRAY was removed
