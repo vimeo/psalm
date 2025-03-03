@@ -147,6 +147,44 @@ return array (
         'return=' => 'bool',
       ),
     ),
+    'idn_to_ascii' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'domain' => 'string',
+        'flags=' => 'int',
+        'variant=' => 'int',
+        '&w_idna_info=' => 'array<array-key, mixed>',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'domain' => 'non-empty-string',
+        'flags=' => 'int',
+        'variant=' => 'int',
+        '&w_idna_info=' => 'array<array-key, mixed>',
+      ),
+    ),
+    'idn_to_utf8' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'domain' => 'string',
+        'flags=' => 'int',
+        'variant=' => 'int',
+        '&w_idna_info=' => 'array<array-key, mixed>',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'domain' => 'non-empty-string',
+        'flags=' => 'int',
+        'variant=' => 'int',
+        '&w_idna_info=' => 'array<array-key, mixed>',
+      ),
+    ),
     'imagick::convolveimage' => 
     array (
       'old' => 
