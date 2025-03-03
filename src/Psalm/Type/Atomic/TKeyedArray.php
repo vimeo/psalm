@@ -329,8 +329,10 @@ final class TKeyedArray extends Atomic
 
         $params_part = $this->fallback_params !== null ? ',...' : '';
 
-        return  ($this->is_list ? ($this->is_callable ? 'callable-list' : 'list') : ($this->is_callable ? 'callable-array' : 'array'))
-                . '{' . implode(', ', $suffixed_properties) . $params_part . '}';
+        return  ($this->is_list
+            ? ($this->is_callable ? 'callable-list' : 'list')
+            : ($this->is_callable ? 'callable-array' : 'array')
+        ) . '{' . implode(', ', $suffixed_properties) . $params_part . '}';
     }
 
     /**
