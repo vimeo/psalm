@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="6.x-dev@049d3523d462c4e2039608d41487347b9394c70c">
+<files psalm-version="6.x-dev@4258dc813b28c2b03865f34a17ddf072f006b357">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$comment_block->tags['variablesfrom'][0]]]></code>
@@ -2379,6 +2379,14 @@
       <code><![CDATA[$properties[$property]]]></code>
       <code><![CDATA[$property_type]]></code>
     </ImplicitToStringCast>
+    <InvalidArgument>
+      <code><![CDATA[$class_strings]]></code>
+      <code><![CDATA[$class_strings]]></code>
+      <code><![CDATA[$extra_params ?? ($sealed
+                    ? null
+                    : [$is_list ? Type::getListKey() : Type::getArrayKey(), Type::getMixed()]
+                )]]></code>
+    </InvalidArgument>
     <InvalidOperand>
       <code><![CDATA[$property_key - 1]]></code>
     </InvalidOperand>
@@ -2689,11 +2697,28 @@
     <ImpurePropertyAssignment>
       <code><![CDATA[$key_type->possibly_undefined]]></code>
     </ImpurePropertyAssignment>
+    <InvalidReturnStatement>
+      <code><![CDATA[new TArray([
+                    $never, $never,
+                ], $this->from_docblock)]]></code>
+      <code><![CDATA[new TArray([
+                    $replaced_list_type, $replaced_list_type,
+                ], $this->from_docblock)]]></code>
+      <code><![CDATA[new TArray([
+                $never, $never,
+            ], $this->from_docblock)]]></code>
+    </InvalidReturnStatement>
+    <InvalidReturnType>
+      <code><![CDATA[self|TArray]]></code>
+      <code><![CDATA[self|TArray]]></code>
+    </InvalidReturnType>
     <PossiblyInvalidOperand>
       <code><![CDATA[$name]]></code>
       <code><![CDATA[$name]]></code>
     </PossiblyInvalidOperand>
     <PossiblyUndefinedIntArrayOffset>
+      <code><![CDATA[$fallback_params[1]]]></code>
+      <code><![CDATA[$fallback_params[1]]]></code>
       <code><![CDATA[$this->properties[0]]]></code>
       <code><![CDATA[$this->properties[0]]]></code>
     </PossiblyUndefinedIntArrayOffset>

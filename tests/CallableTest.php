@@ -2297,7 +2297,7 @@ final class CallableTest extends TestCase
             ],
             'callableArrayTypes' => [
                 'code' => '<?php
-                    /** @var callable-array $c */
+                    /** @var callable-list $c */
                     $c;
                     [$a, $b] = $c;
                     ',

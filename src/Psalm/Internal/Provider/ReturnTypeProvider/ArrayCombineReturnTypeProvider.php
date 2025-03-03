@@ -129,6 +129,6 @@ final class ArrayCombineReturnTypeProvider implements FunctionReturnTypeProvider
             return Type::getEmptyArray();
         }
 
-        return new Union([new TKeyedArray($result, null, null, $is_list)]);
+        return new Union([TKeyedArray::make($result, null, null, $is_list)]);
     }
 }

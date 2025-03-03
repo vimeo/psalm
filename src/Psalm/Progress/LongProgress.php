@@ -51,10 +51,12 @@ class LongProgress extends Progress
             Phase::ALTERING => "\nUpdating files...\n",
             Phase::TAINT_GRAPH_RESOLUTION => "\n\nResolving taint graph...\n\n",
             Phase::JIT_COMPILATION => "JIT compilation in progress...\n\n",
+            Phase::PRELOADING => "Preloading in progress...\n\n",
         });
         $this->fixed_size = $phase === Phase::ANALYSIS
             || $phase === Phase::ALTERING
-            || $phase === Phase::JIT_COMPILATION;
+            || $phase === Phase::JIT_COMPILATION
+            || $phase === Phase::PRELOADING;
     }
 
     protected function reportPhaseDuration(?Phase $newPhase = null): void
@@ -72,6 +74,7 @@ class LongProgress extends Progress
                 Phase::ALTERING => "\n\nUpdating files took $took seconds.\n",
                 Phase::TAINT_GRAPH_RESOLUTION => "\n\nTaint graph resolution took $took seconds.\n",
                 Phase::JIT_COMPILATION => "JIT compilation took $took seconds.\n\n",
+                Phase::PRELOADING => "Preloading took $took seconds.\n\n",
             });
         }
         $this->started = microtime(true);

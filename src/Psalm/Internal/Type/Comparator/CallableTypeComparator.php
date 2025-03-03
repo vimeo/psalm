@@ -20,7 +20,6 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
-use Psalm\Type\Atomic\TCallableInterface;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TKeyedArray;
@@ -31,6 +30,7 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_slice;
+use function assert;
 use function count;
 use function end;
 use function strtolower;
@@ -46,13 +46,14 @@ final class CallableTypeComparator
      */
     public static function isContainedBy(
         Codebase $codebase,
-        TClosure|TCallableInterface $input_type_part,
+        Atomic $input_type_part,
         Atomic $container_type_part,
         ?TypeComparisonResult $atomic_comparison_result,
     ): bool {
         if ($container_type_part instanceof TClosure) {
-            if ($input_type_part instanceof TCallableInterface
+            if ($input_type_part->isCallableType()
                 && !$input_type_part instanceof TCallable // it has stricter checks below
+                && !$input_type_part instanceof TClosure // it has stricter checks below
             ) {
                 if ($atomic_comparison_result) {
                     $atomic_comparison_result->type_coerced = true;
@@ -60,11 +61,13 @@ final class CallableTypeComparator
                 return false;
             }
         }
-        if ($input_type_part instanceof TCallableInterface
+        if ($input_type_part->isCallableType()
             && !$input_type_part instanceof TCallable // it has stricter checks below
+            && !$input_type_part instanceof TClosure // it has stricter checks below
         ) {
             return true;
         }
+        assert($input_type_part instanceof TClosure || $input_type_part instanceof TCallable);
 
         if ($container_type_part->is_pure && !$input_type_part->is_pure) {
             if ($atomic_comparison_result) {

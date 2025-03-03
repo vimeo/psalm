@@ -33,6 +33,7 @@ final class DebugProgress extends Progress
             Phase::ALTERING => "\nUpdating files...\n",
             Phase::TAINT_GRAPH_RESOLUTION => "\nResolving taint graph...\n",
             Phase::JIT_COMPILATION => "\nJIT compilation in progress...\n",
+            Phase::PRELOADING => "\nPreloading in progress...\n",
         });
     }
     

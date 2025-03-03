@@ -710,6 +710,20 @@ final class TypeCombinationTest extends TestCase
                     'callable',
                 ],
             ],
+            'combineCallableAndCallableList' => [
+                'callable',
+                [
+                    'callable',
+                    'callable-list',
+                ],
+            ],
+            'combineCallableListAndCallable' => [
+                'callable',
+                [
+                    'callable-list',
+                    'callable',
+                ],
+            ],
             'combineCallableArrayAndArray' => [
                 'array<array-key, mixed>',
                 [

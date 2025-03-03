@@ -357,7 +357,7 @@ final class ArrayAssignmentAnalyzer
                     $classStrings[$key_value->value] = true;
                 }
             }
-            $object_like = new TKeyedArray(
+            $object_like = TKeyedArray::make(
                 $properties,
                 $classStrings ?: null,
             );
@@ -607,7 +607,7 @@ final class ArrayAssignmentAnalyzer
                         );
                     } elseif ($prop_count !== null) {
                         assert($array_atomic_type_list !== null);
-                        $array_atomic_type = new TKeyedArray(
+                        $array_atomic_type = TKeyedArray::make(
                             array_fill(
                                 0,
                                 $prop_count,
@@ -637,7 +637,7 @@ final class ArrayAssignmentAnalyzer
                             $array_atomic_type_list,
                         );
                         assert(count($array_atomic_type) > 0);
-                        $array_atomic_type = new TKeyedArray(
+                        $array_atomic_type = TKeyedArray::make(
                             $array_atomic_type,
                             null,
                             null,

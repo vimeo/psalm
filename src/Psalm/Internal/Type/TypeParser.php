@@ -33,7 +33,6 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TCallable;
-use Psalm\Type\Atomic\TCallableKeyedArray;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
@@ -1397,7 +1396,7 @@ final class TypeParser
         array $template_type_map,
         array $type_aliases,
         bool $from_docblock,
-    ): TCallableKeyedArray|TKeyedArray|TObjectWithProperties|TArray {
+    ): TKeyedArray|TObjectWithProperties|TArray {
         $properties = [];
         $class_strings = [];
 
@@ -1525,9 +1524,7 @@ final class TypeParser
         }
 
         $callable = str_starts_with($type, 'callable-');
-        $class = TKeyedArray::class;
         if ($callable) {
-            $class = TCallableKeyedArray::class;
             $type = substr($type, 9);
         }
 
@@ -1571,16 +1568,23 @@ final class TypeParser
             }
             $extra_params = $final_extra_params;
         }
-        return new $class(
-            $properties,
-            $class_strings,
-            $extra_params ?? ($sealed
-                ? null
-                : [$is_list ? Type::getListKey() : Type::getArrayKey(), Type::getMixed()]
-            ),
-            $is_list,
-            $from_docblock,
-        );
+        return $callable
+            ? TKeyedArray::makeCallable(
+                $properties,
+                $class_strings,
+                $is_list,
+                $from_docblock,
+            ) : TKeyedArray::make(
+                $properties,
+                $class_strings,
+                $extra_params ?? ($sealed
+                    ? null
+                    : [$is_list ? Type::getListKey() : Type::getArrayKey(), Type::getMixed()]
+                ),
+                $is_list,
+                $from_docblock,
+            )
+        ;
     }
 
     /**
@@ -1612,7 +1616,7 @@ final class TypeParser
 
         foreach ($normalized_intersection_types as $intersection_type) {
             if ($intersection_type instanceof TKeyedArray
-                && !$intersection_type instanceof TCallableKeyedArray
+                && !$intersection_type->is_callable
             ) {
                 $any_array_found = true;
 
@@ -1787,7 +1791,7 @@ final class TypeParser
             $fallback_params = [Type::getArrayKey(), Type::getMixed()];
         }
 
-        return new TKeyedArray(
+        return TKeyedArray::make(
             $properties,
             null,
             $fallback_params,

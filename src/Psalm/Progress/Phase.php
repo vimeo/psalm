@@ -15,4 +15,5 @@ enum Phase
     case ALTERING;
     case TAINT_GRAPH_RESOLUTION;
     case JIT_COMPILATION;
+    case PRELOADING;
 }
