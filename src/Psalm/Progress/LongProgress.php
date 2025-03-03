@@ -52,7 +52,9 @@ class LongProgress extends Progress
             Phase::TAINT_GRAPH_RESOLUTION => "\n\nResolving taint graph...\n\n",
             Phase::JIT_COMPILATION => "JIT compilation in progress...\n\n",
         });
-        $this->fixed_size = $phase === Phase::ANALYSIS || $phase === Phase::ALTERING || $phase === Phase::JIT_COMPILATION;
+        $this->fixed_size = $phase === Phase::ANALYSIS
+            || $phase === Phase::ALTERING
+            || $phase === Phase::JIT_COMPILATION;
     }
 
     protected function reportPhaseDuration(?Phase $newPhase = null): void
