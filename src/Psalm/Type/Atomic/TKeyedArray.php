@@ -90,7 +90,7 @@ final class TKeyedArray extends Atomic
             && $properties[array_key_first($properties)]->isNever()
             && ($fallback_params === null || $fallback_params[1]->isNever())
         ) {
-            $never = $properties[array_key_first($properties)];
+            $never = $properties[array_key_first($properties)]->setPossiblyUndefined(false);
             return new TArray([
                 $never, $never,
             ], $from_docblock);
@@ -150,7 +150,7 @@ final class TKeyedArray extends Atomic
             && $properties[array_key_first($properties)]->isNever()
             && ($this->fallback_params === null || $this->fallback_params[1]->isNever())
         ) {
-            $never = $properties[array_key_first($properties)];
+            $never = $properties[array_key_first($properties)]->setPossiblyUndefined(false);
             return new TArray([
                 $never, $never,
             ], $this->from_docblock);
@@ -586,6 +586,7 @@ final class TKeyedArray extends Atomic
                 ->setPossiblyUndefined(!$this->isNonEmpty());
 
             if ($replaced_list_type->isNever()) {
+                $replaced_list_type = $replaced_list_type->setPossiblyUndefined(false);
                 return new TArray([
                     $replaced_list_type, $replaced_list_type,
                 ], $this->from_docblock);
@@ -660,7 +661,7 @@ final class TKeyedArray extends Atomic
             && $properties[array_key_first($properties)]->isNever()
             && ($fallback_params === null || $fallback_params[1]->isNever())
         ) {
-            $never = $properties[array_key_first($properties)];
+            $never = $properties[array_key_first($properties)]->setPossiblyUndefined(false);
             return new TArray([
                 $never, $never,
             ], $this->from_docblock);
@@ -698,7 +699,7 @@ final class TKeyedArray extends Atomic
                 && $properties[array_key_first($properties)]->isNever()
                 && ($fallback_params === null || $fallback_params[1]->isNever())
             ) {
-                $never = $properties[array_key_first($properties)];
+                $never = $properties[array_key_first($properties)]->setPossiblyUndefined(false);
                 return new TArray([
                     $never, $never,
                 ], $this->from_docblock);

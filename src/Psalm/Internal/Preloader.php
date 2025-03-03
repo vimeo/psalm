@@ -21,17 +21,15 @@ final class Preloader
             return;
         }
 
-        if ($hasJit) {
-            $progress?->startPhase(Phase::JIT_COMPILATION);
-            $progress?->expand(count(PreloaderList::CLASSES)+1);
-        }
+        $progress?->startPhase($hasJit ? Phase::JIT_COMPILATION : Phase::PRELOADING);
+        $progress?->expand(count(PreloaderList::CLASSES)+1);
+
         foreach (PreloaderList::CLASSES as $class) {
             $progress?->taskDone(0);
             class_exists($class);
         }
-        if ($hasJit) {
-            $progress?->finish();
-        }
+
+        $progress?->finish();
         self::$preloaded = true;
     }
 }
