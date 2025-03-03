@@ -53,6 +53,7 @@ final class CallableTypeComparator
         if ($container_type_part instanceof TClosure) {
             if ($input_type_part->isCallableType()
                 && !$input_type_part instanceof TCallable // it has stricter checks below
+                && !$input_type_part instanceof TClosure // it has stricter checks below
             ) {
                 if ($atomic_comparison_result) {
                     $atomic_comparison_result->type_coerced = true;
@@ -62,6 +63,7 @@ final class CallableTypeComparator
         }
         if ($input_type_part->isCallableType()
             && !$input_type_part instanceof TCallable // it has stricter checks below
+            && !$input_type_part instanceof TClosure // it has stricter checks below
         ) {
             return true;
         }

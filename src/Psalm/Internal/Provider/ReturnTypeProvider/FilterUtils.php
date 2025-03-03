@@ -19,6 +19,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
@@ -191,7 +192,7 @@ final class FilterUtils
                     if ($filter_int_used === FILTER_CALLBACK) {
                         $only_callables = true;
                         foreach ($atomic_type->properties['options']->getAtomicTypes() as $option_atomic) {
-                            if ($option_atomic->isCallableType()) {
+                            if ($option_atomic->isCallableType() && !$option_atomic instanceof TClosure) {
                                 continue;
                             }
 
