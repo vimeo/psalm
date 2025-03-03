@@ -264,6 +264,22 @@ abstract class Atomic implements TypeNode, Stringable
                     new Union([$string]),
                 ]);
 
+            case 'callable-list':
+                $classString = new TClassString(
+                    'object',
+                    null,
+                    false,
+                    false,
+                    false,
+                    true,
+                );
+                $object = new TObject(true);
+                $string = new TNonEmptyString(true);
+                return TKeyedArray::makeCallable([
+                    new Union([$classString, $object]),
+                    new Union([$string]),
+                ], null, true);
+
             case 'list':
                 return Type::getListAtomic(Type::getMixed(false, $from_docblock));
 
