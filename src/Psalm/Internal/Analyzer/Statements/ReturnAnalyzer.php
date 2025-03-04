@@ -81,6 +81,7 @@ final class ReturnAnalyzer
                 $var_comments = $codebase->config->disable_var_parsing
                     ? []
                     : CommentAnalyzer::arrayToDocblocks(
+                        $statements_analyzer->getCodebase(),
                         $doc_comment,
                         $parsed_docblock,
                         $statements_analyzer->getSource(),

@@ -363,9 +363,9 @@ final class Codebase
      * Used to register a taint, or to fetch the ID of an already registered taint by its alias.
      *
      * Returns null and emits an issue if a code location is passed and there are no more taint slots.
-     *
      * @throws RuntimeException if no code location is passed and there are no more taint slots.
-     * @return ($location is null ? int|null : int)
+     * 
+     * @return ($location is null ? int : int|null)
      */
     public function getOrRegisterTaint(string $taint_type, ?CodeLocation $location = null): ?int
     {

@@ -428,7 +428,6 @@ final class CommentAnalyzer
 
     /** @return list<VarDocblockComment> */
     public static function getVarComments(
-        Codebase $codebase,
         PhpParser\Comment\Doc $doc_comment,
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Variable $var,

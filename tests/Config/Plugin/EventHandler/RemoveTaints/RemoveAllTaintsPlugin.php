@@ -17,12 +17,10 @@ final class RemoveAllTaintsPlugin implements RemoveTaintsInterface
 {
     /**
      * Called to see what taints should be removed
-     *
-     * @return int-mask-of<TaintKind::*>
      */
     #[Override]
     public static function removeTaints(AddRemoveTaintsEvent $event): int
     {
-        return TaintKindGroup::ALL_INPUT;
+        return TaintKind::ALL_INPUT;
     }
 }

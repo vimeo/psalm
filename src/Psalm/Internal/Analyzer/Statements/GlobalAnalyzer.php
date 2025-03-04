@@ -60,7 +60,7 @@ final class GlobalAnalyzer
             $comment_type = null;
 
             if ($doc_comment) {
-                $var_comments = CommentAnalyzer::getVarComments($codebase, $doc_comment, $statements_analyzer, $var);
+                $var_comments = CommentAnalyzer::getVarComments($doc_comment, $statements_analyzer, $var);
                 $comment_type = CommentAnalyzer::populateVarTypesFromDocblock(
                     $var_comments,
                     $var,

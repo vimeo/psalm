@@ -32,7 +32,7 @@ final class TaintBadDataPlugin implements AddTaintsInterface
 
         switch ($expr->name) {
             case 'bad_data':
-                return TaintKindGroup::ALL_INPUT;
+                return TaintKind::ALL_INPUT;
             case 'bad_sql':
                 return TaintKind::INPUT_SQL;
             case 'bad_html':

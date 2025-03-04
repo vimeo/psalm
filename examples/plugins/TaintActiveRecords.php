@@ -12,6 +12,7 @@ use Psalm\Plugin\EventHandler\AddTaintsInterface;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\TaintKind;
 use Psalm\Type\TaintKindGroup;
 use Psalm\Type\Union;
 
@@ -51,7 +52,7 @@ final class TaintActiveRecords implements AddTaintsInterface
             }
 
             if (self::containsActiveRecord($expr_type)) {
-                return TaintKindGroup::ALL_INPUT;
+                return TaintKind::ALL_INPUT;
             }
         } while ($expr = self::getParentNode($expr));
 

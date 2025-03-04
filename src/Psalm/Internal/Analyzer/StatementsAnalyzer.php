@@ -442,6 +442,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                     $var_comments = $codebase->config->disable_var_parsing
                         ? []
                         : CommentAnalyzer::arrayToDocblocks(
+                            $codebase,
                             $docblock,
                             $statements_analyzer->parsed_docblock,
                             $statements_analyzer->getSource(),
