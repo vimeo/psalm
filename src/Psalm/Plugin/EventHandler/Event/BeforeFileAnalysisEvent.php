@@ -19,39 +19,11 @@ final class BeforeFileAnalysisEvent
      * @internal
      */
     public function __construct(
-        private readonly StatementsSource $statements_source,
-        private readonly Context $file_context,
-        private readonly FileStorage $file_storage,
-        private readonly Codebase $codebase,
-        private readonly array $stmts,
+        public readonly StatementsSource $statements_source,
+        public readonly Context $file_context,
+        public readonly FileStorage $file_storage,
+        public readonly Codebase $codebase,
+        public readonly array $stmts,
     ) {
-    }
-
-    public function getStatementsSource(): StatementsSource
-    {
-        return $this->statements_source;
-    }
-
-    public function getFileContext(): Context
-    {
-        return $this->file_context;
-    }
-
-    public function getFileStorage(): FileStorage
-    {
-        return $this->file_storage;
-    }
-
-    public function getCodebase(): Codebase
-    {
-        return $this->codebase;
-    }
-
-    /**
-     * @return list<Stmt>
-     */
-    public function getStmts(): array
-    {
-        return $this->stmts;
     }
 }

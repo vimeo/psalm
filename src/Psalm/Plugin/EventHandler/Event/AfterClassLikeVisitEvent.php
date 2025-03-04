@@ -17,47 +17,11 @@ final class AfterClassLikeVisitEvent
      * @internal
      */
     public function __construct(
-        private readonly ClassLike $stmt,
-        private readonly ClassLikeStorage $storage,
-        private readonly FileSource $statements_source,
-        private readonly Codebase $codebase,
-        private array $file_replacements = [],
+        public readonly ClassLike $stmt,
+        public readonly ClassLikeStorage $storage,
+        public readonly FileSource $statements_source,
+        public readonly Codebase $codebase,
+        public array $file_replacements = [],
     ) {
-    }
-
-    public function getStmt(): ClassLike
-    {
-        return $this->stmt;
-    }
-
-    public function getStorage(): ClassLikeStorage
-    {
-        return $this->storage;
-    }
-
-    public function getStatementsSource(): FileSource
-    {
-        return $this->statements_source;
-    }
-
-    public function getCodebase(): Codebase
-    {
-        return $this->codebase;
-    }
-
-    /**
-     * @return FileManipulation[]
-     */
-    public function getFileReplacements(): array
-    {
-        return $this->file_replacements;
-    }
-
-    /**
-     * @param FileManipulation[] $file_replacements
-     */
-    public function setFileReplacements(array $file_replacements): void
-    {
-        $this->file_replacements = $file_replacements;
     }
 }

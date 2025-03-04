@@ -21,25 +21,12 @@ final class FunctionReturnTypeProviderEvent
      * @internal
      */
     public function __construct(
-        private readonly StatementsSource $statements_source,
-        private readonly string $function_id,
-        private readonly FuncCall $stmt,
-        private readonly Context $context,
-        private readonly CodeLocation $code_location,
+        public readonly StatementsSource $statements_source,
+        public readonly string $function_id,
+        public readonly FuncCall $stmt,
+        public readonly Context $context,
+        public readonly CodeLocation $code_location,
     ) {
-    }
-
-    public function getStatementsSource(): StatementsSource
-    {
-        return $this->statements_source;
-    }
-
-    /**
-     * @return non-empty-string
-     */
-    public function getFunctionId(): string
-    {
-        return $this->function_id;
     }
 
     /**
@@ -48,20 +35,5 @@ final class FunctionReturnTypeProviderEvent
     public function getCallArgs(): array
     {
         return $this->stmt->getArgs();
-    }
-
-    public function getContext(): Context
-    {
-        return $this->context;
-    }
-
-    public function getCodeLocation(): CodeLocation
-    {
-        return $this->code_location;
-    }
-
-    public function getStmt(): FuncCall
-    {
-        return $this->stmt;
     }
 }

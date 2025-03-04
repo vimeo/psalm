@@ -17,33 +17,10 @@ final class AfterAnalysisEvent
      * @internal
      */
     public function __construct(
-        private readonly Codebase $codebase,
-        private readonly array $issues,
-        private readonly array $build_info,
-        private readonly ?SourceControlInfo $source_control_info = null,
+        public readonly Codebase $codebase,
+        public readonly array $issues,
+        public readonly array $build_info,
+        public readonly ?SourceControlInfo $source_control_info = null,
     ) {
-    }
-
-    public function getCodebase(): Codebase
-    {
-        return $this->codebase;
-    }
-
-    /**
-     * @return array<string, list<IssueData>> where string key is a filepath
-     */
-    public function getIssues(): array
-    {
-        return $this->issues;
-    }
-
-    public function getBuildInfo(): array
-    {
-        return $this->build_info;
-    }
-
-    public function getSourceControlInfo(): ?SourceControlInfo
-    {
-        return $this->source_control_info;
     }
 }
