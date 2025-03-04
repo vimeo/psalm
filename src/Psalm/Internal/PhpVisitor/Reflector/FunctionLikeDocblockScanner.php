@@ -47,7 +47,6 @@ use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
-use Psalm\Type\TaintKindGroup;
 use Psalm\Type\Union;
 
 use function array_any;
@@ -361,7 +360,15 @@ final class FunctionLikeDocblockScanner
         $storage->taint_source_types |= $docblock_info->taint_source_types;
 
         foreach ($docblock_info->added_taints as $taint) {
-            $storage->added_taints |= TaintKindGroup::NAME_TO_TAINT[$taint];
+            $t = $codebase->getTaint($taint);
+            if ($t === null) {
+                $storage->docblock_issues[] = new InvalidDocblock(
+                    "Invalid or unregistered taint $taint in docblock for $cased_function_id",
+                    new CodeLocation($file_scanner, $stmt, null, true),
+                );
+                continue;
+            }
+            $storage->added_taints |= $t;
         }
 
         foreach ($docblock_info->removed_taints as $removed_taint) {
@@ -381,7 +388,15 @@ final class FunctionLikeDocblockScanner
                     $file_scanner,
                 );
             } else {
-                $storage->removed_taints |= TaintKindGroup::NAME_TO_TAINT[$removed_taint];
+                $t = $codebase->getTaint($removed_taint);
+                if ($t === null) {
+                    $storage->docblock_issues[] = new InvalidDocblock(
+                        "Invalid or unregistered taint $taint in docblock for $cased_function_id",
+                        new CodeLocation($file_scanner, $stmt, null, true),
+                    );
+                    continue;
+                }
+                $storage->removed_taints |= $t;
             }
         }
 
