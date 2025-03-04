@@ -51,6 +51,7 @@ use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\Provider\StatementsProvider;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Issue\InvalidDocblock;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
 use Psalm\Storage\ClassLikeStorage;
@@ -361,43 +362,58 @@ final class Codebase
     /**
      * Used to register a taint, or to fetch the ID of an already registered taint by its alias.
      *
-     * @throws AssertionError if no more taint slots are left
-     * @throws RuntimeException if the passed alias uses some unregistered taint slots
-     * @param ?int $alias Used to register an alias of one or more pre-existing taints.
+     * Returns null and emits an issue if a code location is passed and there are no more taint slots.
+     *
+     * @throws RuntimeException if no code location is passed and there are no more taint slots.
+     * @return ($location is null ? int|null : int)
      */
-    public function getOrRegisterTaint(string $taint_type, ?int $alias = null): int
+    public function getOrRegisterTaint(string $taint_type, ?CodeLocation $location = null): ?int
     {
         if (isset($this->taint_map[$taint_type])) {
             return $this->taint_map[$taint_type];
         }
-        if ($alias === null) {
-            if ($this->taint_count+1 === (PHP_INT_SIZE * 8)) {
-                if (PHP_INT_SIZE === 8) {
-                    throw new RuntimeException("No more taint slots left, please register fewer taints or use some of the built-in taints!");
-                }
-                throw new RuntimeException("No more taint slots left, please switch to a 64-bit build of PHP to get 32 more taint slots, or register fewer taints or use some of the built-in taints!");
+        if ($this->taint_count+1 === (PHP_INT_SIZE * 8)) {
+            $taints = implode(',', $this->custom_taints);
+            $err = "No more taint slots left (using $taints), ";
+            if (PHP_INT_SIZE === 8) {
+                $err .= "please use fewer custom taints and use some of the built-in taints!";
+            } else {
+                $err .= "please switch to a 64-bit build of PHP to get 32 more taint slots,".
+                    " or use fewer custom taints and use some of the built-in taints!";
             }
-            $id = 1 << ($this->taint_count++);
-            $this->custom_taints[$id] + $taint_type;
-        } else {
-            if ($this->taint_count+1 !== (PHP_INT_SIZE * 8)) {
-                $mask = (1 << $this->taint_count) - 1;
-                if ($alias & ~$mask) {
-                    throw new AssertionError("The passed alias $alias uses some not yet registered taint slots!");
-                }
+            if ($location !== null) {
+                IssueBuffer::maybeAdd(new InvalidDocblock($err, $location));
+                return null;
             }
-            $id = $alias;
+            throw new RuntimeException($err);
         }
+        $id = 1 << ($this->taint_count++);
+        $this->custom_taints[$id] = $taint_type;
         $this->taint_map[$taint_type] = $id;
         return $id;
     }
 
     /**
-     * Used to to fetch the ID of an already registered taint by its alias, or null if no taint is registered for the alias.
+     * Register an alias taint name based on one or more pre-existing taints.
+     *
+     * @throws AssertionError if the passed taint is already registered or if the alias uses some unregistered taints.
      */
-    public function getTaint(string $taint_type): ?int
+    public function registerTaintAlias(string $taint_type, int $alias): int
     {
-        return $this->taint_map[$taint_type] ?? null;
+        if (isset($this->taint_map[$taint_type])) {
+            throw new AssertionError("A taint called $taint_type is already registered!");
+        }
+
+        if ($this->taint_count+1 !== (PHP_INT_SIZE * 8)) {
+            $mask = (1 << $this->taint_count) - 1;
+            if ($alias & ~$mask) {
+                throw new AssertionError("The passed alias $alias uses some not yet registered taint slots!");
+            }
+        }
+
+        $this->taint_map[$taint_type] = $alias;
+
+        return $alias;
     }
 
     private function loadAnalyzer(): void

@@ -26,6 +26,7 @@ use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\MissingDocblockType;
 use Psalm\IssueBuffer;
 use Psalm\Type\Union;
+use RuntimeException;
 use UnexpectedValueException;
 
 use function count;
@@ -243,11 +244,12 @@ final class CommentAnalyzer
         if (isset($parsed_docblock->tags['psalm-taint-escape'])) {
             foreach ($parsed_docblock->tags['psalm-taint-escape'] as $param) {
                 $param = trim($param);
-                $t = $codebase->getTaint($param);
-                if ($t === null) {
-                    throw new IncorrectDocblockException("Got invalid or unregistered taint type $param");
+                try {
+                    $t = $codebase->getOrRegisterTaint($param);
+                    $var_comment->removed_taints |= $t;
+                } catch (RuntimeException $e) {
+                    throw new DocblockParseException($e->getMessage(), 0, $e);
                 }
-                $var_comment->removed_taints |= $t;
             }
         }
 

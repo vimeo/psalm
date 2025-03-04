@@ -268,7 +268,8 @@ final class TaintFlowGraph extends DataFlowGraph
                     $generated_source = clone $source;
                     $generated_source->id = $source->unspecialized_id;
                     $generated_source->is_first_level_and_specialized = false;
-                    $generated_source->processing_specialized_descendants_of[$source->specialization_key][$source->unspecialized_id] = $source->id;
+                    $generated_source->processing_specialized_descendants_of
+                        [$source->specialization_key][$source->unspecialized_id] = $source->id;
         
                     $this->getChildNodes(
                         $new_sources,
@@ -562,7 +563,8 @@ final class TaintFlowGraph extends DataFlowGraph
             $new_destination->is_first_level_and_specialized = false;
             $new_destination->taintSource = $generated_source;
             $new_destination->taints = $new_taints;
-            $new_destination->processing_specialized_descendants_of = $generated_source->processing_specialized_descendants_of;
+            $new_destination->processing_specialized_descendants_of
+                = $generated_source->processing_specialized_descendants_of;
             $new_destination->path_types = [...$generated_source->path_types, $path_type];
 
             $new_sources[$key] = $new_destination;

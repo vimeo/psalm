@@ -247,15 +247,8 @@ final class FunctionLikeDocblockParser
                 }
 
                 if (count($param_parts) >= 2) {
-                    $t = $codebase->getTaint($param_parts[0]);
-                    if ($t === null) {
-                        IssueBuffer::maybeAdd(
-                            new InvalidDocblock(
-                                "Got invalid or unregistered taint type {$param_parts[0]}",
-                                $code_location,
-                            ),
-                        );
-                    } else {
+                    $t = $codebase->getOrRegisterTaint($param_parts[0], $code_location);
+                    if ($t !== null) {
                         $info->taint_sink_params[] = ['name' => $param_parts[1], 'taint' => $t];
                     }
                 } else {
@@ -282,15 +275,8 @@ final class FunctionLikeDocblockParser
 
                     if (str_starts_with($taint_type, 'exec_')) {
                         $taint_type = substr($taint_type, 5);
-                        $t = $codebase->getTaint($taint_type);
-                        if ($t === null) {
-                            IssueBuffer::maybeAdd(
-                                new InvalidDocblock(
-                                    "Got invalid or unregistered taint type $taint_type",
-                                    $code_location,
-                                ),
-                            );
-                        } else {
+                        $t = $codebase->getOrRegisterTaint($taint_type, $code_location);
+                        if ($t !== null) {
                             $info->taint_sink_params[] = ['name' => $param_parts[0], 'taint' => $t];
                         }
                     }
@@ -306,15 +292,8 @@ final class FunctionLikeDocblockParser
                 }
 
                 if ($param_parts[0]) {
-                    $t = $codebase->getTaint($param_parts[0]);
-                    if ($t === null) {
-                        IssueBuffer::maybeAdd(
-                            new InvalidDocblock(
-                                "Got invalid or unregistered taint type {$param_parts[0]}",
-                                $code_location,
-                            ),
-                        );
-                    } else {
+                    $t = $codebase->getOrRegisterTaint($param_parts[0], $code_location);
+                    if ($t !== null) {
                         $info->taint_source_types |= $t;
                     }
                 } else {
@@ -336,15 +315,8 @@ final class FunctionLikeDocblockParser
 
                 if ($param_parts[0]) {
                     if ($param_parts[0] !== 'none') {
-                        $t = $codebase->getTaint($param_parts[0]);
-                        if ($t === null) {
-                            IssueBuffer::maybeAdd(
-                                new InvalidDocblock(
-                                    "Got invalid or unregistered taint type {$param_parts[0]}",
-                                    $code_location,
-                                ),
-                            );
-                        } else {
+                        $t = $codebase->getOrRegisterTaint($param_parts[0], $code_location);
+                        if ($t !== null) {
                             $info->taint_source_types |= $t;
                         }
                     }

@@ -358,17 +358,13 @@ final class FunctionLikeDocblockScanner
 
         // merge taints from doc block to storage, enforce uniqueness and having consecutive index keys
         $storage->taint_source_types |= $docblock_info->taint_source_types;
+        $location = new CodeLocation($file_scanner, $stmt, null, true);
 
         foreach ($docblock_info->added_taints as $taint) {
-            $t = $codebase->getTaint($taint);
-            if ($t === null) {
-                $storage->docblock_issues[] = new InvalidDocblock(
-                    "Invalid or unregistered taint $taint in docblock for $cased_function_id",
-                    new CodeLocation($file_scanner, $stmt, null, true),
-                );
-                continue;
+            $t = $codebase->getOrRegisterTaint($taint, $location);
+            if ($t !== null) {
+                $storage->added_taints |= $t;
             }
-            $storage->added_taints |= $t;
         }
 
         foreach ($docblock_info->removed_taints as $removed_taint) {
@@ -388,15 +384,10 @@ final class FunctionLikeDocblockScanner
                     $file_scanner,
                 );
             } else {
-                $t = $codebase->getTaint($removed_taint);
-                if ($t === null) {
-                    $storage->docblock_issues[] = new InvalidDocblock(
-                        "Invalid or unregistered taint $taint in docblock for $cased_function_id",
-                        new CodeLocation($file_scanner, $stmt, null, true),
-                    );
-                    continue;
+                $t = $codebase->getOrRegisterTaint($removed_taint, $location);
+                if ($t !== null) {
+                    $storage->removed_taints |= $t;
                 }
-                $storage->removed_taints |= $t;
             }
         }
 

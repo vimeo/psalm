@@ -20,7 +20,6 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
-use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\NonStaticSelfCall;
 use Psalm\Issue\ParentNotFound;
 use Psalm\IssueBuffer;
@@ -330,15 +329,10 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 );
 
                 foreach ($expanded_type->getLiteralStrings() as $literal_string) {
-                    $taint = $codebase->getTaint($literal_string->value);
-                    if ($taint === null) {
-                        IssueBuffer::maybeAdd(new InvalidDocblock(
-                            "Invalid taint name {$literal_string->value} provided",
-                            $method_storage->location,
-                        ));
-                        continue;
+                    $taint = $codebase->getOrRegisterTaint($literal_string->value, $method_storage->location);
+                    if ($taint !== null) {
+                        $conditionally_removed_taints |= $taint;
                     }
-                    $conditionally_removed_taints |= $taint;
                 }
             }
         }
