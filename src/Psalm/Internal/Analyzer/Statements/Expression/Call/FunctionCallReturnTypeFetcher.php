@@ -581,7 +581,7 @@ final class FunctionCallReturnTypeFetcher
             );
 
             $expanded_type = TypeExpander::expandUnion(
-                $statements_analyzer->getCodebase(),
+                $codebase,
                 $conditionally_removed_taint,
                 null,
                 null,

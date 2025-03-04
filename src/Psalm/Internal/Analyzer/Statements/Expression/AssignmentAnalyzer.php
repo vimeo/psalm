@@ -627,6 +627,7 @@ final class AssignmentAnalyzer
             $var_comments = $codebase->config->disable_var_parsing
                 ? []
                 : CommentAnalyzer::getTypeFromComment(
+                    $codebase,
                     $doc_comment,
                     $statements_analyzer->getSource(),
                     $statements_analyzer->getAliases(),
@@ -903,6 +904,7 @@ final class AssignmentAnalyzer
         if ($doc_comment) {
             try {
                 $var_comments = CommentAnalyzer::getTypeFromComment(
+                    $statements_analyzer->getCodebase(),
                     $doc_comment,
                     $statements_analyzer->getSource(),
                     $statements_analyzer->getAliases(),
