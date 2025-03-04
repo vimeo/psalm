@@ -8,7 +8,6 @@ use Override;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\RemoveTaintsInterface;
 use Psalm\Type\TaintKind;
-use Psalm\Type\TaintKindGroup;
 
 /**
  * @psalm-suppress UnusedClass

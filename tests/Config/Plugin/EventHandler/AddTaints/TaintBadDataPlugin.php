@@ -9,7 +9,6 @@ use PhpParser\Node\Expr\Variable;
 use Psalm\Plugin\EventHandler\AddTaintsInterface;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type\TaintKind;
-use Psalm\Type\TaintKindGroup;
 
 /**
  * Add input taints to all variables named 'bad_data'

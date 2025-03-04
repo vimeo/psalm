@@ -39,7 +39,6 @@ use Psalm\Internal\Analyzer\Statements\StaticAnalyzer;
 use Psalm\Internal\Analyzer\Statements\UnsetAnalyzer;
 use Psalm\Internal\Analyzer\Statements\UnusedAssignmentRemover;
 use Psalm\Internal\Codebase\DataFlowGraph;
-use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
@@ -155,9 +154,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
         $this->file_analyzer = $source->getFileAnalyzer();
         $this->codebase = $source->getCodebase();
 
-        if ($this->codebase->taint_flow_graph) {
-            $this->data_flow_graph = new TaintFlowGraph();
-        } elseif ($this->codebase->find_unused_variables) {
+        if (!$this->codebase->taint_flow_graph && $this->codebase->find_unused_variables) {
             $this->data_flow_graph = new VariableUseGraph();
         }
     }
@@ -177,12 +174,19 @@ final class StatementsAnalyzer extends SourceAnalyzer
         if (!$stmts) {
             return null;
         }
-
         // hoist functions to the top
         $this->hoistFunctions($stmts, $context);
 
         $project_analyzer = $this->getFileAnalyzer()->project_analyzer;
         $codebase = $project_analyzer->getCodebase();
+
+        if ($this->codebase->taint_flow_graph) {
+            if ($root_scope && $codebase->config->trackTaintsInPath($this->getFilePath())) {
+                $this->data_flow_graph = $this->codebase->taint_flow_graph;
+            } else {
+                $this->data_flow_graph = null;
+            }
+        }
 
         if ($codebase->config->hoist_constants) {
             self::hoistConstants($this, $stmts, $context);
@@ -213,14 +217,6 @@ final class StatementsAnalyzer extends SourceAnalyzer
                     new FileManipulation($branch_point, $branch_point, $var_id . ' = null;' . "\n" . $indentation),
                 ]);
             }
-        }
-
-        if ($root_scope
-            && $this->data_flow_graph instanceof TaintFlowGraph
-            && $this->codebase->taint_flow_graph
-            && $codebase->config->trackTaintsInPath($this->getFilePath())
-        ) {
-            $this->codebase->taint_flow_graph->addGraph($this->data_flow_graph);
         }
 
         return null;

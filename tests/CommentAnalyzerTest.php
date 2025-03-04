@@ -8,7 +8,6 @@ use Override;
 use PHPUnit\Framework\TestCase as BaseTestCase;
 use PhpParser\Comment\Doc;
 use Psalm\Aliases;
-use Psalm\Codebase;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\RuntimeCaches;
