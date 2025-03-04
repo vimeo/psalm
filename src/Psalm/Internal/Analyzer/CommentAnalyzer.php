@@ -245,8 +245,7 @@ final class CommentAnalyzer
             foreach ($parsed_docblock->tags['psalm-taint-escape'] as $param) {
                 $param = trim($param);
                 try {
-                    $t = $codebase->getOrRegisterTaint($param);
-                    $var_comment->removed_taints |= $t;
+                    $var_comment->removed_taints |= $codebase->getOrRegisterTaint($param);
                 } catch (RuntimeException $e) {
                     throw new DocblockParseException($e->getMessage(), 0, $e);
                 }
