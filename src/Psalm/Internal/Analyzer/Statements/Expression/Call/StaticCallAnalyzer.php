@@ -20,6 +20,7 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\NonStaticSelfCall;
 use Psalm\Issue\ParentNotFound;
 use Psalm\IssueBuffer;
@@ -27,7 +28,6 @@ use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
-use Psalm\Type\TaintKindGroup;
 use Psalm\Type\Union;
 
 use function count;
@@ -330,7 +330,15 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 );
 
                 foreach ($expanded_type->getLiteralStrings() as $literal_string) {
-                    $conditionally_removed_taints |= TaintKindGroup::NAME_TO_TAINT[$literal_string->value];
+                    $taint = $codebase->getTaint($literal_string->value);
+                    if ($taint === null) {
+                        IssueBuffer::maybeAdd(new InvalidDocblock(
+                            "Invalid taint name {$literal_string->value} provided",
+                            $method_storage->location,
+                        ));
+                        continue;
+                    }
+                    $conditionally_removed_taints |= $taint;
                 }
             }
         }

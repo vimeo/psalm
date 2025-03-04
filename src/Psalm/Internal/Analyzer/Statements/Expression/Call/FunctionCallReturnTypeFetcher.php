@@ -21,6 +21,8 @@ use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Issue\InvalidDocblock;
+use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\Event\AfterFunctionCallAnalysisEvent;
 use Psalm\Storage\FunctionLikeStorage;
@@ -39,7 +41,6 @@ use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\TaintKind;
-use Psalm\Type\TaintKindGroup;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -591,7 +592,15 @@ final class FunctionCallReturnTypeFetcher
 
             if (!$expanded_type->isNullable()) {
                 foreach ($expanded_type->getLiteralStrings() as $literal_string) {
-                    $conditionally_removed_taints |= TaintKindGroup::NAME_TO_TAINT[$literal_string->value];
+                    $taint = $codebase->getTaint($literal_string->value);
+                    if ($taint === null) {
+                        IssueBuffer::maybeAdd(new InvalidDocblock(
+                            "Invalid taint name {$literal_string->value} provided",
+                            $function_storage->location,
+                        ));
+                        continue;
+                    }
+                    $conditionally_removed_taints |= $taint;
                 }
             }
         }

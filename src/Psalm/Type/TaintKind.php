@@ -30,4 +30,9 @@ final class TaintKind
     public const INPUT_EXTRACT = (1 << 16);
     public const USER_SECRET = (1 << 17);
     public const SYSTEM_SECRET = (1 << 18);
+
+    public const ALL_INPUT = (1 << 17) - 1;
+
+    /** @internal Keep this synced with the above */
+    public const BUILTIN_TAINT_COUNT = 19;
 }

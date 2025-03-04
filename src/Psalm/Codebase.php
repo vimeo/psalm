@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm;
 
+use AssertionError;
 use Exception;
 use InvalidArgumentException;
 use LanguageServerProtocol\Command;
@@ -65,10 +66,11 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
-use Psalm\Type\TaintKindGroup;
+use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use ReflectionProperty;
 use ReflectionType;
+use RuntimeException;
 use UnexpectedValueException;
 
 use function array_combine;
@@ -99,6 +101,7 @@ use function strtolower;
 use function substr;
 use function substr_count;
 
+use const PHP_INT_SIZE;
 use const PHP_VERSION_ID;
 
 /**
@@ -255,6 +258,42 @@ final class Codebase
     public bool $literal_array_key_check = false;
 
     /** @internal */
+    public int $taint_count = TaintKind::BUILTIN_TAINT_COUNT;
+
+    /**
+     * @var array<string, int>
+     */
+    private array $taint_map = [
+        'callable' => TaintKind::INPUT_CALLABLE,
+        'unserialize' => TaintKind::INPUT_UNSERIALIZE,
+        'include' => TaintKind::INPUT_INCLUDE,
+        'eval' => TaintKind::INPUT_EVAL,
+        'ldap' => TaintKind::INPUT_LDAP,
+        'sql' => TaintKind::INPUT_SQL,
+        'html' => TaintKind::INPUT_HTML,
+        'has_quotes' => TaintKind::INPUT_HAS_QUOTES,
+        'shell' => TaintKind::INPUT_SHELL,
+        'ssrf' => TaintKind::INPUT_SSRF,
+        'file' => TaintKind::INPUT_FILE,
+        'cookie' => TaintKind::INPUT_COOKIE,
+        'header' => TaintKind::INPUT_HEADER,
+        'xpath' => TaintKind::INPUT_XPATH,
+        'sleep' => TaintKind::INPUT_SLEEP,
+        'extract' => TaintKind::INPUT_EXTRACT,
+        'user_secret' => TaintKind::USER_SECRET,
+        'system_secret' => TaintKind::SYSTEM_SECRET,
+
+        'input' => TaintKind::ALL_INPUT,
+        'tainted' => TaintKind::ALL_INPUT,
+    ];
+
+    /**
+     * @internal
+     * @var array<int, string>
+     */
+    public array $custom_taints = [];
+
+    /** @internal */
     public function __construct(
         public Config $config,
         Providers $providers,
@@ -317,6 +356,48 @@ final class Codebase
         );
 
         $this->loadAnalyzer();
+    }
+
+    /**
+     * Used to register a taint, or to fetch the ID of an already registered taint by its alias.
+     *
+     * @throws AssertionError if no more taint slots are left
+     * @throws RuntimeException if the passed alias uses some unregistered taint slots
+     * @param ?int $alias Used to register an alias of one or more pre-existing taints.
+     */
+    public function getOrRegisterTaint(string $taint_type, ?int $alias = null): int
+    {
+        if (isset($this->taint_map[$taint_type])) {
+            return $this->taint_map[$taint_type];
+        }
+        if ($alias === null) {
+            if ($this->taint_count+1 === (PHP_INT_SIZE * 8)) {
+                if (PHP_INT_SIZE === 8) {
+                    throw new RuntimeException("No more taint slots left, please register fewer taints or use some of the built-in taints!");
+                }
+                throw new RuntimeException("No more taint slots left, please switch to a 64-bit build of PHP to get 32 more taint slots, or register fewer taints or use some of the built-in taints!");
+            }
+            $id = 1 << ($this->taint_count++);
+            $this->custom_taints[$id] + $taint_type;
+        } else {
+            if ($this->taint_count+1 !== (PHP_INT_SIZE * 8)) {
+                $mask = (1 << $this->taint_count) - 1;
+                if ($alias & ~$mask) {
+                    throw new AssertionError("The passed alias $alias uses some not yet registered taint slots!");
+                }
+            }
+            $id = $alias;
+        }
+        $this->taint_map[$taint_type] = $id;
+        return $id;
+    }
+
+    /**
+     * Used to to fetch the ID of an already registered taint by its alias, or null if no taint is registered for the alias.
+     */
+    public function getTaint(string $taint_type): ?int
+    {
+        return $this->taint_map[$taint_type] ?? null;
     }
 
     private function loadAnalyzer(): void
@@ -2145,7 +2226,7 @@ final class Codebase
     public function addTaintSource(
         Union $expr_type,
         string $taint_id,
-        int $taints = TaintKindGroup::ALL_INPUT,
+        int $taints = TaintKind::ALL_INPUT,
         ?CodeLocation $code_location = null,
     ): Union {
         if (!$this->taint_flow_graph) {
@@ -2167,7 +2248,7 @@ final class Codebase
 
     public function addTaintSink(
         string $taint_id,
-        int $taints = TaintKindGroup::ALL_INPUT,
+        int $taints = TaintKind::ALL_INPUT,
         ?CodeLocation $code_location = null,
     ): void {
         if (!$this->taint_flow_graph) {

@@ -6,6 +6,7 @@ namespace Psalm\Internal\Codebase;
 
 use Override;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -34,7 +35,6 @@ use Psalm\IssueBuffer;
 use Psalm\Progress\Phase;
 use Psalm\Progress\Progress;
 use Psalm\Type\TaintKind;
-use Psalm\Type\TaintKindGroup;
 
 use function count;
 use function end;
@@ -215,6 +215,8 @@ final class TaintFlowGraph extends DataFlowGraph
 
         $project_analyzer = ProjectAnalyzer::getInstance();
 
+        $codebase = $project_analyzer->getCodebase();
+
         // Remove all specializations without an outgoing edge
         foreach ($this->specializations as $k => &$map) {
             foreach ($map as $kk => $specialized_id) {
@@ -250,6 +252,7 @@ final class TaintFlowGraph extends DataFlowGraph
                         $visited_source_ids,
                         $config,
                         $project_analyzer,
+                        $codebase,
                     );
                     continue;
                 }
@@ -275,6 +278,7 @@ final class TaintFlowGraph extends DataFlowGraph
                         $visited_source_ids,
                         $config,
                         $project_analyzer,
+                        $codebase,
                     );
 
                     // If this node has first level specializations (=> is first-level & unspecialized),
@@ -299,6 +303,7 @@ final class TaintFlowGraph extends DataFlowGraph
                                 $visited_source_ids,
                                 $config,
                                 $project_analyzer,
+                                $codebase,
                             );
                         }
                     } else {
@@ -316,11 +321,12 @@ final class TaintFlowGraph extends DataFlowGraph
                                 $visited_source_ids,
                                 $config,
                                 $project_analyzer,
+                                $codebase,
                             );
                         }
                     }
                 } else {
-                    // Process all descendants 
+                    // Process all descendants
                     foreach ($source->processing_specialized_descendants_of as $map) {
                         if (isset($map[$source->id])) {
                             $specialized_id = $map[$source->id];
@@ -339,6 +345,7 @@ final class TaintFlowGraph extends DataFlowGraph
                                 $visited_source_ids,
                                 $config,
                                 $project_analyzer,
+                                $codebase,
                             );
                         }
                     }
@@ -365,6 +372,7 @@ final class TaintFlowGraph extends DataFlowGraph
         array $visited_source_ids,
         Config $config,
         ProjectAnalyzer $project_analyzer,
+        Codebase $codebase,
     ): void {
         foreach ($this->forward_edges[$generated_source->id] as $to_id => $path) {
             if (!isset($this->nodes[$to_id])) {
@@ -415,11 +423,12 @@ final class TaintFlowGraph extends DataFlowGraph
                     $path = $this->getPredecessorPath($generated_source)
                     . ' -> ' . $this->getSuccessorPath($sink);
 
-                    foreach (TaintKindGroup::TAINT_TO_NAME as $matching_taint => $_) {
-                        if (!($matching_taints & $matching_taint)) {
+                    for ($x = $codebase->taint_count-1; $x >= 0; $x--) {
+                        $t = 1 << $x;
+                        if (!($matching_taints & $t)) {
                             continue;
                         }
-                        $issue = match ($matching_taint) {
+                        $issue = match ($t) {
                             TaintKind::INPUT_CALLABLE => new TaintedCallable(
                                 'Detected tainted text',
                                 $issue_location,
@@ -529,7 +538,7 @@ final class TaintFlowGraph extends DataFlowGraph
                                 $path,
                             ),
                             default => new TaintedCustom(
-                                'Detected tainted ' . $matching_taint,
+                                'Detected tainted ' . $codebase->custom_taints[$t],
                                 $issue_location,
                                 $issue_trace,
                                 $path,

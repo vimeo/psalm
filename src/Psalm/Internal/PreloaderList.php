@@ -1755,7 +1755,6 @@ final class PreloaderList {
         \Psalm\Type\MutableUnion::class,
         \Psalm\Type\Reconciler::class,
         \Psalm\Type\TaintKind::class,
-        \Psalm\Type\TaintKindGroup::class,
         \Psalm\Type\TypeNode::class,
         \Psalm\Type\TypeVisitor::class,
         \Psalm\Type\Union::class,

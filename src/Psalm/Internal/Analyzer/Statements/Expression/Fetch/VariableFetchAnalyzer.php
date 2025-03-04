@@ -34,7 +34,7 @@ use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
-use Psalm\Type\TaintKindGroup;
+use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 
 use function in_array;
@@ -509,7 +509,7 @@ final class VariableFetchAnalyzer
             || $var_name === '$_COOKIE'
             || $var_name === '$_REQUEST'
         ) {
-            $taints = TaintKindGroup::ALL_INPUT;
+            $taints = TaintKind::ALL_INPUT;
         } else {
             $taints = 0;
         }

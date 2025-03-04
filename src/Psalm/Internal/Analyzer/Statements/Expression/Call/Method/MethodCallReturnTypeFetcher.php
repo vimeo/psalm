@@ -34,7 +34,6 @@ use RuntimeException;
 use Throwable;
 use UnexpectedValueException;
 
-use function array_filter;
 use function count;
 use function in_array;
 use function strtolower;
