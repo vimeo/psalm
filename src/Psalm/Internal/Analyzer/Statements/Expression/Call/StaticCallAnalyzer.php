@@ -375,7 +375,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $cased_method_id,
                 $method_storage->signature_return_type_location ?: $method_storage->location,
                 null,
-                $method_storage->taint_source_types
+                $method_storage->taint_source_types,
             );
 
             $statements_analyzer->data_flow_graph->addSource($method_node);

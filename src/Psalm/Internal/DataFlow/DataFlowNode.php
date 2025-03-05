@@ -6,7 +6,6 @@ namespace Psalm\Internal\DataFlow;
 
 use Override;
 use Psalm\CodeLocation;
-use Psalm\Storage\ImmutableNonCloneableTrait;
 use Stringable;
 
 use function strtolower;
@@ -30,7 +29,7 @@ final readonly class DataFlowNode implements Stringable
         /**
          * @var array<string, array<string, string>>
          */
-        public readonly array $specialized_calls = [],    
+        public readonly array $specialized_calls = [],
     ) {
     }
 
@@ -43,7 +42,7 @@ final readonly class DataFlowNode implements Stringable
         string $label,
         ?CodeLocation $code_location,
         ?string $specialization_key = null,
-        int $taints = 0
+        int $taints = 0,
     ): self {
         if ($specialization_key === null) {
             $unspecialized_id = null;
@@ -57,7 +56,7 @@ final readonly class DataFlowNode implements Stringable
             $specialization_key,
             $label,
             $code_location,
-            $taints
+            $taints,
         );
     }
 
@@ -91,11 +90,17 @@ final readonly class DataFlowNode implements Stringable
     public static function getForAssignment(
         string $var_id,
         CodeLocation $assignment_location,
-        string $specialization_key = '',
+        ?string $specialization_key = null,
     ): self {
-        $specialization_key .= '-' . $assignment_location->file_name
-            . ':' . $assignment_location->raw_file_start
-            . '-' . $assignment_location->raw_file_end;
+        if ($specialization_key === null) {
+            $specialization_key = $assignment_location->file_name
+                . ':' . $assignment_location->raw_file_start
+                . '-' . $assignment_location->raw_file_end;
+        } else {
+            $specialization_key .= '-' . $assignment_location->file_name
+                . ':' . $assignment_location->raw_file_start
+                . '-' . $assignment_location->raw_file_end;
+        }
 
         return self::make($var_id, $var_id, $assignment_location, $specialization_key);
     }
@@ -105,7 +110,7 @@ final readonly class DataFlowNode implements Stringable
         string $cased_method_id,
         ?CodeLocation $code_location,
         ?CodeLocation $function_location = null,
-        int $taints = 0
+        int $taints = 0,
     ): self {
         $specialization_key = null;
 
@@ -153,7 +158,7 @@ final readonly class DataFlowNode implements Stringable
             $taints,
             $this->taintSource,
             $this->path_types,
-            $this->specialized_calls
+            $this->specialized_calls,
         );
     }
 

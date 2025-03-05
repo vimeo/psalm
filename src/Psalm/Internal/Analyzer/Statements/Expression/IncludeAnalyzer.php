@@ -122,7 +122,7 @@ final class IncludeAnalyzer
                 0,
                 $arg_location,
                 $arg_location,
-                TaintKind::INPUT_INCLUDE
+                TaintKind::INPUT_INCLUDE,
             );
 
             $statements_analyzer->data_flow_graph->addSink($include_param_sink);

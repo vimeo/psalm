@@ -286,7 +286,7 @@ final class TaintFlowGraph extends DataFlowGraph
                         $source->taints,
                         $source->taintSource,
                         $source->path_types,
-                        $specialized_calls
+                        $specialized_calls,
                     );
 
                     $this->getChildNodes(
@@ -620,7 +620,7 @@ final class TaintFlowGraph extends DataFlowGraph
                 $new_taints,
                 $generated_source,
                 $path_types,
-                $generated_source->specialized_calls
+                $generated_source->specialized_calls,
             );
 
             $new_sources[$key] = $new_destination;
