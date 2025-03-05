@@ -51,7 +51,6 @@ final class PrintAnalyzer
                     | TaintKind::SYSTEM_SECRET
             );
 
-
             $statements_analyzer->data_flow_graph->addSink($print_param_sink);
         }
 

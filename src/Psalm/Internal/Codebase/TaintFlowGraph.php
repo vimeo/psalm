@@ -236,11 +236,14 @@ final class TaintFlowGraph extends DataFlowGraph
             }
         } unset($map);*/
 
+        $stack = [];
         // reprocess resolved descendants up to a maximum nesting level of 40
         for ($i = 0; count($sinks) && count($sources) && $i < 40; $i++) {
             $new_sources = [];
 
             ksort($sources);
+            $stack []= $sources;
+
             $progress->expand(count($sources));
 
             foreach ($sources as $source) {
@@ -264,7 +267,7 @@ final class TaintFlowGraph extends DataFlowGraph
                     continue;
                 }
         
-                // If this is a specialized node AND it was added using addNode, de-specialize;
+                // If this is a specialized node, de-specialize;
                 // Then, if we have one or more edges starting at the de-specialized node,
                 // process destinations of those edges.
                 if ($source->specialization_key !== null && isset($this->specialized_calls[$source->specialization_key])) {
@@ -301,6 +304,7 @@ final class TaintFlowGraph extends DataFlowGraph
                     // process them all
                 } elseif (isset($this->specializations[$source->id])) {
                     $specialized_calls = $source->specialized_calls;
+                    // Assert that we're unspecialized.
                     Assert::null($source->specialization_key);
 
                     if ($specialized_calls) {

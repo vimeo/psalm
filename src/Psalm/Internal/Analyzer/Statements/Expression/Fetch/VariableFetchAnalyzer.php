@@ -529,10 +529,10 @@ final class VariableFetchAnalyzer
         $taint_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
         $taint_source = DataFlowNode::make(
-            $var_name . ':' . $taint_location->file_name . ':' . $taint_location->raw_file_start,
+            $var_name,
             $var_name,
             null,
-            null,
+            $taint_location->file_name . ':' . $taint_location->raw_file_start,
             $taints,
         );
         $statements_analyzer->data_flow_graph->addSource($taint_source);
