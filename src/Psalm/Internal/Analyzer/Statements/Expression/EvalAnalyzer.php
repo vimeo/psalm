@@ -10,8 +10,7 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
-use Psalm\Internal\DataFlow\TaintSink;
-use Psalm\Internal\DataFlow\TaintSource;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
@@ -45,15 +44,14 @@ final class EvalAnalyzer
             ) {
                 $arg_location = new CodeLocation($statements_analyzer->getSource(), $stmt->expr);
 
-                $eval_param_sink = TaintSink::getForMethodArgument(
+                $eval_param_sink = DataFlowNode::getForMethodArgument(
                     'eval',
                     'eval',
                     0,
                     $arg_location,
                     $arg_location,
+                    TaintKind::INPUT_EVAL,
                 );
-
-                $eval_param_sink->taints = TaintKind::INPUT_EVAL;
 
                 $statements_analyzer->data_flow_graph->addSink($eval_param_sink);
 
@@ -65,7 +63,7 @@ final class EvalAnalyzer
 
                 $taints = $added_taints & ~$removed_taints;
                 if ($taints !== 0) {
-                    $taint_source = TaintSource::fromNode($eval_param_sink, $taints);
+                    $taint_source = $eval_param_sink->setTaints($taints);
                     $statements_analyzer->data_flow_graph->addSource($taint_source);
                 }
 

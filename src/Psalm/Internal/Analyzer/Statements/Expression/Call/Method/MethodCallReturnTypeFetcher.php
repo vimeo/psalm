@@ -388,7 +388,7 @@ final class MethodCallReturnTypeFetcher
                         null,
                     );
 
-                    $method_call_node = new DataFlowNode(
+                    $method_call_node = DataFlowNode::make(
                         strtolower((string) $method_id),
                         $cased_method_id,
                         $is_declaring ? ($method_storage->signature_return_type_location
@@ -429,7 +429,7 @@ final class MethodCallReturnTypeFetcher
                     if (!$is_declaring) {
                         $cased_declaring_method_id = $codebase->methods->getCasedMethodId($declaring_method_id);
 
-                        $declaring_method_call_node = new DataFlowNode(
+                        $declaring_method_call_node = DataFlowNode::make(
                             strtolower((string) $declaring_method_id),
                             $cased_declaring_method_id,
                             $method_storage->signature_return_type_location ?: $method_storage->location,

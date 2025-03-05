@@ -14,7 +14,6 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
-use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Issue\ImpureVariable;
 use Psalm\Issue\InvalidScope;
 use Psalm\Issue\PossiblyUndefinedGlobalVariable;
@@ -529,7 +528,7 @@ final class VariableFetchAnalyzer
 
         $taint_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
-        $taint_source = new TaintSource(
+        $taint_source = DataFlowNode::make(
             $var_name . ':' . $taint_location->file_name . ':' . $taint_location->raw_file_start,
             $var_name,
             null,

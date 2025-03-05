@@ -6,6 +6,7 @@ namespace Psalm\Internal\DataFlow;
 
 use Override;
 use Psalm\CodeLocation;
+use Psalm\Storage\ImmutableNonCloneableTrait;
 use Stringable;
 
 use function strtolower;
@@ -14,48 +15,59 @@ use function strtolower;
  * @psalm-consistent-constructor
  * @internal
  */
-class DataFlowNode implements Stringable
+final readonly class DataFlowNode implements Stringable
 {
-    public ?string $unspecialized_id = null;
-
-    public ?string $specialization_key = null;
-
-    public bool $is_first_level_and_specialized = false;
-
-    /** @var ?self */
-    public ?DataFlowNode $taintSource = null;
-
-    /** @var list<string> */
-    public array $path_types = [];
-
-    /**
-     * @var array<string, array<string, string>>
-     */
-    public array $processing_specialized_descendants_of = [];
-
     public function __construct(
-        public string $id,
-        public string $label,
-        public ?CodeLocation $code_location,
-        ?string $specialization_key = null,
-        public int $taints = 0,
+        public readonly string $id,
+        public readonly ?string $unspecialized_id,
+        public readonly ?string $specialization_key,
+        public readonly string $label,
+        public readonly ?CodeLocation $code_location = null,
+        public readonly int $taints = 0,
+        public readonly ?self $taintSource = null,
+        /** @var list<string> */
+        public readonly array $path_types = [],
+        /**
+         * @var array<string, array<string, string>>
+         */
+        public readonly array $specialized_calls = [],    
     ) {
-        if ($specialization_key) {
-            $this->unspecialized_id = $id;
-            $this->id .= '-' . $specialization_key;
-        }
-        $this->specialization_key = $specialization_key;
     }
 
-    /**
-     * @return static
-     */
-    final public static function getForMethodArgument(
+    private function __clone()
+    {
+    }
+
+    public static function make(
+        string $id,
+        string $label,
+        ?CodeLocation $code_location,
+        ?string $specialization_key = null,
+        int $taints = 0
+    ): self {
+        if ($specialization_key === null) {
+            $unspecialized_id = null;
+        } else {
+            $unspecialized_id = $id;
+            $id .= '-' . $specialization_key;
+        }
+        return new self(
+            $id,
+            $unspecialized_id,
+            $specialization_key,
+            $label,
+            $code_location,
+            $taints
+        );
+    }
+
+    public static function getForMethodArgument(
         string $method_id,
         string $cased_method_id,
         int $argument_offset,
         ?CodeLocation $arg_location,
         ?CodeLocation $code_location = null,
+        int $taints = 0,
     ): self {
         $arg_id = strtolower($method_id) . '#' . ($argument_offset + 1);
 
@@ -67,18 +79,16 @@ class DataFlowNode implements Stringable
             $specialization_key = strtolower($code_location->file_name) . ':' . $code_location->raw_file_start;
         }
 
-        return new static(
+        return self::make(
             $arg_id,
             $label,
             $arg_location,
             $specialization_key,
+            $taints,
         );
     }
 
-    /**
-     * @return static
-     */
-    final public static function getForAssignment(
+    public static function getForAssignment(
         string $var_id,
         CodeLocation $assignment_location,
         ?string $specialization_key = null,
@@ -88,16 +98,15 @@ class DataFlowNode implements Stringable
             . ':' . $assignment_location->raw_file_start
             . '-' . $assignment_location->raw_file_end;
 
-        return new static($id, $var_id, $assignment_location, $specialization_key);
+        return self::make($id, $var_id, $assignment_location, $specialization_key);
     }
-    /**
-     * @return static
-     */
-    final public static function getForMethodReturn(
+    
+    public static function getForMethodReturn(
         string $method_id,
         string $cased_method_id,
         ?CodeLocation $code_location,
         ?CodeLocation $function_location = null,
+        int $taints = 0
     ): self {
         $specialization_key = null;
 
@@ -105,40 +114,48 @@ class DataFlowNode implements Stringable
             $specialization_key = strtolower($function_location->file_name) . ':' . $function_location->raw_file_start;
         }
 
-        return new static(
+        return self::make(
             strtolower($method_id),
             $cased_method_id,
             $code_location,
             $specialization_key,
+            $taints,
         );
     }
 
 
-    /**
-     * @return static
-     */
-    final public static function getForVariableUse(): self
+    public static function getForVariableUse(): self
     {
-        return new static('variable-use', 'variable use', null);
+        return new self('variable-use', null, null, 'variable use');
     }
 
 
-
-    /**
-     * @return static
-     */
-    final public static function getForUnknownOrigin(): self
+    public static function getForUnknownOrigin(): self
     {
-        return new static('unknown-origin', 'unknown origin', null);
+        return new self('unknown-origin', null, null, 'unknown origin');
     }
 
-
-    /**
-     * @return static
-     */
-    final public static function getForClosureUse(): self
+    public static function getForClosureUse(): self
     {
-        return new static('closure-use', 'closure use', null);
+        return new self('closure-use', null, null, 'closure use');
+    }
+
+    public function setTaints(int $taints): self
+    {
+        if ($this->taints === $taints) {
+            return $this;
+        }
+        return new self(
+            $this->id,
+            $this->unspecialized_id,
+            $this->specialization_key,
+            $this->label,
+            $this->code_location,
+            $taints,
+            $this->taintSource,
+            $this->path_types,
+            $this->specialized_calls
+        );
     }
 
     #[Override]

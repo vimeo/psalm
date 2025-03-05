@@ -14,7 +14,6 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
-use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\TemplateBound;
@@ -749,7 +748,7 @@ final class FunctionCallReturnTypeFetcher
 
         $taints = $added_taints & ~$function_storage->removed_taints;
         if ($taints !== 0) {
-            $taint_source = TaintSource::fromNode($function_call_node, $taints);
+            $taint_source = $function_call_node->setTaints($taints);
             $graph->addSource($taint_source);
         }
     }

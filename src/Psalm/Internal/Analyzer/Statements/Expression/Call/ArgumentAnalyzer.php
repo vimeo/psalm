@@ -22,7 +22,6 @@ use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
-use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
@@ -1895,7 +1894,7 @@ final class ArgumentAnalyzer
 
         $taints = $added_taints & ~$removed_taints;
         if ($taints !== 0 && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
-            $taint_source = TaintSource::fromNode($argument_value_node, $taints);
+            $taint_source = $argument_value_node->setTaints($taints);
             $statements_analyzer->data_flow_graph->addSource($taint_source);
         }
     }

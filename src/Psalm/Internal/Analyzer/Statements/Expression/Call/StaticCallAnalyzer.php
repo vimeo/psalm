@@ -15,7 +15,6 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
-use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
@@ -371,13 +370,13 @@ final class StaticCallAnalyzer extends CallAnalyzer
             && $method_storage->taint_source_types
             && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph
         ) {
-            $method_node = TaintSource::getForMethodReturn(
+            $method_node = DataFlowNode::getForMethodReturn(
                 (string) $method_id,
                 $cased_method_id,
                 $method_storage->signature_return_type_location ?: $method_storage->location,
+                null,
+                $method_storage->taint_source_types
             );
-
-            $method_node->taints = $method_storage->taint_source_types;
 
             $statements_analyzer->data_flow_graph->addSource($method_node);
         }

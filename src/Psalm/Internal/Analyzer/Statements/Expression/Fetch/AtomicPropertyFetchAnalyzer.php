@@ -24,7 +24,6 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
-use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
@@ -902,7 +901,7 @@ final class AtomicPropertyFetchAnalyzer
 
                 $taints = $added_taints & ~$removed_taints;
                 if ($taints !== 0 && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
-                    $taint_source = TaintSource::fromNode($var_node, $taints);
+                    $taint_source = $var_node->setTaints($taints);
                     $statements_analyzer->data_flow_graph->addSource($taint_source);
                 }
             }
@@ -949,7 +948,7 @@ final class AtomicPropertyFetchAnalyzer
 
         $data_flow_graph->addNode($localized_property_node);
 
-        $property_node = new DataFlowNode(
+        $property_node = DataFlowNode::make(
             $property_id,
             $property_id,
             null,
@@ -980,7 +979,7 @@ final class AtomicPropertyFetchAnalyzer
 
         $taints = $added_taints & ~$removed_taints;
         if ($taints !== 0 && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
-            $taint_source = TaintSource::fromNode($localized_property_node, $taints);
+            $taint_source = $localized_property_node->setTaints($taints);
             $statements_analyzer->data_flow_graph->addSource($taint_source);
         }
     }

@@ -761,8 +761,6 @@ final class PreloaderList {
         \Psalm\Internal\Composer::class,
         \Psalm\Internal\DataFlow\DataFlowNode::class,
         \Psalm\Internal\DataFlow\Path::class,
-        \Psalm\Internal\DataFlow\TaintSink::class,
-        \Psalm\Internal\DataFlow\TaintSource::class,
         \Psalm\Internal\Diff\AstDiffer::class,
         \Psalm\Internal\Diff\ClassStatementsDiffer::class,
         \Psalm\Internal\Diff\DiffElem::class,
@@ -1591,6 +1589,7 @@ final class PreloaderList {
         \Psalm\Progress\DebugProgress::class,
         \Psalm\Progress\DefaultProgress::class,
         \Psalm\Progress\LongProgress::class,
+        \Psalm\Progress\Phase::class,
         \Psalm\Progress\Progress::class,
         \Psalm\Progress\VoidProgress::class,
         \Psalm\Report::class,
@@ -1773,6 +1772,7 @@ final class PreloaderList {
         \Symfony\Component\Console\Output\BufferedOutput::class,
         \Symfony\Component\Console\Style\SymfonyStyle::class,
         \Symfony\Component\Filesystem\Path::class,
+        \Webmozart\Assert\Assert::class,
         \XdgBaseDir\Xdg::class,
 
     ];

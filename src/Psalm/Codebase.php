@@ -39,8 +39,7 @@ use Psalm\Internal\Codebase\Properties;
 use Psalm\Internal\Codebase\Reflection;
 use Psalm\Internal\Codebase\Scanner;
 use Psalm\Internal\Codebase\TaintFlowGraph;
-use Psalm\Internal\DataFlow\TaintSink;
-use Psalm\Internal\DataFlow\TaintSource;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\LanguageServer\PHPMarkdownContent;
 use Psalm\Internal\LanguageServer\Reference;
 use Psalm\Internal\MethodIdentifier;
@@ -2249,7 +2248,7 @@ final class Codebase
             return $expr_type;
         }
 
-        $source = new TaintSource(
+        $source = DataFlowNode::make(
             $taint_id,
             $taint_id,
             $code_location,
@@ -2271,7 +2270,7 @@ final class Codebase
             return;
         }
 
-        $sink = new TaintSink(
+        $sink = DataFlowNode::make(
             $taint_id,
             $taint_id,
             $code_location,

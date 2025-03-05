@@ -20,8 +20,6 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
-use Psalm\Internal\DataFlow\TaintSink;
-use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
@@ -724,15 +722,14 @@ final class NewAnalyzer extends CallAnalyzer
             ) {
                 $arg_location = new CodeLocation($statements_analyzer->getSource(), $stmt_class);
 
-                $custom_call_sink = TaintSink::getForMethodArgument(
+                $custom_call_sink = DataFlowNode::getForMethodArgument(
                     'variable-call',
                     'variable-call',
                     0,
                     $arg_location,
                     $arg_location,
+                    TaintKind::INPUT_CALLABLE,
                 );
-
-                $custom_call_sink->taints = TaintKind::INPUT_CALLABLE;
 
                 $statements_analyzer->data_flow_graph->addSink($custom_call_sink);
 
@@ -743,7 +740,7 @@ final class NewAnalyzer extends CallAnalyzer
 
                 $taints = $added_taints & ~$removed_taints;
                 if ($added_taints !== 0) {
-                    $taint_source = TaintSource::fromNode($custom_call_sink, $taints);
+                    $taint_source = $custom_call_sink->setTaints($taints);
                     $statements_analyzer->data_flow_graph->addSource($taint_source);
                 }
 

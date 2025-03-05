@@ -28,7 +28,6 @@ use Psalm\Internal\Codebase\Methods;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
-use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
@@ -508,7 +507,7 @@ final class InstancePropertyAssignmentAnalyzer
 
                 $taints = $added_taints & ~$removed_taints;
                 if ($taints !== 0 && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
-                    $taint_source = TaintSource::fromNode($property_node, $taints);
+                    $taint_source = $property_node->setTaints($taints);
                     $statements_analyzer->data_flow_graph->addSource($taint_source);
                 }
 
@@ -593,7 +592,7 @@ final class InstancePropertyAssignmentAnalyzer
 
         $data_flow_graph->addNode($localized_property_node);
 
-        $property_node = new DataFlowNode(
+        $property_node = DataFlowNode::make(
             $property_id,
             $property_id,
             null,
@@ -609,7 +608,7 @@ final class InstancePropertyAssignmentAnalyzer
 
         $taints = $added_taints & ~$removed_taints;
         if ($taints !== 0 && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
-            $taint_source = TaintSource::fromNode($property_node, $taints);
+            $taint_source = $property_node->setTaints($taints);
             $statements_analyzer->data_flow_graph->addSource($taint_source);
         }
 
@@ -646,7 +645,7 @@ final class InstancePropertyAssignmentAnalyzer
                 || $stmt instanceof PhpParser\Node\Expr\StaticPropertyFetch)
             && $stmt->name instanceof PhpParser\Node\Identifier
         ) {
-            $declaring_property_node = new DataFlowNode(
+            $declaring_property_node = DataFlowNode::make(
                 $declaring_property_class . '::$' . $stmt->name,
                 $declaring_property_class . '::$' . $stmt->name,
                 null,

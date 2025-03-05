@@ -12,7 +12,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
-use Psalm\Internal\DataFlow\TaintSink;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\ImpureFunctionCall;
 use Psalm\IssueBuffer;
@@ -39,19 +39,18 @@ final class PrintAnalyzer
         if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
             $call_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
-            $print_param_sink = TaintSink::getForMethodArgument(
+            $print_param_sink = DataFlowNode::getForMethodArgument(
                 'print',
                 'print',
                 0,
                 null,
                 $call_location,
+                TaintKind::INPUT_HTML
+                    | TaintKind::INPUT_HAS_QUOTES
+                    | TaintKind::USER_SECRET
+                    | TaintKind::SYSTEM_SECRET
             );
 
-            $print_param_sink->taints = TaintKind::INPUT_HTML
-                | TaintKind::INPUT_HAS_QUOTES
-                | TaintKind::USER_SECRET
-                | TaintKind::SYSTEM_SECRET
-            ;
 
             $statements_analyzer->data_flow_graph->addSink($print_param_sink);
         }
