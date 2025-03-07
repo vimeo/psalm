@@ -479,7 +479,8 @@ final class TaintFlowGraph extends DataFlowGraph
                     $path = $this->getPredecessorPath($generated_source)
                     . ' -> ' . $this->getSuccessorPath($sink);
 
-                    for ($x = $codebase->taint_count-1; $x >= 0; $x--) {
+                    $max = $codebase->taint_count;
+                    for ($x = 0; $x < $max; $x++) {
                         $t = 1 << $x;
                         if (!($matching_taints & $t)) {
                             continue;
