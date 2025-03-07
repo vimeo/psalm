@@ -14,7 +14,7 @@ use function strtolower;
  * @psalm-consistent-constructor
  * @internal
  */
-final readonly class DataFlowNode implements Stringable
+final class DataFlowNode implements Stringable
 {
     public function __construct(
         public readonly string $id,
