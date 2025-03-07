@@ -92,17 +92,12 @@ final readonly class DataFlowNode implements Stringable
         CodeLocation $assignment_location,
         ?string $specialization_key = null,
     ): self {
-        if ($specialization_key === null) {
-            $specialization_key = $assignment_location->file_name
-                . ':' . $assignment_location->raw_file_start
-                . '-' . $assignment_location->raw_file_end;
-        } else {
-            $specialization_key .= '-' . $assignment_location->file_name
-                . ':' . $assignment_location->raw_file_start
-                . '-' . $assignment_location->raw_file_end;
-        }
+        $label = $var_id;
+        $var_id .= ':' . $assignment_location->file_name
+            . ':' . $assignment_location->raw_file_start
+            . '-' . $assignment_location->raw_file_end;
 
-        return self::make($var_id, $var_id, $assignment_location, $specialization_key);
+        return self::make($var_id, $label, $assignment_location, $specialization_key);
     }
     
     public static function getForMethodReturn(
