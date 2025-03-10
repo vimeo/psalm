@@ -1698,7 +1698,7 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
                 }
             } elseif ($type instanceof TCallable) {
                 $non_array_types[] = new TCallableString();
-                $non_array_types[] = new TCallableObject();
+                $non_array_types[] = new TCallableObject($type->from_docblock, $type);
                 $redundant = false;
             } elseif ($type instanceof TIterable) {
                 if (!$type->type_params[0]->isMixed() || !$type->type_params[1]->isMixed()) {

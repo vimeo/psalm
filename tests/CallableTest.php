@@ -2384,6 +2384,21 @@ final class CallableTest extends TestCase
                 f($ca);
                 PHP,
             ],
+            'callableWithoutArray' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-param array|(callable():array) $var
+                     */
+                    function text(mixed $var): array
+                    {
+                        if (is_array($var)) {
+                            return $var;
+                        }
+
+                        //callable-string can\'t specify return type but it doesn\'t error
+                        return call_user_func($var);
+                    }',
+            ],
         ];
     }
 
