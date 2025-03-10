@@ -28,7 +28,7 @@ final class TaintActiveRecords implements AddTaintsInterface
     /**
      * Called to see what taints should be added
      *
-     * @return int-mask-of<TaintKind::*>
+     * @return int
      */
     #[Override]
     public static function addTaints(AddRemoveTaintsEvent $event): int

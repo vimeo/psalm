@@ -13,7 +13,7 @@ final class SafeArrayKeyChecker implements RemoveTaintsInterface
     /**
      * Called to see what taints should be removed
      *
-     * @return int-mask-of<TaintKind::*>
+     * @return int
      */
     #[\Override]
     public static function removeTaints(AddRemoveTaintsEvent $event): int
