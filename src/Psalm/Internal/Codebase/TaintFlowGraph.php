@@ -225,7 +225,7 @@ final class TaintFlowGraph extends DataFlowGraph
         $codebase = $project_analyzer->getCodebase();
 
         // Remove all specializations without an outgoing edge
-        /*foreach ($this->specializations as $k => &$map) {
+        foreach ($this->specializations as $k => &$map) {
             foreach ($map as $kk => $specialized_id) {
                 if (!isset($this->forward_edges[$specialized_id])) {
                     unset($map[$kk]);
@@ -234,7 +234,7 @@ final class TaintFlowGraph extends DataFlowGraph
             if (!$map) {
                 unset($this->specializations[$k]);
             }
-        } unset($map);*/
+        } unset($map);
 
         $stack = [];
         // reprocess resolved descendants up to a maximum nesting level of 40
@@ -270,7 +270,9 @@ final class TaintFlowGraph extends DataFlowGraph
                 // If this is a specialized node, de-specialize;
                 // Then, if we have one or more edges starting at the de-specialized node,
                 // process destinations of those edges.
-                if ($source->specialization_key !== null && isset($this->specialized_calls[$source->specialization_key])) {
+                if ($source->specialization_key !== null
+                    && isset($this->specialized_calls[$source->specialization_key])
+                ) {
                     /** @var string $source->unspecialized_id */
                     if (!isset($this->forward_edges[$source->unspecialized_id])) {
                         continue;
@@ -310,9 +312,6 @@ final class TaintFlowGraph extends DataFlowGraph
                     if ($specialized_calls) {
                         // If processing descendants of a specialized call, accept only descendants.
                         foreach ($this->specializations[$source->id] as $specialization => $specialized_id) {
-                            if (!isset($this->forward_edges[$specialized_id])) {
-                                continue;
-                            }
                             if (!isset($specialized_calls[$specialization])) {
                                 continue;
                             }
@@ -345,9 +344,6 @@ final class TaintFlowGraph extends DataFlowGraph
                     } else {
                         // If not processing descendants, accept all specializations.
                         foreach ($this->specializations[$source->id] as $specialization => $specialized_id) {
-                            if (!isset($this->forward_edges[$specialized_id])) {
-                                continue;
-                            }
                             $new_source = new DataFlowNode(
                                 $specialized_id,
                                 $source->id,

@@ -39,7 +39,6 @@ use Psalm\Internal\Analyzer\Statements\StaticAnalyzer;
 use Psalm\Internal\Analyzer\Statements\UnsetAnalyzer;
 use Psalm\Internal\Analyzer\Statements\UnusedAssignmentRemover;
 use Psalm\Internal\Codebase\DataFlowGraph;
-use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
@@ -150,8 +149,11 @@ final class StatementsAnalyzer extends SourceAnalyzer
      */
     public array $foreach_var_locations = [];
 
-    public function __construct(protected SourceAnalyzer $source, public NodeDataProvider $node_data, private readonly bool $root_scope)
-    {
+    public function __construct(
+        protected SourceAnalyzer $source,
+        public NodeDataProvider $node_data,
+        private readonly bool $root_scope,
+    ) {
         $this->file_analyzer = $source->getFileAnalyzer();
         $this->codebase = $source->getCodebase();
 
