@@ -374,7 +374,6 @@ final class TaintFlowGraph extends DataFlowGraph
                     }
                 } else {
                     // Process all descendants
-                    Assert::null($source->specialization_key);
                     foreach ($source->specialized_calls as $specialization => $map) {
                         if (isset($map[$source->id])) {
                             $specialized_id = $map[$source->id];
