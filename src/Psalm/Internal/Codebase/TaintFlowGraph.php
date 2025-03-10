@@ -236,13 +236,11 @@ final class TaintFlowGraph extends DataFlowGraph
             }
         } unset($map);
 
-        $stack = [];
         // reprocess resolved descendants up to a maximum nesting level of 40
         for ($i = 0; count($sinks) && count($sources) && $i < 40; $i++) {
             $new_sources = [];
 
             ksort($sources);
-            $stack []= $sources;
 
             $progress->expand(count($sources));
 

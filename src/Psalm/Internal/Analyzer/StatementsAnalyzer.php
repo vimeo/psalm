@@ -149,6 +149,8 @@ final class StatementsAnalyzer extends SourceAnalyzer
      */
     public array $foreach_var_locations = [];
 
+    private int $depth = 0;
+
     public function __construct(
         protected SourceAnalyzer $source,
         public NodeDataProvider $node_data,
@@ -181,43 +183,53 @@ final class StatementsAnalyzer extends SourceAnalyzer
         if (!$stmts) {
             return null;
         }
-        // hoist functions to the top
-        $this->hoistFunctions($stmts, $context);
+        $this->depth++;
+        try {
+            // hoist functions to the top
+            $this->hoistFunctions($stmts, $context);
 
-        $codebase = $this->codebase;
+            $codebase = $this->codebase;
 
-        if ($codebase->config->hoist_constants) {
-            self::hoistConstants($this, $stmts, $context);
-        }
-
-        foreach ($stmts as $stmt) {
-            if (self::analyzeStatement($this, $stmt, $context, $global_context) === false) {
-                return false;
+            if ($codebase->config->hoist_constants) {
+                self::hoistConstants($this, $stmts, $context);
             }
-        }
 
-        if ($this->root_scope
-            && !$context->collect_initializations
-            && !$context->collect_mutations
-            && $codebase->find_unused_variables
-            && $context->check_variables
-        ) {
-            $this->checkUnreferencedVars($stmts, $context);
-        }
-
-        if ($codebase->alter_code && $this->root_scope && $this->vars_to_initialize) {
-            $file_contents = $codebase->getFileContents($this->getFilePath());
-
-            foreach ($this->vars_to_initialize as $var_id => $branch_point) {
-                $newline_pos = (int)strrpos($file_contents, "\n", $branch_point - strlen($file_contents)) + 1;
-                $indentation = substr($file_contents, $newline_pos, $branch_point - $newline_pos);
-                FileManipulationBuffer::add($this->getFilePath(), [
-                    new FileManipulation($branch_point, $branch_point, $var_id . ' = null;' . "\n" . $indentation),
-                ]);
+            foreach ($stmts as $stmt) {
+                if (self::analyzeStatement($this, $stmt, $context, $global_context) === false) {
+                    return false;
+                }
             }
-        }
 
-        return null;
+            if ($this->root_scope
+                && $this->depth === 1
+                && !$context->collect_initializations
+                && !$context->collect_mutations
+                && $codebase->find_unused_variables
+                && $context->check_variables
+            ) {
+                $this->checkUnreferencedVars($stmts, $context);
+            }
+
+            if ($codebase->alter_code
+                && $this->root_scope
+                && $this->depth === 1
+                && $this->vars_to_initialize
+            ) {
+                $file_contents = $codebase->getFileContents($this->getFilePath());
+
+                foreach ($this->vars_to_initialize as $var_id => $branch_point) {
+                    $newline_pos = (int)strrpos($file_contents, "\n", $branch_point - strlen($file_contents)) + 1;
+                    $indentation = substr($file_contents, $newline_pos, $branch_point - $newline_pos);
+                    FileManipulationBuffer::add($this->getFilePath(), [
+                        new FileManipulation($branch_point, $branch_point, $var_id . ' = null;' . "\n" . $indentation),
+                    ]);
+                }
+            }
+
+            return null;
+        } finally {
+            $this->depth--;
+        }
     }
 
     /**
