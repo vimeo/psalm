@@ -48,7 +48,7 @@ final class DataFlowNode implements Stringable
             $unspecialized_id = null;
         } else {
             $unspecialized_id = $id;
-            $id .= '-' . $specialization_key;
+            $id .= ' specialized in ' . $specialization_key;
         }
         return new self(
             $id,
@@ -93,7 +93,7 @@ final class DataFlowNode implements Stringable
         ?string $specialization_key = null,
     ): self {
         $label = $var_id;
-        $var_id .= ':' . $assignment_location->file_name
+        $var_id .= ' from ' . strtolower($assignment_location->file_name)
             . ':' . $assignment_location->raw_file_start
             . '-' . $assignment_location->raw_file_end;
 
