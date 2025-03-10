@@ -123,20 +123,23 @@ final class DataFlowNode implements Stringable
     }
 
 
+    private static self $forVariableUse;
     public static function getForVariableUse(): self
     {
-        return new self('variable-use', null, null, 'variable use');
+        return self::$forVariableUse ??= new self('variable-use', null, null, 'variable use');
     }
 
 
+    private static self $forUnknownOrigin;
     public static function getForUnknownOrigin(): self
     {
-        return new self('unknown-origin', null, null, 'unknown origin');
+        return self::$forUnknownOrigin ??= new self('unknown-origin', null, null, 'unknown origin');
     }
 
+    private static self $forClosureUse;
     public static function getForClosureUse(): self
     {
-        return new self('closure-use', null, null, 'closure use');
+        return self::$forClosureUse ??= new self('closure-use', null, null, 'closure use');
     }
 
     public function setTaints(int $taints): self

@@ -74,16 +74,13 @@ final class VariableUseGraph extends DataFlowGraph
             foreach ($sources as $source) {
                 $visited_source_ids[$source->id] = true;
 
-                $child_nodes = $this->getChildNodes(
+                if ($this->getChildNodes(
+                    $new_child_nodes,
                     $source,
                     $visited_source_ids,
-                );
-
-                if ($child_nodes === null) {
+                )) {
                     return true;
                 }
-
-                $new_child_nodes = [...$new_child_nodes, ...$child_nodes];
             }
 
             $sources = $new_child_nodes;
@@ -138,16 +135,16 @@ final class VariableUseGraph extends DataFlowGraph
 
     /**
      * @param array<string, bool> $visited_source_ids
-     * @return array<string, DataFlowNode>|null
+     * @param array<string, DataFlowNode> $child_nodes
+     * @param-out array<string, DataFlowNode> $child_nodes
      */
     private function getChildNodes(
+        array &$child_nodes,
         DataFlowNode $generated_source,
         array $visited_source_ids,
-    ): ?array {
-        $new_child_nodes = [];
-
+    ): bool {
         if (!isset($this->forward_edges[$generated_source->id])) {
-            return [];
+            return false;
         }
 
         foreach ($this->forward_edges[$generated_source->id] as $to_id => $path) {
@@ -164,7 +161,7 @@ final class VariableUseGraph extends DataFlowGraph
                 || $path->type === 'arg'
                 || $path->type === 'comparison'
             ) {
-                return null;
+                return true;
             }
 
             if (isset($visited_source_ids[$to_id])) {
@@ -196,10 +193,10 @@ final class VariableUseGraph extends DataFlowGraph
                 $path_types,
             );
 
-            $new_child_nodes[$to_id] = $new_destination;
+            $child_nodes[$to_id] = $new_destination;
         }
 
-        return $new_child_nodes;
+        return false;
     }
 
     /**
