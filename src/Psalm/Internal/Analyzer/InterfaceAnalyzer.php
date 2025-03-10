@@ -221,8 +221,8 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
 
         MethodComparator::comparePseudoMethods($pseudo_methods, $this->fq_class_name, $codebase, $class_storage);
 
-        $statements_analyzer = new StatementsAnalyzer($this, new NodeDataProvider());
-        $statements_analyzer->analyze($member_stmts, $interface_context, null, true);
+        $statements_analyzer = new StatementsAnalyzer($this, new NodeDataProvider(), true);
+        $statements_analyzer->analyze($member_stmts, $interface_context, null);
 
         ClassConstAnalyzer::analyze($this->storage, $this->getCodebase());
     }

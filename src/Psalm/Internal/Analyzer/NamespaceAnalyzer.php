@@ -77,7 +77,7 @@ final class NamespaceAnalyzer extends SourceAnalyzer
         }
 
         if ($leftover_stmts) {
-            $statements_analyzer = new StatementsAnalyzer($this, new NodeDataProvider());
+            $statements_analyzer = new StatementsAnalyzer($this, new NodeDataProvider(), true);
             $file_context = $this->source->context;
 
             if ($file_context !== null) {
@@ -88,7 +88,7 @@ final class NamespaceAnalyzer extends SourceAnalyzer
                 $context->defineGlobals();
                 $context->collect_exceptions = $codebase->config->check_for_throws_in_global_scope;
             }
-            $statements_analyzer->analyze($leftover_stmts, $context, null, true);
+            $statements_analyzer->analyze($leftover_stmts, $context);
         }
     }
 

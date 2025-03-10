@@ -150,32 +150,19 @@ final class StatementsAnalyzer extends SourceAnalyzer
      */
     public array $foreach_var_locations = [];
 
-    public function __construct(protected SourceAnalyzer $source, public NodeDataProvider $node_data)
+    public function __construct(protected SourceAnalyzer $source, public NodeDataProvider $node_data, private readonly bool $root_scope)
     {
         $this->file_analyzer = $source->getFileAnalyzer();
         $this->codebase = $source->getCodebase();
 
-        if ($this->codebase->taint_flow_graph) {
-            $this->initTaintFlowGraph(true);
-        } elseif ($this->codebase->find_unused_variables) {
-            $this->data_flow_graph = new VariableUseGraph();
-        }
-    }
-
-    private function initTaintFlowGraph(bool $enable): ?TaintFlowGraph
-    {
-        $old = $this->data_flow_graph;
-
-        if ($enable
-            && $this->codebase->taint_flow_graph
+        if ($this->codebase->taint_flow_graph
+            && $root_scope
             && $this->codebase->config->trackTaintsInPath($this->getFilePath())
         ) {
             $this->data_flow_graph = $this->codebase->taint_flow_graph;
-        } else {
-            $this->data_flow_graph = null;
+        } elseif ($this->codebase->find_unused_variables) {
+            $this->data_flow_graph = new VariableUseGraph();
         }
-
-        return $old;
     }
 
     /**
@@ -188,7 +175,6 @@ final class StatementsAnalyzer extends SourceAnalyzer
         array $stmts,
         Context $context,
         ?Context $global_context = null,
-        bool $root_scope = false,
     ): ?bool {
         if (!$stmts) {
             return null;
@@ -197,8 +183,6 @@ final class StatementsAnalyzer extends SourceAnalyzer
         $this->hoistFunctions($stmts, $context);
 
         $codebase = $this->codebase;
-
-        $prev = $this->initTaintFlowGraph($root_scope);
 
         if ($codebase->config->hoist_constants) {
             self::hoistConstants($this, $stmts, $context);
@@ -210,7 +194,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
             }
         }
 
-        if ($root_scope
+        if ($this->root_scope
             && !$context->collect_initializations
             && !$context->collect_mutations
             && $codebase->find_unused_variables
@@ -219,7 +203,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
             $this->checkUnreferencedVars($stmts, $context);
         }
 
-        if ($codebase->alter_code && $root_scope && $this->vars_to_initialize) {
+        if ($codebase->alter_code && $this->root_scope && $this->vars_to_initialize) {
             $file_contents = $codebase->getFileContents($this->getFilePath());
 
             foreach ($this->vars_to_initialize as $var_id => $branch_point) {
@@ -230,8 +214,6 @@ final class StatementsAnalyzer extends SourceAnalyzer
                 ]);
             }
         }
-
-        $this->data_flow_graph = $prev;
 
         return null;
     }
