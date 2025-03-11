@@ -14,7 +14,6 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
-use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\TemplateBound;
@@ -42,8 +41,6 @@ use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_diff;
-use function array_merge;
 use function array_values;
 use function count;
 use function explode;
@@ -571,7 +568,7 @@ final class FunctionCallReturnTypeFetcher
 
         $codebase = $statements_analyzer->getCodebase();
 
-        $conditionally_removed_taints = [];
+        $conditionally_removed_taints = 0;
 
         foreach ($function_storage->conditionally_removed_taints as $conditionally_removed_taint) {
             $conditionally_removed_taint = TemplateInferredTypeReplacer::replace(
@@ -581,7 +578,7 @@ final class FunctionCallReturnTypeFetcher
             );
 
             $expanded_type = TypeExpander::expandUnion(
-                $statements_analyzer->getCodebase(),
+                $codebase,
                 $conditionally_removed_taint,
                 null,
                 null,
@@ -592,7 +589,10 @@ final class FunctionCallReturnTypeFetcher
 
             if (!$expanded_type->isNullable()) {
                 foreach ($expanded_type->getLiteralStrings() as $literal_string) {
-                    $conditionally_removed_taints[] = $literal_string->value;
+                    $taint = $codebase->getOrRegisterTaint($literal_string->value, $function_storage->location);
+                    if ($taint !== null) {
+                        $conditionally_removed_taints |= $taint;
+                    }
                 }
             }
         }
@@ -609,7 +609,7 @@ final class FunctionCallReturnTypeFetcher
                 $assignment_node,
                 'conditionally-escaped',
                 $added_taints,
-                [...$removed_taints, ...$conditionally_removed_taints],
+                $removed_taints | $conditionally_removed_taints,
             );
 
             $stmt_type = $stmt_type->addParentNodes([$assignment_node->id => $assignment_node]);
@@ -645,9 +645,9 @@ final class FunctionCallReturnTypeFetcher
                             $pattern = substr($pattern, 2, -1);
 
                             if (self::simpleExclusion($pattern, $first_arg_value[0])) {
-                                $removed_taints[] = TaintKind::INPUT_HTML;
-                                $removed_taints[] = TaintKind::INPUT_HAS_QUOTES;
-                                $removed_taints[] = TaintKind::INPUT_SQL;
+                                $removed_taints |= TaintKind::INPUT_HTML;
+                                $removed_taints |= TaintKind::INPUT_HAS_QUOTES;
+                                $removed_taints |= TaintKind::INPUT_SQL;
                             }
                         }
                     }
@@ -657,10 +657,7 @@ final class FunctionCallReturnTypeFetcher
             $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
 
             $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
-            $removed_taints = array_merge(
-                $removed_taints,
-                $codebase->config->eventDispatcher->dispatchRemoveTaints($event),
-            );
+            $removed_taints |= $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
             self::taintUsingFlows(
                 $statements_analyzer,
@@ -670,7 +667,7 @@ final class FunctionCallReturnTypeFetcher
                 $stmt->getArgs(),
                 $node_location,
                 $function_call_node,
-                array_merge($removed_taints, $conditionally_removed_taints),
+                $removed_taints | $conditionally_removed_taints,
                 $added_taints,
             );
         }
@@ -682,8 +679,6 @@ final class FunctionCallReturnTypeFetcher
 
     /**
      * @param  array<PhpParser\Node\Arg>   $args
-     * @param  array<string> $removed_taints
-     * @param  array<string> $added_taints
      */
     public static function taintUsingFlows(
         StatementsAnalyzer $statements_analyzer,
@@ -693,8 +688,8 @@ final class FunctionCallReturnTypeFetcher
         array $args,
         CodeLocation $node_location,
         DataFlowNode $function_call_node,
-        array $removed_taints,
-        array $added_taints = [],
+        int $removed_taints,
+        int $added_taints = 0,
     ): void {
         foreach ($function_storage->return_source_params as $i => $path_type) {
             if (!isset($args[$i])) {
@@ -731,7 +726,7 @@ final class FunctionCallReturnTypeFetcher
                     $function_param_sink,
                     $function_call_node,
                     $path_type,
-                    array_merge($added_taints, $function_storage->added_taints),
+                    $added_taints | $function_storage->added_taints,
                     $removed_taints,
                 );
             }
@@ -744,20 +739,16 @@ final class FunctionCallReturnTypeFetcher
         DataFlowNode $function_call_node,
     ): void {
         // Docblock-defined taints should override inherited
-        $added_taints = [];
-        if ($function_storage->taint_source_types !== []) {
+        $added_taints = 0;
+        if ($function_storage->taint_source_types !== 0) {
             $added_taints = $function_storage->taint_source_types;
-        } elseif ($function_storage->added_taints !== []) {
+        } elseif ($function_storage->added_taints !== 0) {
             $added_taints = $function_storage->added_taints;
         }
 
-        $taints = array_diff(
-            $added_taints,
-            $function_storage->removed_taints,
-        );
-        if ($taints !== []) {
-            $taint_source = TaintSource::fromNode($function_call_node);
-            $taint_source->taints = $taints;
+        $taints = $added_taints & ~$function_storage->removed_taints;
+        if ($taints !== 0) {
+            $taint_source = $function_call_node->setTaints($taints);
             $graph->addSource($taint_source);
         }
     }

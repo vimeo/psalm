@@ -21,7 +21,7 @@ use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Internal\Codebase\Functions;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\TaintFlowGraph;
-use Psalm\Internal\DataFlow\TaintSink;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Stubs\Generator\StubsGenerator;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -900,23 +900,24 @@ final class ArgumentsAnalyzer
                 foreach ($arg_function_params[$argument_offset] as $function_param) {
                     if ($function_param->sinks) {
                         if (!$function_storage || $function_storage->specialize_call) {
-                            $sink = TaintSink::getForMethodArgument(
+                            $sink = DataFlowNode::getForMethodArgument(
                                 $cased_method_id,
                                 $cased_method_id,
                                 $argument_offset,
                                 $function_param->location,
                                 $code_location,
+                                $function_param->sinks,
                             );
                         } else {
-                            $sink = TaintSink::getForMethodArgument(
+                            $sink = DataFlowNode::getForMethodArgument(
                                 $cased_method_id,
                                 $cased_method_id,
                                 $argument_offset,
                                 $function_param->location,
+                                null,
+                                $function_param->sinks,
                             );
                         }
-
-                        $sink->taints = $function_param->sinks;
 
                         $statements_analyzer->data_flow_graph->addSink($sink);
                     }

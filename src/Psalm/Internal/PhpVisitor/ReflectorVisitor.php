@@ -368,6 +368,7 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
 
             try {
                 $var_comments = CommentAnalyzer::getTypeFromComment(
+                    $this->codebase,
                     $doc_comment,
                     $this->file_scanner,
                     $this->aliases,

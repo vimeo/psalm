@@ -240,7 +240,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $this->is_static = true;
         }
 
-        $statements_analyzer = new StatementsAnalyzer($this, $type_provider);
+        $statements_analyzer = new StatementsAnalyzer($this, $type_provider, true);
 
         $byref_uses = [];
         if ($this instanceof ClosureAnalyzer && $this->function instanceof Closure) {
@@ -275,7 +275,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     if ($statements_analyzer->data_flow_graph && $use_assignment) {
                         $statements_analyzer->data_flow_graph->addPath(
                             $use_assignment,
-                            new DataFlowNode('closure-use', 'closure use', null),
+                            DataFlowNode::getForClosureUse(),
                             'closure-use',
                         );
                     }
@@ -505,7 +505,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $statements_analyzer->addSuppressedIssues(['NoValue']);
         }
 
-        $statements_analyzer->analyze($function_stmts, $context, $global_context, true);
+        $statements_analyzer->analyze($function_stmts, $context, $global_context);
 
         if ($codebase->alter_code
             && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])

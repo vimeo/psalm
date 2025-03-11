@@ -12,6 +12,7 @@ use Psalm\Plugin\EventHandler\AddTaintsInterface;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\TaintKind;
 use Psalm\Type\TaintKindGroup;
 use Psalm\Type\Union;
 
@@ -27,16 +28,16 @@ final class TaintActiveRecords implements AddTaintsInterface
     /**
      * Called to see what taints should be added
      *
-     * @return list<string>
+     * @return int
      */
     #[Override]
-    public static function addTaints(AddRemoveTaintsEvent $event): array
+    public static function addTaints(AddRemoveTaintsEvent $event): int
     {
         $expr = $event->getExpr();
 
         // Model properties are accessed by property fetch, so abort here
         if ($expr instanceof ArrayItem) {
-            return [];
+            return 0;
         }
 
         $statements_source = $event->getStatementsSource();
@@ -51,11 +52,11 @@ final class TaintActiveRecords implements AddTaintsInterface
             }
 
             if (self::containsActiveRecord($expr_type)) {
-                return TaintKindGroup::ALL_INPUT;
+                return TaintKind::ALL_INPUT;
             }
         } while ($expr = self::getParentNode($expr));
 
-        return [];
+        return 0;
     }
 
     /**

@@ -8,6 +8,7 @@ use PhpParser;
 use Psalm\Aliases;
 use Psalm\CodeLocation;
 use Psalm\CodeLocation\DocblockTypeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\DocComment;
 use Psalm\Exception\DocblockParseException;
@@ -25,6 +26,7 @@ use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\MissingDocblockType;
 use Psalm\IssueBuffer;
 use Psalm\Type\Union;
+use RuntimeException;
 use UnexpectedValueException;
 
 use function count;
@@ -54,6 +56,7 @@ final class CommentAnalyzer
      * @return list<VarDocblockComment>
      */
     public static function getTypeFromComment(
+        Codebase $codebase,
         PhpParser\Comment\Doc $comment,
         FileSource $source,
         Aliases $aliases,
@@ -63,6 +66,7 @@ final class CommentAnalyzer
         $parsed_docblock = DocComment::parsePreservingLength($comment);
 
         return self::arrayToDocblocks(
+            $codebase,
             $comment,
             $parsed_docblock,
             $source,
@@ -79,6 +83,7 @@ final class CommentAnalyzer
      * @throws DocblockParseException if there was a problem parsing the docblock
      */
     public static function arrayToDocblocks(
+        Codebase $codebase,
         PhpParser\Comment\Doc $comment,
         ParsedDocblock $parsed_docblock,
         FileSource $source,
@@ -189,7 +194,7 @@ final class CommentAnalyzer
                 $var_comment->type_end = $type_end;
                 $var_comment->description = $description;
 
-                self::decorateVarDocblockComment($var_comment, $parsed_docblock);
+                self::decorateVarDocblockComment($codebase, $var_comment, $parsed_docblock);
 
                 $var_comments[] = $var_comment;
             }
@@ -209,7 +214,7 @@ final class CommentAnalyzer
         ) {
             $var_comment = new VarDocblockComment();
 
-            self::decorateVarDocblockComment($var_comment, $parsed_docblock);
+            self::decorateVarDocblockComment($codebase, $var_comment, $parsed_docblock);
 
             $var_comments[] = $var_comment;
         }
@@ -218,6 +223,7 @@ final class CommentAnalyzer
     }
 
     private static function decorateVarDocblockComment(
+        Codebase $codebase,
         VarDocblockComment $var_comment,
         ParsedDocblock $parsed_docblock,
     ): void {
@@ -238,7 +244,11 @@ final class CommentAnalyzer
         if (isset($parsed_docblock->tags['psalm-taint-escape'])) {
             foreach ($parsed_docblock->tags['psalm-taint-escape'] as $param) {
                 $param = trim($param);
-                $var_comment->removed_taints[] = $param;
+                try {
+                    $var_comment->removed_taints |= $codebase->getOrRegisterTaint($param);
+                } catch (RuntimeException $e) {
+                    throw new DocblockParseException($e->getMessage(), 0, $e);
+                }
             }
         }
 
@@ -439,6 +449,7 @@ final class CommentAnalyzer
             $var_comments = $codebase->config->disable_var_parsing
                 ? []
                 : self::arrayToDocblocks(
+                    $codebase,
                     $doc_comment,
                     $parsed_docblock,
                     $statements_analyzer->getSource(),

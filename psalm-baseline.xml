@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="6.x-dev@4258dc813b28c2b03865f34a17ddf072f006b357">
+<files psalm-version="dev-master@b513b32ef4a8f5a46c4412133f345182e34db54c">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$comment_block->tags['variablesfrom'][0]]]></code>
@@ -911,7 +911,6 @@
       <code><![CDATA[$context->calling_method_id]]></code>
       <code><![CDATA[$context->calling_method_id]]></code>
       <code><![CDATA[$context->calling_method_id]]></code>
-      <code><![CDATA[$function_param->sinks]]></code>
       <code><![CDATA[$function_params]]></code>
       <code><![CDATA[$function_params]]></code>
       <code><![CDATA[$function_params]]></code>
@@ -1041,7 +1040,6 @@
       <code><![CDATA[$method_id]]></code>
     </ImplicitToStringCast>
     <RiskyTruthyFalsyComparison>
-      <code><![CDATA[!$parent_node->specialization_key]]></code>
       <code><![CDATA[$var_id]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
@@ -1621,12 +1619,7 @@
   </file>
   <file src="src/Psalm/Internal/Codebase/TaintFlowGraph.php">
     <RiskyTruthyFalsyComparison>
-      <code><![CDATA[$node->specialization_key]]></code>
-      <code><![CDATA[$node->unspecialized_id]]></code>
-      <code><![CDATA[$path->escaped_taints]]></code>
-      <code><![CDATA[$path->unescaped_taints]]></code>
-      <code><![CDATA[$source->specialization_key]]></code>
-      <code><![CDATA[end($source->path_types)]]></code>
+      <code><![CDATA[end($path_types)]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Composer.php">
@@ -1635,9 +1628,14 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/DataFlow/DataFlowNode.php">
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[$specialization_key]]></code>
-    </RiskyTruthyFalsyComparison>
+    <RedundantPropertyInitializationCheck>
+      <code><![CDATA[new self('closure-use', null, null, 'closure use')]]></code>
+      <code><![CDATA[new self('unknown-origin', null, null, 'unknown origin')]]></code>
+      <code><![CDATA[new self('variable-use', null, null, 'variable use')]]></code>
+      <code><![CDATA[self::$forClosureUse]]></code>
+      <code><![CDATA[self::$forUnknownOrigin]]></code>
+      <code><![CDATA[self::$forVariableUse]]></code>
+    </RedundantPropertyInitializationCheck>
   </file>
   <file src="src/Psalm/Internal/Diff/ClassStatementsDiffer.php">
     <ImplicitToStringCast>

@@ -28,7 +28,6 @@ use Psalm\Internal\Codebase\Methods;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
-use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
@@ -79,7 +78,6 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_diff;
 use function array_merge;
 use function array_pop;
 use function count;
@@ -507,10 +505,9 @@ final class InstancePropertyAssignmentAnalyzer
                 $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
                 $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
-                $taints = array_diff($added_taints, $removed_taints);
-                if ($taints !== [] && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
-                    $taint_source = TaintSource::fromNode($property_node);
-                    $taint_source->taints = $taints;
+                $taints = $added_taints & ~$removed_taints;
+                if ($taints !== 0 && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+                    $taint_source = $property_node->setTaints($taints);
                     $statements_analyzer->data_flow_graph->addSource($taint_source);
                 }
 
@@ -595,7 +592,7 @@ final class InstancePropertyAssignmentAnalyzer
 
         $data_flow_graph->addNode($localized_property_node);
 
-        $property_node = new DataFlowNode(
+        $property_node = DataFlowNode::make(
             $property_id,
             $property_id,
             null,
@@ -609,10 +606,9 @@ final class InstancePropertyAssignmentAnalyzer
         $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
         $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
-        $taints = array_diff($added_taints, $removed_taints);
-        if ($taints !== [] && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
-            $taint_source = TaintSource::fromNode($property_node);
-            $taint_source->taints = $taints;
+        $taints = $added_taints & ~$removed_taints;
+        if ($taints !== 0 && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+            $taint_source = $property_node->setTaints($taints);
             $statements_analyzer->data_flow_graph->addSource($taint_source);
         }
 
@@ -649,7 +645,7 @@ final class InstancePropertyAssignmentAnalyzer
                 || $stmt instanceof PhpParser\Node\Expr\StaticPropertyFetch)
             && $stmt->name instanceof PhpParser\Node\Identifier
         ) {
-            $declaring_property_node = new DataFlowNode(
+            $declaring_property_node = DataFlowNode::make(
                 $declaring_property_class . '::$' . $stmt->name,
                 $declaring_property_class . '::$' . $stmt->name,
                 null,

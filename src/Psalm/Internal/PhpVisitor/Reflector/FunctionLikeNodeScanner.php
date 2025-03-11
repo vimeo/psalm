@@ -422,7 +422,12 @@ final class FunctionLikeNodeScanner
         if ($doc_comment) {
             try {
                 $code_location = new CodeLocation($this->file_scanner, $stmt, null, true);
-                $docblock_info = FunctionLikeDocblockParser::parse($doc_comment, $code_location, $cased_function_id);
+                $docblock_info = FunctionLikeDocblockParser::parse(
+                    $this->codebase,
+                    $doc_comment,
+                    $code_location,
+                    $cased_function_id,
+                );
             } catch (IncorrectDocblockException $e) {
                 $storage->docblock_issues[] = new MissingDocblockType(
                     $e->getMessage() . ' in docblock for ' . $cased_function_id,
@@ -577,6 +582,7 @@ final class FunctionLikeNodeScanner
                     ;
 
                     $var_comments = CommentAnalyzer::getTypeFromComment(
+                        $this->codebase,
                         $doc_comment,
                         $this->file_scanner,
                         $this->aliases,
@@ -1023,6 +1029,7 @@ final class FunctionLikeNodeScanner
                     try {
                         $code_location = new CodeLocation($this->file_scanner, $stmt, null, true);
                         $docblock_info = FunctionLikeDocblockParser::parse(
+                            $this->codebase,
                             $doc_comment,
                             $code_location,
                             $cased_function_id,

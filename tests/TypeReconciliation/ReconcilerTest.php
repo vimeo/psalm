@@ -56,6 +56,7 @@ final class ReconcilerTest extends TestCase
         $this->statements_analyzer = new StatementsAnalyzer(
             $this->file_analyzer,
             new NodeDataProvider(),
+            false,
         );
 
         $this->addFile('newfile.php', '
