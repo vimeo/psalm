@@ -950,7 +950,7 @@ final class AssignmentAnalyzer
             // Remove old reference parent node so previously referenced variable usage doesn't count as reference usage
             $old_type = $context->vars_in_scope[$lhs_var_id];
             foreach ($old_type->parent_nodes as $old_parent_node_id => $_) {
-                if (str_starts_with($old_parent_node_id, "$lhs_var_id-")) {
+                if (str_starts_with($old_parent_node_id, "$lhs_var_id from ")) {
                     unset($old_type->parent_nodes[$old_parent_node_id]);
                 }
             }
