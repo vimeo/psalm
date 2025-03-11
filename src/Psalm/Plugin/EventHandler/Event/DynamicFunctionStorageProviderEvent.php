@@ -27,12 +27,4 @@ final class DynamicFunctionStorageProviderEvent
         public readonly CodeLocation $code_location,
     ) {
     }
-
-    /**
-     * @return list<PhpParser\Node\Arg>
-     */
-    public function getArgs(): array
-    {
-        return $this->func_call->getArgs();
-    }
 }

@@ -28,12 +28,4 @@ final class FunctionReturnTypeProviderEvent
         public readonly CodeLocation $code_location,
     ) {
     }
-
-    /**
-     * @return list<PhpParser\Node\Arg>
-     */
-    public function getCallArgs(): array
-    {
-        return $this->stmt->getArgs();
-    }
 }

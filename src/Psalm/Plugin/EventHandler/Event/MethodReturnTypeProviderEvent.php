@@ -34,12 +34,4 @@ final class MethodReturnTypeProviderEvent
         public readonly ?string $called_method_name_lowercase = null,
     ) {
     }
-
-    /**
-     * @return list<PhpParser\Node\Arg>
-     */
-    public function getCallArgs(): array
-    {
-        return $this->stmt->getArgs();
-    }
 }
