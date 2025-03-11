@@ -1627,6 +1627,16 @@
       <code><![CDATA[getenv('COMPOSER')]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
+  <file src="src/Psalm/Internal/DataFlow/DataFlowNode.php">
+    <RedundantPropertyInitializationCheck>
+      <code><![CDATA[new self('closure-use', null, null, 'closure use')]]></code>
+      <code><![CDATA[new self('unknown-origin', null, null, 'unknown origin')]]></code>
+      <code><![CDATA[new self('variable-use', null, null, 'variable use')]]></code>
+      <code><![CDATA[self::$forClosureUse]]></code>
+      <code><![CDATA[self::$forUnknownOrigin]]></code>
+      <code><![CDATA[self::$forVariableUse]]></code>
+    </RedundantPropertyInitializationCheck>
+  </file>
   <file src="src/Psalm/Internal/Diff/ClassStatementsDiffer.php">
     <ImplicitToStringCast>
       <code><![CDATA[$const->name]]></code>
