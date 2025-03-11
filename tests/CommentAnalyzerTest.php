@@ -12,9 +12,9 @@ use Psalm\Codebase;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
+use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Internal\Scanner\FileScanner;
-use Psalm\Internal\Provider\Providers;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 
 final class CommentAnalyzerTest extends BaseTestCase
