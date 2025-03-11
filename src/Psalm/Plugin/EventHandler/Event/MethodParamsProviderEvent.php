@@ -16,45 +16,12 @@ final class MethodParamsProviderEvent
      * @internal
      */
     public function __construct(
-        private readonly string $fq_classlike_name,
-        private readonly string $method_name_lowercase,
-        private readonly ?array $call_args = null,
-        private readonly ?StatementsSource $statements_source = null,
-        private readonly ?Context $context = null,
-        private readonly ?CodeLocation $code_location = null,
+        public readonly string $fq_classlike_name,
+        public readonly string $method_name_lowercase,
+        public readonly ?array $call_args = null,
+        public readonly ?StatementsSource $statements_source = null,
+        public readonly ?Context $context = null,
+        public readonly ?CodeLocation $code_location = null,
     ) {
-    }
-
-    public function getFqClasslikeName(): string
-    {
-        return $this->fq_classlike_name;
-    }
-
-    public function getMethodNameLowercase(): string
-    {
-        return $this->method_name_lowercase;
-    }
-
-    /**
-     * @return list<PhpParser\Node\Arg>|null
-     */
-    public function getCallArgs(): ?array
-    {
-        return $this->call_args;
-    }
-
-    public function getStatementsSource(): ?StatementsSource
-    {
-        return $this->statements_source;
-    }
-
-    public function getContext(): ?Context
-    {
-        return $this->context;
-    }
-
-    public function getCodeLocation(): ?CodeLocation
-    {
-        return $this->code_location;
     }
 }

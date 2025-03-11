@@ -19,47 +19,11 @@ final class AfterClassLikeAnalysisEvent
      * @internal
      */
     public function __construct(
-        private readonly Node\Stmt\ClassLike $stmt,
-        private readonly ClassLikeStorage $classlike_storage,
-        private readonly StatementsSource $statements_source,
-        private readonly Codebase $codebase,
-        private array $file_replacements = [],
+        public readonly Node\Stmt\ClassLike $stmt,
+        public readonly ClassLikeStorage $classlike_storage,
+        public readonly StatementsSource $statements_source,
+        public readonly Codebase $codebase,
+        public array $file_replacements = [],
     ) {
-    }
-
-    public function getStmt(): Node\Stmt\ClassLike
-    {
-        return $this->stmt;
-    }
-
-    public function getClasslikeStorage(): ClassLikeStorage
-    {
-        return $this->classlike_storage;
-    }
-
-    public function getStatementsSource(): StatementsSource
-    {
-        return $this->statements_source;
-    }
-
-    public function getCodebase(): Codebase
-    {
-        return $this->codebase;
-    }
-
-    /**
-     * @return FileManipulation[]
-     */
-    public function getFileReplacements(): array
-    {
-        return $this->file_replacements;
-    }
-
-    /**
-     * @param FileManipulation[] $file_replacements
-     */
-    public function setFileReplacements(array $file_replacements): void
-    {
-        $this->file_replacements = $file_replacements;
     }
 }
