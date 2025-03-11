@@ -1516,7 +1516,7 @@ return array (
     '&arr1' => 'mixed',
     '&sort_order=' => 'mixed',
     '&sort_flags=' => 'mixed',
-    '...&arr2=' => 'mixed',
+    '&...arr2=' => 'mixed',
   ),
   'array_pad' => 
   array (
@@ -16397,7 +16397,7 @@ return array (
   ),
   'evloop::check' => 
   array (
-    0 => 'EvCheck',
+    0 => 'mixed',
     'callback' => 'callable',
     'data=' => 'mixed',
     'priority=' => 'int',
@@ -17482,7 +17482,7 @@ return array (
     0 => 'mixed',
     'stream' => 'mixed',
     'format' => 'mixed',
-    '...&vars=' => 'mixed',
+    '&...vars=' => 'mixed',
   ),
   'fseek' => 
   array (
@@ -39423,7 +39423,7 @@ return array (
   array (
     0 => 'mixed',
     'format' => 'mixed',
-    '...&vars=' => 'mixed',
+    '&...vars=' => 'mixed',
   ),
   'splfileobject::fseek' => 
   array (
@@ -40315,7 +40315,7 @@ return array (
   array (
     0 => 'mixed',
     'format' => 'mixed',
-    '...&vars=' => 'mixed',
+    '&...vars=' => 'mixed',
   ),
   'spltempfileobject::fseek' => 
   array (
@@ -40752,7 +40752,7 @@ return array (
     0 => 'mixed',
     'str' => 'mixed',
     'format' => 'mixed',
-    '...&vars=' => 'mixed',
+    '&...vars=' => 'mixed',
   ),
   'stat' => 
   array (
@@ -44939,12 +44939,12 @@ return array (
   array (
     0 => 'bool',
     'types' => 'mixed',
-    '...&arguments=' => 'mixed',
+    '&...arguments=' => 'mixed',
   ),
   'swoole\\database\\mysqlistatementproxy::bind_result' => 
   array (
     0 => 'bool',
-    '...&arguments=' => 'mixed',
+    '&...arguments=' => 'mixed',
   ),
   'swoole\\database\\objectproxy::__call' => 
   array (

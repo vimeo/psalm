@@ -22177,7 +22177,7 @@ return array (
   ),
   'evloop::check' => 
   array (
-    0 => 'EvCheck',
+    0 => 'mixed',
     'callback' => 'callable',
     'data=' => 'mixed',
     'priority=' => 'int',
@@ -88850,12 +88850,12 @@ return array (
   array (
     0 => 'bool',
     'types' => 'mixed',
-    '...&arguments=' => 'mixed',
+    '&...arguments=' => 'mixed',
   ),
   'swoole\\database\\mysqlistatementproxy::bind_result' => 
   array (
     0 => 'bool',
-    '...&arguments=' => 'mixed',
+    '&...arguments=' => 'mixed',
   ),
   'swoole\\database\\objectproxy::__call' => 
   array (
