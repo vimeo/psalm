@@ -104,6 +104,7 @@ use function reset;
 use function str_replace;
 use function strtolower;
 use function substr;
+use function ucfirst;
 
 /**
  * @internal
@@ -524,6 +525,17 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                             }
                         }
                     }
+                }
+
+                foreach ($stmt->hooks as $hook) {
+                    $classMethod = $this->transformHookToClassMethod($stmt, $hook);
+                    $this->analyzeClassMethod(
+                        $classMethod,
+                        $storage,
+                        $this,
+                        $class_context,
+                        $global_context,
+                    );
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassConst) {
                 $member_stmts[] = $stmt;
@@ -2532,5 +2544,51 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 }
             }
         }
+    }
+
+    private function transformHookToClassMethod(
+        PhpParser\Node\Stmt\Property $stmt,
+        PhpParser\Node\PropertyHook $hook,
+    ): PhpParser\Node\Stmt\ClassMethod {
+        $hooked_method_name = $hook->name->name . ucfirst($hook->getAttribute('propertyName'));
+
+        $fake_method_params = array_map(
+            static function (FunctionLikeParameter $param): PhpParser\Node\Param {
+                $fake_param = (new PhpParser\Builder\Param($param->name));
+                if ($param->signature_type) {
+                    $fake_param->setType((string)$param->signature_type);
+                }
+
+                $node = $fake_param->getNode();
+
+                $attributes = $param->location
+                    ? [
+                        'startFilePos' => $param->location->raw_file_start,
+                        'endFilePos' => $param->location->raw_file_end,
+                        'startLine' => $param->location->raw_line_number,
+                    ]
+                    : [];
+
+                $node->setAttributes($attributes);
+
+                return $node;
+            },
+            $this->storage->methods[strtolower($hooked_method_name)]->params,
+        );
+
+        $fake_constructor_attributes = [
+            'startLine' => $hook->getLine(),
+            'startFilePos' => $hook->getAttribute('startFilePos'),
+            'endFilePos' => $hook->getAttribute('endFilePos'),
+        ];
+        return new VirtualClassMethod(
+            new VirtualIdentifier($hooked_method_name),
+            [
+                'flags' => PhpParser\Modifiers::PUBLIC,//this may be private?
+                'params' => $fake_method_params,
+                'stmts' => $hook->body,
+            ],
+            $fake_constructor_attributes,
+        );
     }
 }

@@ -65,6 +65,7 @@ use function spl_object_id;
 use function str_contains;
 use function str_starts_with;
 use function strtolower;
+use function ucfirst;
 
 /**
  * @internal
@@ -534,6 +535,31 @@ final class FunctionLikeNodeScanner
             && $storage instanceof FunctionStorage
         ) {
             $this->file_storage->functions[$function_id] = $storage;
+        } elseif ($stmt instanceof PhpParser\Node\PropertyHook
+            && $classlike_storage
+            && $storage instanceof MethodStorage
+            && $method_name_lc
+            && !$fake_method
+            && $method_id
+        ) {
+            $classlike_storage->methods[$method_name_lc] = $storage;
+
+            $classlike_storage->declaring_method_ids[$method_name_lc]
+                = $classlike_storage->appearing_method_ids[$method_name_lc]
+                = $method_id;
+
+            $is_private = false;//can this be private? $stmt->isPrivate();
+            if (!$is_private
+                || $method_name_lc === '__construct'
+                || $method_name_lc === '__clone'
+                || $classlike_storage->is_trait
+            ) {
+                $classlike_storage->inheritable_method_ids[$method_name_lc] = $method_id;
+            }
+
+            if (!isset($classlike_storage->overridden_method_ids[$method_name_lc])) {
+                $classlike_storage->overridden_method_ids[$method_name_lc] = [];
+            }
         }
 
         if ($classlike_storage && $method_name_lc === '__construct') {
@@ -1132,8 +1158,127 @@ final class FunctionLikeNodeScanner
                     }
                 }
             }
+        } elseif ($stmt instanceof PhpParser\Node\PropertyHook) {
+            if (!$this->classlike_storage) {
+                throw new LogicException('$this->classlike_storage should not be null');
+            }
+
+            $fq_classlike_name = $this->classlike_storage->name;
+            $property_name = $stmt->getAttribute('propertyName');
+            $property_name_uc_first = ucfirst($property_name);
+
+            $method_name_cased = $stmt->name->name . $property_name_uc_first;
+            $method_name_lc = strtolower($stmt->name->name . $property_name);
+
+            $function_id = $fq_classlike_name . '::' . $method_name_lc;
+            $cased_function_id = $fq_classlike_name . '::' . $method_name_cased;
+
+            $classlike_storage = $this->classlike_storage;
+
+            $storage = null;
+
+            if (isset($classlike_storage->methods[$method_name_lc])) {
+                if (!$this->codebase->register_stub_files) {
+                    $duplicate_method_storage = $classlike_storage->methods[$method_name_lc];
+
+                    IssueBuffer::maybeAdd(
+                        new DuplicateMethod(
+                            'Method ' . $function_id . ' has already been defined'
+                            . ($duplicate_method_storage->location
+                                ? ' in ' . $duplicate_method_storage->location->file_path
+                                : ''),
+                            new CodeLocation($this->file_scanner, $stmt, null, true),
+                        ),
+                    );
+
+                    $this->file_storage->has_visitor_issues = true;
+
+                    $duplicate_method_storage->has_visitor_issues = true;
+
+                    return false;
+                }
+
+                // skip methods based on @since docblock tag
+                $doc_comment = $stmt->getDocComment();
+
+                if ($doc_comment) {
+                    $docblock_info = null;
+                    try {
+                        $code_location = new CodeLocation($this->file_scanner, $stmt, null, true);
+                        $docblock_info = FunctionLikeDocblockParser::parse(
+                            $doc_comment,
+                            $code_location,
+                            $cased_function_id,
+                        );
+                    } catch (IncorrectDocblockException|DocblockParseException) {
+                    }
+                    if ($docblock_info) {
+                        if ($docblock_info->since_php_major_version && !$this->aliases->namespace) {
+                            $analysis_major_php_version = $this->codebase->getMajorAnalysisPhpVersion();
+                            $analysis_minor_php_version = $this->codebase->getMinorAnalysisPhpVersion();
+                            if ($docblock_info->since_php_major_version > $analysis_major_php_version) {
+                                return false;
+                            }
+
+                            if ($docblock_info->since_php_major_version === $analysis_major_php_version
+                                && $docblock_info->since_php_minor_version > $analysis_minor_php_version
+                            ) {
+                                return false;
+                            }
+                        }
+                    }
+                }
+
+                $is_functionlike_override = true;
+                $storage = $this->storage = $classlike_storage->methods[$method_name_lc];
+            }
+
+            if (!$storage) {
+                $storage = $this->storage = new MethodStorage();
+            }
+
+            $storage->stubbed = $this->codebase->register_stub_files;
+            $storage->defining_fqcln = $fq_classlike_name;
+
+            $method_id = new MethodIdentifier(
+                $fq_classlike_name,
+                $method_name_lc,
+            );
+
+            $storage->is_static = false;
+            $storage->abstract = false;
+
+            $is_private = false;//can this be private? $stmt->isPrivate();
+            $is_protected = false;//can this be protected? $stmt->isProtected();
+            if ($is_private && $stmt->isFinal() && $method_name_lc !== '__construct') {
+                IssueBuffer::maybeAdd(
+                    new PrivateFinalMethod(
+                        'Private methods cannot be final',
+                        new CodeLocation($this->file_scanner, $stmt, null, true),
+                        (string) $method_id,
+                    ),
+                );
+                if ($this->codebase->analysis_php_version_id >= 8_00_00) {
+                    // ignore `final` on the method as that's what PHP does
+                    $storage->final = $classlike_storage->final;
+                } else {
+                    $storage->final = true;
+                }
+            } else {
+                $storage->final = $classlike_storage->final || $stmt->isFinal();
+            }
+
+            $storage->final_from_docblock = $classlike_storage->final_from_docblock;
+
+            if ($is_private) {
+                $storage->visibility = ClassLikeAnalyzer::VISIBILITY_PRIVATE;
+            } elseif ($is_protected) {
+                $storage->visibility = ClassLikeAnalyzer::VISIBILITY_PROTECTED;
+            } else {
+                $storage->visibility = ClassLikeAnalyzer::VISIBILITY_PUBLIC;
+            }
         } else {
-            throw new UnexpectedValueException('Unrecognized functionlike');
+            throw new UnexpectedValueException('Unrecognized functionlike '.$stmt::class);
         }
 
         return [
