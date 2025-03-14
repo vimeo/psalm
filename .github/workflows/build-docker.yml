@@ -86,6 +86,7 @@ jobs:
         env:
           EVENT_NAME: ${{ github.event_name }}
           REF: ${{ github.ref }}
+          ACTOR: ${{ github.actor }}
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
           php bin/ci/build-docker.php
