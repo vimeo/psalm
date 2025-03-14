@@ -797,7 +797,7 @@ final class ClassLikes
             return $trait_node;
         }
 
-        throw new UnexpectedValueException('Could not locate trait statement');
+        throw new UnexpectedValueException("Could not locate trait statement for $fq_trait_name");
     }
 
     public function addClassAlias(string $fq_class_name, string $alias_name): void
