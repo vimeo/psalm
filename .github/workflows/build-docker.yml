@@ -1,10 +1,6 @@
 name: Build docker image
 
 on:
-  push:
-    branches:
-      - 6.x
-      - master
   release:
     types:
       - published
