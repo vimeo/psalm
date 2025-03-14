@@ -13,6 +13,7 @@ use function Amp\async;
 require 'vendor/autoload.php';
 
 $commit = getenv('GITHUB_SHA');
+$user = getenv('ACTOR');
 $ref = substr(getenv('REF'), strlen('refs/heads/'));
 $is_tag = getenv('EVENT_NAME') === 'release';
 
@@ -50,9 +51,9 @@ while (true) {
 $ref = escapeshellarg($ref);
 $composer_branch = escapeshellarg($composer_branch);
 
-passthru("docker buildx build --push --platform linux/amd64,linux/arm64/v8 --cache-from ghcr.io/vimeo/psalm:$ref --cache-to type=inline . -t ghcr.io/vimeo/psalm:$ref --build-arg PSALM_REV=$composer_branch -f bin/docker/Dockerfile");
+passthru("docker buildx build --push --platform linux/amd64,linux/arm64/v8 --cache-from ghcr.io/$user/psalm:$ref --cache-to type=inline . -t ghcr.io/$user/psalm:$ref --build-arg PSALM_REV=$composer_branch -f bin/docker/Dockerfile");
 
 if ($is_tag) {
-    passthru("docker tag ghcr.io/vimeo/psalm:$ref ghcr.io/vimeo/psalm:latest");
-    passthru("docker push ghcr.io/vimeo/psalm:latest");
+    passthru("docker tag ghcr.io/$user/psalm:$ref ghcr.io/$user/psalm:latest");
+    passthru("docker push ghcr.io/$user/psalm:latest");
 }
