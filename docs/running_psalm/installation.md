@@ -30,7 +30,7 @@ It is recommended to run Psalm in the official docker image: it uses a custom bu
 docker run -v $PWD:/app --rm -it gchr.io/danog/psalm /app/vendor/bin/psalm --no-cache
 ```
 
-Issues due to missing extensions can be fixed by enabling them in psalm.xml and/or requiring them in composer.json [see here &raquo;](https://psalm.dev/docs/running_psalm/configuration/#enableextensions) for more info.
+Issues due to missing extensions can be fixed by enabling them in psalm.xml and/or requiring them in composer.json, [see here &raquo;](https://psalm.dev/docs/running_psalm/configuration/#enableextensions) for more info.
 
 Extensions not stubbed by Psalm itself (and thus not available as a psalm config option) may be stubbed using [traditional PHP stubs](https://github.com/JetBrains/phpstorm-stubs/).
 
