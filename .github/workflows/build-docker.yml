@@ -3,7 +3,8 @@ name: Build docker image
 on:
   push:
     branches:
-      - add_docker_image
+      - 6.x
+      - master
   release:
     types:
       - published
