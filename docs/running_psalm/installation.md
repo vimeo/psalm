@@ -27,7 +27,7 @@ Psalm will probably find a number of issues - find out how to deal with them in 
 It is recommended to run Psalm in the official docker image: it uses a custom build of PHP built from scratch, running Psalm **+30% faster** on average than normal PHP (**+50% faster** if comparing to PHP without opcache installed).  
 
 ```bash
-docker run -v $PWD:/app --rm -it gchr.io/vimeo/psalm /app/vendor/bin/psalm --no-cache
+docker run -v $PWD:/app --rm -it gchr.io/danog/psalm /app/vendor/bin/psalm --no-cache
 ```
 
 ## Installing plugins
