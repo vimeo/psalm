@@ -1,6 +1,6 @@
 # Installation
 
-The latest version of Psalm requires PHP >= 7.4 and [Composer](https://getcomposer.org/).
+The latest version of Psalm requires PHP >= 8.2 and [Composer](https://getcomposer.org/).
 
 ```bash
 composer require --dev vimeo/psalm
@@ -17,10 +17,18 @@ Psalm will scan your project and figure out an appropriate [error level](error_l
 Then run Psalm:
 
 ```bash
-./vendor/bin/psalm
+./vendor/bin/psalm --no-cache
 ```
 
 Psalm will probably find a number of issues - find out how to deal with them in [Dealing with code issues](dealing_with_code_issues.md).
+
+## Docker image
+
+It is recommended to run Psalm in the official docker image: it uses a custom build of PHP built from scratch, running Psalm **+30% faster** on average than normal PHP (**+50% faster** if comparing to PHP without opcache installed).  
+
+```bash
+docker run -v $PWD:/app --rm -it gchr.io/danog/psalm /app/vendor/bin/psalm --no-cache
+```
 
 ## Installing plugins
 

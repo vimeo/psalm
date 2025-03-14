@@ -1,0 +1,51 @@
+From e87144e1a87789dbb1b53957de1668086100e808 Mon Sep 17 00:00:00 2001
+From: Daniil Gentili <daniil@daniil.it>
+Date: Wed, 13 Nov 2024 12:24:29 +0000
+Subject: [PATCH] Add --enable-rtld-deepbind configure flag
+
+---
+ Zend/zend_portability.h |  2 +-
+ configure.ac            | 17 +++++++++++++++++
+ 2 files changed, 18 insertions(+), 1 deletion(-)
+
+diff --git a/Zend/zend_portability.h b/Zend/zend_portability.h
+index 9ab46f9b32cfe..1efc15fb6386c 100644
+--- a/Zend/zend_portability.h
++++ b/Zend/zend_portability.h
+@@ -164,7 +164,7 @@
+ 
+ # if defined(RTLD_GROUP) && defined(RTLD_WORLD) && defined(RTLD_PARENT)
+ #  define DL_LOAD(libname)			dlopen(libname, PHP_RTLD_MODE | RTLD_GLOBAL | RTLD_GROUP | RTLD_WORLD | RTLD_PARENT)
+-# elif defined(RTLD_DEEPBIND) && !defined(__SANITIZE_ADDRESS__) && !__has_feature(memory_sanitizer)
++# elif defined(RTLD_DEEPBIND) && !defined(__SANITIZE_ADDRESS__) && !__has_feature(memory_sanitizer) && defined(PHP_USE_RTLD_DEEPBIND)
+ #  define DL_LOAD(libname)			dlopen(libname, PHP_RTLD_MODE | RTLD_GLOBAL | RTLD_DEEPBIND)
+ # else
+ #  define DL_LOAD(libname)			dlopen(libname, PHP_RTLD_MODE | RTLD_GLOBAL)
+diff --git a/configure.ac b/configure.ac
+index 01d9ded69b920..137f7dae8c3a9 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -868,6 +868,23 @@ AS_VAR_IF([PHP_RTLD_NOW], [yes],
+     [Define to 1 if 'dlopen()' uses the 'RTLD_NOW' mode flag instead of
+     'RTLD_LAZY'.])])
+ 
++if test "$PHP_SAPI" = "apache2handler"; then
++  PHP_RTLD_DEEPBIND_DEFAULT=yes
++else
++  PHP_RTLD_DEEPBIND_DEFAULT=no
++fi
++
++PHP_ARG_ENABLE([rtld-deepbind],
++  [whether to dlopen extensions with RTLD_DEEPBIND],
++  [AS_HELP_STRING([--enable-rtld-deepbind],
++    [Use dlopen with RTLD_DEEPBIND])],
++  [$PHP_RTLD_DEEPBIND_DEFAULT],
++  [$PHP_RTLD_DEEPBIND_DEFAULT])
++
++if test "$PHP_RTLD_DEEPBIND" = "yes"; then
++  AC_DEFINE(PHP_USE_RTLD_DEEPBIND, 1, [ Use dlopen with RTLD_DEEPBIND ])
++fi
++
+ PHP_ARG_WITH([layout],
+   [layout of installed files],
+   [AS_HELP_STRING([--with-layout=TYPE],
