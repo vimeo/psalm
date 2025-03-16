@@ -22,7 +22,7 @@ r("docker pull ghcr.io/$user/psalm:$ref-arm64 --platform arm64");
 r("docker pull ghcr.io/$user/psalm:$ref-amd64 --platform amd64");
 
 r("docker buildx imagetools create -t ghcr.io/$user/psalm:$ref ghcr.io/$user/psalm:$ref-arm64 ghcr.io/$user/psalm:$ref-amd64");
-r("docker push ghcr.io/$user/psalm:$ref");
+r("docker pull ghcr.io/$user/psalm:$ref");
 
 if ($is_tag || true) {
     r("docker tag ghcr.io/$user/psalm:$ref ghcr.io/$user/psalm:latest");
