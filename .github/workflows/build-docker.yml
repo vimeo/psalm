@@ -2,6 +2,9 @@ name: Build docker image
 
 on:
   push:
+    branches:
+      - master
+      - 6.x
   release:
     types:
       - published
