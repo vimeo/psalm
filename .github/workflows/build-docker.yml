@@ -10,6 +10,7 @@ on:
       - master
       - 6.x
     tags:
+      - '*'
 
 permissions:
   contents: read
