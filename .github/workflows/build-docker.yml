@@ -31,13 +31,13 @@ jobs:
       packages: write
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.image }}
     strategy:
       fail-fast: false
       matrix:
-        platform:
-          - linux/amd64
-          - linux/arm64
+        image:
+          - ubuntu-latest
+          - ubuntu-24.04-arm
     steps:
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
@@ -88,7 +88,7 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           REF: ${{ github.ref }}
           ACTOR: ${{ github.repository_owner }}
-          PLATFORM: ${{ matrix.platform }}
+          PLATFORM: ${{ matrix.image }}
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
           php bin/ci/build-docker.php
@@ -111,8 +111,6 @@ jobs:
           coverage: none
         env:
           fail-fast: true
-
-      - uses: actions/checkout@v4
 
       - name: Upload final docker image
         env:

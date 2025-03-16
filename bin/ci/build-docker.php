@@ -3,7 +3,11 @@
 
 declare(strict_types=1);
 
-$platform = str_replace('linux/', '', getenv('PLATFORM'));
+$platform = match (getenv('PLATFORM')) {
+    'ubuntu-24.04-arm' => 'arm64',
+    'ubuntu-latest' => 'amd64',
+};
+
 $commit = getenv('GITHUB_SHA');
 $user = getenv('ACTOR');
 $ref = substr(getenv('REF'), strlen('refs/heads/'));
@@ -47,4 +51,4 @@ $ref = escapeshellarg($ref);
 $composer_branch = escapeshellarg($composer_branch);
 $platform = escapeshellarg($platform);
 
-r("docker buildx build --push --platform linux/$platform . -t ghcr.io/$user/psalm:$ref-$platform --build-arg PSALM_REV=$composer_branch -f bin/docker/Dockerfile");
+r("docker buildx build --push . -t ghcr.io/$user/psalm:$ref-$platform --build-arg PSALM_REV=$composer_branch -f bin/docker/Dockerfile");
