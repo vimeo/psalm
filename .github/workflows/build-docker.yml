@@ -9,9 +9,7 @@ on:
     branches:
       - master
       - 6.x
-  release:
-    types:
-      - published
+    tags:
 
 permissions:
   contents: read
