@@ -87,10 +87,10 @@ jobs:
         env:
           EVENT_NAME: ${{ github.event_name }}
           REF: ${{ github.ref }}
-          ACTOR: ${{ github.actor }}
+          ACTOR: ${{ github.repository_owner }}
           PLATFORM: ${{ matrix.platform }}
         run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
           php bin/ci/build-docker.php
 
   merge-docker:
@@ -116,7 +116,7 @@ jobs:
         env:
           EVENT_NAME: ${{ github.event_name }}
           REF: ${{ github.ref }}
-          ACTOR: ${{ github.actor }}
+          ACTOR: ${{ github.repository_owner }}
         run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
           php bin/ci/push-docker.php
