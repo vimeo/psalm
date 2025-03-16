@@ -112,6 +112,8 @@ jobs:
         env:
           fail-fast: true
 
+      - uses: actions/checkout@v4
+
       - name: Upload final docker image
         env:
           EVENT_NAME: ${{ github.event_name }}
