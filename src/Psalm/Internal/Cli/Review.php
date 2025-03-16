@@ -23,7 +23,6 @@ use function fputs;
 use function gc_collect_cycles;
 use function gc_disable;
 use function getenv;
-use function ini_set;
 use function json_decode;
 use function ltrim;
 use function passthru;

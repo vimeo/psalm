@@ -28,7 +28,6 @@ use function getcwd;
 use function getopt;
 use function implode;
 use function in_array;
-use function ini_set;
 use function is_array;
 use function is_numeric;
 use function is_string;

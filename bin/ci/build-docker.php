@@ -31,7 +31,10 @@ function r(string $cmd): void
     }
 }
 
-$composer_branch = $is_tag ? $ref : "dev-$ref";
+$composer_branch = $is_tag ? $ref : "$ref-dev";
+if ($composer_branch === 'master-dev') {
+    $composer_branch = 'dev-master';
+}
 $dev = $is_tag ? '' : '~dev';
 
 if ($is_tag) {
