@@ -69,7 +69,6 @@ final class Refactor
     public static function run(array $argv): void
     {
         CliUtils::checkRuntimeRequirements();
-        ini_set('memory_limit', '8192M');
 
         gc_collect_cycles();
         gc_disable();
@@ -170,6 +169,7 @@ final class Refactor
         if (isset($options['root'])) {
             $options['r'] = $options['root'];
         }
+        CliUtils::setMemoryLimit($options);
 
         $current_dir = (string) getcwd();
 

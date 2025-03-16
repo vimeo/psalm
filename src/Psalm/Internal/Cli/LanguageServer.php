@@ -143,11 +143,7 @@ final class LanguageServer
             exit(1);
         }
 
-        if (!array_key_exists('use-ini-defaults', $options)) {
-            ini_set('display_errors', '1');
-            ini_set('display_startup_errors', '1');
-            ini_set('memory_limit', (string) (8 * 1_024 * 1_024 * 1_024));
-        }
+        CliUtils::setMemoryLimit($options, '1');
 
         if (array_key_exists('help', $options)) {
             $options['h'] = false;
