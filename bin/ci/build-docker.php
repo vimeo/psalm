@@ -3,15 +3,6 @@
 
 declare(strict_types=1);
 
-use Amp\Process\Process;
-
-use function Amp\ByteStream\getStderr;
-use function Amp\ByteStream\getStdout;
-use function Amp\ByteStream\pipe;
-use function Amp\async;
-
-require 'vendor/autoload.php';
-
 $platform = str_replace('linux/', '', getenv('PLATFORM'));
 $commit = getenv('GITHUB_SHA');
 $user = getenv('ACTOR');
@@ -22,11 +13,9 @@ echo "Waiting for commit $commit on $ref...".PHP_EOL;
 
 function r(string $cmd): void
 {
-    getStderr()->write("> $cmd\n");
-    $cmd = Process::start($cmd);
-    async(pipe(...), $cmd->getStdout(), getStdout())->ignore();
-    async(pipe(...), $cmd->getStderr(), getStderr())->ignore();
-    if ($exit = $cmd->join()) {
+    echo "> $cmd\n";
+    passthru($cmd, $exit);
+    if ($exit) {
         exit($exit);
     }
 }
@@ -58,4 +47,4 @@ $ref = escapeshellarg($ref);
 $composer_branch = escapeshellarg($composer_branch);
 $platform = escapeshellarg($platform);
 
-r("docker buildx build --push . -t ghcr.io/$user/psalm:$ref-$platform --build-arg PSALM_REV=$composer_branch -f bin/docker/Dockerfile");
+r("docker buildx build --push --platform linux/$platform . -t ghcr.io/$user/psalm:$ref-$platform --build-arg PSALM_REV=$composer_branch -f bin/docker/Dockerfile");
