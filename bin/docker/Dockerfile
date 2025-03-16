@@ -9,14 +9,6 @@
 
 FROM debian:bookworm-slim
 
-LABEL "repository"="http://github.com/vimeo/psalm"
-LABEL "homepage"="http://psalm.dev"
-LABEL "maintainer"="Daniil Gentili <daniil@daniil.it>"
-
-LABEL "org.opencontainers.image.source"="http://github.com/vimeo/psalm"
-LABEL "org.opencontainers.image.description"="A static analysis tool for finding errors in PHP applications "
-LABEL "org.opencontainers.image.licenses"=MIT
-
 # prevent Debian's PHP packages from being installed
 # https://github.com/docker-library/php/pull/542
 RUN set -eux; \
@@ -251,6 +243,20 @@ RUN chmod +x /entrypoint.sh
 
 RUN ln -s "$(dpkg -L libjemalloc2 | grep libjemalloc.so | head -1)" /usr/lib/libjemalloc.so
 
+FROM scratch
+
+COPY --from=0 / /
+
+LABEL "repository"="http://github.com/vimeo/psalm"
+LABEL "homepage"="http://psalm.dev"
+LABEL "maintainer"="Daniil Gentili <daniil@daniil.it>"
+
+LABEL "org.opencontainers.image.source"="http://github.com/vimeo/psalm"
+LABEL "org.opencontainers.image.description"="A static analysis tool for finding errors in PHP applications "
+LABEL "org.opencontainers.image.licenses"=MIT
+
+ENV PHP_INI_DIR /usr/local/etc/php
+ENV PHP_VERSION 8.4.4
 ENV PATH=/composer/vendor/bin:${PATH}
 
 ENV USE_ZEND_ALLOC=0
