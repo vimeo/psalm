@@ -234,7 +234,8 @@ ARG PSALM_REV=dev-master
 RUN COMPOSER_ALLOW_SUPERUSER=1 \
     COMPOSER_HOME="/composer" \
     composer global require vimeo/psalm:${PSALM_REV} --prefer-dist --no-progress --dev && \
-    rm /usr/bin/composer
+    rm /usr/bin/composer && \
+	rm /usr/local/etc/php/conf.d/docker-php-ext-opcache.ini
 
 # Add entrypoint script
 
