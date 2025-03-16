@@ -33,7 +33,6 @@ jobs:
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ${{ matrix.image }}
     strategy:
-      fail-fast: false
       matrix:
         image:
           - ubuntu-latest
@@ -111,6 +110,8 @@ jobs:
           coverage: none
         env:
           fail-fast: true
+
+      - uses: actions/checkout@v4
 
       - name: Upload final docker image
         env:
