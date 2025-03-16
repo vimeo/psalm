@@ -30,7 +30,7 @@ It is recommended to run Psalm in the official docker image: it uses a custom bu
 docker run -v $PWD:/app --rm -it ghcr.io/danog/psalm:latest /composer/vendor/bin/psalm --no-cache
 ```
 
-More specific tags are also available (i.e. `ghcr.io/danog/psalm:6.9.0`, as well as branch tags).   
+More specific tags are also available (i.e. `ghcr.io/danog/psalm:6.9.1`, as well as branch tags).   
 
 Issues due to missing extensions can be fixed by enabling them in psalm.xml and/or requiring them in composer.json [see here &raquo;](https://psalm.dev/docs/running_psalm/configuration/#enableextensions) for more info.
 
