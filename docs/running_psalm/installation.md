@@ -27,10 +27,12 @@ Psalm will probably find a number of issues - find out how to deal with them in 
 It is recommended to run Psalm in the official docker image: it uses a custom build of PHP built from scratch, running Psalm **+30% faster** on average than normal PHP (**+50% faster** if comparing to PHP without opcache installed).  
 
 ```bash
-docker run -v $PWD:/app --rm -it gchr.io/danog/psalm /app/vendor/bin/psalm --no-cache
+docker run -v $PWD:/app --rm -it ghcr.io/danog/psalm:latest /composer/vendor/bin/psalm --no-cache
 ```
 
-Issues due to missing extensions can be fixed by enabling them in psalm.xml and/or requiring them in composer.json, [see here &raquo;](https://psalm.dev/docs/running_psalm/configuration/#enableextensions) for more info.
+More specific tags are also available (i.e. `ghcr.io/danog/psalm:6.9.0`).   
+
+Issues due to missing extensions can be fixed by enabling them in psalm.xml and/or requiring them in composer.json [see here &raquo;](https://psalm.dev/docs/running_psalm/configuration/#enableextensions) for more info.
 
 Extensions not stubbed by Psalm itself (and thus not available as a psalm config option) may be stubbed using [traditional PHP stubs](https://github.com/JetBrains/phpstorm-stubs/).
 

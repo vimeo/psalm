@@ -30,7 +30,12 @@ jobs:
       packages: write
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.image }}
+    strategy:
+      matrix:
+        image:
+          - ubuntu-latest
+          - ubuntu-24.04-arm
     steps:
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
@@ -71,18 +76,47 @@ jobs:
           # env:
           #   COMPOSER_ROOT_VERSION: dev-master
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
       # https://github.com/docker/setup-buildx-action
       - name: Set up Docker Buildx
         id: buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v3
 
       - name: Upload docker image
         env:
           EVENT_NAME: ${{ github.event_name }}
           REF: ${{ github.ref }}
-          ACTOR: ${{ github.actor }}
+          ACTOR: ${{ github.repository_owner }}
+          PLATFORM: ${{ matrix.image }}
         run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
           php bin/ci/build-docker.php
+
+  merge-docker:
+    permissions:
+      packages: write
+    needs: build-docker
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          tools: composer:v2
+          coverage: none
+        env:
+          fail-fast: true
+
+      - uses: actions/checkout@v4
+
+      - name: Upload final docker image
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          ACTOR: ${{ github.repository_owner }}
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+          php bin/ci/push-docker.php

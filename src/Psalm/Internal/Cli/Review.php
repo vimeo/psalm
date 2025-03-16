@@ -23,7 +23,6 @@ use function fputs;
 use function gc_collect_cycles;
 use function gc_disable;
 use function getenv;
-use function ini_set;
 use function json_decode;
 use function ltrim;
 use function passthru;
@@ -65,7 +64,6 @@ final class Review
     public static function run(array $argv): void
     {
         CliUtils::checkRuntimeRequirements();
-        ini_set('memory_limit', '8192M');
 
         gc_collect_cycles();
         gc_disable();

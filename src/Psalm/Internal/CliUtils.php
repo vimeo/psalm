@@ -459,13 +459,13 @@ final class CliUtils
      * @param array<string,string|false|list<mixed>> $options
      * @throws ConfigException
      */
-    public static function setMemoryLimit(array $options): void
+    public static function setMemoryLimit(array $options, string $display_error = 'stderr'): void
     {
         if (!array_key_exists('use-ini-defaults', $options)) {
-            ini_set('display_errors', 'stderr');
+            ini_set('display_errors', $display_error);
             ini_set('display_startup_errors', '1');
 
-            $memoryLimit = (8 * 1_024 * 1_024 * 1_024);
+            $memoryLimit = '-1';
 
             if (array_key_exists('memory-limit', $options)) {
                 $memoryLimit = $options['memory-limit'];

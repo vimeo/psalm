@@ -36,7 +36,6 @@ use function getcwd;
 use function getopt;
 use function implode;
 use function in_array;
-use function ini_set;
 use function is_array;
 use function is_string;
 use function microtime;
@@ -69,7 +68,6 @@ final class Refactor
     public static function run(array $argv): void
     {
         CliUtils::checkRuntimeRequirements();
-        ini_set('memory_limit', '8192M');
 
         gc_collect_cycles();
         gc_disable();
@@ -170,6 +168,7 @@ final class Refactor
         if (isset($options['root'])) {
             $options['r'] = $options['root'];
         }
+        CliUtils::setMemoryLimit($options);
 
         $current_dir = (string) getcwd();
 

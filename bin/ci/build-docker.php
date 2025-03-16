@@ -3,14 +3,10 @@
 
 declare(strict_types=1);
 
-use Amp\Process\Process;
-
-use function Amp\ByteStream\getStderr;
-use function Amp\ByteStream\getStdout;
-use function Amp\ByteStream\pipe;
-use function Amp\async;
-
-require 'vendor/autoload.php';
+$platform = match (getenv('PLATFORM')) {
+    'ubuntu-24.04-arm' => 'arm64',
+    'ubuntu-latest' => 'amd64',
+};
 
 $commit = getenv('GITHUB_SHA');
 $user = getenv('ACTOR');
@@ -21,16 +17,17 @@ echo "Waiting for commit $commit on $ref...".PHP_EOL;
 
 function r(string $cmd): void
 {
-    getStderr()->write("> $cmd\n");
-    $cmd = Process::start($cmd);
-    async(pipe(...), $cmd->getStdout(), getStdout())->ignore();
-    async(pipe(...), $cmd->getStderr(), getStderr())->ignore();
-    if ($exit = $cmd->join()) {
+    echo "> $cmd\n";
+    passthru($cmd, $exit);
+    if ($exit) {
         exit($exit);
     }
 }
 
-$composer_branch = $is_tag ? $ref : "dev-$ref";
+$composer_branch = $is_tag ? $ref : "$ref-dev";
+if ($composer_branch === 'master-dev') {
+    $composer_branch = 'dev-master';
+}
 $dev = $is_tag ? '' : '~dev';
 
 if ($is_tag) {
@@ -52,10 +49,6 @@ if ($is_tag) {
 
 $ref = escapeshellarg($ref);
 $composer_branch = escapeshellarg($composer_branch);
+$platform = escapeshellarg($platform);
 
-passthru("docker buildx build --push --platform linux/amd64,linux/arm64/v8 --cache-from ghcr.io/$user/psalm:$ref --cache-to type=inline . -t ghcr.io/$user/psalm:$ref --build-arg PSALM_REV=$composer_branch -f bin/docker/Dockerfile");
-
-if ($is_tag) {
-    passthru("docker tag ghcr.io/$user/psalm:$ref ghcr.io/$user/psalm:latest");
-    passthru("docker push ghcr.io/$user/psalm:latest");
-}
+r("docker buildx build --push . -t ghcr.io/$user/psalm:$ref-$platform --build-arg PSALM_REV=$composer_branch -f bin/docker/Dockerfile");
