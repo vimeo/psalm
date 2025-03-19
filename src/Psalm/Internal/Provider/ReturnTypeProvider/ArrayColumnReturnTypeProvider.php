@@ -9,14 +9,29 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\SourceAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\TypeCombiner;
+use Psalm\Issue\ValueNotConvertibleToArrayKey;
+use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TArrayKey;
+use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TClassStringMap;
+use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TMixed;
+use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TNumeric;
+use Psalm\Type\Atomic\TNumericString;
+use Psalm\Type\Atomic\TScalar;
+use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
 
 use function count;
@@ -199,7 +214,7 @@ final class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderI
         }
 
 
-        $result_key_type = Type::getArrayKey();
+        $result_key_type = null;
         $result_element_type = null !== $row_type && $value_column_name_is_null ? $row_type : null;
         $have_at_least_one_res = false;
         // calculate results
@@ -217,18 +232,54 @@ final class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderI
             }
 
             if ((null !== $key_column_name) && isset($row_shape->properties[$key_column_name])) {
-                $result_key_type = $row_shape->properties[$key_column_name];
+                $new_types = [];
+                foreach ($row_shape->properties[$key_column_name]->getAtomicTypes() as $atomic_type) {
+                    if ($atomic_type instanceof TNull) {
+                        $new_types[] = Type::getAtomicStringFromLiteral('');
+                    } else if ($atomic_type instanceof TMixed) {
+                        $new_types[] = $atomic_type;
+                    } else if ($atomic_type instanceof Scalar) {
+                        if ($atomic_type instanceof TInt) {
+                            $new_types[] = $atomic_type;
+                        } else if ($atomic_type instanceof TString) {
+                            $new_types[] = $atomic_type;
+                        } else if ($atomic_type instanceof TArrayKey) {
+                            $new_types[] = $atomic_type;
+                        } else if ($atomic_type instanceof TFloat || $atomic_type instanceof TBool) {
+                            $new_types[] = new TInt();
+                        } else if ($atomic_type instanceof TNumeric) {
+                            $new_types[] = new TNumericString();
+                            $new_types[] = new TInt();
+                        } else if ($atomic_type instanceof TScalar) {
+                            $new_types[] = new TArrayKey();
+                        } else {
+                            assert(false, 'Unhandled scalar type');
+                        }
+                    } else {
+                        IssueBuffer::maybeAdd(
+                            new ValueNotConvertibleToArrayKey(
+                                'Type ' . $atomic_type->getKey() . ' of ' . $row_shape->properties[$key_column_name] .
+                                    ' cannot be converted to array-key',
+                                $code_location
+                            ),
+                            $statements_source->getSuppressedIssues(),
+                        );
+                    }
+                }
+                $result_key_type = $new_types ? TypeCombiner::combine($new_types) : Type::getNever();
             }
         }
 
+        $result_element_type ??= Type::getMixed();
         if ($third_arg_type && !$key_column_name_is_null) {
+            $result_key_type ??= Type::getArrayKey();
             $type = $have_at_least_one_res ?
-                new TNonEmptyArray([$result_key_type, $result_element_type ?? Type::getMixed()])
-                : new TArray([$result_key_type, $result_element_type ?? Type::getMixed()]);
+                new TNonEmptyArray([$result_key_type, $result_element_type])
+                : new TArray([$result_key_type, $result_element_type]);
         } else {
             $type = $have_at_least_one_res ?
-                Type::getNonEmptyListAtomic($result_element_type ?? Type::getMixed())
-                : Type::getListAtomic($result_element_type ?? Type::getMixed());
+                Type::getNonEmptyListAtomic($result_element_type)
+                : Type::getListAtomic($result_element_type);
         }
 
         return new Union([$type]);
