@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="dev-master@b513b32ef4a8f5a46c4412133f345182e34db54c">
+<files psalm-version="dev-master@354b4d49a646d88aeb9612668c15402416cc70c0">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$comment_block->tags['variablesfrom'][0]]]></code>
@@ -116,10 +116,6 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Config/FileFilter.php">
-    <InvalidOperand>
-      <code><![CDATA[$glob_index]]></code>
-      <code><![CDATA[$glob_index]]></code>
-    </InvalidOperand>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[explode('::', $method_id)[1]]]></code>
     </PossiblyUndefinedIntArrayOffset>
@@ -490,11 +486,6 @@
     </ImplicitToStringCast>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/ArrayAnalyzer.php">
-    <PossiblyInvalidOperand>
-      <code><![CDATA[$item_key_value]]></code>
-      <code><![CDATA[$item_key_value]]></code>
-      <code><![CDATA[$item_key_value]]></code>
-    </PossiblyInvalidOperand>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$var_id]]></code>
     </RiskyTruthyFalsyComparison>
@@ -546,9 +537,6 @@
       <code><![CDATA[$var_id+1]]></code>
       <code><![CDATA[$var_id+1]]></code>
     </InvalidOperand>
-    <PossiblyInvalidOperand>
-      <code><![CDATA[$literal_key]]></code>
-    </PossiblyInvalidOperand>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$assertion->rule[0]]]></code>
       <code><![CDATA[$assertion->rule[0]]]></code>
@@ -670,9 +658,6 @@
       <code><![CDATA[$child_stmt_dim_type]]></code>
       <code><![CDATA[$child_stmt_dim_type]]></code>
     </ImplicitToStringCast>
-    <PossiblyInvalidOperand>
-      <code><![CDATA[$key_value->value]]></code>
-    </PossiblyInvalidOperand>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$parent_var_id]]></code>
       <code><![CDATA[$object_id]]></code>
@@ -751,9 +736,6 @@
       <code><![CDATA[$context->byref_constraints[$var_id]->type]]></code>
       <code><![CDATA[$var_comment_type]]></code>
     </ImplicitToStringCast>
-    <PossiblyInvalidOperand>
-      <code><![CDATA[$offset_value]]></code>
-    </PossiblyInvalidOperand>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$var_comment->var_id]]></code>
       <code><![CDATA[!strpos($root_var_id ?? '', '->')]]></code>
@@ -1156,9 +1138,6 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/CallAnalyzer.php">
-    <PossiblyInvalidOperand>
-      <code><![CDATA[$var_id]]></code>
-    </PossiblyInvalidOperand>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$callable_arg->items[0]]]></code>
       <code><![CDATA[$callable_arg->items[1]]]></code>
@@ -1207,10 +1186,6 @@
       <code><![CDATA[$stmt->name]]></code>
       <code><![CDATA[$stmt->name]]></code>
     </ImplicitToStringCast>
-    <PossiblyInvalidOperand>
-      <code><![CDATA[$offset]]></code>
-      <code><![CDATA[$stmt->dim->value]]></code>
-    </PossiblyInvalidOperand>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$lhs_var_name]]></code>
       <code><![CDATA[!$object_id]]></code>
@@ -1231,13 +1206,6 @@
       <code><![CDATA[$array_type]]></code>
       <code><![CDATA[$offset_type]]></code>
     </ImplicitToStringCast>
-    <PossiblyInvalidOperand>
-      <code><![CDATA[$dim_value]]></code>
-      <code><![CDATA[$dim_value]]></code>
-      <code><![CDATA[$literal_access]]></code>
-      <code><![CDATA[$literal_access]]></code>
-      <code><![CDATA[is_int($last_key) ? $last_key : '\'' . $last_key . '\'']]></code>
-    </PossiblyInvalidOperand>
     <ReferenceConstraintViolation>
       <code><![CDATA[$stmt_type]]></code>
       <code><![CDATA[$stmt_type]]></code>
@@ -2098,12 +2066,6 @@
       <code><![CDATA[$method_name]]></code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
-  <file src="src/Psalm/Internal/Provider/ReturnTypeProvider/FilterUtils.php">
-    <PossiblyInvalidOperand>
-      <code><![CDATA[$option]]></code>
-      <code><![CDATA[$option]]></code>
-    </PossiblyInvalidOperand>
-  </file>
   <file src="src/Psalm/Internal/Provider/ReturnTypeProvider/PdoStatementReturnTypeProvider.php">
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$fetch_class_name]]></code>
@@ -2388,9 +2350,6 @@
     <InvalidOperand>
       <code><![CDATA[$property_key - 1]]></code>
     </InvalidOperand>
-    <PossiblyInvalidOperand>
-      <code><![CDATA[$property]]></code>
-    </PossiblyInvalidOperand>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$const_name]]></code>
       <code><![CDATA[$const_name]]></code>
@@ -2658,14 +2617,6 @@
       <code><![CDATA[!$intersection]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
-  <file src="src/Psalm/Type/Atomic/TIntRange.php">
-    <PossiblyInvalidOperand>
-      <code><![CDATA[$this->max_bound ?? 'max']]></code>
-      <code><![CDATA[$this->max_bound ?? 'max']]></code>
-      <code><![CDATA[$this->min_bound ?? 'min']]></code>
-      <code><![CDATA[$this->min_bound ?? 'min']]></code>
-    </PossiblyInvalidOperand>
-  </file>
   <file src="src/Psalm/Type/Atomic/TIterable.php">
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$intersection]]></code>
@@ -2710,10 +2661,6 @@
       <code><![CDATA[self|TArray]]></code>
       <code><![CDATA[self|TArray]]></code>
     </InvalidReturnType>
-    <PossiblyInvalidOperand>
-      <code><![CDATA[$name]]></code>
-      <code><![CDATA[$name]]></code>
-    </PossiblyInvalidOperand>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$fallback_params[1]]]></code>
       <code><![CDATA[$fallback_params[1]]]></code>
@@ -2744,10 +2691,6 @@
       <code><![CDATA[replace]]></code>
       <code><![CDATA[replace]]></code>
     </ImpureMethodCall>
-    <PossiblyInvalidOperand>
-      <code><![CDATA[$name]]></code>
-      <code><![CDATA[$name]]></code>
-    </PossiblyInvalidOperand>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$intersection]]></code>
       <code><![CDATA[!$intersection]]></code>
@@ -2805,9 +2748,6 @@
     <InvalidOperand>
       <code><![CDATA[$array_key_offset-1]]></code>
     </InvalidOperand>
-    <PossiblyInvalidOperand>
-      <code><![CDATA[$array_key]]></code>
-    </PossiblyInvalidOperand>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$const_name]]></code>
     </PossiblyUndefinedIntArrayOffset>
