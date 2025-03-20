@@ -23,8 +23,6 @@ r("docker pull ghcr.io/$user/psalm:$ref-amd64 --platform amd64");
 
 r("docker buildx imagetools create -t ghcr.io/$user/psalm:$ref ghcr.io/$user/psalm:$ref-arm64 ghcr.io/$user/psalm:$ref-amd64");
 
-if ($is_tag) {
-    r("docker pull ghcr.io/$user/psalm:$ref");
-    r("docker tag ghcr.io/$user/psalm:$ref ghcr.io/$user/psalm:latest");
-    r("docker push ghcr.io/$user/psalm:latest");
+if ($is_tag && !str_contains($ref, 'beta')) {
+    r("docker buildx imagetools create -t ghcr.io/$user/psalm:latest ghcr.io/$user/psalm:$ref-arm64 ghcr.io/$user/psalm:$ref-amd64");
 }
