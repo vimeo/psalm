@@ -486,7 +486,7 @@ final class Config
 
     /** 
      * @internal
-     * @var array<string, ComposerJsonLocation> 
+     * @var array<lowercase-string, ComposerJsonLocation> 
      */
     public array $required_packages = [];
 
@@ -1027,7 +1027,7 @@ final class Config
                     $pos+strlen($chunk),
                     substr_count($composer_json_contents, "\n", 0, $pos)
                 );
-                $config->required_packages[$required] = $location;
+                $config->required_packages[strtolower($required)] = $location;
             }
         }
         foreach ($required_extensions as $required_ext => $_) {

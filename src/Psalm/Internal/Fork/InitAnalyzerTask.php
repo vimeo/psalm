@@ -34,6 +34,7 @@ final class InitAnalyzerTask implements Task
         $file_reference_provider->setCallingMethodReferencesToClassProperties([]);
         $file_reference_provider->setFileReferencesToClassMembers([]);
         $file_reference_provider->setFileReferencesToClassProperties([]);
+        $file_reference_provider->setReferencesToPackages([]);
         $file_reference_provider->setCallingMethodReferencesToMissingClassMembers([]);
         $file_reference_provider->setFileReferencesToMissingClassMembers([]);
         $file_reference_provider->setReferencesToMixedMemberNames([]);

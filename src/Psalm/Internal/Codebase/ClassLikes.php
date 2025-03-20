@@ -837,6 +837,7 @@ final class ClassLikes
         $codebase = $project_analyzer->getCodebase();
 
         $unused_packages = $codebase->config->required_packages;
+        $codebase->file_reference_provider->removeReferencedPackages($unused_packages);
 
         foreach ($this->existing_classlikes_lc as $fq_class_name_lc => $_) {
             try {

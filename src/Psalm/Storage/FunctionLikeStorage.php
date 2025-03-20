@@ -22,6 +22,7 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
     use CustomMetadataTrait;
     use UnserializeMemoryUsageSuppressionTrait;
 
+    /** @var ?lowercase-string */
     public ?string $composer_package = null;
 
     public ?CodeLocation $location = null;

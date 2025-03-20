@@ -319,7 +319,10 @@ final class Codebase
         $this->loadAnalyzer();
     }
 
-    /** @internal */
+    /** 
+     * @internal 
+     * @return ?lowercase-string
+     */
     public function getComposerPackage(CodeLocation $path): ?string {
         $path = $path->file_path;
         if ($this->register_autoload_files
@@ -337,11 +340,15 @@ final class Codebase
                 $pos+1
             );
             if ($pos !== false) {
-                return substr(
+                $res = substr(
                     $path,
                     $l,
                     $pos-$l
                 );
+                if (DIRECTORY_SEPARATOR === '\\') {
+                    $res = str_replace('\\', '/', $res);
+                }
+                return strtolower($res);
             }
         }
         return null;

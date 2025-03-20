@@ -82,7 +82,7 @@ final class Reflection
 
         $ext = $reflected_class->getExtensionName();
         if ($ext !== false) {
-            $storage->composer_package = "ext-$ext";
+            $storage->composer_package = strtolower("ext-$ext");
         }
 
         if ($reflected_parent_class) {
@@ -258,7 +258,7 @@ final class Reflection
 
         $ext = $method->getExtensionName();
         if ($ext !== false) {
-            $storage->composer_package = "ext-$ext";
+            $storage->composer_package = strtolower("ext-$ext");
         }
         $storage->cased_name = $method->name;
         $storage->defining_fqcln = $method->class;
@@ -380,7 +380,7 @@ final class Reflection
 
             $ext = $reflection_function->getExtensionName();
             if ($ext !== false) {
-                $storage->composer_package = "ext-$ext";
+                $storage->composer_package = strtolower("ext-$ext");
             }
 
             if (InternalCallMapHandler::inCallMap($function_id)) {

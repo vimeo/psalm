@@ -6,6 +6,7 @@ namespace Psalm\Internal\Provider;
 
 use Psalm\CodeLocation;
 use Psalm\Codebase;
+use Psalm\CodeLocation\ComposerJsonLocation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Codebase\Analyzer;
@@ -27,6 +28,11 @@ use function explode;
 final class FileReferenceProvider
 {
     private bool $loaded_from_cache = false;
+
+    /**
+     * @var array<string, true>
+     */
+    private static array $references_to_packages = [];
 
     /**
      * A lookup table used for getting all the references to a class not inside a method
@@ -184,6 +190,32 @@ final class FileReferenceProvider
         }
 
         return self::$deleted_files;
+    }
+
+    /**
+     * @param lowercase-string $package
+     */
+    public static function addReferenceToPackage(?string $package): void
+    {
+        if ($package !== null) {
+            self::$references_to_packages[$package] = true;
+        }
+    }
+
+    /**
+     * @return array<lowercase-string, true>
+     */
+    public function getAllReferencesToPackages(): array
+    {
+        return self::$references_to_packages;
+    }
+
+    /**
+     * @param array<lowercase-string, true> $references
+     */
+    public function addReferencesToPackages(array $references): void
+    {
+        self::$references_to_packages += $references;
     }
 
     /**
@@ -842,6 +874,19 @@ final class FileReferenceProvider
     }
 
     /**
+     * @param array<lowercase-string, ComposerJsonLocation> $packages
+     * @param-out array<lowercase-string, ComposerJsonLocation> $packages
+     */
+    public static function removeReferencedPackages(array &$packages): void
+    {
+        foreach ($packages as $package => $_) {
+            if (isset(self::$references_to_packages[$package])) {
+                unset($packages[$package]);
+            }
+        }
+    }
+
+    /**
      * @param array<string, array<string,bool>> $references
      */
     public function setNonMethodReferencesToClasses(array $references): void
@@ -1020,6 +1065,14 @@ final class FileReferenceProvider
                 self::$method_param_uses[$method_id] = $method_param_uses;
             }
         }
+    }
+
+    /**
+     * @param array<lowercase-string, bool> $references
+     */
+    public function setReferencesToPackages(array $references): void
+    {
+        self::$references_to_packages = $references;
     }
 
     /**
@@ -1275,5 +1328,6 @@ final class FileReferenceProvider
         self::$method_param_uses = [];
         self::$classlike_files = [];
         self::$mixed_counts = [];
+        self::$references_to_packages = [];
     }
 }
