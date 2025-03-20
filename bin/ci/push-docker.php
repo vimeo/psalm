@@ -13,8 +13,8 @@ function r(string $cmd): void
 }
 
 $user = getenv('ACTOR');
-$ref = substr(getenv('REF'), strlen('refs/heads/'));
-$is_tag = getenv('EVENT_NAME') === 'release';
+$is_tag = str_starts_with(getenv('REF'), 'refs/tags/');
+$ref = str_replace(['refs/heads/', 'refs/tags/'], '', getenv('REF'));
 
 $ref = escapeshellarg($ref);
 

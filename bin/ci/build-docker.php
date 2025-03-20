@@ -10,8 +10,8 @@ $platform = match (getenv('PLATFORM')) {
 
 $commit = getenv('GITHUB_SHA');
 $user = getenv('ACTOR');
+$is_tag = str_starts_with(getenv('REF'), 'refs/tags/');
 $ref = str_replace(['refs/heads/', 'refs/tags/'], '', getenv('REF'));
-$is_tag = getenv('EVENT_NAME') === 'release';
 
 echo "Waiting for commit $commit on $ref...".PHP_EOL;
 
