@@ -14,6 +14,7 @@ use InvalidArgumentException;
 use JsonException;
 use LogicException;
 use OutOfBoundsException;
+use Psalm\CodeLocation\ComposerJsonLocation;
 use Psalm\CodeLocation\Raw;
 use Psalm\Config\IssueHandler;
 use Psalm\Config\ProjectFileFilter;
@@ -482,6 +483,12 @@ final class Config
     public ?int $threads = null;
     /** @var ?int<1, max> */
     public ?int $scan_threads = null;
+
+    /** 
+     * @internal
+     * @var array<string, ComposerJsonLocation> 
+     */
+    public array $required_packages = [];
 
     /**
      * A list of php extensions supported by Psalm.
@@ -993,10 +1000,10 @@ final class Config
             $config->base_dir = $current_dir;
             $base_dir = $current_dir;
         }
+        $required_extensions = [];
 
         $composer_json_path = Composer::getJsonFilePath($config->base_dir);
 
-        $composer_json = null;
         if (file_exists($composer_json_path)) {
             $composer_json_contents = file_get_contents($composer_json_path);
             assert($composer_json_contents !== false);
@@ -1004,11 +1011,23 @@ final class Config
             if (!is_array($composer_json)) {
                 throw new UnexpectedValueException('Invalid composer.json at ' . $composer_json_path);
             }
-        }
-        $required_extensions = [];
-        foreach (($composer_json["require"] ?? []) as $required => $_) {
-            if (str_starts_with((string) $required, "ext-")) {
-                $required_extensions[strtolower(substr((string) $required, 4))] = true;
+            foreach (($composer_json["require"] ?? []) as $required => $ver) {
+                assert(is_string($required));
+                if (str_starts_with($required, "ext-")) {
+                    $required_extensions[strtolower(substr($required, 4))] = true;
+                }
+                if (!str_contains($required, '/')) {
+                    continue;
+                }
+                $chunk = (string)json_encode($required, JSON_UNESCAPED_SLASHES).": ".(string)json_encode($ver, JSON_UNESCAPED_SLASHES);
+                $pos = (int) strpos($composer_json_contents, $chunk); 
+                $location = new ComposerJsonLocation(
+                    $composer_json_path,
+                    $pos,
+                    $pos+strlen($chunk),
+                    substr_count($composer_json_contents, "\n", 0, $pos)
+                );
+                $config->required_packages[$required] = $location;
             }
         }
         foreach ($required_extensions as $required_ext => $_) {
@@ -2510,7 +2529,9 @@ final class Config
                 $codebase->scanner->addFileToDeepScan($file_path);
             }
 
+            $codebase->scanner->vendor_prefix = $project_analyzer->getConfig()->base_dir.DIRECTORY_SEPARATOR.'vendor'.DIRECTORY_SEPARATOR;
             $codebase->scanner->scanFiles($codebase->classlikes);
+            $codebase->scanner->vendor_prefix = null;
 
             $progress->debug('Finished registering autoloaded files' . "\n");
 

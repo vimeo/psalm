@@ -142,6 +142,7 @@ final class FunctionLikeNodeScanner
         } else {
             $storage->location = new CodeLocation($this->file_scanner, $stmt, null, true);
         }
+        $storage->composer_package ??= $this->codebase->getComposerPackage($storage->location);
 
         $storage->stmt_location = new CodeLocation($this->file_scanner, $stmt);
 

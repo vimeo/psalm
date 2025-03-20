@@ -26,6 +26,8 @@ final class ClassLikeStorage implements HasAttributesInterface
     use CustomMetadataTrait;
     use UnserializeMemoryUsageSuppressionTrait;
 
+    public ?string $composer_package = null;
+
     /**
      * @var array<string, ClassConstantStorage>
      */

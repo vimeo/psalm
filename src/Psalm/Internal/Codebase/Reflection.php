@@ -80,6 +80,11 @@ final class Reflection
 
         $storage->potential_declaring_method_ids['__construct'][$class_name_lower . '::__construct'] = true;
 
+        $ext = $reflected_class->getExtensionName();
+        if ($ext !== false) {
+            $storage->composer_package = "ext-$ext";
+        }
+
         if ($reflected_parent_class) {
             $parent_class_name = $reflected_parent_class->getName();
             $this->registerClass($reflected_parent_class);
@@ -251,6 +256,10 @@ final class Reflection
 
         $storage = $class_storage->methods[$method_name_lc] = new MethodStorage();
 
+        $ext = $method->getExtensionName();
+        if ($ext !== false) {
+            $storage->composer_package = "ext-$ext";
+        }
         $storage->cased_name = $method->name;
         $storage->defining_fqcln = $method->class;
 
@@ -368,6 +377,11 @@ final class Reflection
             }
 
             $storage = self::$builtin_functions[$function_id] = new FunctionStorage();
+
+            $ext = $reflection_function->getExtensionName();
+            if ($ext !== false) {
+                $storage->composer_package = "ext-$ext";
+            }
 
             if (InternalCallMapHandler::inCallMap($function_id)) {
                 $callmap_callable = InternalCallMapHandler::getCallableFromCallMapById(

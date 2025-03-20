@@ -319,6 +319,34 @@ final class Codebase
         $this->loadAnalyzer();
     }
 
+    /** @internal */
+    public function getComposerPackage(CodeLocation $path): ?string {
+        $path = $path->file_path;
+        if ($this->register_autoload_files
+            && !$this->register_stub_files 
+            && !$this->config->isInProjectDirs($path)
+            && $this->scanner->vendor_prefix !== null
+            && str_starts_with($path, $this->scanner->vendor_prefix)
+        ) {
+            $l = strlen($this->scanner->vendor_prefix);
+            $pos = strpos($path, DIRECTORY_SEPARATOR, $l);
+            assert($pos !== false);
+            $pos = strpos(
+                $path,
+                DIRECTORY_SEPARATOR,
+                $pos+1
+            );
+            if ($pos !== false) {
+                return substr(
+                    $path,
+                    $l,
+                    $pos-$l
+                );
+            }
+        }
+        return null;
+    }
+
     private function loadAnalyzer(): void
     {
         $this->analyzer = new Analyzer(

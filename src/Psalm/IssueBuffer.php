@@ -17,6 +17,8 @@ use Psalm\Issue\ConfigIssue;
 use Psalm\Issue\MixedIssue;
 use Psalm\Issue\TaintedInput;
 use Psalm\Issue\UnusedBaselineEntry;
+use Psalm\Issue\UnusedComposerPackage;
+use Psalm\Issue\UnusedExtension;
 use Psalm\Issue\UnusedIssueHandlerSuppression;
 use Psalm\Issue\UnusedPsalmSuppress;
 use Psalm\Plugin\EventHandler\Event\AfterAnalysisEvent;
@@ -193,7 +195,11 @@ final class IssueBuffer
         $issue_type = array_pop($fqcn_parts);
         $file_path = $e->getFilePath();
 
-        if (!$e instanceof ConfigIssue && !$config->reportIssueInFile($issue_type, $file_path)) {
+        if (!$e instanceof ConfigIssue 
+            && !$e instanceof UnusedExtension
+            && !$e instanceof UnusedComposerPackage 
+            && !$config->reportIssueInFile($issue_type, $file_path)
+        ) {
             return true;
         }
 

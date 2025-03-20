@@ -138,6 +138,8 @@ final class Scanner
      */
     private array $reflected_classlikes_lc = [];
 
+    public ?string $vendor_prefix = null;
+
     private bool $is_forked = false;
 
     public function __construct(
@@ -518,6 +520,7 @@ final class Scanner
                             $function_storage,
                         );
                     }
+                    $function_storage->composer_package ??= $this->codebase->getComposerPackage($function_storage->location);
                 }
             }
             if ($this->codebase->register_autoload_files

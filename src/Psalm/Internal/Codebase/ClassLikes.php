@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Codebase;
 
+use Composer\XdebugHandler\XdebugHandler;
 use InvalidArgumentException;
 use PhpParser;
 use PhpParser\NodeTraverser;
@@ -30,7 +31,9 @@ use Psalm\Issue\PossiblyUnusedParam;
 use Psalm\Issue\PossiblyUnusedProperty;
 use Psalm\Issue\PossiblyUnusedReturnValue;
 use Psalm\Issue\UnusedClass;
+use Psalm\Issue\UnusedComposerPackage;
 use Psalm\Issue\UnusedConstructor;
+use Psalm\Issue\UnusedExtension;
 use Psalm\Issue\UnusedMethod;
 use Psalm\Issue\UnusedParam;
 use Psalm\Issue\UnusedProperty;
@@ -833,11 +836,19 @@ final class ClassLikes
         $project_analyzer = ProjectAnalyzer::getInstance();
         $codebase = $project_analyzer->getCodebase();
 
+        $unused_packages = $codebase->config->required_packages;
+
         foreach ($this->existing_classlikes_lc as $fq_class_name_lc => $_) {
             try {
                 $classlike_storage = $this->classlike_storage_provider->get($fq_class_name_lc);
             } catch (InvalidArgumentException) {
                 continue;
+            }
+
+            if ($classlike_storage->composer_package !== null
+                && $this->file_reference_provider->isClassReferenced($fq_class_name_lc)
+            ) {
+                unset($unused_packages[$classlike_storage->composer_package]);
             }
 
             if ($classlike_storage->location
@@ -930,6 +941,15 @@ final class ClassLikes
                     }
                 }
             }
+        }
+
+        foreach ($unused_packages as $package => $loc) {
+            if (str_starts_with($package, 'ext-')) {
+                $package = substr($package, 4);
+                IssueBuffer::maybeAdd(new UnusedExtension("Extension $package required in composer.json is not used in the project", $loc));
+                continue;
+            }
+            IssueBuffer::maybeAdd(new UnusedComposerPackage("Package $package required in composer.json is not used in the project", $loc));
         }
     }
 

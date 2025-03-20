@@ -360,7 +360,7 @@ final class FileReferenceProvider
     }
 
     /**
-     * @return  array<int, string>
+     * @return list<string>
      */
     private function calculateFilesReferencingFile(Codebase $codebase, string $file): array
     {
@@ -392,7 +392,7 @@ final class FileReferenceProvider
             }
         }
 
-        return array_unique($referenced_files);
+        return array_values(array_unique($referenced_files));
     }
 
     /**
