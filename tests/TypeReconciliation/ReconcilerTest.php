@@ -56,6 +56,7 @@ final class ReconcilerTest extends TestCase
         $this->statements_analyzer = new StatementsAnalyzer(
             $this->file_analyzer,
             new NodeDataProvider(),
+            false,
         );
 
         $this->addFile('newfile.php', '
@@ -162,9 +163,9 @@ final class ReconcilerTest extends TestCase
             'nullableClassStringTruthy' => ['class-string<SomeClass>', new Truthy(), 'class-string<SomeClass>|null'],
             'iterableToArray' => ['array<int, int>', new IsType(new TArray([Type::getArrayKey(), Type::getMixed()])), 'iterable<int, int>'],
             'iterableToTraversable' => ['Traversable<int, int>', new IsType(new TNamedObject('Traversable')), 'iterable<int, int>'],
-            'callableToCallableArray' => ['callable-array{class-string|object, non-empty-string}', new IsType(new TArray([Type::getArrayKey(), Type::getMixed()])), 'callable'],
-            'SmallKeyedArrayAndCallable' => ['array{test: string}', new IsType(new TKeyedArray(['test' => Type::getString()])), 'callable'],
-            'BigKeyedArrayAndCallable' => ['array{foo: string, test: string, thing: string}', new IsType(new TKeyedArray(['foo' => Type::getString(), 'test' => Type::getString(), 'thing' => Type::getString()])), 'callable'],
+            'callableToCallableArray' => ['callable-array{0: class-string|object, 1: non-empty-string}', new IsType(new TArray([Type::getArrayKey(), Type::getMixed()])), 'callable'],
+            'SmallKeyedArrayAndCallable' => ['array{test: string}', new IsType(TKeyedArray::make(['test' => Type::getString()])), 'callable'],
+            'BigKeyedArrayAndCallable' => ['array{foo: string, test: string, thing: string}', new IsType(TKeyedArray::make(['foo' => Type::getString(), 'test' => Type::getString(), 'thing' => Type::getString()])), 'callable'],
             'callableOrArrayToCallableArray' => ['array<array-key, mixed>', new IsType(new TArray([Type::getArrayKey(), Type::getMixed()])), 'callable|array'],
             'traversableToIntersection' => ['Countable&Traversable', new IsType(new TNamedObject('Traversable')), 'Countable'],
             'iterableWithoutParamsToTraversableWithoutParams' => ['Traversable', new IsNotType(new TArray([Type::getArrayKey(), Type::getMixed()])), 'iterable'],

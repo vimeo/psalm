@@ -1280,6 +1280,7 @@ final class ClassLikeNodeScanner
 
             try {
                 $var_comments = CommentAnalyzer::getTypeFromComment(
+                    $this->codebase,
                     $comment,
                     $this->file_scanner,
                     $this->aliases,
@@ -1592,6 +1593,7 @@ final class ClassLikeNodeScanner
 
             try {
                 $var_comments = CommentAnalyzer::getTypeFromComment(
+                    $this->codebase,
                     $comment,
                     $this->file_scanner,
                     $this->aliases,

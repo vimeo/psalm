@@ -19,7 +19,6 @@ use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
-use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -89,7 +88,6 @@ use Psalm\Type\MutableUnion;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_diff;
 use function array_keys;
 use function array_map;
 use function array_pop;
@@ -403,8 +401,8 @@ final class ArrayFetchAnalyzer
                 $var_location,
             );
 
-            $added_taints = [];
-            $removed_taints = [];
+            $added_taints = 0;
+            $removed_taints = 0;
 
             if ($context) {
                 $codebase = $statements_analyzer->getCodebase();
@@ -413,10 +411,9 @@ final class ArrayFetchAnalyzer
                 $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
                 $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
-                $taints = array_diff($added_taints, $removed_taints);
-                if ($taints !== [] && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
-                    $taint_source = TaintSource::fromNode($new_parent_node);
-                    $taint_source->taints = $taints;
+                $taints = $added_taints & ~$removed_taints;
+                if ($taints !== 0 && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+                    $taint_source = $new_parent_node->setTaints($taints);
                     $statements_analyzer->data_flow_graph->addSource($taint_source);
                 }
             }
@@ -1116,7 +1113,7 @@ final class ArrayFetchAnalyzer
 
                     $data_flow_graph->addPath(
                         $parent_node,
-                        new DataFlowNode('variable-use', 'variable use', null),
+                        DataFlowNode::getForVariableUse(),
                         'variable-use',
                     );
                 }
@@ -1169,7 +1166,7 @@ final class ArrayFetchAnalyzer
                     $from_mixed_array = $type->type_params[1]->isMixed();
 
                     // ok, type becomes a TKeyedArray
-                    $type = new TKeyedArray(
+                    $type = TKeyedArray::make(
                         [
                             $single_atomic->value => $from_mixed_array ? Type::getMixed() : Type::getNever(),
                         ],
@@ -1179,7 +1176,7 @@ final class ArrayFetchAnalyzer
                         $from_empty_array ? null : $type->type_params,
                     );
                 } elseif (!$stmt->dim && $from_empty_array && $replacement_type) {
-                    $type = new TKeyedArray(
+                    $type = TKeyedArray::make(
                         [$replacement_type],
                         null,
                         null,
@@ -1730,7 +1727,7 @@ final class ArrayFetchAnalyzer
 
                     if (!$stmt->dim) {
                         if ($type->is_list) {
-                            $type = new TKeyedArray(
+                            $type = TKeyedArray::make(
                                 $type->properties,
                                 null,
                                 [$new_key_type, $generic_params],

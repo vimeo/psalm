@@ -18,6 +18,7 @@ use Psalm\Internal\TypeVisitor\TypeScanner;
 use Psalm\StatementsSource;
 use Psalm\Storage\FileStorage;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
@@ -766,7 +767,7 @@ trait UnionTrait
             if ($t instanceof TTemplateParam) {
                 return true;
             }
-            
+
             if ($t instanceof TNamedObject) {
                 foreach ($t->extra_types as $sub) {
                     if ($sub instanceof TTemplateParam) {
@@ -1115,6 +1116,23 @@ trait UnionTrait
     public function isSingleStringLiteral(): bool
     {
         return count($this->types) === 1 && count($this->literal_string_types) === 1;
+    }
+
+
+    /**
+     * @psalm-mutation-free
+     * @return bool true if this type is a safe operand for string concatenation (int|string|array-key)
+     */
+    public function isConcatSafe(): bool
+    {
+        foreach ($this->types as $type) {
+            if (!($type instanceof TInt)
+            && !($type instanceof TString)
+            && !($type instanceof TArrayKey)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**

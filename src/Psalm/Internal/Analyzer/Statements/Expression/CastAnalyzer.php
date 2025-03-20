@@ -247,7 +247,7 @@ final class CastAnalyzer
 
                 foreach ($stmt_expr_type->getAtomicTypes() as $type) {
                     if ($type instanceof Scalar) {
-                        $keyed_array = new TKeyedArray([new Union([$type])], null, null, true);
+                        $keyed_array = TKeyedArray::make([new Union([$type])], null, null, true);
                         $permissible_atomic_types[] = $keyed_array;
                     } elseif ($type instanceof TNull) {
                         $permissible_atomic_types[] = new TArray([Type::getNever(), Type::getNever()]);
@@ -258,7 +258,7 @@ final class CastAnalyzer
                     } elseif ($type instanceof TObjectWithProperties) {
                         $array_type = $type->properties === []
                             ? Type::getArrayAtomic()
-                            : new TKeyedArray(
+                            : TKeyedArray::make(
                                 $type->properties,
                                 null,
                                 [Type::getArrayKey(), Type::getMixed()],

@@ -22,7 +22,7 @@ final class ArrayKeysTest extends TestCase
                     $keys = array_keys([]);
                 ',
                 'assertions' => [
-                    '$keys' => 'list<never>',
+                    '$keys' => 'array<never, never>',
                 ],
             ],
             'arrayKeysOfKeyedArrayReturnsNonEmptyListOfStrings' => [

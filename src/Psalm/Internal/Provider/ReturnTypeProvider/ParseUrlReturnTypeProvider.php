@@ -151,7 +151,7 @@ final class ParseUrlReturnTypeProvider implements FunctionReturnTypeProviderInte
             $component_types['port'] = new Union([new TInt()], ['possibly_undefined' => true]);
 
             self::$return_type = new Union([
-                new TKeyedArray(
+                TKeyedArray::make(
                     $component_types,
                     null,
                 ),

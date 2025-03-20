@@ -313,7 +313,7 @@ final class TryAnalyzer
                     if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
                         $statements_analyzer->data_flow_graph->addPath(
                             $catch_var_node,
-                            new DataFlowNode('variable-use', 'variable use', null),
+                            DataFlowNode::getForVariableUse(),
                             'variable-use',
                         );
                     }

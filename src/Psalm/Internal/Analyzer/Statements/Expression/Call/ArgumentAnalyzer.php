@@ -22,7 +22,6 @@ use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
-use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
@@ -65,7 +64,6 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_diff;
 use function array_filter;
 use function count;
 use function explode;
@@ -998,7 +996,7 @@ final class ArgumentAnalyzer
 
             $param_types_without_callable = array_filter(
                 $param_type->getAtomicTypes(),
-                static fn(Atomic $atomic) => !$atomic instanceof Atomic\TCallableInterface,
+                static fn(Atomic $atomic) => !$atomic->isCallableType(),
             );
             $param_type_without_callable = [] !== $param_types_without_callable
                 ? new Union($param_types_without_callable)
@@ -1894,10 +1892,9 @@ final class ArgumentAnalyzer
             );
         }
 
-        $taints = array_diff($added_taints, $removed_taints);
-        if ($taints !== [] && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
-            $taint_source = TaintSource::fromNode($argument_value_node);
-            $taint_source->taints = $taints;
+        $taints = $added_taints & ~$removed_taints;
+        if ($taints !== 0 && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+            $taint_source = $argument_value_node->setTaints($taints);
             $statements_analyzer->data_flow_graph->addSource($taint_source);
         }
     }

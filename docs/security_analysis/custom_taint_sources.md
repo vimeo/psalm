@@ -26,29 +26,70 @@ For example this plugin treats all variables named `$bad_data` as taint sources.
 namespace Psalm\Example\Plugin;
 
 use PhpParser\Node\Expr\Variable;
+use Psalm\Codebase;
 use Psalm\Plugin\EventHandler\AddTaintsInterface;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
-use Psalm\Type\TaintKindGroup;
+use Psalm\Type\TaintKind;
 
 /**
- * Add input taints to all variables named 'bad_data'
+ * Add input taints to all variables named 'bad_data' or 'even_badder_data'.
+ * 
+ * RemoveTaintsInterface is also available to remove taints.
  */
 class TaintBadDataPlugin implements AddTaintsInterface
 {
+    private static int $myCustomTaint;
+    private static int $myCustomTaintAlias;
+    /**
+     * Must be called by the PluginEntryPointInterface (__invoke) of your plugin.
+     */
+    public static function init(Codebase $codebase): void
+    {
+        // Register a new custom taint
+        // The taint name may be used in @psalm-taint-* annotations in the code.
+        self::$myCustomTaint = $codebase->getOrRegisterTaint("my_custom_taint");
+
+        // Register a taint alias that combines multiple pre-registered taint types
+        // Taint alias names may be used in @psalm-taint-* annotations in the code.
+        self::$myCustomTaintAlias = $codebase->registerTaintAlias(
+            "my_custom_taint_alias",
+            self::$myCustomTaint | TaintKind::ALL_INPUT
+        );
+    }
+
     /**
      * Called to see what taints should be added
      *
-     * @return list<string>
+     * @return int A bitmap of taint from the IDs
      */
-    public static function addTaints(AddRemoveTaintsEvent $event): array
+    public static function addTaints(AddRemoveTaintsEvent $event): int
     {
         $expr = $event->getExpr();
 
         if ($expr instanceof Variable && $expr->name === 'bad_data') {
-            return TaintKindGroup::ALL_INPUT;
+            return TaintKind::ALL_INPUT;
         }
 
-        return [];
+        if ($expr instanceof Variable && $expr->name === 'even_badder_data') {
+            return self::$myCustomTaint;
+        }
+
+        if ($expr instanceof Variable && $expr->name === 'even_badder_data_2') {
+            return self::$myCustomTaintAlias;
+        }
+
+        if ($expr instanceof Variable && $expr->name === 'secret_even_badder_data_3') {
+            // Combine taints using |
+            return self::$myCustomTaintAlias | USER_SECRET;
+        }
+
+        if ($expr instanceof Variable && $expr->name === 'bad_data_but_ok_cookie') {
+            // Remove taints using & and ~ to negate a taint (group)
+            return self::$myCustomTaintAlias & ~TaintKind::INPUT_COOKIE;
+        }
+
+        // No taints
+        return 0;
     }
 }
 ```

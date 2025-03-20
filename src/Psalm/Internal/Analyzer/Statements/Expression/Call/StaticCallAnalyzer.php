@@ -15,7 +15,6 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
-use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
@@ -29,7 +28,6 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
-use function array_merge;
 use function count;
 use function in_array;
 use function md5;
@@ -309,7 +307,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
-        $conditionally_removed_taints = [];
+        $conditionally_removed_taints = 0;
 
         if ($method_storage && $template_result) {
             foreach ($method_storage->conditionally_removed_taints as $conditionally_removed_taint) {
@@ -330,13 +328,16 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 );
 
                 foreach ($expanded_type->getLiteralStrings() as $literal_string) {
-                    $conditionally_removed_taints[] = $literal_string->value;
+                    $taint = $codebase->getOrRegisterTaint($literal_string->value, $method_storage->location);
+                    if ($taint !== null) {
+                        $conditionally_removed_taints |= $taint;
+                    }
                 }
             }
         }
 
-        $added_taints = [];
-        $removed_taints = [];
+        $added_taints = 0;
+        $removed_taints = 0;
 
         if ($context) {
             $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
@@ -357,7 +358,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $assignment_node,
                 'conditionally-escaped',
                 $added_taints,
-                [...$conditionally_removed_taints, ...$removed_taints],
+                $conditionally_removed_taints | $removed_taints,
             );
 
             $return_type_candidate = $return_type_candidate->addParentNodes([$assignment_node->id => $assignment_node]);
@@ -369,13 +370,13 @@ final class StaticCallAnalyzer extends CallAnalyzer
             && $method_storage->taint_source_types
             && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph
         ) {
-            $method_node = TaintSource::getForMethodReturn(
+            $method_node = DataFlowNode::getForMethodReturn(
                 (string) $method_id,
                 $cased_method_id,
                 $method_storage->signature_return_type_location ?: $method_storage->location,
+                null,
+                $method_storage->taint_source_types,
             );
-
-            $method_node->taints = $method_storage->taint_source_types;
 
             $statements_analyzer->data_flow_graph->addSource($method_node);
         }
@@ -389,7 +390,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $stmt->getArgs(),
                 $node_location,
                 $method_source,
-                array_merge($method_storage->removed_taints, $removed_taints),
+                $method_storage->removed_taints | $removed_taints,
                 $added_taints,
             );
         }

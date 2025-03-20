@@ -34,7 +34,6 @@ use RuntimeException;
 use Throwable;
 use UnexpectedValueException;
 
-use function array_filter;
 use function count;
 use function in_array;
 use function strtolower;
@@ -330,15 +329,13 @@ final class MethodCallReturnTypeFetcher
 
                 $parent_nodes = $context->vars_in_scope[$var_id]->parent_nodes;
 
-                $unspecialized_parent_nodes = array_filter(
-                    $parent_nodes,
-                    static fn(DataFlowNode $parent_node): bool => !$parent_node->specialization_key,
-                );
-
-                $specialized_parent_nodes = array_filter(
-                    $parent_nodes,
-                    static fn(DataFlowNode $parent_node): bool => (bool) $parent_node->specialization_key,
-                );
+                $unspecialized_parent_nodes = false;
+                foreach ($parent_nodes as $parent_node) {
+                    if ($parent_node->specialization_key === null) {
+                        $unspecialized_parent_nodes = true;
+                        break;
+                    }
+                }
 
                 $var_node = DataFlowNode::getForAssignment(
                     $var_id,
@@ -378,7 +375,11 @@ final class MethodCallReturnTypeFetcher
                     $method_call_nodes[$method_call_node->id] = $method_call_node;
                 }
 
-                foreach ($specialized_parent_nodes as $parent_node) {
+                foreach ($parent_nodes as $parent_node) {
+                    if ($parent_node->specialization_key === null) {
+                        continue;
+                    }
+
                     $universal_method_call_node = DataFlowNode::getForMethodReturn(
                         (string) $method_id,
                         $cased_method_id,
@@ -387,7 +388,7 @@ final class MethodCallReturnTypeFetcher
                         null,
                     );
 
-                    $method_call_node = new DataFlowNode(
+                    $method_call_node = DataFlowNode::make(
                         strtolower((string) $method_id),
                         $cased_method_id,
                         $is_declaring ? ($method_storage->signature_return_type_location
@@ -428,7 +429,7 @@ final class MethodCallReturnTypeFetcher
                     if (!$is_declaring) {
                         $cased_declaring_method_id = $codebase->methods->getCasedMethodId($declaring_method_id);
 
-                        $declaring_method_call_node = new DataFlowNode(
+                        $declaring_method_call_node = DataFlowNode::make(
                             strtolower((string) $declaring_method_id),
                             $cased_declaring_method_id,
                             $method_storage->signature_return_type_location ?: $method_storage->location,

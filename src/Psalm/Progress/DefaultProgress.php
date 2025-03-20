@@ -106,8 +106,7 @@ class DefaultProgress extends LongProgress
     {
         if ($this->number_of_tasks > self::TOO_MANY_FILES) {
             $this->write(str_repeat(' ', self::NUMBER_OF_COLUMNS + strlen($this->getOverview()) + 1) . "\r");
-        } else {
-            parent::finish();
         }
+        parent::finish();
     }
 }

@@ -125,7 +125,7 @@ final class ArgTest extends TestCase
                 'assertions' => [
                     '$a' => 'array{a: int, b: int}',
                     '$b' => 'non-empty-list<int>',
-                    '$c' => 'list<never>',
+                    '$c' => 'array<never, never>',
                 ],
             ],
             'arrayModificationFunctions' => [

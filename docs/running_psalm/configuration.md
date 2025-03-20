@@ -33,6 +33,12 @@ Configuration file may be split into several files using [XInclude](https://www.
 </projectFiles>
 ```
 
+## Different configuration file
+
+You can also create a different configuration file, then run Psalm with:
+```bash
+vendor/bin/psalm --config=other-psalm-config.xml
+```
 
 ## Optional &lt;psalm /&gt; attributes
 

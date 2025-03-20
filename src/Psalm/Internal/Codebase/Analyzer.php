@@ -25,6 +25,7 @@ use Psalm\Internal\Fork\ShutdownAnalyzerTask;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\IssueBuffer;
+use Psalm\Progress\Phase;
 use Psalm\Progress\Progress;
 use Psalm\Type;
 use Psalm\Type\Union;
@@ -248,7 +249,7 @@ final class Analyzer
         $scanned_files = $codebase->scanner->getScannedFiles();
 
         if ($codebase->taint_flow_graph) {
-            $codebase->taint_flow_graph->connectSinksAndSources();
+            $codebase->taint_flow_graph->connectSinksAndSources($codebase->progress);
         }
 
         $this->progress->finish();
@@ -281,7 +282,7 @@ final class Analyzer
         }
 
         if ($alter_code) {
-            $this->progress->startAlteringFiles();
+            $this->progress->startPhase(Phase::ALTERING);
 
             $project_analyzer->prepareMigration();
 
@@ -297,7 +298,7 @@ final class Analyzer
 
     private function doAnalysis(ProjectAnalyzer $project_analyzer, int $pool_size): void
     {
-        $this->progress->start(count($this->files_to_analyze));
+        $this->progress->expand(count($this->files_to_analyze));
 
         ksort($this->files_to_analyze);
 

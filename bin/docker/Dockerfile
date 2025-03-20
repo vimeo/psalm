@@ -63,9 +63,9 @@ ENV PHP_LDFLAGS="-Wl,-O1 -pie"
 
 ENV GPG_KEYS AFD8691FDAEDF03BDF6E460563F15A9B715376CA 9D7F99A0CB8F05C8A6958D6256A97AF7600A39A6 0616E93D95AF471243E26761770426E17EBBB3DD
 
-ENV PHP_VERSION 8.4.4
-ENV PHP_URL="https://www.php.net/distributions/php-8.4.4.tar.xz" PHP_ASC_URL="https://www.php.net/distributions/php-8.4.4.tar.xz.asc"
-ENV PHP_SHA256="05a6c9a2cc894dd8be719ecab221b311886d5e0c02cb6fac648dd9b3459681ac"
+ENV PHP_VERSION 8.4.5
+ENV PHP_URL="https://www.php.net/distributions/php-8.4.5.tar.xz" PHP_ASC_URL="https://www.php.net/distributions/php-8.4.5.tar.xz.asc"
+ENV PHP_SHA256="0d3270bbce4d9ec617befce52458b763fd461d475f1fe2ed878bb8573faed327"
 
 ADD bin/docker/deepbind.patch /
 

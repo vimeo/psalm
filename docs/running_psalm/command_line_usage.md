@@ -33,7 +33,9 @@ Currently, Shepherd tracks type coverage (the percentage of types Psalm can infe
 
 ## Running Psalm faster
 
-Psalm has a couple of command-line options that will result in faster builds:
+To run Psalm up to 50% faster, use the [official docker image](https://psalm.dev/docs/running_psalm/installation/#docker-image).  
+
+Psalm also has a couple of command-line options that will result in faster builds:
 
 - `--threads=[n]` to run Psalm’s analysis in a number of threads
 - `--diff` which only checks files you’ve updated since the last run (and their dependents).

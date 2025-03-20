@@ -172,7 +172,7 @@ final class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderI
                     if (!$properties) {
                         return Type::getEmptyArray();
                     }
-                    return new Union([new TKeyedArray(
+                    return new Union([TKeyedArray::make(
                         $properties,
                         null,
                         $input_array->fallback_params,

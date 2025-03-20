@@ -13,7 +13,6 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
-use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
 use Psalm\Type\Atomic\TLiteralFloat;
@@ -26,7 +25,6 @@ use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
 
-use function array_diff;
 use function in_array;
 
 /**
@@ -109,10 +107,9 @@ final class EncapsulatedStringAnalyzer
                     $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
                     $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
-                    $taints = array_diff($added_taints, $removed_taints);
-                    if ($taints !== [] && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
-                        $taint_source = TaintSource::fromNode($new_parent_node);
-                        $taint_source->taints = $taints;
+                    $taints = $added_taints & ~$removed_taints;
+                    if ($taints !== 0 && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+                        $taint_source = $new_parent_node->setTaints($taints);
                         $statements_analyzer->data_flow_graph->addSource($taint_source);
                     }
 

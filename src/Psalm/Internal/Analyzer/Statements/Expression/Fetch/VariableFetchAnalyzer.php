@@ -14,7 +14,6 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
-use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Issue\ImpureVariable;
 use Psalm\Issue\InvalidScope;
 use Psalm\Issue\PossiblyUndefinedGlobalVariable;
@@ -34,12 +33,9 @@ use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
-use Psalm\Type\TaintKindGroup;
+use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 
-use function array_diff;
-use function array_merge;
-use function array_unique;
 use function in_array;
 use function is_string;
 use function time;
@@ -467,41 +463,25 @@ final class VariableFetchAnalyzer
                 if ($context->inside_call || $context->inside_return) {
                     $statements_analyzer->data_flow_graph->addPath(
                         $parent_node,
-                        new DataFlowNode(
-                            'variable-use',
-                            'variable use',
-                            null,
-                        ),
+                        DataFlowNode::getForVariableUse(),
                         'use-inside-call',
                     );
                 } elseif ($context->inside_conditional) {
                     $statements_analyzer->data_flow_graph->addPath(
                         $parent_node,
-                        new DataFlowNode(
-                            'variable-use',
-                            'variable use',
-                            null,
-                        ),
+                        DataFlowNode::getForVariableUse(),
                         'use-inside-conditional',
                     );
                 } elseif ($context->inside_isset) {
                     $statements_analyzer->data_flow_graph->addPath(
                         $parent_node,
-                        new DataFlowNode(
-                            'variable-use',
-                            'variable use',
-                            null,
-                        ),
+                        DataFlowNode::getForVariableUse(),
                         'use-inside-isset',
                     );
                 } else {
                     $statements_analyzer->data_flow_graph->addPath(
                         $parent_node,
-                        new DataFlowNode(
-                            'variable-use',
-                            'variable use',
-                            null,
-                        ),
+                        DataFlowNode::getForVariableUse(),
                         'variable-use',
                     );
                 }
@@ -528,9 +508,9 @@ final class VariableFetchAnalyzer
             || $var_name === '$_COOKIE'
             || $var_name === '$_REQUEST'
         ) {
-            $taints = TaintKindGroup::ALL_INPUT;
+            $taints = TaintKind::ALL_INPUT;
         } else {
-            $taints = [];
+            $taints = 0;
         }
 
         // Trigger event to possibly get more/less taints
@@ -539,20 +519,20 @@ final class VariableFetchAnalyzer
 
         $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
         $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
-        $taints = array_unique(array_merge($taints, $added_taints));
-        $taints = array_diff($taints, $removed_taints);
+        $taints |= $added_taints;
+        $taints &= ~$removed_taints;
 
-        if ($taints === []) {
+        if ($taints === 0) {
             return;
         }
 
         $taint_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
-        $taint_source = new TaintSource(
-            $var_name . ':' . $taint_location->file_name . ':' . $taint_location->raw_file_start,
+        $taint_source = DataFlowNode::make(
+            $var_name,
             $var_name,
             null,
-            null,
+            $taint_location->file_name . ':' . $taint_location->raw_file_start,
             $taints,
         );
         $statements_analyzer->data_flow_graph->addSource($taint_source);
@@ -791,7 +771,7 @@ final class VariableFetchAnalyzer
                 $arr['argc'] = $argc_helper;
             }
 
-            $detailed_type = new TKeyedArray(
+            $detailed_type = TKeyedArray::make(
                 $arr,
                 null,
                 [Type::getNonEmptyString(), Type::getString()],
@@ -814,7 +794,7 @@ final class VariableFetchAnalyzer
                 $values['full_path'] = $str;
             }
 
-            $type = new Union([new TKeyedArray($values)]);
+            $type = new Union([TKeyedArray::make($values)]);
             $parent = new TArray([Type::getNonEmptyString(), $type]);
 
             return new Union([$parent]);
