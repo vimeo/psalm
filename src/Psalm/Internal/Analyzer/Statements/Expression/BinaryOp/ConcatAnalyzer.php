@@ -466,7 +466,7 @@ final class ConcatAnalyzer
 
         if (!$operand_type_match
             && (!$comparison_result->scalar_type_match_found
-                || (!$operand_type->isInt() && $config->strict_binary_operands)
+                || (!$operand_type->isConcatSafe() && $config->strict_binary_operands)
             )
         ) {
             if ($has_valid_operand) {
