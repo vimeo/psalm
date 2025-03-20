@@ -275,6 +275,88 @@ final class BinaryOperationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testConcatenationWithIntInStrictMode(): void
+    {
+        $config = Config::getInstance();
+        $config->strict_binary_operands = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    $a = "hi" . 5;',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testConcatenationWithArrayKeyInStrictMode(): void
+    {
+        $config = Config::getInstance();
+        $config->strict_binary_operands = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    interface I {
+                        /** @return array-key */
+                        public function t();
+                    }
+
+                    function test(I $i): void {
+                        $a = "hi" . $i->t();
+                    }
+                    ',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testConcatenationWithAllowedUnionTypeInStrictMode(): void
+    {
+        $config = Config::getInstance();
+        $config->strict_binary_operands = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    interface I {
+                        /** @return int|string */
+                        public function t();
+                    }
+
+                    function test(I $i): void {
+                        $a = "hi" . $i->t();
+                    }
+                    ',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testConcatenationWithBadUnionTypeInStrictMode(): void
+    {
+        $config = Config::getInstance();
+        $config->strict_binary_operands = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    interface I {
+                        /** @return int|float */
+                        public function t();
+                    }
+
+                    function test(I $i): void {
+                        $a = "hi" . $i->t();
+                    }
+                    ',
+        );
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('InvalidOperand');
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testImplicitStringConcatenation(): void
     {
         $config = Config::getInstance();
