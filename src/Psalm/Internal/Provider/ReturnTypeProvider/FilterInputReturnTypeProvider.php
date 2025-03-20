@@ -243,8 +243,7 @@ final class FilterInputReturnTypeProvider implements FunctionReturnTypeProviderI
             [$_, $input_type] = $array_atomic->type_params;
             $input_type = $input_type->setPossiblyUndefined(true);
         } else {
-            // this is impossible
-            throw new UnexpectedValueException('This should not happen');
+            return null;
         }
 
         return FilterUtils::getReturnType(
