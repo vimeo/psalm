@@ -154,7 +154,7 @@ final class FunctionLikeDocblockScanner
         if ($docblock_info->ignore_nullable_return
             && $storage->return_type
             && ($codebase->config->ignore_internal_nullable_issues
-                || !in_array($file_storage->file_path, $codebase->config->internal_stubs)
+                || !array_key_exists($file_storage->file_path, $codebase->config->internal_stubs)
             )
         ) {
             /** @psalm-suppress InaccessibleProperty We just created this type */
@@ -165,7 +165,7 @@ final class FunctionLikeDocblockScanner
         if ($docblock_info->ignore_falsable_return
             && $storage->return_type
             && ($codebase->config->ignore_internal_falsable_issues
-                || !in_array($file_storage->file_path, $codebase->config->internal_stubs)
+                || !array_key_exists($file_storage->file_path, $codebase->config->internal_stubs)
             )
         ) {
             /** @psalm-suppress InaccessibleProperty We just created this type */
@@ -1053,7 +1053,7 @@ final class FunctionLikeDocblockScanner
         if ($docblock_info->ignore_nullable_return
             && $storage->return_type
             && ($codebase->config->ignore_internal_nullable_issues
-                || !in_array($file_storage->file_path, $codebase->config->internal_stubs)
+                || !array_key_exists($file_storage->file_path, $codebase->config->internal_stubs)
             )
         ) {
             /** @psalm-suppress InaccessibleProperty We just created this type */
@@ -1064,7 +1064,7 @@ final class FunctionLikeDocblockScanner
         if ($docblock_info->ignore_falsable_return
             && $storage->return_type
             && ($codebase->config->ignore_internal_falsable_issues
-                || !in_array($file_storage->file_path, $codebase->config->internal_stubs)
+                || !array_key_exists($file_storage->file_path, $codebase->config->internal_stubs)
             )
         ) {
             /** @psalm-suppress InaccessibleProperty We just created this type */

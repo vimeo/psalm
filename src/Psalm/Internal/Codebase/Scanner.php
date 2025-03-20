@@ -163,8 +163,11 @@ final class Scanner
     public function getComposerPackage(CodeLocation $path): ?string
     {
         $path = $path->file_path;
-        if ($this->vendor_prefix !== null
-            && str_starts_with($path, $this->vendor_prefix)
+        $ext = $this->config->stub_files[$path] ?? null;
+        if ($ext !== null) {
+            return "ext-$ext";
+        }
+        if (str_starts_with($path, $this->vendor_prefix)
         ) {
             $l = strlen($this->vendor_prefix);
             $pos = strpos($path, DIRECTORY_SEPARATOR, $l);

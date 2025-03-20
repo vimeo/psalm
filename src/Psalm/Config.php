@@ -283,14 +283,23 @@ final class Config
     private array $mock_classes = [];
 
     /**
-     * @var array<string, string>
+     * @var array<string, null>
      */
     private array $preloaded_stub_files = [];
 
     /**
-     * @var array<string, string>
+     * @var array<string, null>
+     * 
+     * @internal
      */
-    private array $stub_files = [];
+    public array $internal_stubs = [];
+
+    /**
+     * @var array<string, ?lowercase-string>
+     * 
+     * @internal
+     */
+    public array $stub_files = [];
 
     public bool $hide_external_errors = false;
 
@@ -475,11 +484,6 @@ final class Config
      * @var 'default'|'never'|'always'
      */
     public string $trigger_error_exits = 'default';
-
-    /**
-     * @var string[]
-     */
-    public array $internal_stubs = [];
 
     /** @var ?int<1, max> */
     public ?int $threads = null;
@@ -1373,16 +1377,20 @@ final class Config
                     );
                 }
 
+                $preload_classes = false;
                 if (isset($stub_file['preloadClasses'])) {
                     $preload_classes = (string)$stub_file['preloadClasses'];
-
-                    if ($preload_classes === 'true' || $preload_classes === '1') {
-                        $config->addPreloadedStubFile($file_path);
-                    } else {
-                        $config->addStubFile($file_path);
-                    }
+                    $preload_classes = $preload_classes === 'true' || $preload_classes === '1';
+                }
+                $ext = null;
+                if (isset($stub_file['extension'])) {
+                    $ext = (string) $stub_file['extension'];
+                    $ext = $ext === '' ? null : strtolower($ext);
+                }
+                if ($preload_classes) {
+                    $config->addPreloadedStubFile($file_path, $ext);
                 } else {
-                    $config->addStubFile($file_path);
+                    $config->addStubFile($file_path, $ext);
                 }
             }
         }
@@ -2245,7 +2253,7 @@ final class Config
                 throw new UnexpectedValueException('Cannot locate PHP 8.0 classes');
             }
 
-            $core_generic_files[] = $stringable_path;
+            $core_generic_files[$stringable_path] = null;
         }
 
         if (PHP_VERSION_ID < 8_01_00 && $codebase->analysis_php_version_id >= 8_01_00) {
@@ -2255,7 +2263,7 @@ final class Config
                 throw new UnexpectedValueException('Cannot locate PHP 8.1 classes');
             }
 
-            $core_generic_files[] = $stringable_path;
+            $core_generic_files[$stringable_path] = null;
         }
 
         if (PHP_VERSION_ID < 8_02_00 && $codebase->analysis_php_version_id >= 8_02_00) {
@@ -2265,7 +2273,7 @@ final class Config
                 throw new UnexpectedValueException('Cannot locate PHP 8.2 classes');
             }
 
-            $core_generic_files[] = $stringable_path;
+            $core_generic_files[$stringable_path] = null;
         }
 
         if (PHP_VERSION_ID < 8_04_00 && $codebase->analysis_php_version_id >= 8_04_00) {
@@ -2275,7 +2283,7 @@ final class Config
                 throw new UnexpectedValueException('Cannot locate PHP 8.4 classes');
             }
 
-            $core_generic_files[] = $stringable_path;
+            $core_generic_files[$stringable_path] = null;
         }
 
         $stub_files = array_merge($core_generic_files, $this->preloaded_stub_files);
@@ -2284,7 +2292,7 @@ final class Config
             return;
         }
 
-        foreach ($stub_files as $file_path) {
+        foreach ($stub_files as $file_path => $_) {
             $file_path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $file_path);
             // fix mangled phar paths on Windows
             if (str_starts_with($file_path, 'phar:\\\\')) {
@@ -2315,46 +2323,40 @@ final class Config
         $dir_lvl_2 = dirname(__DIR__, 2);
         $stubsDir = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR;
         $this->internal_stubs = [
-            $stubsDir . 'CoreGenericFunctions.phpstub',
-            $stubsDir . 'CoreGenericClasses.phpstub',
-            $stubsDir . 'CoreGenericIterators.phpstub',
-            $stubsDir . 'CoreImmutableClasses.phpstub',
-            $stubsDir . 'Reflection.phpstub',
-            $stubsDir . 'SPL.phpstub',
-            $stubsDir . 'CoreGenericAttributes.phpstub',
+            $stubsDir . 'CoreGenericFunctions.phpstub' => null,
+            $stubsDir . 'CoreGenericClasses.phpstub' => null,
+            $stubsDir . 'CoreGenericIterators.phpstub' => null,
+            $stubsDir . 'CoreImmutableClasses.phpstub' => null,
+            $stubsDir . 'Reflection.phpstub' => null,
+            $stubsDir . 'SPL.phpstub' => null,
+            $stubsDir . 'CoreGenericAttributes.phpstub' => null,
         ];
 
         if ($codebase->analysis_php_version_id >= 7_04_00) {
-            $this->internal_stubs[] = $stubsDir . 'Php74.phpstub';
+            $this->internal_stubs[$stubsDir . 'Php74.phpstub'] = null;
         }
 
         if ($codebase->analysis_php_version_id >= 8_00_00) {
-            $this->internal_stubs[] = $stubsDir . 'Php80.phpstub';
+            $this->internal_stubs[$stubsDir . 'Php80.phpstub'] = null;
         }
 
         if ($codebase->analysis_php_version_id >= 8_01_00) {
-            $this->internal_stubs[] = $stubsDir . 'Php81.phpstub';
+            $this->internal_stubs[$stubsDir . 'Php81.phpstub'] = null;
         }
 
         if ($codebase->analysis_php_version_id >= 8_02_00) {
-            $this->internal_stubs[] = $stubsDir . 'Php82.phpstub';
+            $this->internal_stubs[$stubsDir . 'Php82.phpstub'] = null;
             $this->php_extensions['random'] = true; // random is a part of the PHP core starting from PHP 8.2
         }
 
         if ($codebase->analysis_php_version_id >= 8_04_00) {
-            $this->internal_stubs[] = $stubsDir . 'Php84.phpstub';
+            $this->internal_stubs[$stubsDir . 'Php84.phpstub'] = null;
         }
 
-        $ext_stubs_dir = $dir_lvl_2 . DIRECTORY_SEPARATOR . "stubs" . DIRECTORY_SEPARATOR . "extensions";
+        $ext_stubs_dir = $stubsDir . "extensions" . DIRECTORY_SEPARATOR;
         foreach ($this->php_extensions as $ext => $enabled) {
             if ($enabled) {
-                $this->internal_stubs[] = $ext_stubs_dir . DIRECTORY_SEPARATOR . "$ext.phpstub";
-            }
-        }
-
-        foreach ($this->internal_stubs as $stub_path) {
-            if (!file_exists($stub_path)) {
-                throw new UnexpectedValueException('Cannot locate ' . $stub_path);
+                $this->stub_files[$ext_stubs_dir . "$ext.phpstub"] = strtolower($ext);
             }
         }
 
@@ -2364,20 +2366,23 @@ final class Config
 
         if ($this->use_phpstorm_meta_path) {
             if (is_file($phpstorm_meta_path)) {
-                $stub_files[] = $phpstorm_meta_path;
+                $stub_files[$phpstorm_meta_path ] = null;
             } elseif (is_dir($phpstorm_meta_path)) {
                 $phpstorm_meta_path = (string) realpath($phpstorm_meta_path);
                 $phpstorm_meta_files = glob($phpstorm_meta_path . '/*.meta.php', GLOB_NOSORT);
 
                 foreach ($phpstorm_meta_files ?: [] as $glob) {
                     if (is_file($glob) && realpath(dirname($glob)) === $phpstorm_meta_path) {
-                        $stub_files[] = $glob;
+                        $stub_files[$glob] = null;
                     }
                 }
             }
         }
 
-        foreach ($stub_files as $file_path) {
+        foreach ($stub_files as $file_path => $_) {
+            if (!file_exists($file_path)) {
+                throw new UnexpectedValueException('Cannot locate ' . $file_path);
+            }
             $file_path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $file_path);
             // fix mangled phar paths on Windows
             if (str_starts_with($file_path, 'phar:\\\\')) {
@@ -2667,27 +2672,30 @@ final class Config
         }
     }
 
-    public function addStubFile(string $stub_file): void
+    /** @param ?lowercase-string $extension */
+    public function addStubFile(string $stub_file, ?string $extension = null): void
     {
-        $this->stub_files[$stub_file] = $stub_file;
+        $this->stub_files[$stub_file] = $extension;
     }
 
     public function hasStubFile(string $stub_file): bool
     {
-        return isset($this->stub_files[$stub_file]);
+        return array_key_exists($stub_file, $this->stub_files);
     }
 
     /**
-     * @return array<string, string>
+     * @return array<string, ?lowercase-string>
      */
     public function getStubFiles(): array
     {
         return $this->stub_files;
     }
 
-    public function addPreloadedStubFile(string $stub_file): void
+    /** @param ?lowercase-string $extension */
+    public function addPreloadedStubFile(string $stub_file, ?string $extension = null): void
     {
-        $this->preloaded_stub_files[$stub_file] = $stub_file;
+        $this->preloaded_stub_files[$stub_file] = null;
+        $this->stub_files[$stub_file] = $extension;
     }
 
     public function getPhpVersion(): ?string

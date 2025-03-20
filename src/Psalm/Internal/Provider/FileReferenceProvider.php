@@ -31,7 +31,7 @@ final class FileReferenceProvider
     private bool $loaded_from_cache = false;
 
     /**
-     * @var array<string, true>
+     * @var array<lowercase-string, true>
      */
     private static array $references_to_packages = [];
 
@@ -1069,7 +1069,7 @@ final class FileReferenceProvider
     }
 
     /**
-     * @param array<lowercase-string, bool> $references
+     * @param array<lowercase-string, true> $references
      */
     public function setReferencesToPackages(array $references): void
     {

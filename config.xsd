@@ -114,6 +114,7 @@
     <xs:complexType name="StubsAttributeType">
         <xs:attribute name="name" type="xs:string" use="required" />
         <xs:attribute name="preloadClasses" type="xs:boolean" default="false" />
+        <xs:attribute name="extension" type="xs:string" default="" />
         <xs:anyAttribute processContents="skip" />
     </xs:complexType>
 

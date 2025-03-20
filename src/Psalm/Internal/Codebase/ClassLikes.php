@@ -950,6 +950,10 @@ final class ClassLikes
                 IssueBuffer::maybeAdd(new UnusedExtension("Extension $package required in composer.json is not used in the project", $loc));
                 continue;
             }
+            // TODO: check with actual version constraint
+            if (str_starts_with($package, 'symfony/polyfill-php')) {
+                continue;
+            }
             IssueBuffer::maybeAdd(new UnusedComposerPackage("Package $package required in composer.json is not used in the project", $loc));
         }
     }

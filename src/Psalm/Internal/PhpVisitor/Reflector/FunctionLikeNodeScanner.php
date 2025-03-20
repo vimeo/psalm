@@ -181,7 +181,7 @@ final class FunctionLikeNodeScanner
             }
 
             if ($param_storage->name === 'haystack'
-                && in_array($this->file_path, $this->codebase->config->internal_stubs)
+                && array_key_exists($this->file_path, $this->codebase->config->internal_stubs)
             ) {
                 $param_storage->expect_variable = true;
             }
