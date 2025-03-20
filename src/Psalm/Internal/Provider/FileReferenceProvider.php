@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Psalm\Internal\Provider;
 
 use Psalm\CodeLocation;
-use Psalm\Codebase;
 use Psalm\CodeLocation\ComposerJsonLocation;
+use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Codebase\Analyzer;
@@ -16,6 +16,7 @@ use function array_filter;
 use function array_keys;
 use function array_merge;
 use function array_unique;
+use function array_values;
 use function explode;
 
 /**

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Codebase;
 
-use Composer\XdebugHandler\XdebugHandler;
 use InvalidArgumentException;
 use PhpParser;
 use PhpParser\NodeTraverser;
@@ -65,6 +64,7 @@ use function implode;
 use function preg_match;
 use function preg_quote;
 use function preg_replace;
+use function str_starts_with;
 use function strlen;
 use function strrpos;
 use function strtolower;

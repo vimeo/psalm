@@ -251,7 +251,7 @@ final class ClassLikeNodeScanner
         $storage->stubbed = $this->codebase->register_stub_files;
         $storage->aliases = $this->aliases;
 
-        $storage->composer_package ??= $this->codebase->getComposerPackage($class_location);
+        $storage->composer_package ??= $this->codebase->scanner->getComposerPackage($class_location);
 
         if ($node instanceof PhpParser\Node\Stmt\Class_) {
             $storage->abstract = $node->isAbstract();

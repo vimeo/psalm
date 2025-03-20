@@ -195,9 +195,9 @@ final class IssueBuffer
         $issue_type = array_pop($fqcn_parts);
         $file_path = $e->getFilePath();
 
-        if (!$e instanceof ConfigIssue 
+        if (!$e instanceof ConfigIssue
             && !$e instanceof UnusedExtension
-            && !$e instanceof UnusedComposerPackage 
+            && !$e instanceof UnusedComposerPackage
             && !$config->reportIssueInFile($issue_type, $file_path)
         ) {
             return true;

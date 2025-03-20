@@ -84,6 +84,7 @@ use function is_file;
 use function is_resource;
 use function is_string;
 use function json_decode;
+use function json_encode;
 use function libxml_clear_errors;
 use function libxml_get_errors;
 use function libxml_use_internal_errors;
@@ -118,6 +119,7 @@ use function version_compare;
 use const DIRECTORY_SEPARATOR;
 use const GLOB_NOSORT;
 use const JSON_THROW_ON_ERROR;
+use const JSON_UNESCAPED_SLASHES;
 use const LIBXML_ERR_ERROR;
 use const LIBXML_ERR_FATAL;
 use const LIBXML_NONET;
@@ -484,9 +486,9 @@ final class Config
     /** @var ?int<1, max> */
     public ?int $scan_threads = null;
 
-    /** 
+    /**
      * @internal
-     * @var array<lowercase-string, ComposerJsonLocation> 
+     * @var array<lowercase-string, ComposerJsonLocation>
      */
     public array $required_packages = [];
 
@@ -1020,12 +1022,12 @@ final class Config
                     continue;
                 }
                 $chunk = (string)json_encode($required, JSON_UNESCAPED_SLASHES).": ".(string)json_encode($ver, JSON_UNESCAPED_SLASHES);
-                $pos = (int) strpos($composer_json_contents, $chunk); 
+                $pos = (int) strpos($composer_json_contents, $chunk);
                 $location = new ComposerJsonLocation(
                     $composer_json_path,
                     $pos,
                     $pos+strlen($chunk),
-                    substr_count($composer_json_contents, "\n", 0, $pos)
+                    substr_count($composer_json_contents, "\n", 0, $pos),
                 );
                 $config->required_packages[strtolower($required)] = $location;
             }
@@ -2529,9 +2531,7 @@ final class Config
                 $codebase->scanner->addFileToDeepScan($file_path);
             }
 
-            $codebase->scanner->vendor_prefix = $project_analyzer->getConfig()->base_dir.DIRECTORY_SEPARATOR.'vendor'.DIRECTORY_SEPARATOR;
             $codebase->scanner->scanFiles($codebase->classlikes);
-            $codebase->scanner->vendor_prefix = null;
 
             $progress->debug('Finished registering autoloaded files' . "\n");
 
