@@ -33,6 +33,7 @@ use Psalm\Issue\UnusedClass;
 use Psalm\Issue\UnusedComposerPackage;
 use Psalm\Issue\UnusedConstructor;
 use Psalm\Issue\UnusedExtension;
+use Psalm\Issue\UnusedIssueHandlerSuppression;
 use Psalm\Issue\UnusedMethod;
 use Psalm\Issue\UnusedParam;
 use Psalm\Issue\UnusedProperty;
@@ -64,6 +65,7 @@ use function implode;
 use function preg_match;
 use function preg_quote;
 use function preg_replace;
+use function str_contains;
 use function str_starts_with;
 use function strlen;
 use function strrpos;
@@ -944,8 +946,14 @@ final class ClassLikes
             }
         }
 
+        $ignore = $codebase->config->ignore_unused_packages;
+
         foreach ($unused_packages as $package => $loc) {
-            if (str_starts_with($package, 'ext-')) {
+            if (isset($ignore[$package])) {
+                unset($ignore[$package]);
+                continue;
+            }
+            if (str_starts_with($package, 'ext-') && !str_contains($package, '/')) {
                 $package = substr($package, 4);
                 IssueBuffer::maybeAdd(new UnusedExtension("Extension $package required in composer.json is not used in the project", $loc));
                 continue;
@@ -955,6 +963,23 @@ final class ClassLikes
                 continue;
             }
             IssueBuffer::maybeAdd(new UnusedComposerPackage("Package $package required in composer.json is not used in the project", $loc));
+        }
+
+        foreach ($ignore as $package => $loc) {
+            if (str_starts_with($package, 'ext-') && !str_contains($package, '/')) {
+                $package = substr($package, 4);
+                IssueBuffer::maybeAdd(new UnusedIssueHandlerSuppression(
+                    "Extension $package ignored in the Psalm configuration file using ignoreUnusedExtensions"
+                    ." and required in composer.json is actually used in the project",
+                    $loc,
+                ));
+                continue;
+            }
+            IssueBuffer::maybeAdd(new UnusedIssueHandlerSuppression(
+                "Package $package ignored in the Psalm configuration file using ignoreUnusedComposerPackages"
+                ." and required in composer.json is actually used in the project",
+                $loc,
+            ));
         }
     }
 

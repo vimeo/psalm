@@ -51,11 +51,11 @@ use Psalm\Type\Union;
 
 use function array_any;
 use function array_filter;
+use function array_key_exists;
 use function array_merge;
 use function array_values;
 use function count;
 use function explode;
-use function in_array;
 use function preg_last_error_msg;
 use function preg_match;
 use function preg_replace;

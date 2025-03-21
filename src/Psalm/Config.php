@@ -289,14 +289,12 @@ final class Config
 
     /**
      * @var array<string, null>
-     * 
      * @internal
      */
     public array $internal_stubs = [];
 
     /**
      * @var array<string, ?lowercase-string>
-     * 
      * @internal
      */
     public array $stub_files = [];
@@ -495,6 +493,11 @@ final class Config
      * @var array<lowercase-string, ComposerJsonLocation>
      */
     public array $required_packages = [];
+
+    /**
+     * @var array<lowercase-string, ComposerJsonLocation>
+     */
+    public array $ignore_unused_packages = [];
 
     /**
      * A list of php extensions supported by Psalm.
@@ -1021,8 +1024,7 @@ final class Config
                 assert(is_string($required));
                 if (str_starts_with($required, "ext-")) {
                     $required_extensions[strtolower(substr($required, 4))] = true;
-                }
-                if (!str_contains($required, '/')) {
+                } elseif (!str_contains($required, '/')) {
                     continue;
                 }
                 $chunk = (string)json_encode($required, JSON_UNESCAPED_SLASHES).": ".(string)json_encode($ver, JSON_UNESCAPED_SLASHES);
@@ -1059,6 +1061,35 @@ final class Config
                 $extensionName = (string) $extension["name"];
                 assert(array_key_exists($extensionName, $config->php_extensions));
                 $config->php_extensions[$extensionName] = false;
+            }
+        }
+
+        if (isset($config_xml->ignoreUnusedExtensions) && isset($config_xml->ignoreUnusedExtensions->extension)) {
+            foreach ($config_xml->ignoreUnusedExtensions->extension as $extension) {
+                assert(isset($extension["name"]));
+                $extensionName = 'ext-'.strtolower((string) $extension["name"]);
+                if (!isset($config->required_packages[$extensionName])) {
+                    $extensionName = substr($extensionName, 4);
+                    throw new ConfigException(
+                        "The extension $extensionName was ignored in the Psalm configuration file".
+                        " (ignoreUnusedExtensions), but it is not required by the composer.json file!",
+                    );
+                }
+                $config->ignore_unused_packages[$extensionName] = $config->required_packages[$extensionName];
+            }
+        }
+
+        if (isset($config_xml->ignoreUnusedComposerPackages) && isset($config_xml->ignoreUnusedComposerPackages->package)) {
+            foreach ($config_xml->ignoreUnusedComposerPackages->package as $package) {
+                assert(isset($package["name"]));
+                $packageName = strtolower((string) $package["name"]);
+                if (!isset($config->required_packages[$packageName])) {
+                    throw new ConfigException(
+                        "The composer package $packageName was ignored in the Psalm configuration file"
+                        ." (ignoreUnusedComposerPackages), but it is not required by the composer.json file!",
+                    );
+                }
+                $config->ignore_unused_packages[$packageName] = $config->required_packages[$packageName];
             }
         }
 

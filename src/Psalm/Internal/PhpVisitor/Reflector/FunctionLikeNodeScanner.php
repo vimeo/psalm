@@ -53,13 +53,13 @@ use Psalm\Type\Union;
 use ReflectionFunction;
 use UnexpectedValueException;
 
+use function array_key_exists;
 use function array_keys;
 use function array_pop;
 use function array_search;
 use function count;
 use function end;
 use function explode;
-use function in_array;
 use function is_string;
 use function spl_object_id;
 use function str_contains;

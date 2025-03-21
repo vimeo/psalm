@@ -198,6 +198,7 @@ final class IssueBuffer
         if (!$e instanceof ConfigIssue
             && !$e instanceof UnusedExtension
             && !$e instanceof UnusedComposerPackage
+            && !$e instanceof UnusedIssueHandlerSuppression
             && !$config->reportIssueInFile($issue_type, $file_path)
         ) {
             return true;
