@@ -44,6 +44,7 @@ class DefaultProgress extends LongProgress
             ) {
                 return;
             }
+
             $this->previous_update_seconds = $seconds;
             $this->previous_update_nseconds = $nseconds;
 
