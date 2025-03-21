@@ -33,6 +33,7 @@ use Psalm\Issue\UnusedClass;
 use Psalm\Issue\UnusedComposerPackage;
 use Psalm\Issue\UnusedConstructor;
 use Psalm\Issue\UnusedExtension;
+use Psalm\Issue\UnusedFunction;
 use Psalm\Issue\UnusedIssueHandlerSuppression;
 use Psalm\Issue\UnusedMethod;
 use Psalm\Issue\UnusedParam;
@@ -53,6 +54,7 @@ use ReflectionProperty;
 use UnexpectedValueException;
 
 use function array_filter;
+use function array_key_exists;
 use function array_keys;
 use function array_merge;
 use function array_pop;
@@ -839,7 +841,31 @@ final class ClassLikes
         $codebase = $project_analyzer->getCodebase();
 
         $unused_packages = $codebase->config->required_packages;
-        $codebase->file_reference_provider->removeReferencedPackages($unused_packages);
+
+        $referenced_functions = $this->file_reference_provider->getAllReferencesToFunctions();
+        foreach ($codebase->file_storage_provider->getAll() as $f => $storage) {
+            if (!array_key_exists($f, $referenced_functions)) {
+                continue;
+            }
+            $reffed = $referenced_functions[$f];
+            foreach ($storage->functions as $name => $storage) {
+                if (array_key_exists($name, $reffed)) {
+                    $composer = $storage->composer_package;
+                    if ($composer !== null) {
+                        unset($unused_packages[$composer]);
+                    }
+                } elseif ($find_unused_code && $storage->location !== null) {
+                    IssueBuffer::maybeAdd(
+                        new UnusedFunction(
+                            'Function ' . $storage->cased_name . ' is never used',
+                            $storage->location,
+                            strtolower($name),
+                        ),
+                        $storage->suppressed_issues,
+                    );
+                }
+            }
+        }
 
         foreach ($this->existing_classlikes_lc as $fq_class_name_lc => $_) {
             try {

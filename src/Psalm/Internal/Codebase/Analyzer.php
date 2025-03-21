@@ -68,7 +68,7 @@ use const PHP_INT_MAX;
  * @psalm-type  WorkerData = array{
  *      issues: array<string, list<IssueData>>,
  *      fixable_issue_counts: array<string, int>,
- *      references_to_packages: array<lowercase-string, true>,
+ *      references_to_functions: array<string, array<lowercase-string, true>>,
  *      nonmethod_references_to_classes: array<string, array<string,bool>>,
  *      method_references_to_classes: array<string, array<string,bool>>,
  *      file_references_to_class_members: array<string, array<string,bool>>,
@@ -343,7 +343,7 @@ final class Analyzer
                     $codebase->taint_flow_graph->addGraph($pool_data['taint_data']);
                 }
 
-                $codebase->file_reference_provider->addReferencesToPackages($pool_data['references_to_packages']);
+                $codebase->file_reference_provider->addReferencesToFunctions($pool_data['references_to_functions']);
 
                 $codebase->file_reference_provider->addNonMethodReferencesToClasses(
                     $pool_data['nonmethod_references_to_classes'],

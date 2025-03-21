@@ -362,6 +362,7 @@ These issues are treated as errors at level 7 and below.
  - [UnusedDocblockParam](issues/UnusedDocblockParam.md)
  - [UnusedExtension](issues/UnusedExtension.md)
  - [UnusedForeachValue](issues/UnusedForeachValue.md)
+ - [UnusedFunction](issues/UnusedFunction.md)
  - [UnusedMethod](issues/UnusedMethod.md)
  - [UnusedParam](issues/UnusedParam.md)
  - [UnusedProperty](issues/UnusedProperty.md)

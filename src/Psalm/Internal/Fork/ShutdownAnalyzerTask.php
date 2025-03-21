@@ -38,7 +38,7 @@ final class ShutdownAnalyzerTask implements Task
         return [
             'issues'                                     => IssueBuffer::getIssuesData(),
             'fixable_issue_counts'                       => IssueBuffer::getFixableIssues(),
-            'references_to_packages'                     => $file_reference_provider->getAllReferencesToPackages(),
+            'references_to_functions'                    => $file_reference_provider->getAllReferencesToFunctions(),
             'nonmethod_references_to_classes'            => $file_reference_provider->getAllNonMethodReferencesToClasses(),
             'method_references_to_classes'               => $file_reference_provider->getAllMethodReferencesToClasses(),
             'file_references_to_class_members'           => $file_reference_provider->getAllFileReferencesToClassMembers(),

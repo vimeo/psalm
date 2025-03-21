@@ -158,9 +158,11 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             }
         }
 
-        $codebase->file_reference_provider->addReferenceToPackage(
-            $function_call_info->function_storage?->composer_package,
-        );
+        if ($function_call_info->function_storage instanceof FunctionStorage) {
+            $codebase->file_reference_provider->addReferenceToFunction(
+                $function_call_info->function_storage,
+            );
+        }
 
         $set_inside_conditional = false;
 

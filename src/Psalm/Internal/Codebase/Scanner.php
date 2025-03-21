@@ -558,7 +558,6 @@ final class Scanner
                             $function_storage,
                         );
                     }
-                    $function_storage->composer_package ??= $this->getComposerPackage($function_storage->location);
                 }
             }
             if ($this->codebase->register_autoload_files
