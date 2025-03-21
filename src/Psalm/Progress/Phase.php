@@ -16,4 +16,5 @@ enum Phase
     case TAINT_GRAPH_RESOLUTION;
     case JIT_COMPILATION;
     case PRELOADING;
+    case MERGING_THREAD_RESULTS;
 }

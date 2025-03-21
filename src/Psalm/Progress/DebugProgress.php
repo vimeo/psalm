@@ -34,6 +34,7 @@ final class DebugProgress extends Progress
             Phase::TAINT_GRAPH_RESOLUTION => "\nResolving taint graph...\n",
             Phase::JIT_COMPILATION => "\nJIT compilation in progress...\n",
             Phase::PRELOADING => "\nPreloading in progress...\n",
+            Phase::MERGING_THREAD_RESULTS => "\nMerging thread results...\n",
         });
     }
     

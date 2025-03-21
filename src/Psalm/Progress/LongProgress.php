@@ -52,11 +52,13 @@ class LongProgress extends Progress
             Phase::TAINT_GRAPH_RESOLUTION => "\n\nResolving taint graph...\n\n",
             Phase::JIT_COMPILATION => "JIT compilation in progress...\n\n",
             Phase::PRELOADING => "Preloading in progress...\n\n",
+            Phase::MERGING_THREAD_RESULTS => "\nMerging thread results...\n\n",
         });
         $this->fixed_size = $phase === Phase::ANALYSIS
             || $phase === Phase::ALTERING
             || $phase === Phase::JIT_COMPILATION
-            || $phase === Phase::PRELOADING;
+            || $phase === Phase::PRELOADING
+            || $phase === Phase::MERGING_THREAD_RESULTS;
     }
 
     protected function reportPhaseDuration(?Phase $newPhase = null): void
@@ -75,6 +77,7 @@ class LongProgress extends Progress
                 Phase::TAINT_GRAPH_RESOLUTION => "\n\nTaint graph resolution took $took seconds.\n",
                 Phase::JIT_COMPILATION => "JIT compilation took $took seconds.\n\n",
                 Phase::PRELOADING => "Preloading took $took seconds.\n\n",
+                Phase::MERGING_THREAD_RESULTS => "\n\nMerging thread results took $took seconds.\n\n",
             });
         }
         $this->started = microtime(true);
@@ -126,7 +129,12 @@ class LongProgress extends Progress
 
 
         if (($this->progress % self::NUMBER_OF_COLUMNS) !== 0) {
-            return;
+            if ($this->progress !== $this->number_of_tasks) {
+                return;
+            }
+            if ($this->number_of_tasks > self::NUMBER_OF_COLUMNS) {
+                $this->write(str_repeat(' ', self::NUMBER_OF_COLUMNS - ($this->progress % self::NUMBER_OF_COLUMNS)));
+            }
         }
 
         $this->printOverview();

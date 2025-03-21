@@ -322,6 +322,8 @@ final class Analyzer
             $forked_pool_data = $pool->runAll(new ShutdownAnalyzerTask);
 
             $this->progress->debug('Collecting forked analysis results' . "\n");
+            $this->progress->startPhase(Phase::MERGING_THREAD_RESULTS);
+            $this->progress->expand(count($forked_pool_data));
 
             foreach (Future::iterate($forked_pool_data) as $pool_data) {
                 $pool_data = $pool_data->await();
@@ -432,6 +434,8 @@ final class Analyzer
                     $this->type_map[$file_path] = $type_map;
                     $this->argument_map[$file_path] = $argument_map;
                 }
+
+                $this->progress->taskDone(0);
             }
         } else {
             foreach ($this->files_to_analyze as $file_path => $_) {
