@@ -1027,7 +1027,8 @@ final class Config
                 } elseif (!str_contains($required, '/')) {
                     continue;
                 }
-                $chunk = (string)json_encode($required, JSON_UNESCAPED_SLASHES).": ".(string)json_encode($ver, JSON_UNESCAPED_SLASHES);
+                $chunk = (string)json_encode($required, JSON_UNESCAPED_SLASHES)
+                    .": ".(string)json_encode($ver, JSON_UNESCAPED_SLASHES);
                 $pos = (int) strpos($composer_json_contents, $chunk);
                 $location = new ComposerJsonLocation(
                     $composer_json_path,
@@ -1079,7 +1080,8 @@ final class Config
             }
         }
 
-        if (isset($config_xml->ignoreUnusedComposerPackages) && isset($config_xml->ignoreUnusedComposerPackages->package)) {
+        if (isset($config_xml->ignoreUnusedComposerPackages)
+            && isset($config_xml->ignoreUnusedComposerPackages->package)) {
             foreach ($config_xml->ignoreUnusedComposerPackages->package as $package) {
                 assert(isset($package["name"]));
                 $packageName = strtolower((string) $package["name"]);
