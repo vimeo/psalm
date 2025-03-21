@@ -53,13 +53,13 @@ use Psalm\Type\Union;
 use ReflectionFunction;
 use UnexpectedValueException;
 
+use function array_key_exists;
 use function array_keys;
 use function array_pop;
 use function array_search;
 use function count;
 use function end;
 use function explode;
-use function in_array;
 use function is_string;
 use function spl_object_id;
 use function str_contains;
@@ -142,6 +142,7 @@ final class FunctionLikeNodeScanner
         } else {
             $storage->location = new CodeLocation($this->file_scanner, $stmt, null, true);
         }
+        $storage->composer_package ??= $this->codebase->scanner->getComposerPackage($storage->location);
 
         $storage->stmt_location = new CodeLocation($this->file_scanner, $stmt);
 
@@ -180,7 +181,7 @@ final class FunctionLikeNodeScanner
             }
 
             if ($param_storage->name === 'haystack'
-                && in_array($this->file_path, $this->codebase->config->internal_stubs)
+                && array_key_exists($this->file_path, $this->codebase->config->internal_stubs)
             ) {
                 $param_storage->expect_variable = true;
             }

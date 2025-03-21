@@ -9,13 +9,16 @@ use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Codebase\Analyzer;
+use Psalm\Storage\FunctionStorage;
 use UnexpectedValueException;
 
 use function array_filter;
 use function array_keys;
 use function array_merge;
 use function array_unique;
+use function array_values;
 use function explode;
+use function strtolower;
 
 /**
  * Used to determine which files reference other files, necessary for using the --diff
@@ -27,6 +30,13 @@ use function explode;
 final class FileReferenceProvider
 {
     private bool $loaded_from_cache = false;
+
+    /**
+     * Filepath => (function_id => true)
+     *
+     * @var array<lowercase-string, array<string, true>>
+     */
+    private static array $references_to_functions = [];
 
     /**
      * A lookup table used for getting all the references to a class not inside a method
@@ -184,6 +194,32 @@ final class FileReferenceProvider
         }
 
         return self::$deleted_files;
+    }
+
+    public function addReferenceToFunction(FunctionStorage $storage): void
+    {
+        $f = $storage->location?->file_name;
+        if ($f !== null && $storage->cased_name !== null) {
+            self::$references_to_functions[strtolower($f)][$storage->cased_name] = true;
+        }
+    }
+    /**
+     * @return array<lowercase-string, array<string, true>>
+     */
+    public function getAllReferencesToFunctions(): array
+    {
+        return self::$references_to_functions;
+    }
+
+    /**
+     * @param array<lowercase-string, array<string, true>> $references
+     */
+    public function addReferencesToFunctions(array $references): void
+    {
+        foreach ($references as $f => $refs) {
+            self::$references_to_functions[$f] ??= [];
+            self::$references_to_functions[$f] += $refs;
+        }
     }
 
     /**
@@ -360,7 +396,7 @@ final class FileReferenceProvider
     }
 
     /**
-     * @return  array<int, string>
+     * @return list<string>
      */
     private function calculateFilesReferencingFile(Codebase $codebase, string $file): array
     {
@@ -392,7 +428,7 @@ final class FileReferenceProvider
             }
         }
 
-        return array_unique($referenced_files);
+        return array_values(array_unique($referenced_files));
     }
 
     /**
@@ -1023,6 +1059,14 @@ final class FileReferenceProvider
     }
 
     /**
+     * @param array<lowercase-string, array<string, true>> $references
+     */
+    public function setReferencesToFunctions(array $references): void
+    {
+        self::$references_to_functions = $references;
+    }
+
+    /**
      * @param array<string, array<string,bool>> $references
      */
     public function setCallingMethodReferencesToClasses(array $references): void
@@ -1275,5 +1319,6 @@ final class FileReferenceProvider
         self::$method_param_uses = [];
         self::$classlike_files = [];
         self::$mixed_counts = [];
+        self::$references_to_functions = [];
     }
 }
