@@ -1111,7 +1111,10 @@ final class ConfigTest extends TestCase
                  * @return string
                  */
                 static fn($issue_name): string => '<' . $issue_name . ' errorLevel="suppress" />' . "\n",
-                IssueHandler::getAllIssueTypes(),
+                array_diff(
+                    IssueHandler::getAllIssueTypes(),
+                    ['UnusedComposerPackage', 'UnusedExtension']
+                )
             ),
         );
 

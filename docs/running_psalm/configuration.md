@@ -625,6 +625,31 @@ Optional. A list of extensions to disable. By default, only extensions required 
 </disableExtensions>
 ```
 
+
+#### &lt;ignoreUnusedComposerPackages&gt;
+
+Optional. A list of packages for which [UnusedComposerPackage](issues/UnusedComposerPackage.md) issues should not be emitted, even if they're not used in the current project.  
+
+Useful for example for peer dependencies (dependencies which are only used by another dependency, aren't explicitly required by that dependency's composer.json, and aren't used in the current project).  
+
+```xml
+<ignoreUnusedComposerPackages>
+  <package name="symfony/polyfill-php84"/>
+</ignoreUnusedComposerPackages>
+```
+
+#### &lt;ignoreUnusedExtensions&gt;
+
+Optional. A list of extensions for which [UnusedExtension](issues/UnusedExtension.md) issues should not be emitted, even if they're not used in the current project.
+
+Useful for example for peer dependencies (extensions which are only used by another dependency, aren't explicitly required by that dependency's composer.json, and aren't used in the current project).  
+
+```xml
+<ignoreUnusedExtensions>
+  <extension name="bcmath"/>
+</ignoreUnusedExtensions>
+```
+
 #### &lt;plugins&gt;
 Optional. A list of `<plugin filename="path_to_plugin.php" />` entries. See the [Plugins](plugins/using_plugins.md) section for more information.
 
