@@ -95,7 +95,6 @@ jobs:
           PLATFORM: ${{ matrix.image }}
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
-          bin/stubs/build_docker.sh
           php bin/ci/build-docker.php
 
   merge-docker:
