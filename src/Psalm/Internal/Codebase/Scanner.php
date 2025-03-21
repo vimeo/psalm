@@ -167,8 +167,7 @@ final class Scanner
         if ($ext !== null) {
             return "ext-$ext";
         }
-        if (str_starts_with($path, $this->vendor_prefix)
-        ) {
+        if (str_starts_with($path, $this->vendor_prefix)) {
             $l = strlen($this->vendor_prefix);
             $pos = strpos($path, DIRECTORY_SEPARATOR, $l);
             assert($pos !== false);
