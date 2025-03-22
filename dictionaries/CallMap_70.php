@@ -21157,7 +21157,7 @@ return array (
   ),
   'evloop::check' => 
   array (
-    0 => 'EvCheck',
+    0 => 'mixed',
     'callback' => 'callable',
     'data=' => 'mixed',
     'priority=' => 'int',
