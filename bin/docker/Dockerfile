@@ -63,44 +63,14 @@ ENV PHP_LDFLAGS="-Wl,-O1 -pie"
 
 ENV GPG_KEYS AFD8691FDAEDF03BDF6E460563F15A9B715376CA 9D7F99A0CB8F05C8A6958D6256A97AF7600A39A6 0616E93D95AF471243E26761770426E17EBBB3DD
 
-ENV PHP_VERSION 8.4.5
-ENV PHP_URL="https://www.php.net/distributions/php-8.4.5.tar.xz" PHP_ASC_URL="https://www.php.net/distributions/php-8.4.5.tar.xz.asc"
-ENV PHP_SHA256="0d3270bbce4d9ec617befce52458b763fd461d475f1fe2ed878bb8573faed327"
-
 ADD bin/docker/deepbind.patch /
 
 RUN set -eux; \
 	\
-	savedAptMark="$(apt-mark showmanual)"; \
-	apt-get update; \
-	apt-get install -y --no-install-recommends gnupg; \
-	rm -rf /var/lib/apt/lists/*; \
-	\
 	mkdir -p /usr/src; \
 	cd /usr/src; \
 	\
-	curl -fsSL -o php.tar.xz "$PHP_URL"; \
-	\
-	if [ -n "$PHP_SHA256" ]; then \
-		echo "$PHP_SHA256 *php.tar.xz" | sha256sum -c -; \
-	fi; \
-	\
-	if [ -n "$PHP_ASC_URL" ]; then \
-		curl -fsSL -o php.tar.xz.asc "$PHP_ASC_URL"; \
-		export GNUPGHOME="$(mktemp -d)"; \
-		for key in $GPG_KEYS; do \
-			gpg --batch --keyserver keyserver.ubuntu.com --recv-keys "$key"; \
-		done; \
-		gpg --batch --verify php.tar.xz.asc php.tar.xz; \
-		gpgconf --kill all; \
-		rm -rf "$GNUPGHOME"; \
-	fi; \
-	\
-	apt-mark auto '.*' > /dev/null; \
-	apt-mark manual $savedAptMark > /dev/null; \
-	apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false
-
-COPY bin/docker/docker-php-source /usr/local/bin/
+	git clone https://github.com/php/php-src.git --depth 1 --recursive -b PHP-8.4 php
 
 RUN set -eux; \
 	\
@@ -127,7 +97,6 @@ RUN set -eux; \
 		PHP_BUILD_PROVIDER='https://github.com/docker-library/php' \
 		PHP_UNAME='Linux - Docker' \
 	; \
-	docker-php-source extract; \
 	cd /usr/src/php; \
 	patch -p1 < /deepbind.patch; \
 	gnuArch="$(dpkg-architecture --query DEB_BUILD_GNU_TYPE)"; \
@@ -186,7 +155,7 @@ RUN set -eux; \
 	cp -v php.ini-* "$PHP_INI_DIR/"; \
 	\
 	cd /; \
-	docker-php-source delete; rm deepbind.patch; \
+	rm -r /usr/src/php; rm deepbind.patch; \
 	\
 # reset apt-mark's "manual" list so that "purge --auto-remove" will remove all build dependencies
 	apt-mark auto '.*' > /dev/null; \
