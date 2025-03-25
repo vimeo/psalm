@@ -55,8 +55,10 @@ foreach (new RecursiveIteratorIterator(
     RecursiveIteratorIterator::LEAVES_ONLY,
 ) as $f
 ) {
-    $f = str_replace(['/', '.php', 'src\\'], ['\\', '', ''], $f);
-    $classes[$f] = true;
+    if (str_ends_with($f, '.php')) {
+        $f = str_replace(['/', '.php', 'src\\'], ['\\', '', ''], $f);
+        $classes[$f] = true;
+    }
 }
 
 foreach ($classes as $class => $_) {

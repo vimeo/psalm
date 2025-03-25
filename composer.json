@@ -140,6 +140,8 @@
         "generate_levels_doc": "@php ./bin/docs/generate_levels_doc.php",
         "build": [
             "@gen_preloader",
+            "@gen_callmap",
+            "@gen_propertymap",
             "@generate_issues_list_doc",
             "@generate_levels_doc",
             "@cs-fix"
