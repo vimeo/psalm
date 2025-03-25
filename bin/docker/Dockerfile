@@ -82,7 +82,7 @@ RUN set -eux; \
 		libonig-dev \
 		libreadline-dev \
 		libsodium-dev \
-		libsqlite3-dev \
+		libsqlite3-dev pkg-config build-essential autoconf bison re2c \
 		libssl-dev \
 		libxml2-dev \
 		zlib1g-dev \
@@ -105,6 +105,7 @@ RUN set -eux; \
 	if [ ! -d /usr/include/curl ]; then \
 		ln -sT "/usr/include/$debMultiarch/curl" /usr/local/include/curl; \
 	fi; \
+	./buildconf; \
 	./configure \
 		--build="$gnuArch" \
 		--with-config-file-path="$PHP_INI_DIR" \
