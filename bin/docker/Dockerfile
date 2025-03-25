@@ -36,7 +36,7 @@ RUN set -eux; \
 	apt-get update; \
 	apt-get install -y --no-install-recommends \
 		$PHPIZE_DEPS \
-		ca-certificates \
+		ca-certificates git \
 		curl \
 		xz-utils \
 	; \
