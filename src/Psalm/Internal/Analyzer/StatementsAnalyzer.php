@@ -7,6 +7,7 @@ namespace Psalm\Internal\Analyzer;
 use InvalidArgumentException;
 use Override;
 use PhpParser;
+use PhpParser\Comment\Doc;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
@@ -362,7 +363,12 @@ final class StatementsAnalyzer extends SourceAnalyzer
         $traced_variables = [];
 
         $checked_types = [];
-        if ($docblock = $stmt->getDocComment()) {
+        $hasParsed = false;
+        foreach ($stmt->getComments() as $docblock) {
+            if (!$docblock instanceof Doc) {
+                continue;
+            }
+            $hasParsed = true;
             $statements_analyzer->parseStatementDocblock($docblock, $stmt, $context);
 
             if (isset($statements_analyzer->parsed_docblock->tags['psalm-trace'])) {
@@ -488,7 +494,8 @@ final class StatementsAnalyzer extends SourceAnalyzer
                     }
                 }
             }
-        } else {
+        }
+        if (!$hasParsed) {
             $statements_analyzer->parsed_docblock = null;
         }
 

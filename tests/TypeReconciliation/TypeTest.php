@@ -1348,6 +1348,17 @@ final class TypeTest extends TestCase
                     if (\is_object($a)) {
                     }',
             ],
+            'multipleComments' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var string $line */
+                    /** other comment */
+                    echo $line;
+                PHP,
+                'assertions' => [
+                    '$line===' => 'string',
+                ],
+            ],
         ];
     }
 
