@@ -257,7 +257,6 @@ LABEL "org.opencontainers.image.description"="A static analysis tool for finding
 LABEL "org.opencontainers.image.licenses"=MIT
 
 ENV PHP_INI_DIR /usr/local/etc/php
-ENV PHP_VERSION 8.4.4
 ENV PATH=/composer/vendor/bin:${PATH}
 
 ENV USE_ZEND_ALLOC=0

@@ -4085,6 +4085,49 @@ return array (
     0 => 'mixed',
     'data' => 'string',
   ),
+  'co\\coroutine\\curl\\exception::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'string',
+    'code=' => 'int',
+    'previous=' => 'Throwable|null',
+  ),
+  'co\\coroutine\\curl\\exception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'co\\coroutine\\curl\\exception::__wakeup' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\coroutine\\curl\\exception::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\coroutine\\curl\\exception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'co\\coroutine\\curl\\exception::getline' => 
+  array (
+    0 => 'int',
+  ),
+  'co\\coroutine\\curl\\exception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'co\\coroutine\\curl\\exception::getprevious' => 
+  array (
+    0 => 'Throwable|null',
+  ),
+  'co\\coroutine\\curl\\exception::gettrace' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'co\\coroutine\\curl\\exception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
   'co\\defer' => 
   array (
     0 => 'mixed',
@@ -74141,9 +74184,29 @@ return array (
     'string1' => 'string',
     'string2' => 'string',
   ),
+  'sodium_crypto_aead_aes256gcm_decrypt' => 
+  array (
+    0 => 'false|string',
+    'ciphertext' => 'string',
+    'additional_data' => 'string',
+    'nonce' => 'string',
+    'key' => 'string',
+  ),
+  'sodium_crypto_aead_aes256gcm_encrypt' => 
+  array (
+    0 => 'string',
+    'message' => 'string',
+    'additional_data' => 'string',
+    'nonce' => 'string',
+    'key' => 'string',
+  ),
   'sodium_crypto_aead_aes256gcm_is_available' => 
   array (
     0 => 'bool',
+  ),
+  'sodium_crypto_aead_aes256gcm_keygen' => 
+  array (
+    0 => 'string',
   ),
   'sodium_crypto_aead_chacha20poly1305_decrypt' => 
   array (
@@ -85247,6 +85310,49 @@ return array (
     0 => 'mixed',
     'data' => 'string',
   ),
+  'swoole\\coroutine\\curl\\exception::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'string',
+    'code=' => 'int',
+    'previous=' => 'Throwable|null',
+  ),
+  'swoole\\coroutine\\curl\\exception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\coroutine\\curl\\exception::__wakeup' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\curl\\exception::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\curl\\exception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\coroutine\\curl\\exception::getline' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\coroutine\\curl\\exception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\coroutine\\curl\\exception::getprevious' => 
+  array (
+    0 => 'Throwable|null',
+  ),
+  'swoole\\coroutine\\curl\\exception::gettrace' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'swoole\\coroutine\\curl\\exception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
   'swoole\\coroutine\\deadlock_check' => 
   array (
     0 => 'mixed',
@@ -88192,12 +88298,12 @@ return array (
   array (
     0 => 'bool',
     'types' => 'mixed',
-    '...&arguments=' => 'mixed',
+    '&...arguments=' => 'mixed',
   ),
   'swoole\\database\\mysqlistatementproxy::bind_result' => 
   array (
     0 => 'bool',
-    '...&arguments=' => 'mixed',
+    '&...arguments=' => 'mixed',
   ),
   'swoole\\database\\objectproxy::__call' => 
   array (
@@ -93566,6 +93672,134 @@ return array (
   array (
     0 => 'bool',
     'ns' => 'Swoole\\NameResolver',
+  ),
+  'swoole_native_curl_close' => 
+  array (
+    0 => 'void',
+    'handle' => 'CurlHandle',
+  ),
+  'swoole_native_curl_copy_handle' => 
+  array (
+    0 => 'CurlHandle|false',
+    'handle' => 'CurlHandle',
+  ),
+  'swoole_native_curl_errno' => 
+  array (
+    0 => 'int',
+    'handle' => 'CurlHandle',
+  ),
+  'swoole_native_curl_error' => 
+  array (
+    0 => 'string',
+    'handle' => 'CurlHandle',
+  ),
+  'swoole_native_curl_escape' => 
+  array (
+    0 => 'false|string',
+    'handle' => 'CurlHandle',
+    'string' => 'string',
+  ),
+  'swoole_native_curl_exec' => 
+  array (
+    0 => 'bool|string',
+    'handle' => 'CurlHandle',
+  ),
+  'swoole_native_curl_getinfo' => 
+  array (
+    0 => 'mixed',
+    'handle' => 'CurlHandle',
+    'option=' => 'int|null',
+  ),
+  'swoole_native_curl_init' => 
+  array (
+    0 => 'CurlHandle|false',
+    'url=' => 'null|string',
+  ),
+  'swoole_native_curl_multi_add_handle' => 
+  array (
+    0 => 'int',
+    'multi_handle' => 'CurlMultiHandle',
+    'handle' => 'CurlHandle',
+  ),
+  'swoole_native_curl_multi_close' => 
+  array (
+    0 => 'void',
+    'multi_handle' => 'CurlMultiHandle',
+  ),
+  'swoole_native_curl_multi_errno' => 
+  array (
+    0 => 'int',
+    'multi_handle' => 'CurlMultiHandle',
+  ),
+  'swoole_native_curl_multi_exec' => 
+  array (
+    0 => 'int',
+    'multi_handle' => 'CurlMultiHandle',
+    '&still_running' => 'mixed',
+  ),
+  'swoole_native_curl_multi_getcontent' => 
+  array (
+    0 => 'null|string',
+    'handle' => 'CurlHandle',
+  ),
+  'swoole_native_curl_multi_info_read' => 
+  array (
+    0 => 'array<array-key, mixed>|false',
+    'multi_handle' => 'CurlMultiHandle',
+    '&queued_messages=' => 'mixed',
+  ),
+  'swoole_native_curl_multi_init' => 
+  array (
+    0 => 'CurlMultiHandle',
+  ),
+  'swoole_native_curl_multi_remove_handle' => 
+  array (
+    0 => 'int',
+    'multi_handle' => 'CurlMultiHandle',
+    'handle' => 'CurlHandle',
+  ),
+  'swoole_native_curl_multi_select' => 
+  array (
+    0 => 'int',
+    'multi_handle' => 'CurlMultiHandle',
+    'timeout=' => 'float',
+  ),
+  'swoole_native_curl_multi_setopt' => 
+  array (
+    0 => 'bool',
+    'multi_handle' => 'CurlMultiHandle',
+    'option' => 'int',
+    'value' => 'mixed',
+  ),
+  'swoole_native_curl_pause' => 
+  array (
+    0 => 'int',
+    'handle' => 'CurlHandle',
+    'flags' => 'int',
+  ),
+  'swoole_native_curl_reset' => 
+  array (
+    0 => 'void',
+    'handle' => 'CurlHandle',
+  ),
+  'swoole_native_curl_setopt' => 
+  array (
+    0 => 'bool',
+    'handle' => 'CurlHandle',
+    'option' => 'int',
+    'value' => 'mixed',
+  ),
+  'swoole_native_curl_setopt_array' => 
+  array (
+    0 => 'bool',
+    'handle' => 'CurlHandle',
+    'options' => 'array<array-key, mixed>',
+  ),
+  'swoole_native_curl_unescape' => 
+  array (
+    0 => 'false|string',
+    'handle' => 'CurlHandle',
+    'string' => 'string',
   ),
   'swoole_select' => 
   array (

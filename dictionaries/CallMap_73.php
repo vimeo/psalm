@@ -22096,7 +22096,7 @@ return array (
   ),
   'evloop::check' => 
   array (
-    0 => 'EvCheck',
+    0 => 'mixed',
     'callback' => 'callable',
     'data=' => 'mixed',
     'priority=' => 'int',
@@ -74477,9 +74477,29 @@ return array (
     'string_1' => 'string',
     'string_2' => 'string',
   ),
+  'sodium_crypto_aead_aes256gcm_decrypt' => 
+  array (
+    0 => 'mixed',
+    'string' => 'mixed',
+    'ad' => 'mixed',
+    'nonce' => 'mixed',
+    'key' => 'mixed',
+  ),
+  'sodium_crypto_aead_aes256gcm_encrypt' => 
+  array (
+    0 => 'mixed',
+    'string' => 'mixed',
+    'ad' => 'mixed',
+    'nonce' => 'mixed',
+    'key' => 'mixed',
+  ),
   'sodium_crypto_aead_aes256gcm_is_available' => 
   array (
     0 => 'bool',
+  ),
+  'sodium_crypto_aead_aes256gcm_keygen' => 
+  array (
+    0 => 'mixed',
   ),
   'sodium_crypto_aead_chacha20poly1305_decrypt' => 
   array (
@@ -88352,12 +88372,12 @@ return array (
   array (
     0 => 'bool',
     'types' => 'mixed',
-    '...&arguments=' => 'mixed',
+    '&...arguments=' => 'mixed',
   ),
   'swoole\\database\\mysqlistatementproxy::bind_result' => 
   array (
     0 => 'bool',
-    '...&arguments=' => 'mixed',
+    '&...arguments=' => 'mixed',
   ),
   'swoole\\database\\objectproxy::__call' => 
   array (

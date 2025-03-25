@@ -66,7 +66,7 @@ $files = new RegexIterator(
     '/.*.xml$/',
 );
 
-$classes = require_once dirname(__DIR__) . '/dictionaries/ManualPropertyMap.php';
+$classes = require_once dirname(__DIR__, 2) . '/dictionaries/ManualPropertyMap.php';
 
 
 libxml_use_internal_errors(true);
