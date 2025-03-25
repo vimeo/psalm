@@ -148,7 +148,7 @@ foreach ($files as $file) {
 
 $serialized = serializeArray($classes, '');
 file_put_contents(
-    dirname(__DIR__) . '/dictionaries/PropertyMap.php',
+    dirname(__DIR__, 2) . '/dictionaries/PropertyMap.php',
     <<<EOF
 <?php
 namespace Psalm\Internal;
