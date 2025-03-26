@@ -77,7 +77,7 @@ class LongProgress extends Progress
                 Phase::TAINT_GRAPH_RESOLUTION => "\n\nTaint graph resolution took $took seconds.\n",
                 Phase::JIT_COMPILATION => "JIT compilation took $took seconds.\n\n",
                 Phase::PRELOADING => "Preloading took $took seconds.\n\n",
-                Phase::MERGING_THREAD_RESULTS => "\n\nMerging thread results took $took seconds.\n\n",
+                Phase::MERGING_THREAD_RESULTS => "\nMerging thread results took $took seconds.\n\n",
             });
         }
         $this->started = microtime(true);
