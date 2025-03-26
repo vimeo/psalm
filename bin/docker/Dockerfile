@@ -100,6 +100,7 @@ RUN set -eux; \
 		PHP_UNAME='Linux - Docker' \
 	; \
 	cd /usr/src/php; \
+	git rev-parse HEAD > /php-src.commit; \
 	patch -p1 < /deepbind.patch; \
 	gnuArch="$(dpkg-architecture --query DEB_BUILD_GNU_TYPE)"; \
 	debMultiarch="$(dpkg-architecture --query DEB_BUILD_MULTIARCH)"; \
