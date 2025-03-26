@@ -199,8 +199,7 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 ARG PSALM_REV=dev-master
 RUN COMPOSER_ALLOW_SUPERUSER=1 \
     COMPOSER_HOME="/composer" \
-    composer global require vimeo/psalm:${PSALM_REV} --prefer-dist --no-progress --dev && \
-    rm /usr/bin/composer
+    composer global require vimeo/psalm:${PSALM_REV} --prefer-dist --no-progress --dev
 
 # Add entrypoint script
 
