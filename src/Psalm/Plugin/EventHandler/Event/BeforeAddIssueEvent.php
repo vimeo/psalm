@@ -11,24 +11,9 @@ final class BeforeAddIssueEvent
 {
     /** @internal */
     public function __construct(
-        private readonly CodeIssue $issue,
-        private readonly bool $fixable,
-        private readonly Codebase $codebase,
+        public readonly CodeIssue $issue,
+        public readonly bool $fixable,
+        public readonly Codebase $codebase,
     ) {
-    }
-
-    public function getIssue(): CodeIssue
-    {
-        return $this->issue;
-    }
-
-    public function isFixable(): bool
-    {
-        return $this->fixable;
-    }
-
-    public function getCodebase(): Codebase
-    {
-        return $this->codebase;
     }
 }
