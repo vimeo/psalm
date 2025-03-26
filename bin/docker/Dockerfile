@@ -36,7 +36,7 @@ RUN set -eux; \
 	apt-get update; \
 	apt-get install -y --no-install-recommends \
 		$PHPIZE_DEPS \
-		ca-certificates \
+		ca-certificates git \
 		curl \
 		xz-utils \
 	; \
@@ -65,6 +65,8 @@ ENV GPG_KEYS AFD8691FDAEDF03BDF6E460563F15A9B715376CA 9D7F99A0CB8F05C8A6958D6256
 
 ADD bin/docker/deepbind.patch /
 
+ENV PHP_VERSION 8.4.5
+
 RUN set -eux; \
 	\
 	mkdir -p /usr/src; \
@@ -82,7 +84,7 @@ RUN set -eux; \
 		libonig-dev \
 		libreadline-dev \
 		libsodium-dev \
-		libsqlite3-dev \
+		libsqlite3-dev pkg-config build-essential autoconf bison re2c \
 		libssl-dev \
 		libxml2-dev \
 		zlib1g-dev \
@@ -105,6 +107,7 @@ RUN set -eux; \
 	if [ ! -d /usr/include/curl ]; then \
 		ln -sT "/usr/include/$debMultiarch/curl" /usr/local/include/curl; \
 	fi; \
+	./buildconf; \
 	./configure \
 		--build="$gnuArch" \
 		--with-config-file-path="$PHP_INI_DIR" \
@@ -126,7 +129,7 @@ RUN set -eux; \
 # https://wiki.php.net/rfc/argon2_password_hash
 		--with-password-argon2 \
 # https://wiki.php.net/rfc/libsodium
-		--with-sodium=shared \
+		--with-sodium \
 # always build against system sqlite3 (https://github.com/php/php-src/commit/6083a387a81dbbd66d6316a3a12a63f06d5f7109)
 		--with-pdo-sqlite=/usr \
 		--with-sqlite3=/usr \
@@ -142,6 +145,8 @@ RUN set -eux; \
 		\
 		--disable-cgi \
 		--disable-phpdbg \
+		--enable-pcntl \
+		--enable-mbstring \
 		--with-capstone \
 		--with-libdir="lib/$debMultiarch" \
 		\
@@ -178,20 +183,12 @@ RUN set -eux; \
 # smoke test
 	php --version
 
-COPY bin/docker/docker-php-ext-* /usr/local/bin/
-
-# sodium was built as a shared module (so that it can be replaced later if so desired), so let's enable it too (https://github.com/docker-library/php/issues/598)
-RUN docker-php-ext-enable sodium
+COPY bin/docker/docker-php-* /usr/local/bin/
 
 # This line invalidates cache when master branch changes
 ADD https://github.com/vimeo/psalm/commits/master.atom /dev/null
 
-ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
-
-RUN sed 's/-O2/-O3/g' -i /usr/local/bin/install-php-extensions && \
-    chmod +x /usr/local/bin/install-php-extensions && \
-    install-php-extensions pcntl mbstring xml dom igbinary opcache && \
-    rm /usr/local/bin/install-php-extensions
+RUN pecl install igbinary
 
 RUN apt-get update && apt-get -y --no-install-recommends install git unzip libjemalloc2 && apt-get clean && rm -rf /var/lib/apt/lists/*
 
@@ -202,9 +199,7 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 ARG PSALM_REV=dev-master
 RUN COMPOSER_ALLOW_SUPERUSER=1 \
     COMPOSER_HOME="/composer" \
-    composer global require vimeo/psalm:${PSALM_REV} --prefer-dist --no-progress --dev && \
-    rm /usr/bin/composer && \
-	rm /usr/local/etc/php/conf.d/docker-php-ext-opcache.ini
+    composer global require vimeo/psalm:${PSALM_REV} --prefer-dist --no-progress --dev
 
 # Add entrypoint script
 
