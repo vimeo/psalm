@@ -191,7 +191,7 @@ ADD https://github.com/vimeo/psalm/commits/master.atom /dev/null
 
 RUN pecl install igbinary
 
-RUN apt-get update && apt-get -y --no-install-recommends install git unzip libjemalloc2 && apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get -y --no-install-recommends install openssh git unzip libjemalloc2 && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 ADD bin/docker/php.ini /usr/local/etc/php/php.ini
 
