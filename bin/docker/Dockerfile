@@ -65,7 +65,7 @@ ENV GPG_KEYS AFD8691FDAEDF03BDF6E460563F15A9B715376CA 9D7F99A0CB8F05C8A6958D6256
 
 ADD bin/docker/deepbind.patch /
 
-ENV PHP_VERSION 8.4.5
+ADD https://github.com/php/php-src/commits/master.atom /dev/null
 
 RUN set -eux; \
 	\
@@ -188,6 +188,7 @@ COPY bin/docker/docker-php-* /usr/local/bin/
 
 # This line invalidates cache when master branch changes
 ADD https://github.com/vimeo/psalm/commits/master.atom /dev/null
+ADD https://github.com/vimeo/psalm/commits/6.x.atom /dev/null
 
 RUN pecl install igbinary
 
