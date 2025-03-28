@@ -14,7 +14,7 @@ final class VoidProgress extends Progress
     }
 
     #[Override]
-    public function startPhase(Phase $phase): void
+    public function startPhase(Phase $phase, int $threads = 1): void
     {
     }
 

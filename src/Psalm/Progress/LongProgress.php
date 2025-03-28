@@ -42,17 +42,18 @@ class LongProgress extends Progress
     }
 
     #[Override]
-    public function startPhase(Phase $phase): void
+    public function startPhase(Phase $phase, int $threads = 1): void
     {
+        $threads = $threads === 1 ? '' : " ($threads threads)";
         $this->reportPhaseDuration($phase);
         $this->write(match ($phase) {
-            Phase::SCAN => "\nScanning files...\n\n",
-            Phase::ANALYSIS => "\nAnalyzing files...\n\n",
-            Phase::ALTERING => "\nUpdating files...\n",
-            Phase::TAINT_GRAPH_RESOLUTION => "\n\nResolving taint graph...\n\n",
-            Phase::JIT_COMPILATION => "JIT compilation in progress...\n\n",
-            Phase::PRELOADING => "Preloading in progress...\n\n",
-            Phase::MERGING_THREAD_RESULTS => "\nMerging thread results...\n\n",
+            Phase::SCAN => "\nScanning files$threads...\n\n",
+            Phase::ANALYSIS => "\nAnalyzing files$threads...\n\n",
+            Phase::ALTERING => "\nUpdating files$threads...\n",
+            Phase::TAINT_GRAPH_RESOLUTION => "\n\nResolving taint graph$threads...\n\n",
+            Phase::JIT_COMPILATION => "JIT compilation in progress$threads...\n\n",
+            Phase::PRELOADING => "Preloading in progress$threads...\n\n",
+            Phase::MERGING_THREAD_RESULTS => "\nMerging thread results$threads...\n\n",
         });
         $this->fixed_size = $phase === Phase::ANALYSIS
             || $phase === Phase::ALTERING

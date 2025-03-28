@@ -25,7 +25,7 @@ abstract class Progress
     abstract public function debug(string $message): void;
 
 
-    abstract public function startPhase(Phase $phase): void;
+    abstract public function startPhase(Phase $phase, int $threads = 1): void;
 
     abstract public function expand(int $number_of_tasks): void;
 

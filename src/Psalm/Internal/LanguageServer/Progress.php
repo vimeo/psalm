@@ -32,7 +32,7 @@ final class Progress extends Base
     }
 
     #[Override]
-    public function startPhase(Phase $phase): void
+    public function startPhase(Phase $phase, int $threads = 1): void
     {
     }
 
