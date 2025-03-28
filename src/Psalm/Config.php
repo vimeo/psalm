@@ -404,6 +404,8 @@ final class Config
 
     public bool $all_constants_global = false;
 
+    public bool $force_jit = false;
+
     public int $max_graph_size = 200;
 
     public int $max_avg_path_length = 70;
@@ -1059,7 +1061,14 @@ final class Config
             $config->autoloader = (string) realpath($autoloader_path);
         }
 
-        if (isset($config_xml['cacheDirectory'])) {
+        $no_cache = false;
+        if (isset($config_xml['noCache'])) {
+            $no_cache = (string) $config_xml['noCache'];
+            $no_cache = $no_cache === '1' || $no_cache === 'true';
+        }
+        if ($no_cache) {
+            $config->cache_directory = null;
+        } elseif (isset($config_xml['cacheDirectory'])) {
             $config->cache_directory = (string)$config_xml['cacheDirectory'];
         } elseif ($user_cache_dir = (new Xdg())->getHomeCacheDir()) {
             $config->cache_directory = $user_cache_dir . '/psalm';
@@ -1069,7 +1078,9 @@ final class Config
 
         $config->global_cache_directory = $config->cache_directory;
 
-        $config->cache_directory .= DIRECTORY_SEPARATOR . sha1($base_dir);
+        if ($config->cache_directory !== null) {
+            $config->cache_directory .= DIRECTORY_SEPARATOR . sha1($base_dir);
+        }
 
         if (isset($config_xml['serializer'])) {
             $attribute_text = (string) $config_xml['serializer'];
@@ -1128,6 +1139,11 @@ final class Config
         if (isset($config_xml['allConstantsGlobal'])) {
             $attribute_text = (string) $config_xml['allConstantsGlobal'];
             $config->all_constants_global = $attribute_text === 'true' || $attribute_text === '1';
+        }
+
+        if (isset($config_xml['forceJit'])) {
+            $attribute_text = (string) $config_xml['forceJit'];
+            $config->force_jit = $attribute_text === 'true' || $attribute_text === '1';
         }
 
         if (isset($config_xml['findUnusedVariablesAndParams'])) {
