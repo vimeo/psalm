@@ -265,6 +265,22 @@ When `true`, Psalm will attempt to find all unused variables, the equivalent of 
 ```
 When `true`, Psalm will attempt to find all unused code (including unused variables), the equivalent of running with `--find-unused-code`. Defaults to `true`.
 
+#### forceJit
+```xml
+<psalm
+  forceJit="[bool]"
+>
+```
+When `true`, Psalm will exit immediately if JIT acceleration (up to +20% performance) cannot be enabled, the equivalent of running with `--force-jit`. Defaults to `false`.
+
+#### noCache
+```xml
+<psalm
+  noCache="[bool]"
+>
+```
+When `true`, Psalm will disable usage of the cache, the equivalent of running with `--no-cache`. Defaults to `false`.
+
 #### disallowLiteralKeysOnUnshapedArrays
 ```xml
 <psalm

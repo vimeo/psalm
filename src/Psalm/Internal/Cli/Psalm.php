@@ -285,7 +285,8 @@ final class Psalm
 
         $progress = self::initProgress($options, $config, $in_ci);
 
-        self::restart($options, $threads, $scanThreads, $progress);
+        $force_jit = $config->force_jit || isset($options['force-jit']);
+        self::restart($options, $force_jit, $threads, $scanThreads, $progress);
 
         if (isset($options['debug-emitted-issues'])) {
             $config->debug_emitted_issues = true;
@@ -668,7 +669,7 @@ final class Psalm
 
     private static function initProviders(array $options, Config $config, string $current_dir): Providers
     {
-        if (isset($options['no-cache']) || isset($options['i'])) {
+        if ($config->cache_directory === null || isset($options['i'])) {
             $providers = new Providers(
                 new FileProvider,
             );
@@ -929,8 +930,13 @@ final class Psalm
         return $current_dir;
     }
 
-    private static function restart(array $options, int $threads, int $scanThreads, Progress $progress): void
-    {
+    private static function restart(
+        array $options,
+        bool $force_jit,
+        int $threads,
+        int $scanThreads,
+        Progress $progress,
+    ): void {
         $ini_handler = new PsalmRestarter('PSALM');
 
         if (isset($options['disable-extension'])) {
@@ -992,7 +998,7 @@ final class Psalm
                 . 'Install and enable the opcache extension to make use of JIT for a 20%+ performance boost!'
                 . PHP_EOL . PHP_EOL);
         }
-        if (isset($options['force-jit']) && !$hasJit) {
+        if ($force_jit && !$hasJit) {
             $progress->write('Exiting because JIT was requested but is not available.' . PHP_EOL . PHP_EOL);
             exit(1);
         }
