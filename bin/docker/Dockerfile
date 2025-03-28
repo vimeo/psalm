@@ -222,6 +222,9 @@ LABEL "org.opencontainers.image.source"="http://github.com/vimeo/psalm"
 LABEL "org.opencontainers.image.description"="A static analysis tool for finding errors in PHP applications "
 LABEL "org.opencontainers.image.licenses"=MIT
 
+ARG PSALM_REV=dev-master
+ENV PSALM_VERSION=${PSALM_REV}
+
 ENV PHP_INI_DIR /usr/local/etc/php
 ENV PATH=/composer/vendor/bin:${PATH}
 
