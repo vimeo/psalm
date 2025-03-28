@@ -273,7 +273,7 @@ final class Psalter
         $threads = Psalm::getThreads($options, $config, $in_ci, false);
         $scanThreads = Psalm::getThreads($options, $config, $in_ci, true);
 
-        if (isset($options['no-cache'])) {
+        if ($config->cache_directory === null) {
             $providers = new Providers(
                 new FileProvider(),
             );
