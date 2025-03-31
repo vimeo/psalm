@@ -446,6 +446,7 @@ final class ArrayAnalyzer
                     $taints = array_diff($added_taints, $removed_taints);
                     if ($taints !== [] && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
                         $taint_source = TaintSource::fromNode($new_parent_node);
+                        $taint_source->taints = $taints;
                         $statements_analyzer->data_flow_graph->addSource($taint_source);
                     }
 
