@@ -177,6 +177,7 @@ final class ReportOutputTest extends TestCase
                                 'text' => 'Detected tainted shell code',
                             ],
                             'level' => 'error',
+                            'rank' => 98,
                             'locations' => [
                                 [
                                     'physicalLocation' => [
@@ -332,6 +333,7 @@ final class ReportOutputTest extends TestCase
                                 'text' => 'Detected tainted HTML',
                             ],
                             'level' => 'error',
+                            'rank' => 98,
                             'locations' => [
                                 [
                                     'physicalLocation' => [
@@ -502,6 +504,7 @@ final class ReportOutputTest extends TestCase
                                 'text' => 'Detected tainted text with possible quotes',
                             ],
                             'level' => 'error',
+                            'rank' => 98,
                             'locations' => [
                                 [
                                     'physicalLocation' => [
