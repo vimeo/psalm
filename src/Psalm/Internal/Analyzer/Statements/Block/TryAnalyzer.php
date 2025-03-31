@@ -310,13 +310,11 @@ final class TryAnalyzer
                         ])
                     ;
 
-                    if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
-                        $statements_analyzer->data_flow_graph->addPath(
+                        $statements_analyzer->variable_use_graph?->addPath(
                             $catch_var_node,
                             DataFlowNode::getForVariableUse(),
                             'variable-use',
                         );
-                    }
                 }
             }
 

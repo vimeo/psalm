@@ -294,7 +294,7 @@ final class MethodCallReturnTypeFetcher
             return;
         }
 
-        if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+        if ($statements_analyzer->taint_flow_graph
             && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
             return;
@@ -322,7 +322,7 @@ final class MethodCallReturnTypeFetcher
         );
 
         if ($method_storage->specialize_call
-            && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+            && $statements_analyzer->taint_flow_graph
         ) {
             if ($var_id && isset($context->vars_in_scope[$var_id])) {
                 $var_nodes = [];
@@ -495,7 +495,7 @@ final class MethodCallReturnTypeFetcher
                 (string) $method_id,
                 $cased_method_id,
                 $is_declaring
-                    ? ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+                    ? ($statements_analyzer->taint_flow_graph
                         ? ($method_storage->signature_return_type_location ?: $method_storage->location)
                         : ($method_storage->return_type_location ?: $method_storage->location))
                     : null,
@@ -529,14 +529,14 @@ final class MethodCallReturnTypeFetcher
             ]);
         }
 
-        if (!$statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+        if (!$statements_analyzer->taint_flow_graph) {
             return;
         }
 
         FunctionCallReturnTypeFetcher::taintUsingFlows(
             $statements_analyzer,
             $method_storage,
-            $statements_analyzer->data_flow_graph,
+            $statements_analyzer->taint_flow_graph,
             (string) $method_id,
             $args,
             $node_location,
@@ -546,7 +546,7 @@ final class MethodCallReturnTypeFetcher
 
         FunctionCallReturnTypeFetcher::taintUsingStorage(
             $method_storage,
-            $statements_analyzer->data_flow_graph,
+            $statements_analyzer->taint_flow_graph,
             $method_call_node,
         );
     }

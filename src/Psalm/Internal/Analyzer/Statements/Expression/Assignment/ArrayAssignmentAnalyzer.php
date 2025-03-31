@@ -390,7 +390,7 @@ final class ArrayAssignmentAnalyzer
         array $key_values,
     ): void {
         if ($statements_analyzer->data_flow_graph
-            && ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
+            && ($statements_analyzer->variable_use_graph
                 || !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues()))
         ) {
             $var_location = new CodeLocation($statements_analyzer->getSource(), $expr->var);
@@ -872,7 +872,7 @@ final class ArrayAssignmentAnalyzer
             $parent_var_id = $extended_var_id;
         }
 
-        if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
+        if ($statements_analyzer->variable_use_graph
             && $root_var_id !== null
             && isset($context->references_to_external_scope[$root_var_id])
             && $root_var instanceof Variable && is_string($root_var->name)

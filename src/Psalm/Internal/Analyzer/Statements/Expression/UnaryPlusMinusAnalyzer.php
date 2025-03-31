@@ -118,7 +118,7 @@ final class UnaryPlusMinusAnalyzer
         string $type,
     ): void {
         $result_type = $statements_analyzer->node_data->getType($stmt);
-        if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph && $result_type) {
+        if ($statements_analyzer->variable_use_graph && $result_type) {
             $var_location = new CodeLocation($statements_analyzer, $stmt);
 
             $stmt_value_type = $statements_analyzer->node_data->getType($value);

@@ -387,7 +387,7 @@ final class ArrayFetchAnalyzer
             && ($stmt_var_type = $statements_analyzer->node_data->getType($var))
             && $stmt_var_type->parent_nodes
         ) {
-            if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+            if ($statements_analyzer->taint_flow_graph
                 && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
             ) {
                 $statements_analyzer->node_data->setType($var, $stmt_var_type->setParentNodes([]));
@@ -412,9 +412,9 @@ final class ArrayFetchAnalyzer
                 $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
                 $taints = $added_taints & ~$removed_taints;
-                if ($taints !== 0 && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+                if ($taints !== 0 && $statements_analyzer->taint_flow_graph) {
                     $taint_source = $new_parent_node->setTaints($taints);
-                    $statements_analyzer->data_flow_graph->addSource($taint_source);
+                    $statements_analyzer->taint_flow_graph->addSource($taint_source);
                 }
             }
 
@@ -1097,8 +1097,7 @@ final class ArrayFetchAnalyzer
             }
         }
 
-        if (($data_flow_graph = $statements_analyzer->data_flow_graph)
-            && $data_flow_graph instanceof VariableUseGraph
+        if (($variable_use_graph = $statements_analyzer->variable_use_graph)
             && ($stmt_var_type = $statements_analyzer->node_data->getType($stmt->var))
         ) {
             if ($stmt_var_type->parent_nodes) {
@@ -1106,12 +1105,12 @@ final class ArrayFetchAnalyzer
 
                 $new_parent_node = DataFlowNode::getForAssignment('mixed-var-array-access', $var_location);
 
-                $data_flow_graph->addNode($new_parent_node);
+                $variable_use_graph->addNode($new_parent_node);
 
                 foreach ($stmt_var_type->parent_nodes as $parent_node) {
-                    $data_flow_graph->addPath($parent_node, $new_parent_node, '=');
+                    $variable_use_graph->addPath($parent_node, $new_parent_node, '=');
 
-                    $data_flow_graph->addPath(
+                    $variable_use_graph->addPath(
                         $parent_node,
                         DataFlowNode::getForVariableUse(),
                         'variable-use',

@@ -889,7 +889,7 @@ final class ArgumentsAnalyzer
             }
         }
 
-        if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+        if ($statements_analyzer->taint_flow_graph
             && $cased_method_id
         ) {
             foreach ($args as $argument_offset => $_) {
@@ -919,7 +919,7 @@ final class ArgumentsAnalyzer
                             );
                         }
 
-                        $statements_analyzer->data_flow_graph->addSink($sink);
+                        $statements_analyzer->taint_flow_graph->addSink($sink);
                     }
                 }
             }

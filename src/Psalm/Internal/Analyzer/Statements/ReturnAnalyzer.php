@@ -260,7 +260,7 @@ final class ReturnAnalyzer
                     $source->getParentFQCLN(),
                 );
 
-                if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+                if ($statements_analyzer->taint_flow_graph) {
                     self::handleTaints(
                         $statements_analyzer,
                         $stmt,
@@ -357,11 +357,11 @@ final class ReturnAnalyzer
                         if ($stmt_type->isMixed()) {
                             $origin_locations = [];
 
-                            if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
+                            if ($statements_analyzer->variable_use_graph) {
                                 foreach ($stmt_type->parent_nodes as $parent_node) {
                                     $origin_locations = [
                                         ...$origin_locations,
-                                        ...$statements_analyzer->data_flow_graph->getOriginLocations($parent_node),
+                                        ...$statements_analyzer->variable_use_graph->getOriginLocations($parent_node),
                                     ];
                                 }
                             }
@@ -584,7 +584,7 @@ final class ReturnAnalyzer
         FunctionLikeStorage $storage,
         Context $context,
     ): void {
-        if (!$statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+        if (!$statements_analyzer->taint_flow_graph
             || !$stmt->expr
             || !$storage->location
         ) {
@@ -609,7 +609,7 @@ final class ReturnAnalyzer
 
         if ($inferred_type->parent_nodes) {
             foreach ($inferred_type->parent_nodes as $parent_node) {
-                $statements_analyzer->data_flow_graph->addPath(
+                $statements_analyzer->taint_flow_graph->addPath(
                     $parent_node,
                     $method_node,
                     'return',

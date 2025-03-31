@@ -474,7 +474,7 @@ final class InstancePropertyAssignmentAnalyzer
             );
 
             if ($var_id) {
-                if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+                if ($statements_analyzer->taint_flow_graph
                     && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
                 ) {
                     $context->vars_in_scope[$var_id] =
@@ -506,9 +506,9 @@ final class InstancePropertyAssignmentAnalyzer
                 $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
                 $taints = $added_taints & ~$removed_taints;
-                if ($taints !== 0 && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+                if ($taints !== 0 && $statements_analyzer->taint_flow_graph) {
                     $taint_source = $property_node->setTaints($taints);
-                    $statements_analyzer->data_flow_graph->addSource($taint_source);
+                    $statements_analyzer->taint_flow_graph->addSource($taint_source);
                 }
 
                 $data_flow_graph->addPath(
@@ -541,7 +541,7 @@ final class InstancePropertyAssignmentAnalyzer
                 }
             }
         } else {
-            if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+            if ($statements_analyzer->taint_flow_graph
                 && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
             ) {
                 $assignment_value_type = $assignment_value_type->setParentNodes([]);
@@ -607,9 +607,9 @@ final class InstancePropertyAssignmentAnalyzer
         $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
         $taints = $added_taints & ~$removed_taints;
-        if ($taints !== 0 && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+        if ($taints !== 0 && $statements_analyzer->taint_flow_graph) {
             $taint_source = $property_node->setTaints($taints);
-            $statements_analyzer->data_flow_graph->addSource($taint_source);
+            $statements_analyzer->taint_flow_graph->addSource($taint_source);
         }
 
         $data_flow_graph->addPath(
@@ -638,7 +638,7 @@ final class InstancePropertyAssignmentAnalyzer
             $statements_analyzer,
         );
 
-        if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+        if ($statements_analyzer->taint_flow_graph
             && $declaring_property_class
             && $declaring_property_class !== $class_storage->name
             && ($stmt instanceof PhpParser\Node\Expr\PropertyFetch
@@ -1402,11 +1402,11 @@ final class InstancePropertyAssignmentAnalyzer
             if (!$class_property_type->hasMixed() && $assignment_value_type->hasMixed()) {
                 $origin_locations = [];
 
-                if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
+                if ($statements_analyzer->variable_use_graph) {
                     foreach ($assignment_value_type->parent_nodes as $parent_node) {
                         $origin_locations = [
                             ...$origin_locations,
-                            ...$statements_analyzer->data_flow_graph->getOriginLocations($parent_node),
+                            ...$statements_analyzer->variable_use_graph->getOriginLocations($parent_node),
                         ];
                     }
                 }

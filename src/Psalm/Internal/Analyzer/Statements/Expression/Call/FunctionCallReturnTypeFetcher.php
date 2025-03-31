@@ -542,7 +542,7 @@ final class FunctionCallReturnTypeFetcher
             return null;
         }
 
-        if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+        if ($statements_analyzer->taint_flow_graph
             && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
             return null;
@@ -559,7 +559,7 @@ final class FunctionCallReturnTypeFetcher
         $function_call_node = DataFlowNode::getForMethodReturn(
             $function_id,
             $cased_function_id,
-            $statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+            $statements_analyzer->taint_flow_graph
                 ? ($function_storage->signature_return_type_location ?: $function_storage->location)
                 : ($function_storage->return_type_location ?: $function_storage->location),
             $function_storage->specialize_call ? $node_location : null,
@@ -617,7 +617,7 @@ final class FunctionCallReturnTypeFetcher
             $stmt_type = $stmt_type->addParentNodes([$function_call_node->id => $function_call_node]);
         }
 
-        if (!$statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+        if (!$statements_analyzer->taint_flow_graph) {
             return $function_call_node;
         }
 
@@ -662,7 +662,7 @@ final class FunctionCallReturnTypeFetcher
             self::taintUsingFlows(
                 $statements_analyzer,
                 $function_storage,
-                $statements_analyzer->data_flow_graph,
+                $statements_analyzer->taint_flow_graph,
                 $function_id,
                 $stmt->getArgs(),
                 $node_location,
@@ -672,7 +672,7 @@ final class FunctionCallReturnTypeFetcher
             );
         }
 
-        self::taintUsingStorage($function_storage, $statements_analyzer->data_flow_graph, $function_call_node);
+        self::taintUsingStorage($function_storage, $statements_analyzer->taint_flow_graph, $function_call_node);
 
         return $function_call_node;
     }

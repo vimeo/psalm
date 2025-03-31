@@ -851,7 +851,7 @@ final class AtomicPropertyFetchAnalyzer
             if ($var_id) {
                 $var_type = $statements_analyzer->node_data->getType($stmt->var);
 
-                if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+                if ($statements_analyzer->taint_flow_graph
                     && $var_type
                     && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
                 ) {
@@ -900,9 +900,9 @@ final class AtomicPropertyFetchAnalyzer
                 $type = $type->setParentNodes([$property_node->id => $property_node], true);
 
                 $taints = $added_taints & ~$removed_taints;
-                if ($taints !== 0 && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+                if ($taints !== 0 && $statements_analyzer->taint_flow_graph) {
                     $taint_source = $var_node->setTaints($taints);
-                    $statements_analyzer->data_flow_graph->addSource($taint_source);
+                    $statements_analyzer->taint_flow_graph->addSource($taint_source);
                 }
             }
         } else {
@@ -978,9 +978,9 @@ final class AtomicPropertyFetchAnalyzer
         $type = $type->setParentNodes([$localized_property_node->id => $localized_property_node], true);
 
         $taints = $added_taints & ~$removed_taints;
-        if ($taints !== 0 && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+        if ($taints !== 0 && $statements_analyzer->taint_flow_graph) {
             $taint_source = $localized_property_node->setTaints($taints);
-            $statements_analyzer->data_flow_graph->addSource($taint_source);
+            $statements_analyzer->taint_flow_graph->addSource($taint_source);
         }
     }
 

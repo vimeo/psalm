@@ -672,11 +672,11 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
 
                         $origin_locations = [];
 
-                        if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
+                        if ($statements_analyzer->variable_use_graph) {
                             foreach ($lhs_type->parent_nodes as $parent_node) {
                                 $origin_locations = [
                                     ...$origin_locations,
-                                    ...$statements_analyzer->data_flow_graph->getOriginLocations($parent_node),
+                                    ...$statements_analyzer->variable_use_graph->getOriginLocations($parent_node),
                                 ];
                             }
                         }

@@ -44,7 +44,7 @@ final class EchoAnalyzer
 
             $expr_type = $statements_analyzer->node_data->getType($expr);
 
-            if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+            if ($statements_analyzer->taint_flow_graph) {
                 if ($expr_type && $expr_type->hasObjectType()) {
                     $expr_type = CastAnalyzer::castStringAttempt(
                         $statements_analyzer,
@@ -70,7 +70,7 @@ final class EchoAnalyzer
                 );
 
 
-                $statements_analyzer->data_flow_graph->addSink($echo_param_sink);
+                $statements_analyzer->taint_flow_graph->addSink($echo_param_sink);
             }
 
             if (ArgumentAnalyzer::verifyType(

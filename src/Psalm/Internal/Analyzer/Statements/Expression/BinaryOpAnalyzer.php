@@ -150,7 +150,7 @@ final class BinaryOpAnalyzer
             }
 
             if ($statements_analyzer->data_flow_graph
-                && ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
+                && ($statements_analyzer->variable_use_graph
                     || !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues()))
             ) {
                 $stmt_left_type = $statements_analyzer->node_data->getType($stmt->left);
@@ -172,9 +172,9 @@ final class BinaryOpAnalyzer
                 $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
                 $taints = $added_taints & ~$removed_taints;
-                if ($taints !== 0 && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+                if ($taints !== 0 && $statements_analyzer->taint_flow_graph) {
                     $taint_source = $new_parent_node->setTaints($taints);
-                    $statements_analyzer->data_flow_graph->addSource($taint_source);
+                    $statements_analyzer->taint_flow_graph->addSource($taint_source);
                 }
 
                 if ($stmt_left_type && $stmt_left_type->parent_nodes) {
@@ -391,7 +391,7 @@ final class BinaryOpAnalyzer
             return;
         }
 
-        if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+        if ($statements_analyzer->taint_flow_graph
             && $stmt instanceof PhpParser\Node\Expr\BinaryOp
             && !$stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat
             && !$stmt instanceof PhpParser\Node\Expr\BinaryOp\Coalesce
@@ -428,7 +428,7 @@ final class BinaryOpAnalyzer
             }
 
             if ($stmt instanceof PhpParser\Node\Expr\AssignOp
-                && $statements_analyzer->data_flow_graph instanceof VariableUseGraph
+                && $statements_analyzer->variable_use_graph
             ) {
                 $root_expr = $left;
 

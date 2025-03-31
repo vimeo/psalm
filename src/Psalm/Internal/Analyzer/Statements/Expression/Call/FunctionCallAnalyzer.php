@@ -830,7 +830,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 return $function_call_info;
             }
 
-            if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+            if ($statements_analyzer->taint_flow_graph
                 && $stmt_name_type->parent_nodes
                 && !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
             ) {
@@ -845,7 +845,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     TaintKind::INPUT_CALLABLE,
                 );
 
-                $statements_analyzer->data_flow_graph->addSink($custom_call_sink);
+                $statements_analyzer->taint_flow_graph->addSink($custom_call_sink);
 
                 $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
 
@@ -855,7 +855,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 $taints = $added_taints & ~$removed_taints;
                 if ($taints !== 0) {
                     $taint_source = $custom_call_sink->setTaints($taints);
-                    $statements_analyzer->data_flow_graph->addSource($taint_source);
+                    $statements_analyzer->taint_flow_graph->addSource($taint_source);
                 }
 
                 foreach ($stmt_name_type->parent_nodes as $parent_node) {

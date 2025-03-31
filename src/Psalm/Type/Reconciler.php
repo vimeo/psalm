@@ -314,10 +314,10 @@ class Reconciler
                 continue;
             }
 
-            if (($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+            if (($statements_analyzer->taint_flow_graph
                     && (!$result_type->hasScalarType()
                         || ($result_type->hasString() && !$result_type->hasLiteralString())))
-                || $statements_analyzer->data_flow_graph instanceof VariableUseGraph
+                || $statements_analyzer->variable_use_graph
             ) {
                 if ($before_adjustment && $before_adjustment->parent_nodes) {
                     $result_type = $result_type->setParentNodes($before_adjustment->parent_nodes);

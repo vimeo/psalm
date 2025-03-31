@@ -274,7 +274,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
             return;
         }
 
-        if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+        if ($statements_analyzer->taint_flow_graph
             && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
             return;
@@ -283,7 +283,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
         $node_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
         $method_location = $method_storage
-            ? ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+            ? ($statements_analyzer->taint_flow_graph
                 ? ($method_storage->signature_return_type_location ?: $method_storage->location)
                 : ($method_storage->return_type_location ?: $method_storage->location))
             : null;
@@ -368,7 +368,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
 
         if ($method_storage
             && $method_storage->taint_source_types
-            && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+            && $statements_analyzer->taint_flow_graph
         ) {
             $method_node = DataFlowNode::getForMethodReturn(
                 (string) $method_id,
@@ -378,14 +378,14 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $method_storage->taint_source_types,
             );
 
-            $statements_analyzer->data_flow_graph->addSource($method_node);
+            $statements_analyzer->taint_flow_graph->addSource($method_node);
         }
 
-        if ($method_storage && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+        if ($method_storage && $statements_analyzer->taint_flow_graph) {
             FunctionCallReturnTypeFetcher::taintUsingFlows(
                 $statements_analyzer,
                 $method_storage,
-                $statements_analyzer->data_flow_graph,
+                $statements_analyzer->taint_flow_graph,
                 (string) $method_id,
                 $stmt->getArgs(),
                 $node_location,

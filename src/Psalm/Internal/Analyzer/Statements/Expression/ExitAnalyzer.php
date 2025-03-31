@@ -66,7 +66,7 @@ final class ExitAnalyzer
                 return false;
             }
 
-            if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+            if ($statements_analyzer->taint_flow_graph) {
                 $call_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
                 $echo_param_sink = DataFlowNode::getForMethodArgument(
@@ -81,7 +81,7 @@ final class ExitAnalyzer
                         | TaintKind::SYSTEM_SECRET,
                 );
 
-                $statements_analyzer->data_flow_graph->addSink($echo_param_sink);
+                $statements_analyzer->taint_flow_graph->addSink($echo_param_sink);
             }
 
             if ($expr_type = $statements_analyzer->node_data->getType($stmt->expr)) {

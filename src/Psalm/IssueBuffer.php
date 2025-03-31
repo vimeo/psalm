@@ -274,10 +274,6 @@ final class IssueBuffer
 
         $is_tainted = str_starts_with($issue_type, 'Tainted');
 
-        if ($codebase->taint_flow_graph && !$is_tainted) {
-            return false;
-        }
-
         $reporting_level = $config->getReportingLevelForIssue($e);
 
         if ($reporting_level === Config::REPORT_SUPPRESS) {

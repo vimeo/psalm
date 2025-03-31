@@ -108,9 +108,9 @@ final class EncapsulatedStringAnalyzer
                     $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
                     $taints = $added_taints & ~$removed_taints;
-                    if ($taints !== 0 && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+                    if ($taints !== 0 && $statements_analyzer->taint_flow_graph) {
                         $taint_source = $new_parent_node->setTaints($taints);
-                        $statements_analyzer->data_flow_graph->addSource($taint_source);
+                        $statements_analyzer->taint_flow_graph->addSource($taint_source);
                     }
 
                     if ($casted_part_type->parent_nodes) {

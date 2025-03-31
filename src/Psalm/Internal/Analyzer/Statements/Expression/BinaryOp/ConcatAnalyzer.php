@@ -88,11 +88,11 @@ final class ConcatAnalyzer
 
                     $origin_locations = [];
 
-                    if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
+                    if ($statements_analyzer->variable_use_graph) {
                         foreach ($left_type->parent_nodes as $parent_node) {
                             $origin_locations = [
                                 ...$origin_locations,
-                                ...$statements_analyzer->data_flow_graph->getOriginLocations($parent_node),
+                                ...$statements_analyzer->variable_use_graph->getOriginLocations($parent_node),
                             ];
                         }
                     }
@@ -115,11 +115,11 @@ final class ConcatAnalyzer
                     $arg_location = new CodeLocation($statements_analyzer->getSource(), $right);
                     $origin_locations = [];
 
-                    if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
+                    if ($statements_analyzer->variable_use_graph) {
                         foreach ($right_type->parent_nodes as $parent_node) {
                             $origin_locations = [
                                 ...$origin_locations,
-                                ...$statements_analyzer->data_flow_graph->getOriginLocations($parent_node),
+                                ...$statements_analyzer->variable_use_graph->getOriginLocations($parent_node),
                             ];
                         }
                     }

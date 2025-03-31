@@ -1071,7 +1071,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 && $function_param->location
             ) {
                 //don't add to taint flow graph if the type can't transmit taints
-                if (!$statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+                if ($statements_analyzer->variable_use_graph
                     || $function_param->type === null
                     || !$function_param->type->isSingle()
                     || (!$function_param->type->isInt()
@@ -1094,7 +1094,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                             null,
                         );
 
-                        $statements_analyzer->data_flow_graph->addPath($type_source, $param_assignment, 'param');
+                        $statements_analyzer->taint_flow_graph->addPath($type_source, $param_assignment, 'param');
                     }
 
                     if ($storage->variadic) {
@@ -2211,8 +2211,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
             $assignment_node = DataFlowNode::getForAssignment($var_name, $original_location);
 
-            if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
-                && $statements_analyzer->data_flow_graph->isVariableUsed($assignment_node)
+            if ($statements_analyzer->variable_use_graph
+                && $statements_analyzer->variable_use_graph->isVariableUsed($assignment_node)
             ) {
                 continue;
             }

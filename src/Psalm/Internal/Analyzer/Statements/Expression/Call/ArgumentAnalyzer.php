@@ -779,11 +779,11 @@ final class ArgumentAnalyzer
 
             $origin_locations = [];
 
-            if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
+            if ($statements_analyzer->variable_use_graph) {
                 foreach ($input_type->parent_nodes as $parent_node) {
                     $origin_locations = [
                         ...$origin_locations,
-                        ...$statements_analyzer->data_flow_graph->getOriginLocations($parent_node),
+                        ...$statements_analyzer->variable_use_graph->getOriginLocations($parent_node),
                     ];
                 }
             }
@@ -1139,11 +1139,11 @@ final class ArgumentAnalyzer
             if ($union_comparison_results->type_coerced_from_mixed) {
                 $origin_locations = [];
 
-                if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
+                if ($statements_analyzer->variable_use_graph) {
                     foreach ($input_type->parent_nodes as $parent_node) {
                         $origin_locations = [
                             ...$origin_locations,
-                            ...$statements_analyzer->data_flow_graph->getOriginLocations($parent_node),
+                            ...$statements_analyzer->variable_use_graph->getOriginLocations($parent_node),
                         ];
                     }
                 }
@@ -1750,14 +1750,14 @@ final class ArgumentAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         if (!$statements_analyzer->data_flow_graph
-            || ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+            || ($statements_analyzer->taint_flow_graph
                 && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues()))
         ) {
             return;
         }
 
         // literal data can’t be tainted
-        if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+        if ($statements_analyzer->taint_flow_graph
             && $input_type->isSingle()
             && $input_type->hasLiteralValue()
         ) {
@@ -1765,7 +1765,7 @@ final class ArgumentAnalyzer
         }
 
         // numeric types can't be tainted, neither can bool
-        if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+        if ($statements_analyzer->taint_flow_graph
             && $input_type->isSingle()
             && ($input_type->isInt() || $input_type->isFloat() || $input_type->isBool())
         ) {
@@ -1792,7 +1792,7 @@ final class ArgumentAnalyzer
                 $cased_method_id,
                 $cased_method_id,
                 $argument_offset,
-                $statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+                $statements_analyzer->taint_flow_graph
                     ? $function_param->location
                     : null,
                 $function_call_location,
@@ -1802,12 +1802,12 @@ final class ArgumentAnalyzer
                 $cased_method_id,
                 $cased_method_id,
                 $argument_offset,
-                $statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+                $statements_analyzer->taint_flow_graph
                     ? $function_param->location
                     : null,
             );
 
-            if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+            if ($statements_analyzer->taint_flow_graph
                 && $method_id
                 && $method_id->method_name !== '__construct'
             ) {
@@ -1829,8 +1829,8 @@ final class ArgumentAnalyzer
                         null,
                     );
 
-                    $statements_analyzer->data_flow_graph->addNode($new_sink);
-                    $statements_analyzer->data_flow_graph->addPath(
+                    $statements_analyzer->taint_flow_graph->addNode($new_sink);
+                    $statements_analyzer->taint_flow_graph->addPath(
                         $method_node,
                         $new_sink,
                         'arg',
@@ -1841,7 +1841,7 @@ final class ArgumentAnalyzer
             }
         }
 
-        if ($method_id && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+        if ($method_id && $statements_analyzer->taint_flow_graph) {
             $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
             if ($declaring_method_id && (string) $declaring_method_id !== (string) $method_id) {
@@ -1853,8 +1853,8 @@ final class ArgumentAnalyzer
                     null,
                 );
 
-                $statements_analyzer->data_flow_graph->addNode($new_sink);
-                $statements_analyzer->data_flow_graph->addPath(
+                $statements_analyzer->taint_flow_graph->addNode($new_sink);
+                $statements_analyzer->taint_flow_graph->addPath(
                     $method_node,
                     $new_sink,
                     'arg',
@@ -1893,9 +1893,9 @@ final class ArgumentAnalyzer
         }
 
         $taints = $added_taints & ~$removed_taints;
-        if ($taints !== 0 && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+        if ($taints !== 0 && $statements_analyzer->taint_flow_graph) {
             $taint_source = $argument_value_node->setTaints($taints);
-            $statements_analyzer->data_flow_graph->addSource($taint_source);
+            $statements_analyzer->taint_flow_graph->addSource($taint_source);
         }
     }
 }
