@@ -71,6 +71,10 @@ final class SarifReport extends Report
                     'text' => $issue_data->message,
                 ],
                 'level' => ($issue_data->severity === Config::REPORT_ERROR) ? 'error' : 'note',
+                'rank' => (float) ($issue_data->error_level > 0
+                    ? (90 + (8 - $issue_data->error_level)) // 8 to 1 => 90 to 97
+                    : (100 + $issue_data->error_level) // -1 to -2 => 99 to 98
+                ),
                 'locations' => [
                     [
                         'physicalLocation' => [
