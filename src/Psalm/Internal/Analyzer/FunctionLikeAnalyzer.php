@@ -20,8 +20,6 @@ use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
-use Psalm\Internal\Codebase\TaintFlowGraph;
-use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\FileManipulation\FunctionDocblockManipulator;
@@ -1085,7 +1083,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
                     $statements_analyzer->data_flow_graph->addNode($param_assignment);
 
-                    if ($cased_method_id !== null) {
+                    if ($cased_method_id !== null && $statements_analyzer->taint_flow_graph) {
                         $type_source = DataFlowNode::getForMethodArgument(
                             $cased_method_id,
                             $cased_method_id,

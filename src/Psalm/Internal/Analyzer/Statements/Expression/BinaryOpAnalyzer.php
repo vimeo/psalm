@@ -15,8 +15,6 @@ use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\NonComparisonOpAnalyz
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\OrAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Codebase\TaintFlowGraph;
-use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Issue\DocblockTypeContradiction;

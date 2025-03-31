@@ -32,7 +32,6 @@ use Psalm\Internal\Clause;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\DataFlowGraph;
 use Psalm\Internal\Codebase\TaintFlowGraph;
-use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\ReferenceConstraint;
@@ -789,7 +788,7 @@ final class AssignmentAnalyzer
 
     private static function taintAssignment(
         Union &$type,
-        DataFlowGraph $taint_flow_graph,
+        DataFlowGraph $data_flow_graph,
         string $var_id,
         CodeLocation $var_location,
         int $removed_taints,
@@ -797,23 +796,26 @@ final class AssignmentAnalyzer
     ): void {
         $parent_nodes = $type->parent_nodes;
 
+        $taint_flow_graph = $data_flow_graph instanceof TaintFlowGraph
+            ? $data_flow_graph
+            : ($data_flow_graph instanceof CombinedFlowGraph
+                ? $data_flow_graph->taint_flow_graph
+                : null
+        );
+
         $new_parent_node = DataFlowNode::getForAssignment($var_id, $var_location);
-        $taint_flow_graph->addNode($new_parent_node);
+        $data_flow_graph->addNode($new_parent_node);
         $new_parent_nodes = [$new_parent_node->id => $new_parent_node];
 
         // If taints get added (e.g. due to plugin) this assignment needs to
         // become a new taint source
         $taints = $added_taints & ~$removed_taints;
-        if ($taints !== 0) {
-            if ($taint_flow_graph instanceof TaintFlowGraph) {
-                $taint_flow_graph->addSource($new_parent_node->setTaints($taints));
-            } elseif ($taint_flow_graph instanceof CombinedFlowGraph) {
-                $taint_flow_graph->taint_flow_graph->addSource($new_parent_node->setTaints($taints));
-            }
+        if ($taints !== 0 && $taint_flow_graph) {
+            $taint_flow_graph->addSource($new_parent_node->setTaints($taints));
         }
 
         foreach ($parent_nodes as $parent_node) {
-            $taint_flow_graph->addPath(
+            $data_flow_graph->addPath(
                 $parent_node,
                 $new_parent_node,
                 '=',

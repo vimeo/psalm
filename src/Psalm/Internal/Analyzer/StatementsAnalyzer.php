@@ -175,7 +175,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
         }
         if ($this->taint_flow_graph && $this->variable_use_graph) {
             $this->data_flow_graph = new CombinedFlowGraph($this->variable_use_graph, $this->taint_flow_graph);
-        } 
+        }
     }
 
     /**

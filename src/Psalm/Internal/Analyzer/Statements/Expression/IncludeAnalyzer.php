@@ -14,7 +14,6 @@ use Psalm\Exception\UnpreparedAnalysisException;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Issue\MissingFile;
