@@ -565,7 +565,7 @@ final class FunctionCallReturnTypeFetcher
                 : ($function_storage->return_type_location ?: $function_storage->location),
             $function_storage->specialize_call ? $node_location : null,
         );
-        $statements_analyzer->data_flow_graph->addNode($function_call_node);
+        $graph->addNode($function_call_node);
 
         $codebase = $statements_analyzer->getCodebase();
 

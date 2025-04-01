@@ -169,6 +169,7 @@ final class BinaryOpAnalyzer
                 $taints = $added_taints & ~$removed_taints;
                 if ($taints !== 0 && !$graph instanceof VariableUseGraph) {
                     $taint_source = $new_parent_node->setTaints($taints);
+                    assert($statements_analyzer->taint_flow_graph !== null);
                     $statements_analyzer->taint_flow_graph->addSource($taint_source);
                 }
 
