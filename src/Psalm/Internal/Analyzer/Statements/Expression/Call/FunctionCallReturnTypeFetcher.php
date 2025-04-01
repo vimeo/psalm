@@ -13,6 +13,7 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
@@ -538,15 +539,15 @@ final class FunctionCallReturnTypeFetcher
         TemplateResult $template_result,
         Context $context,
     ): ?DataFlowNode {
-        if (!$statements_analyzer->data_flow_graph) {
+        if (!$graph = $statements_analyzer->getDataFlowGraphWithSuppressed()) {
             return null;
         }
-
-        if ($statements_analyzer->taint_flow_graph
-            && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
-        ) {
-            return null;
+        $taint_flow_graph = null;
+        if (!$graph instanceof VariableUseGraph) {
+            $taint_flow_graph = $statements_analyzer->taint_flow_graph;
+            assert($taint_flow_graph);
         }
+        $variable_use_graph = $statements_analyzer->variable_use_graph;
 
         $codebase = $statements_analyzer->getCodebase();
         $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
@@ -559,7 +560,7 @@ final class FunctionCallReturnTypeFetcher
         $function_call_node = DataFlowNode::getForMethodReturn(
             $function_id,
             $cased_function_id,
-            $statements_analyzer->taint_flow_graph
+            $taint_flow_graph
                 ? ($function_storage->signature_return_type_location ?: $function_storage->location)
                 : ($function_storage->return_type_location ?: $function_storage->location),
             $function_storage->specialize_call ? $node_location : null,
@@ -604,7 +605,14 @@ final class FunctionCallReturnTypeFetcher
                 $function_call_node->specialization_key,
             );
 
-            $statements_analyzer->data_flow_graph->addPath(
+            $variable_use_graph?->addPath(
+                $function_call_node,
+                $assignment_node,
+                'conditionally-escaped',
+                $added_taints,
+                $removed_taints | $conditionally_removed_taints,
+            );
+            $taint_flow_graph?->addPath(
                 $function_call_node,
                 $assignment_node,
                 'conditionally-escaped',
@@ -617,7 +625,7 @@ final class FunctionCallReturnTypeFetcher
             $stmt_type = $stmt_type->addParentNodes([$function_call_node->id => $function_call_node]);
         }
 
-        if (!$statements_analyzer->taint_flow_graph) {
+        if (!$taint_flow_graph) {
             return $function_call_node;
         }
 
