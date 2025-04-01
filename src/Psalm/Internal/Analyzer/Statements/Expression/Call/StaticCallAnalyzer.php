@@ -13,6 +13,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticMethod\AtomicStatic
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
@@ -269,22 +270,16 @@ final class StaticCallAnalyzer extends CallAnalyzer
         ?TemplateResult $template_result,
         ?Context $context = null,
     ): void {
-        if (!$statements_analyzer->data_flow_graph) {
-            return;
-        }
-
-        if ($statements_analyzer->taint_flow_graph
-            && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
-        ) {
+        if (!$graph = $statements_analyzer->getDataFlowGraphWithSuppressed()) {
             return;
         }
 
         $node_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
         $method_location = $method_storage
-            ? ($statements_analyzer->taint_flow_graph
-                ? ($method_storage->signature_return_type_location ?: $method_storage->location)
-                : ($method_storage->return_type_location ?: $method_storage->location))
+            ? ($graph instanceof VariableUseGraph
+                ? ($method_storage->return_type_location ?: $method_storage->location)
+                : ($method_storage->signature_return_type_location ?: $method_storage->location))
             : null;
 
         if ($method_storage && $method_storage->specialize_call) {
@@ -302,7 +297,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
             );
         }
 
-        $statements_analyzer->data_flow_graph->addNode($method_source);
+        $graph->addNode($method_source);
 
         $codebase = $statements_analyzer->getCodebase();
 
@@ -352,7 +347,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $method_source->specialization_key,
             );
 
-            $statements_analyzer->data_flow_graph->addPath(
+            $graph->addPath(
                 $method_source,
                 $assignment_node,
                 'conditionally-escaped',
@@ -365,9 +360,12 @@ final class StaticCallAnalyzer extends CallAnalyzer
             $return_type_candidate = $return_type_candidate->setParentNodes([$method_source->id => $method_source]);
         }
 
+        if ($graph instanceof VariableUseGraph) {
+            return;
+        }
+
         if ($method_storage
             && $method_storage->taint_source_types
-            && $statements_analyzer->taint_flow_graph
         ) {
             $method_node = DataFlowNode::getForMethodReturn(
                 (string) $method_id,
@@ -380,7 +378,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
             $statements_analyzer->taint_flow_graph->addSource($method_node);
         }
 
-        if ($method_storage && $statements_analyzer->taint_flow_graph) {
+        if ($method_storage) {
             FunctionCallReturnTypeFetcher::taintUsingFlows(
                 $statements_analyzer,
                 $method_storage,
