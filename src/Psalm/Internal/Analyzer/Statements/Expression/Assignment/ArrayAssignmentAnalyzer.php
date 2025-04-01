@@ -46,7 +46,6 @@ use function assert;
 use function count;
 use function end;
 use function implode;
-use function in_array;
 use function is_string;
 use function str_contains;
 use function strlen;

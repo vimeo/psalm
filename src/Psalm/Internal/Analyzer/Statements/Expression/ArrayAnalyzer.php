@@ -44,6 +44,7 @@ use function array_merge;
 use function array_values;
 use function count;
 use function filter_var;
+use function in_array;
 use function is_int;
 use function is_numeric;
 use function is_string;
@@ -419,7 +420,8 @@ final class ArrayAnalyzer
                 $taint_flow_graph = null;
             }
             if ($item_value_type = $statements_analyzer->node_data->getType($item->value)) {
-                if ($item_value_type->isSingle()
+                if ($taint_flow_graph
+                    && $item_value_type->isSingle()
                     && $item_value_type->hasLiteralValue()
                 ) {
                     $taint_flow_graph = null;

@@ -33,7 +33,6 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function in_array;
 use function strlen;
 
 /**
