@@ -545,7 +545,7 @@ final class FunctionCallReturnTypeFetcher
         $taint_flow_graph = null;
         if (!$graph instanceof VariableUseGraph) {
             $taint_flow_graph = $statements_analyzer->taint_flow_graph;
-            assert($taint_flow_graph);
+            assert($taint_flow_graph !== null);
         }
         $variable_use_graph = $statements_analyzer->variable_use_graph;
 

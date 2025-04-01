@@ -1773,7 +1773,10 @@ final class ArgumentAnalyzer
                 return;
             }
         }
-        $allow_taints = !$graph instanceof VariableUseGraph;
+        $taint_flow_graph = null;
+        if (!$graph instanceof VariableUseGraph) {
+            $taint_flow_graph = $statements_analyzer->taint_flow_graph;
+        }
 
         $event = new AddRemoveTaintsEvent($expr, $context, $statements_analyzer, $codebase);
 
@@ -1795,7 +1798,7 @@ final class ArgumentAnalyzer
                 $cased_method_id,
                 $cased_method_id,
                 $argument_offset,
-                $allow_taints
+                $taint_flow_graph
                     ? $function_param->location
                     : null,
                 $function_call_location,
@@ -1805,12 +1808,12 @@ final class ArgumentAnalyzer
                 $cased_method_id,
                 $cased_method_id,
                 $argument_offset,
-                $allow_taints
+                $taint_flow_graph
                     ? $function_param->location
                     : null,
             );
 
-            if ($allow_taints
+            if ($taint_flow_graph
                 && $method_id
                 && $method_id->method_name !== '__construct'
             ) {
@@ -1832,8 +1835,8 @@ final class ArgumentAnalyzer
                         null,
                     );
 
-                    $statements_analyzer->taint_flow_graph->addNode($new_sink);
-                    $statements_analyzer->taint_flow_graph->addPath(
+                    $taint_flow_graph->addNode($new_sink);
+                    $taint_flow_graph->addPath(
                         $method_node,
                         $new_sink,
                         'arg',
@@ -1844,7 +1847,7 @@ final class ArgumentAnalyzer
             }
         }
 
-        if ($method_id && $allow_taints) {
+        if ($method_id && $taint_flow_graph) {
             $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
             if ($declaring_method_id && (string) $declaring_method_id !== (string) $method_id) {
@@ -1856,8 +1859,8 @@ final class ArgumentAnalyzer
                     null,
                 );
 
-                $statements_analyzer->taint_flow_graph->addNode($new_sink);
-                $statements_analyzer->taint_flow_graph->addPath(
+                $taint_flow_graph->addNode($new_sink);
+                $taint_flow_graph->addPath(
                     $method_node,
                     $new_sink,
                     'arg',
@@ -1896,9 +1899,9 @@ final class ArgumentAnalyzer
         }
 
         $taints = $added_taints & ~$removed_taints;
-        if ($taints !== 0 && $allow_taints) {
+        if ($taints !== 0 && $taint_flow_graph) {
             $taint_source = $argument_value_node->setTaints($taints);
-            $statements_analyzer->taint_flow_graph->addSource($taint_source);
+            $taint_flow_graph->addSource($taint_source);
         }
     }
 }

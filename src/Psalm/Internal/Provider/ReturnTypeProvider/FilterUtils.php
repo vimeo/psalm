@@ -1481,9 +1481,7 @@ final class FilterUtils
         Union $return_type,
         string $function_id,
     ): Union {
-        if ($statements_analyzer->data_flow_graph
-            && !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
-        ) {
+        if ($statements_analyzer->data_flow_graph) {
             $function_return_sink = DataFlowNode::getForMethodReturn(
                 $function_id,
                 $function_id,

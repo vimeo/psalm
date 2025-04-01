@@ -16,6 +16,8 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Codebase\CombinedFlowGraph;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
@@ -385,9 +387,7 @@ final class ArrayFetchAnalyzer
             && ($stmt_var_type = $statements_analyzer->node_data->getType($var))
             && $stmt_var_type->parent_nodes
         ) {
-            if ($statements_analyzer->taint_flow_graph
-                && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
-            ) {
+            if (!$graph = $statements_analyzer->getDataFlowGraphWithSuppressed()) {
                 $statements_analyzer->node_data->setType($var, $stmt_var_type->setParentNodes([]));
                 return;
             }
@@ -410,15 +410,15 @@ final class ArrayFetchAnalyzer
                 $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
                 $taints = $added_taints & ~$removed_taints;
-                if ($taints !== 0 && $statements_analyzer->taint_flow_graph) {
+                if ($taints !== 0 && ($graph instanceof CombinedFlowGraph || $graph instanceof TaintFlowGraph)) {
                     $taint_source = $new_parent_node->setTaints($taints);
-                    $statements_analyzer->taint_flow_graph->addSource($taint_source);
+                    $graph->addSource($taint_source);
                 }
             }
 
             $array_key_node = null;
 
-            $statements_analyzer->data_flow_graph->addNode($new_parent_node);
+            $graph->addNode($new_parent_node);
 
             $dim_value = $offset_type->isSingleStringLiteral()
                 ? $offset_type->getSingleStringLiteral()->value
@@ -432,11 +432,11 @@ final class ArrayFetchAnalyzer
                     $var_location,
                 );
 
-                $statements_analyzer->data_flow_graph->addNode($array_key_node);
+                $graph->addNode($array_key_node);
             }
 
             foreach ($stmt_var_type->parent_nodes as $parent_node) {
-                $statements_analyzer->data_flow_graph->addPath(
+                $graph->addPath(
                     $parent_node,
                     $new_parent_node,
                     'arrayvalue-fetch' . ($dim_value !== null ? '-\'' . $dim_value . '\'' : ''),
@@ -445,7 +445,7 @@ final class ArrayFetchAnalyzer
                 );
 
                 if ($stmt_type->by_ref) {
-                    $statements_analyzer->data_flow_graph->addPath(
+                    $graph->addPath(
                         $new_parent_node,
                         $parent_node,
                         'arrayvalue-assignment' . ($dim_value !== null ? '-\'' . $dim_value . '\'' : ''),
@@ -455,7 +455,7 @@ final class ArrayFetchAnalyzer
                 }
 
                 if ($array_key_node) {
-                    $statements_analyzer->data_flow_graph->addPath(
+                    $graph->addPath(
                         $parent_node,
                         $array_key_node,
                         'arraykey-fetch',
