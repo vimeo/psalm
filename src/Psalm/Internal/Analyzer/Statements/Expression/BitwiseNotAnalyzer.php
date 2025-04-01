@@ -114,7 +114,7 @@ final class BitwiseNotAnalyzer
             $stmt_value_type = $statements_analyzer->node_data->getType($value);
 
             $new_parent_node = DataFlowNode::getForAssignment('bitwisenot', $var_location);
-            $statements_analyzer->data_flow_graph->addNode($new_parent_node);
+            $statements_analyzer->variable_use_graph->addNode($new_parent_node);
             $result_type = $result_type->setParentNodes([
                 $new_parent_node->id => $new_parent_node,
             ]);
@@ -122,7 +122,7 @@ final class BitwiseNotAnalyzer
 
             if ($stmt_value_type && $stmt_value_type->parent_nodes) {
                 foreach ($stmt_value_type->parent_nodes as $parent_node) {
-                    $statements_analyzer->data_flow_graph->addPath($parent_node, $new_parent_node, 'bitwisenot');
+                    $statements_analyzer->variable_use_graph->addPath($parent_node, $new_parent_node, 'bitwisenot');
                 }
             }
         }

@@ -139,7 +139,7 @@ final class IncludeAnalyzer
             }
 
             foreach ($stmt_expr_type->parent_nodes as $parent_node) {
-                $statements_analyzer->data_flow_graph->addPath(
+                $statements_analyzer->taint_flow_graph->addPath(
                     $parent_node,
                     $include_param_sink,
                     'arg',

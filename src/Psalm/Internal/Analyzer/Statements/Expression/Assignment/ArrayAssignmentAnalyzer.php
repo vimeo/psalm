@@ -388,10 +388,7 @@ final class ArrayAssignmentAnalyzer
         ?string $var_var_id,
         array $key_values,
     ): void {
-        if ($statements_analyzer->data_flow_graph
-            && ($statements_analyzer->variable_use_graph
-                || !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues()))
-        ) {
+        if ($graph = $statements_analyzer->getDataFlowGraphWithSuppressed()) {
             $var_location = new CodeLocation($statements_analyzer->getSource(), $expr->var);
 
             $parent_node = DataFlowNode::getForAssignment(
@@ -399,21 +396,21 @@ final class ArrayAssignmentAnalyzer
                 $var_location,
             );
 
-            $statements_analyzer->data_flow_graph->addNode($parent_node);
+            $graph->addNode($parent_node);
 
             $old_parent_nodes = $stmt_type->parent_nodes;
 
             $stmt_type = $stmt_type->setParentNodes([$parent_node->id => $parent_node]);
 
             foreach ($old_parent_nodes as $old_parent_node) {
-                $statements_analyzer->data_flow_graph->addPath(
+                $graph->addPath(
                     $old_parent_node,
                     $parent_node,
                     '=',
                 );
 
                 if ($stmt_type->by_ref) {
-                    $statements_analyzer->data_flow_graph->addPath(
+                    $graph->addPath(
                         $parent_node,
                         $old_parent_node,
                         '=',
@@ -425,14 +422,14 @@ final class ArrayAssignmentAnalyzer
                 foreach ($child_stmt_type->parent_nodes as $child_parent_node) {
                     if ($key_values) {
                         foreach ($key_values as $key_value) {
-                            $statements_analyzer->data_flow_graph->addPath(
+                            $graph->addPath(
                                 $child_parent_node,
                                 $parent_node,
                                 'arrayvalue-assignment-\'' . $key_value->value . '\'',
                             );
                         }
                     } else {
-                        $statements_analyzer->data_flow_graph->addPath(
+                        $graph->addPath(
                             $child_parent_node,
                             $parent_node,
                             'arrayvalue-assignment',
@@ -878,7 +875,7 @@ final class ArrayAssignmentAnalyzer
             && $root_var_id === '$' . $root_var->name
         ) {
             // Array is a reference to an external scope, mark it as used
-            $statements_analyzer->data_flow_graph->addPath(
+            $statements_analyzer->variable_use_graph->addPath(
                 DataFlowNode::getForAssignment(
                     $root_var_id,
                     new CodeLocation($statements_analyzer->getSource(), $root_var),

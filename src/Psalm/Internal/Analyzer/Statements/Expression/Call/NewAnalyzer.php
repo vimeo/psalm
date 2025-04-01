@@ -673,7 +673,7 @@ final class NewAnalyzer extends CallAnalyzer
                 );
             }
 
-            $statements_analyzer->data_flow_graph->addNode($method_source);
+            $statements_analyzer->taint_flow_graph->addNode($method_source);
 
             $stmt_type = $stmt_type->setParentNodes([$method_source->id => $method_source]);
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
@@ -744,7 +744,7 @@ final class NewAnalyzer extends CallAnalyzer
                 }
 
                 foreach ($stmt_class_type->parent_nodes as $parent_node) {
-                    $statements_analyzer->data_flow_graph->addPath(
+                    $statements_analyzer->taint_flow_graph->addPath(
                         $parent_node,
                         $custom_call_sink,
                         'call',

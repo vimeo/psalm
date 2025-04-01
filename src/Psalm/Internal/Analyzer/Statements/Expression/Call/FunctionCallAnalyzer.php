@@ -833,6 +833,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 && $stmt_name_type->parent_nodes
                 && !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
             ) {
+                assert($statements_analyzer->data_flow_graph !== null);
                 $arg_location = new CodeLocation($statements_analyzer->getSource(), $function_name);
 
                 $custom_call_sink = DataFlowNode::getForMethodArgument(

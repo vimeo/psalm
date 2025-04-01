@@ -595,7 +595,7 @@ final class ReturnAnalyzer
             $storage->signature_return_type_location ?: $storage->location,
         );
 
-        $statements_analyzer->data_flow_graph->addNode($method_node);
+        $statements_analyzer->taint_flow_graph->addNode($method_node);
 
         $codebase = $statements_analyzer->getCodebase();
 

@@ -788,7 +788,7 @@ final class AssignmentAnalyzer
 
     private static function taintAssignment(
         Union &$type,
-        DataFlowGraph $data_flow_graph,
+        DataFlowGraph $flow_graph,
         string $var_id,
         CodeLocation $var_location,
         int $removed_taints,
@@ -796,26 +796,19 @@ final class AssignmentAnalyzer
     ): void {
         $parent_nodes = $type->parent_nodes;
 
-        $taint_flow_graph = $data_flow_graph instanceof TaintFlowGraph
-            ? $data_flow_graph
-            : ($data_flow_graph instanceof CombinedFlowGraph
-                ? $data_flow_graph->taint_flow_graph
-                : null
-        );
-
         $new_parent_node = DataFlowNode::getForAssignment($var_id, $var_location);
-        $data_flow_graph->addNode($new_parent_node);
+        $flow_graph->addNode($new_parent_node);
         $new_parent_nodes = [$new_parent_node->id => $new_parent_node];
 
         // If taints get added (e.g. due to plugin) this assignment needs to
         // become a new taint source
         $taints = $added_taints & ~$removed_taints;
-        if ($taints !== 0 && $taint_flow_graph) {
-            $taint_flow_graph->addSource($new_parent_node->setTaints($taints));
+        if ($taints !== 0 && $flow_graph instanceof TaintFlowGraph) {
+            $flow_graph->addSource($new_parent_node->setTaints($taints));
         }
 
         foreach ($parent_nodes as $parent_node) {
-            $data_flow_graph->addPath(
+            $flow_graph->addPath(
                 $parent_node,
                 $new_parent_node,
                 '=',
@@ -1090,7 +1083,7 @@ final class AssignmentAnalyzer
                         if ($statements_analyzer->variable_use_graph) {
                             $byref_node = DataFlowNode::getForAssignment($var_id, $location);
 
-                            $statements_analyzer->data_flow_graph->addPath(
+                            $statements_analyzer->variable_use_graph->addPath(
                                 $byref_node,
                                 DataFlowNode::getForVariableUse(),
                                 'variable-use',
@@ -1549,7 +1542,7 @@ final class AssignmentAnalyzer
 
                                 self::taintAssignment(
                                     $context->vars_in_scope[$list_var_id],
-                                    $statements_analyzer->data_flow_graph,
+                                    $statements_analyzer->getDataFlowGraphWithSuppressed(),
                                     $list_var_id,
                                     $var_location,
                                     $removed_taints,
@@ -1740,7 +1733,7 @@ final class AssignmentAnalyzer
                             $parent_nodes += $original_type->parent_nodes;
                         }
                         foreach ($parent_nodes as $parent_node) {
-                            $statements_analyzer->data_flow_graph->addPath(
+                            $statements_analyzer->variable_use_graph->addPath(
                                 $parent_node,
                                 $assignment_node,
                                 '&=', // Normal assignment to reference/referenced variable
@@ -1749,7 +1742,7 @@ final class AssignmentAnalyzer
 
                         if (isset($context->references_to_external_scope[$var_id])) {
                             // Mark reference to an external scope as used when a value is assigned to it
-                            $statements_analyzer->data_flow_graph->addPath(
+                            $statements_analyzer->variable_use_graph->addPath(
                                 $assignment_node,
                                 DataFlowNode::getForVariableUse(),
                                 'variable-use',
@@ -1817,7 +1810,7 @@ final class AssignmentAnalyzer
                 && $assign_value_type->parent_nodes
             ) {
                 foreach ($assign_value_type->parent_nodes as $parent_node) {
-                    $statements_analyzer->data_flow_graph->addPath(
+                    $statements_analyzer->variable_use_graph->addPath(
                         $parent_node,
                         DataFlowNode::getForVariableUse(),
                         'variable-use',
@@ -1883,7 +1876,7 @@ final class AssignmentAnalyzer
 
             self::taintAssignment(
                 $context->vars_in_scope[$var_id],
-                $data_flow_graph,
+                $statements_analyzer->getDataFlowGraphWithSuppressed(),
                 $var_id,
                 $var_location,
                 $removed_taints,
