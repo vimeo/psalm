@@ -40,7 +40,6 @@ use Psalm\Internal\Analyzer\Statements\StaticAnalyzer;
 use Psalm\Internal\Analyzer\Statements\UnsetAnalyzer;
 use Psalm\Internal\Analyzer\Statements\UnusedAssignmentRemover;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
-use Psalm\Internal\Codebase\DataFlowGraph;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -142,7 +141,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
 
     public ?TaintFlowGraph $taint_flow_graph = null;
     public ?VariableUseGraph $variable_use_graph = null;
-    public ?DataFlowGraph $data_flow_graph = null;
+    public TaintFlowGraph|CombinedFlowGraph|VariableUseGraph|null $data_flow_graph = null;
 
     /**
      * Locations of foreach values
@@ -178,7 +177,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
         }
     }
 
-    public function getDataFlowGraphWithSuppressed(): ?DataFlowGraph
+    public function getDataFlowGraphWithSuppressed(): TaintFlowGraph|CombinedFlowGraph|VariableUseGraph|null
     {
         if ($this->taint_flow_graph && in_array('TaintedInput', $this->getSuppressedIssues())) {
             return $this->variable_use_graph;

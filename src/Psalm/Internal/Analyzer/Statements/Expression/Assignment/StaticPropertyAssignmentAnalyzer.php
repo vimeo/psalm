@@ -198,15 +198,18 @@ final class StaticPropertyAssignmentAnalyzer
                 $context->vars_in_scope[$var_id] = $assignment_value_type;
             }
 
-            InstancePropertyAssignmentAnalyzer::taintUnspecializedProperty(
-                $statements_analyzer,
-                $stmt,
-                $property_id,
-                $class_storage,
-                $assignment_value_type,
-                $context,
-                null,
-            );
+            if ($graph = $statements_analyzer->getDataFlowGraphWithSuppressed()) {
+                InstancePropertyAssignmentAnalyzer::taintUnspecializedProperty(
+                    $statements_analyzer,
+                    $graph,
+                    $stmt,
+                    $property_id,
+                    $class_storage,
+                    $assignment_value_type,
+                    $context,
+                    null,
+                );
+            }
 
             $class_property_type = $codebase->properties->getPropertyType(
                 $property_id,

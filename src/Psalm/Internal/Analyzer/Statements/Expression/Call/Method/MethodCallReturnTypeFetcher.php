@@ -15,7 +15,6 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFet
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
-use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
@@ -317,6 +316,7 @@ final class MethodCallReturnTypeFetcher
             $statements_analyzer,
         );
 
+        $method_call_node = null;
         if ($method_storage->specialize_call
             && $taint_flow_graph
         ) {
@@ -529,7 +529,7 @@ final class MethodCallReturnTypeFetcher
             ]);
         }
 
-        if (!$taint_flow_graph) {
+        if (!$taint_flow_graph || !$method_call_node) {
             return;
         }
 

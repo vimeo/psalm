@@ -25,8 +25,6 @@ use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
 
-use function assert;
-
 /**
  * @internal
  */
@@ -107,9 +105,8 @@ final class EncapsulatedStringAnalyzer
 
                     $taints = $added_taints & ~$removed_taints;
                     if ($taints !== 0 && !$graph instanceof VariableUseGraph) {
-                        assert($statements_analyzer->taint_flow_graph);
                         $taint_source = $new_parent_node->setTaints($taints);
-                        $statements_analyzer->taint_flow_graph->addSource($taint_source);
+                        $graph->addSource($taint_source);
                     }
 
                     if ($casted_part_type->parent_nodes) {

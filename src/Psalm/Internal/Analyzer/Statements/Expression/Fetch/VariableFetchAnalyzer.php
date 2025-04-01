@@ -495,7 +495,7 @@ final class VariableFetchAnalyzer
         Union &$type,
         PhpParser\Node\Expr\Variable $stmt,
     ): void {
-        if (!$graph = $statements_analyzer->getDataFlowGraphWithSuppressed()) {
+        if (!$graph = $statements_analyzer->getTaintFlowGraphWithSuppressed()) {
             return;
         }
 

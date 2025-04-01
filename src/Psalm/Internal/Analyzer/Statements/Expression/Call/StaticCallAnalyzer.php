@@ -360,7 +360,8 @@ final class StaticCallAnalyzer extends CallAnalyzer
             $return_type_candidate = $return_type_candidate->setParentNodes([$method_source->id => $method_source]);
         }
 
-        if ($graph instanceof VariableUseGraph) {
+        $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
+        if (!$taint_flow_graph) {
             return;
         }
 
@@ -375,14 +376,14 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $method_storage->taint_source_types,
             );
 
-            $statements_analyzer->taint_flow_graph->addSource($method_node);
+            $taint_flow_graph->addSource($method_node);
         }
 
         if ($method_storage) {
             FunctionCallReturnTypeFetcher::taintUsingFlows(
                 $statements_analyzer,
                 $method_storage,
-                $statements_analyzer->taint_flow_graph,
+                $taint_flow_graph,
                 (string) $method_id,
                 $stmt->getArgs(),
                 $node_location,

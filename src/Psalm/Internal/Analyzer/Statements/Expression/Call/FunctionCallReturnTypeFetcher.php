@@ -13,7 +13,6 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
-use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
@@ -43,7 +42,6 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_values;
-use function assert;
 use function count;
 use function explode;
 use function str_contains;
@@ -666,7 +664,7 @@ final class FunctionCallReturnTypeFetcher
             self::taintUsingFlows(
                 $statements_analyzer,
                 $function_storage,
-                $statements_analyzer->taint_flow_graph,
+                $taint_flow_graph,
                 $function_id,
                 $stmt->getArgs(),
                 $node_location,
@@ -676,7 +674,7 @@ final class FunctionCallReturnTypeFetcher
             );
         }
 
-        self::taintUsingStorage($function_storage, $statements_analyzer->taint_flow_graph, $function_call_node);
+        self::taintUsingStorage($function_storage, $taint_flow_graph, $function_call_node);
 
         return $function_call_node;
     }

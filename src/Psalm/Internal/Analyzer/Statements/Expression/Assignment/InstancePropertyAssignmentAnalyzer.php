@@ -24,6 +24,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnaly
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Codebase\DataFlowGraph;
 use Psalm\Internal\Codebase\Methods;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -79,7 +80,6 @@ use UnexpectedValueException;
 
 use function array_merge;
 use function array_pop;
-use function assert;
 use function count;
 use function in_array;
 use function reset;
@@ -505,9 +505,8 @@ final class InstancePropertyAssignmentAnalyzer
 
                 $taints = $added_taints & ~$removed_taints;
                 if ($taints !== 0 && !$graph instanceof VariableUseGraph) {
-                    assert($statements_analyzer->taint_flow_graph);
                     $taint_source = $property_node->setTaints($taints);
-                    $statements_analyzer->taint_flow_graph->addSource($taint_source);
+                    $graph->addSource($taint_source);
                 }
 
                 $graph->addPath(
@@ -553,6 +552,7 @@ final class InstancePropertyAssignmentAnalyzer
 
             self::taintUnspecializedProperty(
                 $statements_analyzer,
+                $graph,
                 $stmt,
                 $property_id,
                 $class_storage,
@@ -565,6 +565,7 @@ final class InstancePropertyAssignmentAnalyzer
 
     public static function taintUnspecializedProperty(
         StatementsAnalyzer $statements_analyzer,
+        DataFlowGraph $graph,
         PhpParser\Node\Expr $stmt,
         string $property_id,
         ClassLikeStorage $class_storage,
@@ -574,12 +575,6 @@ final class InstancePropertyAssignmentAnalyzer
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
-        $data_flow_graph = $statements_analyzer->data_flow_graph;
-
-        if (!$data_flow_graph) {
-            return;
-        }
-
         $property_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
         $localized_property_node = DataFlowNode::getForAssignment(
@@ -587,7 +582,7 @@ final class InstancePropertyAssignmentAnalyzer
             $property_location,
         );
 
-        $data_flow_graph->addNode($localized_property_node);
+        $graph->addNode($localized_property_node);
 
         $property_node = DataFlowNode::make(
             $property_id,
@@ -596,7 +591,7 @@ final class InstancePropertyAssignmentAnalyzer
             null,
         );
 
-        $data_flow_graph->addNode($property_node);
+        $graph->addNode($property_node);
 
         $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
 
@@ -609,7 +604,7 @@ final class InstancePropertyAssignmentAnalyzer
             $statements_analyzer->taint_flow_graph->addSource($taint_source);
         }
 
-        $data_flow_graph->addPath(
+        $graph->addPath(
             $localized_property_node,
             $property_node,
             'property-assignment',
@@ -619,7 +614,7 @@ final class InstancePropertyAssignmentAnalyzer
 
         if ($assignment_value_type->parent_nodes) {
             foreach ($assignment_value_type->parent_nodes as $parent_node) {
-                $data_flow_graph->addPath(
+                $graph->addPath(
                     $parent_node,
                     $localized_property_node,
                     '=',
@@ -649,9 +644,9 @@ final class InstancePropertyAssignmentAnalyzer
                 null,
             );
 
-            $data_flow_graph->addNode($declaring_property_node);
+            $graph->addNode($declaring_property_node);
 
-            $data_flow_graph->addPath(
+            $graph->addPath(
                 $property_node,
                 $declaring_property_node,
                 'property-assignment',

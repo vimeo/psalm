@@ -263,7 +263,6 @@ final class IssueBuffer
     {
         $config = Config::getInstance();
         $project_analyzer = ProjectAnalyzer::getInstance();
-        $codebase = $project_analyzer->getCodebase();
 
         $fqcn_parts = explode('\\', $e::class);
         $issue_type = array_pop($fqcn_parts);
