@@ -22,8 +22,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Codebase\CombinedFlowGraph;
-use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
@@ -901,7 +900,7 @@ final class AtomicPropertyFetchAnalyzer
                 $type = $type->setParentNodes([$property_node->id => $property_node], true);
 
                 $taints = $added_taints & ~$removed_taints;
-                if ($taints !== 0 && ($graph instanceof TaintFlowGraph || $graph instanceof CombinedFlowGraph)) {
+                if ($taints !== 0 && !$graph instanceof VariableUseGraph) {
                     $taint_source = $var_node->setTaints($taints);
                     $graph->addSource($taint_source);
                 }

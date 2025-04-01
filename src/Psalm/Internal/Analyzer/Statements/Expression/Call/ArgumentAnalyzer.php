@@ -19,7 +19,6 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
-use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
@@ -1773,10 +1772,7 @@ final class ArgumentAnalyzer
                 return;
             }
         }
-        $taint_flow_graph = null;
-        if (!$graph instanceof VariableUseGraph) {
-            $taint_flow_graph = $statements_analyzer->taint_flow_graph;
-        }
+        $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
 
         $event = new AddRemoveTaintsEvent($expr, $context, $statements_analyzer, $codebase);
 

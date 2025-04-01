@@ -16,8 +16,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
-use Psalm\Internal\Codebase\CombinedFlowGraph;
-use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
@@ -410,7 +409,7 @@ final class ArrayFetchAnalyzer
                 $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
                 $taints = $added_taints & ~$removed_taints;
-                if ($taints !== 0 && ($graph instanceof CombinedFlowGraph || $graph instanceof TaintFlowGraph)) {
+                if ($taints !== 0 && !$graph instanceof VariableUseGraph) {
                     $taint_source = $new_parent_node->setTaints($taints);
                     $graph->addSource($taint_source);
                 }
