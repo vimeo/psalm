@@ -19,6 +19,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
+use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
@@ -1747,10 +1748,7 @@ final class ArgumentAnalyzer
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
-        if (!$statements_analyzer->data_flow_graph
-            || ($statements_analyzer->taint_flow_graph
-                && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues()))
-        ) {
+        if (!$graph = $statements_analyzer->getDataFlowGraphWithSuppressed()) {
             return;
         }
 
@@ -1759,7 +1757,10 @@ final class ArgumentAnalyzer
             && $input_type->isSingle()
             && $input_type->hasLiteralValue()
         ) {
-            return;
+            $graph = $statements_analyzer->variable_use_graph;
+            if (!$graph) {
+                return;
+            }
         }
 
         // numeric types can't be tainted, neither can bool
@@ -1767,8 +1768,12 @@ final class ArgumentAnalyzer
             && $input_type->isSingle()
             && ($input_type->isInt() || $input_type->isFloat() || $input_type->isBool())
         ) {
-            return;
+            $graph = $statements_analyzer->variable_use_graph;
+            if (!$graph) {
+                return;
+            }
         }
+        $allow_taints = !$graph instanceof VariableUseGraph;
 
         $event = new AddRemoveTaintsEvent($expr, $context, $statements_analyzer, $codebase);
 
@@ -1790,7 +1795,7 @@ final class ArgumentAnalyzer
                 $cased_method_id,
                 $cased_method_id,
                 $argument_offset,
-                $statements_analyzer->taint_flow_graph
+                $allow_taints
                     ? $function_param->location
                     : null,
                 $function_call_location,
@@ -1800,12 +1805,12 @@ final class ArgumentAnalyzer
                 $cased_method_id,
                 $cased_method_id,
                 $argument_offset,
-                $statements_analyzer->taint_flow_graph
+                $allow_taints
                     ? $function_param->location
                     : null,
             );
 
-            if ($statements_analyzer->taint_flow_graph
+            if ($allow_taints
                 && $method_id
                 && $method_id->method_name !== '__construct'
             ) {
@@ -1839,7 +1844,7 @@ final class ArgumentAnalyzer
             }
         }
 
-        if ($method_id && $statements_analyzer->taint_flow_graph) {
+        if ($method_id && $allow_taints) {
             $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
             if ($declaring_method_id && (string) $declaring_method_id !== (string) $method_id) {
@@ -1862,16 +1867,16 @@ final class ArgumentAnalyzer
             }
         }
 
-        $statements_analyzer->data_flow_graph->addNode($method_node);
+        $graph->addNode($method_node);
 
         $argument_value_node = DataFlowNode::getForAssignment(
             'call to ' . $cased_method_id,
             $arg_location,
         );
 
-        $statements_analyzer->data_flow_graph->addNode($argument_value_node);
+        $graph->addNode($argument_value_node);
 
-        $statements_analyzer->data_flow_graph->addPath(
+        $graph->addPath(
             $argument_value_node,
             $method_node,
             'arg',
@@ -1880,8 +1885,8 @@ final class ArgumentAnalyzer
         );
 
         foreach ($input_type->parent_nodes as $parent_node) {
-            $statements_analyzer->data_flow_graph->addNode($method_node);
-            $statements_analyzer->data_flow_graph->addPath(
+            $graph->addNode($method_node);
+            $graph->addPath(
                 $parent_node,
                 $argument_value_node,
                 'arg',
@@ -1891,7 +1896,7 @@ final class ArgumentAnalyzer
         }
 
         $taints = $added_taints & ~$removed_taints;
-        if ($taints !== 0 && $statements_analyzer->taint_flow_graph) {
+        if ($taints !== 0 && $allow_taints) {
             $taint_source = $argument_value_node->setTaints($taints);
             $statements_analyzer->taint_flow_graph->addSource($taint_source);
         }

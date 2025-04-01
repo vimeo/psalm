@@ -79,6 +79,7 @@ use UnexpectedValueException;
 
 use function array_merge;
 use function array_pop;
+use function assert;
 use function count;
 use function in_array;
 use function reset;

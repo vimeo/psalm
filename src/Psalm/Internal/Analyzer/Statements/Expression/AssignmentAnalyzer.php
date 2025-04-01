@@ -88,6 +88,7 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function assert;
 use function count;
 use function in_array;
 use function is_string;

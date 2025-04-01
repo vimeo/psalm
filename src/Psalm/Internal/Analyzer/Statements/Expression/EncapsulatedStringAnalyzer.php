@@ -25,7 +25,7 @@ use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
 
-use function in_array;
+use function assert;
 
 /**
  * @internal
