@@ -185,6 +185,13 @@ final class StatementsAnalyzer extends SourceAnalyzer
         }
         return $this->data_flow_graph;
     }
+    public function getTaintFlowGraphWithSuppressed(): ?TaintFlowGraph
+    {
+        if ($this->taint_flow_graph && in_array('TaintedInput', $this->getSuppressedIssues())) {
+            return null;
+        }
+        return $this->taint_flow_graph;
+    }
     /**
      * Checks an array of statements for validity
      *

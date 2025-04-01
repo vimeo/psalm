@@ -542,11 +542,7 @@ final class FunctionCallReturnTypeFetcher
         if (!$graph = $statements_analyzer->getDataFlowGraphWithSuppressed()) {
             return null;
         }
-        $taint_flow_graph = null;
-        if (!$graph instanceof VariableUseGraph) {
-            $taint_flow_graph = $statements_analyzer->taint_flow_graph;
-            assert($taint_flow_graph !== null);
-        }
+        $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
         $variable_use_graph = $statements_analyzer->variable_use_graph;
 
         $codebase = $statements_analyzer->getCodebase();

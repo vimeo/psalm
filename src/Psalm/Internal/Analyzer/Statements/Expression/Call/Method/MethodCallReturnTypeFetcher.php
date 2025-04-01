@@ -293,14 +293,8 @@ final class MethodCallReturnTypeFetcher
         ) {
             return;
         }
-        $taint_flow_graph = null;
-        $variable_use_graph = null;
-        if (!$graph instanceof VariableUseGraph) {
-            $taint_flow_graph = $statements_analyzer->taint_flow_graph;
-        }
-        if (!$graph instanceof TaintFlowGraph) {
-            $variable_use_graph = $statements_analyzer->variable_use_graph;
-        }
+        $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
+        $variable_use_graph = $statements_analyzer->variable_use_graph;
 
         $codebase = $statements_analyzer->getCodebase();
 
