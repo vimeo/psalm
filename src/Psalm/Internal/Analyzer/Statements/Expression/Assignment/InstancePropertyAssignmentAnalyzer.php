@@ -25,6 +25,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\Methods;
+use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
@@ -472,9 +473,7 @@ final class InstancePropertyAssignmentAnalyzer
             );
 
             if ($var_id) {
-                if ($statements_analyzer->taint_flow_graph
-                    && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
-                ) {
+                if (!$graph = $statements_analyzer->getDataFlowGraphWithSuppressed()) {
                     $context->vars_in_scope[$var_id] =
                         $context->vars_in_scope[$var_id]->setParentNodes([]);
                     return;
@@ -487,7 +486,7 @@ final class InstancePropertyAssignmentAnalyzer
                     $var_location,
                 );
 
-                $data_flow_graph->addNode($var_node);
+                $graph->addNode($var_node);
 
                 $property_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
@@ -496,7 +495,7 @@ final class InstancePropertyAssignmentAnalyzer
                     $property_location,
                 );
 
-                $data_flow_graph->addNode($property_node);
+                $graph->addNode($property_node);
 
                 $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
 
@@ -504,12 +503,13 @@ final class InstancePropertyAssignmentAnalyzer
                 $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
                 $taints = $added_taints & ~$removed_taints;
-                if ($taints !== 0 && $statements_analyzer->taint_flow_graph) {
+                if ($taints !== 0 && !$graph instanceof VariableUseGraph) {
+                    assert($statements_analyzer->taint_flow_graph);
                     $taint_source = $property_node->setTaints($taints);
                     $statements_analyzer->taint_flow_graph->addSource($taint_source);
                 }
 
-                $data_flow_graph->addPath(
+                $graph->addPath(
                     $property_node,
                     $var_node,
                     'property-assignment'
@@ -539,9 +539,7 @@ final class InstancePropertyAssignmentAnalyzer
                 }
             }
         } else {
-            if ($statements_analyzer->taint_flow_graph
-                && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
-            ) {
+            if (!$graph = $statements_analyzer->getDataFlowGraphWithSuppressed()) {
                 $assignment_value_type = $assignment_value_type->setParentNodes([]);
                 return;
             }
