@@ -43,9 +43,9 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_values;
+use function assert;
 use function count;
 use function explode;
-use function in_array;
 use function str_contains;
 use function str_ends_with;
 use function strlen;

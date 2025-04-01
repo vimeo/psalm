@@ -13,8 +13,6 @@ use Psalm\Type;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function in_array;
-
 /**
  * @internal
  */

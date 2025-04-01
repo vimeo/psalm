@@ -14,7 +14,6 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
@@ -37,7 +36,6 @@ use Throwable;
 use UnexpectedValueException;
 
 use function count;
-use function in_array;
 use function strtolower;
 
 /**

@@ -41,13 +41,13 @@ final class CombinedFlowGraph extends DataFlowGraph
         $this->taint_flow_graph->addSink($node);
     }
 
-    #[\Override]
+    #[Override]
     public function summarizeEdges(): never
     {
         throw new AssertionError("Unreachable");
     }
 
-    #[\Override]
+    #[Override]
     public function getEdgeStats(): never
     {
         throw new AssertionError("Unreachable");
