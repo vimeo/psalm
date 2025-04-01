@@ -29,8 +29,10 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Clause;
+use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\DataFlowGraph;
 use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\ReferenceConstraint;
@@ -802,7 +804,8 @@ final class AssignmentAnalyzer
         // If taints get added (e.g. due to plugin) this assignment needs to
         // become a new taint source
         $taints = $added_taints & ~$removed_taints;
-        if ($taints !== 0 && $flow_graph instanceof TaintFlowGraph) {
+        if ($taints !== 0 && !$flow_graph instanceof VariableUseGraph) {
+            assert($flow_graph instanceof CombinedFlowGraph || $flow_graph instanceof TaintFlowGraph);
             $flow_graph->addSource($new_parent_node->setTaints($taints));
         }
 
@@ -1534,6 +1537,10 @@ final class AssignmentAnalyzer
                                 ])
                             ;
                         } else {
+                            if (!$graph = $statements_analyzer->getDataFlowGraphWithSuppressed()) {
+                                $context->vars_in_scope[$list_var_id] =
+                                    $context->vars_in_scope[$list_var_id]->setParentNodes([]);
+                            } else {
                                 $event = new AddRemoveTaintsEvent($var, $context, $statements_analyzer, $codebase);
 
                                 $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
@@ -1541,12 +1548,13 @@ final class AssignmentAnalyzer
 
                                 self::taintAssignment(
                                     $context->vars_in_scope[$list_var_id],
-                                    $statements_analyzer->getDataFlowGraphWithSuppressed(),
+                                    $graph,
                                     $list_var_id,
                                     $var_location,
                                     $removed_taints,
                                     $added_taints,
                                 );
+                            }
                         }
                     }
                 }
@@ -1866,6 +1874,9 @@ final class AssignmentAnalyzer
         }
 
         $data_flow_graph = $statements_analyzer->data_flow_graph;
+        if (!$graph = $statements_analyzer->getDataFlowGraphWithSuppressed()) {
+            $context->vars_in_scope[$var_id] = $context->vars_in_scope[$var_id]->setParentNodes([]);
+        } else {
             $var_location = new CodeLocation($statements_analyzer->getSource(), $assign_var);
 
             $event = new AddRemoveTaintsEvent($assign_var, $context, $statements_analyzer, $codebase);
@@ -1875,12 +1886,13 @@ final class AssignmentAnalyzer
 
             self::taintAssignment(
                 $context->vars_in_scope[$var_id],
-                $statements_analyzer->getDataFlowGraphWithSuppressed(),
+                $graph,
                 $var_id,
                 $var_location,
                 $removed_taints,
                 $added_taints,
             );
+        }
 
         if ($assign_expr) {
             $new_parent_node = DataFlowNode::getForAssignment(
