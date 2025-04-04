@@ -333,6 +333,9 @@ final class DocumentationTest extends TestCase
                     $php_version = '8.3';
                     break;
             }
+            if (str_starts_with($issue_name, 'Taint')) {
+                $ignored_issues = TaintTest::IGNORE;
+            }
 
             $invalid_code_data[$issue_name] = [
                 $blocks[0],

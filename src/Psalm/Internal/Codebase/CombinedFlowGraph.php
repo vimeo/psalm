@@ -25,8 +25,13 @@ final class CombinedFlowGraph extends DataFlowGraph
         $this->taint_flow_graph->addNode($node);
     }
     #[Override]
-    public function addPath(DataFlowNode $from, DataFlowNode $to, string $path_type, int $added_taints = 0, int $removed_taints = 0): void
-    {
+    public function addPath(
+        DataFlowNode $from,
+        DataFlowNode $to,
+        string $path_type,
+        int $added_taints = 0,
+        int $removed_taints = 0,
+    ): void {
         $this->variable_use_graph->addPath($from, $to, $path_type, $added_taints, $removed_taints);
         $this->taint_flow_graph->addPath($from, $to, $path_type, $added_taints, $removed_taints);
     }

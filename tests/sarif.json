@@ -7,7 +7,7 @@
                 "driver": {
                     "name": "Psalm",
                     "informationUri": "https:\/\/psalm.dev",
-                    "version": "dev-master@a4b37609d5438890372257fef3012cad3e0ca48d",
+                    "version": "dev-master@",
                     "rules": [
                         {
                             "id": "190",

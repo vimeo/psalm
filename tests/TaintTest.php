@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\IssueBuffer;
 
+use function array_filter;
 use function array_map;
+use function array_values;
+use function in_array;
 use function preg_quote;
 use function strpos;
 use function trim;
@@ -18,6 +22,18 @@ use const DIRECTORY_SEPARATOR;
 
 final class TaintTest extends TestCase
 {
+    // Somewhat legacy, do not add new issues here pls
+    public const IGNORE = [
+        'RiskyCast', 'PossiblyInvalidArgument', 'PossiblyInvalidCast',
+        'ForbiddenCode', 'InvalidOperand', 'MixedAssignment',
+        'InvalidScalarArgument', 'MissingParamType', 'UndefinedGlobalVariable', 'InvalidReturnType',
+        'MixedArgument', 'PossiblyInvalidArgument', 'PossiblyInvalidCast', 'MixedReturnStatement',
+        'MixedArgumentTypeCoercion', 'MixedArrayAccess', 'RedundantFunctionCall',
+        'MissingPropertyType', 'UndefinedMagicPropertyAssignment', 'InvalidStringClass', 'PossiblyInvalidIterator',
+        'InvalidReturnStatement', 'ArgumentTypeCoercion', 'UnresolvableInclude', 'UndefinedClass', 'RedundantCast',
+        'MixedArrayAssignment', 'InvalidReturnStatement', 'InvalidArrayOffset', 'UndefinedFunction', 'ImplicitToStringCast',
+        'InvalidArgument',
+    ];
     /**
      * @dataProvider providerValidCodeParse
      */
@@ -35,7 +51,12 @@ final class TaintTest extends TestCase
             $code,
         );
 
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+
         $this->project_analyzer->trackTaintedInputs();
+        foreach (self::IGNORE as $issue_name) {
+            Config::getInstance()->setCustomErrorLevel($issue_name, Config::REPORT_SUPPRESS);
+        }
 
         $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
 
@@ -56,12 +77,17 @@ final class TaintTest extends TestCase
 
         $file_path = self::$src_dir_path . 'somefile.php';
 
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+
         $this->addFile(
             $file_path,
             $code,
         );
 
         $this->project_analyzer->trackTaintedInputs();
+        foreach (self::IGNORE as $issue_name) {
+            Config::getInstance()->setCustomErrorLevel($issue_name, Config::REPORT_SUPPRESS);
+        }
 
         $this->analyzeFile($file_path, new Context(), false);
     }
@@ -410,7 +436,7 @@ final class TaintTest extends TestCase
                     }
 
                     $userObj = new User((string) $_GET["user_id"]);
-                    UserUpdater::doDelete(new PDO(), $userObj);',
+                    UserUpdater::doDelete(new PDO("t"), $userObj);',
             ],
             'taintPropertyWithoutPassingObject' => [
                 'code' => '<?php
@@ -626,8 +652,9 @@ final class TaintTest extends TestCase
 
                         return $string;
                     }
-
+                    /** @psalm-suppress PossiblyInvalidArgument */
                     echo foo($_GET["foo"], true);
+                    /** @psalm-suppress PossiblyInvalidArgument */
                     echo foo($_GET["foo"]);',
             ],
             'NoTaintForInt' => [
@@ -637,6 +664,7 @@ final class TaintTest extends TestCase
                         echo $value;
                     }
 
+                    /** @psalm-suppress InvalidScalarArgument */
                     foo($_GET["foo"]);
 
                     function bar(): int {
@@ -696,12 +724,13 @@ final class TaintTest extends TestCase
                      * @psalm-taint-sink sql $sql
                      * @psalm-taint-specialize
                      */
-                    function query(string $sql) {}
+                    function query(string $sql) { return ""; }
                     $value = $_GET["value"];
                     $result = fetch($value);',
             ],
             'NoTaintForIntTypeCastUsingAnnotatedSink' => [
                 'code' => '<?php // --taint-analysis
+                    /** @psalm-suppress MissingParamType */
                     function fetch($id): string
                     {
                         return query("SELECT * FROM table WHERE id=" . (int)$id);
@@ -717,7 +746,7 @@ final class TaintTest extends TestCase
             ],
             'dontTaintArrayWithDifferentOffsetUpdated' => [
                 'code' => '<?php
-                    function foo() {
+                    function foo(): void {
                         $foo = [
                             "a" => [["c" => "hello"]],
                             "b" => [],
@@ -1247,6 +1276,7 @@ final class TaintTest extends TestCase
             'taintStrConversion' => [
                 'code' => '<?php
                     function foo() : void {
+                        /** @psalm-suppress PossiblyInvalidCast */
                         $a = strtoupper(strtolower((string) $_GET["bad"]));
                         echo $a;
                     }',
@@ -1393,7 +1423,7 @@ final class TaintTest extends TestCase
                         }
 
                         /**
-                         * @psalm-specialize-call
+                         * @psalm-taint-specialize
                          */
                         public function getArg(string $method, string $type)
                         {
@@ -1470,7 +1500,7 @@ final class TaintTest extends TestCase
                     }
 
                     $userObj = new User((string) $_GET["user_id"]);
-                    UserUpdater::doDelete(new PDO(), $userObj);',
+                    UserUpdater::doDelete(new PDO("test"), $userObj);',
                 'error_message' => 'TaintedSql',
             ],
             'taintPropertyPassingObjectSettingValueLater' => [
@@ -1561,7 +1591,7 @@ final class TaintTest extends TestCase
             'taintStringObtainedUsingStrval' => [
                 'code' => '<?php
                     $unsafe = strval($_GET[\'unsafe\']);
-                    echo $unsafe',
+                    echo $unsafe;',
                 'error_message' => 'TaintedHtml',
             ],
             'taintStringObtainedUsingSprintf' => [
@@ -1606,7 +1636,7 @@ final class TaintTest extends TestCase
                         }
                     }
 
-                    function doesEcho(string $s) {
+                    function doesEcho(string $s): void {
                         echo $s;
                     }
 
@@ -1780,8 +1810,10 @@ final class TaintTest extends TestCase
             'taintExit' => [
                 'code' => '<?php
                     if (rand(0, 1)) {
+                        /** @psalm-suppress PossiblyInvalidArgument */
                         exit($_GET[\'a\']);
                     } else {
+                        /** @psalm-suppress PossiblyInvalidArgument */
                         die($_GET[\'b\']);
                     }',
                 'error_message' => 'TaintedHtml',
@@ -1821,6 +1853,7 @@ final class TaintTest extends TestCase
                     /** @psalm-suppress InvalidReturnType */
                     function stub(): Unsafe { }
 
+                    /** @psalm-suppress MixedArgument */
                     echo stub()->isUnsafe();',
                 'error_message' => 'TaintedHtml',
             ],
@@ -1896,7 +1929,7 @@ final class TaintTest extends TestCase
                     /**
                      * @psalm-flow ($r) -> return
                      */
-                    function some_stub(string $r): string {}
+                    function some_stub(string $r): string { return ""; }
 
                     $r = $_GET["untrusted"];
 
@@ -1956,6 +1989,7 @@ final class TaintTest extends TestCase
             ],
             'taintPopen' => [
                 'code' => '<?php
+                    /** @psalm-suppress PossiblyInvalidCast */
                     $cb = popen($_POST[\'x\'], \'r\');',
                 'error_message' => 'TaintedShell',
             ],
@@ -2441,6 +2475,7 @@ final class TaintTest extends TestCase
                  * We arbitrarily chose system() to test this.
                  */
                 'code' => '<?php
+                    /** @psalm-suppress PossiblyInvalidArgument */
                     system(urlencode($_GET["bad"]));
                 ',
                 'error_message' => 'TaintedShell',
@@ -2674,7 +2709,10 @@ final class TaintTest extends TestCase
 
         $actualIssueTypes = array_map(
             static fn(IssueData $issue): string => $issue->type . '{ ' . trim($issue->snippet) . ' }',
-            IssueBuffer::getIssuesDataForFile($filePath),
+            array_values(array_filter(
+                IssueBuffer::getIssuesDataForFile($filePath),
+                static fn(IssueData $issue): bool => !in_array($issue->type, self::IGNORE, true),
+            )),
         );
         self::assertSame($expectedIssuesTypes, $actualIssueTypes);
     }
@@ -2694,12 +2732,12 @@ final class TaintTest extends TestCase
                      * @psalm-flow ($value) -> return
                      * @psalm-taint-sink html $value
                      */
-                    function process(string $value): string {}
+                    function process(string $value): string { return ""; }
                     $data = process((string)($_GET["inject"] ?? ""));
                     exec($data);
                 ',
                 'expectedIssueTypes' => [
-                    'TaintedHtml{ function process(string $value): string {} }',
+                    'TaintedHtml{ function process(string $value): string { return ""; } }',
                     'TaintedShell{ exec($data); }',
                 ],
             ],
@@ -2736,9 +2774,13 @@ final class TaintTest extends TestCase
                 'code' => '<?php
                     $first = (string)($_GET["first"] ?? "");
                     $second = (string)($_GET["second"] ?? "");
+                    /** @psalm-suppress UnresolvableInclude */
                     require $first;
+                    /** @psalm-suppress MissingFile */
                     require dirname(__DIR__)."/first.php";
+                    /** @psalm-suppress UnresolvableInclude */
                     require $second;
+                    /** @psalm-suppress MissingFile */
                     require dirname(__DIR__)."/second.php";
                 ',
                 'expectedIssueTypes' => [
