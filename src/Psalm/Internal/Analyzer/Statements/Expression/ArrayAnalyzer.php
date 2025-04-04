@@ -420,11 +420,12 @@ final class ArrayAnalyzer
                 $taint_flow_graph = null;
             }
             if ($item_value_type = $statements_analyzer->node_data->getType($item->value)) {
-                if ($taint_flow_graph
+                $taint_value_flow_graph = $taint_flow_graph;
+                if ($taint_value_flow_graph
                     && $item_value_type->isSingle()
                     && $item_value_type->hasLiteralValue()
                 ) {
-                    $taint_flow_graph = null;
+                    $taint_value_flow_graph = null;
                 }
                 if ($item_value_type->parent_nodes) {
                     $var_location = new CodeLocation($statements_analyzer->getSource(), $item);
@@ -439,8 +440,8 @@ final class ArrayAnalyzer
 
                     $added_taints = 0;
                     $removed_taints = 0;
-                    if ($taint_flow_graph) {
-                        $taint_flow_graph->addNode($new_parent_node);
+                    if ($taint_value_flow_graph) {
+                        $taint_value_flow_graph->addNode($new_parent_node);
                         $event = new AddRemoveTaintsEvent($item, $context, $statements_analyzer, $codebase);
 
                         $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
@@ -449,12 +450,12 @@ final class ArrayAnalyzer
                         $taints = $added_taints & ~$removed_taints;
                         if ($taints !== 0) {
                             $taint_source = $new_parent_node->setTaints($taints);
-                            $taint_flow_graph->addSource($taint_source);
+                            $taint_value_flow_graph->addSource($taint_source);
                         }
                     }
 
                     foreach ($item_value_type->parent_nodes as $parent_node) {
-                        $taint_flow_graph?->addPath(
+                        $taint_value_flow_graph?->addPath(
                             $parent_node,
                             $new_parent_node,
                             'arrayvalue-assignment'
@@ -475,6 +476,14 @@ final class ArrayAnalyzer
                     $array_creation_info->parent_taint_nodes += [$new_parent_node->id => $new_parent_node];
                 }
 
+                $taint_key_flow_graph = $taint_flow_graph;
+                if ($taint_key_flow_graph
+                    && $item_key_type
+                    && $item_key_type->isSingle()
+                    && $item_key_type->hasLiteralValue()
+                ) {
+                    $taint_key_flow_graph = null;
+                }
                 if ($item_key_type
                     && $item_key_type->parent_nodes
                     && $item_key_value === null
@@ -490,8 +499,8 @@ final class ArrayAnalyzer
 
                     $added_taints = 0;
                     $removed_taints = 0;
-                    if ($taint_flow_graph) {
-                        $taint_flow_graph->addNode($new_parent_node);
+                    if ($taint_key_flow_graph) {
+                        $taint_key_flow_graph->addNode($new_parent_node);
                         $event = new AddRemoveTaintsEvent($item, $context, $statements_analyzer, $codebase);
 
                         $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
@@ -500,12 +509,12 @@ final class ArrayAnalyzer
                         $taints = $added_taints & ~$removed_taints;
                         if ($taints !== 0) {
                             $taint_source = $new_parent_node->setTaints($taints);
-                            $taint_flow_graph->addSource($taint_source);
+                            $taint_key_flow_graph->addSource($taint_source);
                         }
                     }
 
                     foreach ($item_key_type->parent_nodes as $parent_node) {
-                        $taint_flow_graph?->addPath(
+                        $taint_key_flow_graph?->addPath(
                             $parent_node,
                             $new_parent_node,
                             'arraykey-assignment',
