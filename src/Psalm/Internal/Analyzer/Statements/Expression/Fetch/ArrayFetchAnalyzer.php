@@ -922,44 +922,37 @@ final class ArrayFetchAnalyzer
         Context $context,
         StatementsAnalyzer $statements_analyzer,
     ): void {
-        if ($context->inside_isset || $context->inside_unset) {
+        if ($context->inside_isset || $context->inside_unset || !$offset_type->hasLiteralInt()) {
             return;
         }
 
-        if ($offset_type->hasLiteralInt()) {
-            $found_match = false;
-
-            foreach ($offset_type->getAtomicTypes() as $offset_type_part) {
-                if ($extended_var_id
-                    && $offset_type_part instanceof TLiteralInt
-                    && isset(
-                        $context->vars_in_scope[
-                            $extended_var_id . '[' . $offset_type_part->value . ']'
-                        ],
-                    )
-                    && !$context->vars_in_scope[
-                            $extended_var_id . '[' . $offset_type_part->value . ']'
-                        ]->possibly_undefined
-                ) {
-                    $found_match = true;
-                    break;
-                }
-            }
-
-            if (!$found_match) {
-                IssueBuffer::maybeAdd(
-                    new PossiblyUndefinedIntArrayOffset(
-                        'Possibly undefined array offset \''
-                            . $offset_type->getId() . '\' '
-                            . 'is risky given expected type \''
-                            . $expected_offset_type->getId() . '\'.'
-                            . ' Consider using isset beforehand.',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt),
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
+        foreach ($offset_type->getAtomicTypes() as $offset_type_part) {
+            if ($extended_var_id
+                && $offset_type_part instanceof TLiteralInt
+                && isset(
+                    $context->vars_in_scope[
+                        $extended_var_id . '[' . $offset_type_part->value . ']'
+                    ],
+                )
+                && !$context->vars_in_scope[
+                        $extended_var_id . '[' . $offset_type_part->value . ']'
+                    ]->possibly_undefined
+            ) {
+                return;
             }
         }
+
+        IssueBuffer::maybeAdd(
+            new PossiblyUndefinedIntArrayOffset(
+                'Possibly undefined array offset \''
+                    . $offset_type->getId() . '\' '
+                    . 'is risky given expected type \''
+                    . $expected_offset_type->getId() . '\'.'
+                    . ' Consider using isset beforehand.',
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
+            ),
+            $statements_analyzer->getSuppressedIssues(),
+        );
     }
 
     private static function checkLiteralStringArrayOffset(

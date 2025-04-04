@@ -258,16 +258,14 @@ final class ReturnAnalyzer
                     $source->getParentFQCLN(),
                 );
 
-                if ($statements_analyzer->taint_flow_graph) {
-                    self::handleTaints(
-                        $statements_analyzer,
-                        $stmt,
-                        $cased_method_id,
-                        $inferred_type,
-                        $storage,
-                        $context,
-                    );
-                }
+                self::handleTaints(
+                    $statements_analyzer,
+                    $stmt,
+                    $cased_method_id,
+                    $inferred_type,
+                    $storage,
+                    $context,
+                );
 
                 if ($storage instanceof MethodStorage && $context->self) {
                     $self_class = $context->self;
