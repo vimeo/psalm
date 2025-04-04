@@ -44,7 +44,6 @@ use UnexpectedValueException;
 use function array_values;
 use function count;
 use function explode;
-use function in_array;
 use function str_contains;
 use function str_ends_with;
 use function strlen;
@@ -538,15 +537,11 @@ final class FunctionCallReturnTypeFetcher
         TemplateResult $template_result,
         Context $context,
     ): ?DataFlowNode {
-        if (!$statements_analyzer->data_flow_graph) {
+        if (!$graph = $statements_analyzer->getDataFlowGraphWithSuppressed()) {
             return null;
         }
-
-        if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
-            && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
-        ) {
-            return null;
-        }
+        $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
+        $variable_use_graph = $statements_analyzer->variable_use_graph;
 
         $codebase = $statements_analyzer->getCodebase();
         $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
@@ -559,12 +554,12 @@ final class FunctionCallReturnTypeFetcher
         $function_call_node = DataFlowNode::getForMethodReturn(
             $function_id,
             $cased_function_id,
-            $statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+            $taint_flow_graph
                 ? ($function_storage->signature_return_type_location ?: $function_storage->location)
                 : ($function_storage->return_type_location ?: $function_storage->location),
             $function_storage->specialize_call ? $node_location : null,
         );
-        $statements_analyzer->data_flow_graph->addNode($function_call_node);
+        $graph->addNode($function_call_node);
 
         $codebase = $statements_analyzer->getCodebase();
 
@@ -604,7 +599,14 @@ final class FunctionCallReturnTypeFetcher
                 $function_call_node->specialization_key,
             );
 
-            $statements_analyzer->data_flow_graph->addPath(
+            $variable_use_graph?->addPath(
+                $function_call_node,
+                $assignment_node,
+                'conditionally-escaped',
+                $added_taints,
+                $removed_taints | $conditionally_removed_taints,
+            );
+            $taint_flow_graph?->addPath(
                 $function_call_node,
                 $assignment_node,
                 'conditionally-escaped',
@@ -617,7 +619,7 @@ final class FunctionCallReturnTypeFetcher
             $stmt_type = $stmt_type->addParentNodes([$function_call_node->id => $function_call_node]);
         }
 
-        if (!$statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+        if (!$taint_flow_graph) {
             return $function_call_node;
         }
 
@@ -662,7 +664,7 @@ final class FunctionCallReturnTypeFetcher
             self::taintUsingFlows(
                 $statements_analyzer,
                 $function_storage,
-                $statements_analyzer->data_flow_graph,
+                $taint_flow_graph,
                 $function_id,
                 $stmt->getArgs(),
                 $node_location,
@@ -672,7 +674,7 @@ final class FunctionCallReturnTypeFetcher
             );
         }
 
-        self::taintUsingStorage($function_storage, $statements_analyzer->data_flow_graph, $function_call_node);
+        self::taintUsingStorage($function_storage, $taint_flow_graph, $function_call_node);
 
         return $function_call_node;
     }

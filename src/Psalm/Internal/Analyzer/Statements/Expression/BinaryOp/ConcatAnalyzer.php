@@ -12,7 +12,6 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
-use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
@@ -88,11 +87,11 @@ final class ConcatAnalyzer
 
                     $origin_locations = [];
 
-                    if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
+                    if ($statements_analyzer->variable_use_graph) {
                         foreach ($left_type->parent_nodes as $parent_node) {
                             $origin_locations = [
                                 ...$origin_locations,
-                                ...$statements_analyzer->data_flow_graph->getOriginLocations($parent_node),
+                                ...$statements_analyzer->variable_use_graph->getOriginLocations($parent_node),
                             ];
                         }
                     }
@@ -115,11 +114,11 @@ final class ConcatAnalyzer
                     $arg_location = new CodeLocation($statements_analyzer->getSource(), $right);
                     $origin_locations = [];
 
-                    if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
+                    if ($statements_analyzer->variable_use_graph) {
                         foreach ($right_type->parent_nodes as $parent_node) {
                             $origin_locations = [
                                 ...$origin_locations,
-                                ...$statements_analyzer->data_flow_graph->getOriginLocations($parent_node),
+                                ...$statements_analyzer->variable_use_graph->getOriginLocations($parent_node),
                             ];
                         }
                     }

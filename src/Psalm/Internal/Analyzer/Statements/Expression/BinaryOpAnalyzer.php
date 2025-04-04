@@ -15,7 +15,6 @@ use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\NonComparisonOpAnalyz
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\OrAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
@@ -34,7 +33,6 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function in_array;
 use function strlen;
 
 /**
@@ -149,17 +147,14 @@ final class BinaryOpAnalyzer
                 $stmt_type = $result_type;
             }
 
-            if ($statements_analyzer->data_flow_graph
-                && ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
-                    || !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues()))
-            ) {
+            if ($graph = $statements_analyzer->getDataFlowGraphWithSuppressed()) {
                 $stmt_left_type = $statements_analyzer->node_data->getType($stmt->left);
                 $stmt_right_type = $statements_analyzer->node_data->getType($stmt->right);
 
                 $var_location = new CodeLocation($statements_analyzer, $stmt);
 
                 $new_parent_node = DataFlowNode::getForAssignment('concat', $var_location);
-                $statements_analyzer->data_flow_graph->addNode($new_parent_node);
+                $graph->addNode($new_parent_node);
 
                 $stmt_type = $stmt_type->setParentNodes([
                     $new_parent_node->id => $new_parent_node,
@@ -172,14 +167,14 @@ final class BinaryOpAnalyzer
                 $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
                 $taints = $added_taints & ~$removed_taints;
-                if ($taints !== 0 && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+                if ($taints !== 0 && !$graph instanceof VariableUseGraph) {
                     $taint_source = $new_parent_node->setTaints($taints);
-                    $statements_analyzer->data_flow_graph->addSource($taint_source);
+                    $graph->addSource($taint_source);
                 }
 
                 if ($stmt_left_type && $stmt_left_type->parent_nodes) {
                     foreach ($stmt_left_type->parent_nodes as $parent_node) {
-                        $statements_analyzer->data_flow_graph->addPath(
+                        $graph->addPath(
                             $parent_node,
                             $new_parent_node,
                             'concat',
@@ -191,7 +186,7 @@ final class BinaryOpAnalyzer
 
                 if ($stmt_right_type && $stmt_right_type->parent_nodes) {
                     foreach ($stmt_right_type->parent_nodes as $parent_node) {
-                        $statements_analyzer->data_flow_graph->addPath(
+                        $graph->addPath(
                             $parent_node,
                             $new_parent_node,
                             'concat',
@@ -391,70 +386,72 @@ final class BinaryOpAnalyzer
             return;
         }
 
-        if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+        $graph = $statements_analyzer->data_flow_graph;
+        if ($statements_analyzer->taint_flow_graph
             && $stmt instanceof PhpParser\Node\Expr\BinaryOp
             && !$stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat
             && !$stmt instanceof PhpParser\Node\Expr\BinaryOp\Coalesce
             && (!$stmt instanceof PhpParser\Node\Expr\BinaryOp\Plus || !$result_type->hasArray())
         ) {
+            $graph = $statements_analyzer->variable_use_graph;
             //among BinaryOp, only Concat and Coalesce can pass tainted value to the result. Also Plus on arrays only
-            return;
         }
 
-        if ($statements_analyzer->data_flow_graph) {
+        if (!$graph) {
+            return;
+        }
             $stmt_left_type = $statements_analyzer->node_data->getType($left);
             $stmt_right_type = $statements_analyzer->node_data->getType($right);
 
             $var_location = new CodeLocation($statements_analyzer, $stmt);
 
             $new_parent_node = DataFlowNode::getForAssignment($type, $var_location);
-            $statements_analyzer->data_flow_graph->addNode($new_parent_node);
+            $graph->addNode($new_parent_node);
 
             $result_type = $result_type->setParentNodes([
                 $new_parent_node->id => $new_parent_node,
             ]);
             $statements_analyzer->node_data->setType($stmt, $result_type);
 
-            if ($stmt_left_type && $stmt_left_type->parent_nodes) {
-                foreach ($stmt_left_type->parent_nodes as $parent_node) {
-                    $statements_analyzer->data_flow_graph->addPath($parent_node, $new_parent_node, $type);
-                }
+        if ($stmt_left_type && $stmt_left_type->parent_nodes) {
+            foreach ($stmt_left_type->parent_nodes as $parent_node) {
+                $graph->addPath($parent_node, $new_parent_node, $type);
             }
+        }
 
-            if ($stmt_right_type && $stmt_right_type->parent_nodes) {
-                foreach ($stmt_right_type->parent_nodes as $parent_node) {
-                    $statements_analyzer->data_flow_graph->addPath($parent_node, $new_parent_node, $type);
-                }
+        if ($stmt_right_type && $stmt_right_type->parent_nodes) {
+            foreach ($stmt_right_type->parent_nodes as $parent_node) {
+                $graph->addPath($parent_node, $new_parent_node, $type);
             }
+        }
 
-            if ($stmt instanceof PhpParser\Node\Expr\AssignOp
-                && $statements_analyzer->data_flow_graph instanceof VariableUseGraph
+        if ($stmt instanceof PhpParser\Node\Expr\AssignOp
+                && $statements_analyzer->variable_use_graph
             ) {
-                $root_expr = $left;
+            $root_expr = $left;
 
-                while ($root_expr instanceof PhpParser\Node\Expr\ArrayDimFetch) {
-                    $root_expr = $root_expr->var;
-                }
+            while ($root_expr instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+                $root_expr = $root_expr->var;
+            }
 
-                if ($left instanceof PhpParser\Node\Expr\PropertyFetch) {
-                    $statements_analyzer->data_flow_graph->addPath(
-                        $new_parent_node,
-                        DataFlowNode::getForVariableUse(),
-                        'used-by-instance-property',
-                    );
-                } if ($left instanceof PhpParser\Node\Expr\StaticPropertyFetch) {
-                    $statements_analyzer->data_flow_graph->addPath(
-                        $new_parent_node,
-                        DataFlowNode::getForVariableUse(),
-                        'use-in-static-property',
-                    );
-                } elseif (!$left instanceof PhpParser\Node\Expr\Variable) {
-                    $statements_analyzer->data_flow_graph->addPath(
-                        $new_parent_node,
-                        DataFlowNode::getForVariableUse(),
-                        'variable-use',
-                    );
-                }
+            if ($left instanceof PhpParser\Node\Expr\PropertyFetch) {
+                $graph->addPath(
+                    $new_parent_node,
+                    DataFlowNode::getForVariableUse(),
+                    'used-by-instance-property',
+                );
+            } if ($left instanceof PhpParser\Node\Expr\StaticPropertyFetch) {
+                $graph->addPath(
+                    $new_parent_node,
+                    DataFlowNode::getForVariableUse(),
+                    'use-in-static-property',
+                );
+            } elseif (!$left instanceof PhpParser\Node\Expr\Variable) {
+                $graph->addPath(
+                    $new_parent_node,
+                    DataFlowNode::getForVariableUse(),
+                    'variable-use',
+                );
             }
         }
     }

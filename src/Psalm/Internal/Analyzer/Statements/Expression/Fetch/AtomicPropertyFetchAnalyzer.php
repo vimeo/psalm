@@ -22,7 +22,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
@@ -851,11 +851,11 @@ final class AtomicPropertyFetchAnalyzer
             if ($var_id) {
                 $var_type = $statements_analyzer->node_data->getType($stmt->var);
 
-                if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
-                    && $var_type
-                    && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
-                ) {
-                    $statements_analyzer->node_data->setType($stmt->var, $var_type->setParentNodes([]));
+                $graph = $statements_analyzer->getDataFlowGraphWithSuppressed();
+                if (!$graph) {
+                    if ($var_type) {
+                        $statements_analyzer->node_data->setType($stmt->var, $var_type->setParentNodes([]));
+                    }
                     return;
                 }
 
@@ -867,16 +867,16 @@ final class AtomicPropertyFetchAnalyzer
                     $var_location,
                 );
 
-                $data_flow_graph->addNode($var_node);
+                $graph->addNode($var_node);
 
                 $property_node = DataFlowNode::getForAssignment(
                     $var_property_id ?: $var_id . '->$property',
                     $property_location,
                 );
 
-                $data_flow_graph->addNode($property_node);
+                $graph->addNode($property_node);
 
-                $data_flow_graph->addPath(
+                $graph->addPath(
                     $var_node,
                     $property_node,
                     'property-fetch'
@@ -900,9 +900,9 @@ final class AtomicPropertyFetchAnalyzer
                 $type = $type->setParentNodes([$property_node->id => $property_node], true);
 
                 $taints = $added_taints & ~$removed_taints;
-                if ($taints !== 0 && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+                if ($taints !== 0 && !$graph instanceof VariableUseGraph) {
                     $taint_source = $var_node->setTaints($taints);
-                    $statements_analyzer->data_flow_graph->addSource($taint_source);
+                    $graph->addSource($taint_source);
                 }
             }
         } else {
@@ -978,9 +978,9 @@ final class AtomicPropertyFetchAnalyzer
         $type = $type->setParentNodes([$localized_property_node->id => $localized_property_node], true);
 
         $taints = $added_taints & ~$removed_taints;
-        if ($taints !== 0 && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+        if ($taints !== 0 && $statements_analyzer->taint_flow_graph) {
             $taint_source = $localized_property_node->setTaints($taints);
-            $statements_analyzer->data_flow_graph->addSource($taint_source);
+            $statements_analyzer->taint_flow_graph->addSource($taint_source);
         }
     }
 

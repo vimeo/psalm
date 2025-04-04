@@ -18,7 +18,6 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodVisibilityAn
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateResult;
@@ -643,7 +642,7 @@ final class NewAnalyzer extends CallAnalyzer
             }
         }
 
-        if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+        if ($statements_analyzer->taint_flow_graph
             && !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
             && ($stmt_type = $statements_analyzer->node_data->getType($stmt))
         ) {
@@ -674,7 +673,7 @@ final class NewAnalyzer extends CallAnalyzer
                 );
             }
 
-            $statements_analyzer->data_flow_graph->addNode($method_source);
+            $statements_analyzer->taint_flow_graph->addNode($method_source);
 
             $stmt_type = $stmt_type->setParentNodes([$method_source->id => $method_source]);
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
@@ -716,7 +715,7 @@ final class NewAnalyzer extends CallAnalyzer
         if ($has_single_class) {
             $fq_class_name = $stmt_class_type->getSingleStringLiteral()->value;
         } else {
-            if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+            if ($statements_analyzer->taint_flow_graph
                 && $stmt_class_type->parent_nodes
                 && !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
             ) {
@@ -731,7 +730,7 @@ final class NewAnalyzer extends CallAnalyzer
                     TaintKind::INPUT_CALLABLE,
                 );
 
-                $statements_analyzer->data_flow_graph->addSink($custom_call_sink);
+                $statements_analyzer->taint_flow_graph->addSink($custom_call_sink);
 
                 $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
 
@@ -741,11 +740,11 @@ final class NewAnalyzer extends CallAnalyzer
                 $taints = $added_taints & ~$removed_taints;
                 if ($added_taints !== 0) {
                     $taint_source = $custom_call_sink->setTaints($taints);
-                    $statements_analyzer->data_flow_graph->addSource($taint_source);
+                    $statements_analyzer->taint_flow_graph->addSource($taint_source);
                 }
 
                 foreach ($stmt_class_type->parent_nodes as $parent_node) {
-                    $statements_analyzer->data_flow_graph->addPath(
+                    $statements_analyzer->taint_flow_graph->addPath(
                         $parent_node,
                         $custom_call_sink,
                         'call',

@@ -20,7 +20,6 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Internal\Codebase\Functions;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
-use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Stubs\Generator\StubsGenerator;
@@ -889,7 +888,7 @@ final class ArgumentsAnalyzer
             }
         }
 
-        if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+        if ($statements_analyzer->taint_flow_graph
             && $cased_method_id
         ) {
             foreach ($args as $argument_offset => $_) {
@@ -919,7 +918,7 @@ final class ArgumentsAnalyzer
                             );
                         }
 
-                        $statements_analyzer->data_flow_graph->addSink($sink);
+                        $statements_analyzer->taint_flow_graph->addSink($sink);
                     }
                 }
             }

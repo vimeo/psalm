@@ -11,7 +11,6 @@ use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TypeCombiner;
@@ -144,7 +143,7 @@ final class CastAnalyzer
                 }
             }
 
-            if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
+            if ($statements_analyzer->variable_use_graph
             ) {
                 $type = new Union([new TBool()], [
                     'parent_nodes' => $maybe_type->parent_nodes ?? [],
@@ -220,7 +219,7 @@ final class CastAnalyzer
                 $type = Type::getObject();
             }
 
-            if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
+            if ($statements_analyzer->variable_use_graph
             ) {
                 $type = $type->setParentNodes($stmt_expr_type->parent_nodes ?? []);
             }
@@ -326,7 +325,7 @@ final class CastAnalyzer
 
         $parent_nodes = [];
 
-        if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
+        if ($statements_analyzer->variable_use_graph) {
             $parent_nodes = $stmt_type->parent_nodes;
         }
 
@@ -512,7 +511,7 @@ final class CastAnalyzer
 
         $parent_nodes = [];
 
-        if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
+        if ($statements_analyzer->variable_use_graph) {
             $parent_nodes = $stmt_type->parent_nodes;
         }
 

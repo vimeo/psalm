@@ -1600,6 +1600,20 @@ trait UnionTrait
         return $this->types === [];
     }
 
+    public function getTaintsToRemove(): int
+    {
+        if (!$this->isSingle()) {
+            return 0;
+        }
+        // numeric types can't be tainted (except sleep & custom taints), neither can bool
+        if ($this->isInt() || $this->isFloat()) {
+            return TaintKind::ALL_INPUT & ~TaintKind::NUMERIC_ONLY;
+        }
+        if ($this->isBool()) {
+            return TaintKind::ALL_INPUT & ~TaintKind::BOOL_ONLY;
+        }
+        return 0;
+    }
     #[Override]
     public function visit(TypeVisitor $visitor): bool
     {

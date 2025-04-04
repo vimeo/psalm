@@ -16,7 +16,6 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
-use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
@@ -387,9 +386,7 @@ final class ArrayFetchAnalyzer
             && ($stmt_var_type = $statements_analyzer->node_data->getType($var))
             && $stmt_var_type->parent_nodes
         ) {
-            if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
-                && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
-            ) {
+            if (!$graph = $statements_analyzer->getDataFlowGraphWithSuppressed()) {
                 $statements_analyzer->node_data->setType($var, $stmt_var_type->setParentNodes([]));
                 return;
             }
@@ -412,15 +409,15 @@ final class ArrayFetchAnalyzer
                 $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
                 $taints = $added_taints & ~$removed_taints;
-                if ($taints !== 0 && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+                if ($taints !== 0 && !$graph instanceof VariableUseGraph) {
                     $taint_source = $new_parent_node->setTaints($taints);
-                    $statements_analyzer->data_flow_graph->addSource($taint_source);
+                    $graph->addSource($taint_source);
                 }
             }
 
             $array_key_node = null;
 
-            $statements_analyzer->data_flow_graph->addNode($new_parent_node);
+            $graph->addNode($new_parent_node);
 
             $dim_value = $offset_type->isSingleStringLiteral()
                 ? $offset_type->getSingleStringLiteral()->value
@@ -434,11 +431,11 @@ final class ArrayFetchAnalyzer
                     $var_location,
                 );
 
-                $statements_analyzer->data_flow_graph->addNode($array_key_node);
+                $graph->addNode($array_key_node);
             }
 
             foreach ($stmt_var_type->parent_nodes as $parent_node) {
-                $statements_analyzer->data_flow_graph->addPath(
+                $graph->addPath(
                     $parent_node,
                     $new_parent_node,
                     'arrayvalue-fetch' . ($dim_value !== null ? '-\'' . $dim_value . '\'' : ''),
@@ -447,7 +444,7 @@ final class ArrayFetchAnalyzer
                 );
 
                 if ($stmt_type->by_ref) {
-                    $statements_analyzer->data_flow_graph->addPath(
+                    $graph->addPath(
                         $new_parent_node,
                         $parent_node,
                         'arrayvalue-assignment' . ($dim_value !== null ? '-\'' . $dim_value . '\'' : ''),
@@ -457,7 +454,7 @@ final class ArrayFetchAnalyzer
                 }
 
                 if ($array_key_node) {
-                    $statements_analyzer->data_flow_graph->addPath(
+                    $graph->addPath(
                         $parent_node,
                         $array_key_node,
                         'arraykey-fetch',
@@ -925,44 +922,37 @@ final class ArrayFetchAnalyzer
         Context $context,
         StatementsAnalyzer $statements_analyzer,
     ): void {
-        if ($context->inside_isset || $context->inside_unset) {
+        if ($context->inside_isset || $context->inside_unset || !$offset_type->hasLiteralInt()) {
             return;
         }
 
-        if ($offset_type->hasLiteralInt()) {
-            $found_match = false;
-
-            foreach ($offset_type->getAtomicTypes() as $offset_type_part) {
-                if ($extended_var_id
-                    && $offset_type_part instanceof TLiteralInt
-                    && isset(
-                        $context->vars_in_scope[
-                            $extended_var_id . '[' . $offset_type_part->value . ']'
-                        ],
-                    )
-                    && !$context->vars_in_scope[
-                            $extended_var_id . '[' . $offset_type_part->value . ']'
-                        ]->possibly_undefined
-                ) {
-                    $found_match = true;
-                    break;
-                }
-            }
-
-            if (!$found_match) {
-                IssueBuffer::maybeAdd(
-                    new PossiblyUndefinedIntArrayOffset(
-                        'Possibly undefined array offset \''
-                            . $offset_type->getId() . '\' '
-                            . 'is risky given expected type \''
-                            . $expected_offset_type->getId() . '\'.'
-                            . ' Consider using isset beforehand.',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt),
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
+        foreach ($offset_type->getAtomicTypes() as $offset_type_part) {
+            if ($extended_var_id
+                && $offset_type_part instanceof TLiteralInt
+                && isset(
+                    $context->vars_in_scope[
+                        $extended_var_id . '[' . $offset_type_part->value . ']'
+                    ],
+                )
+                && !$context->vars_in_scope[
+                        $extended_var_id . '[' . $offset_type_part->value . ']'
+                    ]->possibly_undefined
+            ) {
+                return;
             }
         }
+
+        IssueBuffer::maybeAdd(
+            new PossiblyUndefinedIntArrayOffset(
+                'Possibly undefined array offset \''
+                    . $offset_type->getId() . '\' '
+                    . 'is risky given expected type \''
+                    . $expected_offset_type->getId() . '\'.'
+                    . ' Consider using isset beforehand.',
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
+            ),
+            $statements_analyzer->getSuppressedIssues(),
+        );
     }
 
     private static function checkLiteralStringArrayOffset(
@@ -1097,8 +1087,7 @@ final class ArrayFetchAnalyzer
             }
         }
 
-        if (($data_flow_graph = $statements_analyzer->data_flow_graph)
-            && $data_flow_graph instanceof VariableUseGraph
+        if (($variable_use_graph = $statements_analyzer->variable_use_graph)
             && ($stmt_var_type = $statements_analyzer->node_data->getType($stmt->var))
         ) {
             if ($stmt_var_type->parent_nodes) {
@@ -1106,12 +1095,12 @@ final class ArrayFetchAnalyzer
 
                 $new_parent_node = DataFlowNode::getForAssignment('mixed-var-array-access', $var_location);
 
-                $data_flow_graph->addNode($new_parent_node);
+                $variable_use_graph->addNode($new_parent_node);
 
                 foreach ($stmt_var_type->parent_nodes as $parent_node) {
-                    $data_flow_graph->addPath($parent_node, $new_parent_node, '=');
+                    $variable_use_graph->addPath($parent_node, $new_parent_node, '=');
 
-                    $data_flow_graph->addPath(
+                    $variable_use_graph->addPath(
                         $parent_node,
                         DataFlowNode::getForVariableUse(),
                         'variable-use',

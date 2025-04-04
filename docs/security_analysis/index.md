@@ -2,7 +2,7 @@
 
 Psalm can attempt to find connections between user-controlled input (like `$_GET['name']`) and places that we don’t want unescaped user-controlled input to end up (like `echo "<h1>$name</h1>"` by looking at the ways that data flows through your application (via assignments, function/method calls and array/property access).
 
-You can enable this mode with the `--taint-analysis` command line flag. When taint analysis is enabled, no other analysis is performed.  To [ensure comprehensive results](https://github.com/vimeo/psalm/issues/6156), Psalm should be run normally prior to taint analysis, and any errors should be fixed.
+You can enable this mode with the `--taint-analysis` command line flag.  
 
 Tainted input is anything that can be controlled, wholly or in part, by a user of your application. In taint analysis, tainted input is called a _taint source_.
 

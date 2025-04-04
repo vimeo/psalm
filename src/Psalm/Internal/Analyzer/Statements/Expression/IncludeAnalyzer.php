@@ -14,7 +14,6 @@ use Psalm\Exception\UnpreparedAnalysisException;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Issue\MissingFile;
@@ -110,7 +109,7 @@ final class IncludeAnalyzer
         }
 
         if ($stmt_expr_type
-            && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+            && $statements_analyzer->taint_flow_graph
             && $stmt_expr_type->parent_nodes
             && !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
@@ -125,7 +124,7 @@ final class IncludeAnalyzer
                 TaintKind::INPUT_INCLUDE,
             );
 
-            $statements_analyzer->data_flow_graph->addSink($include_param_sink);
+            $statements_analyzer->taint_flow_graph->addSink($include_param_sink);
 
             $codebase = $statements_analyzer->getCodebase();
             $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
@@ -136,11 +135,11 @@ final class IncludeAnalyzer
             $taints = $added_taints & ~$removed_taints;
             if ($taints !== 0) {
                 $taint_source = $include_param_sink->setTaints($taints);
-                $statements_analyzer->data_flow_graph->addSource($taint_source);
+                $statements_analyzer->taint_flow_graph->addSource($taint_source);
             }
 
             foreach ($stmt_expr_type->parent_nodes as $parent_node) {
-                $statements_analyzer->data_flow_graph->addPath(
+                $statements_analyzer->taint_flow_graph->addPath(
                     $parent_node,
                     $include_param_sink,
                     'arg',

@@ -196,7 +196,7 @@ final class PsalmEndToEndTest extends TestCase
 
         $this->assertStringContainsString('TaintedHtml', $result['STDOUT']);
         $this->assertStringContainsString('TaintedTextWithQuotes', $result['STDOUT']);
-        $this->assertStringContainsString('2 errors', $result['STDOUT']);
+        $this->assertStringContainsString('4 errors', $result['STDOUT']);
         $this->assertSame(2, $result['CODE']);
     }
 
@@ -222,7 +222,7 @@ final class PsalmEndToEndTest extends TestCase
 
         $this->assertStringContainsString('TaintedHtml', $result['STDOUT']);
         $this->assertStringContainsString('TaintedTextWithQuotes', $result['STDOUT']);
-        $this->assertStringContainsString('2 errors', $result['STDOUT']);
+        $this->assertStringContainsString('4 errors', $result['STDOUT']);
         $this->assertSame(2, $result['CODE']);
     }
 

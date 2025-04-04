@@ -11,7 +11,6 @@ use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\ImpureFunctionCall;
@@ -36,7 +35,7 @@ final class PrintAnalyzer
             return false;
         }
 
-        if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+        if ($statements_analyzer->taint_flow_graph) {
             $call_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
             $print_param_sink = DataFlowNode::getForMethodArgument(
@@ -51,7 +50,7 @@ final class PrintAnalyzer
                     | TaintKind::SYSTEM_SECRET,
             );
 
-            $statements_analyzer->data_flow_graph->addSink($print_param_sink);
+            $statements_analyzer->taint_flow_graph->addSink($print_param_sink);
         }
 
         if ($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr)) {

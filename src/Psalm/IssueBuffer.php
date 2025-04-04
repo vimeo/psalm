@@ -263,7 +263,6 @@ final class IssueBuffer
     {
         $config = Config::getInstance();
         $project_analyzer = ProjectAnalyzer::getInstance();
-        $codebase = $project_analyzer->getCodebase();
 
         $fqcn_parts = explode('\\', $e::class);
         $issue_type = array_pop($fqcn_parts);
@@ -273,10 +272,6 @@ final class IssueBuffer
         }
 
         $is_tainted = str_starts_with($issue_type, 'Tainted');
-
-        if ($codebase->taint_flow_graph && !$is_tainted) {
-            return false;
-        }
 
         $reporting_level = $config->getReportingLevelForIssue($e);
 

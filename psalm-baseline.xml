@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="dev-master@354b4d49a646d88aeb9612668c15402416cc70c0">
+<files psalm-version="dev-master@a4b37609d5438890372257fef3012cad3e0ca48d">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$comment_block->tags['variablesfrom'][0]]]></code>
@@ -153,6 +153,11 @@
       <code><![CDATA[$creating_conditional_id]]></code>
       <code><![CDATA[$creating_conditional_id]]></code>
     </RiskyTruthyFalsyComparison>
+  </file>
+  <file src="src/Psalm/Internal/Algebra/FormulaGenerator.php">
+    <ComplexMethod>
+      <code><![CDATA[getFormula]]></code>
+    </ComplexMethod>
   </file>
   <file src="src/Psalm/Internal/Analyzer/AlgebraAnalyzer.php">
     <ImplicitToStringCast>
@@ -403,6 +408,9 @@
     </ArgumentTypeCoercion>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Block/ForeachAnalyzer.php">
+    <ComplexMethod>
+      <code><![CDATA[checkIteratorType]]></code>
+    </ComplexMethod>
     <ConflictingReferenceConstraint>
       <code><![CDATA[if (AtomicTypeComparator::isContainedBy(]]></code>
       <code><![CDATA[if (AtomicTypeComparator::isContainedBy(]]></code>
@@ -451,6 +459,11 @@
       <code><![CDATA[$if_scope->redefined_vars]]></code>
       <code><![CDATA[$statements_analyzer->getTemplateTypeMap()]]></code>
     </RiskyTruthyFalsyComparison>
+  </file>
+  <file src="src/Psalm/Internal/Analyzer/Statements/Block/LoopAnalyzer.php">
+    <ComplexMethod>
+      <code><![CDATA[analyze]]></code>
+    </ComplexMethod>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Block/SwitchAnalyzer.php">
     <InvalidPropertyAssignmentValue>
@@ -936,16 +949,6 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/FunctionCallAnalyzer.php">
-    <PossiblyNullArgument>
-      <code><![CDATA[$function_name]]></code>
-      <code><![CDATA[$function_name]]></code>
-    </PossiblyNullArgument>
-    <PossiblyNullPropertyFetch>
-      <code><![CDATA[$stmt->getArgs()[0]->value]]></code>
-    </PossiblyNullPropertyFetch>
-    <PossiblyUndefinedArrayOffset>
-      <code><![CDATA[$stmt->getArgs()[0]]]></code>
-    </PossiblyUndefinedArrayOffset>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$parts[1]]]></code>
     </PossiblyUndefinedIntArrayOffset>
@@ -989,6 +992,9 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/Method/ExistingAtomicMethodCallAnalyzer.php">
+    <ComplexMethod>
+      <code><![CDATA[analyze]]></code>
+    </ComplexMethod>
     <ImplicitToStringCast>
       <code><![CDATA[$method_id]]></code>
       <code><![CDATA[$pseudo_set_type]]></code>
@@ -1120,6 +1126,9 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/StaticMethod/ExistingAtomicStaticCallAnalyzer.php">
+    <ComplexMethod>
+      <code><![CDATA[analyze]]></code>
+    </ComplexMethod>
     <ImplicitToStringCast>
       <code><![CDATA[$method_id]]></code>
       <code><![CDATA[$method_id]]></code>
@@ -1200,6 +1209,9 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Fetch/ArrayFetchAnalyzer.php">
+    <ComplexMethod>
+      <code><![CDATA[handleArrayAccessOnKeyedArray]]></code>
+    </ComplexMethod>
     <ImplicitToStringCast>
       <code><![CDATA[$array_type]]></code>
       <code><![CDATA[$array_type]]></code>
@@ -1305,6 +1317,9 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/SimpleTypeInferer.php">
+    <ComplexMethod>
+      <code><![CDATA[infer]]></code>
+    </ComplexMethod>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$fq_classlike_name]]></code>
     </RiskyTruthyFalsyComparison>
@@ -1488,6 +1503,11 @@
       <code><![CDATA[$migrated_source_fqcln]]></code>
       <code><![CDATA[empty($classlike_storage->overridden_method_ids[$method_name])]]></code>
     </RiskyTruthyFalsyComparison>
+  </file>
+  <file src="src/Psalm/Internal/Codebase/CombinedFlowGraph.php">
+    <PossiblyUnusedMethod>
+      <code><![CDATA[addSink]]></code>
+    </PossiblyUnusedMethod>
   </file>
   <file src="src/Psalm/Internal/Codebase/ConstantTypeResolver.php">
     <InvalidOperand>
@@ -2147,6 +2167,9 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Type/Comparator/AtomicTypeComparator.php">
+    <ComplexMethod>
+      <code><![CDATA[isContainedBy]]></code>
+    </ComplexMethod>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$array->properties[0]]]></code>
       <code><![CDATA[$array->properties[0]]]></code>
@@ -2271,6 +2294,9 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Type/TemplateStandinTypeReplacer.php">
+    <ComplexMethod>
+      <code><![CDATA[handleTemplateParamStandin]]></code>
+    </ComplexMethod>
     <ImpureMethodCall>
       <code><![CDATA[getClassTemplateTypes]]></code>
     </ImpureMethodCall>
@@ -2318,6 +2344,9 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Type/TypeExpander.php">
+    <ComplexMethod>
+      <code><![CDATA[expandConditional]]></code>
+    </ComplexMethod>
     <InvalidArgument>
       <code><![CDATA[$fallback_params]]></code>
     </InvalidArgument>
@@ -2859,6 +2888,14 @@
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[empty($normalizedEntry['type'])]]></code>
     </RiskyTruthyFalsyComparison>
+  </file>
+  <file src="tests/ReportOutputTest.php">
+    <MixedAssignment>
+      <code><![CDATA[$issue_data]]></code>
+    </MixedAssignment>
+    <PossiblyFalseArgument>
+      <code><![CDATA[file_get_contents(__DIR__.'/sarif.json')]]></code>
+    </PossiblyFalseArgument>
   </file>
   <file src="tests/TestConfig.php">
     <InvalidExtendClass>

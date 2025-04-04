@@ -9,8 +9,6 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Codebase\TaintFlowGraph;
-use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Internal\Type\TypeExpander;
@@ -314,10 +312,10 @@ class Reconciler
                 continue;
             }
 
-            if (($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+            if (($statements_analyzer->taint_flow_graph
                     && (!$result_type->hasScalarType()
                         || ($result_type->hasString() && !$result_type->hasLiteralString())))
-                || $statements_analyzer->data_flow_graph instanceof VariableUseGraph
+                || $statements_analyzer->variable_use_graph
             ) {
                 if ($before_adjustment && $before_adjustment->parent_nodes) {
                     $result_type = $result_type->setParentNodes($before_adjustment->parent_nodes);

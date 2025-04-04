@@ -12,7 +12,6 @@ use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Issue\ImpureVariable;
 use Psalm\Issue\InvalidScope;
@@ -496,9 +495,7 @@ final class VariableFetchAnalyzer
         Union &$type,
         PhpParser\Node\Expr\Variable $stmt,
     ): void {
-        if (!$statements_analyzer->data_flow_graph instanceof TaintFlowGraph
-            || in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
-        ) {
+        if (!$graph = $statements_analyzer->getTaintFlowGraphWithSuppressed()) {
             return;
         }
 
@@ -535,7 +532,7 @@ final class VariableFetchAnalyzer
             $taint_location->file_name . ':' . $taint_location->raw_file_start,
             $taints,
         );
-        $statements_analyzer->data_flow_graph->addSource($taint_source);
+        $graph->addSource($taint_source);
 
         $type = $type->setParentNodes([
             $taint_source->id => $taint_source,

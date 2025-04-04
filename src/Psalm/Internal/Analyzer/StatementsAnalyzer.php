@@ -39,7 +39,8 @@ use Psalm\Internal\Analyzer\Statements\ReturnAnalyzer;
 use Psalm\Internal\Analyzer\Statements\StaticAnalyzer;
 use Psalm\Internal\Analyzer\Statements\UnsetAnalyzer;
 use Psalm\Internal\Analyzer\Statements\UnusedAssignmentRemover;
-use Psalm\Internal\Codebase\DataFlowGraph;
+use Psalm\Internal\Codebase\CombinedFlowGraph;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
@@ -138,7 +139,9 @@ final class StatementsAnalyzer extends SourceAnalyzer
 
     private ?string $fake_this_class = null;
 
-    public ?DataFlowGraph $data_flow_graph = null;
+    public ?TaintFlowGraph $taint_flow_graph = null;
+    public ?VariableUseGraph $variable_use_graph = null;
+    public TaintFlowGraph|CombinedFlowGraph|VariableUseGraph|null $data_flow_graph = null;
 
     /**
      * Locations of foreach values
@@ -164,12 +167,30 @@ final class StatementsAnalyzer extends SourceAnalyzer
             && $root_scope
             && $this->codebase->config->trackTaintsInPath($this->getFilePath())
         ) {
-            $this->data_flow_graph = $this->codebase->taint_flow_graph;
-        } elseif ($this->codebase->find_unused_variables) {
-            $this->data_flow_graph = new VariableUseGraph();
+            $this->data_flow_graph = $this->taint_flow_graph = $this->codebase->taint_flow_graph;
+        }
+        if ($this->codebase->find_unused_variables) {
+            $this->data_flow_graph = $this->variable_use_graph = new VariableUseGraph();
+        }
+        if ($this->taint_flow_graph && $this->variable_use_graph) {
+            $this->data_flow_graph = new CombinedFlowGraph($this->variable_use_graph, $this->taint_flow_graph);
         }
     }
 
+    public function getDataFlowGraphWithSuppressed(): TaintFlowGraph|CombinedFlowGraph|VariableUseGraph|null
+    {
+        if ($this->taint_flow_graph && in_array('TaintedInput', $this->getSuppressedIssues())) {
+            return $this->variable_use_graph;
+        }
+        return $this->data_flow_graph;
+    }
+    public function getTaintFlowGraphWithSuppressed(): ?TaintFlowGraph
+    {
+        if ($this->taint_flow_graph && in_array('TaintedInput', $this->getSuppressedIssues())) {
+            return null;
+        }
+        return $this->taint_flow_graph;
+    }
     /**
      * Checks an array of statements for validity
      *
@@ -861,14 +882,14 @@ final class StatementsAnalyzer extends SourceAnalyzer
 
         $unused_var_remover = new UnusedAssignmentRemover();
 
-        if ($this->data_flow_graph instanceof VariableUseGraph
+        if ($this->variable_use_graph
             && $codebase->config->limit_method_complexity
             && $source instanceof FunctionLikeAnalyzer
             && !$source instanceof ClosureAnalyzer
             && $function_storage
             && $function_storage->location
         ) {
-            [$count, , $unique_destinations, $mean] = $this->data_flow_graph->getEdgeStats();
+            [$count, , $unique_destinations, $mean] = $this->variable_use_graph->getEdgeStats();
 
             $average_destination_branches_converging = $unique_destinations > 0 ? $count / $unique_destinations : 0;
 
@@ -922,8 +943,8 @@ final class StatementsAnalyzer extends SourceAnalyzer
             if (!isset($this->byref_uses[$var_id])
                 && !isset($context->referenced_globals[$var_id])
                 && !VariableFetchAnalyzer::isSuperGlobal($var_id)
-                && $this->data_flow_graph instanceof VariableUseGraph
-                && !$this->data_flow_graph->isVariableUsed($assignment_node)
+                && $this->variable_use_graph
+                && !$this->variable_use_graph->isVariableUsed($assignment_node)
             ) {
                 $is_foreach_var = false;
 

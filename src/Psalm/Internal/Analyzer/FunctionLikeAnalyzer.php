@@ -20,8 +20,6 @@ use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
-use Psalm\Internal\Codebase\TaintFlowGraph;
-use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\FileManipulation\FunctionDocblockManipulator;
@@ -1070,39 +1068,36 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             if ($statements_analyzer->data_flow_graph
                 && $function_param->location
             ) {
-                //don't add to taint flow graph if the type can't transmit taints
-                if (!$statements_analyzer->data_flow_graph instanceof TaintFlowGraph
-                    || $function_param->type === null
-                    || !$function_param->type->isSingle()
-                    || (!$function_param->type->isInt()
-                        && !$function_param->type->isFloat()
-                        && !$function_param->type->isBool())
-                ) {
-                    $param_assignment = DataFlowNode::getForAssignment(
-                        $function_param_id,
+                $param_assignment = DataFlowNode::getForAssignment(
+                    $function_param_id,
+                    $function_param->location,
+                );
+
+                $statements_analyzer->data_flow_graph->addNode($param_assignment);
+
+                if ($cased_method_id !== null) {
+                    $type_source = DataFlowNode::getForMethodArgument(
+                        $cased_method_id,
+                        $cased_method_id,
+                        $offset,
                         $function_param->location,
+                        null,
                     );
 
-                    $statements_analyzer->data_flow_graph->addNode($param_assignment);
-
-                    if ($cased_method_id !== null) {
-                        $type_source = DataFlowNode::getForMethodArgument(
-                            $cased_method_id,
-                            $cased_method_id,
-                            $offset,
-                            $function_param->location,
-                            null,
-                        );
-
-                        $statements_analyzer->data_flow_graph->addPath($type_source, $param_assignment, 'param');
-                    }
-
-                    if ($storage->variadic) {
-                        $this->param_nodes += [$param_assignment->id => $param_assignment];
-                    }
-
-                    $parent_nodes = [$param_assignment->id => $param_assignment];
+                    $statements_analyzer->data_flow_graph->addPath(
+                        $type_source,
+                        $param_assignment,
+                        'param',
+                        0,
+                        $function_param->signature_type?->getTaintsToRemove() ?? 0,
+                    );
                 }
+
+                if ($storage->variadic) {
+                    $this->param_nodes += [$param_assignment->id => $param_assignment];
+                }
+
+                $parent_nodes = [$param_assignment->id => $param_assignment];
             }
 
             if ($function_param->type) {
@@ -2211,9 +2206,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
             $assignment_node = DataFlowNode::getForAssignment($var_name, $original_location);
 
-            if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
-                && $statements_analyzer->data_flow_graph->isVariableUsed($assignment_node)
-            ) {
+            if ($statements_analyzer->variable_use_graph?->isVariableUsed($assignment_node)) {
                 continue;
             }
 
