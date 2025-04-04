@@ -321,8 +321,6 @@ final class MethodCallReturnTypeFetcher
             && $taint_flow_graph
         ) {
             if ($var_id && isset($context->vars_in_scope[$var_id])) {
-                $var_nodes = [];
-
                 $parent_nodes = $context->vars_in_scope[$var_id]->parent_nodes;
 
                 $unspecialized_parent_nodes = false;
@@ -354,8 +352,6 @@ final class MethodCallReturnTypeFetcher
                         );
                     }
                 }
-
-                $var_nodes[$var_node->id] = $var_node;
 
                 $method_call_nodes = [];
 
@@ -409,18 +405,14 @@ final class MethodCallReturnTypeFetcher
 
                 foreach ($method_call_nodes as $method_call_node) {
                     $taint_flow_graph->addNode($method_call_node);
-
-                    foreach ($var_nodes as $var_node) {
-                        $taint_flow_graph->addNode($var_node);
-
-                        $taint_flow_graph->addPath(
-                            $method_call_node,
-                            $var_node,
-                            'method-call-' . $method_id->method_name,
-                            $added_taints,
-                            $removed_taints,
-                        );
-                    }
+                    $taint_flow_graph->addNode($var_node);
+                    $taint_flow_graph->addPath(
+                        $method_call_node,
+                        $var_node,
+                        'method-call-' . $method_id->method_name,
+                        $added_taints,
+                        $removed_taints,
+                    );
 
                     if (!$is_declaring) {
                         $cased_declaring_method_id = $codebase->methods->getCasedMethodId($declaring_method_id);
@@ -446,7 +438,7 @@ final class MethodCallReturnTypeFetcher
                 $return_type_candidate = $return_type_candidate->setParentNodes($method_call_nodes);
 
                 $stmt_var_type = $context->vars_in_scope[$var_id]->setParentNodes(
-                    $var_nodes,
+                    [$var_node->id => $var_node],
                 );
 
                 $context->vars_in_scope[$var_id] = $stmt_var_type;
