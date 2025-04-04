@@ -808,7 +808,7 @@ final class TaintTest extends TestCase
     }
 
     /**
-     * @return array<string, array{code: string, error_message: string}>
+     * @return array<string, array{code: string, error_message: string, php_version?: string}>
      */
     public function providerInvalidCodeParse(): array
     {

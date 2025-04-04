@@ -104,7 +104,7 @@ final class ReportOutputTest extends TestCase
     {
         $this->analyzeTaintFlowFilesForReport();
 
-        $issue_data = json_decode(file_get_contents(__DIR__.'/sarif.json'), true);
+        $issue_data = json_decode(file_get_contents(__DIR__.'/sarif.json'), true, flags: JSON_THROW_ON_ERROR);
 
         $sarif_report_options = ProjectAnalyzer::getFileReportOptions([__DIR__ . '/test-report.sarif'])[0];
 
