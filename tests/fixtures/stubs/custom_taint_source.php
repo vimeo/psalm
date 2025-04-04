@@ -1,3 +1,3 @@
 <?php
 
-function custom_taint_source(){}
+function custom_taint_source(): void {}
