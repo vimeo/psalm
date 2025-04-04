@@ -19,7 +19,6 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
-use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
@@ -1753,34 +1752,12 @@ final class ArgumentAnalyzer
         }
         $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
 
-        // literal data can’t be tainted
-        if ($taint_flow_graph
-            && $input_type->isSingle()
-            && $input_type->hasLiteralValue()
-        ) {
-            $graph = $statements_analyzer->variable_use_graph;
-            $taint_flow_graph = null;
-            if (!$graph) {
-                return;
-            }
-        }
-
-        // numeric types can't be tainted, neither can bool
-        if ($taint_flow_graph
-            && $input_type->isSingle()
-            && ($input_type->isInt() || $input_type->isFloat() || $input_type->isBool())
-        ) {
-            $graph = $statements_analyzer->variable_use_graph;
-            $taint_flow_graph = null;
-            if (!$graph) {
-                return;
-            }
-        }
+        $removed_taints = $taint_flow_graph ? $input_type->getTaintsToRemove() : 0;
 
         $event = new AddRemoveTaintsEvent($expr, $context, $statements_analyzer, $codebase);
 
         $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
-        $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+        $removed_taints |= $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
         if ($function_param->type && $function_param->type->isString() && !$input_type->isString()) {
             $input_type = CastAnalyzer::castStringAttempt(

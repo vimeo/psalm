@@ -32,7 +32,7 @@ final class TaintTest extends TestCase
         'MissingPropertyType', 'UndefinedMagicPropertyAssignment', 'InvalidStringClass', 'PossiblyInvalidIterator',
         'InvalidReturnStatement', 'ArgumentTypeCoercion', 'UnresolvableInclude', 'UndefinedClass', 'RedundantCast',
         'MixedArrayAssignment', 'InvalidReturnStatement', 'InvalidArrayOffset', 'UndefinedFunction', 'ImplicitToStringCast',
-        'InvalidArgument', 'UndefinedVariable'
+        'InvalidArgument', 'UndefinedVariable',
     ];
     /**
      * @dataProvider providerValidCodeParse
@@ -2633,6 +2633,33 @@ final class TaintTest extends TestCase
                 'code' => '<?php
                     extract($_POST);',
                 'error_message' => 'TaintedExtract',
+            ],
+            'TaintForIntTypeCastUsingAnnotatedSink' => [
+                'code' => '<?php // --taint-analysis
+                    /** @param int $id */
+                    function fetch($id): string
+                    {
+                        return query("SELECT * FROM table WHERE id=" . $id);
+                    }
+                    /**
+                     * @return string
+                     * @psalm-taint-sink sql $sql
+                     * @psalm-taint-specialize
+                     */
+                    function query(string $sql) {}
+                    $value = $_GET["value"];
+                    $result = fetch($value);',
+                'error_message' => 'TaintedSql',
+            ],
+            'TaintForIntSleep' => [
+                'code' => '<?php // --taint-analysis
+                    function s(int $id): void
+                    {
+                        sleep($id);
+                    }
+                    $value = $_GET["value"];
+                    s($value);',
+                'error_message' => 'TaintedSleep',
             ],
             'taintedExecuteQueryFunction' => [
                 'code' => '<?php

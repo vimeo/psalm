@@ -1084,7 +1084,13 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         null,
                     );
 
-                    $statements_analyzer->data_flow_graph->addPath($type_source, $param_assignment, 'param');
+                    $statements_analyzer->data_flow_graph->addPath(
+                        $type_source,
+                        $param_assignment,
+                        'param',
+                        0,
+                        $function_param->signature_type?->getTaintsToRemove() ?? 0,
+                    );
                 }
 
                 if ($storage->variadic) {

@@ -33,6 +33,11 @@ final class TaintKind
 
     public const ALL_INPUT = (1 << 17) - 1;
 
+    /** @internal */
+    public const NUMERIC_ONLY = self::INPUT_SLEEP;
+    /** @internal */
+    public const BOOL_ONLY = self::INPUT_SLEEP;
+
     /** @internal Keep this synced with the above */
     public const BUILTIN_TAINT_COUNT = 19;
 }
