@@ -43,6 +43,7 @@ use function preg_quote;
 use function scandir;
 use function sort;
 use function str_replace;
+use function str_starts_with;
 use function strlen;
 use function strpos;
 use function substr;

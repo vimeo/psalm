@@ -32,7 +32,7 @@ final class TaintTest extends TestCase
         'MissingPropertyType', 'UndefinedMagicPropertyAssignment', 'InvalidStringClass', 'PossiblyInvalidIterator',
         'InvalidReturnStatement', 'ArgumentTypeCoercion', 'UnresolvableInclude', 'UndefinedClass', 'RedundantCast',
         'MixedArrayAssignment', 'InvalidReturnStatement', 'InvalidArrayOffset', 'UndefinedFunction', 'ImplicitToStringCast',
-        'InvalidArgument',
+        'InvalidArgument', 'UndefinedVariable'
     ];
     /**
      * @dataProvider providerValidCodeParse
@@ -66,7 +66,7 @@ final class TaintTest extends TestCase
     /**
      * @dataProvider providerInvalidCodeParse
      */
-    public function testInvalidCode(string $code, string $error_message): void
+    public function testInvalidCode(string $code, string $error_message, string $php_version = '8.0'): void
     {
         if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
@@ -77,7 +77,7 @@ final class TaintTest extends TestCase
 
         $file_path = self::$src_dir_path . 'somefile.php';
 
-        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $this->project_analyzer->setPhpVersion($php_version, 'tests');
 
         $this->addFile(
             $file_path,
@@ -1882,6 +1882,7 @@ final class TaintTest extends TestCase
                 'code' => '<?php
                     $cb = create_function(\'$a\', $_GET[\'x\']);',
                 'error_message' => 'TaintedEval',
+                'php_version' => '7.0',
             ],
             'taintException' => [
                 'code' => '<?php
