@@ -983,6 +983,42 @@ final class RedundantConditionTest extends TestCase
                         assert(!!$p);
                     }',
             ],
+            'ternaryNullComparisonDoesNotMakeSubsequentTernaryNullComparisonInElseifRedundant' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface X {
+                        public function a(): bool {}
+                        public function b(): bool {}
+                    }
+
+                    function foo(?X $x): void {
+                        if ($x === null ? null : $x->a()) {
+                        } elseif ($x === null ? null : $x->b()) {
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeMethodCallDoesNotMakeSubsequentNullsafeMethodCallInElseifRedundant' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface X {
+                        public function a(): bool {}
+                        public function b(): bool {}
+                    }
+
+                    function foo(?X $x): void {
+                        if ($x?->a()) {
+                        } elseif ($x?->b()) {
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
