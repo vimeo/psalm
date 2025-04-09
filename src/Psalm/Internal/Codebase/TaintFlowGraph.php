@@ -262,6 +262,7 @@ final class TaintFlowGraph extends DataFlowGraph
                         $project_analyzer,
                         $codebase,
                     );
+                    $progress->taskDone(0);
                     continue;
                 }
         
@@ -273,6 +274,7 @@ final class TaintFlowGraph extends DataFlowGraph
                 ) {
                     /** @var string $source->unspecialized_id */
                     if (!isset($this->forward_edges[$source->unspecialized_id])) {
+                        $progress->taskDone(0);
                         continue;
                     }
                     $specialized_calls = $source->specialized_calls;
