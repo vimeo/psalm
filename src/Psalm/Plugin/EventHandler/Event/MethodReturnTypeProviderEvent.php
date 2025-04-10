@@ -23,77 +23,15 @@ final class MethodReturnTypeProviderEvent
      * @internal
      */
     public function __construct(
-        private readonly StatementsSource $source,
-        private readonly string $fq_classlike_name,
-        private readonly string $method_name_lowercase,
-        private readonly PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $stmt,
-        private readonly Context $context,
-        private readonly CodeLocation $code_location,
-        private readonly ?array $template_type_parameters = null,
-        private readonly ?string $called_fq_classlike_name = null,
-        private readonly ?string $called_method_name_lowercase = null,
+        public readonly StatementsSource $source,
+        public readonly string $fq_classlike_name,
+        public readonly string $method_name_lowercase,
+        public readonly PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $stmt,
+        public readonly Context $context,
+        public readonly CodeLocation $code_location,
+        public readonly ?array $template_type_parameters = null,
+        public readonly ?string $called_fq_classlike_name = null,
+        public readonly ?string $called_method_name_lowercase = null,
     ) {
-    }
-
-    public function getSource(): StatementsSource
-    {
-        return $this->source;
-    }
-
-    public function getFqClasslikeName(): string
-    {
-        return $this->fq_classlike_name;
-    }
-
-    /**
-     * @return lowercase-string
-     */
-    public function getMethodNameLowercase(): string
-    {
-        return $this->method_name_lowercase;
-    }
-
-    /**
-     * @return list<PhpParser\Node\Arg>
-     */
-    public function getCallArgs(): array
-    {
-        return $this->stmt->getArgs();
-    }
-
-    public function getContext(): Context
-    {
-        return $this->context;
-    }
-
-    public function getCodeLocation(): CodeLocation
-    {
-        return $this->code_location;
-    }
-
-    /**
-     * @return non-empty-list<Union>|null
-     */
-    public function getTemplateTypeParameters(): ?array
-    {
-        return $this->template_type_parameters;
-    }
-
-    public function getCalledFqClasslikeName(): ?string
-    {
-        return $this->called_fq_classlike_name;
-    }
-
-    /**
-     * @return lowercase-string|null
-     */
-    public function getCalledMethodNameLowercase(): ?string
-    {
-        return $this->called_method_name_lowercase;
-    }
-
-    public function getStmt(): PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall
-    {
-        return $this->stmt;
     }
 }
