@@ -884,9 +884,15 @@ final class ClassLikes
                         && $classlike_storage->stmt_location !== null
                         && isset($project_analyzer->getIssuesToFix()['ClassMustBeFinal'])
                     ) {
-                        $idx = $classlike_storage->stmt_location->getSelectionBounds()[0];
+                        $selection = $classlike_storage->stmt_location->getSnippet();
+                        $insert_pos = strpos($selection, "class");
+        
+                        if ($insert_pos === false) {
+                            $insert_pos = $classlike_storage->stmt_location->getSelectionBounds()[0];
+                        }
+
                         FileManipulationBuffer::add($classlike_storage->stmt_location->file_path, [
-                            new FileManipulation($idx, $idx, 'final ', true),
+                            new FileManipulation($insert_pos, $insert_pos, 'final ', true),
                         ]);
                     }
                 }
