@@ -34,9 +34,9 @@ final class PluginRegistrationSocket implements RegistrationInterface
     }
 
     #[Override]
-    public function addStubFile(string $file_name): void
+    public function addStubFile(string $file_name, ?string $extension = null): void
     {
-        $this->config->addStubFile($file_name);
+        $this->config->addStubFile($file_name, $extension);
     }
 
     #[Override]
