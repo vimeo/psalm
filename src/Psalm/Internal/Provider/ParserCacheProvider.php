@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider;
 
 use JsonException;
@@ -10,6 +12,7 @@ use Psalm\Internal\Cache;
 use RuntimeException;
 use UnexpectedValueException;
 
+use function assert;
 use function clearstatcache;
 use function error_log;
 use function file_put_contents;
@@ -29,7 +32,6 @@ use function touch;
 use const DIRECTORY_SEPARATOR;
 use const JSON_THROW_ON_ERROR;
 use const LOCK_EX;
-use const PHP_VERSION_ID;
 use const SCANDIR_SORT_NONE;
 
 /**
@@ -41,7 +43,7 @@ class ParserCacheProvider
     private const PARSER_CACHE_DIRECTORY = 'php-parser';
     private const FILE_CONTENTS_CACHE_DIRECTORY = 'file-caches';
 
-    private Cache $cache;
+    private readonly Cache $cache;
 
     /**
      * A map of filename hashes to contents hashes
@@ -57,12 +59,11 @@ class ParserCacheProvider
      */
     protected array $new_file_content_hashes = [];
 
-    private bool $use_file_cache;
-
-    public function __construct(Config $config, bool $use_file_cache = true)
-    {
+    public function __construct(
+        Config $config,
+        private readonly bool $use_file_cache = true,
+    ) {
         $this->cache = new Cache($config);
-        $this->use_file_cache = $use_file_cache;
     }
 
     /**
@@ -71,7 +72,7 @@ class ParserCacheProvider
     public function loadStatementsFromCache(
         string $file_path,
         int $file_modified_time,
-        string $file_content_hash
+        string $file_content_hash,
     ): ?array {
         if (!$this->use_file_cache) {
             return null;
@@ -199,7 +200,7 @@ class ParserCacheProvider
             }
 
             /** @psalm-suppress MixedAssignment */
-            $hashes_decoded = json_decode($hashes_encoded, true);
+            $hashes_decoded = json_decode($hashes_encoded, true, 512, JSON_THROW_ON_ERROR);
 
             if (!is_array($hashes_decoded)) {
                 throw new UnexpectedValueException(
@@ -221,7 +222,7 @@ class ParserCacheProvider
         string $file_path,
         string $file_content_hash,
         array $stmts,
-        bool $touch_only
+        bool $touch_only,
     ): void {
         $cache_location = $this->getCacheLocationForPath($file_path, self::PARSER_CACHE_DIRECTORY, !$touch_only);
 
@@ -309,6 +310,7 @@ class ParserCacheProvider
 
         if (is_dir($cache_directory)) {
             $directory_files = scandir($cache_directory, SCANDIR_SORT_NONE);
+            assert($directory_files !== false);
 
             foreach ($directory_files as $directory_file) {
                 $full_path = $cache_directory . DIRECTORY_SEPARATOR . $directory_file;
@@ -329,11 +331,7 @@ class ParserCacheProvider
 
     private function getParserCacheKey(string $file_path): string
     {
-        if (PHP_VERSION_ID >= 8_01_00) {
-            $hash = hash('xxh128', $file_path);
-        } else {
-            $hash = hash('md4', $file_path);
-        }
+        $hash = hash('xxh128', $file_path);
 
         return $hash . ($this->cache->use_igbinary ? '-igbinary' : '') . '-r';
     }
@@ -342,7 +340,7 @@ class ParserCacheProvider
     private function getCacheLocationForPath(
         string $file_path,
         string $subdirectory,
-        bool $create_directory = false
+        bool $create_directory = false,
     ): string {
         $root_cache_directory = $this->cache->getCacheDirectory();
 

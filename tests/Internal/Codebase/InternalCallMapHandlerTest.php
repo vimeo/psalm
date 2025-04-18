@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\Internal\Codebase;
 
 use InvalidArgumentException;
@@ -45,6 +47,7 @@ use function version_compare;
 use const PHP_MAJOR_VERSION;
 use const PHP_MINOR_VERSION;
 use const PHP_VERSION;
+use const PHP_VERSION_ID;
 
 /** @group callmap */
 class InternalCallMapHandlerTest extends TestCase
@@ -75,17 +78,12 @@ class InternalCallMapHandlerTest extends TestCase
      * @var array<int|string, string|list<string>>
      */
     private static array $ignoredFunctions = [
-        'array_multisort',
         'datefmt_create' => ['8.0'],
-        'fiber::start',
-        'get_class' => ['8.3'],
-        'get_parent_class' => ['8.3'],
         'imagefilledpolygon',
         'imagegd',
         'imagegd2',
         'imageopenpolygon',
         'imagepolygon',
-        'intlgregoriancalendar::__construct',
         'lzf_compress',
         'lzf_decompress',
         'mailparse_msg_extract_part',
@@ -97,7 +95,6 @@ class InternalCallMapHandlerTest extends TestCase
         'mailparse_msg_get_structure',
         'mailparse_msg_parse',
         'mailparse_stream_encode',
-        'mb_check_encoding' => ['8.1', '8.2', '8.3'],
         'memcached::cas', // memcached 3.2.0 has incorrect reflection
         'memcached::casbykey', // memcached 3.2.0 has incorrect reflection
         'oauth::fetch',
@@ -175,60 +172,18 @@ class InternalCallMapHandlerTest extends TestCase
      * @var array<int|string, string|list<string>>
      */
     private static array $ignoredReturnTypeOnlyFunctions = [
-        'appenditerator::getinneriterator' => ['8.1', '8.2', '8.3'],
-        'appenditerator::getiteratorindex' => ['8.1', '8.2', '8.3'],
-        'cachingiterator::getinneriterator' => ['8.1', '8.2', '8.3'],
-        'callbackfilteriterator::getinneriterator' => ['8.1', '8.2', '8.3'],
-        'curl_multi_getcontent',
-        'datetime::add' => ['8.1', '8.2', '8.3'], // DateTime does not contain static
-        'datetime::modify' => ['8.1', '8.2', '8.3'], // DateTime does not contain static
-        'datetime::createfromformat' => ['8.1', '8.2', '8.3'], // DateTime does not contain static
+        'datetime::add' => ['8.1', '8.2', '8.3', '8.4'], // DateTime does not contain static
+        'datetime::modify' => ['8.1', '8.2', '8.3', '8.4'], // DateTime does not contain static
+        'datetime::createfromformat' => ['8.1', '8.2', '8.3', '8.4'], // DateTime does not contain static
         'datetime::createfromimmutable' => ['8.1'],
         'datetime::createfrominterface',
-        'datetime::setdate' => ['8.1', '8.2', '8.3'], // DateTime does not contain static
-        'datetime::setisodate' => ['8.1', '8.2', '8.3'], // DateTime does not contain static
-        'datetime::settime' => ['8.1', '8.2', '8.3'], // DateTime does not contain static
-        'datetime::settimestamp' => ['8.1', '8.2', '8.3'], // DateTime does not contain static
-        'datetime::settimezone' => ['8.1', '8.2', '8.3'], // DateTime does not contain static
-        'datetime::sub' => ['8.1', '8.2', '8.3'], // DateTime does not contain static
         'datetimeimmutable::createfrominterface',
-        'fiber::getcurrent',
-        'filteriterator::getinneriterator' => ['8.1', '8.2', '8.3'],
-        'get_cfg_var', // Ignore array return type
-        'infiniteiterator::getinneriterator' => ['8.1', '8.2', '8.3'],
-        'iteratoriterator::getinneriterator' => ['8.1', '8.2', '8.3'],
-        'limititerator::getinneriterator' => ['8.1', '8.2', '8.3'],
-        'locale::getallvariants' => ['8.1', '8.2', '8.3'],
-        'locale::getkeywords' => ['8.1', '8.2', '8.3'],
-        'locale::getprimarylanguage' => ['8.1', '8.2', '8.3'],
-        'locale::getregion' => ['8.1', '8.2', '8.3'],
-        'locale::getscript' => ['8.1', '8.2', '8.3'],
-        'locale::parselocale' => ['8.1', '8.2', '8.3'],
-        'messageformatter::create' => ['8.1', '8.2', '8.3'],
-        'multipleiterator::current' => ['8.1', '8.2', '8.3'],
-        'mysqli::get_charset' => ['8.1', '8.2', '8.3'],
-        'mysqli_stmt::get_warnings' => ['8.1', '8.2', '8.3'],
-        'mysqli_stmt_get_warnings',
-        'mysqli_stmt_insert_id',
-        'norewinditerator::getinneriterator' => ['8.1', '8.2', '8.3'],
-        'passthru',
-        'recursivecachingiterator::getinneriterator' => ['8.1', '8.2', '8.3'],
-        'recursivecallbackfilteriterator::getinneriterator' => ['8.1', '8.2', '8.3'],
-        'recursivefilteriterator::getinneriterator' => ['8.1', '8.2', '8.3'],
-        'recursiveregexiterator::getinneriterator' => ['8.1', '8.2', '8.3'],
-        'reflectionclass::getstaticproperties' => ['8.1', '8.2'],
-        'reflectionclass::newinstanceargs' => ['8.1', '8.2', '8.3'],
-        'reflectionfunction::getclosurescopeclass' => ['8.1', '8.2', '8.3'],
-        'reflectionfunction::getclosurethis' => ['8.1', '8.2', '8.3'],
-        'reflectionmethod::getclosurescopeclass' => ['8.1', '8.2', '8.3'],
-        'reflectionmethod::getclosurethis' => ['8.1', '8.2', '8.3'],
-        'reflectionobject::getstaticproperties' => ['8.1', '8.2'],
-        'reflectionobject::newinstanceargs' => ['8.1', '8.2', '8.3'],
-        'regexiterator::getinneriterator' => ['8.1', '8.2', '8.3'],
-        'register_shutdown_function' => ['8.0', '8.1'],
-        'splfileobject::fscanf' => ['8.1', '8.2', '8.3'],
-        'spltempfileobject::fscanf' => ['8.1', '8.2', '8.3'],
-        'xsltprocessor::transformtoxml' => ['8.1', '8.2', '8.3'],
+        'datetime::setdate' => ['8.1', '8.2', '8.3', '8.4'], // DateTime does not contain static
+        'datetime::setisodate' => ['8.1', '8.2', '8.3', '8.4'], // DateTime does not contain static
+        'datetime::settime' => ['8.1', '8.2', '8.3', '8.4'], // DateTime does not contain static
+        'datetime::settimestamp' => ['8.1', '8.2', '8.3', '8.4'], // DateTime does not contain static
+        'datetime::settimezone' => ['8.1', '8.2', '8.3', '8.4'], // DateTime does not contain static
+        'datetime::sub' => ['8.1', '8.2', '8.3', '8.4'], // DateTime does not contain static
     ];
 
     /**
@@ -321,7 +276,7 @@ class InternalCallMapHandlerTest extends TestCase
         $collator_sort_entry = $entries[0];
         $this->assertIsArray($collator_sort_entry->params);
         $this->assertArrayHasKey(1, $collator_sort_entry->params);
-        $this->assertEquals('array', $collator_sort_entry->params[1]->name);
+        $this->assertEquals('arr', $collator_sort_entry->params[1]->name);
     }
 
     public function testGetCallablesFromCallmapRemovesWPrefixFromParameterNames(): void
@@ -372,7 +327,7 @@ class InternalCallMapHandlerTest extends TestCase
                 continue;
             }
 
-            yield "$function: " . json_encode($entry) => [$function, $entry];
+            yield "$function: " . (string) json_encode($entry) => [$function, $entry];
         }
     }
 
@@ -519,7 +474,11 @@ class InternalCallMapHandlerTest extends TestCase
     {
         try {
             if (strpos($functionName, '::') !== false) {
-                return new ReflectionMethod($functionName);
+                if (PHP_VERSION_ID < 8_03_00) {
+                    return new ReflectionMethod($functionName);
+                }
+
+                return ReflectionMethod::createFromMethodName($functionName);
             }
 
             /** @var callable-string $functionName */
@@ -552,15 +511,21 @@ class InternalCallMapHandlerTest extends TestCase
                 'optional' => false,
                 'type' => $entry,
             ];
-            if (strncmp($normalizedKey, '&', 1) === 0) {
-                $normalizedEntry['byRef'] = true;
-                $normalizedKey = substr($normalizedKey, 1);
-            }
 
-            if (strncmp($normalizedKey, '...', 3) === 0) {
-                $normalizedEntry['variadic'] = true;
-                $normalizedKey = substr($normalizedKey, 3);
-            }
+            do {
+                if (strncmp($normalizedKey, '...', 3) === 0) {
+                    $normalizedEntry['variadic'] = true;
+                    $normalizedKey = substr($normalizedKey, 3);
+                    continue;
+                }
+
+                if (strncmp($normalizedKey, '&', 1) === 0) {
+                    $normalizedEntry['byRef'] = true;
+                    $normalizedKey = substr($normalizedKey, 1);
+                    continue;
+                }
+                break;
+            } while (true);
 
             // Read the reference mode
             if ($normalizedEntry['byRef']) {
@@ -628,7 +593,6 @@ class InternalCallMapHandlerTest extends TestCase
     public function assertEntryReturnType(ReflectionFunctionAbstract $function, string $entryReturnType): void
     {
         if (version_compare(PHP_VERSION, '8.1.0', '>=')) {
-            /** @var ReflectionType|null $expectedType */
             $expectedType = $function->hasTentativeReturnType() ? $function->getTentativeReturnType() : $function->getReturnType();
         } else {
             $expectedType = $function->getReturnType();

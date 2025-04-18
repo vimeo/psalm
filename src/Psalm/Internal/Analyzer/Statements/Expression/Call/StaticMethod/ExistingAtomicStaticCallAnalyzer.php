@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call\StaticMethod;
 
 use PhpParser;
@@ -42,6 +44,7 @@ use function count;
 use function explode;
 use function in_array;
 use function is_string;
+use function str_starts_with;
 use function strlen;
 use function strpos;
 use function strtolower;
@@ -66,7 +69,7 @@ final class ExistingAtomicStaticCallAnalyzer
         string $cased_method_id,
         ClassLikeStorage $class_storage,
         bool &$moved_call,
-        ?TemplateResult $inferred_template_result = null
+        ?TemplateResult $inferred_template_result = null,
     ): void {
         $fq_class_name = $method_id->fq_class_name;
         $method_name_lc = $method_id->method_name;
@@ -111,22 +114,18 @@ final class ExistingAtomicStaticCallAnalyzer
                     $local_vars_possibly_in_scope = [];
 
                     foreach ($context->vars_in_scope as $var => $_) {
-                        if (strpos($var, '$this->') !== 0 && $var !== '$this') {
+                        if (!str_starts_with($var, '$this->') && $var !== '$this') {
                             $local_vars_in_scope[$var] = $context->vars_in_scope[$var];
                         }
                     }
 
                     foreach ($context->vars_possibly_in_scope as $var => $_) {
-                        if (strpos($var, '$this->') !== 0 && $var !== '$this') {
+                        if (!str_starts_with($var, '$this->') && $var !== '$this') {
                             $local_vars_possibly_in_scope[$var] = $context->vars_possibly_in_scope[$var];
                         }
                     }
 
                     if (!isset($context->initialized_methods[(string) $appearing_method_id])) {
-                        if ($context->initialized_methods === null) {
-                            $context->initialized_methods = [];
-                        }
-
                         $context->initialized_methods[(string) $appearing_method_id] = true;
 
                         $file_analyzer->getMethodMutations($appearing_method_id, $context);
@@ -482,7 +481,7 @@ final class ExistingAtomicStaticCallAnalyzer
         Context $context,
         string $fq_class_name,
         ClassLikeStorage $class_storage,
-        Config $config
+        Config $config,
     ): ?Union {
         $return_type_candidate = $codebase->methods->getMethodReturnType(
             $method_id,
@@ -623,11 +622,11 @@ final class ExistingAtomicStaticCallAnalyzer
         StaticCall $stmt,
         ClassLikeStorage $class_storage,
         MethodIdentifier $method_id,
-        TTemplateParam $template_type
+        TTemplateParam $template_type,
     ): array {
         if ($template_type->param_name === 'TFunctionArgCount') {
             return [
-                'fn-' . strtolower((string)$method_id) => [
+                'fn-' . $method_id->method_name => [
                     new TemplateBound(
                         Type::getInt(false, count($stmt->getArgs())),
                     ),
@@ -637,7 +636,7 @@ final class ExistingAtomicStaticCallAnalyzer
 
         if ($template_type->param_name === 'TPhpMajorVersion') {
             return [
-                'fn-' . strtolower((string)$method_id) => [
+                'fn-' . $method_id->method_name => [
                     new TemplateBound(
                         Type::getInt(false, $codebase->getMajorAnalysisPhpVersion()),
                     ),
@@ -647,7 +646,7 @@ final class ExistingAtomicStaticCallAnalyzer
 
         if ($template_type->param_name === 'TPhpVersionId') {
             return [
-                'fn-' . strtolower((string) $method_id) => [
+                'fn-' . $method_id->method_name => [
                     new TemplateBound(
                         Type::getInt(
                             false,

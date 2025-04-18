@@ -77,7 +77,7 @@ trait EmitterTrait
     public function emit(
         string $eventName,
         array $arguments = [],
-        ?callable $continueCallBack = null
+        ?callable $continueCallBack = null,
     ): void {
         if ($continueCallBack === null) {
             foreach ($this->listeners($eventName) as $listener) {

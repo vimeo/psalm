@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 use Psalm\Codebase;
@@ -7,12 +9,10 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type;
 use Psalm\Type\Atomic;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Union;
-
-use function get_class;
 
 /**
  * Represents an array where the type of each value
@@ -22,30 +22,16 @@ use function get_class;
  */
 final class TClassStringMap extends Atomic
 {
-    /**
-     * @var string
-     */
-    public $param_name;
-
-    public ?TNamedObject $as_type;
-
-    /**
-     * @var Union
-     */
-    public $value_param;
-
+    use UnserializeMemoryUsageSuppressionTrait;
     /**
      * Constructs a new instance of a list
      */
     public function __construct(
-        string $param_name,
-        ?TNamedObject $as_type,
-        Union $value_param,
-        bool $from_docblock = false
+        public string $param_name,
+        public ?TNamedObject $as_type,
+        public Union $value_param,
+        bool $from_docblock = false,
     ) {
-        $this->param_name = $param_name;
-        $this->as_type = $as_type;
-        $this->value_param = $value_param;
         parent::__construct($from_docblock);
     }
 
@@ -68,7 +54,7 @@ final class TClassStringMap extends Atomic
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        bool $use_phpdoc_format
+        bool $use_phpdoc_format,
     ): string {
         if ($use_phpdoc_format) {
             return (new TArray([Type::getString(), $this->value_param]))
@@ -101,7 +87,7 @@ final class TClassStringMap extends Atomic
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $analysis_php_version_id
+        int $analysis_php_version_id,
     ): string {
         return 'array';
     }
@@ -130,16 +116,12 @@ final class TClassStringMap extends Atomic
         ?string $calling_function = null,
         bool $replace = true,
         bool $add_lower_bound = false,
-        int $depth = 0
+        int $depth = 0,
     ): self {
         $cloned = null;
 
         foreach ([Type::getString(), $this->value_param] as $offset => $type_param) {
             $input_type_param = null;
-
-            if ($input_type instanceof TList) {
-                $input_type = $input_type->getKeyedArray();
-            }
 
             if (($input_type instanceof TGenericObject
                     || $input_type instanceof TIterable
@@ -188,7 +170,7 @@ final class TClassStringMap extends Atomic
      */
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
-        ?Codebase $codebase
+        ?Codebase $codebase,
     ): self {
         $value_param = TemplateInferredTypeReplacer::replace(
             $this->value_param,
@@ -212,7 +194,7 @@ final class TClassStringMap extends Atomic
 
     public function equals(Atomic $other_type, bool $ensure_source_equality): bool
     {
-        if (get_class($other_type) !== static::class) {
+        if ($other_type::class !== self::class) {
             return false;
         }
 

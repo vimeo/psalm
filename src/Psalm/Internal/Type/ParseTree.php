@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Type;
 
 /**
@@ -12,13 +14,10 @@ class ParseTree
      */
     public array $children = [];
 
-    public ?ParseTree $parent = null;
-
     public bool $possibly_undefined = false;
 
-    public function __construct(?ParseTree $parent = null)
+    public function __construct(public ?ParseTree $parent = null)
     {
-        $this->parent = $parent;
     }
 
     public function __destruct()

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Plugin\EventHandler\Event;
 
 use PhpParser\Node;
@@ -10,15 +12,6 @@ use Psalm\Storage\ClassLikeStorage;
 
 final class AfterClassLikeAnalysisEvent
 {
-    private Node\Stmt\ClassLike $stmt;
-    private ClassLikeStorage $classlike_storage;
-    private StatementsSource $statements_source;
-    private Codebase $codebase;
-    /**
-     * @var FileManipulation[]
-     */
-    private array $file_replacements;
-
     /**
      * Called after a statement has been checked
      *
@@ -26,17 +19,12 @@ final class AfterClassLikeAnalysisEvent
      * @internal
      */
     public function __construct(
-        Node\Stmt\ClassLike $stmt,
-        ClassLikeStorage $classlike_storage,
-        StatementsSource $statements_source,
-        Codebase $codebase,
-        array $file_replacements = []
+        private readonly Node\Stmt\ClassLike $stmt,
+        private readonly ClassLikeStorage $classlike_storage,
+        private readonly StatementsSource $statements_source,
+        private readonly Codebase $codebase,
+        private array $file_replacements = [],
     ) {
-        $this->stmt = $stmt;
-        $this->classlike_storage = $classlike_storage;
-        $this->statements_source = $statements_source;
-        $this->codebase = $codebase;
-        $this->file_replacements = $file_replacements;
     }
 
     public function getStmt(): Node\Stmt\ClassLike

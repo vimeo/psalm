@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Storage\Assertion;
 
 use Psalm\Storage\Assertion;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type\Atomic;
 
 /**
@@ -10,11 +13,9 @@ use Psalm\Type\Atomic;
  */
 final class IsNotType extends Assertion
 {
-    public Atomic $type;
-
-    public function __construct(Atomic $type)
+    use UnserializeMemoryUsageSuppressionTrait;
+    public function __construct(public readonly Atomic $type)
     {
-        $this->type = $type;
     }
 
     public function isNegation(): bool

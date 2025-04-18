@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
@@ -66,7 +68,6 @@ class ReferenceConstraintTest extends TestCase
                     'MixedAssignment',
                     'MixedArrayAccess',
                     'MixedReturnStatement',
-                    'MixedInferredReturnType',
                     'MixedOperand',
                 ],
             ],

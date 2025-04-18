@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\LanguageServer;
 
 use Psalm\Codebase;
@@ -43,6 +45,7 @@ class FileMapTest extends TestCase
             $providers,
             null,
             [],
+            1,
             1,
             null,
             $this->codebase,

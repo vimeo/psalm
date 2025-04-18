@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Storage\FunctionLikeParameter;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
@@ -16,12 +19,10 @@ use Psalm\Type\Union;
  */
 final class TCallable extends Atomic implements TCallableInterface
 {
+    use UnserializeMemoryUsageSuppressionTrait;
     use CallableTrait;
 
-    /**
-     * @var string
-     */
-    public $value;
+    public string $value;
 
     /**
      * Constructs a new instance of a generic type
@@ -33,7 +34,7 @@ final class TCallable extends Atomic implements TCallableInterface
         ?array $params = null,
         ?Union $return_type = null,
         ?bool $is_pure = null,
-        bool $from_docblock = false
+        bool $from_docblock = false,
     ) {
         $this->value = $value;
         $this->params = $params;
@@ -49,7 +50,7 @@ final class TCallable extends Atomic implements TCallableInterface
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $analysis_php_version_id
+        int $analysis_php_version_id,
     ): string {
         return 'callable';
     }
@@ -88,7 +89,7 @@ final class TCallable extends Atomic implements TCallableInterface
         ?string $calling_function = null,
         bool $replace = true,
         bool $add_lower_bound = false,
-        int $depth = 0
+        int $depth = 0,
     ): self {
         $replaced = $this->replaceCallableTemplateTypesWithStandins(
             $template_result,

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
@@ -13,6 +15,14 @@ class TypeAnnotationTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'atInArrayKey' => [
+                'code' => '<?php
+
+                /**
+                 * @param list<array{"@a": "test"}> $v
+                 */
+                function a(array $v): void {}',
+            ],
             'typeAliasBeforeClass' => [
                 'code' => '<?php
                     namespace Barrr;
@@ -832,6 +842,20 @@ class TypeAnnotationTest extends TestCase
                 'assertions' => [
                     '$output===' => 'array{phone: string}',
                 ],
+            ],
+            'multilineTypeWithExtraSpace' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type PhoneType = array{
+                     *    phone: string, ' . '
+                     * }
+                     */
+                    class Foo {
+                        /** @var PhoneType */
+                        public static $phone;
+                    }
+                    $output = Foo::$phone;
+                    ',
             ],
             'combineAliasOfArrayAndArrayCorrectly' => [
                 'code' => '<?php

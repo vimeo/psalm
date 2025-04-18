@@ -974,9 +974,14 @@ class DOMXPath
 
     public function __construct(DOMDocument $document, bool $registerNodeNS = true) {}
 
+    /**
+     * @return DOMNodeList<DOMNode>|false
+     * @psalm-taint-sink xpath $expression
+     */
     public function evaluate(string $expression, ?DOMNode $contextNode = null, bool $registerNodeNS = true): mixed {}
 
     /**
+     * @psalm-taint-sink xpath $expression
      * @return DOMNodeList<DOMNode|DOMNameSpaceNode>|false
      */
     public function query(string $expression, ?DOMNode $contextNode = null, bool $registerNodeNS = true): mixed {}

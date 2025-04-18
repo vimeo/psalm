@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\LanguageServer\Provider;
 
 use Psalm\Internal\Provider\ClassLikeStorageCacheProvider as InternalClassLikeStorageCacheProvider;
@@ -32,7 +34,7 @@ final class ClassLikeStorageCacheProvider extends InternalClassLikeStorageCacheP
     public function getLatestFromCache(
         string $fq_classlike_name_lc,
         ?string $file_path,
-        ?string $file_contents
+        ?string $file_contents,
     ): ClassLikeStorage {
         $cached_value = $this->loadFromCache($fq_classlike_name_lc);
 

@@ -49,6 +49,7 @@ final class MethodGetCompletionItemsForClassishThingTest extends TestCase
             null,
             [],
             1,
+            1,
             null,
             $this->codebase,
         );
@@ -281,6 +282,7 @@ final class MethodGetCompletionItemsForClassishThingTest extends TestCase
                 'magicObjProp2',
     
                 'magicObjMethod',
+                //'magicStaticMethod',
     
                 'publicObjProp',
                 'protectedObjProp',
@@ -361,6 +363,7 @@ final class MethodGetCompletionItemsForClassishThingTest extends TestCase
                 'magicObjProp2',
     
                 'magicObjMethod',
+                //'magicStaticMethod',
     
                 'publicObjProp',
                 'protectedObjProp',
@@ -438,6 +441,7 @@ final class MethodGetCompletionItemsForClassishThingTest extends TestCase
                 'magicObjProp2',
     
                 'magicObjMethod',
+                //'magicStaticMethod',
     
                 'publicObjProp',
                 'protectedObjProp',

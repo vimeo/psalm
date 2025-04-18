@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider;
 
 use function microtime;
-use function strpos;
+use function str_starts_with;
 
 /**
  * @internal
@@ -84,7 +86,7 @@ final class FakeFileProvider extends FileProvider
         $file_paths = parent::getFilesInDir($dir_path, $file_extensions, $filter);
 
         foreach ($this->fake_files as $file_path => $_) {
-            if (strpos($file_path, $dir_path) === 0) {
+            if (str_starts_with($file_path, $dir_path)) {
                 $file_paths[] = $file_path;
             }
         }

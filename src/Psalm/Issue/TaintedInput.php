@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Issue;
 
 use Psalm\CodeLocation;
@@ -12,30 +14,15 @@ abstract class TaintedInput extends CodeIssue
     public const SHORTCODE = 205;
 
     /**
-     * @var string
-     * @readonly
-     */
-    public $journey_text;
-
-    /**
-     * @var list<array{location: ?CodeLocation, label: string, entry_path_type: string}>
-     * @readonly
-     */
-    public $journey = [];
-
-    /**
      * @param list<array{location: ?CodeLocation, label: string, entry_path_type: string}> $journey
      */
     public function __construct(
         string $message,
         CodeLocation $code_location,
-        array $journey,
-        string $journey_text
+        public readonly array $journey,
+        public readonly string $journey_text,
     ) {
         parent::__construct($message, $code_location);
-
-        $this->journey = $journey;
-        $this->journey_text = $journey_text;
     }
 
     /**
@@ -58,7 +45,7 @@ abstract class TaintedInput extends CodeIssue
 
     public static function nodeToDataFlowNodeData(
         CodeLocation $location,
-        string $label
+        string $label,
     ): DataFlowNodeData {
         $selection_bounds = $location->getSelectionBounds();
         $snippet_bounds = $location->getSnippetBounds();

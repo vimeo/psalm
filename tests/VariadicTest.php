@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use Psalm\Config;
@@ -58,7 +60,7 @@ class VariadicTest extends TestCase
             ),
         );
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,

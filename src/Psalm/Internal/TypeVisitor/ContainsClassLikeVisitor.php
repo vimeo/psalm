@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\TypeVisitor;
 
 use Psalm\Type\Atomic\TClassConstant;
@@ -15,20 +17,15 @@ use function strtolower;
  */
 final class ContainsClassLikeVisitor extends TypeVisitor
 {
-    /**
-     * @var lowercase-string
-     */
-    private string $fq_classlike_name;
-
     private bool $contains_classlike = false;
 
     /**
      * @psalm-external-mutation-free
      * @param lowercase-string $fq_classlike_name
      */
-    public function __construct(string $fq_classlike_name)
-    {
-        $this->fq_classlike_name = $fq_classlike_name;
+    public function __construct(
+        private readonly string $fq_classlike_name,
+    ) {
     }
 
     /**

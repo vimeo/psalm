@@ -2,12 +2,6 @@
 # See https://app.circleci.com/pipelines/github/vimeo/psalm
 version: 2.1
 executors:
-  php-74:
-    docker:
-      - image: thecodingmachine/php:7.4-v4-cli
-  php-80:
-    docker:
-      - image: thecodingmachine/php:8.0-v4-cli
   php-81:
     docker:
       - image: thecodingmachine/php:8.1-v4-cli
@@ -16,7 +10,7 @@ executors:
       - image: thecodingmachine/php:8.2-v4-cli
 jobs:
   "Code Style Analysis":
-    executor: php-74
+    executor: php-81
     steps:
       - checkout
 
@@ -44,7 +38,7 @@ jobs:
           command: vendor/bin/phpcs -d memory_limit=512M
 
   phar-build:
-    executor: php-74
+    executor: php-81
     steps:
       - attach_workspace:
           at: /home/docker/project/

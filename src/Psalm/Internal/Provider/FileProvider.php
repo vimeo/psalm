@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider;
 
 use FilesystemIterator;
@@ -168,7 +170,7 @@ class FileProvider
             $iterator = new RecursiveCallbackFilterIterator(
                 $iterator,
                 /** @param mixed $_ */
-                static function (string $current, $_, RecursiveIterator $iterator) use ($filter): bool {
+                static function (string $current, mixed $_, RecursiveIterator $iterator) use ($filter): bool {
                     if ($iterator->hasChildren()) {
                         $path = $current . DIRECTORY_SEPARATOR;
                     } else {

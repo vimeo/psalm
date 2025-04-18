@@ -16,7 +16,7 @@ use function trim;
 
 final class TemplateScanner extends Psalm\Internal\Scanner\FileScanner
 {
-    const VIEW_CLASS = 'Your\\View\\Class';
+    final public const VIEW_CLASS = 'Your\\View\\Class';
 
     public function scan(
         Codebase $codebase,

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer;
 
 use LogicException;
@@ -19,6 +21,7 @@ use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use UnexpectedValueException;
 
 use function in_array;
@@ -30,6 +33,7 @@ use function strtolower;
  */
 final class MethodAnalyzer extends FunctionLikeAnalyzer
 {
+    use UnserializeMemoryUsageSuppressionTrait;
     // https://github.com/php/php-src/blob/a83923044c48982c80804ae1b45e761c271966d3/Zend/zend_enum.c#L77-L95
     private const FORBIDDEN_ENUM_METHODS = [
         '__construct',
@@ -52,7 +56,7 @@ final class MethodAnalyzer extends FunctionLikeAnalyzer
     public function __construct(
         PhpParser\Node\Stmt\ClassMethod $function,
         SourceAnalyzer $source,
-        ?MethodStorage $storage = null
+        ?MethodStorage $storage = null,
     ) {
         $codebase = $source->getCodebase();
 
@@ -100,7 +104,7 @@ final class MethodAnalyzer extends FunctionLikeAnalyzer
         Codebase $codebase,
         CodeLocation $code_location,
         array $suppressed_issues,
-        ?bool &$is_dynamic_this_method = false
+        ?bool &$is_dynamic_this_method = false,
     ): void {
         $codebase_methods = $codebase->methods;
 
@@ -168,7 +172,7 @@ final class MethodAnalyzer extends FunctionLikeAnalyzer
         CodeLocation $code_location,
         array $suppressed_issues,
         ?string $calling_method_id = null,
-        bool $with_pseudo = false
+        bool $with_pseudo = false,
     ): ?bool {
         if ($codebase->methods->methodExists(
             $method_id,
@@ -212,7 +216,7 @@ final class MethodAnalyzer extends FunctionLikeAnalyzer
     public static function isMethodVisible(
         MethodIdentifier $method_id,
         Context $context,
-        StatementsSource $source
+        StatementsSource $source,
     ): bool {
         $codebase = $source->getCodebase();
 
@@ -297,7 +301,7 @@ final class MethodAnalyzer extends FunctionLikeAnalyzer
      */
     public static function checkMethodSignatureMustOmitReturnType(
         MethodStorage $method_storage,
-        CodeLocation $code_location
+        CodeLocation $code_location,
     ): void {
         if ($method_storage->signature_return_type === null) {
             return;

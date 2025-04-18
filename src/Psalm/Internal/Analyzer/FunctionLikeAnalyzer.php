@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
@@ -83,6 +85,7 @@ use function mb_strpos;
 use function md5;
 use function microtime;
 use function reset;
+use function str_starts_with;
 use function strpos;
 use function strtolower;
 use function substr;
@@ -95,11 +98,6 @@ use const SORT_NUMERIC;
  */
 abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 {
-    /**
-     * @var TFunction
-     */
-    protected $function;
-
     protected Codebase $codebase;
 
     /**
@@ -139,18 +137,17 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
      */
     public array $param_nodes = [];
 
-    protected FunctionLikeStorage $storage;
-
     /**
      * @param TFunction $function
      */
-    public function __construct($function, SourceAnalyzer $source, FunctionLikeStorage $storage)
-    {
-        $this->function = $function;
+    public function __construct(
+        protected Closure|Function_|ClassMethod|ArrowFunction $function,
+        SourceAnalyzer $source,
+        protected FunctionLikeStorage $storage,
+    ) {
         $this->source = $source;
         $this->suppressed_issues = $source->getSuppressedIssues();
         $this->codebase = $source->getCodebase();
-        $this->storage = $storage;
     }
 
     /**
@@ -166,7 +163,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         NodeDataProvider $type_provider,
         ?Context $global_context = null,
         bool $add_mutations = false,
-        array &$byref_vars = []
+        array &$byref_vars = [],
     ): ?bool {
         $storage = $this->storage;
 
@@ -842,20 +839,20 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
 
             if ($this->return_vars_possibly_in_scope !== null) {
-                $context->vars_possibly_in_scope = array_merge(
-                    $context->vars_possibly_in_scope,
-                    $this->return_vars_possibly_in_scope,
-                );
+                $context->vars_possibly_in_scope = [
+                    ...$context->vars_possibly_in_scope,
+                    ...$this->return_vars_possibly_in_scope,
+                ];
             }
 
             foreach ($context->vars_in_scope as $var => $_) {
-                if (strpos($var, '$this->') !== 0 && $var !== '$this') {
+                if (!str_starts_with($var, '$this->') && $var !== '$this') {
                     $context->removePossibleReference($var);
                 }
             }
 
             foreach ($context->vars_possibly_in_scope as $var => $_) {
-                if (strpos($var, '$this->') !== 0 && $var !== '$this') {
+                if (!str_starts_with($var, '$this->') && $var !== '$this') {
                     unset($context->vars_possibly_in_scope[$var]);
                 }
             }
@@ -912,7 +909,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         StatementsAnalyzer $statements_analyzer,
         FunctionLikeStorage $storage,
         ?ClassLikeStorage $class_storage,
-        Context $context
+        Context $context,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -1013,7 +1010,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         array $params,
         array $param_stmts,
         Context $context,
-        bool $has_template_types
+        bool $has_template_types,
     ): bool {
         $check_stmts = true;
         $codebase = $statements_analyzer->getCodebase();
@@ -1369,7 +1366,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         Codebase $codebase,
         FunctionLikeStorage $storage,
         array $params,
-        Context $context
+        Context $context,
     ): void {
         foreach ($this->function->params as $param) {
             $param_name_node = null;
@@ -1497,7 +1494,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         ?string $fq_class_name = null,
         ?CodeLocation $return_type_location = null,
         bool $did_explicitly_return = false,
-        bool $closure_inside_call = false
+        bool $closure_inside_call = false,
     ): void {
         ReturnTypeAnalyzer::verifyReturnType(
             $this->function,
@@ -1519,7 +1516,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         ProjectAnalyzer $project_analyzer,
         string $param_name,
         Union $inferred_return_type,
-        bool $docblock_only = false
+        bool $docblock_only = false,
     ): void {
         $manipulator = FunctionDocblockManipulator::getForFunction(
             $project_analyzer,
@@ -1583,10 +1580,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         }
 
         if ($this->return_vars_possibly_in_scope !== null) {
-            $this->return_vars_possibly_in_scope = array_merge(
-                $context->vars_possibly_in_scope,
-                $this->return_vars_possibly_in_scope,
-            );
+            $this->return_vars_possibly_in_scope = [
+                ...$context->vars_possibly_in_scope,
+                ...$this->return_vars_possibly_in_scope,
+            ];
         } else {
             $this->return_vars_possibly_in_scope = $context->vars_possibly_in_scope;
         }
@@ -1596,7 +1593,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         StatementsAnalyzer $statements_analyzer,
         Context $context,
         Codebase $codebase,
-        ?PhpParser\Node $stmt = null
+        ?PhpParser\Node $stmt = null,
     ): void {
         $storage = $this->getFunctionLikeStorage($statements_analyzer);
 
@@ -1673,7 +1670,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
             try {
                 return $codebase_methods->getStorage($method_id);
-            } catch (UnexpectedValueException $e) {
+            } catch (UnexpectedValueException) {
                 $declaring_method_id = $codebase_methods->getDeclaringMethodId($method_id);
 
                 if ($declaring_method_id === null) {
@@ -1852,7 +1849,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         Codebase $codebase,
         NodeDataProvider $type_provider,
         FunctionLikeStorage $storage,
-        bool $add_mutations
+        bool $add_mutations,
     ): ?array {
         $classlike_storage_provider = $codebase->classlike_storage_provider;
         $real_method_id = null;
@@ -2134,7 +2131,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     private function detectUnusedParameters(
         StatementsAnalyzer $statements_analyzer,
         FunctionLikeStorage $storage,
-        Context $context
+        Context $context,
     ): array {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -2241,6 +2238,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
     private function isIgnoredForUnusedParam(string $var_name): bool
     {
-        return strpos($var_name, '$_') === 0 || (strpos($var_name, '$unused') === 0 && $var_name !== '$unused');
+        return str_starts_with($var_name, '$_') || (str_starts_with($var_name, '$unused') && $var_name !== '$unused');
     }
 }

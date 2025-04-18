@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm;
 
 use function sha1;
@@ -10,33 +12,13 @@ use function trim;
 
 final class FileManipulation
 {
-    /** @var int */
-    public $start;
-
-    /** @var int */
-    public $end;
-
-    /** @var string */
-    public $insertion_text;
-
-    /** @var bool */
-    public $preserve_indentation;
-
-    /** @var bool */
-    public $remove_trailing_newline;
-
     public function __construct(
-        int $start,
-        int $end,
-        string $insertion_text,
-        bool $preserve_indentation = false,
-        bool $remove_trailing_newline = false
+        public int $start,
+        public int $end,
+        public string $insertion_text,
+        public bool $preserve_indentation = false,
+        public bool $remove_trailing_newline = false,
     ) {
-        $this->start = $start;
-        $this->end = $end;
-        $this->insertion_text = $insertion_text;
-        $this->preserve_indentation = $preserve_indentation;
-        $this->remove_trailing_newline = $remove_trailing_newline;
     }
 
     public function getKey(): string

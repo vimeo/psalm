@@ -1,50 +1,28 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Storage;
 
 use Psalm\CodeLocation;
 
 /**
  * @psalm-immutable
+ * @api
  */
 final class AttributeStorage
 {
     use ImmutableNonCloneableTrait;
     use UnserializeMemoryUsageSuppressionTrait;
-    /**
-     * @var string
-     */
-    public $fq_class_name;
-
-    /**
-     * @var list<AttributeArg>
-     */
-    public $args;
-
-    /**
-     * @var CodeLocation
-     * @psalm-suppress PossiblyUnusedProperty part of public API
-     */
-    public $location;
-
-    /**
-     * @var CodeLocation
-     * @psalm-suppress PossiblyUnusedProperty part of public API
-     */
-    public $name_location;
 
     /**
      * @param list<AttributeArg> $args
      */
     public function __construct(
-        string $fq_class_name,
-        array $args,
-        CodeLocation $location,
-        CodeLocation $name_location
+        public readonly string $fq_class_name,
+        public readonly array $args,
+        public readonly CodeLocation $location,
+        public readonly CodeLocation $name_location,
     ) {
-        $this->fq_class_name = $fq_class_name;
-        $this->args = $args;
-        $this->location = $location;
-        $this->name_location = $name_location;
     }
 }

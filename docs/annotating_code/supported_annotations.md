@@ -6,23 +6,23 @@ Psalm supports a wide range of docblock annotations.
 
 Psalm uses the following PHPDoc tags to understand your code:
 
-- [`@var`](https://docs.phpdoc.org/latest/guide/references/phpdoc/tags/var.html)
+- [`@var`](https://docs.phpdoc.org/guide/references/phpdoc/tags/var.html)
   Used for specifying the types of properties and variables
-- [`@return`](https://docs.phpdoc.org/latest/guide/references/phpdoc/tags/return.html)
+- [`@return`](https://docs.phpdoc.org/guide/references/phpdoc/tags/return.html)
   Used for specifying the return types of functions, methods and closures
-- [`@param`](https://docs.phpdoc.org/latest/guide/references/phpdoc/tags/param.html)
+- [`@param`](https://docs.phpdoc.org/guide/references/phpdoc/tags/param.html)
   Used for specifying types of parameters passed to functions, methods and closures
-- [`@property`](https://docs.phpdoc.org/latest/guide/references/phpdoc/tags/property.html)
+- [`@property`](https://docs.phpdoc.org/guide/references/phpdoc/tags/property.html)
   Used to specify what properties can be accessed on an object that uses `__get` and `__set`
-- [`@property-read`](https://docs.phpdoc.org/latest/guide/references/phpdoc/tags/property.html)
+- [`@property-read`](https://docs.phpdoc.org/guide/references/phpdoc/tags/property.html)
   Used to specify what properties can be read on object that uses `__get`
-- [`@property-write`](https://docs.phpdoc.org/latest/guide/references/phpdoc/tags/property.html)
+- [`@property-write`](https://docs.phpdoc.org/guide/references/phpdoc/tags/property.html)
   Used to specify what properties can be written on object that uses `__set`
-- [`@method`](https://docs.phpdoc.org/latest/guide/references/phpdoc/tags/method.html)
+- [`@method`](https://docs.phpdoc.org/guide/references/phpdoc/tags/method.html)
   Used to specify which magic methods are available on object that uses `__call`.
-- [`@deprecated`](https://docs.phpdoc.org/latest/guide/references/phpdoc/tags/deprecated.html)
+- [`@deprecated`](https://docs.phpdoc.org/guide/references/phpdoc/tags/deprecated.html)
   Used to mark functions, methods, classes and interfaces as being deprecated
-- [`@internal`](https://docs.phpdoc.org/latest/guide/references/phpdoc/tags/internal.html)
+- [`@internal`](https://docs.phpdoc.org/guide/references/phpdoc/tags/internal.html)
    Used to mark classes, functions and properties that are internal to an application or library.
 - [`@mixin`](#mixins)
     Used to tell Psalm that the current class proxies the methods and properties of the referenced class.
@@ -202,7 +202,7 @@ takesFoo(getFoo());
 
 This provides the same, but for `false`. Psalm uses this internally for functions like `preg_replace`, which can return false if the given input has encoding errors, but where 99.9% of the time the function operates as expected.
 
-### `@psalm-seal-properties`, `@psalm-no-seal-properties`
+### `@psalm-seal-properties`, `@psalm-no-seal-properties`, `@seal-properties`, `@no-seal-properties`
 
 If you have a magic property getter/setter, you can use `@psalm-seal-properties` to instruct Psalm to disallow getting and setting any properties not contained in a list of `@property` (or `@property-read`/`@property-write`) annotations.
 This is automatically enabled with the configuration option `sealAllProperties` and can be disabled for a class with `@psalm-no-seal-properties`
@@ -211,7 +211,7 @@ This is automatically enabled with the configuration option `sealAllProperties` 
 <?php
 /**
  * @property string $foo
- * @psalm-seal-properties
+ * @seal-properties
  */
 class A {
      public function __get(string $name): ?string {
@@ -227,7 +227,7 @@ $a = new A();
 $a->bar = 5; // this call fails
 ```
 
-### `@psalm-seal-methods`, `@psalm-no-seal-methods`
+### `@psalm-seal-methods`, `@psalm-no-seal-methods`, `@seal-methods`, `@no-seal-methods`
 
 If you have a magic method caller, you can use `@psalm-seal-methods` to instruct Psalm to disallow calling any methods not contained in a list of `@method` annotations.
 This is automatically enabled with the configuration option `sealAllMethods` and can be disabled for a class with `@psalm-no-seal-methods`
@@ -236,7 +236,7 @@ This is automatically enabled with the configuration option `sealAllMethods` and
 <?php
 /**
  * @method foo(): string
- * @psalm-seal-methods
+ * @seal-methods
  */
 class A {
      public function __call(string $name, array $args) {
@@ -264,9 +264,9 @@ is not within the given namespace.
 <?php
 namespace A\B {
     /**
-    * @internal
-    * @psalm-internal A\B
-    */
+     * @internal
+     * @psalm-internal A\B
+     */
     class Foo { }
 }
 
@@ -785,6 +785,6 @@ class BazClass extends BaseClass {} // this is an error
 
 ## Type Syntax
 
-Psalm supports PHPDoc’s [type syntax](https://docs.phpdoc.org/latest/guide/guides/types.html), and also the [proposed PHPDoc PSR type syntax](https://github.com/php-fig/fig-standards/blob/master/proposed/phpdoc.md#appendix-a-types).
+Psalm supports PHPDoc’s [type syntax](https://docs.phpdoc.org/guide/guides/types.html), and also the [proposed PHPDoc PSR type syntax](https://github.com/php-fig/fig-standards/blob/master/proposed/phpdoc.md#appendix-a-types).
 
 A detailed write-up is found in [Typing in Psalm](typing_in_psalm.md)

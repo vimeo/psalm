@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\Loop;
 
 use Psalm\Tests\TestCase;

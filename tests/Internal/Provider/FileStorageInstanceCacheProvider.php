@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\Internal\Provider;
 
 use Psalm\Internal\Provider\FileStorageCacheProvider;

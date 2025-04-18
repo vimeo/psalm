@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Fetch;
 
 use PhpParser;
+use PhpParser\Node\Expr;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
@@ -27,6 +30,7 @@ use Psalm\Issue\EmptyArrayAccess;
 use Psalm\Issue\InvalidArrayAccess;
 use Psalm\Issue\InvalidArrayAssignment;
 use Psalm\Issue\InvalidArrayOffset;
+use Psalm\Issue\LiteralKeyUnshapedArray;
 use Psalm\Issue\MixedArrayAccess;
 use Psalm\Issue\MixedArrayAssignment;
 use Psalm\Issue\MixedArrayOffset;
@@ -62,7 +66,6 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -104,7 +107,7 @@ final class ArrayFetchAnalyzer
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
-        Context $context
+        Context $context,
     ): bool {
         $extended_var_id = ExpressionIdentifier::getExtendedVarId(
             $stmt->var,
@@ -378,7 +381,7 @@ final class ArrayFetchAnalyzer
         ?string $keyed_array_var_id,
         Union &$stmt_type,
         Union &$offset_type,
-        ?Context $context = null
+        ?Context $context = null,
     ): void {
         if ($statements_analyzer->data_flow_graph
             && ($stmt_var_type = $statements_analyzer->node_data->getType($var))
@@ -479,7 +482,7 @@ final class ArrayFetchAnalyzer
         ?string $extended_var_id,
         Context $context,
         ?PhpParser\Node\Expr $assign_value = null,
-        ?Union $replacement_type = null
+        ?Union $replacement_type = null,
     ): Union {
         $offset_type = $offset_type_original->getBuilder();
 
@@ -509,7 +512,7 @@ final class ArrayFetchAnalyzer
             if ($value_type instanceof TLiteralString) {
                 $key_values[] = $value_type;
             }
-        } elseif ($stmt->dim instanceof PhpParser\Node\Scalar\LNumber) {
+        } elseif ($stmt->dim instanceof PhpParser\Node\Scalar\Int_) {
             $key_values[] = new TLiteralInt($stmt->dim->value);
         } elseif ($stmt->dim && ($stmt_dim_type = $statements_analyzer->node_data->getType($stmt->dim))) {
             $string_literals = $stmt_dim_type->getLiteralStrings();
@@ -543,6 +546,15 @@ final class ArrayFetchAnalyzer
                 $offset_type->removeType('null');
                 $offset_type->addType(Type::getAtomicStringFromLiteral(''));
             }
+        }
+
+        if ($codebase->literal_array_key_check && !$in_assignment) {
+            self::validateArrayOffset(
+                $statements_analyzer,
+                $stmt,
+                $array_type,
+                $offset_type,
+            );
         }
 
         if ($offset_type->isNullable() && !$context->inside_isset) {
@@ -585,10 +597,6 @@ final class ArrayFetchAnalyzer
         $types = $array_type->getAtomicTypes();
         $changed = false;
         foreach ($types as $type_string => $type) {
-            if ($type instanceof TList) {
-                $type = $type->getKeyedArray();
-            }
-
             $original_type_real = $type;
             $original_type = $type;
 
@@ -909,7 +917,7 @@ final class ArrayFetchAnalyzer
         ?string $extended_var_id,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         Context $context,
-        StatementsAnalyzer $statements_analyzer
+        StatementsAnalyzer $statements_analyzer,
     ): void {
         if ($context->inside_isset || $context->inside_unset) {
             return;
@@ -957,7 +965,7 @@ final class ArrayFetchAnalyzer
         ?string $extended_var_id,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         Context $context,
-        StatementsAnalyzer $statements_analyzer
+        StatementsAnalyzer $statements_analyzer,
     ): void {
         if ($context->inside_isset || $context->inside_unset) {
             return;
@@ -1051,7 +1059,7 @@ final class ArrayFetchAnalyzer
         ?string $extended_var_id,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         ?Union $array_access_type,
-        Atomic $type
+        Atomic $type,
     ): Union {
         if (!$context->collect_initializations
             && !$context->collect_mutations
@@ -1139,7 +1147,7 @@ final class ArrayFetchAnalyzer
         array &$expected_offset_types,
         ?Union &$array_access_type,
         bool &$has_array_access,
-        bool &$has_valid_offset
+        bool &$has_valid_offset,
     ): void {
         $has_array_access = true;
 
@@ -1270,7 +1278,7 @@ final class ArrayFetchAnalyzer
         array &$expected_offset_types,
         ?Union &$array_access_type,
         Atomic $original_type,
-        bool &$has_valid_offset
+        bool &$has_valid_offset,
     ): void {
         // if we're assigning to an empty array with a key offset, refashion that array
         if ($in_assignment) {
@@ -1434,7 +1442,7 @@ final class ArrayFetchAnalyzer
         TClassStringMap &$type,
         MutableUnion $offset_type,
         ?Union $replacement_type,
-        ?Union &$array_access_type
+        ?Union &$array_access_type,
     ): void {
         $offset_type_parts = array_values($offset_type->getAtomicTypes());
 
@@ -1544,7 +1552,7 @@ final class ArrayFetchAnalyzer
         TKeyedArray &$type,
         bool $hasMixed,
         array &$expected_offset_types,
-        bool &$has_valid_offset
+        bool &$has_valid_offset,
     ): void {
         $generic_key_type = $type->getGenericKeyType();
 
@@ -1764,6 +1772,36 @@ final class ArrayFetchAnalyzer
         }
     }
 
+    public static function validateArrayOffset(
+        StatementsAnalyzer $statements_analyzer,
+        Expr $stmt,
+        Type\Union|Type\MutableUnion $array_type,
+        Type\Union|Type\MutableUnion $offset_type,
+    ): void {
+        $literal_offsets = array_keys($offset_type->getLiteralStrings());
+        if (!$literal_offsets) {
+            return;
+        }
+
+        foreach ($array_type->getAtomicTypes() as $t) {
+            if ($t instanceof TKeyedArray) {
+                return;
+            }
+            if ($t instanceof TArray && $t->type_params[0]->allLiterals()) {
+                return;
+            }
+        }
+        if (IssueBuffer::accepts(
+            new LiteralKeyUnshapedArray(
+                'Literal offset ' . implode('|', $literal_offsets) . ' was used on unshaped array '.$array_type,
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
+            ),
+            $statements_analyzer->getSuppressedIssues(),
+        )) {
+            // fall through
+        }
+    }
+
     private static function handleArrayAccessOnNamedObject(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
@@ -1772,7 +1810,7 @@ final class ArrayFetchAnalyzer
         bool $in_assignment,
         ?PhpParser\Node\Expr $assign_value,
         ?Union &$array_access_type,
-        bool &$has_array_access
+        bool &$has_array_access,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
         if (strtolower($type->value) === 'simplexmlelement'
@@ -1925,7 +1963,7 @@ final class ArrayFetchAnalyzer
         MutableUnion $offset_type,
         array &$expected_offset_types,
         ?Union &$array_access_type,
-        bool &$has_valid_offset
+        bool &$has_valid_offset,
     ): void {
         if ($in_assignment && $replacement_type) {
             if ($replacement_type->hasMixed()) {
@@ -2008,7 +2046,7 @@ final class ArrayFetchAnalyzer
     private static function checkArrayOffsetType(
         MutableUnion $offset_type,
         array $offset_types,
-        Codebase $codebase
+        Codebase $codebase,
     ): bool {
         $has_valid_absolute_offset = false;
         foreach ($offset_types as $atomic_offset_type) {

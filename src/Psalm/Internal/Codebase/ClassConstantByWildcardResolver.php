@@ -15,13 +15,12 @@ use function array_merge;
  */
 final class ClassConstantByWildcardResolver
 {
-    private StorageByPatternResolver $resolver;
-    private Codebase $codebase;
+    private readonly StorageByPatternResolver $resolver;
 
-    public function __construct(Codebase $codebase)
-    {
+    public function __construct(
+        private readonly Codebase $codebase,
+    ) {
         $this->resolver = new StorageByPatternResolver();
-        $this->codebase = $codebase;
     }
 
     /**

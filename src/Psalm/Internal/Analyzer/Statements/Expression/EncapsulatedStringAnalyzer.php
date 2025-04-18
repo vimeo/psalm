@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
-use PhpParser\Node\Scalar\EncapsedStringPart;
+use PhpParser\Node\Expr;
+use PhpParser\Node\InterpolatedStringPart;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -30,8 +33,8 @@ final class EncapsulatedStringAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Scalar\Encapsed $stmt,
-        Context $context
+        PhpParser\Node\Scalar\InterpolatedString $stmt,
+        Context $context,
     ): bool {
         $parent_nodes = [];
 
@@ -42,11 +45,13 @@ final class EncapsulatedStringAnalyzer
         $literal_string = "";
 
         foreach ($stmt->parts as $part) {
-            if (ExpressionAnalyzer::analyze($statements_analyzer, $part, $context) === false) {
-                return false;
+            if ($part instanceof Expr) {
+                if (ExpressionAnalyzer::analyze($statements_analyzer, $part, $context) === false) {
+                    return false;
+                }
             }
 
-            if ($part instanceof EncapsedStringPart) {
+            if ($part instanceof InterpolatedStringPart) {
                 if ($literal_string !== null) {
                     $literal_string .= $part->value;
                 }

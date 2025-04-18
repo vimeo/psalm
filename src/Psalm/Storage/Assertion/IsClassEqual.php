@@ -1,19 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Storage\Assertion;
 
 use Psalm\Storage\Assertion;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 
 /**
  * @psalm-immutable
  */
 final class IsClassEqual extends Assertion
 {
-    public string $type;
-
-    public function __construct(string $type)
+    use UnserializeMemoryUsageSuppressionTrait;
+    public function __construct(public readonly string $type)
     {
-        $this->type = $type;
     }
 
     public function getNegation(): Assertion

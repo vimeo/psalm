@@ -29,7 +29,10 @@ function simplexml_import_dom(SimpleXMLElement|DOMNode $node, ?string $class_nam
  */
 class SimpleXMLElement implements Traversable, Countable
 {
-    /** @return array<array-key, SimpleXMLElement>|null|false */
+    /**
+     * @return array<array-key, SimpleXMLElement>|null|false
+     * @psalm-taint-sink xpath $expression
+     */
     public function xpath(string $expression) {}
 
     public function registerXPathNamespace(string $prefix, string $namespace): bool {}

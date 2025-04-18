@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 use function preg_quote;
 use function preg_replace;
+use function str_contains;
 use function stripos;
-use function strpos;
 use function strtolower;
 
 /**
@@ -15,17 +17,14 @@ use function strtolower;
  */
 final class TLiteralClassString extends TLiteralString
 {
-    /**
-     * Whether or not this type can represent a child of the class named in $value
-     *
-     * @var bool
-     */
-    public $definite_class = false;
-
-    public function __construct(string $value, bool $definite_class = false, bool $from_docblock = false)
-    {
+    public function __construct(
+        string $value, /**
+         * Whether or not this type can represent a child of the class named in $value
+         */
+        public bool $definite_class = false,
+        bool $from_docblock = false,
+    ) {
         parent::__construct($value, $from_docblock);
-        $this->definite_class = $definite_class;
     }
 
     public function getKey(bool $include_extra = true): string
@@ -40,7 +39,7 @@ final class TLiteralClassString extends TLiteralString
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $analysis_php_version_id
+        int $analysis_php_version_id,
     ): string {
         return 'string';
     }
@@ -71,7 +70,7 @@ final class TLiteralClassString extends TLiteralString
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        bool $use_phpdoc_format
+        bool $use_phpdoc_format,
     ): string {
         if ($use_phpdoc_format) {
             return 'string';
@@ -93,7 +92,7 @@ final class TLiteralClassString extends TLiteralString
             ) . '::class';
         }
 
-        if (!$namespace && strpos($this->value, '\\') === false) {
+        if (!$namespace && !str_contains($this->value, '\\')) {
             return $this->value . '::class';
         }
 

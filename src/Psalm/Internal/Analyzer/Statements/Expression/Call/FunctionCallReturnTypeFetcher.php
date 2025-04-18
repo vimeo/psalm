@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use InvalidArgumentException;
@@ -25,7 +27,6 @@ use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
-use Psalm\Type\Atomic\TCallableArray;
 use Psalm\Type\Atomic\TCallableKeyedArray;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
@@ -33,7 +34,6 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
@@ -48,8 +48,9 @@ use function array_values;
 use function count;
 use function explode;
 use function in_array;
+use function str_contains;
+use function str_ends_with;
 use function strlen;
-use function strpos;
 use function strtolower;
 use function substr;
 use function trim;
@@ -73,7 +74,7 @@ final class FunctionCallReturnTypeFetcher
         ?FunctionLikeStorage $function_storage,
         ?TCallable $callmap_callable,
         TemplateResult $template_result,
-        Context $context
+        Context $context,
     ): Union {
         $stmt_type = null;
         $config = $codebase->config;
@@ -234,7 +235,7 @@ final class FunctionCallReturnTypeFetcher
                             );
                         }
                     }
-                } catch (InvalidArgumentException $e) {
+                } catch (InvalidArgumentException) {
                     // this can happen when the function was defined in the Config startup script
                     $stmt_type = Type::getMixed();
                 }
@@ -280,7 +281,7 @@ final class FunctionCallReturnTypeFetcher
 
                 $fake_call_factory = new BuilderFactory();
 
-                if (strpos($proxy_call['fqn'], '::') !== false) {
+                if (str_contains($proxy_call['fqn'], '::')) {
                     [$fqcn, $method] = explode('::', $proxy_call['fqn']);
                     $fake_call = $fake_call_factory->staticCall($fqcn, $method, $fake_call_arguments);
                 } else {
@@ -316,7 +317,7 @@ final class FunctionCallReturnTypeFetcher
         string $function_id,
         array $call_args,
         TCallable $callmap_callable,
-        Context $context
+        Context $context,
     ): Union {
         $call_map_key = strtolower($function_id);
 
@@ -361,12 +362,7 @@ final class FunctionCallReturnTypeFetcher
 
                         if (count($atomic_types) === 1) {
                             if (isset($atomic_types['array'])) {
-                                if ($atomic_types['array'] instanceof TList) {
-                                    $atomic_types['array'] = $atomic_types['array']->getKeyedArray();
-                                }
-                                if ($atomic_types['array'] instanceof TCallableArray
-                                    || $atomic_types['array'] instanceof TCallableKeyedArray
-                                ) {
+                                if ($atomic_types['array'] instanceof TCallableKeyedArray) {
                                     return Type::getInt(false, 2);
                                 }
 
@@ -542,7 +538,7 @@ final class FunctionCallReturnTypeFetcher
         FunctionLikeStorage $function_storage,
         Union &$stmt_type,
         TemplateResult $template_result,
-        Context $context
+        Context $context,
     ): ?DataFlowNode {
         if (!$statements_analyzer->data_flow_graph) {
             return null;
@@ -642,7 +638,7 @@ final class FunctionCallReturnTypeFetcher
                         $pattern = trim($pattern);
                         if ($pattern[0] === '['
                             && $pattern[1] === '^'
-                            && substr($pattern, -1) === ']'
+                            && str_ends_with($pattern, ']')
                         ) {
                             $pattern = substr($pattern, 2, -1);
 
@@ -706,7 +702,7 @@ final class FunctionCallReturnTypeFetcher
         CodeLocation $node_location,
         DataFlowNode $function_call_node,
         array $removed_taints,
-        array $added_taints = []
+        array $added_taints = [],
     ): void {
         foreach ($function_storage->return_source_params as $i => $path_type) {
             if (!isset($args[$i])) {

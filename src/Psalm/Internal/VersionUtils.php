@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal;
 
 use Composer\InstalledVersions;
@@ -92,7 +94,7 @@ final class VersionUtils
                 self::PSALM_PACKAGE => self::getVersion(self::PSALM_PACKAGE),
                 self::PHP_PARSER_PACKAGE => self::getVersion(self::PHP_PARSER_PACKAGE),
             ];
-        } catch (OutOfBoundsException $ex) {
+        } catch (OutOfBoundsException) {
         }
         return null;
     }

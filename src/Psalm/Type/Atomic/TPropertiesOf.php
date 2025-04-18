@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type\Atomic;
 
 /**
@@ -13,18 +16,13 @@ use Psalm\Type\Atomic;
  */
 final class TPropertiesOf extends Atomic
 {
+    use UnserializeMemoryUsageSuppressionTrait;
     // These should match the values of
     // `Psalm\Internal\Analyzer\ClassLikeAnalyzer::VISIBILITY_*`, as they are
     // used to compared against properties visibility.
     public const VISIBILITY_PUBLIC = 1;
     public const VISIBILITY_PROTECTED = 2;
     public const VISIBILITY_PRIVATE = 3;
-
-    public TNamedObject $classlike_type;
-    /**
-     * @var self::VISIBILITY_*|null
-     */
-    public $visibility_filter;
 
     /**
      * @return list<TokenName>
@@ -43,12 +41,10 @@ final class TPropertiesOf extends Atomic
      * @param self::VISIBILITY_*|null $visibility_filter
      */
     public function __construct(
-        TNamedObject $classlike_type,
-        ?int $visibility_filter,
-        bool $from_docblock = false
+        public TNamedObject $classlike_type,
+        public ?int $visibility_filter,
+        bool $from_docblock = false,
     ) {
-        $this->classlike_type = $classlike_type;
-        $this->visibility_filter = $visibility_filter;
         parent::__construct($from_docblock);
     }
 
@@ -57,16 +53,12 @@ final class TPropertiesOf extends Atomic
      */
     public static function filterForTokenName(string $token_name): ?int
     {
-        switch ($token_name) {
-            case 'public-properties-of':
-                return self::VISIBILITY_PUBLIC;
-            case 'protected-properties-of':
-                return self::VISIBILITY_PROTECTED;
-            case 'private-properties-of':
-                return self::VISIBILITY_PRIVATE;
-            default:
-                return null;
-        }
+        return match ($token_name) {
+            'public-properties-of' => self::VISIBILITY_PUBLIC,
+            'protected-properties-of' => self::VISIBILITY_PROTECTED,
+            'private-properties-of' => self::VISIBILITY_PRIVATE,
+            default => null,
+        };
     }
 
     /**
@@ -75,16 +67,12 @@ final class TPropertiesOf extends Atomic
      */
     public static function tokenNameForFilter(?int $visibility_filter): string
     {
-        switch ($visibility_filter) {
-            case self::VISIBILITY_PUBLIC:
-                return 'public-properties-of';
-            case self::VISIBILITY_PROTECTED:
-                return 'protected-properties-of';
-            case self::VISIBILITY_PRIVATE:
-                return  'private-properties-of';
-            default:
-                return 'properties-of';
-        }
+        return match ($visibility_filter) {
+            self::VISIBILITY_PUBLIC => 'public-properties-of',
+            self::VISIBILITY_PROTECTED => 'protected-properties-of',
+            self::VISIBILITY_PRIVATE => 'private-properties-of',
+            default => 'properties-of',
+        };
     }
 
     protected function getChildNodeKeys(): array
@@ -104,7 +92,7 @@ final class TPropertiesOf extends Atomic
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $analysis_php_version_id
+        int $analysis_php_version_id,
     ): string {
         return $this->getKey();
     }

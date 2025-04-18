@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm;
 
 use PhpParser\Comment\Doc;
@@ -10,8 +12,8 @@ use Psalm\Internal\Scanner\ParsedDocblock;
 use function explode;
 use function in_array;
 use function preg_match;
+use function str_starts_with;
 use function strlen;
-use function strpos;
 use function strspn;
 use function substr;
 use function trim;
@@ -52,7 +54,7 @@ final class DocComment
         }
 
         foreach ($parsed_docblock->tags as $special_key => $_) {
-            if (strpos($special_key, 'psalm-') === 0) {
+            if (str_starts_with($special_key, 'psalm-')) {
                 $special_key = substr($special_key, 6);
 
                 if (!in_array(

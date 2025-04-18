@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\PluginManager\Command;
 
 use Psalm\Internal\PluginManager\PluginListFactory;
@@ -22,11 +24,9 @@ use function is_string;
  */
 final class ShowCommand extends Command
 {
-    private PluginListFactory $plugin_list_factory;
-
-    public function __construct(PluginListFactory $plugin_list_factory)
-    {
-        $this->plugin_list_factory = $plugin_list_factory;
+    public function __construct(
+        private readonly PluginListFactory $plugin_list_factory,
+    ) {
         parent::__construct();
     }
 

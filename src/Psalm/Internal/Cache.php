@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal;
 
 use Psalm\Config;
@@ -25,20 +27,15 @@ use const LOCK_EX;
  */
 final class Cache
 {
-    private Config $config;
-
     public bool $use_igbinary;
 
-    public function __construct(Config $config)
-    {
-        $this->config = $config;
+    public function __construct(
+        private readonly Config $config,
+    ) {
         $this->use_igbinary = $config->use_igbinary;
     }
 
-    /**
-     * @return array|object|string|null
-     */
-    public function getItem(string $path)
+    public function getItem(string $path): array|object|string|null
     {
         if (!file_exists($path)) {
             return null;
@@ -92,13 +89,10 @@ final class Cache
         }
     }
 
-    /**
-     * @param array|object|string $item
-     */
-    public function saveItem(string $path, $item): void
+    public function saveItem(string $path, array|object|string $item): void
     {
         if ($this->use_igbinary) {
-            $serialized = igbinary_serialize($item);
+            $serialized = (string) igbinary_serialize($item);
         } else {
             $serialized = serialize($item);
         }

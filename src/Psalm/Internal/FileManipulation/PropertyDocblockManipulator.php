@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\FileManipulation;
 
 use PhpParser\Node\Stmt\Property;
@@ -29,15 +31,13 @@ final class PropertyDocblockManipulator
      */
     private static array $manipulators = [];
 
-    private Property $stmt;
+    private readonly int $docblock_start;
 
-    private int $docblock_start;
-
-    private int $docblock_end;
+    private readonly int $docblock_end;
 
     private ?int $typehint_start = null;
 
-    private int $typehint_area_start;
+    private readonly int $typehint_area_start;
 
     private ?int $typehint_end = null;
 
@@ -58,7 +58,7 @@ final class PropertyDocblockManipulator
     public static function getForProperty(
         ProjectAnalyzer $project_analyzer,
         string $file_path,
-        Property $stmt
+        Property $stmt,
     ): self {
         if (isset(self::$manipulators[$file_path][$stmt->getLine()])) {
             return self::$manipulators[$file_path][$stmt->getLine()];
@@ -73,10 +73,9 @@ final class PropertyDocblockManipulator
 
     private function __construct(
         ProjectAnalyzer $project_analyzer,
-        Property $stmt,
-        string $file_path
+        private readonly Property $stmt,
+        string $file_path,
     ) {
-        $this->stmt = $stmt;
         $docblock = $stmt->getDocComment();
         $this->docblock_start = $docblock ? $docblock->getStartFilePos() : (int)$stmt->getAttribute('startFilePos');
         $this->docblock_end = (int)$stmt->getAttribute('startFilePos');
@@ -139,7 +138,7 @@ final class PropertyDocblockManipulator
         string $new_type,
         string $phpdoc_type,
         bool $is_php_compatible,
-        ?string $description = null
+        ?string $description = null,
     ): void {
         $new_type = str_replace(['<mixed, mixed>', '<array-key, mixed>', '<never, never>'], '', $new_type);
 

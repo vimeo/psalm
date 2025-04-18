@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\BinaryOp;
 
 use PhpParser;
@@ -22,6 +24,8 @@ use Psalm\Issue\PossiblyInvalidOperand;
 use Psalm\Issue\PossiblyNullOperand;
 use Psalm\Issue\StringIncrement;
 use Psalm\IssueBuffer;
+use Psalm\Node\Expr\BinaryOp\VirtualMinus;
+use Psalm\Node\Expr\BinaryOp\VirtualPlus;
 use Psalm\StatementsSource;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -31,7 +35,6 @@ use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -47,7 +50,6 @@ use Psalm\Type\Union;
 use function array_diff_key;
 use function array_values;
 use function count;
-use function get_class;
 use function is_int;
 use function is_numeric;
 use function max;
@@ -67,7 +69,7 @@ final class ArithmeticOpAnalyzer
         PhpParser\Node\Expr $right,
         PhpParser\Node $parent,
         ?Union &$result_type = null,
-        ?Context $context = null
+        ?Context $context = null,
     ): void {
         $codebase = $statements_source ? $statements_source->getCodebase() : null;
 
@@ -277,10 +279,7 @@ final class ArithmeticOpAnalyzer
         }
     }
 
-    /**
-     * @param int|float $result
-     */
-    private static function getNumericalType($result): Union
+    private static function getNumericalType(int|float $result): Union
     {
         if (is_int($result)) {
             return Type::getInt(false, $result);
@@ -309,7 +308,7 @@ final class ArithmeticOpAnalyzer
         bool &$has_valid_left_operand,
         bool &$has_valid_right_operand,
         bool &$has_string_increment,
-        ?Union &$result_type = null
+        ?Union &$result_type = null,
     ): ?Union {
         if (($left_type_part instanceof TLiteralInt || $left_type_part instanceof TLiteralFloat)
             && ($right_type_part instanceof TLiteralInt || $right_type_part instanceof TLiteralFloat)
@@ -323,7 +322,7 @@ final class ArithmeticOpAnalyzer
             // get_class is fine here because both classes are final.
             if ($statements_source !== null
                 && $config->strict_binary_operands
-                && get_class($left_type_part) !== get_class($right_type_part)
+                && $left_type_part::class !== $right_type_part::class
             ) {
                 IssueBuffer::maybeAdd(
                     new InvalidOperand(
@@ -510,15 +509,7 @@ final class ArithmeticOpAnalyzer
             || $right_type_part instanceof TArray
             || $left_type_part instanceof TKeyedArray
             || $right_type_part instanceof TKeyedArray
-            || $left_type_part instanceof TList
-            || $right_type_part instanceof TList
         ) {
-            if ($left_type_part instanceof TList) {
-                $left_type_part = $left_type_part->getKeyedArray();
-            }
-            if ($right_type_part instanceof TList) {
-                $right_type_part = $right_type_part->getKeyedArray();
-            }
             if ((!$right_type_part instanceof TArray
                     && !$right_type_part instanceof TKeyedArray)
                 || (!$left_type_part instanceof TArray
@@ -634,6 +625,11 @@ final class ArithmeticOpAnalyzer
                 return null;
             }
         }
+        /**
+         * @var Atomic $left_type_part
+         * @var Atomic $right_type_part
+         * // Todo remove this hint reset after fixing #10267
+         */
 
         if (($left_type_part instanceof TNamedObject && strtolower($left_type_part->value) === 'gmp')
             || ($right_type_part instanceof TNamedObject && strtolower($right_type_part->value) === 'gmp')
@@ -826,6 +822,28 @@ final class ArithmeticOpAnalyzer
                                 $result_type = Type::getInt();
                             }
                         }
+                    } elseif ($parent instanceof VirtualPlus || $parent instanceof VirtualMinus) {
+                        $sum = $parent instanceof VirtualPlus ? 1 : -1;
+                        if ($context && $context->inside_loop && $left_type_part instanceof TLiteralInt) {
+                            if ($parent instanceof VirtualPlus) {
+                                $new_type = new TIntRange($left_type_part->value + $sum, null);
+                            } else {
+                                $new_type = new TIntRange(null, $left_type_part->value + $sum);
+                            }
+                        } elseif ($left_type_part instanceof TLiteralInt) {
+                            $new_type = new TLiteralInt($left_type_part->value + $sum);
+                        } elseif ($left_type_part instanceof TIntRange) {
+                            $start = $left_type_part->min_bound === null ? null : $left_type_part->min_bound + $sum;
+                            $end = $left_type_part->max_bound === null ? null : $left_type_part->max_bound + $sum;
+                            $new_type = new TIntRange($start, $end);
+                        } else {
+                            $new_type = new TInt();
+                        }
+
+                        $result_type = Type::combineUnionTypes(
+                            new Union([$new_type], ['from_calculation' => true]),
+                            $result_type,
+                        );
                     } else {
                         $result_type = Type::combineUnionTypes(
                             $always_positive ? Type::getIntRange(1, null) : Type::getInt(true),
@@ -925,15 +943,11 @@ final class ArithmeticOpAnalyzer
         return null;
     }
 
-    /**
-     * @param float|int      $operand1
-     * @param float|int      $operand2
-     */
     public static function arithmeticOperation(
         PhpParser\Node $operation,
-        $operand1,
-        $operand2,
-        bool $allow_float_result
+        float|int $operand1,
+        float|int $operand2,
+        bool $allow_float_result,
     ): ?Union {
         if ($operation instanceof PhpParser\Node\Expr\BinaryOp\Plus) {
             $result = $operand1 + $operand2;
@@ -981,7 +995,7 @@ final class ArithmeticOpAnalyzer
         PhpParser\Node $parent,
         ?Union &$result_type,
         TIntRange $left_type_part,
-        TIntRange $right_type_part
+        TIntRange $right_type_part,
     ): void {
         if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Div) {
             //can't assume an int range will stay int after division
@@ -1083,7 +1097,7 @@ final class ArithmeticOpAnalyzer
         PhpParser\Node $parent,
         ?Union &$result_type,
         Atomic $left_type_part,
-        Atomic $right_type_part
+        Atomic $right_type_part,
     ): void {
         if (!$left_type_part instanceof TIntRange) {
             $left_type_part = TIntRange::convertToIntRange($left_type_part);
@@ -1099,7 +1113,7 @@ final class ArithmeticOpAnalyzer
         PhpParser\Node\Expr\BinaryOp\Mul $parent,
         ?Union &$result_type,
         TIntRange $left_type_part,
-        TIntRange $right_type_part
+        TIntRange $right_type_part,
     ): void {
         //Mul is a special case because of double negatives. We can only infer when we know both signs strictly
         if ($right_type_part->min_bound !== null
@@ -1275,7 +1289,7 @@ final class ArithmeticOpAnalyzer
     private static function analyzePowBetweenIntRange(
         ?Union &$result_type,
         TIntRange $left_type_part,
-        TIntRange $right_type_part
+        TIntRange $right_type_part,
     ): void {
         //If Pow first operand is negative, the result could be positive or negative, else it will be positive
         //If Pow second operand is negative, the result will be float, if it's 0, it will be 1/-1, else positive
@@ -1348,7 +1362,7 @@ final class ArithmeticOpAnalyzer
     private static function analyzeModBetweenIntRange(
         ?Union &$result_type,
         TIntRange $left_type_part,
-        TIntRange $right_type_part
+        TIntRange $right_type_part,
     ): void {
         //result of Mod is not directly dependant on the bounds of the range
         if ($right_type_part->min_bound !== null && $right_type_part->min_bound === $right_type_part->max_bound) {

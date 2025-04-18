@@ -1,6 +1,6 @@
 # TaintedHtml
 
-Emitted when user-controlled input that can contain HTML can be passed into to an `echo` statement.
+Emitted when user-controlled input that can contain HTML can be passed into an `echo` statement.
 
 ## Risk
 

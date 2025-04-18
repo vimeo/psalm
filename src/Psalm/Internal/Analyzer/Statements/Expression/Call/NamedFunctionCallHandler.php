@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use PhpParser;
@@ -23,9 +25,9 @@ use Psalm\Issue\RedundantFunctionCall;
 use Psalm\Issue\RedundantFunctionCallGivenDocblockType;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualArray;
-use Psalm\Node\Expr\VirtualArrayItem;
 use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Node\Scalar\VirtualString;
+use Psalm\Node\VirtualArrayItem;
 use Psalm\Type;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TClassString;
@@ -36,7 +38,6 @@ use Psalm\Type\Atomic\TDependentGetType;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
@@ -55,6 +56,7 @@ use function in_array;
 use function is_numeric;
 use function is_string;
 use function preg_match;
+use function str_starts_with;
 use function strpos;
 use function strtolower;
 
@@ -76,7 +78,7 @@ final class NamedFunctionCallHandler
         PhpParser\Node\Expr\FuncCall $real_stmt,
         PhpParser\Node\Name $function_name,
         string $function_id,
-        Context $context
+        Context $context,
     ): void {
         if ($function_id === 'get_class'
             || $function_id === 'gettype'
@@ -293,10 +295,6 @@ final class NamedFunctionCallHandler
                 && $array_type_union->isSingle()
             ) {
                 foreach ($array_type_union->getAtomicTypes() as $array_type) {
-                    if ($array_type instanceof TList) {
-                        $array_type = $array_type->getKeyedArray();
-                    }
-
                     if ($array_type instanceof TKeyedArray) {
                         foreach ($array_type->properties as $key => $type) {
                             // variables must start with letters or underscore
@@ -514,7 +512,7 @@ final class NamedFunctionCallHandler
 
         if ($first_arg
             && $function_id
-            && strpos($function_id, 'is_') === 0
+            && str_starts_with($function_id, 'is_')
             && $function_id !== 'is_a'
             && !$context->inside_negation
         ) {
@@ -680,7 +678,7 @@ final class NamedFunctionCallHandler
         PhpParser\Node\Expr\FuncCall $stmt,
         PhpParser\Node\Expr\FuncCall $real_stmt,
         string $function_id,
-        Context $context
+        Context $context,
     ): void {
         $first_arg = $stmt->getArgs()[0] ?? null;
 

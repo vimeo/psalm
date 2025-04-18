@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Storage;
 
 /**
@@ -8,5 +10,5 @@ namespace Psalm\Storage;
 trait CustomMetadataTrait
 {
     /** @var array<string,_MetadataEntry> */
-    public $custom_metadata = [];
+    public array $custom_metadata = [];
 }

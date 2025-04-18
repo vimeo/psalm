@@ -6,6 +6,7 @@
  * @param mixed $search_value
  * @param bool  $strict
  *
+ * @psalm-flow ($array) -> return
  * @return (TArray is non-empty-array ? non-empty-list<key-of<TArray>> : list<key-of<TArray>>)
  * @psalm-pure
  */
@@ -20,6 +21,7 @@ function array_keys(array $array, $search_value = null, bool $strict = false)
  * @param array<TKey, TValue> $array
  * @param array ...$arrays
  *
+ * @psalm-flow ($array) -> return
  * @return array<TKey, TValue>
  * @psalm-pure
  */
@@ -34,6 +36,7 @@ function array_intersect(array $array, array ...$arrays)
  * @param array<TKey, TValue> $array
  * @param array ...$arrays
  *
+ * @psalm-flow ($array) -> return
  * @return array<TKey, TValue>
  * @psalm-pure
  */
@@ -48,10 +51,27 @@ function array_intersect_key(array $array, array ...$arrays)
  * @param array<TKey, TValue> $array
  * @param array ...$arrays
  *
+ * @psalm-flow ($array) -> return
  * @return array<TKey, TValue>
  * @psalm-pure
  */
 function array_intersect_assoc(array $array, array ...$arrays)
+{
+}
+
+/**
+ * @psalm-flow ($array) -> return
+ * @psalm-pure
+ */
+function array_intersect_uassoc(array $array, array ...$arrays, callable $key_compare_func): array
+{
+}
+
+/**
+ * @psalm-flow ($array) -> return
+ * @psalm-pure
+ */
+function array_intersect_ukey(array $array, array ...$arrays, callable $key_compare_func): array
 {
 }
 
@@ -62,6 +82,7 @@ function array_intersect_assoc(array $array, array ...$arrays)
  * @param array<mixed, TKey> $keys
  * @param array<mixed, TValue> $values
  *
+ * @psalm-flow ($keys, $values) -> return
  * @return (
  *     PHP_MAJOR_VERSION is 8 ?
  *         ($keys is non-empty-array ? non-empty-array<TKey, TValue> : array<TKey, TValue>) :
@@ -81,6 +102,7 @@ function array_combine(array $keys, array $values)
  * @param array<TKey, TValue> $array
  * @param array ...$arrays
  *
+ * @psalm-flow ($array) -> return
  * @return array<TKey, TValue>
  * @psalm-pure
  */
@@ -95,10 +117,27 @@ function array_diff(array $array, array ...$arrays)
  * @param array<TKey, TValue> $array
  * @param array ...$arrays
  *
+ * @psalm-flow ($array) -> return
  * @return array<TKey, TValue>
  * @psalm-pure
  */
 function array_diff_key(array $array, array ...$arrays)
+{
+}
+
+/**
+ * @psalm-flow ($array) -> return
+ * @psalm-pure
+ */
+function array_diff_uassoc(array $array, array ...$arrays, callable $key_compare_func)
+{
+}
+
+/**
+ * @psalm-flow ($array) -> return
+ * @psalm-pure
+ */
+function array_diff_ukey(array $array, array ...$arrays, callable $key_compare_func)
 {
 }
 
@@ -109,6 +148,7 @@ function array_diff_key(array $array, array ...$arrays)
  * @param array<TKey, TValue> $array
  * @param array ...$arrays
  *
+ * @psalm-flow ($array) -> return
  * @return array<TKey, TValue>
  * @psalm-pure
  */
@@ -122,6 +162,7 @@ function array_diff_assoc(array $array, array ...$arrays)
  *
  * @param array<TKey, TValue> $array
  *
+ * @psalm-flow ($array) -> return
  * @return ($array is non-empty-array ? non-empty-array<TValue, TKey> : array<TValue, TKey>)
  * @psalm-pure
  */
@@ -136,6 +177,7 @@ function array_flip(array $array)
  *
  * @param TArray $array
  *
+ * @psalm-flow ($array) -> return
  * @return (TArray is non-empty-array ? non-empty-array<TKey, TValue> : array<TKey, TValue>)
  * @psalm-pure
  */
@@ -203,6 +245,7 @@ function end(&$array)
  *
  * @param TArray $array
  *
+ * @psalm-flow ($array) -> return
  * @return (TArray is array<never, never> ? null : (TArray is non-empty-array ? key-of<TArray> : key-of<TArray>|null))
  * @psalm-pure
  */
@@ -215,6 +258,7 @@ function array_key_first($array)
  *
  * @param TArray $array
  *
+ * @psalm-flow ($array) -> return
  * @return (TArray is array<never, never> ? null : (TArray is non-empty-array ? key-of<TArray> : key-of<TArray>|null))
  * @psalm-pure
  */
@@ -223,10 +267,19 @@ function array_key_last($array)
 }
 
 /**
+ * @psalm-flow ($array, $arrays) -> return
+ * @psalm-pure
+ */
+function array_map(?callable $callback, array $array, array ...$arrays): array
+{
+}
+
+/**
  * @psalm-template TArray as array
  *
  * @param TArray $array
  *
+ * @psalm-flow ($array) -> return
  * @return (TArray is non-empty-array ? non-empty-list<value-of<TArray>> : list<value-of<TArray>>)
  * @psalm-pure
  */
@@ -241,6 +294,7 @@ function array_values($array)
  * @param array<T, mixed> $haystack
  * @param bool            $strict
  *
+ * @psalm-flow ($haystack) -> return
  * @return T|false
  * @psalm-pure
  */
@@ -327,9 +381,28 @@ function uksort(array &$array, callable $callback): bool
  *
  * @param array<K,T> $array
  *
+ * @psalm-flow ($array) -> return
  * @return array<K,T>
  */
 function array_change_key_case(array $array, int $case = CASE_LOWER)
+{
+}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($array) -> return
+ */
+function array_chunk(array $array, int $length)
+{
+}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($array) -> return
+ */
+function array_column(array $array, int|string|null $column_key)
 {
 }
 
@@ -357,6 +430,7 @@ function array_key_exists($key, array $array) : bool
  *
  * @param array<TKey, TValue> ...$arrays
  *
+ * @psalm-flow ($arrays) -> return
  * @return array<TKey, TValue>
  */
 function array_merge_recursive(array ...$arrays)
@@ -366,6 +440,152 @@ function array_merge_recursive(array ...$arrays)
 /**
  * @psalm-pure
  *
+ * @psalm-flow ($array, $value) -> return
+ */
+function array_pad(array $array, int $length, mixed $value): array
+{
+}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($array) -> return
+ */
+function array_rand(array $array, int $num = 1): int|string|array
+{
+}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($array, $initial) -> return
+ */
+function array_reduce(array $array, callable $callback, mixed $initial = null): mixed
+{
+}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($array, $replacements) -> return
+ */
+function array_replace(array $array, array ...$replacements): array
+{
+}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($array, $replacements) -> return
+ */
+function array_replace_recursive(array $array, array ...$replacements): array
+{
+}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($array) -> return
+ */
+function array_reverse(array $array, bool $preserve_keys = false): array
+{
+}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($array) -> return
+ */
+function array_slice(
+    array $array,
+    int $offset,
+    ?int $length = null,
+    bool $preserve_keys = false
+): array
+{
+}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($array, $replacement) -> return
+ */
+function array_splice(
+    array &$array,
+    int $offset,
+    ?int $length = null,
+    mixed $replacement = []
+): array
+{
+}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($array) -> return
+ */
+function array_udiff(array $array, array ...$arrays, callable $value_compare_func): array
+{
+}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($array) -> return
+ */
+function array_udiff_assoc(array $array, array ...$arrays, callable $value_compare_func): array
+{
+}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($array) -> return
+ */
+function array_udiff_uassoc(
+    array $array,
+    array ...$arrays,
+    callable $value_compare_func,
+    callable $key_compare_func
+): array
+{
+}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($array) -> return
+ */
+function array_uintersect(array $array, array ...$arrays, callable $value_compare_func): array
+{
+}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($array) -> return
+ */
+function array_uintersect_assoc(array $array, array ...$arrays, callable $value_compare_func): array
+{
+}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($array1) -> return
+ */
+function array_uintersect_uassoc(
+    array $array1,
+    array ...$arrays,
+    callable $value_compare_func,
+    callable $key_compare_func
+): array
+{
+}
+
+/**
+ * @psalm-pure
+ * 
  * @no-named-arguments
  *
  * @psalm-template TKey as array-key
@@ -373,9 +593,18 @@ function array_merge_recursive(array ...$arrays)
  *
  * @param array<TKey, TValue> ...$arrays
  *
+ * @psalm-flow ($arrays) -> return
  * @return array<TKey, TValue>
  */
 function array_merge(array ...$arrays)
+{
+}
+
+/**
+ * @psalm-pure
+ * @psalm-flow ($value) -> return
+ */
+function array_fill(int $start_index, int $count, mixed $value): array
 {
 }
 
@@ -388,9 +617,18 @@ function array_merge(array ...$arrays)
  * @param array<TKey> $keys
  * @param TValue $value
  *
+ * @psalm-flow ($value) -> return
  * @return array<TKey, TValue>
  */
 function array_fill_keys(array $keys, $value): array
+{
+}
+
+/**
+ * @psalm-pure
+ * @psalm-flow ($array) -> return
+ */
+function array_filter(array $array, ?callable $callback = null, int $mode = 0): array
 {
 }
 
@@ -1390,6 +1628,7 @@ function str_getcsv(string $string, string $separator = ',', string $enclosure =
  *
  * @param TArray $array
  *
+ * @psalm-flow ($array) -> return
  * @return (TArray is non-empty-array ? non-empty-array<TKey, int<1, max>> : array<TKey, int<1, max>>)
  *
  * @psalm-pure
@@ -1799,9 +2038,31 @@ if (defined('GLOB_BRACE')) {
 function exec(string $command, &$output = null, int &$result_code = null): string|false {}
 
 /**
-* @return ($return_array is true ? array|false : object|false)
-* @psalm-ignore-falsable-return
-*/
+ * @psalm-taint-specialize
+ * @psalm-taint-sink sleep $seconds
+ */
+function sleep(int $seconds): int {}
+
+/**
+ * @psalm-taint-sink sleep $microseconds
+ */
+function usleep(int $microseconds): void {}
+
+/**
+ * @psalm-taint-sink sleep $seconds
+ * @psalm-taint-sink sleep $nanoseconds
+ */
+function time_nanosleep(int $seconds, int $nanoseconds): array|bool {}
+
+/**
+ * @psalm-taint-sink sleep $timestamp
+ */
+function time_sleep_until(float $timestamp): bool {}
+
+/**
+ * @return ($return_array is true ? array|false : object|false)
+ * @psalm-ignore-falsable-return
+ */
 function get_browser(?string $user_agent = null, bool $return_array = false): object|array|false {}
 
 /**
@@ -1823,3 +2084,8 @@ function register_shutdown_function(callable $callback, mixed ...$args): void {}
  * @psalm-taint-sink callable $callback
  */
 function register_tick_function(callable $callback, mixed ...$args): bool {}
+
+/**
+ * @psalm-taint-sink extract $array
+ */
+function extract(array &$array, int $flags = EXTR_OVERWRITE, string $prefix = ""): int {}

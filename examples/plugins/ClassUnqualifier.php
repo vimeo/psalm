@@ -29,7 +29,7 @@ final class ClassUnqualifier implements AfterClassLikeExistenceCheckInterface
             return;
         }
 
-        if (strpos($candidate_type, '\\' . $fq_class_name) !== false) {
+        if (str_contains($candidate_type, '\\' . $fq_class_name)) {
             $type_tokens = TypeTokenizer::tokenize($candidate_type, false);
 
             foreach ($type_tokens as &$type_token) {

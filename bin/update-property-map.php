@@ -93,9 +93,9 @@ libxml_use_internal_errors(true);
 foreach ($files as $file) {
     $contents = file_get_contents($file);
     // FIXME: find a way to ignore custom entities, for now we strip them.
-    $contents = preg_replace('#&[a-zA-Z\d.\-_]+;#', '', $contents);
-    $contents = preg_replace('#%[a-zA-Z\d.\-_]+;#', '', $contents);
-    $contents = preg_replace('#<!ENTITY[^>]+>#', '', $contents);
+    $contents = (string) preg_replace('#&[a-zA-Z\d.\-_]+;#', '', $contents);
+    $contents = (string) preg_replace('#%[a-zA-Z\d.\-_]+;#', '', $contents);
+    $contents = (string) preg_replace('#<!ENTITY[^>]+>#', '', $contents);
     try {
         $simple = new SimpleXMLElement($contents);
     } catch (Throwable $exception) {

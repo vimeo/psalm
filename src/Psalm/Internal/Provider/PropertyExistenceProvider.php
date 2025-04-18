@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider;
 
 use Closure;
@@ -37,7 +39,7 @@ final class PropertyExistenceProvider
     public function registerClass(string $class): void
     {
         if (is_subclass_of($class, PropertyExistenceProviderInterface::class, true)) {
-            $callable = Closure::fromCallable([$class, 'doesPropertyExist']);
+            $callable = $class::doesPropertyExist(...);
 
             foreach ($class::getClassLikeNames() as $fq_classlike_name) {
                 $this->registerClosure($fq_classlike_name, $callable);
@@ -64,7 +66,7 @@ final class PropertyExistenceProvider
         bool $read_mode,
         ?StatementsSource $source = null,
         ?Context $context = null,
-        ?CodeLocation $code_location = null
+        ?CodeLocation $code_location = null,
     ): ?bool {
         foreach (self::$handlers[strtolower($fq_classlike_name)] ?? [] as $property_handler) {
             $event = new PropertyExistenceProviderEvent(

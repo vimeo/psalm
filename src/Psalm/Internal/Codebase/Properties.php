@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Codebase;
 
 use Psalm\CodeLocation;
@@ -25,13 +27,7 @@ use function strtolower;
  */
 final class Properties
 {
-    private ClassLikeStorageProvider $classlike_storage_provider;
-
-    private ClassLikes $classlikes;
-
     public bool $collect_locations = false;
-
-    public FileReferenceProvider $file_reference_provider;
 
     public PropertyExistenceProvider $property_existence_provider;
 
@@ -41,16 +37,13 @@ final class Properties
 
 
     public function __construct(
-        ClassLikeStorageProvider $storage_provider,
-        FileReferenceProvider $file_reference_provider,
-        ClassLikes $classlikes
+        private readonly ClassLikeStorageProvider $classlike_storage_provider,
+        public FileReferenceProvider $file_reference_provider,
+        private readonly ClassLikes $classlikes,
     ) {
-        $this->classlike_storage_provider = $storage_provider;
-        $this->file_reference_provider = $file_reference_provider;
         $this->property_existence_provider = new PropertyExistenceProvider();
         $this->property_visibility_provider = new PropertyVisibilityProvider();
         $this->property_type_provider = new PropertyTypeProvider();
-        $this->classlikes = $classlikes;
     }
 
     /**
@@ -61,7 +54,7 @@ final class Properties
         bool $read_mode,
         ?StatementsSource $source = null,
         ?Context $context = null,
-        ?CodeLocation $code_location = null
+        ?CodeLocation $code_location = null,
     ): bool {
         // remove leading backslash if it exists
         $property_id = ltrim($property_id, '\\');
@@ -168,7 +161,7 @@ final class Properties
     public function getDeclaringClassForProperty(
         string $property_id,
         bool $read_mode,
-        ?StatementsSource $source = null
+        ?StatementsSource $source = null,
     ): ?string {
         [$fq_class_name, $property_name] = explode('::$', $property_id);
 
@@ -199,7 +192,7 @@ final class Properties
     public function getAppearingClassForProperty(
         string $property_id,
         bool $read_mode,
-        ?StatementsSource $source = null
+        ?StatementsSource $source = null,
     ): ?string {
         [$fq_class_name, $property_name] = explode('::$', $property_id);
 
@@ -269,7 +262,7 @@ final class Properties
         string $property_id,
         bool $property_set,
         ?StatementsSource $source = null,
-        ?Context $context = null
+        ?Context $context = null,
     ): ?Union {
         // remove leading backslash if it exists
         $property_id = ltrim($property_id, '\\');

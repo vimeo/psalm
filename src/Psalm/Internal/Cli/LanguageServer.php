@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Cli;
 
 use LanguageServerProtocol\MessageType;
@@ -33,8 +35,9 @@ use function is_string;
 use function preg_replace;
 use function realpath;
 use function setlocale;
+use function str_contains;
+use function str_starts_with;
 use function strlen;
-use function strpos;
 use function strtolower;
 use function substr;
 
@@ -109,8 +112,8 @@ final class LanguageServer
 
         array_map(
             static function (string $arg) use ($valid_long_options): void {
-                if (strpos($arg, '--') === 0 && $arg !== '--') {
-                    $arg_name = preg_replace('/=.*$/', '', substr($arg, 2), 1);
+                if (str_starts_with($arg, '--') && $arg !== '--') {
+                    $arg_name = (string) preg_replace('/=.*$/', '', substr($arg, 2), 1);
 
                     if (!in_array($arg_name, $valid_long_options, true)
                         && !in_array($arg_name . ':', $valid_long_options, true)
@@ -433,7 +436,7 @@ final class LanguageServer
         }
 
         if (is_string($map_folder)) {
-            if (strpos($map_folder, ':') === false) {
+            if (!str_contains($map_folder, ':')) {
                 fwrite(
                     STDERR,
                     'invalid format for --map-folder option' . PHP_EOL,

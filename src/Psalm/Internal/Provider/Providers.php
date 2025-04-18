@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider;
 
 use RuntimeException;
@@ -18,10 +20,6 @@ use const LOCK_SH;
  */
 final class Providers
 {
-    public FileProvider $file_provider;
-
-    public ?ParserCacheProvider $parser_cache_provider = null;
-
     public FileStorageProvider $file_storage_provider;
 
     public ClassLikeStorageProvider $classlike_storage_provider;
@@ -30,20 +28,14 @@ final class Providers
 
     public FileReferenceProvider $file_reference_provider;
 
-    public ?ProjectCacheProvider $project_cache_provider = null;
-
     public function __construct(
-        FileProvider $file_provider,
-        ?ParserCacheProvider $parser_cache_provider = null,
+        public FileProvider $file_provider,
+        public ?ParserCacheProvider $parser_cache_provider = null,
         ?FileStorageCacheProvider $file_storage_cache_provider = null,
         ?ClassLikeStorageCacheProvider $classlike_storage_cache_provider = null,
         ?FileReferenceCacheProvider $file_reference_cache_provider = null,
-        ?ProjectCacheProvider $project_cache_provider = null
+        public ?ProjectCacheProvider $project_cache_provider = null,
     ) {
-        $this->file_provider = $file_provider;
-        $this->parser_cache_provider = $parser_cache_provider;
-        $this->project_cache_provider = $project_cache_provider;
-
         $this->file_storage_provider = new FileStorageProvider($file_storage_cache_provider);
         $this->classlike_storage_provider = new ClassLikeStorageProvider($classlike_storage_cache_provider);
         $this->statements_provider = new StatementsProvider(

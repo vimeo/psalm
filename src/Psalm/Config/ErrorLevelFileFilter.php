@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Config;
 
 use Psalm\Config;
@@ -13,14 +15,13 @@ final class ErrorLevelFileFilter extends FileFilter
 {
     private string $error_level = '';
 
-    /**
-     * @return static
-     */
+    public int $suppressions = 0;
+
     public static function loadFromArray(
         array $config,
         string $base_dir,
-        bool $inclusive
-    ): ErrorLevelFileFilter {
+        bool $inclusive,
+    ): static {
         $filter = parent::loadFromArray($config, $base_dir, $inclusive);
 
         if (isset($config['type'])) {
@@ -36,14 +37,11 @@ final class ErrorLevelFileFilter extends FileFilter
         return $filter;
     }
 
-    /**
-     * @return static
-     */
     public static function loadFromXMLElement(
         SimpleXMLElement $e,
         string $base_dir,
-        bool $inclusive
-    ): ErrorLevelFileFilter {
+        bool $inclusive,
+    ): static {
         $filter = parent::loadFromXMLElement($e, $base_dir, $inclusive);
 
         if (isset($e['type'])) {

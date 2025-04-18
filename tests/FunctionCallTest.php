@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use Psalm\Config;
@@ -968,7 +970,7 @@ class FunctionCallTest extends TestCase
                     '$porta' => 'false|int|null',
                     '$porte' => 'false|int|null',
                 ],
-                'ignored_issues' => ['MixedReturnStatement', 'MixedInferredReturnType'],
+                'ignored_issues' => ['MixedReturnStatement'],
             ],
             'parseUrlComponent' => [
                 'code' => '<?php

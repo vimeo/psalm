@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 use function max;
@@ -15,27 +17,12 @@ final class TIntRange extends TInt
     public const BOUND_MIN = 'min';
     public const BOUND_MAX = 'max';
 
-    /**
-     * @var int|null
-     */
-    public $min_bound;
-    /**
-     * @var int|null
-     */
-    public $max_bound;
-
-    /** @var string|null */
-    public $dependent_list_key;
-
     public function __construct(
-        ?int $min_bound,
-        ?int $max_bound,
+        public ?int $min_bound,
+        public ?int $max_bound,
         bool $from_docblock = false,
-        ?string $dependent_list_key = null
+        public ?string $dependent_list_key = null,
     ) {
-        $this->min_bound = $min_bound;
-        $this->max_bound = $max_bound;
-        $this->dependent_list_key = $dependent_list_key;
         parent::__construct($from_docblock);
     }
 
@@ -56,7 +43,7 @@ final class TIntRange extends TInt
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        bool $use_phpdoc_format
+        bool $use_phpdoc_format,
     ): string {
         return $use_phpdoc_format ?
             'int' :

@@ -1,19 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Storage\Assertion;
 
 use Psalm\Storage\Assertion;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 
 /**
  * @psalm-immutable
  */
 final class NonEmptyCountable extends Assertion
 {
-    public $is_negatable;
-
-    public function __construct(bool $is_negatable)
+    use UnserializeMemoryUsageSuppressionTrait;
+    public function __construct(public readonly bool $is_negatable)
     {
-        $this->is_negatable = $is_negatable;
     }
 
     public function getNegation(): Assertion

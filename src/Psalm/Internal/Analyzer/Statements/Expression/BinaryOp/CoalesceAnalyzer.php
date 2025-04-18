@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\BinaryOp;
 
 use PhpParser;
@@ -23,7 +25,7 @@ final class CoalesceAnalyzer
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\BinaryOp\Coalesce $stmt,
-        Context $context
+        Context $context,
     ): bool {
         $left_expr = $stmt->left;
 

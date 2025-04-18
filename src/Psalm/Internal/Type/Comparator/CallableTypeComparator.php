@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Type\Comparator;
 
 use Exception;
@@ -18,12 +20,10 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
-use Psalm\Type\Atomic\TCallableArray;
 use Psalm\Type\Atomic\TCallableInterface;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -42,14 +42,13 @@ use function substr;
 final class CallableTypeComparator
 {
     /**
-     * @param  TClosure|TCallableInterface $input_type_part
      * @param  TCallable|TClosure   $container_type_part
      */
     public static function isContainedBy(
         Codebase $codebase,
-        $input_type_part,
+        TClosure|TCallableInterface $input_type_part,
         Atomic $container_type_part,
-        ?TypeComparisonResult $atomic_comparison_result
+        ?TypeComparisonResult $atomic_comparison_result,
     ): bool {
         if ($container_type_part instanceof TClosure) {
             if ($input_type_part instanceof TCallableInterface
@@ -189,11 +188,9 @@ final class CallableTypeComparator
         Codebase $codebase,
         Atomic $input_type_part,
         TCallable $container_type_part,
-        ?TypeComparisonResult $atomic_comparison_result
+        ?TypeComparisonResult $atomic_comparison_result,
     ): bool {
-        if ($input_type_part instanceof TList) {
-            $input_type_part = $input_type_part->getKeyedArray();
-        }
+
         if ($input_type_part instanceof TArray) {
             if ($input_type_part->type_params[1]->isMixed()
                 || $input_type_part->type_params[1]->hasScalar()
@@ -207,15 +204,6 @@ final class CallableTypeComparator
             }
 
             if (!$input_type_part->type_params[1]->hasString()) {
-                return false;
-            }
-
-            if (!$input_type_part instanceof TCallableArray) {
-                if ($atomic_comparison_result) {
-                    $atomic_comparison_result->type_coerced_from_mixed = true;
-                    $atomic_comparison_result->type_coerced = true;
-                }
-
                 return false;
             }
         } elseif ($input_type_part instanceof TKeyedArray) {
@@ -239,7 +227,7 @@ final class CallableTypeComparator
                 if (!$codebase->methods->hasStorage($method_id)) {
                     return false;
                 }
-            } catch (Exception $e) {
+            } catch (Exception) {
                 return false;
             }
         }
@@ -269,11 +257,9 @@ final class CallableTypeComparator
         Atomic $input_type_part,
         ?TCallable $container_type_part = null,
         ?StatementsAnalyzer $statements_analyzer = null,
-        bool $expand_callable = false
+        bool $expand_callable = false,
     ): ?Atomic {
-        if ($input_type_part instanceof TList) {
-            $input_type_part = $input_type_part->getKeyedArray();
-        }
+
         if ($input_type_part instanceof TCallable || $input_type_part instanceof TClosure) {
             return $input_type_part;
         }
@@ -336,7 +322,7 @@ final class CallableTypeComparator
                     $return_type,
                     $function_storage->pure,
                 );
-            } catch (UnexpectedValueException $e) {
+            } catch (UnexpectedValueException) {
                 if (InternalCallMapHandler::inCallMap($input_type_part->value)) {
                     $args = [];
 
@@ -401,7 +387,7 @@ final class CallableTypeComparator
                         $converted_return_type,
                         $method_storage->pure,
                     );
-                } catch (UnexpectedValueException $e) {
+                } catch (UnexpectedValueException) {
                     // do nothing
                 }
             }
@@ -491,8 +477,8 @@ final class CallableTypeComparator
         TKeyedArray $input_type_part,
         ?Codebase $codebase = null,
         ?string $calling_method_id = null,
-        ?string $file_name = null
-    ) {
+        ?string $file_name = null,
+    ): string|MethodIdentifier|null {
         if (!isset($input_type_part->properties[0])
             || !isset($input_type_part->properties[1])
             || count($input_type_part->properties) > 2

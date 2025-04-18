@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
@@ -18,7 +20,6 @@ use UnexpectedValueException;
 use function array_diff;
 use function array_filter;
 use function array_keys;
-use function array_merge;
 use function array_values;
 use function in_array;
 use function preg_match;
@@ -33,7 +34,7 @@ final class DoAnalyzer
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Do_ $stmt,
-        Context $context
+        Context $context,
     ): ?bool {
         $do_context = clone $context;
         $do_context->break_types[] = 'loop';
@@ -156,10 +157,10 @@ final class DoAnalyzer
 
         $do_context->loop_scope = null;
 
-        $context->vars_possibly_in_scope = array_merge(
-            $context->vars_possibly_in_scope,
-            $do_context->vars_possibly_in_scope,
-        );
+        $context->vars_possibly_in_scope = [
+            ...$context->vars_possibly_in_scope,
+            ...$do_context->vars_possibly_in_scope,
+        ];
 
         if ($context->collect_exceptions) {
             $context->mergeExceptions($inner_loop_context);
@@ -172,7 +173,7 @@ final class DoAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Do_ $stmt,
         Context $context,
-        LoopScope $loop_scope
+        LoopScope $loop_scope,
     ): void {
         $do_context = clone $context;
 

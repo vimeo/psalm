@@ -55,7 +55,7 @@ final class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface,
                     $statements_source->getSuppressedIssues(),
                 );
             }
-        } catch (Exception $e) {
+        } catch (Exception) {
             // can throw if storage is missing
         }
     }
@@ -93,7 +93,7 @@ final class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface,
                     $statements_source->getSuppressedIssues(),
                 );
             }
-        } catch (Exception $e) {
+        } catch (Exception) {
             // can throw if storage is missing
         }
     }

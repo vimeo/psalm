@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements;
 
 use PhpParser;
@@ -24,7 +26,7 @@ final class StaticAnalyzer
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Static_ $stmt,
-        Context $context
+        Context $context,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -87,7 +89,7 @@ final class StaticAnalyzer
             }
 
             if ($context->check_variables) {
-                $context->vars_in_scope[$var_id] = $comment_type ? $comment_type : Type::getMixed();
+                $context->vars_in_scope[$var_id] = $comment_type ?: Type::getMixed();
                 $context->vars_possibly_in_scope[$var_id] = true;
                 $context->assigned_var_ids[$var_id] = (int) $stmt->getAttribute('startFilePos');
                 $statements_analyzer->byref_uses[$var_id] = true;

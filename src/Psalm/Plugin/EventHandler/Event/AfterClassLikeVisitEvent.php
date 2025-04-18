@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Plugin\EventHandler\Event;
 
 use PhpParser\Node\Stmt\ClassLike;
@@ -10,31 +12,17 @@ use Psalm\Storage\ClassLikeStorage;
 
 final class AfterClassLikeVisitEvent
 {
-    private ClassLike $stmt;
-    private ClassLikeStorage $storage;
-    private FileSource $statements_source;
-    private Codebase $codebase;
-    /**
-     * @var FileManipulation[]
-     */
-    private array $file_replacements;
-
     /**
      * @param  FileManipulation[] $file_replacements
      * @internal
      */
     public function __construct(
-        ClassLike $stmt,
-        ClassLikeStorage $storage,
-        FileSource $statements_source,
-        Codebase $codebase,
-        array $file_replacements = []
+        private readonly ClassLike $stmt,
+        private readonly ClassLikeStorage $storage,
+        private readonly FileSource $statements_source,
+        private readonly Codebase $codebase,
+        private array $file_replacements = [],
     ) {
-        $this->stmt = $stmt;
-        $this->storage = $storage;
-        $this->statements_source = $statements_source;
-        $this->codebase = $codebase;
-        $this->file_replacements = $file_replacements;
     }
 
     public function getStmt(): ClassLike

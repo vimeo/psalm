@@ -1,6 +1,6 @@
 # TaintedShell
 
-Emitted when user-controlled input can be passed into to an `exec` call or similar.
+Emitted when user-controlled input can be passed into an `exec` call or similar.
 
 ```php
 <?php

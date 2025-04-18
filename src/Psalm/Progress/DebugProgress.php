@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Progress;
 
 use function error_reporting;
@@ -20,12 +22,12 @@ final class DebugProgress extends Progress
 
     public function startScanningFiles(): void
     {
-        $this->write('Scanning files...' . "\n");
+        $this->write("\n" . 'Scanning files...' . "\n\n");
     }
 
     public function startAnalyzingFiles(): void
     {
-        $this->write('Analyzing files...' . "\n");
+        $this->write("\n" . 'Analyzing files...' . "\n");
     }
 
     public function startAlteringFiles(): void

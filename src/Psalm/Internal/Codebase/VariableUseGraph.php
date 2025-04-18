@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Codebase;
 
 use Psalm\CodeLocation;
@@ -7,7 +9,6 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\DataFlow\Path;
 
 use function abs;
-use function array_merge;
 use function count;
 
 /**
@@ -16,7 +17,7 @@ use function count;
 final class VariableUseGraph extends DataFlowGraph
 {
     /** @var array<string, array<string, true>> */
-    protected array $backward_edges = [];
+    private array $backward_edges = [];
 
     /** @var array<string, DataFlowNode> */
     private array $nodes = [];
@@ -38,7 +39,7 @@ final class VariableUseGraph extends DataFlowGraph
         DataFlowNode $to,
         string $path_type,
         ?array $added_taints = null,
-        ?array $removed_taints = null
+        ?array $removed_taints = null,
     ): void {
         $from_id = $from->id;
         $to_id = $to->id;
@@ -83,10 +84,7 @@ final class VariableUseGraph extends DataFlowGraph
                     return true;
                 }
 
-                $new_child_nodes = array_merge(
-                    $new_child_nodes,
-                    $child_nodes,
-                );
+                $new_child_nodes = [...$new_child_nodes, ...$child_nodes];
             }
 
             $sources = $new_child_nodes;
@@ -146,7 +144,7 @@ final class VariableUseGraph extends DataFlowGraph
      */
     private function getChildNodes(
         DataFlowNode $generated_source,
-        array $visited_source_ids
+        array $visited_source_ids,
     ): ?array {
         $new_child_nodes = [];
 
@@ -202,7 +200,7 @@ final class VariableUseGraph extends DataFlowGraph
      */
     private function getParentNodes(
         DataFlowNode $destination,
-        array $visited_source_ids
+        array $visited_source_ids,
     ): array {
         $new_parent_nodes = [];
 

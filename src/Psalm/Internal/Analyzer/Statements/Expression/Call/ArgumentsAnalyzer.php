@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use InvalidArgumentException;
@@ -41,11 +43,9 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
-use Psalm\Type\Atomic\TCallableArray;
 use Psalm\Type\Atomic\TCallableKeyedArray;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
@@ -64,7 +64,7 @@ use function is_string;
 use function max;
 use function min;
 use function reset;
-use function strpos;
+use function str_contains;
 use function strtolower;
 
 /**
@@ -84,7 +84,7 @@ final class ArgumentsAnalyzer
         ?string $method_id,
         bool $allow_named_args,
         Context $context,
-        ?TemplateResult $template_result = null
+        ?TemplateResult $template_result = null,
     ): ?bool {
         $last_param = $function_params
             ? $function_params[count($function_params) - 1]
@@ -240,7 +240,7 @@ final class ArgumentsAnalyzer
                 $context,
                 false,
                 null,
-                false,
+                null,
                 $high_order_template_result,
             ) === false) {
                 $context->inside_isset = $was_inside_isset;
@@ -321,7 +321,7 @@ final class ArgumentsAnalyzer
         int $argument_offset,
         PhpParser\Node\Arg $arg,
         Context $context,
-        ?TemplateResult &$template_result
+        ?TemplateResult &$template_result,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -376,7 +376,7 @@ final class ArgumentsAnalyzer
         TemplateResult $template_result,
         int $argument_offset,
         PhpParser\Node\Arg $arg,
-        FunctionLikeParameter $param
+        FunctionLikeParameter $param,
     ): void {
         if (!$param->type) {
             return;
@@ -456,7 +456,7 @@ final class ArgumentsAnalyzer
                 $statements_analyzer->getFilePath(),
                 $closure_id,
             );
-        } catch (UnexpectedValueException $e) {
+        } catch (UnexpectedValueException) {
             return;
         }
 
@@ -537,7 +537,6 @@ final class ArgumentsAnalyzer
 
     /**
      * @param   list<PhpParser\Node\Arg>  $args
-     * @param   string|MethodIdentifier|null  $method_id
      * @param   array<int,FunctionLikeParameter>        $function_params
      * @return  false|null
      * @psalm-suppress ComplexMethod there's just not much that can be done about this
@@ -545,13 +544,13 @@ final class ArgumentsAnalyzer
     public static function checkArgumentsMatch(
         StatementsAnalyzer $statements_analyzer,
         array $args,
-        $method_id,
+        string|MethodIdentifier|null $method_id,
         array $function_params,
         ?FunctionLikeStorage $function_storage,
         ?ClassLikeStorage $class_storage,
         TemplateResult $template_result,
         CodeLocation $code_location,
-        Context $context
+        Context $context,
     ): ?bool {
         $in_call_map = $method_id ? InternalCallMapHandler::inCallMap((string) $method_id) : false;
 
@@ -994,7 +993,7 @@ final class ArgumentsAnalyzer
         int $argument_offset,
         PhpParser\Node\Arg $arg,
         Context $context,
-        ?TemplateResult $template_result
+        ?TemplateResult $template_result,
     ): ?bool {
         if ($arg->value instanceof PhpParser\Node\Scalar
             || $arg->value instanceof PhpParser\Node\Expr\Cast
@@ -1045,9 +1044,9 @@ final class ArgumentsAnalyzer
                         $function_params,
                         static function (
                             ?FunctionLikeParameter $function_param,
-                            FunctionLikeParameter $param
+                            FunctionLikeParameter $param,
                         ) use (
-                            $arg
+                            $arg,
                         ) {
                             if ($param->name === $arg->name->name) {
                                 return $param;
@@ -1144,7 +1143,7 @@ final class ArgumentsAnalyzer
                 $by_ref_type,
                 $by_ref_out_type ?: $by_ref_type,
                 $context,
-                $method_id && (strpos($method_id, '::') !== false || !InternalCallMapHandler::inCallMap($method_id)),
+                $method_id && (str_contains($method_id, '::') || !InternalCallMapHandler::inCallMap($method_id)),
                 $check_null_ref,
             );
         }
@@ -1158,7 +1157,7 @@ final class ArgumentsAnalyzer
     private static function evaluateArbitraryParam(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Arg $arg,
-        Context $context
+        Context $context,
     ): ?bool {
         // there are a bunch of things we want to evaluate even when we don't
         // know what function/method is being called
@@ -1177,7 +1176,7 @@ final class ArgumentsAnalyzer
             || $arg->value instanceof PhpParser\Node\Expr\Array_
             || $arg->value instanceof PhpParser\Node\Expr\BinaryOp
             || $arg->value instanceof PhpParser\Node\Expr\Ternary
-            || $arg->value instanceof PhpParser\Node\Scalar\Encapsed
+            || $arg->value instanceof PhpParser\Node\Scalar\InterpolatedString
             || $arg->value instanceof PhpParser\Node\Expr\PostInc
             || $arg->value instanceof PhpParser\Node\Expr\PostDec
             || $arg->value instanceof PhpParser\Node\Expr\PreInc
@@ -1266,7 +1265,7 @@ final class ArgumentsAnalyzer
         Context $context,
         PhpParser\Node\Expr\PropertyFetch $stmt,
         string $fq_class_name,
-        string $prop_name
+        string $prop_name,
     ): void {
         $property_id = $fq_class_name . '::$' . $prop_name;
 
@@ -1279,7 +1278,7 @@ final class ArgumentsAnalyzer
 
         try {
             $declaring_class_storage = $codebase->classlike_storage_provider->get($declaring_property_class);
-        } catch (InvalidArgumentException $_) {
+        } catch (InvalidArgumentException) {
             return;
         }
 
@@ -1305,7 +1304,7 @@ final class ArgumentsAnalyzer
         ?string $method_id,
         int $argument_offset,
         PhpParser\Node\Arg $arg,
-        Context $context
+        Context $context,
     ): ?bool {
         $var_id = ExpressionIdentifier::getVarId(
             $arg->value,
@@ -1315,7 +1314,7 @@ final class ArgumentsAnalyzer
 
         $builtin_array_functions = [
             'ksort', 'asort', 'krsort', 'arsort', 'natcasesort', 'natsort',
-            'reset', 'end', 'next', 'prev', 'array_pop', 'array_shift',
+            'reset', 'end', 'next', 'prev', 'array_pop', 'array_shift', 'extract',
         ];
 
         if ($arg->value instanceof PhpParser\Node\Expr\PropertyFetch
@@ -1482,7 +1481,7 @@ final class ArgumentsAnalyzer
         ?TemplateResult $template_result,
         array $args,
         array $function_params,
-        ?FunctionLikeParameter $last_param
+        ?FunctionLikeParameter $last_param,
     ): ?TemplateResult {
         $template_types = CallAnalyzer::getTemplateTypesForCall(
             $codebase,
@@ -1562,7 +1561,6 @@ final class ArgumentsAnalyzer
 
     /**
      * @param   array<int, PhpParser\Node\Arg>  $args
-     * @param   string|MethodIdentifier|null  $method_id
      * @param   array<int,FunctionLikeParameter>        $function_params
      */
     private static function checkArgCount(
@@ -1575,9 +1573,9 @@ final class ArgumentsAnalyzer
         array $args,
         array $function_params,
         bool $in_call_map,
-        $method_id,
+        string|MethodIdentifier|null $method_id,
         ?string $cased_method_id,
-        CodeLocation $code_location
+        CodeLocation $code_location,
     ): void {
         if (!$is_variadic
             && count($args) > count($function_params)
@@ -1632,14 +1630,8 @@ final class ArgumentsAnalyzer
                         }
 
                         foreach ($arg_value_type->getAtomicTypes() as $atomic_arg_type) {
-                            if ($atomic_arg_type instanceof TList) {
-                                $atomic_arg_type = $atomic_arg_type->getKeyedArray();
-                            }
-
                             $packed_var_definite_args_tmp = [];
-                            if ($atomic_arg_type instanceof TCallableArray ||
-                                $atomic_arg_type instanceof TCallableKeyedArray
-                            ) {
+                            if ($atomic_arg_type instanceof TCallableKeyedArray) {
                                 $packed_var_definite_args_tmp[] = 2;
                             } elseif ($atomic_arg_type instanceof TKeyedArray) {
                                 if ($atomic_arg_type->fallback_params !== null) {
