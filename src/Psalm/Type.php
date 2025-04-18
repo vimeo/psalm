@@ -684,6 +684,10 @@ abstract class Type
                 $combined_type->ignore_nullable_issues = true;
             }
 
+            if ($type_1->ignore_nullable_issues_foreach || $type_2->ignore_nullable_issues_foreach) {
+                $combined_type->ignore_nullable_issues_foreach = true;
+            }
+
             if ($type_1->ignore_falsable_issues || $type_2->ignore_falsable_issues) {
                 $combined_type->ignore_falsable_issues = true;
             }
@@ -853,6 +857,10 @@ abstract class Type
 
                 if ($type_1->ignore_nullable_issues && $type_2->ignore_nullable_issues) {
                     $combined_type->ignore_nullable_issues = true;
+                }
+
+                if ($type_1->ignore_nullable_issues_foreach && $type_2->ignore_nullable_issues_foreach) {
+                    $combined_type->ignore_nullable_issues_foreach = true;
                 }
 
                 if ($type_1->ignore_falsable_issues && $type_2->ignore_falsable_issues) {

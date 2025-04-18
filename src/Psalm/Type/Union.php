@@ -100,6 +100,14 @@ final class Union implements TypeNode
      */
     public bool $ignore_nullable_issues = false;
 
+
+    /**
+     * Whether or not to ignore issues with possibly-null values when using foreach
+     *
+     * @var bool
+     */
+    public $ignore_nullable_issues_foreach = false;
+
     /**
      * Whether or not to ignore issues with possibly-false values
      */
