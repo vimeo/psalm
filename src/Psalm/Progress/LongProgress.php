@@ -59,7 +59,8 @@ class LongProgress extends Progress
             || $phase === Phase::ALTERING
             || $phase === Phase::JIT_COMPILATION
             || $phase === Phase::PRELOADING
-            || $phase === Phase::MERGING_THREAD_RESULTS;
+            || $phase === Phase::MERGING_THREAD_RESULTS
+            || $phase === Phase::TAINT_GRAPH_RESOLUTION;
     }
 
     protected function reportPhaseDuration(?Phase $newPhase = null): void

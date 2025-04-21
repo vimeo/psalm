@@ -407,6 +407,9 @@ final class TaintFlowGraph extends DataFlowGraph
 
             $progress->taskDone(0);
         }
+        for (; $i < $depth; $i++) {
+            $progress->taskDone(0);
+        }
     }
 
     /**
