@@ -1654,6 +1654,12 @@ function is_a($object_or_class, string $class, $allow_string = false): bool{}
 function mb_convert_encoding(array|string $string, string $to_encoding, array|string|null $from_encoding = null): array|string|false{}
 
 /**
+ * @param int|"none"|"long"|"entity"|null $substitute_character
+ * @return ($substitute_character is null ? (int|"none"|"long"|"entity") : bool)
+ */
+function mb_substitute_character(string|int|null $substitute_character = null): string|int|bool {}
+
+/**
  * @template TRead of null|array<array-key, resource>
  * @template TWrite of null|array<array-key, resource>
  * @template TExcept of null|array<array-key, resource>
