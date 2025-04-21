@@ -388,7 +388,7 @@ final class Config
 
     public bool $find_unused_issue_handler_suppression = true;
 
-    public bool $run_taint_analysis = false;
+    public bool $run_taint_analysis = true;
 
     public bool $use_phpstorm_meta_path = true;
 
