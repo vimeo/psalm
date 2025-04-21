@@ -116,7 +116,7 @@ final class PsalmEndToEndTest extends TestCase
         $this->runPsalmInit();
 
         $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
-        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', $psalmXml);
+        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
         file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
 
         $this->assertStringContainsString(
@@ -131,7 +131,7 @@ final class PsalmEndToEndTest extends TestCase
     {
         $this->runPsalmInit();
         $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
-        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', $psalmXml);
+        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
         file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
 
         (new Process([PHP_BINARY, $this->psalter, '--alter', '--issues=InvalidReturnType'], self::$tmpDir))->mustRun();
@@ -142,7 +142,7 @@ final class PsalmEndToEndTest extends TestCase
     {
         $this->runPsalmInit(1);
         $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
-        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', $psalmXml);
+        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
         file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
 
         $result = $this->runPsalm([], self::$tmpDir, true);
@@ -182,7 +182,7 @@ final class PsalmEndToEndTest extends TestCase
 
         $this->runPsalmInit(1);
         $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
-        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', $psalmXml);
+        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
         file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
 
         $result = $this->runPsalm(['--diff', '-m'], self::$tmpDir, true);
