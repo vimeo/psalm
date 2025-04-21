@@ -42,7 +42,7 @@ namespace {
     class ReflectionProperty implements Reflector
     {
         /**
-         * Starting from PHP 8.1, this method is pure, and has no effect.
+         * @deprecated Starting from PHP 8.1, this method is pure, and has no effect.
          *
          * @psalm-pure
          */
@@ -52,7 +52,7 @@ namespace {
     class ReflectionMethod extends ReflectionFunctionAbstract
     {
         /**
-         * Starting from PHP 8.1, this method is pure, and has no effect.
+         * @deprecated Starting from PHP 8.1, this method is pure, and has no effect.
          *
          * @psalm-pure
          */
