@@ -13,11 +13,11 @@ class ReflectionClass implements Reflector {
     public $name;
 
     /**
-     * @param T|class-string<T>|interface-string<T>|trait-string|enum-string<T> $argument
+     * @param T|class-string<T>|interface-string<T>|trait-string|enum-string<T> $objectOrClass
      * @psalm-pure
-     * @psalm-taint-sink callable $argument
+     * @psalm-taint-sink callable $objectOrClass
      */
-    public function __construct($argument) {}
+    public function __construct(object|string $objectOrClass) {}
 
     /**
      * @return class-string<T>
