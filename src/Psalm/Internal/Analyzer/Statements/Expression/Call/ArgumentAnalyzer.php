@@ -359,11 +359,13 @@ final class ArgumentAnalyzer
                 $context->calling_function_id ?: $context->calling_method_id,
             );
 
-            $param_type = TemplateInferredTypeReplacer::replace(
-                $param_type,
-                $template_result,
-                $codebase,
-            );
+            if ($template_result) {
+                $param_type = TemplateInferredTypeReplacer::replace(
+                    $param_type,
+                    $template_result,
+                    $codebase,
+                );
+            }
 
             $arg_value_type = TemplateStandinTypeReplacer::replace(
                 $arg_value_type,
