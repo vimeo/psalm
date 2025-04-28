@@ -25,6 +25,7 @@ use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateBound;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
@@ -356,6 +357,12 @@ final class ArgumentAnalyzer
                 $argument_offset,
                 $context->self,
                 $context->calling_function_id ?: $context->calling_method_id,
+            );
+
+            $param_type = TemplateInferredTypeReplacer::replace(
+                $param_type,
+                $template_result,
+                $codebase,
             );
 
             $arg_value_type = TemplateStandinTypeReplacer::replace(
