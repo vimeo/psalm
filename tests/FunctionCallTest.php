@@ -2920,6 +2920,18 @@ final class FunctionCallTest extends TestCase
                     }',
                 'error_message' => 'RedundantCondition',
             ],
+            'templateTypesInParams' => [
+                'code' => '<?php
+                    /** 
+                     * @param ($flag is 0 ? (double|int) : ($flag is 1 ? bool : string)) $in
+                     * @param 0|1|2 $flag
+                     */
+                    function test($in, int $flag): string {
+                        return (string) $in;
+                    }
+                    test("test", 0);',
+                'error_message' => 'tmp'
+            ],
             'noCrashOnEmptyArrayPush' => [
                 'code' => '<?php
                     array_push();',

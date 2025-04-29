@@ -280,6 +280,7 @@ final class FunctionLikeDocblockScanner
                 $type_aliases,
                 $classlike_storage,
                 $storage,
+                $cased_function_id,
                 $function_template_types,
                 $class_template_types,
                 $docblock_info->params,
@@ -700,6 +701,7 @@ final class FunctionLikeDocblockScanner
         array $type_aliases,
         ?ClassLikeStorage $classlike_storage,
         FunctionLikeStorage $storage,
+        string $cased_function_id,
         array &$function_template_types,
         array $class_template_types,
         array $docblock_params,
@@ -789,20 +791,25 @@ final class FunctionLikeDocblockScanner
             }
 
             try {
+                [$fixed_type_tokens, $function_template_types] = self::getConditionalSanitizedTypeTokens(
+                    $docblock_param['type'],
+                    $aliases,
+                    $function_template_types + $class_template_types,
+                    $type_aliases,
+                    $storage,
+                    $classlike_storage,
+                    $cased_function_id,
+                    $function_template_types,
+                );
+
                 $new_param_type = TypeParser::parseTokens(
-                    TypeTokenizer::getFullyQualifiedTokens(
-                        $docblock_param['type'],
-                        $aliases,
-                        $function_template_types + $class_template_types,
-                        $type_aliases,
-                        $fq_classlike_name,
-                    ),
+                    $fixed_type_tokens,
                     null,
                     $function_template_types + $class_template_types,
                     $type_aliases,
                     true,
                 );
-            } catch (TypeParseTreeException $e) {
+            } catch (TypeParseTreeException|\Throwable $e) {
                 $storage->docblock_issues[] = new InvalidDocblock(
                     $e->getMessage() . ' in docblock for ' . $cased_method_id,
                     $docblock_type_location,
