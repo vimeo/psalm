@@ -82,10 +82,11 @@ class ParserCacheProvider
 
         $file_cache_key = $this->getParserCacheKey($file_path);
 
-        $file_content_hashes = $this->new_file_content_hashes + $this->getExistingFileContentHashes();
+        $existing = $this->new_file_content_hashes[$file_cache_key] 
+            ?? $this->getExistingFileContentHashes()[$file_cache_key] 
+            ?? null;
 
-        if (isset($file_content_hashes[$file_cache_key])
-            && $file_content_hash === $file_content_hashes[$file_cache_key]
+        if ($file_content_hash === $existing
             && is_readable($cache_location)
             && filemtime($cache_location) > $file_modified_time
         ) {
@@ -149,70 +150,32 @@ class ParserCacheProvider
             return [];
         }
 
-        if ($this->existing_file_content_hashes === null) {
-            $root_cache_directory = $this->cache->getCacheDirectory();
-            $file_hashes_path = $root_cache_directory . DIRECTORY_SEPARATOR . self::FILE_HASHES;
+        if ($this->existing_file_content_hashes !== null) {
+            return $this->existing_file_content_hashes;
+        }
+        $root_cache_directory = $this->cache->getCacheDirectory();
+        $file_hashes_path = $root_cache_directory . DIRECTORY_SEPARATOR . self::FILE_HASHES;
 
-            if (!$root_cache_directory) {
-                throw new UnexpectedValueException('No cache directory defined');
-            }
-            if (is_readable($file_hashes_path)) {
-                $hashes_encoded = Providers::safeFileGetContents($file_hashes_path);
-
-                if (!$hashes_encoded) {
-                    error_log('Unexpected value when loading from file content hashes');
-                    $this->existing_file_content_hashes = [];
-
-                    return [];
-                }
-
-                try {
-                    $hashes_decoded = json_decode($hashes_encoded, true, 512, JSON_THROW_ON_ERROR);
-                } catch (JsonException $e) {
-                    error_log('Failed to parse hashes: ' . $e->getMessage());
-                    $this->existing_file_content_hashes = [];
-
-                    return [];
-                }
-
-                if (!is_array($hashes_decoded)) {
-                    error_log('Unexpected value ' . gettype($hashes_decoded));
-                    $this->existing_file_content_hashes = [];
-
-                    return [];
-                }
-
-                /** @var array<string, string> $hashes_decoded */
-                $this->existing_file_content_hashes = $hashes_decoded;
-            } else {
-                $this->existing_file_content_hashes = [];
-            }
-
-            if (!is_readable($file_hashes_path)) {
-                // might not exist yet
-                $this->existing_file_content_hashes = [];
-                return $this->existing_file_content_hashes;
-            }
-
-            $hashes_encoded = Providers::safeFileGetContents($file_hashes_path);
-            if (!$hashes_encoded) {
-                throw new UnexpectedValueException('File content hashes should be in cache');
-            }
-
-            /** @psalm-suppress MixedAssignment */
-            $hashes_decoded = json_decode($hashes_encoded, true, 512, JSON_THROW_ON_ERROR);
-
-            if (!is_array($hashes_decoded)) {
-                throw new UnexpectedValueException(
-                    'File content hashes are of invalid type ' . gettype($hashes_decoded),
-                );
-            }
-
-            /** @var array<string, string> $hashes_decoded */
-            $this->existing_file_content_hashes = $hashes_decoded;
+        if (!$root_cache_directory) {
+            throw new UnexpectedValueException('No cache directory defined');
         }
 
-        return $this->existing_file_content_hashes;
+        $hashes_encoded = Providers::safeFileGetContents($file_hashes_path);
+        if (!$hashes_encoded) {
+            throw new UnexpectedValueException('File content hashes should be in cache');
+        }
+
+        /** @psalm-suppress MixedAssignment */
+        $hashes_decoded = json_decode($hashes_encoded, true, 512, JSON_THROW_ON_ERROR);
+
+        if (!is_array($hashes_decoded)) {
+            throw new UnexpectedValueException(
+                'File content hashes are of invalid type ' . gettype($hashes_decoded),
+            );
+        }
+
+        /** @var array<string, string> $hashes_decoded */
+        return $this->existing_file_content_hashes = $hashes_decoded;
     }
 
     /**
@@ -249,7 +212,7 @@ class ParserCacheProvider
      */
     public function addNewFileContentHashes(array $file_content_hashes): void
     {
-        $this->new_file_content_hashes = $file_content_hashes + $this->new_file_content_hashes;
+        $this->new_file_content_hashes += $file_content_hashes;
     }
 
     public function saveFileContentHashes(): void
@@ -333,7 +296,7 @@ class ParserCacheProvider
     {
         $hash = hash('xxh128', $file_path);
 
-        return $hash . ($this->cache->use_igbinary ? '-igbinary' : '') . '-r';
+        return $hash . ($this->cache->use_igbinary ? '-igbinary-r' : '-r');
     }
 
 

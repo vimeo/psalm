@@ -368,9 +368,7 @@ final class Scanner
             }
         }
 
-        if ($this->codebase->statements_provider->parser_cache_provider) {
-            $this->codebase->statements_provider->parser_cache_provider->saveFileContentHashes();
-        }
+        $this->codebase->statements_provider->parser_cache_provider?->saveFileContentHashes();
 
         $this->file_reference_provider->addClassLikeFiles($this->classlike_files);
 
