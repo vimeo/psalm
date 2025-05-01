@@ -14,7 +14,7 @@ use function strtolower;
 /**
  * @internal
  */
-final class ClassLikeStorageCacheProvider extends InternalClassLikeStorageCacheProvider
+final class InMemoryClassLikeStorageCacheProvider extends InternalClassLikeStorageCacheProvider
 {
     /** @var array<lowercase-string, ClassLikeStorage> */
     private array $cache = [];

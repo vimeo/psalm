@@ -14,7 +14,7 @@ use Psalm\Internal\Provider\FileReferenceCacheProvider as InternalFileReferenceC
  *
  * @internal
  */
-final class FileReferenceCacheProvider extends InternalFileReferenceCacheProvider
+final class InMemoryFileReferenceCacheProvider extends InternalFileReferenceCacheProvider
 {
     private ?array $cached_file_references = null;
 

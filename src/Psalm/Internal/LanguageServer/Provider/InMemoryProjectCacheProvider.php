@@ -10,7 +10,7 @@ use Psalm\Internal\Provider\ProjectCacheProvider as PsalmProjectCacheProvider;
 /**
  * @internal
  */
-final class ProjectCacheProvider extends PsalmProjectCacheProvider
+final class InMemoryProjectCacheProvider extends PsalmProjectCacheProvider
 {
     private int $last_run = 0;
 

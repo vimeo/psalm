@@ -683,7 +683,7 @@ final class Psalm
 
             $providers = new Providers(
                 new FileProvider,
-                new ParserCacheProvider($config, !$no_file_cache),
+                $no_file_cache ? null : new ParserCacheProvider($config),
                 $file_storage_cache_provider,
                 $classlike_storage_cache_provider,
                 new FileReferenceCacheProvider($config),

@@ -59,10 +59,7 @@ class ParserCacheProvider
      */
     protected array $new_file_content_hashes = [];
 
-    public function __construct(
-        Config $config,
-        private readonly bool $use_file_cache = true,
-    ) {
+    public function __construct(Config $config) {
         $this->cache = new Cache($config);
     }
 
@@ -74,10 +71,6 @@ class ParserCacheProvider
         int $file_modified_time,
         string $file_content_hash,
     ): ?array {
-        if (!$this->use_file_cache) {
-            return null;
-        }
-
         $cache_location = $this->getCacheLocationForPath($file_path, self::PARSER_CACHE_DIRECTORY);
 
         $file_cache_key = $this->getParserCacheKey($file_path);
@@ -106,10 +99,6 @@ class ParserCacheProvider
      */
     public function loadExistingStatementsFromCache(string $file_path): ?array
     {
-        if (!$this->use_file_cache) {
-            return null;
-        }
-
         $cache_location = $this->getCacheLocationForPath($file_path, self::PARSER_CACHE_DIRECTORY);
 
         if (is_readable($cache_location)) {
@@ -126,10 +115,6 @@ class ParserCacheProvider
 
     public function loadExistingFileContentsFromCache(string $file_path): ?string
     {
-        if (!$this->use_file_cache) {
-            return null;
-        }
-
         $cache_location = $this->getCacheLocationForPath($file_path, self::FILE_CONTENTS_CACHE_DIRECTORY);
 
         $cache_item = $this->cache->getItem($cache_location);
@@ -146,10 +131,6 @@ class ParserCacheProvider
      */
     private function getExistingFileContentHashes(): array
     {
-        if (!$this->use_file_cache) {
-            return [];
-        }
-
         if ($this->existing_file_content_hashes !== null) {
             return $this->existing_file_content_hashes;
         }
@@ -217,10 +198,6 @@ class ParserCacheProvider
 
     public function saveFileContentHashes(): void
     {
-        if (!$this->use_file_cache) {
-            return;
-        }
-
         $root_cache_directory = $this->cache->getCacheDirectory();
 
         if (!$root_cache_directory) {
@@ -248,10 +225,6 @@ class ParserCacheProvider
 
     public function cacheFileContents(string $file_path, string $file_contents): void
     {
-        if (!$this->use_file_cache) {
-            return;
-        }
-
         $cache_location = $this->getCacheLocationForPath($file_path, self::FILE_CONTENTS_CACHE_DIRECTORY, true);
         $this->cache->saveItem($cache_location, $file_contents);
     }

@@ -13,7 +13,7 @@ use function microtime;
 /**
  * @internal
  */
-final class ParserCacheProvider extends InternalParserCacheProvider
+final class InMemoryParserCacheProvider extends InternalParserCacheProvider
 {
     /**
      * @var array<string, string>

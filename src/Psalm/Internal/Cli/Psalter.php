@@ -280,7 +280,7 @@ final class Psalter
         } else {
             $providers = new Providers(
                 new FileProvider(),
-                new ParserCacheProvider($config, false),
+                null,
                 new FileStorageCacheProvider($config),
                 new ClassLikeStorageCacheProvider($config),
                 null,
