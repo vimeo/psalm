@@ -54,6 +54,7 @@ use function array_any;
 use function array_filter;
 use function array_merge;
 use function array_values;
+use function assert;
 use function count;
 use function explode;
 use function in_array;
@@ -438,6 +439,7 @@ final class FunctionLikeDocblockScanner
         $storage->public_api = $docblock_info->public_api;
 
         foreach ($pending as $template_name => $j) {
+            assert(isset($storage->template_types[$template_name]));
             $v = $storage->template_types[$template_name];
             $template_as_type = reset($v);
             $template_function_id = key($v);
@@ -827,7 +829,7 @@ final class FunctionLikeDocblockScanner
                 );
 
                 $new_param_type = TypeParser::parseTokens(
-                    $fixed_type_tokens,
+                    array_values($fixed_type_tokens),
                     null,
                     $function_template_types + $class_template_types,
                     $type_aliases,

@@ -87,6 +87,7 @@ final class FunctionLikeDocblockParser
             $parsed_docblock->tags['phpstan-param'] ?? null,
             $parsed_docblock->tags['psalm-param'] ?? null,
         ] as $tags) {
+            /** @psalm-suppress RiskyTruthyFalsyComparison */
             if (!$tags) {
                 continue;
             }
