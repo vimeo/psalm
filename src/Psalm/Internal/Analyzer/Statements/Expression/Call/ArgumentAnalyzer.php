@@ -348,6 +348,8 @@ final class ArgumentAnalyzer
             // don’t get overwritten
             $readonly_template_result->readonly = true;
 
+            $prev_param_type = $param_type;
+
             $param_type = TemplateStandinTypeReplacer::replace(
                 $param_type,
                 $readonly_template_result,
@@ -365,6 +367,13 @@ final class ArgumentAnalyzer
                     $template_result,
                     $codebase,
                 );
+            }
+
+            if ($param_type->from_docblock 
+                && !$prev_param_type->from_docblock
+                && $param_type->equals($prev_param_type, false)
+            ) {
+                $param_type = $prev_param_type;
             }
 
             $arg_value_type = TemplateStandinTypeReplacer::replace(

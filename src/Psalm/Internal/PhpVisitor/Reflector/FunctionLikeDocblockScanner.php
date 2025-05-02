@@ -48,6 +48,7 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
+use Throwable;
 
 use function array_any;
 use function array_filter;
@@ -809,7 +810,7 @@ final class FunctionLikeDocblockScanner
                     $type_aliases,
                     true,
                 );
-            } catch (TypeParseTreeException|\Throwable $e) {
+            } catch (TypeParseTreeException|Throwable $e) {
                 $storage->docblock_issues[] = new InvalidDocblock(
                     $e->getMessage() . ' in docblock for ' . $cased_method_id,
                     $docblock_type_location,

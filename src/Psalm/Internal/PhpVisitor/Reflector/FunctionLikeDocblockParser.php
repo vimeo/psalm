@@ -20,7 +20,6 @@ use Psalm\IssueBuffer;
 
 use function array_keys;
 use function array_shift;
-use function array_unique;
 use function count;
 use function explode;
 use function implode;
