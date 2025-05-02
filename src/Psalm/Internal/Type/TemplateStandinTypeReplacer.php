@@ -1010,14 +1010,14 @@ final class TemplateStandinTypeReplacer
         $as_type = $atomic_type->as_type;
         if ($input_type
             && !$template_result->readonly
-            && UnionTypeComparator::canBeContainedBy(
+            && (!$as_type || UnionTypeComparator::canBeContainedBy(
                 $codebase,
                 $input_type,
                 new Union([$as_type]),
                 false,
                 false,
                 $matching_input_keys,
-            )
+            ))
         ) {
             $valid_input_atomic_types = [];
 
