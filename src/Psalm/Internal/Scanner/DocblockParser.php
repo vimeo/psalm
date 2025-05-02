@@ -246,16 +246,6 @@ final class DocblockParser
             }
         }
 
-        if (isset($docblock->tags['param'])
-            || isset($docblock->tags['psalm-param'])
-            || isset($docblock->tags['phpstan-param'])
-        ) {
-            $docblock->combined_tags['param']
-                = ($docblock->tags['param'] ?? [])
-                + ($docblock->tags['phpstan-param'] ?? [])
-                + ($docblock->tags['psalm-param'] ?? []);
-        }
-
         if (isset($docblock->tags['var'])
             || isset($docblock->tags['psalm-var'])
             || isset($docblock->tags['phpstan-var'])

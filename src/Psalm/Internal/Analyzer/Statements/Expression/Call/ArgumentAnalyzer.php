@@ -28,6 +28,7 @@ use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateBound;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
@@ -351,6 +352,8 @@ final class ArgumentAnalyzer
             // don’t get overwritten
             $readonly_template_result->readonly = true;
 
+            $prev_param_type = $param_type;
+
             $param_type = TemplateStandinTypeReplacer::replace(
                 $param_type,
                 $readonly_template_result,
@@ -361,6 +364,21 @@ final class ArgumentAnalyzer
                 $context->self,
                 $context->calling_function_id ?: $context->calling_method_id,
             );
+
+            if ($template_result) {
+                $param_type = TemplateInferredTypeReplacer::replace(
+                    $param_type,
+                    $template_result,
+                    $codebase,
+                );
+            }
+
+            if ($param_type->from_docblock
+                && !$prev_param_type->from_docblock
+                && $param_type->equals($prev_param_type, false)
+            ) {
+                $param_type = $prev_param_type;
+            }
 
             $arg_value_type = TemplateStandinTypeReplacer::replace(
                 $arg_value_type,
@@ -1665,11 +1683,9 @@ final class ArgumentAnalyzer
                 }
             }
 
-            if (!$input_type_changed) {
-                return;
+            if ($input_type_changed) {
+                $input_type = new Union($types);
             }
-
-            $input_type = new Union($types);
         }
 
 

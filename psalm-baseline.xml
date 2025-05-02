@@ -1889,6 +1889,9 @@
     <PossiblyUndefinedArrayOffset>
       <code><![CDATA[$source_param_string]]></code>
     </PossiblyUndefinedArrayOffset>
+    <ReferenceConstraintViolation>
+      <code><![CDATA[$function_template_types]]></code>
+    </ReferenceConstraintViolation>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$aliases->namespace]]></code>
       <code><![CDATA[$classlike_storage->template_types]]></code>
