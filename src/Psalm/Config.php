@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm;
 
+use Amp\Serialization\Serializer;
 use Composer\Autoload\ClassLoader;
 use Composer\Semver\Constraint\Constraint;
 use Composer\Semver\VersionParser;
@@ -26,7 +27,10 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\CliUtils;
 use Psalm\Internal\Composer;
 use Psalm\Internal\EventDispatcher;
+use Psalm\Internal\Fork\IgbinarySerializer;
+use Psalm\Internal\GzipSerializer;
 use Psalm\Internal\IncludeCollector;
+use Psalm\Internal\Lz4Serializer;
 use Psalm\Internal\Provider\AddRemoveTaints\HtmlFunctionTainter;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Issue\ArgumentIssue;
@@ -2768,6 +2772,17 @@ final class Config
     public function getUniversalObjectCrates(): array
     {
         return $this->universal_object_crates;
+    }
+
+    /** @internal */
+    public function getCacheSerializer(): Serializer
+    {
+        $s = $this->use_igbinary ? new IgbinarySerializer : new Serializer;
+        return match ($this->compressor) {
+            'deflate' => new GzipSerializer($s),
+            'lz4' => new Lz4Serializer($s),
+            null => $s
+        };
     }
 
     /** @internal */

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Provider;
 
-use JsonException;
 use PhpParser;
 use PhpParser\Node\Stmt;
 use Psalm\Config;
@@ -13,25 +12,16 @@ use RuntimeException;
 use UnexpectedValueException;
 
 use function assert;
-use function clearstatcache;
-use function error_log;
-use function file_put_contents;
 use function filemtime;
-use function gettype;
 use function hash;
 use function is_array;
 use function is_dir;
-use function is_readable;
 use function is_string;
-use function json_decode;
-use function json_encode;
 use function mkdir;
 use function scandir;
 use function touch;
 
 use const DIRECTORY_SEPARATOR;
-use const JSON_THROW_ON_ERROR;
-use const LOCK_EX;
 use const SCANDIR_SORT_NONE;
 
 /**
@@ -39,28 +29,30 @@ use const SCANDIR_SORT_NONE;
  */
 class ParserCacheProvider
 {
-    private const FILE_HASHES = 'file_hashes_json';
     private const PARSER_CACHE_DIRECTORY = 'php-parser';
     private const FILE_CONTENTS_CACHE_DIRECTORY = 'file-caches';
 
-    private readonly Cache $cache;
+    private readonly Cache $stmtCache;
+    private readonly Cache $fileCache;
 
     /**
      * A map of filename hashes to contents hashes
      *
      * @var array<string, string>|null
      */
-    protected ?array $existing_file_content_hashes = null;
+    protected ?array $existing_stmt_hashes = null;
 
     /**
      * A map of recently-added filename hashes to contents hashes
      *
      * @var array<string, string>
      */
-    protected array $new_file_content_hashes = [];
+    protected array $new_stmt_hashes = [];
 
-    public function __construct(Config $config) {
-        $this->cache = new Cache($config);
+    public function __construct(Config $config)
+    {
+        $this->stmtCache = new Cache($config, self::PARSER_CACHE_DIRECTORY);
+        $this->fileCache = new Cache($config, self::FILE_CONTENTS_CACHE_DIRECTORY);
     }
 
     /**
@@ -71,27 +63,23 @@ class ParserCacheProvider
         int $file_modified_time,
         string $file_content_hash,
     ): ?array {
-        $cache_location = $this->getCacheLocationForPath($file_path, self::PARSER_CACHE_DIRECTORY);
+        $file_cache_key = hash('xxh128', $file_path);
 
-        $file_cache_key = $this->getParserCacheKey($file_path);
-
-        $existing = $this->new_file_content_hashes[$file_cache_key] 
-            ?? $this->getExistingFileContentHashes()[$file_cache_key] 
+        $existing = $this->new_stmt_hashes[$file_cache_key]
+            ?? $this->getExistingStmtHashes()[$file_cache_key]
             ?? null;
 
-        if ($file_content_hash === $existing
-            && is_readable($cache_location)
-            && filemtime($cache_location) > $file_modified_time
-        ) {
-            $stmts = $this->cache->getItem($cache_location);
+        if ($file_content_hash !== $existing) {
+            return null;
+        }
+        $stmts = $this->stmtCache->getItem($file_cache_key, $file_modified_time);
 
-            if (is_array($stmts)) {
-                /** @var list<Stmt> $stmts */
-                return $stmts;
-            }
+        if (!is_array($stmts)) {
+            return null;
         }
 
-        return null;
+        /** @var list<Stmt> $stmts */
+        return $stmts;
     }
 
     /**
@@ -99,15 +87,11 @@ class ParserCacheProvider
      */
     public function loadExistingStatementsFromCache(string $file_path): ?array
     {
-        $cache_location = $this->getCacheLocationForPath($file_path, self::PARSER_CACHE_DIRECTORY);
+        $stmts = $this->stmtCache->getItem(hash('xxh128', $file_path));
 
-        if (is_readable($cache_location)) {
-            $stmts = $this->cache->getItem($cache_location);
-
-            if (is_array($stmts)) {
-                /** @var list<Stmt> $stmts */
-                return $stmts;
-            }
+        if (is_array($stmts)) {
+            /** @var list<Stmt> $stmts */
+            return $stmts;
         }
 
         return null;
@@ -115,9 +99,7 @@ class ParserCacheProvider
 
     public function loadExistingFileContentsFromCache(string $file_path): ?string
     {
-        $cache_location = $this->getCacheLocationForPath($file_path, self::FILE_CONTENTS_CACHE_DIRECTORY);
-
-        $cache_item = $this->cache->getItem($cache_location);
+        $cache_item = $this->fileCache->getItem(hash('xxh128', $file_path));
 
         if (!is_string($cache_item)) {
             return null;
@@ -126,37 +108,20 @@ class ParserCacheProvider
         return $cache_item;
     }
 
+    public function cacheFileContents(string $file_path, string $file_contents): void
+    {
+        $this->fileCache->saveItem(hash('xxh128', $file_path), $file_contents);
+    }
+
     /**
      * @return array<string, string>
      */
-    private function getExistingFileContentHashes(): array
+    private function getExistingStmtHashes(): array
     {
-        if ($this->existing_file_content_hashes !== null) {
-            return $this->existing_file_content_hashes;
+        if ($this->existing_stmt_hashes !== null) {
+            return $this->existing_stmt_hashes;
         }
-        $root_cache_directory = $this->cache->getCacheDirectory();
-        $file_hashes_path = $root_cache_directory . DIRECTORY_SEPARATOR . self::FILE_HASHES;
-
-        if (!$root_cache_directory) {
-            throw new UnexpectedValueException('No cache directory defined');
-        }
-
-        $hashes_encoded = Providers::safeFileGetContents($file_hashes_path);
-        if (!$hashes_encoded) {
-            throw new UnexpectedValueException('File content hashes should be in cache');
-        }
-
-        /** @psalm-suppress MixedAssignment */
-        $hashes_decoded = json_decode($hashes_encoded, true, 512, JSON_THROW_ON_ERROR);
-
-        if (!is_array($hashes_decoded)) {
-            throw new UnexpectedValueException(
-                'File content hashes are of invalid type ' . gettype($hashes_decoded),
-            );
-        }
-
-        /** @var array<string, string> $hashes_decoded */
-        return $this->existing_file_content_hashes = $hashes_decoded;
+        return $this->existing_stmt_hashes = $this->stmtCache->getItem('idx') ?? [];
     }
 
     /**
@@ -176,7 +141,7 @@ class ParserCacheProvider
             $this->cache->saveItem($cache_location, $stmts);
 
             $file_cache_key = $this->getParserCacheKey($file_path);
-            $this->new_file_content_hashes[$file_cache_key] = $file_content_hash;
+            $this->new_stmt_hashes[$file_cache_key] = $file_content_hash;
         }
     }
 
@@ -185,56 +150,33 @@ class ParserCacheProvider
      */
     public function getNewFileContentHashes(): array
     {
-        return $this->new_file_content_hashes;
+        return $this->new_stmt_hashes;
     }
 
     /**
-     * @param array<string, string> $file_content_hashes
+     * @param array<string, string> $stmt_hashes
      */
-    public function addNewFileContentHashes(array $file_content_hashes): void
+    public function addNewFileContentHashes(array $stmt_hashes): void
     {
-        $this->new_file_content_hashes += $file_content_hashes;
+        $this->new_stmt_hashes += $stmt_hashes;
     }
 
     public function saveFileContentHashes(): void
     {
-        $root_cache_directory = $this->cache->getCacheDirectory();
+        // Load
+        $this->getExistingStmtHashes();
 
-        if (!$root_cache_directory) {
-            return;
-        }
+        $this->existing_stmt_hashes += $this->new_stmt_hashes;
 
-        // directory was removed most likely due to a race condition
-        // with other psalm instances that were manually started at
-        // the same time
-        clearstatcache(true, $root_cache_directory);
-        if (!is_dir($root_cache_directory)) {
-            return;
-        }
-
-        $file_content_hashes = $this->new_file_content_hashes + $this->getExistingFileContentHashes();
-
-        $file_hashes_path = $root_cache_directory . DIRECTORY_SEPARATOR . self::FILE_HASHES;
-
-        file_put_contents(
-            $file_hashes_path,
-            json_encode($file_content_hashes, JSON_THROW_ON_ERROR),
-            LOCK_EX,
-        );
-    }
-
-    public function cacheFileContents(string $file_path, string $file_contents): void
-    {
-        $cache_location = $this->getCacheLocationForPath($file_path, self::FILE_CONTENTS_CACHE_DIRECTORY, true);
-        $this->cache->saveItem($cache_location, $file_contents);
+        $this->stmtCache->saveItem('idx', $this->existing_stmt_hashes);
     }
 
     public function deleteOldParserCaches(float $time_before): int
     {
         $cache_directory = $this->cache->getCacheDirectory();
 
-        $this->existing_file_content_hashes = null;
-        $this->new_file_content_hashes = [];
+        $this->existing_stmt_hashes = null;
+        $this->new_stmt_hashes = [];
 
         if (!$cache_directory) {
             return 0;
@@ -264,14 +206,6 @@ class ParserCacheProvider
 
         return $removed_count;
     }
-
-    private function getParserCacheKey(string $file_path): string
-    {
-        $hash = hash('xxh128', $file_path);
-
-        return $hash . ($this->cache->use_igbinary ? '-igbinary-r' : '-r');
-    }
-
 
     private function getCacheLocationForPath(
         string $file_path,

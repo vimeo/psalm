@@ -4,22 +4,30 @@ declare(strict_types=1);
 
 namespace Psalm\Internal;
 
+use Amp\Serialization\Serializer;
+use Closure;
 use Psalm\Config;
 use Psalm\Internal\Provider\Providers;
+use RuntimeException;
 
 use function file_exists;
 use function file_put_contents;
+use function filemtime;
 use function gzdeflate;
 use function gzinflate;
 use function igbinary_serialize;
 use function igbinary_unserialize;
+use function is_dir;
+use function is_readable;
 use function is_writable;
 use function lz4_compress;
 use function lz4_uncompress;
+use function mkdir;
 use function serialize;
 use function unlink;
 use function unserialize;
 
+use const DIRECTORY_SEPARATOR;
 use const LOCK_EX;
 
 /**
@@ -27,17 +35,46 @@ use const LOCK_EX;
  */
 final class Cache
 {
-    public bool $use_igbinary;
+    private readonly string $dir;
+    private readonly Serializer $serializer;
 
-    public function __construct(
-        private readonly Config $config,
-    ) {
-        $this->use_igbinary = $config->use_igbinary;
+    public function __construct(Config $config, string $subdir, mixed $dependencies)
+    {
+        $this->serializer = $config->getCacheSerializer();
+
+        $dir = $config->getCacheDirectory().DIRECTORY_SEPARATOR.$subdir;
+
+        $this->dir = $dir.DIRECTORY_SEPARATOR;
+        try {
+            if (mkdir($this->dir, 0777, true) === false) {
+                // any other error than directory already exists/permissions issue
+                throw new RuntimeException(
+                    'Failed to create ' . $this->dir . ' cache directory for unknown reasons',
+                );
+            }
+        } catch (RuntimeException $e) {
+            // Race condition (#4483)
+            if (!is_dir($this->dir)) {
+                // rethrow the error with default message
+                // it contains the reason why creation failed
+                throw $e;
+            }
+        }
+
+        $dependencies = $this->serializer->serialize($dependencies);
+
+        $idx = fopen($this->dir.'idx', 'r');
+        flock($idx, LOCK_EX);
+        if (stream_get_contents($idx) !== )
     }
 
-    public function getItem(string $path): array|object|string|null
+    public function getItem(string $key, ?int $mtime_at_least = null, ?string $hash = null): array|object|string|null
     {
-        if (!file_exists($path)) {
+        $path = $this->dir . DIRECTORY_SEPARATOR . $key;
+        if (!file_exists($path) || !is_readable($path)) {
+            return null;
+        }
+        if ($mtime_at_least !== null && filemtime($path) <= $mtime_at_least) {
             return null;
         }
 
@@ -46,20 +83,12 @@ final class Cache
             return null;
         }
 
-        if ($this->config->compressor === 'deflate') {
-            $inflated = @gzinflate($cache);
-        } elseif ($this->config->compressor === 'lz4') {
-            /**
-             * @psalm-suppress UndefinedFunction
-             * @var string|false $inflated
-             */
-            $inflated = lz4_uncompress($cache);
-        } else {
-            $inflated = $cache;
+        if ($this->decompressor !== null) {
+            $cache = ($this->decompressor)($cache);
         }
 
         // invalid cache data
-        if ($inflated === false) {
+        if ($cache === false) {
             $this->deleteItem($path);
 
             return null;
@@ -67,19 +96,19 @@ final class Cache
 
         if ($this->use_igbinary) {
             /** @var object|false $unserialized */
-            $unserialized = @igbinary_unserialize($inflated);
+            $cache = @igbinary_unserialize($cache);
         } else {
             /** @var object|false $unserialized */
-            $unserialized = @unserialize($inflated);
+            $cache = @unserialize($cache);
         }
 
-        if ($unserialized === false) {
+        if ($cache === false) {
             $this->deleteItem($path);
 
             return null;
         }
 
-        return $unserialized;
+        return $cache;
     }
 
     public function deleteItem(string $path): void
@@ -92,31 +121,15 @@ final class Cache
     public function saveItem(string $path, array|object|string $item): void
     {
         if ($this->use_igbinary) {
-            $serialized = (string) igbinary_serialize($item);
+            $item = (string) igbinary_serialize($item);
         } else {
-            $serialized = serialize($item);
+            $item = serialize($item);
         }
 
-        if ($this->config->compressor === 'deflate') {
-            $compressed = gzdeflate($serialized);
-        } elseif ($this->config->compressor === 'lz4') {
-            /**
-             * @psalm-suppress UndefinedFunction
-             * @var string|false $compressed
-             */
-            $compressed = lz4_compress($serialized, 4);
-        } else {
-            $compressed = $serialized;
+        if ($this->compressor !== null) {
+            $item = ($this->compressor)($item);
         }
 
-        if ($compressed !== false) {
-            file_put_contents($path, $compressed, LOCK_EX);
-        }
-        // TODO: Error handling
-    }
-
-    public function getCacheDirectory(): ?string
-    {
-        return $this->config->getCacheDirectory();
+        file_put_contents($path, $item, LOCK_EX);
     }
 }
