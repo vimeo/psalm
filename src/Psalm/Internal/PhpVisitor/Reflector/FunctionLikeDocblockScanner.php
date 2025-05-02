@@ -57,10 +57,12 @@ use function array_values;
 use function count;
 use function explode;
 use function in_array;
+use function key;
 use function preg_last_error_msg;
 use function preg_match;
 use function preg_replace;
 use function preg_split;
+use function reset;
 use function str_contains;
 use function str_ends_with;
 use function str_replace;
@@ -272,6 +274,8 @@ final class FunctionLikeDocblockScanner
             }
         }
 
+        $pending = [];
+
         if ($docblock_info->params) {
             self::improveParamsFromDocblock(
                 $codebase,
@@ -288,6 +292,7 @@ final class FunctionLikeDocblockScanner
                 $stmt,
                 $fake_method,
                 $classlike_storage && !$classlike_storage->is_trait ? $classlike_storage->name : null,
+                $pending,
             );
         }
 
@@ -384,6 +389,7 @@ final class FunctionLikeDocblockScanner
                     $cased_function_id,
                     $file_storage,
                     $file_scanner,
+                    $pending,
                 );
             } else {
                 $t = $codebase->getOrRegisterTaint($removed_taint, $location);
@@ -421,6 +427,7 @@ final class FunctionLikeDocblockScanner
                 $classlike_storage,
                 $cased_function_id,
                 $file_storage,
+                $pending,
             );
         }
 
@@ -429,12 +436,28 @@ final class FunctionLikeDocblockScanner
         }
 
         $storage->public_api = $docblock_info->public_api;
+
+        foreach ($pending as $template_name => $j) {
+            $v = $storage->template_types[$template_name];
+            $template_as_type = reset($v);
+            $template_function_id = key($v);
+
+            $storage->params[$j]->type = new Union([
+                new TTemplateParam(
+                    $template_name,
+                    $template_as_type,
+                    $template_function_id,
+                ),
+            ]);
+        }
     }
 
     /**
      * @param  array<string, array<string, Union>> $template_types
      * @param  array<string, TypeAlias>|null   $type_aliases
      * @param  array<string, array<string, Union>> $function_template_types
+     * @param  array<string, int> $pending_generated_templates
+     * @param-out  array<string, int> $pending_generated_templates
      * @return array{
      *     array<int, array{0: string, 1: int, 2?: string}>,
      *     array<string, array<string, Union>>
@@ -449,6 +472,7 @@ final class FunctionLikeDocblockScanner
         ?ClassLikeStorage $classlike_storage,
         string $cased_function_id,
         array $function_template_types,
+        array &$pending_generated_templates,
     ): array {
         $fixed_type_tokens = TypeTokenizer::getFullyQualifiedTokens(
             $docblock_return_type,
@@ -467,8 +491,9 @@ final class FunctionLikeDocblockScanner
             $token_body = $type_token[0];
 
             if ($token_body[0] === '$') {
+                $t = substr($token_body, 1);
                 foreach ($storage->params as $j => $param_storage) {
-                    if ('$' . $param_storage->name === $token_body) {
+                    if ($param_storage->name === $t) {
                         if (!isset($param_type_mapping[$token_body])) {
                             $template_name = 'TGeneratedFromParam' . $j;
                             if (isset($storage->template_types[$template_name])) {
@@ -482,18 +507,12 @@ final class FunctionLikeDocblockScanner
                                     $template_function_id => $template_as_type,
                                 ];
 
+                                $pending_generated_templates[$template_name] = $j;
+
                                 $function_template_types[$template_name]
                                     = $storage->template_types[$template_name];
 
                                 $param_type_mapping[$token_body] = $template_name;
-
-                                $param_storage->type = new Union([
-                                    new TTemplateParam(
-                                        $template_name,
-                                        $template_as_type,
-                                        $template_function_id,
-                                    ),
-                                ]);
                             }
                         }
 
@@ -693,6 +712,8 @@ final class FunctionLikeDocblockScanner
      *         description?:string
      *     }
      * > $docblock_params
+     * @param  array<string, int> $pending_generated_templates
+     * @param-out  array<string, int> $pending_generated_templates
      */
     private static function improveParamsFromDocblock(
         Codebase $codebase,
@@ -709,6 +730,7 @@ final class FunctionLikeDocblockScanner
         PhpParser\Node\FunctionLike $function,
         bool $fake_method,
         ?string $fq_classlike_name,
+        array &$pending_generated_templates,
     ): void {
         $base = $classlike_storage ? $classlike_storage->name . '::' : '';
 
@@ -801,6 +823,7 @@ final class FunctionLikeDocblockScanner
                     $classlike_storage,
                     $cased_function_id,
                     $function_template_types,
+                    $pending_generated_templates,
                 );
 
                 $new_param_type = TypeParser::parseTokens(
@@ -931,6 +954,8 @@ final class FunctionLikeDocblockScanner
      * @param array<string, TypeAlias> $type_aliases
      * @param array<string, non-empty-array<string, Union>> $function_template_types
      * @param array<string, non-empty-array<string, Union>> $class_template_types
+     * @param  array<string, int> $pending_generated_templates
+     * @param-out  array<string, int> $pending_generated_templates
      */
     private static function handleReturn(
         Codebase $codebase,
@@ -947,6 +972,7 @@ final class FunctionLikeDocblockScanner
         ?ClassLikeStorage $classlike_storage,
         string $cased_function_id,
         FileStorage $file_storage,
+        array &$pending_generated_templates,
     ): void {
         if (!$fake_method
             && $docblock_info->return_type_line_number
@@ -985,6 +1011,7 @@ final class FunctionLikeDocblockScanner
                 $classlike_storage,
                 $cased_function_id,
                 $function_template_types,
+                $pending_generated_templates,
             );
 
             $storage->return_type = TypeParser::parseTokens(
@@ -1157,6 +1184,8 @@ final class FunctionLikeDocblockScanner
      * @param array<string, TypeAlias> $type_aliases
      * @param array<string, non-empty-array<string, Union>> $function_template_types
      * @param array<string, non-empty-array<string, Union>> $class_template_types
+     * @param  array<string, int> $pending_generated_templates
+     * @param-out  array<string, int> $pending_generated_templates
      */
     private static function handleRemovedTaint(
         Codebase $codebase,
@@ -1171,6 +1200,7 @@ final class FunctionLikeDocblockScanner
         string $cased_function_id,
         FileStorage $file_storage,
         FileScanner $file_scanner,
+        array &$pending_generated_templates,
     ): void {
         try {
             [$fixed_type_tokens, $function_template_types] = self::getConditionalSanitizedTypeTokens(
@@ -1182,6 +1212,7 @@ final class FunctionLikeDocblockScanner
                 $classlike_storage,
                 $cased_function_id,
                 $function_template_types,
+                $pending_generated_templates,
             );
 
             $removed_taint = TypeParser::parseTokens(

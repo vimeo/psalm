@@ -369,7 +369,7 @@ final class ArgumentAnalyzer
                 );
             }
 
-            if ($param_type->from_docblock 
+            if ($param_type->from_docblock
                 && !$prev_param_type->from_docblock
                 && $param_type->equals($prev_param_type, false)
             ) {
