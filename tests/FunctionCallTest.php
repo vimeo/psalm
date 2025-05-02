@@ -2930,7 +2930,7 @@ final class FunctionCallTest extends TestCase
                         return (string) $in;
                     }
                     test("test", 0);',
-                'error_message' => 'tmp',
+                'error_message' => 'InvalidArgument',
             ],
             'noCrashOnEmptyArrayPush' => [
                 'code' => '<?php
