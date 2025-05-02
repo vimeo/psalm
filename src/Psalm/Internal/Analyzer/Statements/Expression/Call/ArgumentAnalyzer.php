@@ -1679,11 +1679,9 @@ final class ArgumentAnalyzer
                 }
             }
 
-            if (!$input_type_changed) {
-                return;
+            if ($input_type_changed) {
+                $input_type = new Union($types);
             }
-
-            $input_type = new Union($types);
         }
 
 
