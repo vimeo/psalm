@@ -1133,6 +1133,8 @@ final class FunctionLikeNodeScanner
                     }
                 }
             }
+        } elseif ($stmt instanceof PhpParser\Node\PropertyHook) {
+            // TODO: implement
         } else {
             throw new UnexpectedValueException("Unrecognized functionlike of type ".($stmt::class));
         }
