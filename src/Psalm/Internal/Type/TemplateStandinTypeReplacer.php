@@ -1013,7 +1013,7 @@ final class TemplateStandinTypeReplacer
             && (!$as_type || UnionTypeComparator::canBeContainedBy(
                 $codebase,
                 $input_type,
-                new Union([$as_type]),
+                new Union([new TClassString($as_type->value)]),
                 false,
                 false,
                 $matching_input_keys,
