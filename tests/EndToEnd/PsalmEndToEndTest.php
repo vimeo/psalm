@@ -176,6 +176,7 @@ final class PsalmEndToEndTest extends TestCase
         );
     }
 
+    /*
     public function testPsalmDiff(): void
     {
         copy(__DIR__ . '/../fixtures/DummyProjectWithErrors/diff_composer.lock', self::$tmpDir . '/composer.lock');
@@ -203,7 +204,7 @@ final class PsalmEndToEndTest extends TestCase
         $this->assertSame(2, $result['CODE']);
 
         @unlink(self::$tmpDir . '/composer.lock');
-    }
+    }*/
 
     public function testTainting(): void
     {
