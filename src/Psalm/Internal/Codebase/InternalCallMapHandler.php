@@ -23,6 +23,7 @@ use function assert;
 use function count;
 use function dirname;
 use function max;
+use function min;
 use function str_ends_with;
 use function str_starts_with;
 use function strlen;
@@ -37,6 +38,7 @@ use function substr;
 final class InternalCallMapHandler
 {
     private const MIN_CALLMAP_VERSION = 70;
+    private const MAX_CALLMAP_VERSION = 84;
 
     private static ?int $loaded_php_major_version = null;
     private static ?int $loaded_php_minor_version = null;
@@ -350,9 +352,12 @@ final class InternalCallMapHandler
             return self::$call_map;
         }
 
-        $analyzer_version_int = max(
-            self::MIN_CALLMAP_VERSION,
-            (int) ($analyzer_major_version . $analyzer_minor_version),
+        $analyzer_version_int = min(
+            self::MAX_CALLMAP_VERSION,
+            max(
+                self::MIN_CALLMAP_VERSION,
+                (int) ($analyzer_major_version . $analyzer_minor_version),
+            ),
         );
 
         /** @var non-empty-array<lowercase-string, array<int|string, string>> */
