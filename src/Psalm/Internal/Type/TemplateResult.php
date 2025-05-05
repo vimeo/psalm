@@ -80,14 +80,4 @@ final class TemplateResult
         return $instance;
     }
 
-    /**
-     * Returns a template result with only types NOT contained in the passed template result.
-     */
-    public function diff(self $other): self
-    {
-        return new self(
-            array_diff_key($this->template_types, $other->lower_bounds, $other->template_types),
-            array_diff_key($this->lower_bounds, $other->lower_bounds, $other->template_types),
-        );
-    }
 }

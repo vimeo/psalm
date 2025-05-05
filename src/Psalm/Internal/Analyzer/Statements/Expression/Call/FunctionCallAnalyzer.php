@@ -174,13 +174,10 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             $template_result = TemplateResult::make([], []);
         }
 
-        $param_templates = null;
         if (!$is_first_class_callable) {
             if (isset($function_call_info->function_storage->template_types)) {
                 $template_result->template_types += $function_call_info->function_storage->template_types ?: [];
             }
-
-            $old_templates = clone $template_result;
 
             ArgumentsAnalyzer::analyze(
                 $statements_analyzer,
@@ -191,8 +188,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 $context,
                 $template_result,
             );
-
-            $param_templates = $template_result->diff($old_templates);
         }
 
         if ($set_inside_conditional) {
@@ -221,7 +216,19 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         $already_inferred_lower_bounds = $template_result->lower_bounds;
 
-        $template_result = $param_templates ?? TemplateResult::make([], []);
+        $param_templates = [];
+        foreach ($template_result->template_types as $k => $bounds) {
+            if (str_starts_with($k, 'TGeneratedFromParam')) {
+                $param_templates[$k] = $bounds;
+            }
+        }
+        $param_lower_bounds = [];
+        foreach ($template_result->lower_bounds as $k => $bounds) {
+            if (str_starts_with($k, 'TGeneratedFromParam')) {
+                $param_lower_bounds[$k] = $bounds;
+            }
+        }
+        $template_result = new TemplateResult($param_templates, $param_lower_bounds);
 
         // do this here to allow closure param checks
         if (!$is_first_class_callable && $function_call_info->function_params !== null) {
