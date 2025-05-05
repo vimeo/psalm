@@ -593,14 +593,15 @@ final class Scanner
         }
 
         foreach ($this->config->eventDispatcher->file_path_provider_interface as $provider) {
+            /** @psalm-suppress ArgumentTypeCoercion */
             $file_path = $provider::getClassFilePath($fq_class_name);
 
-            if ($file_path && file_exists($file_path)) {
+            if ($file_path !== null && file_exists($file_path)) {
                 $this->progress->debug('Using custom file path provider to locate file for ' . $fq_class_name . "\n");
 
                 $classlikes->addFullyQualifiedClassLikeName(
                     $fq_class_name_lc,
-                    (string) realpath($composer_file_path),
+                    (string) realpath($file_path),
                 );
 
                 return true;
