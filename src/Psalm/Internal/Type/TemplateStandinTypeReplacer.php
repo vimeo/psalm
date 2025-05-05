@@ -1005,27 +1005,12 @@ final class TemplateStandinTypeReplacer
         }
 
         $atomic_types = [];
-        $matching_input_keys = [];
 
         $as_type = $atomic_type->as_type;
-        if ($input_type
-            && !$template_result->readonly
-            && (!$as_type || UnionTypeComparator::canBeContainedBy(
-                $codebase,
-                $input_type,
-                new Union([new TClassString($as_type->value, $as_type)]),
-                false,
-                false,
-                $matching_input_keys,
-            ))
-        ) {
+        if ($input_type && !$template_result->readonly) {
             $valid_input_atomic_types = [];
 
-            foreach ($input_type->getAtomicTypes() as $k => $input_atomic_type) {
-                if ($matching_input_keys && !isset($matching_input_keys[$k])) {
-                    continue;
-                }
-
+            foreach ($input_type->getAtomicTypes() as $input_atomic_type) {
                 if ($input_atomic_type instanceof TLiteralClassString) {
                     $valid_input_atomic_types[] = new TNamedObject(
                         $input_atomic_type->value,
@@ -1364,7 +1349,7 @@ final class TemplateStandinTypeReplacer
 
                     $new_input_param = TemplateInferredTypeReplacer::replace(
                         $new_input_param,
-                        TemplateResult::make([], $replacement_templates),
+                        new TemplateResult([], $replacement_templates),
                         $codebase,
                     );
 

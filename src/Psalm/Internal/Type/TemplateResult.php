@@ -6,7 +6,6 @@ namespace Psalm\Internal\Type;
 
 use Psalm\Type\Union;
 
-use function array_diff_key;
 use function array_replace_recursive;
 
 /**
@@ -79,5 +78,4 @@ final class TemplateResult
 
         return $instance;
     }
-
 }

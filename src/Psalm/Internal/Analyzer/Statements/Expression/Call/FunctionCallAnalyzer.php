@@ -75,6 +75,7 @@ use function in_array;
 use function preg_replace;
 use function reset;
 use function spl_object_id;
+use function str_starts_with;
 use function strpos;
 use function strtolower;
 
