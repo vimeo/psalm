@@ -967,6 +967,27 @@ final class CallableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'firstClassCallableFromObject' => [
+                'code' => '<?php
+
+                function onKernelController(callable $controller): void
+                {
+                    if (\is_array($controller)) {
+                        $controller = $controller[0];
+                    } else {
+                        try {
+                            $reflection = new \ReflectionFunction($controller(...));
+                            $controller = $reflection->getClosureThis();
+                        } catch (\ReflectionException) {
+                            return;
+                        }
+                    }
+                }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'inferTypeWhenClosureParamIsOmitted' => [
                 'code' => '<?php
                     /**

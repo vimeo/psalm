@@ -921,7 +921,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
         $result->existent_method_ids[$method_id] = true;
         $result->has_valid_method_call_type = true;
 
-        if ($lhs_type_part_callable !== null) {
+        if ($lhs_type_part_callable !== null && !$stmt->isFirstClassCallable()) {
             $result->return_type = $lhs_type_part_callable->return_type ?? Type::getMixed();
             $callableArgumentCount = count($lhs_type_part_callable->params ?? []);
             $providedArgumentsCount = count($stmt->getArgs());

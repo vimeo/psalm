@@ -592,6 +592,22 @@ final class Scanner
             return true;
         }
 
+        foreach ($this->config->eventDispatcher->file_path_provider_interface as $provider) {
+            /** @psalm-suppress ArgumentTypeCoercion */
+            $file_path = $provider::getClassFilePath($fq_class_name);
+
+            if ($file_path !== null && file_exists($file_path)) {
+                $this->progress->debug('Using custom file path provider to locate file for ' . $fq_class_name . "\n");
+
+                $classlikes->addFullyQualifiedClassLikeName(
+                    $fq_class_name_lc,
+                    (string) realpath($file_path),
+                );
+
+                return true;
+            }
+        }
+
         $reflected_class = ErrorHandler::runWithExceptionsSuppressed(
             function () use ($fq_class_name): ?ReflectionClass {
                 $old_level = error_reporting();

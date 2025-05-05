@@ -21,6 +21,7 @@ use Psalm\Plugin\EventHandler\BeforeAddIssueInterface;
 use Psalm\Plugin\EventHandler\BeforeExpressionAnalysisInterface;
 use Psalm\Plugin\EventHandler\BeforeFileAnalysisInterface;
 use Psalm\Plugin\EventHandler\BeforeStatementAnalysisInterface;
+use Psalm\Plugin\EventHandler\ClassFilePathProviderInterface;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\Event\AfterAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\AfterClassLikeAnalysisEvent;
@@ -169,6 +170,15 @@ final class EventDispatcher
      * @var list<class-string<BeforeFileAnalysisInterface>>
      */
     public array $before_file_checks = [];
+
+    /**
+     * Static methods to be called to determine the file path a of a class
+     * not autoloadable using composer, but autoloadable through another autoloader
+     * (to avoid actually autoloading and parsing the class).
+     *
+     * @var list<class-string<ClassFilePathProviderInterface>>
+     */
+    public array $file_path_provider_interface = [];
 
     /**
      * Static methods to be called after functionlike checks have completed
