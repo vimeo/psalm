@@ -215,7 +215,7 @@ final class ArgumentsAnalyzer
             if ($param && $high_order_callable_info) {
                 $high_order_template_result = HighOrderFunctionArgHandler::remapLowerBounds(
                     $statements_analyzer,
-                    $template_result ?? TemplateResult::make([], []),
+                    $template_result ?? new TemplateResult([], []),
                     $high_order_callable_info,
                     $param->type ?? Type::getMixed(),
                 );
@@ -229,7 +229,7 @@ final class ArgumentsAnalyzer
                     $args,
                     $method_id,
                     $context,
-                    $template_result ?? TemplateResult::make([], []),
+                    $template_result ?? new TemplateResult([], []),
                     $argument_offset,
                     $arg,
                     $param,
@@ -366,7 +366,7 @@ final class ArgumentsAnalyzer
 
         if ($replace_template_result->lower_bounds) {
             if (!$template_result) {
-                $template_result = TemplateResult::make([], []);
+                $template_result = new TemplateResult([], []);
             }
 
             $template_result->lower_bounds += $replace_template_result->lower_bounds;

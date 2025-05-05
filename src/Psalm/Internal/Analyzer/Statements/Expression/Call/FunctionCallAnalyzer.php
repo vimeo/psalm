@@ -171,7 +171,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         }
 
         if (!$template_result) {
-            $template_result = TemplateResult::make([], []);
+            $template_result = new TemplateResult([], []);
         }
 
         if (!$is_first_class_callable) {

@@ -94,7 +94,7 @@ final class MissingMethodCallHandler
                 CallAnalyzer::checkMethodArgs(
                     $method_id,
                     $stmt->getArgs(),
-                    TemplateResult::make([], []),
+                    new TemplateResult([], []),
                     $context,
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                     $statements_analyzer,

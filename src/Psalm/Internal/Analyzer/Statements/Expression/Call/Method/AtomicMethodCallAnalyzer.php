@@ -935,7 +935,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 $result->too_many_arguments_method_ids[] = new MethodIdentifier('callable-object', '__invoke');
             }
 
-            $template_result = $inferred_template_result ?? TemplateResult::make([], []);
+            $template_result = $inferred_template_result ?? new TemplateResult([], []);
 
             ArgumentsAnalyzer::analyze(
                 $statements_analyzer,
