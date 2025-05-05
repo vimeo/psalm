@@ -75,6 +75,7 @@ use function in_array;
 use function preg_replace;
 use function reset;
 use function spl_object_id;
+use function str_starts_with;
 use function strpos;
 use function strtolower;
 
@@ -216,7 +217,19 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         $already_inferred_lower_bounds = $template_result->lower_bounds;
 
-        $template_result = new TemplateResult([], []);
+        $param_templates = [];
+        foreach ($template_result->template_types as $k => $bounds) {
+            if (str_starts_with($k, 'TGeneratedFromParam')) {
+                $param_templates[$k] = $bounds;
+            }
+        }
+        $param_lower_bounds = [];
+        foreach ($template_result->lower_bounds as $k => $bounds) {
+            if (str_starts_with($k, 'TGeneratedFromParam')) {
+                $param_lower_bounds[$k] = $bounds;
+            }
+        }
+        $template_result = new TemplateResult($param_templates, $param_lower_bounds);
 
         // do this here to allow closure param checks
         if (!$is_first_class_callable && $function_call_info->function_params !== null) {

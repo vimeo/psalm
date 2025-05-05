@@ -28,6 +28,7 @@ use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateBound;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
@@ -344,7 +345,7 @@ final class ArgumentAnalyzer
             // of that class where we know that TKey is int and TValue is string, then we
             // want to substitute the expected parameters so it's as if we were actually
             // calling "add(int $key, string $value)"
-            $readonly_template_result = new TemplateResult($class_generic_params, []);
+            $readonly_template_result = TemplateResult::make($class_generic_params, []);
 
             // This flag ensures that the template results will never be written to
             // It also supersedes the `$add_lower_bounds` flag so that closure params
@@ -361,6 +362,14 @@ final class ArgumentAnalyzer
                 $context->self,
                 $context->calling_function_id ?: $context->calling_method_id,
             );
+
+            if ($template_result) {
+                $param_type = TemplateInferredTypeReplacer::replace(
+                    $param_type,
+                    $template_result,
+                    $codebase,
+                );
+            }
 
             $arg_value_type = TemplateStandinTypeReplacer::replace(
                 $arg_value_type,
@@ -1665,11 +1674,9 @@ final class ArgumentAnalyzer
                 }
             }
 
-            if (!$input_type_changed) {
-                return;
+            if ($input_type_changed) {
+                $input_type = new Union($types);
             }
-
-            $input_type = new Union($types);
         }
 
 

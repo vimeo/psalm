@@ -184,7 +184,7 @@ final class ExistingAtomicStaticCallAnalyzer
             }
         }
 
-        $template_result = new TemplateResult([], $found_generic_params ?: []);
+        $template_result = TemplateResult::make([], $found_generic_params ?: []);
 
         if ($inferred_template_result) {
             $template_result->lower_bounds += $inferred_template_result->lower_bounds;

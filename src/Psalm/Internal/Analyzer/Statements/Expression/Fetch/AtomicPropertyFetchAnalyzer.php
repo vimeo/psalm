@@ -803,7 +803,7 @@ final class AtomicPropertyFetchAnalyzer
 
             $class_property_type = TemplateInferredTypeReplacer::replace(
                 $class_property_type,
-                new TemplateResult([], $template_types),
+                TemplateResult::make([], $template_types),
                 $codebase,
             );
         }

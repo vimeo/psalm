@@ -219,7 +219,7 @@ final class TypeChecker extends TypeVisitor
         }
 
         $expected_type_param_keys = array_keys($expected_type_params);
-        $template_result = new TemplateResult($expected_type_params, []);
+        $template_result = TemplateResult::make($expected_type_params, []);
 
         foreach ($atomic->type_params as $i => $type_param) {
             $this->prevent_template_covariance = $this->source instanceof MethodAnalyzer

@@ -213,7 +213,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         $method_template_params = [];
 
         if ($method_storage && $method_storage->if_this_is_type) {
-            $method_template_result = new TemplateResult($method_storage->template_types ?: [], []);
+            $method_template_result = TemplateResult::make($method_storage->template_types ?: [], []);
 
             TemplateStandinTypeReplacer::fillTemplateResult(
                 $method_storage->if_this_is_type,
@@ -226,7 +226,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             $method_template_params = $method_template_result->lower_bounds;
         }
 
-        $template_result = new TemplateResult([], $class_template_params ?: []);
+        $template_result = TemplateResult::make([], $class_template_params ?: []);
         $template_result->lower_bounds += $method_template_params;
 
         if ($inferred_template_result) {
