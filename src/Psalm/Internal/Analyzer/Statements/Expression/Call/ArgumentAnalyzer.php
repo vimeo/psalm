@@ -345,7 +345,7 @@ final class ArgumentAnalyzer
             // of that class where we know that TKey is int and TValue is string, then we
             // want to substitute the expected parameters so it's as if we were actually
             // calling "add(int $key, string $value)"
-            $readonly_template_result = new TemplateResult($class_generic_params, []);
+            $readonly_template_result = TemplateResult::make($class_generic_params, []);
 
             // This flag ensures that the template results will never be written to
             // It also supersedes the `$add_lower_bounds` flag so that closure params

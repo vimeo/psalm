@@ -870,7 +870,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 );
 
                 $lhs_type_part = $mixin->replaceTemplateTypesWithArgTypes(
-                    new TemplateResult([], $mixin_class_template_params ?: []),
+                    TemplateResult::make([], $mixin_class_template_params ?: []),
                     $codebase,
                 );
 
@@ -935,7 +935,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 $result->too_many_arguments_method_ids[] = new MethodIdentifier('callable-object', '__invoke');
             }
 
-            $template_result = $inferred_template_result ?? new TemplateResult([], []);
+            $template_result = $inferred_template_result ?? TemplateResult::make([], []);
 
             ArgumentsAnalyzer::analyze(
                 $statements_analyzer,

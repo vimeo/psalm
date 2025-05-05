@@ -215,7 +215,7 @@ final class ArgumentsAnalyzer
             if ($param && $high_order_callable_info) {
                 $high_order_template_result = HighOrderFunctionArgHandler::remapLowerBounds(
                     $statements_analyzer,
-                    $template_result ?? new TemplateResult([], []),
+                    $template_result ?? TemplateResult::make([], []),
                     $high_order_callable_info,
                     $param->type ?? Type::getMixed(),
                 );
@@ -229,7 +229,7 @@ final class ArgumentsAnalyzer
                     $args,
                     $method_id,
                     $context,
-                    $template_result ?? new TemplateResult([], []),
+                    $template_result ?? TemplateResult::make([], []),
                     $argument_offset,
                     $arg,
                     $param,
@@ -335,7 +335,7 @@ final class ArgumentsAnalyzer
 
         $template_types = ['ArrayValue' . $argument_offset => [$method_id => Type::getMixed()]];
 
-        $replace_template_result = new TemplateResult(
+        $replace_template_result = TemplateResult::make(
             $template_types,
             [],
         );
@@ -366,7 +366,7 @@ final class ArgumentsAnalyzer
 
         if ($replace_template_result->lower_bounds) {
             if (!$template_result) {
-                $template_result = new TemplateResult([], []);
+                $template_result = TemplateResult::make([], []);
             }
 
             $template_result->lower_bounds += $replace_template_result->lower_bounds;
@@ -433,7 +433,7 @@ final class ArgumentsAnalyzer
                 );
             }
         }
-        $replace_template_result = new TemplateResult(
+        $replace_template_result = TemplateResult::make(
             $new_bounds,
             [],
         );
@@ -1511,7 +1511,7 @@ final class ArgumentsAnalyzer
         }
 
         if (!$template_result) {
-            return new TemplateResult($template_types, []);
+            return TemplateResult::make($template_types, []);
         }
 
         if (!$template_result->template_types) {

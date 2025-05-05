@@ -393,7 +393,7 @@ final class MethodCallAnalyzer extends CallAnalyzer
             return $stmt->isFirstClassCallable() || self::checkMethodArgs(
                 null,
                 $stmt->getArgs(),
-                new TemplateResult([], []),
+                TemplateResult::make([], []),
                 $context,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
                 $statements_analyzer,

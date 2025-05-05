@@ -58,13 +58,13 @@ final class ClosedInheritanceToUnion
     private static function getTemplateResult(TNamedObject $object, Codebase $codebase): TemplateResult
     {
         if (!$object instanceof TGenericObject) {
-            return new TemplateResult([], []);
+            return TemplateResult::make([], []);
         }
 
         $storage = $codebase->classlikes->getStorageFor($object->value);
 
         if (null === $storage || null === $storage->template_types) {
-            return new TemplateResult([], []);
+            return TemplateResult::make([], []);
         }
 
         $lower_bounds = [];
@@ -76,6 +76,6 @@ final class ClosedInheritanceToUnion
             }
         }
 
-        return new TemplateResult($storage->template_types, $lower_bounds);
+        return TemplateResult::make($storage->template_types, $lower_bounds);
     }
 }

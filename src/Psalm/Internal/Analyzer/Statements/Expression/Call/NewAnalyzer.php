@@ -415,7 +415,7 @@ final class NewAnalyzer extends CallAnalyzer
                 );
             }
 
-            $template_result ??= new TemplateResult([], []);
+            $template_result ??= TemplateResult::make([], []);
 
             if (self::checkMethodArgs(
                 $method_id,
@@ -763,7 +763,7 @@ final class NewAnalyzer extends CallAnalyzer
             if (self::checkMethodArgs(
                 null,
                 $stmt->getArgs(),
-                new TemplateResult([], []),
+                TemplateResult::make([], []),
                 $context,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
                 $statements_analyzer,

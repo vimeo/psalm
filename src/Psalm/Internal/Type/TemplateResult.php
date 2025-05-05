@@ -6,6 +6,7 @@ namespace Psalm\Internal\Type;
 
 use Psalm\Type\Union;
 
+use function array_diff_key;
 use function array_replace_recursive;
 
 /**
@@ -28,11 +29,6 @@ use function array_replace_recursive;
 final class TemplateResult
 {
     /**
-     * @var array<string, array<string, non-empty-list<TemplateBound>>>
-     */
-    public array $lower_bounds = [];
-
-    /**
      * @var array<string, array<string, TemplateBound>>
      */
     public array $upper_bounds = [];
@@ -49,15 +45,24 @@ final class TemplateResult
 
     /**
      * @param  array<string, array<string, Union>> $template_types
+     * @param  array<string, array<string, non-empty-list<TemplateBound>>> $lower_bounds
+     */
+    public function __construct(public array $template_types, public array $lower_bounds)
+    {
+    }
+
+    /**
+     * @param  array<string, array<string, Union>> $template_types
      * @param  array<string, array<string, Union>> $lower_bounds
      */
-    public function __construct(public array $template_types, array $lower_bounds)
+    public static function make(array $template_types, array $lower_bounds): self
     {
-        foreach ($lower_bounds as $key1 => $boundSet) {
-            foreach ($boundSet as $key2 => $bound) {
-                $this->lower_bounds[$key1][$key2] = [new TemplateBound($bound)];
-            }
-        }
+        foreach ($lower_bounds as &$boundSet) {
+            foreach ($boundSet as &$bound) {
+                $bound = [new TemplateBound($bound)];
+            } unset($bound);
+        } unset($boundSet);
+        return new self($template_types, $lower_bounds);
     }
 
     public function merge(TemplateResult $result): TemplateResult
@@ -73,5 +78,16 @@ final class TemplateResult
         $instance->template_types = [...$instance->template_types, ...$result->template_types];
 
         return $instance;
+    }
+
+    /**
+     * Returns a template result with only types NOT contained in the passed template result.
+     */
+    public function diff(self $other): self
+    {
+        return new self(
+            array_diff_key($this->template_types, $other->lower_bounds, $other->template_types),
+            array_diff_key($this->lower_bounds, $other->lower_bounds, $other->template_types),
+        );
     }
 }

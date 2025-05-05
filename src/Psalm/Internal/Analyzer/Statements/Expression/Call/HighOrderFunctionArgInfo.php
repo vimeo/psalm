@@ -38,7 +38,7 @@ final class HighOrderFunctionArgInfo
             ? [...$this->function_storage->template_types ?? [], ...$this->class_storage->template_types ?? []]
             : $this->function_storage->template_types ?? [];
 
-        return new TemplateResult($templates, []);
+        return TemplateResult::make($templates, []);
     }
 
     public function getType(): string

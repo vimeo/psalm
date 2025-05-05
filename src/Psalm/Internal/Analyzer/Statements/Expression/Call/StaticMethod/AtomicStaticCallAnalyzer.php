@@ -638,7 +638,7 @@ final class AtomicStaticCallAnalyzer
                         CallAnalyzer::checkMethodArgs(
                             $method_id,
                             $stmt->getArgs(),
-                            new TemplateResult([], []),
+                            TemplateResult::make([], []),
                             $context,
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                             $statements_analyzer,
@@ -917,7 +917,7 @@ final class AtomicStaticCallAnalyzer
             $pseudo_method_storage->params,
             $pseudo_method_storage,
             null,
-            new TemplateResult([], []),
+            TemplateResult::make([], []),
             new CodeLocation($statements_analyzer, $stmt),
             $context,
         ) === false) {
@@ -946,7 +946,7 @@ final class AtomicStaticCallAnalyzer
                     $method_storage->params,
                     $method_storage,
                     null,
-                    new TemplateResult([], []),
+                    TemplateResult::make([], []),
                     new CodeLocation($statements_analyzer, $stmt),
                     $context,
                 );

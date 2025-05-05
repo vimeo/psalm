@@ -784,7 +784,7 @@ final class Methods
 
                     if ($found_generic_params) {
                         $passed_template_result = $template_result;
-                        $template_result = new TemplateResult(
+                        $template_result = TemplateResult::make(
                             [],
                             $found_generic_params,
                         );

@@ -94,7 +94,7 @@ final class MissingMethodCallHandler
                 CallAnalyzer::checkMethodArgs(
                     $method_id,
                     $stmt->getArgs(),
-                    new TemplateResult([], []),
+                    TemplateResult::make([], []),
                     $context,
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                     $statements_analyzer,
@@ -132,7 +132,7 @@ final class MissingMethodCallHandler
                 (string) $method_id,
                 true,
                 $context,
-                $found_generic_params ? new TemplateResult([], $found_generic_params) : null,
+                $found_generic_params ? TemplateResult::make([], $found_generic_params) : null,
             );
 
             ArgumentsAnalyzer::checkArgumentsMatch(
@@ -142,7 +142,7 @@ final class MissingMethodCallHandler
                 $pseudo_method_storage->params,
                 $pseudo_method_storage,
                 null,
-                new TemplateResult([], $found_generic_params ?: []),
+                TemplateResult::make([], $found_generic_params ?: []),
                 new CodeLocation($statements_analyzer, $stmt),
                 $context,
             );
@@ -153,7 +153,7 @@ final class MissingMethodCallHandler
                 if ($found_generic_params) {
                     $return_type_candidate = TemplateInferredTypeReplacer::replace(
                         $return_type_candidate,
-                        new TemplateResult([], $found_generic_params),
+                        TemplateResult::make([], $found_generic_params),
                         $codebase,
                     );
                 }
@@ -294,7 +294,7 @@ final class MissingMethodCallHandler
                 (string) $method_id,
                 true,
                 $context,
-                $found_generic_params ? new TemplateResult([], $found_generic_params) : null,
+                $found_generic_params ? TemplateResult::make([], $found_generic_params) : null,
             ) === false) {
                 return;
             }
@@ -306,7 +306,7 @@ final class MissingMethodCallHandler
                 $pseudo_method_storage->params,
                 $pseudo_method_storage,
                 null,
-                new TemplateResult([], $found_generic_params ?: []),
+                TemplateResult::make([], $found_generic_params ?: []),
                 new CodeLocation($statements_analyzer, $stmt->name),
                 $context,
             ) === false) {
@@ -319,7 +319,7 @@ final class MissingMethodCallHandler
                 if ($found_generic_params) {
                     $return_type_candidate = TemplateInferredTypeReplacer::replace(
                         $return_type_candidate,
-                        new TemplateResult([], $found_generic_params),
+                        TemplateResult::make([], $found_generic_params),
                         $codebase,
                     );
                 }

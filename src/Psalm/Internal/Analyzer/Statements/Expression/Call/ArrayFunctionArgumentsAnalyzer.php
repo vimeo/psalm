@@ -982,7 +982,7 @@ final class ArrayFunctionArgumentsAnalyzer
                 && $closure_type->return_type
                 && $closure_param_type->hasTemplate()
             ) {
-                $template_result = new TemplateResult(
+                $template_result = TemplateResult::make(
                     [],
                     [],
                 );
