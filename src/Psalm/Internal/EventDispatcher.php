@@ -281,6 +281,10 @@ final class EventDispatcher
         if (is_subclass_of($class, RemoveTaintsInterface::class)) {
             $this->remove_taints_checks[] = $class;
         }
+
+        if (is_subclass_of($class, ClassFilePathProviderInterface::class)) {
+            $this->file_path_provider_interface[] = $class;
+        }
     }
 
     public function hasAfterMethodCallAnalysisHandlers(): bool
