@@ -63,11 +63,12 @@ use const STDIN;
  */
 final class CliUtils
 {
+    /** @return list<ClassLoader> */
     public static function requireAutoloaders(
         string $current_dir,
         bool $has_explicit_root,
         string $vendor_dir,
-    ): ?ClassLoader {
+    ): array {
         $autoload_roots = [$current_dir];
 
         $psalm_dir = dirname(__DIR__, 3);
@@ -126,8 +127,7 @@ final class CliUtils
             }
         }
 
-        $first_autoloader = null;
-
+        $autoloaders = [];
         foreach ($autoload_files as $file) {
             /**
              * @psalm-suppress UnresolvableInclude
@@ -135,14 +135,13 @@ final class CliUtils
              */
             $autoloader = ErrorHandler::runWithExceptionsSuppressed(static fn(): mixed => require_once $file);
 
-            if (!$first_autoloader
-                && $autoloader instanceof ClassLoader
+            if ($autoloader instanceof ClassLoader
             ) {
-                $first_autoloader = $autoloader;
+                $autoloaders []= $autoloader;
             }
         }
 
-        if ($first_autoloader === null && !$in_phar) {
+        if (!$autoloaders && !$in_phar) {
             if (!$autoload_files) {
                 fwrite(STDERR, 'Failed to find a valid Composer autoloader' . "\n");
             } else {
@@ -162,7 +161,7 @@ final class CliUtils
         define('PSALM_VERSION', VersionUtils::getPsalmVersion());
         define('PHP_PARSER_VERSION', VersionUtils::getPhpParserVersion());
 
-        return $first_autoloader;
+        return $autoloaders;
     }
 
     /**
@@ -342,11 +341,12 @@ final class CliUtils
     }
 
 
+    /** @param list<ClassLoader> $autoloaders */
     public static function initializeConfig(
         ?string $path_to_config,
         string $current_dir,
         string $output_format,
-        ?ClassLoader $first_autoloader,
+        array $autoloaders,
         bool $create_if_non_existent = false,
     ): Config {
         try {
@@ -384,7 +384,7 @@ final class CliUtils
             exit(1);
         }
 
-        $config->setComposerClassLoader($first_autoloader);
+        $config->setComposerClassLoader($autoloaders);
 
         return $config;
     }

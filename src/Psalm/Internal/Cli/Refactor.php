@@ -192,10 +192,11 @@ final class Refactor
         IssueBuffer::captureServer($_SERVER);
 
         $include_collector = new IncludeCollector();
-        $first_autoloader = $include_collector->runAndCollect(
+        $autoloaders = $include_collector->runAndCollect(
             // we ignore the FQN because of a hack in scoper.inc that needs full path
             // phpcs:ignore SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName
-            static fn(): ?\Composer\Autoload\ClassLoader =>
+            /** @return list<ClassLoader> */
+            static fn(): array =>
                 CliUtils::requireAutoloaders($current_dir, isset($options['r']), $vendor_dir),
         );
 
@@ -298,7 +299,7 @@ final class Refactor
             $path_to_config,
             $current_dir,
             Report::TYPE_CONSOLE,
-            $first_autoloader,
+            $autoloaders,
         );
         $config->setIncludeCollector($include_collector);
 

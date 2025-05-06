@@ -434,7 +434,8 @@ final class Config
     /** @var array<callable-string, bool> */
     private array $predefined_functions = [];
 
-    private ?ClassLoader $composer_class_loader = null;
+    /** @var list<ClassLoader> $autoloaders */
+    private array $autoloaders = [];
 
     public string $hash = '';
 
@@ -1461,9 +1462,10 @@ final class Config
         throw new UnexpectedValueException('No config initialized');
     }
 
-    public function setComposerClassLoader(?ClassLoader $loader = null): void
+    /** @param list<ClassLoader> $autoloaders */
+    public function setComposerClassLoader(array $autoloaders): void
     {
-        $this->composer_class_loader = $loader;
+        $this->autoloaders = $autoloaders;
     }
 
     /** @return array<string, IssueHandler> */
@@ -1671,9 +1673,7 @@ final class Config
             // plugins from Psalm directory or phar file. If that fails as well, it
             // will fall back to project autoloader. It may seem that the last step
             // will always fail, but it's only true if project uses Composer autoloader
-            if ($this->composer_class_loader
-                && ($pluginclas_class_path = $this->composer_class_loader->findFile($pluginClassName))
-            ) {
+            if (false !== $pluginclas_class_path = $this->getComposerFilePathForClassLike($pluginClassName)) {
                 $projectAnalyzer->progress->debug(
                     'Loading plugin ' . $pluginClassName . ' via require' . PHP_EOL,
                 );
@@ -2537,20 +2537,22 @@ final class Config
     /** @return string|false */
     public function getComposerFilePathForClassLike(string $fq_classlike_name): string|bool
     {
-        if (!$this->composer_class_loader) {
-            return false;
+        foreach ($this->autoloaders as $autoloader) {
+            $f = $autoloader->findFile($fq_classlike_name);
+            if ($f !== false) {
+                return $f;
+            }
         }
-
-        return $this->composer_class_loader->findFile($fq_classlike_name);
+        return false;
     }
 
     public function getPotentialComposerFilePathForClassLike(string $class): ?string
     {
-        if (!$this->composer_class_loader) {
+        if (!$this->autoloaders) {
             return null;
         }
 
-        $psr4_prefixes = $this->composer_class_loader->getPrefixesPsr4();
+        $psr4_prefixes = reset($this->autoloaders)->getPrefixesPsr4();
 
         // PSR-4 lookup
         $logicalPathPsr4 = str_replace('\\', DIRECTORY_SEPARATOR, $class) . '.php';
