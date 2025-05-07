@@ -417,7 +417,7 @@ final class ArgumentAnalyzer
                 $argument_offset,
                 !$statements_analyzer->isStatic()
                     && (!$method_id || $method_id->method_name !== '__construct')
-                    ? $context->self
+                    ? ($method_id ? $method_id->fq_class_name : $context->self)
                     : null,
                 $context->calling_method_id ?: $context->calling_function_id,
             );
