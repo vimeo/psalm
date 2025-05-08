@@ -32,54 +32,15 @@ class ParserCacheProvider
     private const PARSER_CACHE_DIRECTORY = 'php-parser';
     private const FILE_CONTENTS_CACHE_DIRECTORY = 'file-caches';
 
-    private readonly Cache $stmtCache;
-    private readonly Cache $fileCache;
-
-    /**
-     * A map of filename hashes to contents hashes
-     *
-     * @var array<string, string>|null
-     */
-    protected ?array $existing_stmt_hashes = null;
-
-    /**
-     * A map of recently-added filename hashes to contents hashes
-     *
-     * @var array<string, string>
-     */
-    protected array $new_stmt_hashes = [];
+    /** @var Cache<list<PhpParser\Node\Stmt>> */
+    public readonly Cache $stmtCache;
+    /** @var Cache<string> */
+    public readonly Cache $fileCache;
 
     public function __construct(Config $config)
     {
         $this->stmtCache = new Cache($config, self::PARSER_CACHE_DIRECTORY);
         $this->fileCache = new Cache($config, self::FILE_CONTENTS_CACHE_DIRECTORY);
-    }
-
-    /**
-     * @return list<PhpParser\Node\Stmt>|null
-     */
-    public function loadStatementsFromCache(
-        string $file_path,
-        int $file_modified_time,
-        string $file_content_hash,
-    ): ?array {
-        $file_cache_key = hash('xxh128', $file_path);
-
-        $existing = $this->new_stmt_hashes[$file_cache_key]
-            ?? $this->getExistingStmtHashes()[$file_cache_key]
-            ?? null;
-
-        if ($file_content_hash !== $existing) {
-            return null;
-        }
-        $stmts = $this->stmtCache->getItem($file_cache_key, $file_modified_time);
-
-        if (!is_array($stmts)) {
-            return null;
-        }
-
-        /** @var list<Stmt> $stmts */
-        return $stmts;
     }
 
     /**

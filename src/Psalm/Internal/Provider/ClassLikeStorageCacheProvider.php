@@ -29,14 +29,8 @@ class ClassLikeStorageCacheProvider
 {
     private readonly Cache $cache;
 
-    private string $modified_timestamps = '';
-
-    private const CLASS_CACHE_DIRECTORY = 'class_cache';
-
     public function __construct(Config $config)
     {
-        $this->cache = new Cache($config);
-
         $storage_dir = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'Storage' . DIRECTORY_SEPARATOR;
 
         $dependent_files = [
@@ -49,16 +43,20 @@ class ClassLikeStorageCacheProvider
         if ($config->eventDispatcher->hasAfterClassLikeVisitHandlers()) {
             $dependent_files = array_merge($dependent_files, $config->plugin_paths);
         }
+        
+        $dependencies = [];
 
         foreach ($dependent_files as $dependent_file_path) {
             if (!file_exists($dependent_file_path)) {
                 throw new UnexpectedValueException($dependent_file_path . ' must exist');
             }
 
-            $this->modified_timestamps .= ' ' . (int) filemtime($dependent_file_path);
+            $dependencies []= filemtime($dependent_file_path);
         }
 
-        $this->modified_timestamps .= $config->computeHash();
+        $dependencies []= $config->computeHash();
+
+        $this->cache = new Cache($config, 'classlike_cache', $dependencies);
     }
 
     public function writeToCache(ClassLikeStorage $storage, string $file_path, string $file_contents): void

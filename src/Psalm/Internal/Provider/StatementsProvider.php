@@ -107,12 +107,18 @@ final class StatementsProvider
 
         $config = Config::getInstance();
 
-        $file_content_hash = hash('xxh128', $version . $file_contents);
+        $file_content_hash = hash_init('xxh128');
+        hash_update($file_content_hash, $version);
+        hash_update($file_content_hash, "\0");
+        hash_update($file_content_hash, (string) $modified_time);
+        hash_update($file_content_hash, "\0");
+        hash_update($file_content_hash, $file_contents);
+        $file_content_hash = hash_final($file_content_hash);
 
         if (!$this->parser_cache_provider
             || (!$config->isInProjectDirs($file_path) && strpos($file_path, 'vendor'))
         ) {
-            $progress->debug('Parsing ' . $file_path . "\n");
+            $progress->debug('Parsing ' . $file_path . " because we cannot use cache\n");
 
             $has_errors = false;
 
@@ -121,7 +127,6 @@ final class StatementsProvider
 
         $stmts = $this->parser_cache_provider->loadStatementsFromCache(
             $file_path,
-            $modified_time,
             $file_content_hash,
         );
 

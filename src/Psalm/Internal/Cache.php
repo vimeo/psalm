@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal;
 
+use Amp\Serialization\SerializationException;
 use Amp\Serialization\Serializer;
 use Closure;
 use Psalm\Config;
@@ -32,13 +33,22 @@ use const LOCK_EX;
 
 /**
  * @internal
+ * 
+ * @template T as array|object|string
  */
 final class Cache
 {
     private readonly string $dir;
     private readonly Serializer $serializer;
 
-    public function __construct(Config $config, string $subdir, mixed $dependencies)
+    /** @var array<string, string> */
+    private array $idx = [];
+    /** @var array<string, string> */
+    private array $newIdx = [];
+    /** @var array<string, T> */
+    private array $cache = [];
+
+    public function __construct(Config $config, string $subdir, mixed $dependencies = null)
     {
         $this->serializer = $config->getCacheSerializer();
 
@@ -65,16 +75,39 @@ final class Cache
 
         $idx = fopen($this->dir.'idx', 'r');
         flock($idx, LOCK_EX);
-        if (stream_get_contents($idx) !== )
+        $data = stream_get_contents($idx);
+        try {
+            [$deps, $idx] = json_decode($data, true);
+
+            if ($deps === $dependencies) {
+                $this->idx = $idx;
+            }
+        } catch (RuntimeException) {}
+        flock($idx, LOCK_UN);
+        fclose($idx);
     }
 
-    public function getItem(string $key, ?int $mtime_at_least = null, ?string $hash = null): array|object|string|null
+    /** @return T */
+    public function getItem(string $key, string $hash = ''): array|object|string|null
     {
-        $path = $this->dir . DIRECTORY_SEPARATOR . $key;
-        if (!file_exists($path) || !is_readable($path)) {
+        if (isset($this->idx[$key]) && $this->idx[$key] !== $hash) {
+            unset($this->idx[$key]);
+            unset($this->newIdx[$key]);
+            unset($this->cache[$key]);
+            return null;
+        } elseif (!isset($this->idx[$key])) {
             return null;
         }
-        if ($mtime_at_least !== null && filemtime($path) <= $mtime_at_least) {
+
+        if (isset($this->cache[$key])) {
+            return $this->cache[$key];
+        }
+
+        $path = $this->dir . DIRECTORY_SEPARATOR . hash('xxh128', $key);
+
+        if (!file_exists($path) 
+            || !is_readable($path)
+        ) {
             return null;
         }
 
@@ -83,53 +116,34 @@ final class Cache
             return null;
         }
 
-        if ($this->decompressor !== null) {
-            $cache = ($this->decompressor)($cache);
-        }
+        $this->cache[$key] = $v = $this->serializer->unserialize($cache);
+        $this->idx[$key] = $hash;
+        $this->newIdx[$key] = $hash;
 
-        // invalid cache data
-        if ($cache === false) {
-            $this->deleteItem($path);
-
-            return null;
-        }
-
-        if ($this->use_igbinary) {
-            /** @var object|false $unserialized */
-            $cache = @igbinary_unserialize($cache);
-        } else {
-            /** @var object|false $unserialized */
-            $cache = @unserialize($cache);
-        }
-
-        if ($cache === false) {
-            $this->deleteItem($path);
-
-            return null;
-        }
-
-        return $cache;
+        return $v;
     }
 
-    public function deleteItem(string $path): void
+    public function deleteItem(string $key): void
     {
-        if (@is_writable($path)) {
-            @unlink($path);
-        }
+        $path = $this->dir . DIRECTORY_SEPARATOR . hash('xxh128', $key);
+        @unlink($path);
+        unset($this->idx[$key]);
+        unset($this->newIdx[$key]);
+        unset($this->cache[$key]);
     }
 
-    public function saveItem(string $path, array|object|string $item): void
+    /** @param T $item */
+    public function saveItem(string $key, array|object|string $item, string $hash = ''): void
     {
-        if ($this->use_igbinary) {
-            $item = (string) igbinary_serialize($item);
-        } else {
-            $item = serialize($item);
-        }
+        $path = $this->dir . DIRECTORY_SEPARATOR . hash('xxh128', $key);
+        file_put_contents($path, $this->serializer->serialize($item), LOCK_EX);
+        $this->cache[$key] = $item;
+        $this->idx[$key] = $hash;
+        $this->newIdx[$key] = $hash;
+    }
 
-        if ($this->compressor !== null) {
-            $item = ($this->compressor)($item);
-        }
-
-        file_put_contents($path, $item, LOCK_EX);
+    /** @return array<string, string> */
+    public function getNewIdx(): array {
+        return $this->newIdx;
     }
 }

@@ -69,11 +69,7 @@ final class Providers
             throw new RuntimeException('Could not acquire lock for ' . $path);
         }
 
-        $file_size = filesize($path);
-        $content = '';
-        if ($file_size > 0) {
-            $content = (string) fread($fp, $file_size);
-        }
+        $content = stream_get_contents($path);
 
         fclose($fp);
 
