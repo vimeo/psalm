@@ -21,13 +21,13 @@ use const DIRECTORY_SEPARATOR;
 /**
  * @internal
  */
-class FileStorageCacheProvider
+final class FileStorageCacheProvider
 {
     private readonly Cache $cache;
 
     private const FILE_STORAGE_CACHE_DIRECTORY = 'file_cache';
 
-    public function __construct(Config $config)
+    public function __construct(Config $config, bool $noFile = false)
     {
         $storage_dir = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'Storage' . DIRECTORY_SEPARATOR;
 
@@ -52,7 +52,7 @@ class FileStorageCacheProvider
             $dependencies []= (int) filemtime($dependent_file_path);
         }
 
-        $this->cache = new Cache($config, self::FILE_STORAGE_CACHE_DIRECTORY, $dependencies);
+        $this->cache = new Cache($config, self::FILE_STORAGE_CACHE_DIRECTORY, $dependencies, $noFile);
     }
 
     public function writeToCache(FileStorage $storage, string $file_contents): void
@@ -63,10 +63,5 @@ class FileStorageCacheProvider
     public function getLatestFromCache(string $file_path, string $file_contents): ?FileStorage
     {
         return $this->cache->getItem(strtolower($file_path), hash('xxh128', $file_contents));
-    }
-
-    public function removeCacheForFile(string $file_path): void
-    {
-        $this->cache->deleteItem(strtolower($file_path));
     }
 }

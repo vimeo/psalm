@@ -352,12 +352,6 @@ final class Scanner
 
                 $this->addThreadData($pool_data['scanner_data']);
 
-                if ($this->codebase->statements_provider->parser_cache_provider) {
-                    $this->codebase->statements_provider->parser_cache_provider->addNewFileContentHashes(
-                        $pool_data['new_file_content_hashes'],
-                    );
-                }
-
                 $this->codebase->addGlobalConstantTypes($pool_data['global_constants']);
                 $this->codebase->functions->addGlobalFunctions($pool_data['global_functions']);
             }
@@ -367,8 +361,6 @@ final class Scanner
                 $this->progress->taskDone(0);
             }
         }
-
-        $this->codebase->statements_provider->parser_cache_provider?->saveFileContentHashes();
 
         $this->file_reference_provider->addClassLikeFiles($this->classlike_files);
 

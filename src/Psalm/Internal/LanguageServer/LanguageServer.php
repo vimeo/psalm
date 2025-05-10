@@ -227,10 +227,10 @@ final class LanguageServer extends Dispatcher
         if ($inMemory) {
             $providers = new Providers(
                 new FileProvider,
-                new InMemoryParserCacheProvider,
-                new InMemoryFileStorageCacheProvider,
-                new InMemoryClassLikeStorageCacheProvider,
-                new InMemoryFileReferenceCacheProvider($config),
+                new ParserCacheProvider($config, true),
+                new FileStorageCacheProvider($config, true),
+                new ClassLikeStorageCacheProvider($config, true),
+                new FileReferenceCacheProvider($config, true),
                 new InMemoryProjectCacheProvider,
             );
         } else {

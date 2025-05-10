@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Psalm\Internal;
 
 use Amp\Serialization\Serializer;
+use AssertionError;
 use Psalm\Config;
 use Psalm\Internal\Provider\Providers;
 use RuntimeException;
+use Webmozart\Assert\Assert;
 
 use function fclose;
 use function file_exists;
@@ -35,18 +37,23 @@ final class Cache
     private readonly string $dir;
     private readonly Serializer $serializer;
 
-    /** @var array<string, string> */
-    private array $idx = [];
-    /** @var array<string, ?string> */
-    private array $newIdx = [];
-    /** @var array<string, T> */
+    /** @var array<string, list{string, T}> */
     private array $cache = [];
 
-    public function __construct(Config $config, string $subdir, array $dependencies = [])
+    public function __construct(Config $config, string $subdir, array $dependencies = [], private readonly bool $noFile = false)
     {
         $this->serializer = $config->getCacheSerializer();
+        if ($noFile) {
+            return;
+        }
 
         $dir = $config->getCacheDirectory().DIRECTORY_SEPARATOR.$subdir;
+
+        $dependencies []= $config->computeHash();
+        $dependencies []= $this->serializer;
+        $dependencies = $this->serializer->serialize($dependencies);
+
+        $dir .= DIRECTORY_SEPARATOR . hash('xxh128', $dependencies);
 
         $this->dir = $dir.DIRECTORY_SEPARATOR;
         try {
@@ -64,86 +71,54 @@ final class Cache
                 throw $e;
             }
         }
-
-        $dependencies []= $config->computeHash();
-        $dependencies = $this->serializer->serialize($dependencies);
-
-        $idx = fopen($this->dir.'idx', 'r');
-        flock($idx, LOCK_EX);
-        $data = stream_get_contents($idx);
-        try {
-            [$deps, $idx] = json_decode($data, true);
-
-            if ($deps === $dependencies) {
-                $this->idx = $idx;
-            }
-        } catch (RuntimeException) {
-        }
-        flock($idx, LOCK_UN);
-        fclose($idx);
     }
 
     /** @return T */
     public function getItem(string $key, string $hash = ''): array|object|string|null
     {
-        if (isset($this->idx[$key]) && $this->idx[$key] !== $hash) {
-            $this->deleteItem($key);
-            return null;
-        } elseif (!isset($this->idx[$key])) {
-            return null;
+        if (isset($this->cache[$key]) && ($combined = $this->cache[$key])[0] === $hash) {
+            return $combined[1];
         }
 
-        if (isset($this->cache[$key])) {
-            return $this->cache[$key];
-        }
-
-        $path = $this->dir . DIRECTORY_SEPARATOR . hash('xxh128', $key);
-
-        if (!file_exists($path)
-            || !is_readable($path)
-        ) {
+        if ($this->noFile) {
             return null;
         }
 
-        $cache = Providers::safeFileGetContents($path);
-        if ($cache === '') {
+        $path = $this->dir . hash('xxh128', $key);
+
+        if (!file_exists("$path.hash")) {
             return null;
         }
 
-        $this->cache[$key] = $v = $this->serializer->unserialize($cache);
-        $this->idx[$key] = $hash;
-        $this->newIdx[$key] = $hash;
-
+        $v = Providers::safeFileGetContentsWithHash($path, $hash);
+        if ($v === null) {
+            return null;
+        }
+        $v = $this->serializer->unserialize($v);
+        $this->cache[$key] = [$hash, $v];
         return $v;
-    }
-
-    public function deleteItem(string $key): void
-    {
-        if (isset($this->idx[$key])) {
-            $path = $this->dir . DIRECTORY_SEPARATOR . hash('xxh128', $key);
-            @unlink($path);
-            unset($this->idx[$key]);
-            unset($this->cache[$key]);
-            $this->newIdx[$key] = null;
-        }
     }
 
     /** @param T $item */
     public function saveItem(string $key, array|object|string $item, string $hash = ''): void
     {
-        if (isset($this->idx[$key]) && $this->idx[$key] === $hash) {
+        // Assume all threads will store the same contents.
+        // If the assumption is wrong, it will get fixed on the next run.
+        if (isset($this->cache[$key]) && $this->cache[$key][0] === $hash) {
             return;
         }
-        $path = $this->dir . DIRECTORY_SEPARATOR . hash('xxh128', $key);
-        file_put_contents($path, $this->serializer->serialize($item), LOCK_EX);
-        $this->cache[$key] = $item;
-        $this->idx[$key] = $hash;
-        $this->newIdx[$key] = $hash;
-    }
-
-    /** @return array<string, ?string> */
-    public function getNewIdx(): array
-    {
-        return $this->newIdx;
+        if (!$this->noFile) {
+            $path = $this->dir . hash('xxh128', $key);
+            $f = fopen("$path.hash", 'r+');
+            Assert::notFalse($f);
+            flock($f, LOCK_EX);
+            ftruncate($f, 0); 
+            Assert::eq(fwrite($f, $hash), strlen($hash));
+            file_put_contents($path, $this->serializer->serialize($item));
+            fflush($f);
+            flock($f, LOCK_UN);
+            fclose($f);    
+        }
+        $this->cache[$key] = [$hash, $item];
     }
 }

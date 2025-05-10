@@ -21,11 +21,11 @@ use const DIRECTORY_SEPARATOR;
 /**
  * @internal
  */
-class ClassLikeStorageCacheProvider
+final class ClassLikeStorageCacheProvider
 {
     private readonly Cache $cache;
 
-    public function __construct(Config $config)
+    public function __construct(Config $config, bool $noFile = false)
     {
         $storage_dir = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'Storage' . DIRECTORY_SEPARATOR;
 
@@ -50,7 +50,7 @@ class ClassLikeStorageCacheProvider
             $dependencies []= filemtime($dependent_file_path);
         }
 
-        $this->cache = new Cache($config, 'classlike_cache', $dependencies);
+        $this->cache = new Cache($config, 'classlike_cache', $dependencies, $noFile);
     }
 
     public function writeToCache(ClassLikeStorage $storage, string $file_path, string $file_contents): void

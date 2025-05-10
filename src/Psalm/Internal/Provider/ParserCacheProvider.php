@@ -8,10 +8,7 @@ use PhpParser;
 use Psalm\Config;
 use Psalm\Internal\Cache;
 
-/**
- * @internal
- */
-class ParserCacheProvider
+final class ParserCacheProvider
 {
     private const PARSER_CACHE_DIRECTORY = 'php-parser';
     private const FILE_CONTENTS_CACHE_DIRECTORY = 'file-caches';
@@ -21,10 +18,10 @@ class ParserCacheProvider
     /** @var Cache<string> */
     public readonly Cache $fileCache;
 
-    public function __construct(Config $config)
+    public function __construct(Config $config, bool $noFile = false)
     {
-        $this->stmtCache = new Cache($config, self::PARSER_CACHE_DIRECTORY);
-        $this->fileCache = new Cache($config, self::FILE_CONTENTS_CACHE_DIRECTORY);
+        $this->stmtCache = new Cache($config, self::PARSER_CACHE_DIRECTORY, [], $noFile);
+        $this->fileCache = new Cache($config, self::FILE_CONTENTS_CACHE_DIRECTORY, [], $noFile);
     }
 
     /**

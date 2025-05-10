@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm;
 
+use Amp\Serialization\NativeSerializer;
 use Amp\Serialization\Serializer;
 use Composer\Autoload\ClassLoader;
 use Composer\Semver\Constraint\Constraint;
@@ -2777,11 +2778,11 @@ final class Config
     /** @internal */
     public function getCacheSerializer(): Serializer
     {
-        $s = $this->use_igbinary ? new IgbinarySerializer : new Serializer;
+        $s = $this->use_igbinary ? new IgbinarySerializer : new NativeSerializer();
         return match ($this->compressor) {
             'deflate' => new GzipSerializer($s),
             'lz4' => new Lz4Serializer($s),
-            null => $s
+            'off' => $s
         };
     }
 

@@ -68,6 +68,40 @@ final class Providers
             throw new RuntimeException('Could not acquire lock for ' . $path);
         }
 
+        $content = stream_get_contents($fp);
+
+        fclose($fp);
+
+        return $content;
+    }
+
+    public static function safeFileGetContentsWithHash(string $path, ?string $hash = null): ?string
+    {
+        // no readable validation as that must be done in the caller
+        $fp = fopen("$path.hash", 'r');
+        if ($fp === false) {
+            return null;
+        }
+        $max_wait_cycles = 5;
+        $has_lock = false;
+        while ($max_wait_cycles > 0) {
+            if (flock($fp, LOCK_SH)) {
+                $has_lock = true;
+                break;
+            }
+            $max_wait_cycles--;
+            usleep(50_000);
+        }
+
+        if (!$has_lock) {
+            fclose($fp);
+            throw new RuntimeException("Could not acquire lock for $path.hash");
+        }
+
+        if (stream_get_contents($fp) !== $hash) {
+            fclose($fp);
+            return null;
+        }
         $content = stream_get_contents($path);
 
         fclose($fp);
