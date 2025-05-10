@@ -323,7 +323,7 @@ final class Psalm
 
         $show_info = self::initShowInfo($options);
 
-        $is_diff = self::initIsDiff($options);
+        $is_diff = false; // self::initIsDiff($options);
 
         $find_unused_code = self::shouldFindUnusedCode($options, $config);
 
@@ -493,12 +493,12 @@ final class Psalm
             : false;
     }
 
-    private static function initIsDiff(array $options): bool
+    /*private static function initIsDiff(array $options): bool
     {
         return !isset($options['no-diff'])
             && !isset($options['set-baseline'])
             && !isset($options['update-baseline']);
-    }
+    }*/
 
     /**
      * @param array<int,string> $args

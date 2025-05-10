@@ -1003,6 +1003,9 @@ final class ProjectAnalyzer
         $this->progress->startPhase(Phase::SCAN, $this->scanThreads);
 
         $this->config->visitPreloadedStubFiles($this->codebase, $this->progress);
+
+        $this->config->initializePlugins($this);
+
         $this->visitAutoloadFiles();
 
         $this->codebase->scanner->addFilesToShallowScan($this->extra_files);
@@ -1020,9 +1023,6 @@ final class ProjectAnalyzer
         }
 
         $this->file_reference_provider->loadReferenceCache();
-
-        $this->config->initializePlugins($this);
-
 
         $this->codebase->scanFiles($this->scanThreads);
 

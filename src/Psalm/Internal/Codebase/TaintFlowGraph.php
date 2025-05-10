@@ -237,12 +237,13 @@ final class TaintFlowGraph extends DataFlowGraph
         } unset($map);
 
         // reprocess resolved descendants up to a maximum nesting level of 40
-        for ($i = 0; count($sinks) && count($sources) && $i < 40; $i++) {
+        $depth = 40;
+
+        $progress->expand($depth);
+        for ($i = 0; count($sinks) && count($sources) && $i < $depth; $i++) {
             $new_sources = [];
 
             ksort($sources);
-
-            $progress->expand(count($sources));
 
             foreach ($sources as $source) {
                 $source_taints = $source->taints;
@@ -262,7 +263,6 @@ final class TaintFlowGraph extends DataFlowGraph
                         $project_analyzer,
                         $codebase,
                     );
-                    $progress->taskDone(0);
                     continue;
                 }
         
@@ -274,7 +274,6 @@ final class TaintFlowGraph extends DataFlowGraph
                 ) {
                     /** @var string $source->unspecialized_id */
                     if (!isset($this->forward_edges[$source->unspecialized_id])) {
-                        $progress->taskDone(0);
                         continue;
                     }
                     $specialized_calls = $source->specialized_calls;
@@ -401,12 +400,15 @@ final class TaintFlowGraph extends DataFlowGraph
                         }
                     }
                 }
-
-                $progress->taskDone(0);
             }
 
             $sources = $new_sources;
             unset($new_sources);
+
+            $progress->taskDone(0);
+        }
+        for (; $i < $depth; $i++) {
+            $progress->taskDone(0);
         }
     }
 

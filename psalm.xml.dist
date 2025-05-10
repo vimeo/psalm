@@ -4,8 +4,6 @@
     xmlns="https://getpsalm.org/schema/config"
     name="Psalm for Psalm"
     errorLevel="1"
-    noCache="true"
-    forceJit="false"
     throwExceptionOnError="0"
     findUnusedCode="true"
     ensureArrayStringOffsetsExist="true"

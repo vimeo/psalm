@@ -63,6 +63,27 @@ final class Php84Test extends TestCase
                 'ignored_issues' => ['UnusedVariable'],
                 'php_version' => '8.4',
             ],
+            'propertyHook' => [
+                'code' => '<?php
+                    class Foo {
+                        public int|null $test = null{
+                            get {
+                                return $this->test;
+                            }
+                            set(int $value) {
+                                $this->test = $value;
+                            }
+                        }
+                    }
+                    $property_hook = new Foo();
+                    $property_hook->test = 5;
+                    ',
+                'assertions' => [
+                    '$property_hook->test' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
         ];
     }
 
