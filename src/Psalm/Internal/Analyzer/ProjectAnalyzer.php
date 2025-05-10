@@ -387,8 +387,6 @@ final class ProjectAnalyzer
 
     public function check(string $base_dir, bool $is_diff = false): void
     {
-        $start_checks = (int)microtime(true);
-
         if (!$base_dir) {
             throw new InvalidArgumentException('Cannot work with empty base_dir');
         }

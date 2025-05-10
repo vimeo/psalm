@@ -6,6 +6,7 @@ namespace Psalm\Internal;
 
 use Amp\Serialization\SerializationException;
 use Amp\Serialization\Serializer;
+use Override;
 
 use function error_get_last;
 use function gzdeflate;
@@ -18,6 +19,7 @@ final class GzipSerializer implements Serializer
     {
     }
 
+    #[Override]
     public function serialize($data): string
     {
         $data = $this->serializer->serialize($data);
@@ -30,6 +32,7 @@ final class GzipSerializer implements Serializer
         return $data;
     }
 
+    #[Override]
     public function unserialize(string $data)
     {
         $data = gzinflate($data);

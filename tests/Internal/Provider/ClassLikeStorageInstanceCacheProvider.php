@@ -27,26 +27,15 @@ final class ClassLikeStorageInstanceCacheProvider extends ClassLikeStorageCacheP
         $this->cache[$fq_classlike_name_lc] = $storage;
     }
 
-    /**
-     * @param lowercase-string $fq_classlike_name_lc
-     */
     #[Override]
     public function getLatestFromCache(string $fq_classlike_name_lc, ?string $file_path, string $file_contents): ClassLikeStorage
     {
-        $cached_value = $this->loadFromCache($fq_classlike_name_lc);
+        $cached_value = $this->cache[strtolower($fq_classlike_name_lc)] ?? null;
 
         if (!$cached_value) {
             throw new UnexpectedValueException('Should be in cache');
         }
 
         return $cached_value;
-    }
-
-    /**
-     * @param lowercase-string $fq_classlike_name_lc
-     */
-    private function loadFromCache(string $fq_classlike_name_lc): ?ClassLikeStorage
-    {
-        return $this->cache[$fq_classlike_name_lc] ?? null;
     }
 }

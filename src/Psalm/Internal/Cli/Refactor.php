@@ -314,8 +314,8 @@ final class Refactor
         $providers = new Providers(
             new FileProvider(),
             null,
-            new FileStorageCacheProvider($config, Composer::getLockFilePath($current_dir)),
-            new ClassLikeStorageCacheProvider($config, Composer::getLockFilePath($current_dir)),
+            new FileStorageCacheProvider($config, Composer::getLockFile($current_dir)),
+            new ClassLikeStorageCacheProvider($config, Composer::getLockFile($current_dir)),
             null,
             new ProjectCacheProvider(),
         );

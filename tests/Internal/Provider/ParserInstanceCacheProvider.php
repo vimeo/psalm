@@ -8,8 +8,6 @@ use Override;
 use PhpParser;
 use Psalm\Internal\Provider\ParserCacheProvider;
 
-use function microtime;
-
 final class ParserInstanceCacheProvider extends ParserCacheProvider
 {
     /**
@@ -44,19 +42,6 @@ final class ParserInstanceCacheProvider extends ParserCacheProvider
     }
 
     /**
-     * @return list<PhpParser\Node\Stmt>|null
-     */
-    #[Override]
-    public function loadExistingStatementsFromCache(string $file_path): ?array
-    {
-        if (isset($this->statements_cache[$file_path])) {
-            return $this->statements_cache[$file_path];
-        }
-
-        return null;
-    }
-
-    /**
      * @param  list<PhpParser\Node\Stmt>        $stmts
      */
     #[Override]
@@ -80,10 +65,5 @@ final class ParserInstanceCacheProvider extends ParserCacheProvider
     public function cacheFileContents(string $file_path, string $file_contents): void
     {
         $this->file_contents_cache[$file_path] = $file_contents;
-    }
-
-    #[Override]
-    public function saveFileContentHashes(): void
-    {
     }
 }

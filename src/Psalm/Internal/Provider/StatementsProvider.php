@@ -37,11 +37,6 @@ final class StatementsProvider
     /**
      * @var array<string, array<string, bool>>
      */
-    private array $unchanged_members = [];
-
-    /**
-     * @var array<string, array<string, bool>>
-     */
     private array $unchanged_signature_members = [];
 
     /**
@@ -87,8 +82,6 @@ final class StatementsProvider
         if ($progress === null) {
             $progress = new VoidProgress();
         }
-
-        $from_cache = false;
 
         $version = PHP_PARSER_VERSION . $this->this_modified_time;
 

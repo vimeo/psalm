@@ -6,6 +6,7 @@ namespace Psalm\Internal;
 
 use Amp\Serialization\SerializationException;
 use Amp\Serialization\Serializer;
+use Override;
 
 use function error_get_last;
 use function lz4_compress;
@@ -18,6 +19,7 @@ final class Lz4Serializer implements Serializer
     {
     }
 
+    #[Override]
     public function serialize($data): string
     {
         $data = $this->serializer->serialize($data);
@@ -30,6 +32,7 @@ final class Lz4Serializer implements Serializer
         return $data;
     }
 
+    #[Override]
     public function unserialize(string $data)
     {
         $data = lz4_uncompress($data);

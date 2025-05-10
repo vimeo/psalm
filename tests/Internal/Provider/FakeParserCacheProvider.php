@@ -20,12 +20,6 @@ final class FakeParserCacheProvider extends ParserCacheProvider
     }
 
     #[Override]
-    public function loadExistingStatementsFromCache(string $file_path): ?array
-    {
-        return null;
-    }
-
-    #[Override]
     public function saveStatementsToCache(string $file_path, string $file_content_hash, array $stmts): void
     {
     }
