@@ -20,7 +20,7 @@ final class Lz4Serializer implements Serializer
     }
 
     #[Override]
-    public function serialize($data): string
+    public function serialize(mixed $data): string
     {
         $data = $this->serializer->serialize($data);
         $data = lz4_compress($data, 4);
@@ -33,7 +33,7 @@ final class Lz4Serializer implements Serializer
     }
 
     #[Override]
-    public function unserialize(string $data)
+    public function unserialize(string $data): mixed
     {
         $data = lz4_uncompress($data);
         if ($data === false) {

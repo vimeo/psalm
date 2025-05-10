@@ -43,8 +43,12 @@ final class Cache
     /** @var array<string, list{string, T}> */
     private array $cache = [];
 
-    public function __construct(Config $config, string $subdir, array $dependencies = [], private readonly bool $noFile = false)
-    {
+    public function __construct(
+        Config $config,
+        string $subdir,
+        array $dependencies = [],
+        private readonly bool $noFile = false
+    ) {
         $this->serializer = $config->getCacheSerializer();
         if ($noFile) {
             return;

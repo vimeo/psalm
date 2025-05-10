@@ -66,7 +66,7 @@ final class FakeFileReferenceCacheProvider extends FileReferenceCacheProvider
 
     public function __construct()
     {
-        parent::__construct(Config::getInstance());
+        parent::__construct(Config::getInstance(), '');
     }
 
     #[Override]
