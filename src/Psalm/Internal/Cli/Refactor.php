@@ -314,10 +314,10 @@ final class Refactor
         $providers = new Providers(
             new FileProvider(),
             null,
-            new FileStorageCacheProvider($config),
-            new ClassLikeStorageCacheProvider($config),
+            new FileStorageCacheProvider($config, Composer::getLockFilePath($current_dir)),
+            new ClassLikeStorageCacheProvider($config, Composer::getLockFilePath($current_dir)),
             null,
-            new ProjectCacheProvider(Composer::getLockFilePath($current_dir)),
+            new ProjectCacheProvider(),
         );
 
         $debug = array_key_exists('debug', $options) || array_key_exists('debug-by-line', $options);

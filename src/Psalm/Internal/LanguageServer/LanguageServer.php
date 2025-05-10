@@ -227,20 +227,20 @@ final class LanguageServer extends Dispatcher
         if ($inMemory) {
             $providers = new Providers(
                 new FileProvider,
-                new ParserCacheProvider($config, true),
-                new FileStorageCacheProvider($config, true),
-                new ClassLikeStorageCacheProvider($config, true),
-                new FileReferenceCacheProvider($config, true),
+                new ParserCacheProvider($config, Composer::getLockFile($base_dir), true),
+                new FileStorageCacheProvider($config, Composer::getLockFile($base_dir), true),
+                new ClassLikeStorageCacheProvider($config, Composer::getLockFile($base_dir), true),
+                new FileReferenceCacheProvider($config, Composer::getLockFile($base_dir), true),
                 new InMemoryProjectCacheProvider,
             );
         } else {
             $providers = new Providers(
                 new FileProvider,
-                new ParserCacheProvider($config),
-                new FileStorageCacheProvider($config),
-                new ClassLikeStorageCacheProvider($config),
-                new FileReferenceCacheProvider($config),
-                new ProjectCacheProvider(Composer::getLockFilePath($base_dir)),
+                new ParserCacheProvider($config, Composer::getLockFile($base_dir)),
+                new FileStorageCacheProvider($config, Composer::getLockFile($base_dir)),
+                new ClassLikeStorageCacheProvider($config, Composer::getLockFile($base_dir)),
+                new FileReferenceCacheProvider($config, Composer::getLockFile($base_dir)),
+                new ProjectCacheProvider(),
             );
         }
 

@@ -25,7 +25,7 @@ final class ClassLikeStorageCacheProvider
 {
     private readonly Cache $cache;
 
-    public function __construct(Config $config, bool $noFile = false)
+    public function __construct(Config $config, string $composerLock, bool $noFile = false)
     {
         $storage_dir = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'Storage' . DIRECTORY_SEPARATOR;
 
@@ -40,7 +40,7 @@ final class ClassLikeStorageCacheProvider
             $dependent_files = array_merge($dependent_files, $config->plugin_paths);
         }
         
-        $dependencies = [];
+        $dependencies = [$composerLock];
 
         foreach ($dependent_files as $dependent_file_path) {
             if (!file_exists($dependent_file_path)) {

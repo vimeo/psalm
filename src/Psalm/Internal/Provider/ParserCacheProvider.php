@@ -18,10 +18,10 @@ final class ParserCacheProvider
     /** @var Cache<string> */
     public readonly Cache $fileCache;
 
-    public function __construct(Config $config, bool $noFile = false)
+    public function __construct(Config $config, string $composerLock, bool $noFile = false)
     {
-        $this->stmtCache = new Cache($config, self::PARSER_CACHE_DIRECTORY, [], $noFile);
-        $this->fileCache = new Cache($config, self::FILE_CONTENTS_CACHE_DIRECTORY, [], $noFile);
+        $this->stmtCache = new Cache($config, self::PARSER_CACHE_DIRECTORY, [$composerLock], $noFile);
+        $this->fileCache = new Cache($config, self::FILE_CONTENTS_CACHE_DIRECTORY, [$composerLock], $noFile);
     }
 
     /**

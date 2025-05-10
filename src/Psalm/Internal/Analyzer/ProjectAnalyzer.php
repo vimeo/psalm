@@ -230,8 +230,6 @@ final class ProjectAnalyzer
         $this->progress = $progress;
         $this->config = $config;
 
-        $this->clearCacheDirectoryIfConfigOrComposerLockfileChanged();
-
         $this->codebase = $codebase;
 
         $this->config->processPluginFileExtensions($this);
@@ -266,50 +264,6 @@ final class ProjectAnalyzer
         }
 
         self::$instance = $this;
-    }
-
-    private function clearCacheDirectoryIfConfigOrComposerLockfileChanged(): void
-    {
-        $cache_directory = $this->config->getCacheDirectory();
-        if ($cache_directory === null) {
-            return;
-        }
-
-        if ($this->project_cache_provider
-            && $this->project_cache_provider->hasLockfileChanged()
-        ) {
-            // we only clear the cache if it actually exists
-            // if it's not populated yet, we don't clear anything but populate the cache instead
-            clearstatcache(true, $cache_directory);
-            if (is_dir($cache_directory)) {
-                $this->progress->debug(
-                    'Composer lockfile change detected, clearing cache directory ' . $cache_directory . PHP_EOL,
-                );
-
-                Config::removeCacheDirectory($cache_directory);
-            }
-
-            $this->file_reference_provider->cache?->writeConfigHash();
-
-            $this->project_cache_provider->updateComposerLockHash();
-        } elseif ($this->file_reference_provider->cache
-            && $this->file_reference_provider->cache->hasConfigChanged()
-        ) {
-            clearstatcache(true, $cache_directory);
-            if (is_dir($cache_directory)) {
-                $this->progress->debug(
-                    'Config change detected, clearing cache directory ' . $cache_directory . PHP_EOL,
-                );
-
-                Config::removeCacheDirectory($cache_directory);
-            }
-
-            $this->file_reference_provider->cache->writeConfigHash();
-
-            if ($this->project_cache_provider) {
-                $this->project_cache_provider->updateComposerLockHash();
-            }
-        }
     }
 
     /**

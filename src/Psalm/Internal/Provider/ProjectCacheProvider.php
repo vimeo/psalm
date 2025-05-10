@@ -24,16 +24,8 @@ use const DIRECTORY_SEPARATOR;
 class ProjectCacheProvider
 {
     private const GOOD_RUN_NAME = 'good_run';
-    private const COMPOSER_LOCK_HASH = 'composer_lock_hash';
 
     private ?int $last_run = null;
-
-    private ?string $composer_lock_hash = null;
-
-    public function __construct(
-        private readonly string $composer_lock_location,
-    ) {
-    }
 
     public function canDiffFiles(): bool
     {
@@ -73,59 +65,5 @@ class ProjectCacheProvider
         }
 
         return $this->last_run;
-    }
-
-    public function hasLockfileChanged(): bool
-    {
-        if (file_exists($this->composer_lock_location)) {
-            $lockfile_contents = Providers::safeFileGetContents($this->composer_lock_location);
-            if (!$lockfile_contents) {
-                return true;
-            }
-
-            $hash = hash('xxh128', $lockfile_contents);
-        } else {
-            $hash = '';
-        }
-
-        $changed = $hash !== $this->getComposerLockHash();
-
-        $this->composer_lock_hash = $hash;
-
-        return $changed;
-    }
-
-    public function updateComposerLockHash(): void
-    {
-        $cache_directory = Config::getInstance()->getCacheDirectory();
-
-        if (!$cache_directory || !$this->composer_lock_hash) {
-            return;
-        }
-
-        if (!file_exists($cache_directory)) {
-            mkdir($cache_directory, 0777, true);
-        }
-
-        $lock_hash_location = $cache_directory . DIRECTORY_SEPARATOR . self::COMPOSER_LOCK_HASH;
-
-        file_put_contents($lock_hash_location, $this->composer_lock_hash);
-    }
-
-    private function getComposerLockHash(): string
-    {
-        if ($this->composer_lock_hash === null) {
-            $cache_directory = Config::getInstance()->getCacheDirectory();
-
-            $lock_hash_location = $cache_directory . DIRECTORY_SEPARATOR . self::COMPOSER_LOCK_HASH;
-
-            if (file_exists($lock_hash_location)) {
-                $this->composer_lock_hash = Providers::safeFileGetContents($lock_hash_location) ?: '';
-            } else {
-                $this->composer_lock_hash = '';
-            }
-        }
-
-        return $this->composer_lock_hash;
     }
 }

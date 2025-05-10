@@ -109,7 +109,7 @@ final class Cache
         }
         if (!$this->noFile) {
             $path = $this->dir . hash('xxh128', $key);
-            $f = fopen("$path.hash", 'r+');
+            $f = fopen("$path.hash", 'w');
             Assert::notFalse($f);
             flock($f, LOCK_EX);
             ftruncate($f, 0); 

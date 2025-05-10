@@ -39,17 +39,9 @@ final class FileReferenceCacheProvider
     private const METHOD_PARAM_USE_CACHE_NAME = 'method_param_uses';
     private readonly Cache $cache;
 
-    public function __construct(private readonly Config $config, bool $noFile = false)
+    public function __construct(private readonly Config $config, string $composerLock, bool $noFile = false)
     {
-        $this->cache = new Cache($this->config, 'file_reference', [], $noFile);
-    }
-
-    public function hasConfigChanged(): bool {
-        return $this->cache->getItem(self::CONFIG_HASH_CACHE_NAME) !== $this->config->computeHash();
-    }
-
-    public function writeConfigHash(): void {
-        $this->cache->saveItem(self::CONFIG_HASH_CACHE_NAME, $this->config->computeHash());
+        $this->cache = new Cache($this->config, 'file_reference', [$composerLock], $noFile);
     }
 
     public function getCachedFileReferences(): ?array

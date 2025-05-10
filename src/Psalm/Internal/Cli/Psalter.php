@@ -280,10 +280,10 @@ final class Psalter
             $providers = new Providers(
                 new FileProvider(),
                 null,
-                new FileStorageCacheProvider($config),
-                new ClassLikeStorageCacheProvider($config),
+                new FileStorageCacheProvider($config, Composer::getLockFile($current_dir)),
+                new ClassLikeStorageCacheProvider($config, Composer::getLockFile($current_dir)),
                 null,
-                new ProjectCacheProvider(Composer::getLockFilePath($current_dir)),
+                new ProjectCacheProvider(),
             );
         }
 

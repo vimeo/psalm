@@ -668,10 +668,10 @@ final class Psalm
         if ($config->cache_directory === null || isset($options['i'])) {
             $providers = new Providers(
                 new FileProvider,
-                new ParserCacheProvider($config, true),
-                new FileStorageCacheProvider($config, true),
-                new ClassLikeStorageCacheProvider($config, true),
-                new FileReferenceCacheProvider($config, true),
+                new ParserCacheProvider($config, Composer::getLockFile($current_dir), true),
+                new FileStorageCacheProvider($config, Composer::getLockFile($current_dir), true),
+                new ClassLikeStorageCacheProvider($config, Composer::getLockFile($current_dir), true),
+                new FileReferenceCacheProvider($config, Composer::getLockFile($current_dir), true),
             );
         } else {
             $no_reflection_cache = isset($options['no-reflection-cache']);
@@ -679,11 +679,11 @@ final class Psalm
 
             $providers = new Providers(
                 new FileProvider,
-                new ParserCacheProvider($config, $no_file_cache),
-                new FileStorageCacheProvider($config, $no_reflection_cache),
-                new ClassLikeStorageCacheProvider($config, $no_reflection_cache),
-                new FileReferenceCacheProvider($config),
-                new ProjectCacheProvider(Composer::getLockFilePath($current_dir)),
+                new ParserCacheProvider($config, Composer::getLockFile($current_dir), $no_file_cache),
+                new FileStorageCacheProvider($config, Composer::getLockFile($current_dir), $no_reflection_cache),
+                new ClassLikeStorageCacheProvider($config, Composer::getLockFile($current_dir), $no_reflection_cache),
+                new FileReferenceCacheProvider($config, Composer::getLockFile($current_dir)),
+                new ProjectCacheProvider(),
             );
         }
         return $providers;
