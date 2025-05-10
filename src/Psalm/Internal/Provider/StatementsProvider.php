@@ -121,20 +121,17 @@ final class StatementsProvider
         );
 
         if ($stmts === null) {
+            $progress->debug('Parsing ' . $file_path . " because the cache is absent or outdated\n");
+
             $has_errors = false;
 
             return self::parseStatements($file_contents, $analysis_php_version_id, $has_errors, $file_path);
         }
 
-        $from_cache = true;
         $this->diff_map[$file_path] = [];
         $this->deletion_ranges[$file_path] = [];
 
-        $this->parser_cache_provider->saveStatementsToCache($file_path, $file_content_hash, $stmts, $from_cache);
-
-        if (!$stmts) {
-            return [];
-        }
+        $this->parser_cache_provider->saveStatementsToCache($file_path, $file_content_hash, $stmts);
 
         return $stmts;
     }
