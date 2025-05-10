@@ -31,7 +31,7 @@ final class FakeParserCacheProvider extends ParserCacheProvider
     }
 
     #[Override]
-    public function loadExistingFileContentsFromCache(string $file_path): ?string
+    public function loadFileContentsFromCache(string $file_path): ?string
     {
         return null;
     }
