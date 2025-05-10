@@ -478,14 +478,6 @@ final class ProjectAnalyzer
             $this->codebase->alter_code,
             true,
         );
-
-        if ($this->parser_cache_provider && !$is_diff) {
-            $removed_parser_files = $this->parser_cache_provider->deleteOldParserCaches($start_checks);
-
-            if ($removed_parser_files) {
-                $this->progress->debug('Removed ' . $removed_parser_files . ' old parser caches' . PHP_EOL);
-            }
-        }
     }
 
     public function consolidateAnalyzedData(): void

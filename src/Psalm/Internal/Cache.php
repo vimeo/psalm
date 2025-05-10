@@ -33,6 +33,7 @@ use const LOCK_UN;
  */
 final class Cache
 {
+    /** @psalm-suppress PropertyNotSetInConstructor intentional */
     private readonly string $dir;
     private readonly Serializer $serializer;
 

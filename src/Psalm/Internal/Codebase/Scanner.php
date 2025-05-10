@@ -79,7 +79,6 @@ use const PHP_EOL;
  *     errors:array<string, bool>,
  *     classlike_storage:array<string, ClassLikeStorage>,
  *     file_storage:array<lowercase-string, FileStorage>,
- *     new_file_content_hashes: array<string, string>,
  *     taint_data: ?TaintFlowGraph,
  *     global_constants: array<string, Union>,
  *     global_functions: array<lowercase-string, FunctionStorage>
