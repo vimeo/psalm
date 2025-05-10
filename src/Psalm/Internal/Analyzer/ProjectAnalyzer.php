@@ -928,7 +928,7 @@ final class ProjectAnalyzer
 
         foreach ($this->project_files as $file_path) {
             if ($this->file_provider->getModifiedTime($file_path) >= $last_run
-                && $this->parser_cache_provider->loadExistingFileContentsFromCache($file_path)
+                && $this->parser_cache_provider->loadFileContentsFromCache($file_path)
                     !== $this->file_provider->getContents($file_path)
             ) {
                 $diff_files[] = $file_path;

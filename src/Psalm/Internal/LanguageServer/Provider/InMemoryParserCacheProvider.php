@@ -8,8 +8,6 @@ use Override;
 use PhpParser;
 use Psalm\Internal\Provider\ParserCacheProvider as InternalParserCacheProvider;
 
-use function microtime;
-
 /**
  * @internal
  */
@@ -20,10 +18,6 @@ final class InMemoryParserCacheProvider extends InternalParserCacheProvider
      */
     private array $file_contents_cache = [];
 
-    /**
-     * @var array<string, string>
-     */
-    private array $file_content_hash = [];
 
     /**
      * @var array<string, list<PhpParser\Node\Stmt>>
@@ -31,9 +25,9 @@ final class InMemoryParserCacheProvider extends InternalParserCacheProvider
     private array $statements_cache = [];
 
     /**
-     * @var array<string, float>
+     * @var array<string, string>
      */
-    private array $statements_cache_time = [];
+    private array $statements_hash = [];
 
     public function __construct()
     {
@@ -42,26 +36,15 @@ final class InMemoryParserCacheProvider extends InternalParserCacheProvider
     #[Override]
     public function loadStatementsFromCache(
         string $file_path,
-        int $file_modified_time,
         string $file_content_hash,
     ): ?array {
         if (isset($this->statements_cache[$file_path])
-            && $this->statements_cache_time[$file_path] >= $file_modified_time
-            && $this->file_content_hash[$file_path] === $file_content_hash
+            && $this->statements_hash[$file_path] === $file_content_hash
         ) {
             return $this->statements_cache[$file_path];
         }
 
         return null;
-    }
-
-    /**
-     * @return list<PhpParser\Node\Stmt>|null
-     */
-    #[Override]
-    public function loadExistingStatementsFromCache(string $file_path): ?array
-    {
-        return $this->statements_cache[$file_path] ?? null;
     }
 
     /**
@@ -72,15 +55,13 @@ final class InMemoryParserCacheProvider extends InternalParserCacheProvider
         string $file_path,
         string $file_content_hash,
         array $stmts,
-        bool $touch_only,
     ): void {
         $this->statements_cache[$file_path] = $stmts;
-        $this->statements_cache_time[$file_path] = microtime(true);
-        $this->file_content_hash[$file_path] = $file_content_hash;
+        $this->statements_hash[$file_path] = $file_content_hash;
     }
 
     #[Override]
-    public function loadExistingFileContentsFromCache(string $file_path): ?string
+    public function loadFileContentsFromCache(string $file_path): ?string
     {
         return $this->file_contents_cache[$file_path] ?? null;
     }
@@ -89,23 +70,5 @@ final class InMemoryParserCacheProvider extends InternalParserCacheProvider
     public function cacheFileContents(string $file_path, string $file_contents): void
     {
         $this->file_contents_cache[$file_path] = $file_contents;
-    }
-
-    #[Override]
-    public function deleteOldParserCaches(float $time_before): int
-    {
-        $this->existing_file_content_hashes = null;
-        $this->new_file_content_hashes = [];
-
-        $this->file_contents_cache = [];
-        $this->file_content_hash = [];
-        $this->statements_cache = [];
-        $this->statements_cache_time = [];
-        return 0;
-    }
-
-    #[Override]
-    public function saveFileContentHashes(): void
-    {
     }
 }

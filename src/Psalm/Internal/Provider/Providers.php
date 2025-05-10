@@ -7,10 +7,9 @@ namespace Psalm\Internal\Provider;
 use RuntimeException;
 
 use function fclose;
-use function filesize;
 use function flock;
 use function fopen;
-use function fread;
+use function stream_get_contents;
 use function usleep;
 
 use const LOCK_SH;

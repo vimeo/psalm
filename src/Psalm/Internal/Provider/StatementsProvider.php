@@ -31,7 +31,9 @@ use function array_map;
 use function array_merge;
 use function count;
 use function filemtime;
-use function hash;
+use function hash_final;
+use function hash_init;
+use function hash_update;
 use function md5;
 use function str_starts_with;
 use function strlen;
@@ -135,7 +137,7 @@ final class StatementsProvider
 
             $existing_statements = $this->parser_cache_provider->loadExistingStatementsFromCache($file_path);
 
-            $existing_file_contents = $this->parser_cache_provider->loadExistingFileContentsFromCache($file_path);
+            $existing_file_contents = $this->parser_cache_provider->loadFileContentsFromCache($file_path);
 
             // this happens after editing temporary file
             if ($existing_file_contents === $file_contents && $existing_statements) {

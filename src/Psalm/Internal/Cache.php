@@ -4,36 +4,30 @@ declare(strict_types=1);
 
 namespace Psalm\Internal;
 
-use Amp\Serialization\SerializationException;
 use Amp\Serialization\Serializer;
-use Closure;
 use Psalm\Config;
 use Psalm\Internal\Provider\Providers;
 use RuntimeException;
 
+use function fclose;
 use function file_exists;
 use function file_put_contents;
-use function filemtime;
-use function gzdeflate;
-use function gzinflate;
-use function igbinary_serialize;
-use function igbinary_unserialize;
+use function flock;
+use function fopen;
+use function hash;
 use function is_dir;
 use function is_readable;
-use function is_writable;
-use function lz4_compress;
-use function lz4_uncompress;
+use function json_decode;
 use function mkdir;
-use function serialize;
+use function stream_get_contents;
 use function unlink;
-use function unserialize;
 
 use const DIRECTORY_SEPARATOR;
 use const LOCK_EX;
+use const LOCK_UN;
 
 /**
  * @internal
- * 
  * @template T as array|object|string
  */
 final class Cache
@@ -43,12 +37,12 @@ final class Cache
 
     /** @var array<string, string> */
     private array $idx = [];
-    /** @var array<string, string> */
+    /** @var array<string, ?string> */
     private array $newIdx = [];
     /** @var array<string, T> */
     private array $cache = [];
 
-    public function __construct(Config $config, string $subdir, mixed $dependencies = null)
+    public function __construct(Config $config, string $subdir, array $dependencies = [])
     {
         $this->serializer = $config->getCacheSerializer();
 
@@ -71,6 +65,7 @@ final class Cache
             }
         }
 
+        $dependencies []= $config->computeHash();
         $dependencies = $this->serializer->serialize($dependencies);
 
         $idx = fopen($this->dir.'idx', 'r');
@@ -82,7 +77,8 @@ final class Cache
             if ($deps === $dependencies) {
                 $this->idx = $idx;
             }
-        } catch (RuntimeException) {}
+        } catch (RuntimeException) {
+        }
         flock($idx, LOCK_UN);
         fclose($idx);
     }
@@ -91,9 +87,7 @@ final class Cache
     public function getItem(string $key, string $hash = ''): array|object|string|null
     {
         if (isset($this->idx[$key]) && $this->idx[$key] !== $hash) {
-            unset($this->idx[$key]);
-            unset($this->newIdx[$key]);
-            unset($this->cache[$key]);
+            $this->deleteItem($key);
             return null;
         } elseif (!isset($this->idx[$key])) {
             return null;
@@ -105,7 +99,7 @@ final class Cache
 
         $path = $this->dir . DIRECTORY_SEPARATOR . hash('xxh128', $key);
 
-        if (!file_exists($path) 
+        if (!file_exists($path)
             || !is_readable($path)
         ) {
             return null;
@@ -125,16 +119,21 @@ final class Cache
 
     public function deleteItem(string $key): void
     {
-        $path = $this->dir . DIRECTORY_SEPARATOR . hash('xxh128', $key);
-        @unlink($path);
-        unset($this->idx[$key]);
-        unset($this->newIdx[$key]);
-        unset($this->cache[$key]);
+        if (isset($this->idx[$key])) {
+            $path = $this->dir . DIRECTORY_SEPARATOR . hash('xxh128', $key);
+            @unlink($path);
+            unset($this->idx[$key]);
+            unset($this->cache[$key]);
+            $this->newIdx[$key] = null;
+        }
     }
 
     /** @param T $item */
     public function saveItem(string $key, array|object|string $item, string $hash = ''): void
     {
+        if (isset($this->idx[$key]) && $this->idx[$key] === $hash) {
+            return;
+        }
         $path = $this->dir . DIRECTORY_SEPARATOR . hash('xxh128', $key);
         file_put_contents($path, $this->serializer->serialize($item), LOCK_EX);
         $this->cache[$key] = $item;
@@ -142,8 +141,9 @@ final class Cache
         $this->newIdx[$key] = $hash;
     }
 
-    /** @return array<string, string> */
-    public function getNewIdx(): array {
+    /** @return array<string, ?string> */
+    public function getNewIdx(): array
+    {
         return $this->newIdx;
     }
 }
