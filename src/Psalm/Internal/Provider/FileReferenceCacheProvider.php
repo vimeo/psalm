@@ -29,7 +29,6 @@ final class FileReferenceCacheProvider
     private const FILE_METHOD_RETURN_CACHE_NAME = 'file_method_return_references';
     private const FILE_CLASS_MEMBER_CACHE_NAME = 'file_class_member_references';
     private const FILE_CLASS_PROPERTY_CACHE_NAME = 'file_class_property_references';
-    private const CONFIG_HASH_CACHE_NAME = 'config';
     private const ISSUES_CACHE_NAME = 'issues';
     private const FILE_MAPS_CACHE_NAME = 'file_maps';
     private const TYPE_COVERAGE_CACHE_NAME = 'type_coverage';
@@ -37,11 +36,12 @@ final class FileReferenceCacheProvider
     private const FILE_MISSING_MEMBER_CACHE_NAME = 'file_missing_member';
     private const UNKNOWN_MEMBER_CACHE_NAME = 'unknown_member_references';
     private const METHOD_PARAM_USE_CACHE_NAME = 'method_param_uses';
+    /** @var Cache<array> */
     private readonly Cache $cache;
 
-    public function __construct(private readonly Config $config, string $composerLock, bool $noFile = false)
+    public function __construct(Config $config, string $composerLock, bool $noFile = false)
     {
-        $this->cache = new Cache($this->config, 'file_reference', [$composerLock], $noFile);
+        $this->cache = new Cache($config, 'file_reference', [$composerLock], $noFile);
     }
 
     public function getCachedFileReferences(): ?array

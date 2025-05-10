@@ -23,6 +23,7 @@ use const DIRECTORY_SEPARATOR;
  */
 final class ClassLikeStorageCacheProvider
 {
+    /** @var Cache<ClassLikeStorage> */
     private readonly Cache $cache;
 
     public function __construct(Config $config, string $composerLock, bool $noFile = false)

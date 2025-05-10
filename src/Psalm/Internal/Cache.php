@@ -49,11 +49,16 @@ final class Cache
 
         $dir = $config->getCacheDirectory().DIRECTORY_SEPARATOR.$subdir;
 
-        $dependencies []= $config->computeHash();
-        $dependencies []= $this->serializer;
-        $dependencies = $this->serializer->serialize($dependencies);
+        $hash = hash_init('xxh128');
+        foreach ($dependencies as $dep) {
+            hash_update($hash, (string) $dep);
+            hash_update($hash, "\0");
+        }
+        hash_update($hash, $config->computeHash());
+        hash_update($hash, "\0");
+        hash_update($hash, $this->serializer->serialize($this->serializer));
 
-        $dir .= DIRECTORY_SEPARATOR . hash('xxh128', $dependencies);
+        $dir .= DIRECTORY_SEPARATOR . hash_final($hash);
 
         $this->dir = $dir.DIRECTORY_SEPARATOR;
         try {

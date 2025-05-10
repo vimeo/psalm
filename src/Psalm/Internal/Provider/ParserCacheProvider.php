@@ -8,6 +8,7 @@ use PhpParser;
 use Psalm\Config;
 use Psalm\Internal\Cache;
 
+/** @internal */
 final class ParserCacheProvider
 {
     private const PARSER_CACHE_DIRECTORY = 'php-parser';
