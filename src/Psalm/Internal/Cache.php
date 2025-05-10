@@ -4,119 +4,133 @@ declare(strict_types=1);
 
 namespace Psalm\Internal;
 
+use Amp\Serialization\Serializer;
 use Psalm\Config;
 use Psalm\Internal\Provider\Providers;
+use RuntimeException;
+use Webmozart\Assert\Assert;
 
+use function fclose;
+use function fflush;
 use function file_exists;
 use function file_put_contents;
-use function gzdeflate;
-use function gzinflate;
-use function igbinary_serialize;
-use function igbinary_unserialize;
-use function is_writable;
-use function lz4_compress;
-use function lz4_uncompress;
-use function serialize;
-use function unlink;
-use function unserialize;
+use function flock;
+use function fopen;
+use function ftruncate;
+use function fwrite;
+use function hash;
+use function hash_final;
+use function hash_init;
+use function hash_update;
+use function is_dir;
+use function mkdir;
+use function strlen;
 
+use const DIRECTORY_SEPARATOR;
 use const LOCK_EX;
+use const LOCK_UN;
 
 /**
  * @internal
+ * @template T as array|object|string
  */
 final class Cache
 {
-    public bool $use_igbinary;
+    /** @psalm-suppress PropertyNotSetInConstructor intentional */
+    private readonly string $dir;
+    private readonly Serializer $serializer;
+
+    /** @var array<string, list{string, T}> */
+    private array $cache = [];
 
     public function __construct(
-        private readonly Config $config,
+        Config $config,
+        string $subdir,
+        array $dependencies = [],
+        private readonly bool $noFile = false,
     ) {
-        $this->use_igbinary = $config->use_igbinary;
-    }
-
-    public function getItem(string $path): array|object|string|null
-    {
-        if (!file_exists($path)) {
-            return null;
+        $this->serializer = $config->getCacheSerializer();
+        if ($noFile) {
+            return;
         }
 
-        $cache = Providers::safeFileGetContents($path);
-        if ($cache === '') {
-            return null;
+        $dir = $config->getCacheDirectory().DIRECTORY_SEPARATOR.$subdir;
+
+        $hash = hash_init('xxh128');
+        foreach ($dependencies as $dep) {
+            hash_update($hash, (string) $dep);
+            hash_update($hash, "\0");
         }
+        hash_update($hash, $config->computeHash());
+        hash_update($hash, "\0");
+        hash_update($hash, $this->serializer->serialize($this->serializer));
 
-        if ($this->config->compressor === 'deflate') {
-            $inflated = @gzinflate($cache);
-        } elseif ($this->config->compressor === 'lz4') {
-            /**
-             * @psalm-suppress UndefinedFunction
-             * @var string|false $inflated
-             */
-            $inflated = lz4_uncompress($cache);
-        } else {
-            $inflated = $cache;
-        }
+        $dir .= DIRECTORY_SEPARATOR . hash_final($hash);
 
-        // invalid cache data
-        if ($inflated === false) {
-            $this->deleteItem($path);
-
-            return null;
-        }
-
-        if ($this->use_igbinary) {
-            /** @var object|false $unserialized */
-            $unserialized = @igbinary_unserialize($inflated);
-        } else {
-            /** @var object|false $unserialized */
-            $unserialized = @unserialize($inflated);
-        }
-
-        if ($unserialized === false) {
-            $this->deleteItem($path);
-
-            return null;
-        }
-
-        return $unserialized;
-    }
-
-    public function deleteItem(string $path): void
-    {
-        if (@is_writable($path)) {
-            @unlink($path);
+        $this->dir = $dir.DIRECTORY_SEPARATOR;
+        try {
+            if (mkdir($this->dir, 0777, true) === false) {
+                // any other error than directory already exists/permissions issue
+                throw new RuntimeException(
+                    'Failed to create ' . $this->dir . ' cache directory for unknown reasons',
+                );
+            }
+        } catch (RuntimeException $e) {
+            // Race condition (#4483)
+            if (!is_dir($this->dir)) {
+                // rethrow the error with default message
+                // it contains the reason why creation failed
+                throw $e;
+            }
         }
     }
 
-    public function saveItem(string $path, array|object|string $item): void
+    /** @return T */
+    public function getItem(string $key, string $hash = ''): array|object|string|null
     {
-        if ($this->use_igbinary) {
-            $serialized = (string) igbinary_serialize($item);
-        } else {
-            $serialized = serialize($item);
+        if (isset($this->cache[$key]) && ($combined = $this->cache[$key])[0] === $hash) {
+            return $combined[1];
         }
 
-        if ($this->config->compressor === 'deflate') {
-            $compressed = gzdeflate($serialized);
-        } elseif ($this->config->compressor === 'lz4') {
-            /**
-             * @psalm-suppress UndefinedFunction
-             * @var string|false $compressed
-             */
-            $compressed = lz4_compress($serialized, 4);
-        } else {
-            $compressed = $serialized;
+        if ($this->noFile) {
+            return null;
         }
 
-        if ($compressed !== false) {
-            file_put_contents($path, $compressed, LOCK_EX);
+        $path = $this->dir . hash('xxh128', $key);
+
+        if (!file_exists("$path.hash")) {
+            return null;
         }
-        // TODO: Error handling
+
+        $v = Providers::safeFileGetContentsWithHash($path, $hash);
+        if ($v === null) {
+            return null;
+        }
+        $v = $this->serializer->unserialize($v);
+        $this->cache[$key] = [$hash, $v];
+        return $v;
     }
 
-    public function getCacheDirectory(): ?string
+    /** @param T $item */
+    public function saveItem(string $key, array|object|string $item, string $hash = ''): void
     {
-        return $this->config->getCacheDirectory();
+        // Assume all threads will store the same contents.
+        // If the assumption is wrong, it will get fixed on the next run.
+        if (isset($this->cache[$key]) && $this->cache[$key][0] === $hash) {
+            return;
+        }
+        if (!$this->noFile) {
+            $path = $this->dir . hash('xxh128', $key);
+            $f = fopen("$path.hash", 'w');
+            Assert::notFalse($f);
+            flock($f, LOCK_EX);
+            ftruncate($f, 0);
+            Assert::eq(fwrite($f, $hash), strlen($hash));
+            file_put_contents($path, $this->serializer->serialize($item));
+            fflush($f);
+            flock($f, LOCK_UN);
+            fclose($f);
+        }
+        $this->cache[$key] = [$hash, $item];
     }
 }

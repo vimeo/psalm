@@ -32,15 +32,4 @@ final class ProjectCacheProvider extends PsalmProjectCacheProvider
     {
         return $this->last_run > 0;
     }
-
-    #[Override]
-    public function hasLockfileChanged(): bool
-    {
-        return false;
-    }
-
-    #[Override]
-    public function updateComposerLockHash(): void
-    {
-    }
 }
