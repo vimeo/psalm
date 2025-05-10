@@ -64,7 +64,6 @@ final class StatementsProvider
     public function __construct(
         private readonly FileProvider $file_provider,
         public ?ParserCacheProvider $parser_cache_provider = null,
-        private readonly ?FileStorageCacheProvider $file_storage_cache_provider = null,
     ) {
         $this->this_modified_time = filemtime(__FILE__);
     }
@@ -223,7 +222,6 @@ final class StatementsProvider
     public function resetDiffs(): void
     {
         $this->changed_members = [];
-        $this->unchanged_members = [];
         $this->unchanged_signature_members = [];
         $this->diff_map = [];
         $this->deletion_ranges = [];

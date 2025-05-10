@@ -42,7 +42,6 @@ final class Providers
         $this->statements_provider = new StatementsProvider(
             $file_provider,
             $parser_cache_provider,
-            $file_storage_cache_provider,
         );
         $this->file_reference_provider = new FileReferenceProvider($file_provider, $file_reference_cache_provider);
     }

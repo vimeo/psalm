@@ -20,15 +20,9 @@ final class FileStorageInstanceCacheProvider extends FileStorageCacheProvider
     }
 
     #[Override]
-    public function writeToCache(FileStorage $storage, string $file_path): void
+    public function writeToCache(FileStorage $storage, string $file_contents): void
     {
-        $this->cache[strtolower($file_path)] = $storage;
-    }
-
-    #[Override]
-    public function removeCacheForFile(string $file_path): void
-    {
-        unset($this->cache[strtolower($file_path)]);
+        $this->cache[strtolower($storage->file_path)] = $storage;
     }
 
     #[Override]
