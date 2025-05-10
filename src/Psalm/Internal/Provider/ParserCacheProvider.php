@@ -14,9 +14,9 @@ final class ParserCacheProvider
     private const FILE_CONTENTS_CACHE_DIRECTORY = 'file-caches';
 
     /** @var Cache<list<PhpParser\Node\Stmt>> */
-    public readonly Cache $stmtCache;
+    private readonly Cache $stmtCache;
     /** @var Cache<string> */
-    public readonly Cache $fileCache;
+    private readonly Cache $fileCache;
 
     public function __construct(Config $config, string $composerLock, bool $noFile = false)
     {

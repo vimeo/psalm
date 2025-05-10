@@ -5,24 +5,23 @@ declare(strict_types=1);
 namespace Psalm\Internal;
 
 use Amp\Serialization\Serializer;
-use AssertionError;
 use Psalm\Config;
 use Psalm\Internal\Provider\Providers;
 use RuntimeException;
 use Webmozart\Assert\Assert;
 
 use function fclose;
+use function fflush;
 use function file_exists;
 use function file_put_contents;
 use function flock;
 use function fopen;
+use function ftruncate;
+use function fwrite;
 use function hash;
 use function is_dir;
-use function is_readable;
-use function json_decode;
 use function mkdir;
-use function stream_get_contents;
-use function unlink;
+use function strlen;
 
 use const DIRECTORY_SEPARATOR;
 use const LOCK_EX;
@@ -112,12 +111,12 @@ final class Cache
             $f = fopen("$path.hash", 'w');
             Assert::notFalse($f);
             flock($f, LOCK_EX);
-            ftruncate($f, 0); 
+            ftruncate($f, 0);
             Assert::eq(fwrite($f, $hash), strlen($hash));
             file_put_contents($path, $this->serializer->serialize($item));
             fflush($f);
             flock($f, LOCK_UN);
-            fclose($f);    
+            fclose($f);
         }
         $this->cache[$key] = [$hash, $item];
     }

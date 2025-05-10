@@ -102,7 +102,7 @@ final class Providers
             fclose($fp);
             return null;
         }
-        $content = stream_get_contents($path);
+        $content = file_get_contents($path);
 
         fclose($fp);
 

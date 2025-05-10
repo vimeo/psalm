@@ -14,7 +14,7 @@ final class FakeParserCacheProvider extends ParserCacheProvider
     }
 
     #[Override]
-    public function loadStatementsFromCache(string $file_path, int $file_modified_time, string $file_content_hash): ?array
+    public function loadStatementsFromCache(string $file_path, string $file_content_hash): ?array
     {
         return null;
     }
@@ -26,7 +26,7 @@ final class FakeParserCacheProvider extends ParserCacheProvider
     }
 
     #[Override]
-    public function saveStatementsToCache(string $file_path, string $file_content_hash, array $stmts, bool $touch_only): void
+    public function saveStatementsToCache(string $file_path, string $file_content_hash, array $stmts): void
     {
     }
 
@@ -38,20 +38,6 @@ final class FakeParserCacheProvider extends ParserCacheProvider
 
     #[Override]
     public function cacheFileContents(string $file_path, string $file_contents): void
-    {
-    }
-
-    #[Override]
-    public function deleteOldParserCaches(float $time_before): int
-    {
-        $this->existing_file_content_hashes = null;
-        $this->new_file_content_hashes = [];
-
-        return 0;
-    }
-
-    #[Override]
-    public function saveFileContentHashes(): void
     {
     }
 }

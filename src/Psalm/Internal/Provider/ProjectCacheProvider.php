@@ -9,8 +9,6 @@ use Psalm\Config;
 use function file_exists;
 use function file_put_contents;
 use function filemtime;
-use function hash;
-use function mkdir;
 use function touch;
 
 use const DIRECTORY_SEPARATOR;
