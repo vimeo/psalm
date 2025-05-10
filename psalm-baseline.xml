@@ -2927,9 +2927,6 @@
       <code><![CDATA[public function __construct()]]></code>
       <code><![CDATA[public function __construct()]]></code>
     </MethodSignatureMismatch>
-    <TooFewArguments>
-      <code><![CDATA[parent::__construct(Config::getInstance())]]></code>
-    </TooFewArguments>
   </file>
   <file src="tests/Internal/Provider/FakeParserCacheProvider.php">
     <InvalidExtendClass>

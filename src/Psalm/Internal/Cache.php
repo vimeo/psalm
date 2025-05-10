@@ -47,7 +47,7 @@ final class Cache
         Config $config,
         string $subdir,
         array $dependencies = [],
-        private readonly bool $noFile = false
+        private readonly bool $noFile = false,
     ) {
         $this->serializer = $config->getCacheSerializer();
         if ($noFile) {
