@@ -108,7 +108,6 @@ final class StatementsProvider
             $stmts = self::parseStatements($file_contents, $analysis_php_version_id, $has_errors, $file_path);
 
             $this->parser_cache_provider->saveStatementsToCache($file_path, $file_content_hash, $stmts);
-            $this->parser_cache_provider->cacheFileContents($file_path, $file_contents);
 
             // Not clear why should we clear the file storage cache, since it's also based on the file contents...
             // $this->file_storage_cache_provider->removeCacheForFile($file_path);

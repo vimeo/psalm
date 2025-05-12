@@ -85,6 +85,25 @@ final class Cache
         }
     }
 
+    public function checkHash(string $key, string $hash = ''): ?bool
+    {
+        if (isset($this->cache[$key]) && ($combined = $this->cache[$key])[0] === $hash) {
+            return $combined[1];
+        }
+
+        if ($this->noFile) {
+            return null;
+        }
+
+        $path = $this->dir . hash('xxh128', $key);
+
+        if (!file_exists($path)) {
+            return null;
+        }
+
+        return Providers::safeFileGetContents($path) === $hash;
+    }
+
     /** @return T */
     public function getItem(string $key, string $hash = ''): array|object|string|null
     {

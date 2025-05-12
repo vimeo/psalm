@@ -12,19 +12,15 @@ use Psalm\Internal\Cache;
 final class ParserCacheProvider
 {
     private const PARSER_CACHE_DIRECTORY = 'php-parser';
-    private const FILE_CONTENTS_CACHE_DIRECTORY = 'file-caches';
 
     /** @var Cache<list<PhpParser\Node\Stmt>> */
     private readonly Cache $stmtCache;
-    /** @var Cache<string> */
-    private readonly Cache $fileCache;
 
     public function __construct(Config $config, string $composerLock, bool $noFile = false)
     {
         $deps = [$composerLock, PHP_PARSER_VERSION, (string) filemtime(__DIR__.DIRECTORY_SEPARATOR.'StatementsProvider.php')];
 
         $this->stmtCache = new Cache($config, self::PARSER_CACHE_DIRECTORY, $deps, $noFile);
-        $this->fileCache = new Cache($config, self::FILE_CONTENTS_CACHE_DIRECTORY, $deps, $noFile);
     }
 
     /**
@@ -37,6 +33,13 @@ final class ParserCacheProvider
         return $this->stmtCache->getItem($file_path, $file_content_hash);
     }
 
+    public function areStatementsUptodate(
+        string $file_path,
+        string $file_content_hash,
+    ): ?bool {
+        return $this->stmtCache->checkHash($file_path, $file_content_hash);
+    }
+
     /**
      * @param  list<PhpParser\Node\Stmt>        $stmts
      */
@@ -46,15 +49,5 @@ final class ParserCacheProvider
         array $stmts,
     ): void {
         $this->stmtCache->saveItem($file_path, $stmts, $file_content_hash);
-    }
-
-    public function loadFileContentsFromCache(string $file_path): ?string
-    {
-        return $this->fileCache->getItem($file_path);
-    }
-
-    public function cacheFileContents(string $file_path, string $file_contents): void
-    {
-        $this->fileCache->saveItem($file_path, $file_contents);
     }
 }
