@@ -32,8 +32,6 @@ use function strpos;
  */
 final class StatementsProvider
 {
-    private readonly int|bool $this_modified_time;
-
     /**
      * @var array<string, array<string, bool>>
      */
@@ -65,7 +63,6 @@ final class StatementsProvider
         private readonly FileProvider $file_provider,
         public ?ParserCacheProvider $parser_cache_provider = null,
     ) {
-        $this->this_modified_time = filemtime(__FILE__);
     }
 
     /**
@@ -82,20 +79,11 @@ final class StatementsProvider
             $progress = new VoidProgress();
         }
 
-        $version = PHP_PARSER_VERSION . $this->this_modified_time;
-
         $file_contents = $this->file_provider->getContents($file_path);
-        $modified_time = $this->file_provider->getModifiedTime($file_path);
 
         $config = Config::getInstance();
 
-        $file_content_hash = hash_init('xxh128');
-        hash_update($file_content_hash, $version);
-        hash_update($file_content_hash, "\0");
-        hash_update($file_content_hash, (string) $modified_time);
-        hash_update($file_content_hash, "\0");
-        hash_update($file_content_hash, $file_contents);
-        $file_content_hash = hash_final($file_content_hash);
+        $file_content_hash = hash('xxh128', $file_contents);
 
         if (!$this->parser_cache_provider
             || (!$config->isInProjectDirs($file_path) && strpos($file_path, 'vendor'))
@@ -117,13 +105,19 @@ final class StatementsProvider
 
             $has_errors = false;
 
-            return self::parseStatements($file_contents, $analysis_php_version_id, $has_errors, $file_path);
+            $stmts = self::parseStatements($file_contents, $analysis_php_version_id, $has_errors, $file_path);
+
+            $this->parser_cache_provider->saveStatementsToCache($file_path, $file_content_hash, $stmts);
+            $this->parser_cache_provider->cacheFileContents($file_path, $file_contents);
+
+            // Not clear why should we clear the file storage cache, since it's also based on the file contents...
+            // $this->file_storage_cache_provider->removeCacheForFile($file_path);
+
+            return $stmts;
         }
 
         $this->diff_map[$file_path] = [];
         $this->deletion_ranges[$file_path] = [];
-
-        $this->parser_cache_provider->saveStatementsToCache($file_path, $file_content_hash, $stmts);
 
         return $stmts;
     }
