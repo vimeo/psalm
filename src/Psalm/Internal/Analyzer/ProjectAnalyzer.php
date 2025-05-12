@@ -865,15 +865,11 @@ final class ProjectAnalyzer
 
         $diff_files = [];
 
-        $last_run = $this->project_cache_provider->getLastRun(PSALM_VERSION);
-
         foreach ($this->project_files as $file_path) {
-            if ($this->file_provider->getModifiedTime($file_path) >= $last_run
-                && $this->parser_cache_provider->areStatementsUptodate(
-                    $file_path,
-                    hash('xxh128', $this->file_provider->getContents($file_path))
-                )
-            ) {
+            if ($this->parser_cache_provider->areStatementsUptodate(
+                $file_path,
+                hash('xxh128', $this->file_provider->getContents($file_path))
+            ) === false) {
                 $diff_files[] = $file_path;
             }
         }
