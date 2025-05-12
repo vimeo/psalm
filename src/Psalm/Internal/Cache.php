@@ -98,17 +98,45 @@ final class Cache
 
         $path = $this->dir . hash('xxh128', $key);
 
-        if (!file_exists("$path.hash")) {
+        if (!file_exists("$path.hash")
+            || !file_exists($path)
+        ) {
             return null;
         }
 
-        $v = Providers::safeFileGetContentsWithHash($path, $hash);
-        if ($v === null) {
+        $fp = fopen("$path.hash", 'r');
+        if ($fp === false) {
             return null;
         }
-        $v = $this->serializer->unserialize($v);
-        $this->cache[$key] = [$hash, $v];
-        return $v;
+        $max_wait_cycles = 5;
+        $has_lock = false;
+        while ($max_wait_cycles > 0) {
+            if (flock($fp, LOCK_SH)) {
+                $has_lock = true;
+                break;
+            }
+            $max_wait_cycles--;
+            usleep(50_000);
+        }
+
+        if (!$has_lock) {
+            fclose($fp);
+            throw new RuntimeException("Could not acquire lock for $path.hash");
+        }
+
+        if (stream_get_contents($fp) !== $hash) {
+            fclose($fp);
+            return null;
+        }
+
+        $content = file_get_contents($path);
+        Assert::notFalse($content);
+
+        fclose($fp);
+
+        $content = $this->serializer->unserialize($content);
+        $this->cache[$key] = [$hash, $content];
+        return $content;
     }
 
     /** @param T $item */

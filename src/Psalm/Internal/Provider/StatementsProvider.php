@@ -113,6 +113,13 @@ final class StatementsProvider
         );
 
         if ($stmts === null) {
+            $stmts = $this->parser_cache_provider->loadStatementsFromCacheIgnoreHash($file_path);
+            // this happens after editing temporary file
+            if ($stmts !== null
+                && $file_contents === $this->parser_cache_provider->loadFileContentsFromCache($file_path)) {
+
+            }
+
             $progress->debug('Parsing ' . $file_path . " because the cache is absent or outdated\n");
 
             $has_errors = false;
