@@ -766,7 +766,6 @@ final class PreloaderList {
         \Psalm\Internal\Diff\AstDiffer::class,
         \Psalm\Internal\Diff\ClassStatementsDiffer::class,
         \Psalm\Internal\Diff\DiffElem::class,
-        \Psalm\Internal\Diff\FileDiffer::class,
         \Psalm\Internal\Diff\FileStatementsDiffer::class,
         \Psalm\Internal\Diff\NamespaceStatementsDiffer::class,
         \Psalm\Internal\ErrorHandler::class,
@@ -1538,6 +1537,7 @@ final class PreloaderList {
         \Psalm\Plugin\EventHandler\BeforeExpressionAnalysisInterface::class,
         \Psalm\Plugin\EventHandler\BeforeFileAnalysisInterface::class,
         \Psalm\Plugin\EventHandler\BeforeStatementAnalysisInterface::class,
+        \Psalm\Plugin\EventHandler\ClassFilePathProviderInterface::class,
         \Psalm\Plugin\EventHandler\DynamicFunctionStorageProviderInterface::class,
         \Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent::class,
         \Psalm\Plugin\EventHandler\Event\AfterAnalysisEvent::class,
@@ -1774,6 +1774,7 @@ final class PreloaderList {
         \Symfony\Component\Console\Output\BufferedOutput::class,
         \Symfony\Component\Console\Style\SymfonyStyle::class,
         \Symfony\Component\Filesystem\Path::class,
+        \Webmozart\Assert\Assert::class,
         \XdgBaseDir\Xdg::class,
 
     ];
