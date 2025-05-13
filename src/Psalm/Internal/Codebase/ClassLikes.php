@@ -780,7 +780,7 @@ final class ClassLikes
         $file_statements = $this->statements_provider->getStatementsForFile(
             $storage->location->file_path,
             $codebase->analysis_php_version_id,
-            $codebase->diff_run,
+            $codebase->diff_run || $codebase->diff_methods,
         );
 
         $trait_finder = new TraitFinder($fq_trait_name);

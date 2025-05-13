@@ -14,7 +14,7 @@ final class FakeParserCacheProvider extends ParserCacheProvider
     }
 
     #[Override]
-    public function loadStatementsFromCache(string $file_path, string $file_content_hash): ?array
+    public function loadStatementsFromCache(string $file_path, ?string $file_content_hash): ?array
     {
         return null;
     }
@@ -25,13 +25,8 @@ final class FakeParserCacheProvider extends ParserCacheProvider
     }
 
     #[Override]
-    public function areStatementsUptodate(
-        string $file_path,
-        string $file_content_hash,
-    ): ?bool {
-        if (!isset($this->file_content_hash[$file_path])) {
-            return null;
-        }
-        return $this->file_content_hash[$file_path] === $file_content_hash;
+    public function getHash(string $file_path): ?string
+    {
+        return $this->file_content_hash[$file_path] ?? null;
     }
 }
