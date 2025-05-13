@@ -411,6 +411,9 @@ final class Populator
         }
     }
 
+    /**
+     * @param lowercase-string $used_trait_lc
+     */
     private function populateDataFromTrait(
         ClassLikeStorage $storage,
         ClassLikeStorageProvider $storage_provider,
@@ -425,6 +428,12 @@ final class Populator
             );
             $trait_storage = $storage_provider->get($used_trait_lc);
         } catch (InvalidArgumentException) {
+            $this->progress->debug('Populator could not find dependency (' . __LINE__ . ")\n");
+
+            $storage->invalid_dependencies[$used_trait_lc] = true;
+
+            $this->invalid_class_storages[$used_trait_lc][] = $storage;
+
             return;
         }
 
