@@ -8,6 +8,10 @@ use PhpParser;
 use Psalm\Config;
 use Psalm\Internal\Cache;
 
+use function filemtime;
+
+use const DIRECTORY_SEPARATOR;
+
 /** @internal */
 final class ParserCacheProvider
 {
@@ -33,7 +37,8 @@ final class ParserCacheProvider
         return $this->stmtCache->getItem($file_path, $file_content_hash);
     }
 
-    public function getHash(string $file_path): ?string {
+    public function getHash(string $file_path): ?string
+    {
         return $this->stmtCache->getHash($file_path);
     }
 

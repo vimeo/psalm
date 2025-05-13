@@ -30,7 +30,6 @@ use function array_intersect_key;
 use function array_map;
 use function array_merge;
 use function count;
-use function hash;
 use function md5;
 use function str_starts_with;
 use function strlen;
@@ -85,7 +84,6 @@ final class StatementsProvider
     public function getStatementsForFile(
         string $file_path,
         int $analysis_php_version_id,
-        bool $is_diff,
         ?Progress $progress = null,
     ): array {
         unset($this->errors[$file_path]);
@@ -121,19 +119,6 @@ final class StatementsProvider
         }
 
         $progress->debug("Parsing $file_path because the cache is absent or outdated\n");
-
-        if (!$is_diff) {
-            $has_errors = false;
-
-            $stmts = self::parseStatements($file_contents, $analysis_php_version_id, $has_errors, $file_path);
-
-            $this->parser_cache_provider->saveStatementsToCache($file_path, $file_contents, $stmts);
-
-            // Not clear why should we clear the file storage cache, since it's also based on the file contents...
-            // $this->file_storage_cache_provider->removeCacheForFile($file_path);
-
-            return $stmts;
-        }
 
         $existing_file_contents = $this->parser_cache_provider->getHash($file_path);
 

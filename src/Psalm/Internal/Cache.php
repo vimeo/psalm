@@ -13,6 +13,7 @@ use Webmozart\Assert\Assert;
 use function fclose;
 use function fflush;
 use function file_exists;
+use function file_get_contents;
 use function file_put_contents;
 use function flock;
 use function fopen;
@@ -24,10 +25,13 @@ use function hash_init;
 use function hash_update;
 use function is_dir;
 use function mkdir;
+use function stream_get_contents;
 use function strlen;
+use function usleep;
 
 use const DIRECTORY_SEPARATOR;
 use const LOCK_EX;
+use const LOCK_SH;
 use const LOCK_UN;
 
 /**
@@ -153,7 +157,7 @@ final class Cache
                 return null;
             }
             $hash = $fileHash;
-        } else if ($fileHash !== $hash) {
+        } elseif ($fileHash !== $hash) {
             fclose($fp);
             return null;
         }

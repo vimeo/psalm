@@ -87,7 +87,6 @@ use function substr;
 use function usort;
 
 use const PHP_EOL;
-use const PSALM_VERSION;
 use const STDERR;
 
 /**
@@ -867,7 +866,7 @@ final class ProjectAnalyzer
 
         foreach ($this->project_files as $file_path) {
             $hash = $this->parser_cache_provider->getHash($file_path);
-            if ($hash !== null && 
+            if ($hash !== null &&
                 $hash !== $this->file_provider->getContents($file_path)
             ) {
                 $diff_files[] = $file_path;

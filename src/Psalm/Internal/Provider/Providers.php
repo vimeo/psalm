@@ -5,10 +5,8 @@ declare(strict_types=1);
 namespace Psalm\Internal\Provider;
 
 use RuntimeException;
-use Webmozart\Assert\Assert;
 
 use function fclose;
-use function file_get_contents;
 use function flock;
 use function fopen;
 use function stream_get_contents;
