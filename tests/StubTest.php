@@ -1202,6 +1202,49 @@ final class StubTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testUseOnlyStubbedInterface(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/interface.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace Foo;
+
+                class A implements StubbedInterface {
+                    /**
+                     * @param int $x
+                     */
+                    public function run_stubbed($x): float {
+                        return $x . "";
+                    }
+                }',
+        );
+
+        $this->expectExceptionMessage('InvalidReturnStatement');
+        $this->expectException(CodeException::class);
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     public function testStubFileWithExtendedStubbedClass(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
