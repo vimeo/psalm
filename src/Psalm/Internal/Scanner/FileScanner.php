@@ -45,6 +45,7 @@ class FileScanner implements FileSource
         $stmts = $codebase->statements_provider->getStatementsForFile(
             $file_storage->file_path,
             $codebase->analysis_php_version_id,
+            $codebase->diff_run,
             $progress,
         );
 

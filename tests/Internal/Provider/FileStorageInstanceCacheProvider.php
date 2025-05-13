@@ -19,27 +19,15 @@ final class FileStorageInstanceCacheProvider extends FileStorageCacheProvider
     {
     }
 
-    /**
-     * @param lowercase-string $file_path
-     */
     #[Override]
-    protected function storeInCache(string $file_path, FileStorage $storage): void
+    public function writeToCache(FileStorage $storage, string $file_contents): void
     {
-        $this->cache[$file_path] = $storage;
+        $this->cache[strtolower($storage->file_path)] = $storage;
     }
 
     #[Override]
-    public function removeCacheForFile(string $file_path): void
+    public function getLatestFromCache(string $file_path, string $file_contents): ?FileStorage
     {
-        unset($this->cache[strtolower($file_path)]);
-    }
-
-    /**
-     * @param lowercase-string $file_path
-     */
-    #[Override]
-    protected function loadFromCache(string $file_path): ?FileStorage
-    {
-        return $this->cache[$file_path] ?? null;
+        return $this->cache[strtolower($file_path)] ?? null;
     }
 }
