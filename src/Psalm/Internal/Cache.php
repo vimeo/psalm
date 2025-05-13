@@ -111,11 +111,11 @@ final class Cache
     /** @return T */
     public function getItem(string $key, ?string $hash = ''): array|object|string|null
     {
-        if (isset($this->cache[$key]) && (
-            ($combined = $this->cache[$key])[0] === $hash)
-            || $hash === null
-        ) {
-            return $combined[1];
+        if (isset($this->cache[$key])) {
+            $combined = $this->cache[$key];
+            if ($hash === null || $combined[0] === $hash) {
+                return $combined[1];
+            }
         }
 
         if ($this->noFile) {

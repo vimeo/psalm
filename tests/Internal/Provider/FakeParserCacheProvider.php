@@ -27,6 +27,6 @@ final class FakeParserCacheProvider extends ParserCacheProvider
     #[Override]
     public function getHash(string $file_path): ?string
     {
-        return $this->file_content_hash[$file_path] ?? null;
+        return null;
     }
 }
