@@ -97,10 +97,10 @@ final class CacheTest extends TestCase
         $file_provider = new FakeFileProvider();
         $providers = new Providers(
             $file_provider,
-            new ParserCacheProvider(new TestConfig, '', true),
-            new FileStorageCacheProvider(new TestConfig, '', true),
-            new ClassLikeStorageCacheProvider(new TestConfig, '', true),
-            new FileReferenceCacheProvider(new TestConfig, '', true),
+            new ParserCacheProvider($config ?? new TestConfig, '', true),
+            new FileStorageCacheProvider($config ?? new TestConfig, '', true),
+            new ClassLikeStorageCacheProvider($config ?? new TestConfig, '', true),
+            new FileReferenceCacheProvider($config ?? new TestConfig, '', true),
             new ProjectCacheProvider(),
         );
 

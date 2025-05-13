@@ -36,10 +36,10 @@ final class ErrorAfterUpdateTest extends TestCase
 
         $providers = new Providers(
             $this->file_provider,
-            new ParserCacheProvider(new TestConfig, '', true),
+            new ParserCacheProvider($config ?? new TestConfig, '', true),
             null,
             null,
-            new FileReferenceCacheProvider(new TestConfig, '', true),
+            new FileReferenceCacheProvider($config ?? new TestConfig, '', true),
             new ProjectCacheProvider(),
         );
 

@@ -181,7 +181,7 @@ final class CodebaseTest extends TestCase
         };
         (new PluginRegistrationSocket($this->codebase->config, $this->codebase))
             ->registerHooksFromClass(get_class($hook));
-        $this->codebase->classlike_storage_provider->cache = new ClassLikeStorageCacheProvider(new TestConfig, '', true);
+        $this->codebase->classlike_storage_provider->cache = new ClassLikeStorageCacheProvider($config ?? new TestConfig, '', true);
 
         $this->analyzeFile('somefile.php', new Context);
 
