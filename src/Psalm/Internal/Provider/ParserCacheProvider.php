@@ -28,16 +28,13 @@ final class ParserCacheProvider
      */
     public function loadStatementsFromCache(
         string $file_path,
-        string $file_content_hash,
+        ?string $file_content_hash,
     ): ?array {
         return $this->stmtCache->getItem($file_path, $file_content_hash);
     }
 
-    public function areStatementsUptodate(
-        string $file_path,
-        string $file_content_hash,
-    ): ?bool {
-        return $this->stmtCache->checkHash($file_path, $file_content_hash);
+    public function getHash(string $file_path): ?string {
+        return $this->stmtCache->getHash($file_path);
     }
 
     /**

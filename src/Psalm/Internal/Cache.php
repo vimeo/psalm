@@ -85,10 +85,10 @@ final class Cache
         }
     }
 
-    public function checkHash(string $key, string $hash = ''): ?bool
+    public function getHash(string $key): ?string
     {
-        if (isset($this->cache[$key]) && ($combined = $this->cache[$key])[0] === $hash) {
-            return $combined[1];
+        if (isset($this->cache[$key])) {
+            return $this->cache[$key][0];
         }
 
         if ($this->noFile) {
@@ -101,13 +101,16 @@ final class Cache
             return null;
         }
 
-        return Providers::safeFileGetContents($path) === $hash;
+        return Providers::safeFileGetContents($path);
     }
 
     /** @return T */
-    public function getItem(string $key, string $hash = ''): array|object|string|null
+    public function getItem(string $key, ?string $hash = ''): array|object|string|null
     {
-        if (isset($this->cache[$key]) && ($combined = $this->cache[$key])[0] === $hash) {
+        if (isset($this->cache[$key]) && (
+            ($combined = $this->cache[$key])[0] === $hash)
+            || $hash === null
+        ) {
             return $combined[1];
         }
 
@@ -143,7 +146,14 @@ final class Cache
             throw new RuntimeException("Could not acquire lock for $path.hash");
         }
 
-        if (stream_get_contents($fp) !== $hash) {
+        $fileHash = stream_get_contents($fp);
+        if ($hash === null) {
+            if ($fileHash === '') {
+                fclose($fp);
+                return null;
+            }
+            $hash = $fileHash;
+        } else if ($fileHash !== $hash) {
             fclose($fp);
             return null;
         }

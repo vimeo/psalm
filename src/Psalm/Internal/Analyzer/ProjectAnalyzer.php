@@ -866,10 +866,10 @@ final class ProjectAnalyzer
         $diff_files = [];
 
         foreach ($this->project_files as $file_path) {
-            if ($this->parser_cache_provider->areStatementsUptodate(
-                $file_path,
-                hash('xxh128', $this->file_provider->getContents($file_path))
-            ) === false) {
+            $hash = $this->parser_cache_provider->getHash($file_path);
+            if ($hash !== null && 
+                $hash !== $this->file_provider->getContents($file_path)
+            ) {
                 $diff_files[] = $file_path;
             }
         }
