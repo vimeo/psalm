@@ -251,7 +251,7 @@ final class Populator
 
                 $dependency->populated = false;
                 unset($dependency->invalid_dependencies[$fq_classlike_name_lc]);
-                $this->populateClassLikeStorage($dependency, $dependent_classlikes);
+                $this->populateClassLikeStorage($dependency, $dependency->dependent_classlikes);
             }
 
             unset($this->invalid_class_storages[$fq_classlike_name_lc]);
