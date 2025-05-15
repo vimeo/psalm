@@ -118,7 +118,7 @@
         "lint": "@php parallel-lint ./src ./tests",
         "phpunit": [
             "Composer\\Config::disableProcessTimeout",
-            "paratest -f --runner=WrapperRunner"
+            "@php paratest -f --runner=WrapperRunner"
         ],
         "phpunit-std": [
             "Composer\\Config::disableProcessTimeout",
