@@ -156,6 +156,7 @@ final class Cache
                 fclose($fp);
                 return null;
             }
+            Assert::notFalse($fileHash);
             $hash = $fileHash;
         } elseif ($fileHash !== $hash) {
             fclose($fp);

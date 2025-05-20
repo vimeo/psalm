@@ -16,12 +16,6 @@ final class ProjectCacheProvider extends PsalmProjectCacheProvider
     }
 
     #[Override]
-    public function getLastRun(string $psalm_version): int
-    {
-        return $this->last_run;
-    }
-
-    #[Override]
     public function processSuccessfulRun(float $start_time, string $psalm_version): void
     {
         $this->last_run = (int) $start_time;

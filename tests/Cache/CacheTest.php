@@ -19,7 +19,6 @@ use Psalm\Internal\RuntimeCaches;
 use Psalm\IssueBuffer;
 use Psalm\Tests\Internal\Provider\ProjectCacheProvider;
 use Psalm\Tests\TestCase;
-use Psalm\Tests\TestConfig;
 
 use function microtime;
 use function str_replace;

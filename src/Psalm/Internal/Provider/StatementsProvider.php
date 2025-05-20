@@ -122,7 +122,10 @@ final class StatementsProvider
 
         $existing_file_contents = $this->parser_cache_provider->getHash($file_path);
 
-        $existing_statements = $this->parser_cache_provider->loadStatementsFromCache($file_path, $existing_file_contents);
+        $existing_statements = $this->parser_cache_provider->loadStatementsFromCache(
+            $file_path,
+            $existing_file_contents
+        );
 
         // Race condition, another thread wrote the same data we already have
         if ($existing_file_contents === $file_contents && $existing_statements !== null) {
