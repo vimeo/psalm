@@ -17,7 +17,7 @@ final class ParsedDocblock
 
     private static bool $shouldAddNewLineBetweenAnnotations = true;
 
-    /** @param array<string, array<int, string>> $tags */
+    /** @param array<int|string, array<int, string>> $tags */
     public function __construct(public string $description, public array $tags, public string $first_line_padding = '')
     {
     }
