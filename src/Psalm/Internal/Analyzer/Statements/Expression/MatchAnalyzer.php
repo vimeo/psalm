@@ -217,9 +217,7 @@ final class MatchAnalyzer
             $statements_analyzer->addSuppressedIssues(['RedundantConditionGivenDocblockType']);
         }
 
-        if (ExpressionAnalyzer::analyze($statements_analyzer, $ternary, $context) === false) {
-            return false;
-        }
+        $v = ExpressionAnalyzer::analyze($statements_analyzer, $ternary, $context);
 
         if (!in_array('RedundantCondition', $suppressed_issues, true)) {
             $statements_analyzer->removeSuppressedIssues(['RedundantCondition']);
@@ -227,6 +225,10 @@ final class MatchAnalyzer
 
         if (!in_array('RedundantConditionGivenDocblockType', $suppressed_issues, true)) {
             $statements_analyzer->removeSuppressedIssues(['RedundantConditionGivenDocblockType']);
+        }
+
+        if ($v === false) {
+            return false;
         }
 
         if ($switch_var_id && $last_arm->conds) {
