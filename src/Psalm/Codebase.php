@@ -448,8 +448,9 @@ final class Codebase
             $parser_cache_provider = $this->statements_provider->parser_cache_provider;
 
             foreach ($candidate_files as $candidate_file_path) {
-                if ($parser_cache_provider->loadExistingFileContentsFromCache($candidate_file_path)
-                    !== $this->file_provider->getContents($candidate_file_path)
+                $hash = $parser_cache_provider->getHash($candidate_file_path);
+                if ($hash !== null &&
+                    $hash !== $this->file_provider->getContents($candidate_file_path)
                 ) {
                     $diff_files[] = $candidate_file_path;
                 }

@@ -15,11 +15,11 @@ use Psalm\Internal\LanguageServer\Message;
 use Psalm\Internal\LanguageServer\PathMapper;
 use Psalm\Internal\LanguageServer\Progress;
 use Psalm\Internal\Provider\FakeFileProvider;
+use Psalm\Internal\Provider\FileReferenceCacheProvider;
+use Psalm\Internal\Provider\ParserCacheProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\IssueBuffer;
 use Psalm\Tests\AsyncTestCase;
-use Psalm\Tests\Internal\Provider\FakeFileReferenceCacheProvider;
-use Psalm\Tests\Internal\Provider\ParserInstanceCacheProvider;
 use Psalm\Tests\Internal\Provider\ProjectCacheProvider;
 use Psalm\Tests\LanguageServer\Message as MessageBody;
 use Psalm\Tests\LanguageServer\MockProtocolStream;
@@ -44,10 +44,10 @@ final class DiagnosticTest extends AsyncTestCase
 
         $providers = new Providers(
             $this->file_provider,
-            new ParserInstanceCacheProvider(),
+            new ParserCacheProvider($config, '', true),
             null,
             null,
-            new FakeFileReferenceCacheProvider(),
+            new FileReferenceCacheProvider($config, '', true),
             new ProjectCacheProvider(),
         );
 

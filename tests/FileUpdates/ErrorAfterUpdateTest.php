@@ -8,9 +8,9 @@ use Override;
 use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
+use Psalm\Internal\Provider\FileReferenceCacheProvider;
+use Psalm\Internal\Provider\ParserCacheProvider;
 use Psalm\Internal\Provider\Providers;
-use Psalm\Tests\Internal\Provider\FakeFileReferenceCacheProvider;
-use Psalm\Tests\Internal\Provider\ParserInstanceCacheProvider;
 use Psalm\Tests\Internal\Provider\ProjectCacheProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
@@ -36,10 +36,10 @@ final class ErrorAfterUpdateTest extends TestCase
 
         $providers = new Providers(
             $this->file_provider,
-            new ParserInstanceCacheProvider(),
+            new ParserCacheProvider($config, '', true),
             null,
             null,
-            new FakeFileReferenceCacheProvider(),
+            new FileReferenceCacheProvider($config, '', true),
             new ProjectCacheProvider(),
         );
 

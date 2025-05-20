@@ -6,12 +6,12 @@ namespace Psalm\Tests\FileUpdates;
 
 use Override;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
 use Psalm\Internal\Provider\FakeFileProvider;
+use Psalm\Internal\Provider\FileReferenceCacheProvider;
+use Psalm\Internal\Provider\FileStorageCacheProvider;
+use Psalm\Internal\Provider\ParserCacheProvider;
 use Psalm\Internal\Provider\Providers;
-use Psalm\Tests\Internal\Provider\ClassLikeStorageInstanceCacheProvider;
-use Psalm\Tests\Internal\Provider\FakeFileReferenceCacheProvider;
-use Psalm\Tests\Internal\Provider\FileStorageInstanceCacheProvider;
-use Psalm\Tests\Internal\Provider\ParserInstanceCacheProvider;
 use Psalm\Tests\Internal\Provider\ProjectCacheProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
@@ -35,10 +35,10 @@ final class CachedStorageTest extends TestCase
 
         $providers = new Providers(
             $this->file_provider,
-            new ParserInstanceCacheProvider(),
-            new FileStorageInstanceCacheProvider(),
-            new ClassLikeStorageInstanceCacheProvider(),
-            new FakeFileReferenceCacheProvider(),
+            new ParserCacheProvider($config, '', true),
+            new FileStorageCacheProvider($config, '', true),
+            new ClassLikeStorageCacheProvider($config, '', true),
+            new FileReferenceCacheProvider($config, '', true),
             new ProjectCacheProvider(),
         );
 

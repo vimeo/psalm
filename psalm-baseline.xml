@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="dev-master@a4b37609d5438890372257fef3012cad3e0ca48d">
+<files psalm-version="6.x-dev@90b5b9f5e7c8e441b191d3c82c58214753d7c7c1">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$comment_block->tags['variablesfrom'][0]]]></code>
@@ -96,7 +96,6 @@
       <code><![CDATA[$issue_handler_children]]></code>
       <code><![CDATA[$parent_issue_type]]></code>
       <code><![CDATA[$phpstorm_meta_files]]></code>
-      <code><![CDATA[$pluginclas_class_path = $this->composer_class_loader->findFile($pluginClassName)]]></code>
       <code><![CDATA[$this->autoloader]]></code>
       <code><![CDATA[strpos($file_contents, $deprecated_element_xml->localName, $offset)]]></code>
       <code><![CDATA[strrpos($file_contents, $attribute->name, $offset - strlen($file_contents))]]></code>
@@ -1406,7 +1405,21 @@
       <code><![CDATA[$this->vars_to_initialize]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
+  <file src="src/Psalm/Internal/Cache.php">
+    <MixedAssignment>
+      <code><![CDATA[$dep]]></code>
+    </MixedAssignment>
+  </file>
   <file src="src/Psalm/Internal/Cli/LanguageServer.php">
+    <InvalidArgument>
+      <code><![CDATA[$autoloaders]]></code>
+    </InvalidArgument>
+    <InvalidReturnStatement>
+      <code><![CDATA[CliUtils::requireAutoloaders($current_dir, isset($options['r']), $vendor_dir)]]></code>
+    </InvalidReturnStatement>
+    <InvalidReturnType>
+      <code><![CDATA[list<ClassLoader>]]></code>
+    </InvalidReturnType>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$options['verbose']]]></code>
     </RiskyTruthyFalsyComparison>
@@ -1429,11 +1442,29 @@
     </UnusedPsalmSuppress>
   </file>
   <file src="src/Psalm/Internal/Cli/Psalter.php">
+    <InvalidArgument>
+      <code><![CDATA[$autoloaders]]></code>
+    </InvalidArgument>
+    <InvalidReturnStatement>
+      <code><![CDATA[CliUtils::requireAutoloaders($current_dir, isset($options['r']), $vendor_dir)]]></code>
+    </InvalidReturnStatement>
+    <InvalidReturnType>
+      <code><![CDATA[list<ClassLoader>]]></code>
+    </InvalidReturnType>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$paths_to_check]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Cli/Refactor.php">
+    <InvalidArgument>
+      <code><![CDATA[$autoloaders]]></code>
+    </InvalidArgument>
+    <InvalidReturnStatement>
+      <code><![CDATA[CliUtils::requireAutoloaders($current_dir, isset($options['r']), $vendor_dir)]]></code>
+    </InvalidReturnStatement>
+    <InvalidReturnType>
+      <code><![CDATA[list<ClassLoader>]]></code>
+    </InvalidReturnType>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$identifier_name]]></code>
     </PossiblyUndefinedIntArrayOffset>
@@ -1784,6 +1815,22 @@
       <code><![CDATA[empty($additional_info)]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
+  <file src="src/Psalm/Internal/Lz4Serializer.php">
+    <MixedArgument>
+      <code><![CDATA[$data]]></code>
+    </MixedArgument>
+    <MixedAssignment>
+      <code><![CDATA[$data]]></code>
+      <code><![CDATA[$data]]></code>
+    </MixedAssignment>
+    <MixedReturnStatement>
+      <code><![CDATA[$data]]></code>
+    </MixedReturnStatement>
+    <UndefinedFunction>
+      <code><![CDATA[lz4_compress($data, 4)]]></code>
+      <code><![CDATA[lz4_uncompress($data)]]></code>
+    </UndefinedFunction>
+  </file>
   <file src="src/Psalm/Internal/MethodIdentifier.php">
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$method_id_parts[1]]]></code>
@@ -1991,19 +2038,14 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Provider/ClassLikeStorageCacheProvider.php">
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[!$root_cache_directory]]></code>
-      <code><![CDATA[$file_contents]]></code>
-      <code><![CDATA[$file_path]]></code>
-    </RiskyTruthyFalsyComparison>
+    <InvalidPropertyAssignmentValue>
+      <code><![CDATA[new Cache($config, 'classlike_cache', $dependencies, $noFile)]]></code>
+    </InvalidPropertyAssignmentValue>
   </file>
   <file src="src/Psalm/Internal/Provider/FileReferenceCacheProvider.php">
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[!$cache_directory]]></code>
-      <code><![CDATA[!$cache_directory]]></code>
-      <code><![CDATA[!$cache_directory]]></code>
-      <code><![CDATA[$cache_directory]]></code>
-    </RiskyTruthyFalsyComparison>
+    <InvalidPropertyAssignmentValue>
+      <code><![CDATA[new Cache($config, 'file_reference', [$composerLock], $noFile)]]></code>
+    </InvalidPropertyAssignmentValue>
   </file>
   <file src="src/Psalm/Internal/Provider/FileReferenceProvider.php">
     <RiskyTruthyFalsyComparison>
@@ -2018,9 +2060,12 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Provider/FileStorageCacheProvider.php">
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[!$root_cache_directory]]></code>
-    </RiskyTruthyFalsyComparison>
+    <InvalidReturnStatement>
+      <code><![CDATA[$this->cache->getItem(strtolower($file_path), hash('xxh128', $file_contents))]]></code>
+    </InvalidReturnStatement>
+    <InvalidReturnType>
+      <code><![CDATA[?FileStorage]]></code>
+    </InvalidReturnType>
   </file>
   <file src="src/Psalm/Internal/Provider/FunctionParamsProvider.php">
     <RiskyTruthyFalsyComparison>
@@ -2038,20 +2083,17 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Provider/ParserCacheProvider.php">
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[!$cache_directory]]></code>
-      <code><![CDATA[!$root_cache_directory]]></code>
-      <code><![CDATA[!$root_cache_directory]]></code>
-      <code><![CDATA[!$root_cache_directory]]></code>
-    </RiskyTruthyFalsyComparison>
+    <PropertyTypeCoercion>
+      <code><![CDATA[new Cache($config, self::PARSER_CACHE_DIRECTORY, $deps, $noFile)]]></code>
+    </PropertyTypeCoercion>
   </file>
-  <file src="src/Psalm/Internal/Provider/ProjectCacheProvider.php">
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[!$cache_directory]]></code>
-      <code><![CDATA[!$cache_directory]]></code>
-      <code><![CDATA[!$this->composer_lock_hash]]></code>
-      <code><![CDATA[$cache_directory]]></code>
-    </RiskyTruthyFalsyComparison>
+  <file src="src/Psalm/Internal/Provider/Providers.php">
+    <FalsableReturnStatement>
+      <code><![CDATA[$content]]></code>
+    </FalsableReturnStatement>
+    <InvalidFalsableReturnType>
+      <code><![CDATA[string]]></code>
+    </InvalidFalsableReturnType>
   </file>
   <file src="src/Psalm/Internal/Provider/ReturnTypeProvider/ArrayColumnReturnTypeProvider.php">
     <RiskyTruthyFalsyComparison>
@@ -2102,16 +2144,8 @@
     </InvalidOperand>
   </file>
   <file src="src/Psalm/Internal/Provider/StatementsProvider.php">
-    <InvalidOperand>
-      <code><![CDATA[$this->this_modified_time]]></code>
-    </InvalidOperand>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$existing_file_contents]]></code>
-      <code><![CDATA[$existing_file_contents]]></code>
-      <code><![CDATA[$existing_file_contents]]></code>
-      <code><![CDATA[$existing_statements]]></code>
-      <code><![CDATA[$existing_statements]]></code>
-      <code><![CDATA[$existing_statements]]></code>
       <code><![CDATA[$existing_statements]]></code>
       <code><![CDATA[$file_changes]]></code>
       <code><![CDATA[$file_path]]></code>
@@ -2841,6 +2875,11 @@
       <code><![CDATA[$expected_value_type]]></code>
     </ImplicitToStringCast>
   </file>
+  <file src="tests/Config/ConfigTest.php">
+    <InvalidArgument>
+      <code><![CDATA[$classloader]]></code>
+    </InvalidArgument>
+  </file>
   <file src="tests/Config/PluginListTest.php">
     <InvalidArgument>
       <code><![CDATA[$this->composer_lock]]></code>
@@ -2888,6 +2927,18 @@
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[empty($normalizedEntry['type'])]]></code>
     </RiskyTruthyFalsyComparison>
+  </file>
+  <file src="tests/Internal/Provider/FakeParserCacheProvider.php">
+    <InvalidExtendClass>
+      <code><![CDATA[ParserCacheProvider]]></code>
+    </InvalidExtendClass>
+    <MethodSignatureMismatch>
+      <code><![CDATA[#[Override]]]></code>
+      <code><![CDATA[#[Override]]]></code>
+      <code><![CDATA[#[Override]]]></code>
+      <code><![CDATA[public function __construct()]]></code>
+      <code><![CDATA[public function __construct()]]></code>
+    </MethodSignatureMismatch>
   </file>
   <file src="tests/ReportOutputTest.php">
     <MixedAssignment>

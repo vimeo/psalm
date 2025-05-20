@@ -1465,12 +1465,14 @@ final class ArgumentsAnalyzer
                 $statements_analyzer->addSuppressedIssues(['EmptyArrayAccess']);
             }
 
-            if (ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context) === false) {
-                return false;
-            }
+            $v = ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context);
 
             if (!in_array('EmptyArrayAccess', $suppressed_issues, true)) {
                 $statements_analyzer->removeSuppressedIssues(['EmptyArrayAccess']);
+            }
+
+            if ($v === false) {
+                return false;
             }
         }
 

@@ -24,6 +24,7 @@ use Psalm\Internal\Fork\Pool;
 use Psalm\Internal\Fork\ShutdownAnalyzerTask;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
+use Psalm\Internal\Provider\StatementsProvider;
 use Psalm\IssueBuffer;
 use Psalm\Progress\Phase;
 use Psalm\Progress\Progress;
@@ -451,10 +452,14 @@ final class Analyzer
     {
         $codebase = $project_analyzer->getCodebase();
 
+        $statements_provider = $codebase->statements_provider;
+        $file_reference_provider = $codebase->file_reference_provider;
+
+        // Load cached data from disk
         if ($codebase->diff_methods) {
-            $this->analyzed_methods = $codebase->file_reference_provider->getAnalyzedMethods();
-            $this->existing_issues = $codebase->file_reference_provider->getExistingIssues();
-            $file_maps = $codebase->file_reference_provider->getFileMaps();
+            $this->analyzed_methods = $file_reference_provider->getAnalyzedMethods();
+            $this->existing_issues = $file_reference_provider->getExistingIssues();
+            $file_maps = $file_reference_provider->getFileMaps();
 
             foreach ($file_maps as $file_path => [$reference_map, $type_map, $argument_map]) {
                 $this->reference_map[$file_path] = $reference_map;
@@ -462,16 +467,6 @@ final class Analyzer
                 $this->argument_map[$file_path] = $argument_map;
             }
         }
-
-        $statements_provider = $codebase->statements_provider;
-        $file_reference_provider = $codebase->file_reference_provider;
-
-        $changed_members = $statements_provider->getChangedMembers();
-        $unchanged_signature_members = $statements_provider->getUnchangedSignatureMembers();
-        $errored_files = $statements_provider->getErrors();
-
-        $diff_map = $statements_provider->getDiffMap();
-        $deletion_ranges = $statements_provider->getDeletionRanges();
 
         $method_references_to_class_members = $file_reference_provider->getAllMethodReferencesToClassMembers();
 
@@ -506,6 +501,9 @@ final class Analyzer
         $references_to_mixed_member_names = $file_reference_provider->getAllReferencesToMixedMemberNames();
 
         $this->mixed_counts = $file_reference_provider->getTypeCoverage();
+        // Finish loading cached data from disk
+
+        $changed_members = $statements_provider->getChangedMembers();
 
         foreach ($changed_members as $file_path => $members_by_file) {
             foreach ($members_by_file as $changed_member => $_) {
@@ -531,7 +529,7 @@ final class Analyzer
 
         $newly_invalidated_methods = [];
 
-        foreach ($unchanged_signature_members as $file_unchanged_signature_members) {
+        foreach ($statements_provider->getUnchangedSignatureMembers() as $file_unchanged_signature_members) {
             $newly_invalidated_methods = array_merge($newly_invalidated_methods, $file_unchanged_signature_members);
 
             foreach ($file_unchanged_signature_members as $unchanged_signature_member_id => $_) {
@@ -649,7 +647,7 @@ final class Analyzer
             }
         }
 
-        foreach ($errored_files as $file_path => $_) {
+        foreach ($statements_provider->getErrors() as $file_path => $_) {
             unset($this->analyzed_methods[$file_path]);
             unset($this->existing_issues[$file_path]);
         }
@@ -671,7 +669,7 @@ final class Analyzer
             }
         }
 
-        $this->shiftFileOffsets($diff_map, $deletion_ranges);
+        $this->shiftFileOffsets($statements_provider);
 
         foreach ($this->files_to_analyze as $file_path) {
             $file_reference_provider->clearExistingIssuesForFile($file_path);
@@ -819,12 +817,11 @@ final class Analyzer
         );
     }
 
-    /**
-     * @param array<string, array<int, array{int, int, int, int}>> $diff_map
-     * @param array<string, array<int, array{int, int}>> $deletion_ranges
-     */
-    public function shiftFileOffsets(array $diff_map, array $deletion_ranges): void
+    public function shiftFileOffsets(StatementsProvider $statements_provider): void
     {
+        $diff_map = $statements_provider->getDiffMap();
+        $deletion_ranges = $statements_provider->getDeletionRanges();
+
         foreach ($this->existing_issues as $file_path => $file_issues) {
             if (!isset($this->analyzed_methods[$file_path])) {
                 continue;

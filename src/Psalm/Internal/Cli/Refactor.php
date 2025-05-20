@@ -14,7 +14,6 @@ use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileStorageCacheProvider;
-use Psalm\Internal\Provider\ParserCacheProvider;
 use Psalm\Internal\Provider\ProjectCacheProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\IssueBuffer;
@@ -315,11 +314,11 @@ final class Refactor
 
         $providers = new Providers(
             new FileProvider(),
-            new ParserCacheProvider($config, false),
-            new FileStorageCacheProvider($config),
-            new ClassLikeStorageCacheProvider($config),
             null,
-            new ProjectCacheProvider(Composer::getLockFilePath($current_dir)),
+            new FileStorageCacheProvider($config, Composer::getLockFile($current_dir)),
+            new ClassLikeStorageCacheProvider($config, Composer::getLockFile($current_dir)),
+            null,
+            new ProjectCacheProvider(),
         );
 
         $debug = array_key_exists('debug', $options) || array_key_exists('debug-by-line', $options);
