@@ -179,10 +179,11 @@ final class Cache
     {
         // Assume all threads will store the same contents.
         // If the assumption is wrong, it will get fixed on the next run.
-        if ($hash !== null && isset($this->cache[$key]) && $this->cache[$key][0] === $hash) {
+        if ($hash === null) {
+            $hash = '';
+        } else if (isset($this->cache[$key]) && $this->cache[$key][0] === $hash) {
             return;
         }
-        $hash ??= '';
         if (!$this->noFile) {
             $path = $this->dir . hash('xxh128', $key);
             $f = fopen("$path.hash", 'w');
