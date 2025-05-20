@@ -25,7 +25,7 @@ final class ParserCacheProvider
         $deps = [
             $composerLock,
             PHP_PARSER_VERSION,
-            (string) filemtime(__DIR__.DIRECTORY_SEPARATOR.'StatementsProvider.php')
+            (string) filemtime(__DIR__.DIRECTORY_SEPARATOR.'StatementsProvider.php'),
         ];
 
         $this->stmtCache = new Cache($config, self::PARSER_CACHE_DIRECTORY, $deps, $noFile);

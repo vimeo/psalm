@@ -124,7 +124,7 @@ final class StatementsProvider
 
         $existing_statements = $this->parser_cache_provider->loadStatementsFromCache(
             $file_path,
-            $existing_file_contents
+            $existing_file_contents,
         );
 
         // Race condition, another thread wrote the same data we already have
