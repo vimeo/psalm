@@ -181,7 +181,7 @@ final class Cache
         // If the assumption is wrong, it will get fixed on the next run.
         if ($hash === null) {
             $hash = '';
-        } else if (isset($this->cache[$key]) && $this->cache[$key][0] === $hash) {
+        } elseif (isset($this->cache[$key]) && $this->cache[$key][0] === $hash) {
             return;
         }
         if (!$this->noFile) {

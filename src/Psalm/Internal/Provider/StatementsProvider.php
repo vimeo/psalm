@@ -225,6 +225,8 @@ final class StatementsProvider
 
             $this->diff_map[$file_path] = $diff_map;
             $this->deletion_ranges[$file_path] = $deletion_ranges;
+        } elseif ($has_errors && !$stmts) {
+            $this->errors[$file_path] = true;
         }
 
         $this->parser_cache_provider->saveStatementsToCache($file_path, $file_contents, $stmts);
