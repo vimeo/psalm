@@ -8,7 +8,6 @@ use Psalm\Config;
 
 use function file_exists;
 use function file_put_contents;
-use function filemtime;
 use function touch;
 
 use const DIRECTORY_SEPARATOR;
@@ -23,20 +22,18 @@ class ProjectCacheProvider
 {
     private const GOOD_RUN_NAME = 'good_run';
 
-    private ?int $last_run = null;
-
     public function canDiffFiles(): bool
     {
         $cache_directory = Config::getInstance()->getCacheDirectory();
 
-        return $cache_directory && file_exists($cache_directory . DIRECTORY_SEPARATOR . self::GOOD_RUN_NAME);
+        return $cache_directory !== null && file_exists($cache_directory . DIRECTORY_SEPARATOR . self::GOOD_RUN_NAME);
     }
 
     public function processSuccessfulRun(float $start_time, string $psalm_version): void
     {
         $cache_directory = Config::getInstance()->getCacheDirectory();
 
-        if (!$cache_directory) {
+        if ($cache_directory === null) {
             return;
         }
 

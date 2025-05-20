@@ -1396,14 +1396,7 @@
   <file src="src/Psalm/Internal/Cache.php">
     <MixedAssignment>
       <code><![CDATA[$dep]]></code>
-      <code><![CDATA[$v]]></code>
     </MixedAssignment>
-    <MixedPropertyTypeCoercion>
-      <code><![CDATA[$this->cache]]></code>
-    </MixedPropertyTypeCoercion>
-    <MixedReturnStatement>
-      <code><![CDATA[$v]]></code>
-    </MixedReturnStatement>
   </file>
   <file src="src/Psalm/Internal/Cli/LanguageServer.php">
     <RiskyTruthyFalsyComparison>
@@ -2046,21 +2039,9 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Provider/ParserCacheProvider.php">
-    <InvalidPropertyAssignmentValue>
-      <code><![CDATA[new Cache($config, self::FILE_CONTENTS_CACHE_DIRECTORY, [$composerLock], $noFile)]]></code>
-    </InvalidPropertyAssignmentValue>
-    <PossiblyUnusedMethod>
-      <code><![CDATA[cacheFileContents]]></code>
-    </PossiblyUnusedMethod>
     <PropertyTypeCoercion>
-      <code><![CDATA[new Cache($config, self::PARSER_CACHE_DIRECTORY, [$composerLock], $noFile)]]></code>
+      <code><![CDATA[new Cache($config, self::PARSER_CACHE_DIRECTORY, $deps, $noFile)]]></code>
     </PropertyTypeCoercion>
-  </file>
-  <file src="src/Psalm/Internal/Provider/ProjectCacheProvider.php">
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[!$cache_directory]]></code>
-      <code><![CDATA[$cache_directory]]></code>
-    </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Provider/Providers.php">
     <FalsableReturnStatement>
@@ -2119,9 +2100,6 @@
     </InvalidOperand>
   </file>
   <file src="src/Psalm/Internal/Provider/StatementsProvider.php">
-    <InvalidOperand>
-      <code><![CDATA[$this->this_modified_time]]></code>
-    </InvalidOperand>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$existing_file_contents]]></code>
       <code><![CDATA[$existing_statements]]></code>
@@ -2867,97 +2845,11 @@
       <code><![CDATA[empty($normalizedEntry['type'])]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
-  <file src="tests/Internal/Provider/ClassLikeStorageInstanceCacheProvider.php">
-    <InvalidExtendClass>
-      <code><![CDATA[ClassLikeStorageCacheProvider]]></code>
-    </InvalidExtendClass>
-    <MethodSignatureMismatch>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[public function __construct()]]></code>
-      <code><![CDATA[public function __construct()]]></code>
-    </MethodSignatureMismatch>
-    <RedundantFunctionCall>
-      <code><![CDATA[strtolower]]></code>
-    </RedundantFunctionCall>
-  </file>
-  <file src="tests/Internal/Provider/FakeFileReferenceCacheProvider.php">
-    <InvalidExtendClass>
-      <code><![CDATA[FileReferenceCacheProvider]]></code>
-    </InvalidExtendClass>
-    <MethodSignatureMismatch>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[public function __construct()]]></code>
-      <code><![CDATA[public function __construct()]]></code>
-    </MethodSignatureMismatch>
-  </file>
   <file src="tests/Internal/Provider/FakeParserCacheProvider.php">
     <InvalidExtendClass>
       <code><![CDATA[ParserCacheProvider]]></code>
     </InvalidExtendClass>
     <MethodSignatureMismatch>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[public function __construct()]]></code>
-      <code><![CDATA[public function __construct()]]></code>
-    </MethodSignatureMismatch>
-  </file>
-  <file src="tests/Internal/Provider/FileStorageInstanceCacheProvider.php">
-    <InvalidExtendClass>
-      <code><![CDATA[FileStorageCacheProvider]]></code>
-    </InvalidExtendClass>
-    <MethodSignatureMismatch>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[public function __construct()]]></code>
-      <code><![CDATA[public function __construct()]]></code>
-    </MethodSignatureMismatch>
-  </file>
-  <file src="tests/Internal/Provider/ParserInstanceCacheProvider.php">
-    <InvalidExtendClass>
-      <code><![CDATA[ParserCacheProvider]]></code>
-    </InvalidExtendClass>
-    <MethodSignatureMismatch>
-      <code><![CDATA[#[Override]]]></code>
       <code><![CDATA[#[Override]]]></code>
       <code><![CDATA[#[Override]]]></code>
       <code><![CDATA[#[Override]]]></code>
