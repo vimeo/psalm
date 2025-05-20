@@ -174,13 +174,14 @@ final class Cache
     }
 
     /** @param T $item */
-    public function saveItem(string $key, array|object|string $item, string $hash = ''): void
+    public function saveItem(string $key, array|object|string $item, ?string $hash = null): void
     {
         // Assume all threads will store the same contents.
         // If the assumption is wrong, it will get fixed on the next run.
-        if (isset($this->cache[$key]) && $this->cache[$key][0] === $hash) {
+        if ($hash !== null && isset($this->cache[$key]) && $this->cache[$key][0] === $hash) {
             return;
         }
+        $hash ??= '';
         if (!$this->noFile) {
             $path = $this->dir . hash('xxh128', $key);
             $f = fopen("$path.hash", 'w');
