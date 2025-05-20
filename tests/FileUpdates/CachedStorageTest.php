@@ -35,10 +35,10 @@ final class CachedStorageTest extends TestCase
 
         $providers = new Providers(
             $this->file_provider,
-            new ParserCacheProvider($config ?? new TestConfig, '', true),
-            new FileStorageCacheProvider($config ?? new TestConfig, '', true),
-            new ClassLikeStorageCacheProvider($config ?? new TestConfig, '', true),
-            new FileReferenceCacheProvider($config ?? new TestConfig, '', true),
+            new ParserCacheProvider($config, '', true),
+            new FileStorageCacheProvider($config, '', true),
+            new ClassLikeStorageCacheProvider($config, '', true),
+            new FileReferenceCacheProvider($config, '', true),
             new ProjectCacheProvider(),
         );
 

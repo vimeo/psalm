@@ -167,6 +167,7 @@ final class Cache
 
         fclose($fp);
 
+        /** @var T */
         $content = $this->serializer->unserialize($content);
         $this->cache[$key] = [$hash, $content];
         return $content;

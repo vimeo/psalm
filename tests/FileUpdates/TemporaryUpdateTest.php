@@ -42,10 +42,10 @@ final class TemporaryUpdateTest extends TestCase
 
         $providers = new Providers(
             $this->file_provider,
-            new ParserCacheProvider($config ?? new TestConfig, '', true),
+            new ParserCacheProvider($config, '', true),
             null,
             null,
-            new FileReferenceCacheProvider($config ?? new TestConfig, '', true),
+            new FileReferenceCacheProvider($config, '', true),
             new ProjectCacheProvider(),
         );
 
