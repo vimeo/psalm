@@ -343,11 +343,6 @@ final class ClassLikeStorage implements HasAttributesInterface
      */
     public array $dependent_classlikes = [];
 
-    /**
-     * A hash of the source file's name, contents, and this file's modified on date
-     */
-    public string $hash = '';
-
     public bool $has_visitor_issues = false;
 
     /**

@@ -79,7 +79,6 @@ use const PHP_EOL;
  *     errors:array<string, bool>,
  *     classlike_storage:array<string, ClassLikeStorage>,
  *     file_storage:array<lowercase-string, FileStorage>,
- *     new_file_content_hashes: array<string, string>,
  *     taint_data: ?TaintFlowGraph,
  *     global_constants: array<string, Union>,
  *     global_functions: array<lowercase-string, FunctionStorage>
@@ -352,12 +351,6 @@ final class Scanner
 
                 $this->addThreadData($pool_data['scanner_data']);
 
-                if ($this->codebase->statements_provider->parser_cache_provider) {
-                    $this->codebase->statements_provider->parser_cache_provider->addNewFileContentHashes(
-                        $pool_data['new_file_content_hashes'],
-                    );
-                }
-
                 $this->codebase->addGlobalConstantTypes($pool_data['global_constants']);
                 $this->codebase->functions->addGlobalFunctions($pool_data['global_functions']);
             }
@@ -366,10 +359,6 @@ final class Scanner
                 $this->scanAPath($file_path);
                 $this->progress->taskDone(0);
             }
-        }
-
-        if ($this->codebase->statements_provider->parser_cache_provider) {
-            $this->codebase->statements_provider->parser_cache_provider->saveFileContentHashes();
         }
 
         $this->file_reference_provider->addClassLikeFiles($this->classlike_files);

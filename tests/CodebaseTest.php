@@ -11,6 +11,7 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
 use Psalm\Exception\UnpopulatedClasslikeException;
+use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
 use Psalm\Issue\InvalidReturnStatement;
 use Psalm\Issue\InvalidReturnType;
 use Psalm\IssueBuffer;
@@ -19,7 +20,6 @@ use Psalm\Plugin\EventHandler\BeforeAddIssueInterface;
 use Psalm\Plugin\EventHandler\Event\AfterClassLikeVisitEvent;
 use Psalm\Plugin\EventHandler\Event\BeforeAddIssueEvent;
 use Psalm\PluginRegistrationSocket;
-use Psalm\Tests\Internal\Provider\ClassLikeStorageInstanceCacheProvider;
 use Psalm\Type;
 
 use function array_map;
@@ -181,7 +181,7 @@ final class CodebaseTest extends TestCase
         };
         (new PluginRegistrationSocket($this->codebase->config, $this->codebase))
             ->registerHooksFromClass(get_class($hook));
-        $this->codebase->classlike_storage_provider->cache = new ClassLikeStorageInstanceCacheProvider;
+        $this->codebase->classlike_storage_provider->cache = new ClassLikeStorageCacheProvider($this->codebase->config, '', true);
 
         $this->analyzeFile('somefile.php', new Context);
 
