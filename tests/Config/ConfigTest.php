@@ -1595,7 +1595,7 @@ final class ConfigTest extends TestCase
             ],
         );
 
-        $config->setComposerClassLoader($classloader);
+        $config->setComposerClassLoader([$classloader]);
 
         $this->assertSame(
             dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'Psalm' . DIRECTORY_SEPARATOR . 'Foo.php',
