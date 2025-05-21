@@ -7,7 +7,9 @@ namespace Psalm\Internal;
 use Psalm\Internal\Provider\Providers;
 
 use function basename;
+use function file_exists;
 use function getenv;
+use function is_readable;
 use function pathinfo;
 use function substr;
 use function trim;
@@ -49,6 +51,15 @@ final class Composer
 
     public static function getLockFile(string $root): string
     {
-        return self::$lockFile ??= Providers::safeFileGetContents(self::getLockFilePath($root));
+        if (self::$lockFile !== null) {
+            return self::$lockFile;
+        }
+        $root = self::getLockFilePath($root);
+        if (file_exists($root) && is_readable($root)) {
+            $root = Providers::safeFileGetContents($root);
+        } else {
+            $root = '';
+        }
+        return self::$lockFile = $root;
     }
 }
