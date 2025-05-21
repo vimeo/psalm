@@ -18,8 +18,8 @@ phpunit)
 	git clone --depth=1 git@github.com:psalm/endtoend-test-phpunit
 	cd endtoend-test-phpunit
 	composer install
-	"$PSALM_PHAR" --config=.psalm/config.xml --monochrome --show-info=false
-	"$PSALM_PHAR" --config=.psalm/static-analysis.xml --monochrome
+	"$PSALM_PHAR" --config=.psalm/config.xml --monochrome --show-info=false --set-baseline=.psalm/baseline.xml
+	"$PSALM_PHAR" --config=.psalm/static-analysis.xml --monochrome --set-baseline=.psalm/static-analysis-baseline.xml
 	;;
 
 collections)
@@ -29,7 +29,7 @@ collections)
 	rm vendor/amphp/amp/lib/functions.php; touch vendor/amphp/amp/lib/functions.php;
 	rm vendor/amphp/amp/lib/Internal/functions.php; touch vendor/amphp/amp/lib/Internal/functions.php
 	rm vendor/amphp/byte-stream/lib/functions.php; touch vendor/amphp/byte-stream/lib/functions.php
-	"$PSALM" --monochrome --show-info=false
+	"$PSALM" --monochrome --show-info=false --set-baseline=psalm-baseline.xml
 	;;
 
 psl)
@@ -44,7 +44,7 @@ psl)
 	# Avoid conflicts with old psalm when running phar tests
 	rm -rf vendor/vimeo/psalm
 	sed 's/ErrorOutputBehavior::Packed, ErrorOutputBehavior::Discard/ErrorOutputBehavior::Discard/g' -i src/Psl/Shell/execute.php
-	"$PSALM_PHAR" --monochrome -c config/psalm.xml
+	"$PSALM_PHAR" --monochrome -c config/psalm.xml --set-baseline=psalm-baseline.xml
 	"$PSALM_PHAR" --monochrome -c config/psalm.xml tests/static-analysis
 	;;
 
@@ -52,10 +52,15 @@ laravel)
 	git clone --depth=1 git@github.com:psalm/endtoend-test-laravel.git
 	cd endtoend-test-laravel
 	composer install
-	"$PSALM" --monochrome
+	"$PSALM" --monochrome --set-baseline=psalm-baseline.xml
 	;;
 
 *)
 	echo "Usage: test-with-real-projects.sh {phpunit|collections|laravel|psl}"
 	exit 1
 esac
+
+if [ "$2" == "update" ]; then
+	git commit -am 'Update baseline'
+	git push
+fi
