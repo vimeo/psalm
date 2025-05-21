@@ -55,7 +55,8 @@ final class DocComment
         }
 
         foreach ($parsed_docblock->tags as $special_key => $_) {
-            if (is_string($special_key) && str_starts_with($special_key, 'psalm-')) {
+            /** @psalm-suppress RedundantCast */
+            if (str_starts_with((string) $special_key, 'psalm-')) {
                 $special_key = substr($special_key, 6);
 
                 if (!in_array(
