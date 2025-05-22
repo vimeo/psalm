@@ -19,10 +19,10 @@ FAIL=0
 case $1 in
 update)
 	cd "$OLDPWD"
-	"${BASH_SOURCE[0]}" phpunit update
-	"${BASH_SOURCE[0]}" collections update
-	"${BASH_SOURCE[0]}" psl update
-	"${BASH_SOURCE[0]}" laravel update
+	"${BASH_SOURCE[0]}" phpunit update || true
+	"${BASH_SOURCE[0]}" collections update || true
+	"${BASH_SOURCE[0]}" psl update || true
+	"${BASH_SOURCE[0]}" laravel update || true
 	exit 0
 	;;
 phpunit)
@@ -51,18 +51,19 @@ psl)
 	git clone git@github.com:psalm/endtoend-test-psl.git
 	cd endtoend-test-psl
 	git checkout 2.3.x_master
-	composer install
+	composer install --ignore-platform-reqs
 	# Avoid conflicts with old psalm when running phar tests
 	rm -rf vendor/vimeo/psalm
 	sed 's/ErrorOutputBehavior::Packed, ErrorOutputBehavior::Discard/ErrorOutputBehavior::Discard/g' -i src/Psl/Shell/execute.php
 	"$PSALM_PHAR" --monochrome -c config/psalm.xml --set-baseline=psalm-baseline.xml || FAIL=$?
-	"$PSALM_PHAR" --monochrome -c config/psalm.xml tests/static-analysis || FAIL=$?
+	"$PSALM_PHAR" --monochrome -c config/psalm.xml tests/static-analysis --set-baseline=psalm-baseline-static-analysis.xml || FAIL=$?
+	git add psalm-baseline-static-analysis.xml
 	;;
 
 laravel)
 	git clone --depth=1 git@github.com:psalm/endtoend-test-laravel.git
 	cd endtoend-test-laravel
-	composer install
+	composer install --ignore-platform-reqs
 	"$PSALM" --monochrome --set-baseline=psalm-baseline.xml || FAIL=$?
 	;;
 
