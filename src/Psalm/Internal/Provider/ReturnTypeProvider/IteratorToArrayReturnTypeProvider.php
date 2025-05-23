@@ -65,6 +65,12 @@ final class IteratorToArrayReturnTypeProvider implements FunctionReturnTypeProvi
                     continue;
                 }
 
+                if ($call_arg_atomic_type instanceof TIterable) {
+                    $key_type = $call_arg_atomic_type->type_params[0];
+                    $value_type = $call_arg_atomic_type->type_params[1];
+                    continue;
+                }
+
                 if ($call_arg_atomic_type instanceof TNamedObject
                     && AtomicTypeComparator::isContainedBy(
                         $codebase,
