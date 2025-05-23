@@ -56,8 +56,7 @@ psl)
 	rm -rf vendor/vimeo/psalm
 	sed 's/ErrorOutputBehavior::Packed, ErrorOutputBehavior::Discard/ErrorOutputBehavior::Discard/g' -i src/Psl/Shell/execute.php
 	"$PSALM_PHAR" --monochrome -c config/psalm.xml --set-baseline=psalm-baseline.xml || FAIL=$?
-	"$PSALM_PHAR" --monochrome -c config/psalm.xml tests/static-analysis --set-baseline=psalm-baseline-static-analysis.xml || FAIL=$?
-	git add psalm-baseline-static-analysis.xml
+	"$PSALM_PHAR" --monochrome -c config/psalm-static-analysis.xml tests/static-analysis --set-baseline=psalm-baseline-static-analysis.xml || FAIL=$?
 	;;
 
 laravel)
