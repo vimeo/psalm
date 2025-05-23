@@ -22,7 +22,6 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\PhpVisitor\TraitFinder;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
-use Psalm\Internal\Provider\StatementsProvider;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\ClassMustBeFinal;
 use Psalm\Issue\PossiblyUnusedMethod;
@@ -145,7 +144,6 @@ final class ClassLikes
         private readonly Config $config,
         private readonly ClassLikeStorageProvider $classlike_storage_provider,
         public FileReferenceProvider $file_reference_provider,
-        private readonly StatementsProvider $statements_provider,
         private readonly Scanner $scanner,
     ) {
         $this->collectPredefinedClassLikes();
@@ -777,9 +775,8 @@ final class ClassLikes
         }
 
         $codebase = ProjectAnalyzer::getInstance()->getCodebase();
-        $file_statements = $this->statements_provider->getStatementsForFile(
+        $file_statements = $codebase->getStatementsForFile(
             $storage->location->file_path,
-            $codebase->analysis_php_version_id,
         );
 
         $trait_finder = new TraitFinder($fq_trait_name);

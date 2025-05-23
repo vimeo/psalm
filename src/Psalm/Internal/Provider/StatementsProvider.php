@@ -84,6 +84,7 @@ final class StatementsProvider
     public function getStatementsForFile(
         string $file_path,
         int $analysis_php_version_id,
+        bool $do_diff,
         ?Progress $progress = null,
     ): array {
         unset($this->errors[$file_path]);
@@ -120,39 +121,45 @@ final class StatementsProvider
 
         $progress->debug("Parsing $file_path because the cache is absent or outdated\n");
 
-        $existing_file_contents = $this->parser_cache_provider->getHash($file_path);
-
-        $existing_statements = $this->parser_cache_provider->loadStatementsFromCache(
-            $file_path,
-            $existing_file_contents,
-        );
-
-        // Race condition, another thread wrote the same data we already have
-        if ($existing_file_contents === $file_contents && $existing_statements !== null) {
-            $this->diff_map[$file_path] = [];
-            $this->deletion_ranges[$file_path] = [];
-
-            return $existing_statements;
-        }
-
-        $file_changes = null;
-
+        $existing_statements = null;
+        $existing_file_contents = null;
         $existing_statements_copy = null;
+        $file_changes = null;
+        if ($do_diff) {
+            $existing_file_contents = $this->parser_cache_provider->getHash($file_path);
 
-        if ($existing_statements !== null
-            && $existing_file_contents  !== null
-            && abs(strlen($existing_file_contents) - strlen($file_contents)) < 5_000
-        ) {
-            $file_changes = FileDiffer::getDiff($existing_file_contents, $file_contents);
+            $existing_statements = $this->parser_cache_provider->loadStatementsFromCache(
+                $file_path,
+                $existing_file_contents,
+            );
 
-            if (count($file_changes) < 10) {
-                $traverser = new PhpParser\NodeTraverser;
-                $traverser->addVisitor(new CloningVisitor);
-                // performs a deep clone
-                /** @var list<PhpParser\Node\Stmt> */
-                $existing_statements_copy = $traverser->traverse($existing_statements);
-            } else {
-                $file_changes = null;
+            // Race condition, another thread wrote the same data we already have
+            if ($existing_file_contents === $file_contents && $existing_statements !== null) {
+                $this->diff_map[$file_path] = [];
+                $this->deletion_ranges[$file_path] = [];
+
+                return $existing_statements;
+            }
+
+            $file_changes = null;
+
+            $existing_statements_copy = null;
+
+            if ($existing_statements !== null
+                && $existing_file_contents  !== null
+                && abs(strlen($existing_file_contents) - strlen($file_contents)) < 5_000
+            ) {
+                $file_changes = FileDiffer::getDiff($existing_file_contents, $file_contents);
+
+                if (count($file_changes) < 10) {
+                    $traverser = new PhpParser\NodeTraverser;
+                    $traverser->addVisitor(new CloningVisitor);
+                    // performs a deep clone
+                    /** @var list<PhpParser\Node\Stmt> */
+                    $existing_statements_copy = $traverser->traverse($existing_statements);
+                } else {
+                    $file_changes = null;
+                }
             }
         }
 

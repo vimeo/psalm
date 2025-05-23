@@ -42,9 +42,8 @@ class FileScanner implements FileSource
             return;
         }
 
-        $stmts = $codebase->statements_provider->getStatementsForFile(
+        $stmts = $codebase->getStatementsForFile(
             $file_storage->file_path,
-            $codebase->analysis_php_version_id,
             $progress,
         );
 
