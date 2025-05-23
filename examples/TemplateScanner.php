@@ -25,11 +25,7 @@ final class TemplateScanner extends Psalm\Internal\Scanner\FileScanner
         bool $storage_from_cache = false,
         ?Progress $progress = null
     ): void {
-        $stmts = $codebase->statements_provider->getStatementsForFile(
-            $file_storage->file_path,
-            7_04_00,
-            $progress,
-        );
+        $stmts = $codebase->getStatementsForFile($file_storage->file_path);
 
         if ($stmts === []) {
             return;
