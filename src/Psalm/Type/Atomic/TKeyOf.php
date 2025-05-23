@@ -60,6 +60,7 @@ final class TKeyOf extends TArrayKey
                 && !$type instanceof TClassConstant
                 && !$type instanceof TKeyedArray
                 && !$type instanceof TPropertiesOf
+                && !$type instanceof TRecursivePropertiesOf
             ) {
                 return false;
             }
