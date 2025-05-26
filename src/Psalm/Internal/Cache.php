@@ -110,12 +110,14 @@ final class Cache
         flock($this->lock, LOCK_EX);
 
         foreach (new DirectoryIterator($this->dir) as $f) {
-            if ($f->isFile() && !$f->isDot() && $f->getFilename() !== 'consolidated'
+            if ($f->isFile() && !$f->isDot()
+                && $f->getFilename() !== 'consolidated'
+                && $f->getFilename() !== 'lock'
                 && $f->getExtension() !== 'hash'
             ) {
                 $this->getItem($f->getFilename());
-                unlink($f->getPath());
-                unlink($f->getPath().'.hash');
+                unlink($f->getPathName());
+                unlink($f->getPathname().'.hash');
             }
         }
         $consolidated = $this->serializer->serialize($this->cache);
