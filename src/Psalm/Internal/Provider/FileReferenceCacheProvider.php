@@ -39,7 +39,7 @@ final class FileReferenceCacheProvider
     /** @var Cache<array> */
     private readonly Cache $cache;
 
-    public function __construct(Config $config, string $composerLock, bool $noFile = false)
+    public function __construct(Config $config, string $composerLock, public readonly bool $noFile = false)
     {
         $this->cache = new Cache($config, 'file_reference', [$composerLock], $noFile);
     }
