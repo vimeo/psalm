@@ -116,7 +116,7 @@ final class Cache
                 && $f->getExtension() !== 'hash'
             ) {
                 $this->getItem($f->getFilename());
-                unlink($f->getPathName());
+                unlink($f->getPathname());
                 unlink($f->getPathname().'.hash');
             }
         }
