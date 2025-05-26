@@ -300,6 +300,8 @@ final class Config
 
     public bool $allow_includes = true;
 
+    public bool $ignore_include_side_effects = false;
+
     /** @var 1|2|3|4|5|6|7|8 */
     public int $level = 1;
 
@@ -949,6 +951,7 @@ final class Config
             'hideAllErrorsExceptPassedFiles' => 'hide_all_errors_except_passed_files',
             'resolveFromConfigFile' => 'resolve_from_config_file',
             'allowFileIncludes' => 'allow_includes',
+            'ignoreIncludeSideEffects' => 'ignore_include_side_effects',
             'strictBinaryOperands' => 'strict_binary_operands',
             'allowBoolToLiteralBoolComparison' => 'allow_bool_to_literal_bool_comparison',
             'rememberPropertyAssignmentsAfterCall' => 'remember_property_assignments_after_call',

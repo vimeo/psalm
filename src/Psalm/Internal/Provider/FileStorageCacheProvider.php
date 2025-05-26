@@ -27,7 +27,7 @@ final class FileStorageCacheProvider
 
     private const FILE_STORAGE_CACHE_DIRECTORY = 'file_cache';
 
-    public function __construct(Config $config, string $composerLock, bool $noFile = false)
+    public function __construct(Config $config, string $composerLock, bool $persistent = true)
     {
         $storage_dir = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'Storage' . DIRECTORY_SEPARATOR;
 
@@ -52,9 +52,14 @@ final class FileStorageCacheProvider
             $dependencies []= (int) filemtime($dependent_file_path);
         }
 
-        $this->cache = new Cache($config, self::FILE_STORAGE_CACHE_DIRECTORY, $dependencies, $noFile);
+        $this->cache = new Cache($config, self::FILE_STORAGE_CACHE_DIRECTORY, $dependencies, $persistent);
     }
 
+    public function consolidate(): void
+    {
+        $this->cache->consolidate();
+    }
+    
     public function writeToCache(FileStorage $storage, string $file_contents): void
     {
         $this->cache->saveItem(strtolower($storage->file_path), $storage, hash('xxh128', $file_contents));

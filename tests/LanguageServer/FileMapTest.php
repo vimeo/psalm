@@ -33,10 +33,10 @@ final class FileMapTest extends TestCase
 
         $providers = new Providers(
             $this->file_provider,
-            new ParserCacheProvider($config, '', true),
+            new ParserCacheProvider($config, '', false),
             null,
             null,
-            new FileReferenceCacheProvider($config, '', true),
+            new FileReferenceCacheProvider($config, '', false),
             new ProjectCacheProvider(),
         );
 

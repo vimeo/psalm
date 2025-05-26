@@ -471,6 +471,18 @@ Defaults to `$XDG_CACHE_HOME/psalm`. If `$XDG_CACHE_HOME` is either not set or e
 ```
 Whether or not to allow `require`/`include` calls in your PHP. Defaults to `true`.
 
+#### ignoreIncludeSideEffects
+```xml
+<psalm
+  ignoreIncludeSideEffects="[bool]"
+>
+```
+Whether or not to ignore side effects of includes.  
+
+Ignoring include side effects can significantly speed up scans on legacy codebases, but changes to variables or variables defined inside of included files will not be visible to Psalm (functions, constants and classes will still be visible anyway, especially if the hoistConstants, allConstantsGlobal, allFunctionsGlobal configuration parameters are set to true).  
+
+Defaults to `false`.
+
 #### serializer
 ```xml
 <psalm

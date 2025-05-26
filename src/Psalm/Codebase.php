@@ -191,6 +191,8 @@ final class Codebase
     /** whether or not we only checked a part of the codebase */
     public bool $diff_run = false;
 
+    public bool $language_server = false;
+
     /**
      * @var array<lowercase-string, string>
      */
@@ -331,7 +333,6 @@ final class Codebase
             $this->config,
             $providers->classlike_storage_provider,
             $providers->file_reference_provider,
-            $providers->statements_provider,
             $this->scanner,
         );
 
@@ -551,12 +552,16 @@ final class Codebase
     /**
      * @return list<PhpParser\Node\Stmt>
      */
-    public function getStatementsForFile(string $file_path): array
+    public function getStatementsForFile(string $file_path, ?Progress $progress = null): array
     {
         return $this->statements_provider->getStatementsForFile(
             $file_path,
             $this->analysis_php_version_id,
-            $this->progress,
+            $this->diff_methods
+                || $this->diff_run
+                || $this->language_server
+                || $this->file_reference_provider->cache?->persistent,
+            $progress ?? $this->progress,
         );
     }
 

@@ -20,7 +20,7 @@ final class ParserCacheProvider
     /** @var Cache<list<PhpParser\Node\Stmt>> */
     private readonly Cache $stmtCache;
 
-    public function __construct(Config $config, string $composerLock, bool $noFile = false)
+    public function __construct(Config $config, string $composerLock, bool $persistent = true)
     {
         $deps = [
             $composerLock,
@@ -28,7 +28,12 @@ final class ParserCacheProvider
             (string) filemtime(__DIR__.DIRECTORY_SEPARATOR.'StatementsProvider.php'),
         ];
 
-        $this->stmtCache = new Cache($config, self::PARSER_CACHE_DIRECTORY, $deps, $noFile);
+        $this->stmtCache = new Cache($config, self::PARSER_CACHE_DIRECTORY, $deps, $persistent);
+    }
+
+    public function consolidate(): void
+    {
+        $this->stmtCache->consolidate();
     }
 
     /**

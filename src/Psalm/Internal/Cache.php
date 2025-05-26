@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace Psalm\Internal;
 
 use Amp\Serialization\Serializer;
+use AssertionError;
+use DirectoryIterator;
 use Psalm\Config;
 use Psalm\Internal\Provider\Providers;
 use RuntimeException;
 use Webmozart\Assert\Assert;
 
+use function assert;
 use function fclose;
 use function fflush;
 use function file_exists;
@@ -24,9 +27,15 @@ use function hash_final;
 use function hash_init;
 use function hash_update;
 use function is_dir;
+use function is_int;
 use function mkdir;
+use function pack;
 use function stream_get_contents;
 use function strlen;
+use function substr;
+use function substr_compare;
+use function unlink;
+use function unpack;
 use function usleep;
 
 use const DIRECTORY_SEPARATOR;
@@ -46,15 +55,17 @@ final class Cache
 
     /** @var array<string, list{string, T}> */
     private array $cache = [];
+    /** @var resource */
+    private mixed $lock;
 
     public function __construct(
         Config $config,
         string $subdir,
         array $dependencies = [],
-        private readonly bool $noFile = false,
+        private readonly bool $persistent = true,
     ) {
         $this->serializer = $config->getCacheSerializer();
-        if ($noFile) {
+        if (!$persistent) {
             return;
         }
 
@@ -87,6 +98,43 @@ final class Cache
                 throw $e;
             }
         }
+
+        $lock = fopen($this->dir.'lock', 'c');
+        assert($lock !== false);
+        flock($lock, LOCK_SH);
+        $this->lock = $lock;
+
+        if (file_exists($this->dir.'consolidated')) {
+            /** @var array<string, list{string, T}> */
+            $this->cache = $this->serializer->unserialize(Providers::safeFileGetContents($this->dir.'consolidated'));
+        }
+    }
+
+    public function consolidate(): void
+    {
+        flock($this->lock, LOCK_UN);
+        flock($this->lock, LOCK_EX);
+
+        foreach (new DirectoryIterator($this->dir) as $f) {
+            if ($f->isFile() && !$f->isDot()
+                && $f->getExtension() === 'hash'
+            ) {
+                $key = file_get_contents($f->getPathname());
+                Assert::notFalse($key);
+                /** @var int */
+                $hashLen = unpack('V', $key)[1];
+                $hash = substr($key, 4, $hashLen);
+                $key = substr($key, 4+$hashLen);
+                Assert::notNull($this->getItem($key, $hash));
+                unlink($f->getPathname());
+                unlink(substr($f->getPathname(), 0, -5));
+            }
+        }
+        $consolidated = $this->serializer->serialize($this->cache);
+
+        file_put_contents($this->dir . 'consolidated', $consolidated, LOCK_EX);
+        flock($this->lock, LOCK_UN);
+        flock($this->lock, LOCK_SH);
     }
 
     public function getHash(string $key): ?string
@@ -95,7 +143,7 @@ final class Cache
             return $this->cache[$key][0];
         }
 
-        if ($this->noFile) {
+        if (!$this->persistent) {
             return null;
         }
 
@@ -118,7 +166,7 @@ final class Cache
             }
         }
 
-        if ($this->noFile) {
+        if (!$this->persistent) {
             return null;
         }
 
@@ -156,9 +204,17 @@ final class Cache
                 fclose($fp);
                 return null;
             }
-            Assert::notFalse($fileHash);
-            $hash = $fileHash;
-        } elseif ($fileHash !== $hash) {
+            assert($fileHash !== false);
+            $hashLen = unpack('V', $fileHash)[1];
+            assert(is_int($hashLen));
+            $hash = substr($fileHash, 4, $hashLen);
+            if (substr_compare($fileHash, $key, 4+$hashLen) !== 0) {
+                throw new AssertionError("Hash collision on key $key");
+            }
+        } elseif (substr_compare($fileHash, $hash, 4, strlen($hash)) !== 0
+            || substr_compare($fileHash, $key, strlen($hash)+4) !== 0
+            || strlen($fileHash) !== strlen($key)+strlen($hash)+4
+        ) {
             fclose($fp);
             return null;
         }
@@ -184,13 +240,15 @@ final class Cache
         } elseif (isset($this->cache[$key]) && $this->cache[$key][0] === $hash) {
             return;
         }
-        if (!$this->noFile) {
+        if ($this->persistent) {
             $path = $this->dir . hash('xxh128', $key);
             $f = fopen("$path.hash", 'w');
             Assert::notFalse($f);
             flock($f, LOCK_EX);
             ftruncate($f, 0);
+            Assert::eq(fwrite($f, pack('V', strlen($hash))), 4);
             Assert::eq(fwrite($f, $hash), strlen($hash));
+            Assert::eq(fwrite($f, $key), strlen($key));
             file_put_contents($path, $this->serializer->serialize($item));
             fflush($f);
             flock($f, LOCK_UN);

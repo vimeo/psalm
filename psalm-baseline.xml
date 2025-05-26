@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="6.x-dev@90b5b9f5e7c8e441b191d3c82c58214753d7c7c1">
+<files psalm-version="6.x-dev@4696e07d52a656123262c12f435aa0f6bc8690d3">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$comment_block->tags['variablesfrom'][0]]]></code>
@@ -1409,6 +1409,19 @@
     <MixedAssignment>
       <code><![CDATA[$dep]]></code>
     </MixedAssignment>
+    <PossiblyFalseArgument>
+      <code><![CDATA[$fileHash]]></code>
+      <code><![CDATA[$fileHash]]></code>
+      <code><![CDATA[$fileHash]]></code>
+    </PossiblyFalseArgument>
+    <PossiblyInvalidArrayAccess>
+      <code><![CDATA[unpack('V', $fileHash)[1]]]></code>
+      <code><![CDATA[unpack('V', $key)[1]]]></code>
+    </PossiblyInvalidArrayAccess>
+    <PossiblyUndefinedIntArrayOffset>
+      <code><![CDATA[unpack('V', $fileHash)[1]]]></code>
+      <code><![CDATA[unpack('V', $key)[1]]]></code>
+    </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Cli/LanguageServer.php">
     <InvalidArgument>
@@ -2039,12 +2052,12 @@
   </file>
   <file src="src/Psalm/Internal/Provider/ClassLikeStorageCacheProvider.php">
     <InvalidPropertyAssignmentValue>
-      <code><![CDATA[new Cache($config, 'classlike_cache', $dependencies, $noFile)]]></code>
+      <code><![CDATA[new Cache($config, 'classlike_cache', $dependencies, $persistent)]]></code>
     </InvalidPropertyAssignmentValue>
   </file>
   <file src="src/Psalm/Internal/Provider/FileReferenceCacheProvider.php">
     <InvalidPropertyAssignmentValue>
-      <code><![CDATA[new Cache($config, 'file_reference', [$composerLock], $noFile)]]></code>
+      <code><![CDATA[new Cache($config, 'file_reference', [$composerLock], $persistent)]]></code>
     </InvalidPropertyAssignmentValue>
   </file>
   <file src="src/Psalm/Internal/Provider/FileReferenceProvider.php">
@@ -2084,7 +2097,7 @@
   </file>
   <file src="src/Psalm/Internal/Provider/ParserCacheProvider.php">
     <PropertyTypeCoercion>
-      <code><![CDATA[new Cache($config, self::PARSER_CACHE_DIRECTORY, $deps, $noFile)]]></code>
+      <code><![CDATA[new Cache($config, self::PARSER_CACHE_DIRECTORY, $deps, $persistent)]]></code>
     </PropertyTypeCoercion>
   </file>
   <file src="src/Psalm/Internal/Provider/Providers.php">

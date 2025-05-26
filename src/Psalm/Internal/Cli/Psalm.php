@@ -121,6 +121,7 @@ final class Psalm
 
     private const LONG_OPTIONS = [
         'clear-cache',
+        'consolidate-cache',
         'clear-global-cache',
         'config:',
         'debug',
@@ -339,6 +340,10 @@ final class Psalm
 
         if (isset($options['clear-cache'])) {
             self::clearCache($config);
+        }
+
+        if (isset($options['consolidate-cache'])) {
+            self::consolidateCache($config, $current_dir);
         }
 
         if (isset($options['clear-global-cache'])) {
@@ -675,10 +680,10 @@ final class Psalm
         if ($config->cache_directory === null || isset($options['i'])) {
             $providers = new Providers(
                 new FileProvider,
-                new ParserCacheProvider($config, Composer::getLockFile($current_dir), true),
-                new FileStorageCacheProvider($config, Composer::getLockFile($current_dir), true),
-                new ClassLikeStorageCacheProvider($config, Composer::getLockFile($current_dir), true),
-                new FileReferenceCacheProvider($config, Composer::getLockFile($current_dir), true),
+                new ParserCacheProvider($config, Composer::getLockFile($current_dir), false),
+                new FileStorageCacheProvider($config, Composer::getLockFile($current_dir), false),
+                new ClassLikeStorageCacheProvider($config, Composer::getLockFile($current_dir), false),
+                new FileReferenceCacheProvider($config, Composer::getLockFile($current_dir), false),
             );
         } else {
             $no_reflection_cache = isset($options['no-reflection-cache']);
@@ -687,10 +692,10 @@ final class Psalm
 
             $providers = new Providers(
                 new FileProvider,
-                new ParserCacheProvider($config, Composer::getLockFile($current_dir), $no_file_cache),
-                new FileStorageCacheProvider($config, Composer::getLockFile($current_dir), $no_reflection_cache),
-                new ClassLikeStorageCacheProvider($config, Composer::getLockFile($current_dir), $no_reflection_cache),
-                new FileReferenceCacheProvider($config, Composer::getLockFile($current_dir), $no_reference_cache),
+                new ParserCacheProvider($config, Composer::getLockFile($current_dir), !$no_file_cache),
+                new FileStorageCacheProvider($config, Composer::getLockFile($current_dir), !$no_reflection_cache),
+                new ClassLikeStorageCacheProvider($config, Composer::getLockFile($current_dir), !$no_reflection_cache),
+                new FileReferenceCacheProvider($config, Composer::getLockFile($current_dir), !$no_reference_cache),
                 new ProjectCacheProvider(),
             );
         }
@@ -900,6 +905,22 @@ final class Psalm
             Config::removeCacheDirectory($cache_directory);
         }
         echo 'Cache directory deleted' . PHP_EOL;
+        exit;
+    }
+
+
+    private static function consolidateCache(Config $config, string $current_dir): never
+    {
+        $cache_directory = $config->getCacheDirectory();
+
+        if ($cache_directory !== null) {
+            $lock = Composer::getLockFile($current_dir);
+            (new ParserCacheProvider($config, $lock))->consolidate();
+            (new FileStorageCacheProvider($config, $lock))->consolidate();
+            (new ClassLikeStorageCacheProvider($config, $lock))->consolidate();
+            (new FileReferenceCacheProvider($config, $lock))->consolidate();
+        }
+        echo 'Cache consolidated' . PHP_EOL;
         exit;
     }
 
@@ -1473,6 +1494,11 @@ final class Psalm
                 Whether the report should include non-errors in its output (defaults to true)
 
         Caching:
+            --consolidate-cache
+                Consolidates all cache files that Psalm uses for this specific project into a single file,
+                for quicker runs when doing whole project scans.  
+                Make sure to consolidate the cache again after running Psalm before saving the cache via CI.
+
             --clear-cache
                 Clears all cache files that Psalm uses for this specific project
 
@@ -1485,6 +1511,9 @@ final class Psalm
             --no-reflection-cache
                 Runs Psalm without using cached representations of unchanged classes and files.
                 Useful if you want the afterClassLikeVisit plugin hook to run every time you visit a file.
+
+            --no-reference-cache
+                Runs Psalm without using cached representations of unchanged methods.
 
             --no-file-cache
                 Runs Psalm without using caching every single file for later diffing.

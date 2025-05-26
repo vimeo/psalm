@@ -26,7 +26,7 @@ final class ClassLikeStorageCacheProvider
     /** @var Cache<ClassLikeStorage> */
     private readonly Cache $cache;
 
-    public function __construct(Config $config, string $composerLock, bool $noFile = false)
+    public function __construct(Config $config, string $composerLock, bool $persistent = true)
     {
         $storage_dir = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'Storage' . DIRECTORY_SEPARATOR;
 
@@ -51,7 +51,12 @@ final class ClassLikeStorageCacheProvider
             $dependencies []= filemtime($dependent_file_path);
         }
 
-        $this->cache = new Cache($config, 'classlike_cache', $dependencies, $noFile);
+        $this->cache = new Cache($config, 'classlike_cache', $dependencies, $persistent);
+    }
+
+    public function consolidate(): void
+    {
+        $this->cache->consolidate();
     }
 
     public function writeToCache(ClassLikeStorage $storage, string $file_path, string $file_contents): void
