@@ -2008,12 +2008,12 @@
   </file>
   <file src="src/Psalm/Internal/Provider/ClassLikeStorageCacheProvider.php">
     <InvalidPropertyAssignmentValue>
-      <code><![CDATA[new Cache($config, 'classlike_cache', $dependencies, $noFile)]]></code>
+      <code><![CDATA[new Cache($config, 'classlike_cache', $dependencies, $persistent)]]></code>
     </InvalidPropertyAssignmentValue>
   </file>
   <file src="src/Psalm/Internal/Provider/FileReferenceCacheProvider.php">
     <InvalidPropertyAssignmentValue>
-      <code><![CDATA[new Cache($config, 'file_reference', [$composerLock], $noFile)]]></code>
+      <code><![CDATA[new Cache($config, 'file_reference', [$composerLock], $persistent)]]></code>
     </InvalidPropertyAssignmentValue>
   </file>
   <file src="src/Psalm/Internal/Provider/FileReferenceProvider.php">
@@ -2053,7 +2053,7 @@
   </file>
   <file src="src/Psalm/Internal/Provider/ParserCacheProvider.php">
     <PropertyTypeCoercion>
-      <code><![CDATA[new Cache($config, self::PARSER_CACHE_DIRECTORY, $deps, $noFile)]]></code>
+      <code><![CDATA[new Cache($config, self::PARSER_CACHE_DIRECTORY, $deps, $persistent)]]></code>
     </PropertyTypeCoercion>
   </file>
   <file src="src/Psalm/Internal/Provider/Providers.php">
