@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal;
 
 use Amp\Serialization\Serializer;
+use AssertionError;
 use DirectoryIterator;
 use Psalm\Config;
 use Psalm\Internal\Provider\Providers;
@@ -26,10 +27,15 @@ use function hash_final;
 use function hash_init;
 use function hash_update;
 use function is_dir;
+use function is_int;
 use function mkdir;
+use function pack;
 use function stream_get_contents;
 use function strlen;
+use function substr;
+use function substr_compare;
 use function unlink;
+use function unpack;
 use function usleep;
 
 use const DIRECTORY_SEPARATOR;
@@ -111,13 +117,17 @@ final class Cache
 
         foreach (new DirectoryIterator($this->dir) as $f) {
             if ($f->isFile() && !$f->isDot()
-                && $f->getFilename() !== 'consolidated'
-                && $f->getFilename() !== 'lock'
-                && $f->getExtension() !== 'hash'
+                && $f->getExtension() === 'hash'
             ) {
-                $this->getItem($f->getFilename());
+                $key = file_get_contents($f->getPathname());
+                Assert::notFalse($key);
+                /** @var int */
+                $hashLen = unpack('V', $key)[1];
+                $hash = substr($key, 4, $hashLen);
+                $key = substr($key, 4+$hashLen);
+                Assert::notNull($this->getItem($key, $hash));
                 unlink($f->getPathname());
-                unlink($f->getPathname().'.hash');
+                unlink(substr($f->getPathname(), 0, -5));
             }
         }
         $consolidated = $this->serializer->serialize($this->cache);
@@ -194,9 +204,17 @@ final class Cache
                 fclose($fp);
                 return null;
             }
-            Assert::notFalse($fileHash);
-            $hash = $fileHash;
-        } elseif ($fileHash !== $hash) {
+            assert($fileHash !== false);
+            $hashLen = unpack('V', $fileHash)[1];
+            assert(is_int($hashLen));
+            $hash = substr($fileHash, 4, $hashLen);
+            if (substr_compare($fileHash, $key, 4+$hashLen) !== 0) {
+                throw new AssertionError("Hash collision on key $key");
+            }
+        } elseif (substr_compare($fileHash, $hash, 4, strlen($hash)) !== 0
+            || substr_compare($fileHash, $key, strlen($hash)+4) !== 0
+            || strlen($fileHash) !== strlen($key)+strlen($hash)+4
+        ) {
             fclose($fp);
             return null;
         }
@@ -228,7 +246,9 @@ final class Cache
             Assert::notFalse($f);
             flock($f, LOCK_EX);
             ftruncate($f, 0);
+            Assert::eq(fwrite($f, pack('V', strlen($hash))), 4);
             Assert::eq(fwrite($f, $hash), strlen($hash));
+            Assert::eq(fwrite($f, $key), strlen($key));
             file_put_contents($path, $this->serializer->serialize($item));
             fflush($f);
             flock($f, LOCK_UN);
