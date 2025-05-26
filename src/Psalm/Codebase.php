@@ -459,7 +459,7 @@ final class Codebase
         return $this->statements_provider->getStatementsForFile(
             $file_path,
             $this->analysis_php_version_id,
-            ($this->diff_methods || $this->diff_run) || !$this->file_reference_provider->cache->noFile,
+            ($this->diff_methods || $this->diff_run) || $this->file_reference_provider->cache?->persistent,
             $progress ?? $this->progress,
         );
     }

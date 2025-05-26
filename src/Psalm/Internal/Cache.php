@@ -51,10 +51,10 @@ final class Cache
         Config $config,
         string $subdir,
         array $dependencies = [],
-        private readonly bool $noFile = false,
+        private readonly bool $persistent = true,
     ) {
         $this->serializer = $config->getCacheSerializer();
-        if ($noFile) {
+        if (!$persistent) {
             return;
         }
 
@@ -95,7 +95,7 @@ final class Cache
             return $this->cache[$key][0];
         }
 
-        if ($this->noFile) {
+        if (!$this->persistent) {
             return null;
         }
 
@@ -118,7 +118,7 @@ final class Cache
             }
         }
 
-        if ($this->noFile) {
+        if (!$this->persistent) {
             return null;
         }
 
@@ -184,7 +184,7 @@ final class Cache
         } elseif (isset($this->cache[$key]) && $this->cache[$key][0] === $hash) {
             return;
         }
-        if (!$this->noFile) {
+        if ($this->persistent) {
             $path = $this->dir . hash('xxh128', $key);
             $f = fopen("$path.hash", 'w');
             Assert::notFalse($f);

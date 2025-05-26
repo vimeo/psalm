@@ -669,10 +669,10 @@ final class Psalm
         if ($config->cache_directory === null || isset($options['i'])) {
             $providers = new Providers(
                 new FileProvider,
-                new ParserCacheProvider($config, Composer::getLockFile($current_dir), true),
-                new FileStorageCacheProvider($config, Composer::getLockFile($current_dir), true),
-                new ClassLikeStorageCacheProvider($config, Composer::getLockFile($current_dir), true),
-                new FileReferenceCacheProvider($config, Composer::getLockFile($current_dir), true),
+                new ParserCacheProvider($config, Composer::getLockFile($current_dir), false),
+                new FileStorageCacheProvider($config, Composer::getLockFile($current_dir), false),
+                new ClassLikeStorageCacheProvider($config, Composer::getLockFile($current_dir), false),
+                new FileReferenceCacheProvider($config, Composer::getLockFile($current_dir), false),
             );
         } else {
             $no_reflection_cache = isset($options['no-reflection-cache']);
@@ -681,10 +681,10 @@ final class Psalm
 
             $providers = new Providers(
                 new FileProvider,
-                new ParserCacheProvider($config, Composer::getLockFile($current_dir), $no_file_cache),
-                new FileStorageCacheProvider($config, Composer::getLockFile($current_dir), $no_reflection_cache),
-                new ClassLikeStorageCacheProvider($config, Composer::getLockFile($current_dir), $no_reflection_cache),
-                new FileReferenceCacheProvider($config, Composer::getLockFile($current_dir), $no_reference_cache),
+                new ParserCacheProvider($config, Composer::getLockFile($current_dir), !$no_file_cache),
+                new FileStorageCacheProvider($config, Composer::getLockFile($current_dir), !$no_reflection_cache),
+                new ClassLikeStorageCacheProvider($config, Composer::getLockFile($current_dir), !$no_reflection_cache),
+                new FileReferenceCacheProvider($config, Composer::getLockFile($current_dir), !$no_reference_cache),
                 new ProjectCacheProvider(),
             );
         }
