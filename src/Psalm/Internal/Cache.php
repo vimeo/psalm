@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace Psalm\Internal;
 
 use Amp\Serialization\Serializer;
+use DirectoryIterator;
 use Psalm\Config;
 use Psalm\Internal\Provider\Providers;
 use RuntimeException;
 use Webmozart\Assert\Assert;
 
+use function assert;
 use function fclose;
 use function fflush;
 use function file_exists;
@@ -27,6 +29,7 @@ use function is_dir;
 use function mkdir;
 use function stream_get_contents;
 use function strlen;
+use function unlink;
 use function usleep;
 
 use const DIRECTORY_SEPARATOR;
@@ -46,6 +49,8 @@ final class Cache
 
     /** @var array<string, list{string, T}> */
     private array $cache = [];
+    /** @var resource */
+    private mixed $lock;
 
     public function __construct(
         Config $config,
@@ -87,6 +92,37 @@ final class Cache
                 throw $e;
             }
         }
+
+        $lock = fopen($this->dir.'lock', 'c');
+        assert($lock !== false);
+        flock($lock, LOCK_SH);
+        $this->lock = $lock;
+
+        if (file_exists($this->dir.'consolidated')) {
+            /** @var array<string, list{string, T}> */
+            $this->cache = $this->serializer->unserialize(Providers::safeFileGetContents($this->dir.'consolidated'));
+        }
+    }
+
+    public function consolidate(): void
+    {
+        flock($this->lock, LOCK_UN);
+        flock($this->lock, LOCK_EX);
+
+        foreach (new DirectoryIterator($this->dir) as $f) {
+            if ($f->isFile() && !$f->isDot() && $f->getFilename() !== 'consolidated'
+                && $f->getExtension() !== 'hash'
+            ) {
+                $this->getItem($f->getFilename());
+                unlink($f->getPath());
+                unlink($f->getPath().'.hash');
+            }
+        }
+        $consolidated = $this->serializer->serialize($this->cache);
+
+        file_put_contents($this->dir . 'consolidated', $consolidated, LOCK_EX);
+        flock($this->lock, LOCK_UN);
+        flock($this->lock, LOCK_SH);
     }
 
     public function getHash(string $key): ?string

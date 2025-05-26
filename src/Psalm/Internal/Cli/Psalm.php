@@ -120,6 +120,7 @@ final class Psalm
 
     private const LONG_OPTIONS = [
         'clear-cache',
+        'consolidate-cache',
         'clear-global-cache',
         'config:',
         'debug',
@@ -337,6 +338,10 @@ final class Psalm
 
         if (isset($options['clear-cache'])) {
             self::clearCache($config);
+        }
+
+        if (isset($options['consolidate-cache'])) {
+            self::consolidateCache($config, $current_dir);
         }
 
         if (isset($options['clear-global-cache'])) {
@@ -894,6 +899,22 @@ final class Psalm
             Config::removeCacheDirectory($cache_directory);
         }
         echo 'Cache directory deleted' . PHP_EOL;
+        exit;
+    }
+
+
+    private static function consolidateCache(Config $config, string $current_dir): never
+    {
+        $cache_directory = $config->getCacheDirectory();
+
+        if ($cache_directory !== null) {
+            $lock = Composer::getLockFile($current_dir);
+            (new ParserCacheProvider($config, $lock))->consolidate();
+            (new FileStorageCacheProvider($config, $lock))->consolidate();
+            (new ClassLikeStorageCacheProvider($config, $lock))->consolidate();
+            (new FileReferenceCacheProvider($config, $lock))->consolidate();
+        }
+        echo 'Cache consolidated' . PHP_EOL;
         exit;
     }
 
@@ -1466,6 +1487,11 @@ final class Psalm
                 Whether the report should include non-errors in its output (defaults to true)
 
         Caching:
+            --consolidate-cache
+                Consolidates all cache files that Psalm uses for this specific project into a single file,
+                for quicker runs when doing whole project scans.  
+                Make sure to consolidate the cache again after running Psalm before saving the cache via CI.
+
             --clear-cache
                 Clears all cache files that Psalm uses for this specific project
 
@@ -1478,6 +1504,9 @@ final class Psalm
             --no-reflection-cache
                 Runs Psalm without using cached representations of unchanged classes and files.
                 Useful if you want the afterClassLikeVisit plugin hook to run every time you visit a file.
+
+            --no-reference-cache
+                Runs Psalm without using cached representations of unchanged methods.
 
             --no-file-cache
                 Runs Psalm without using caching every single file for later diffing.

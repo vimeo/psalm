@@ -31,6 +31,11 @@ final class ParserCacheProvider
         $this->stmtCache = new Cache($config, self::PARSER_CACHE_DIRECTORY, $deps, $noFile);
     }
 
+    public function consolidate(): void
+    {
+        $this->stmtCache->consolidate();
+    }
+
     /**
      * @return list<PhpParser\Node\Stmt>|null
      */
