@@ -54,6 +54,11 @@ final class ClassLikeStorageCacheProvider
         $this->cache = new Cache($config, 'classlike_cache', $dependencies, $noFile);
     }
 
+    public function consolidate(): void
+    {
+        $this->cache->consolidate();
+    }
+
     public function writeToCache(ClassLikeStorage $storage, string $file_path, string $file_contents): void
     {
         $fq_classlike_name_lc = strtolower($storage->name);

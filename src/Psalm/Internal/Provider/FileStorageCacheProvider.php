@@ -55,6 +55,11 @@ final class FileStorageCacheProvider
         $this->cache = new Cache($config, self::FILE_STORAGE_CACHE_DIRECTORY, $dependencies, $noFile);
     }
 
+    public function consolidate(): void
+    {
+        $this->cache->consolidate();
+    }
+    
     public function writeToCache(FileStorage $storage, string $file_contents): void
     {
         $this->cache->saveItem(strtolower($storage->file_path), $storage, hash('xxh128', $file_contents));
