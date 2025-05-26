@@ -188,6 +188,8 @@ final class Codebase
     /** whether or not we only checked a part of the codebase */
     public bool $diff_run = false;
 
+    public bool $language_server = false;
+
     /**
      * @var array<lowercase-string, string>
      */
@@ -459,7 +461,7 @@ final class Codebase
         return $this->statements_provider->getStatementsForFile(
             $file_path,
             $this->analysis_php_version_id,
-            ($this->diff_methods || $this->diff_run) || $this->file_reference_provider->cache?->persistent,
+            $this->diff_methods || $this->diff_run || $this->language_server || $this->file_reference_provider->cache?->persistent,
             $progress ?? $this->progress,
         );
     }

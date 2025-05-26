@@ -43,6 +43,7 @@ final class CompletionTest extends TestCase
         );
 
         $this->codebase = new Codebase($config, $providers);
+        $this->codebase->language_server = true;
 
         $this->project_analyzer = new ProjectAnalyzer(
             $config,

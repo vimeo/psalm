@@ -246,6 +246,8 @@ final class LanguageServer extends Dispatcher
             $progress,
         );
 
+        $codebase->language_server = true;
+
         if ($config->find_unused_variables) {
             $codebase->reportUnusedVariables();
         }
