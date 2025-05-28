@@ -26965,6 +26965,99 @@ return array (
     'newObj' => 'array<array-key, mixed>|object',
     'updateOptions=' => 'array<array-key, mixed>|null',
   ),
+  'mongodb\\driver\\bulkwritecommand::__construct' =>
+  array (
+    0 => 'void',
+    'options=' => 'array<array-key, mixed>|null',
+  ),
+  'mongodb\\driver\\bulkwritecommand::count' =>
+  array (
+    0 => 'int',
+  ),
+  'mongodb\\driver\\bulkwritecommand::deletemany' =>
+  array (
+    0 => 'void',
+    'namespace' => 'string',
+    'filter' => 'array<array-key, mixed>|object',
+    'options=' => 'array<array-key, mixed>|null',
+  ),
+  'mongodb\\driver\\bulkwritecommand::deleteone' =>
+  array (
+    0 => 'void',
+    'namespace' => 'string',
+    'filter' => 'array<array-key, mixed>|object',
+    'options=' => 'array<array-key, mixed>|null',
+  ),
+  'mongodb\\driver\\bulkwritecommand::insertone' =>
+  array (
+    0 => 'mixed',
+    'namespace' => 'string',
+    'document' => 'array<array-key, mixed>|object',
+  ),
+  'mongodb\\driver\\bulkwritecommand::replaceone' =>
+  array (
+    0 => 'void',
+    'namespace' => 'string',
+    'filter' => 'array<array-key, mixed>|object',
+    'replacement' => 'array<array-key, mixed>|object',
+    'options=' => 'array<array-key, mixed>|null',
+  ),
+  'mongodb\\driver\\bulkwritecommand::updatemany' =>
+  array (
+    0 => 'void',
+    'namespace' => 'string',
+    'filter' => 'array<array-key, mixed>|object',
+    'update' => 'array<array-key, mixed>|object',
+    'options=' => 'array<array-key, mixed>|null',
+  ),
+  'mongodb\\driver\\bulkwritecommand::updateone' =>
+  array (
+    0 => 'void',
+    'namespace' => 'string',
+    'filter' => 'array<array-key, mixed>|object',
+    'update' => 'array<array-key, mixed>|object',
+    'options=' => 'array<array-key, mixed>|null',
+  ),
+  'mongodb\\driver\\bulkwritecommandresult::__construct' =>
+  array (
+    0 => 'void',
+  ),
+  'mongodb\\driver\\bulkwritecommandresult::getdeletedcount' =>
+  array (
+    0 => 'int',
+  ),
+  'mongodb\\driver\\bulkwritecommandresult::getdeleteresults' =>
+  array (
+    0 => 'MongoDB\\BSON\\Document|null',
+  ),
+  'mongodb\\driver\\bulkwritecommandresult::getinsertedcount' =>
+  array (
+    0 => 'int',
+  ),
+  'mongodb\\driver\\bulkwritecommandresult::getinsertresults' =>
+  array (
+    0 => 'MongoDB\\BSON\\Document|null',
+  ),
+  'mongodb\\driver\\bulkwritecommandresult::getmatchedcount' =>
+  array (
+    0 => 'int',
+  ),
+  'mongodb\\driver\\bulkwritecommandresult::getmodifiedcount' =>
+  array (
+    0 => 'int',
+  ),
+  'mongodb\\driver\\bulkwritecommandresult::getupdateresults' =>
+  array (
+    0 => 'MongoDB\\BSON\\Document|null',
+  ),
+  'mongodb\\driver\\bulkwritecommandresult::getupsertedcount' =>
+  array (
+    0 => 'int',
+  ),
+  'mongodb\\driver\\bulkwritecommandresult::isacknowledged' =>
+  array (
+    0 => 'bool',
+  ),
   'mongodb\\driver\\clientencryption::__construct' => 
   array (
     0 => 'void',
@@ -27125,6 +27218,70 @@ return array (
     0 => 'string',
   ),
   'mongodb\\driver\\exception\\authenticationexception::haserrorlabel' => 
+  array (
+    0 => 'bool',
+    'errorLabel' => 'string',
+  ),
+  'mongodb\\driver\\exception\\bulkwritecommandexception::__construct' =>
+  array (
+    0 => 'void',
+    'message=' => 'string',
+    'code=' => 'int',
+    'previous=' => 'Throwable|null',
+  ),
+  'mongodb\\driver\\exception\\bulkwritecommandexception::__tostring' =>
+  array (
+    0 => 'string',
+  ),
+  'mongodb\\driver\\exception\\bulkwritecommandexception::__wakeup' =>
+  array (
+    0 => 'void',
+  ),
+  'mongodb\\driver\\exception\\bulkwritecommandexception::getcode' =>
+  array (
+    0 => 'mixed',
+  ),
+  'mongodb\\driver\\exception\\bulkwritecommandexception::geterrorreply' =>
+  array (
+    0 => 'MongoDB\\BSON\\Document|null',
+  ),
+  'mongodb\\driver\\exception\\bulkwritecommandexception::getfile' =>
+  array (
+    0 => 'string',
+  ),
+  'mongodb\\driver\\exception\\bulkwritecommandexception::getline' =>
+  array (
+    0 => 'int',
+  ),
+  'mongodb\\driver\\exception\\bulkwritecommandexception::getmessage' =>
+  array (
+    0 => 'string',
+  ),
+  'mongodb\\driver\\exception\\bulkwritecommandexception::getpartialresult' =>
+  array (
+    0 => 'MongoDB\\Driver\\BulkWriteCommandResult|null',
+  ),
+  'mongodb\\driver\\exception\\bulkwritecommandexception::getprevious' =>
+  array (
+    0 => 'Throwable|null',
+  ),
+  'mongodb\\driver\\exception\\bulkwritecommandexception::gettrace' =>
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'mongodb\\driver\\exception\\bulkwritecommandexception::gettraceasstring' =>
+  array (
+    0 => 'string',
+  ),
+  'mongodb\\driver\\exception\\bulkwritecommandexception::getwriteconcernerrors' =>
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'mongodb\\driver\\exception\\bulkwritecommandexception::getwriteerrors' =>
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'mongodb\\driver\\exception\\bulkwritecommandexception::haserrorlabel' =>
   array (
     0 => 'bool',
     'errorLabel' => 'string',
@@ -27674,6 +27831,12 @@ return array (
     'bulk' => 'MongoDB\\Driver\\BulkWrite',
     'options=' => 'array<array-key, mixed>|null',
   ),
+  'mongodb\\driver\\manager::executebulkwritecommand' =>
+  array (
+    0 => 'MongoDB\\Driver\\BulkWriteCommandResult',
+    'bulkWriteCommand' => 'MongoDB\\Driver\\BulkWriteCommand',
+    'options=' => 'array<array-key, mixed>|null',
+  ),
   'mongodb\\driver\\manager::executecommand' => 
   array (
     0 => 'MongoDB\\Driver\\CursorInterface',
@@ -28132,6 +28295,12 @@ return array (
     0 => 'MongoDB\\Driver\\WriteResult',
     'namespace' => 'string',
     'bulkWrite' => 'MongoDB\\Driver\\BulkWrite',
+    'options=' => 'array<array-key, mixed>|null',
+  ),
+  'mongodb\\driver\\server::executebulkwritecommand' =>
+  array (
+    0 => 'MongoDB\\Driver\\BulkWriteCommandResult',
+    'bulkWriteCommand' => 'MongoDB\\Driver\\BulkWriteCommand',
     'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\server::executecommand' => 
