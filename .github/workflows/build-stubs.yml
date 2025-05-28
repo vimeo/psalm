@@ -26,7 +26,6 @@ jobs:
         with:
           cancel_others: true
           do_not_skip: '["release"]'
-          paths: '[".github/**", "bin/**"]'
 
   build-stubs-docker:
     permissions:
