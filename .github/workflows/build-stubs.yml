@@ -5,10 +5,9 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  push:
-    branches:
-      - master
-      - 6.x
+  release:
+    types:
+      - published
 
 permissions:
   contents: read
@@ -26,7 +25,6 @@ jobs:
         with:
           cancel_others: true
           do_not_skip: '["release"]'
-          paths: '[".github/**", "bin/**"]'
 
   build-stubs-docker:
     permissions:

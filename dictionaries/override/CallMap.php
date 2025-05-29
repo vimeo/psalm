@@ -36041,15 +36041,6 @@ return array (
   array (
     0 => 'int',
   ),
-  'mongodb\\bson\\binary::serialize' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\binary::unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
-  ),
   'mongodb\\bson\\binaryinterface::__tostring' => 
   array (
     0 => 'string',
@@ -36066,15 +36057,6 @@ return array (
   array (
     0 => 'string',
   ),
-  'mongodb\\bson\\dbpointer::serialize' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\dbpointer::unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
-  ),
   'mongodb\\bson\\decimal128::__construct' => 
   array (
     0 => 'void',
@@ -36083,15 +36065,6 @@ return array (
   'mongodb\\bson\\decimal128::__tostring' => 
   array (
     0 => 'string',
-  ),
-  'mongodb\\bson\\decimal128::serialize' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\decimal128::unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
   ),
   'mongodb\\bson\\decimal128interface::__tostring' => 
   array (
@@ -36107,21 +36080,6 @@ return array (
     0 => 'array<array-key, mixed>|object',
     'typeMap=' => 'array<array-key, mixed>|null',
   ),
-  'mongodb\\bson\\document::unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
-  ),
-  'mongodb\\bson\\fromjson' => 
-  array (
-    0 => 'string',
-    'json' => 'string',
-  ),
-  'mongodb\\bson\\fromphp' => 
-  array (
-    0 => 'string',
-    'value' => 'array<array-key, mixed>|object',
-  ),
   'mongodb\\bson\\int64::__construct' => 
   array (
     0 => 'void',
@@ -36130,15 +36088,6 @@ return array (
   'mongodb\\bson\\int64::__tostring' => 
   array (
     0 => 'string',
-  ),
-  'mongodb\\bson\\int64::serialize' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\int64::unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
   ),
   'mongodb\\bson\\iterator::key' => 
   array (
@@ -36162,15 +36111,6 @@ return array (
   array (
     0 => 'null|object',
   ),
-  'mongodb\\bson\\javascript::serialize' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\javascript::unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
-  ),
   'mongodb\\bson\\javascriptinterface::__tostring' => 
   array (
     0 => 'string',
@@ -36182,24 +36122,6 @@ return array (
   'mongodb\\bson\\javascriptinterface::getscope' => 
   array (
     0 => 'null|object',
-  ),
-  'mongodb\\bson\\maxkey::serialize' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\maxkey::unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
-  ),
-  'mongodb\\bson\\minkey::serialize' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\minkey::unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
   ),
   'mongodb\\bson\\objectid::__construct' => 
   array (
@@ -36214,15 +36136,6 @@ return array (
   array (
     0 => 'int',
   ),
-  'mongodb\\bson\\objectid::serialize' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\objectid::unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
-  ),
   'mongodb\\bson\\objectidinterface::__tostring' => 
   array (
     0 => 'string',
@@ -36235,11 +36148,6 @@ return array (
   array (
     0 => 'array<array-key, mixed>|object',
     'typeMap=' => 'array<array-key, mixed>|null',
-  ),
-  'mongodb\\bson\\packedarray::unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
   ),
   'mongodb\\bson\\persistable::bsonserialize' => 
   array (
@@ -36263,15 +36171,6 @@ return array (
   array (
     0 => 'string',
   ),
-  'mongodb\\bson\\regex::serialize' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\regex::unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
-  ),
   'mongodb\\bson\\regexinterface::__tostring' => 
   array (
     0 => 'string',
@@ -36292,15 +36191,6 @@ return array (
   array (
     0 => 'string',
   ),
-  'mongodb\\bson\\symbol::serialize' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\symbol::unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
-  ),
   'mongodb\\bson\\timestamp::__construct' => 
   array (
     0 => 'void',
@@ -36319,15 +36209,6 @@ return array (
   array (
     0 => 'int',
   ),
-  'mongodb\\bson\\timestamp::serialize' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\timestamp::unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
-  ),
   'mongodb\\bson\\timestampinterface::__tostring' => 
   array (
     0 => 'string',
@@ -36340,39 +36221,9 @@ return array (
   array (
     0 => 'int',
   ),
-  'mongodb\\bson\\tocanonicalextendedjson' => 
-  array (
-    0 => 'string',
-    'bson' => 'string',
-  ),
-  'mongodb\\bson\\tojson' => 
-  array (
-    0 => 'string',
-    'bson' => 'string',
-  ),
-  'mongodb\\bson\\tophp' => 
-  array (
-    0 => 'array<array-key, mixed>|object',
-    'bson' => 'string',
-    'typemap=' => 'array<array-key, mixed>|null',
-  ),
-  'mongodb\\bson\\torelaxedextendedjson' => 
-  array (
-    0 => 'string',
-    'bson' => 'string',
-  ),
   'mongodb\\bson\\undefined::__tostring' => 
   array (
     0 => 'string',
-  ),
-  'mongodb\\bson\\undefined::serialize' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\undefined::unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
   ),
   'mongodb\\bson\\unserializable::bsonunserialize' => 
   array (
@@ -36382,24 +36233,15 @@ return array (
   'mongodb\\bson\\utcdatetime::__construct' => 
   array (
     0 => 'void',
-    'milliseconds=' => 'DateTimeInterface|float|int|null|string',
+    'milliseconds=' => 'DateTimeInterface|MongoDB\\BSON\\Int64|int|null',
   ),
   'mongodb\\bson\\utcdatetime::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\utcdatetime::serialize' => 
   array (
     0 => 'string',
   ),
   'mongodb\\bson\\utcdatetime::todatetime' => 
   array (
     0 => 'DateTime',
-  ),
-  'mongodb\\bson\\utcdatetime::unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
   ),
   'mongodb\\bson\\utcdatetimeinterface::__tostring' => 
   array (
@@ -36467,8 +36309,7 @@ return array (
   ),
   'mongodb\\driver\\cursor::getid' => 
   array (
-    0 => 'MongoDB\\Driver\\CursorId',
-    'asInt64=' => 'bool',
+    0 => 'MongoDB\\BSON\\Int64',
   ),
   'mongodb\\driver\\cursor::getserver' => 
   array (
@@ -36502,19 +36343,6 @@ return array (
   'mongodb\\driver\\cursor::valid' => 
   array (
     0 => 'bool',
-  ),
-  'mongodb\\driver\\cursorid::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\cursorid::serialize' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\cursorid::unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
   ),
   'mongodb\\driver\\cursorinterface::getid' => 
   array (
@@ -36594,21 +36422,9 @@ return array (
   array (
     0 => 'string',
   ),
-  'mongodb\\driver\\exception\\sslconnectionexception::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'mongodb\\driver\\exception\\unexpectedvalueexception::__tostring' => 
   array (
     0 => 'string',
-  ),
-  'mongodb\\driver\\exception\\writeexception::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\exception\\writeexception::getwriteresult' => 
-  array (
-    0 => 'MongoDB\\Driver\\WriteResult',
   ),
   'mongodb\\driver\\manager::__construct' => 
   array (
@@ -36632,21 +36448,21 @@ return array (
     0 => 'MongoDB\\Driver\\WriteResult',
     'namespace' => 'string',
     'bulk' => 'MongoDB\\Driver\\BulkWrite',
-    'options=' => 'MongoDB\\Driver\\WriteConcern|array<array-key, mixed>|null',
+    'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\manager::executecommand' => 
   array (
     0 => 'MongoDB\\Driver\\Cursor',
     'db' => 'string',
     'command' => 'MongoDB\\Driver\\Command',
-    'options=' => 'MongoDB\\Driver\\ReadPreference|array<array-key, mixed>|null',
+    'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\manager::executequery' => 
   array (
     0 => 'MongoDB\\Driver\\Cursor',
     'namespace' => 'string',
     'query' => 'MongoDB\\Driver\\Query',
-    'options=' => 'MongoDB\\Driver\\ReadPreference|array<array-key, mixed>|null',
+    'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\manager::executereadcommand' => 
   array (
@@ -36733,10 +36549,6 @@ return array (
   array (
     0 => 'string',
   ),
-  'mongodb\\driver\\monitoring\\commandfailedevent::getserver' => 
-  array (
-    0 => 'MongoDB\\Driver\\Server',
-  ),
   'mongodb\\driver\\monitoring\\commandfailedevent::getserviceid' => 
   array (
     0 => 'MongoDB\\BSON\\ObjectId|null',
@@ -36760,10 +36572,6 @@ return array (
   'mongodb\\driver\\monitoring\\commandstartedevent::getrequestid' => 
   array (
     0 => 'string',
-  ),
-  'mongodb\\driver\\monitoring\\commandstartedevent::getserver' => 
-  array (
-    0 => 'MongoDB\\Driver\\Server',
   ),
   'mongodb\\driver\\monitoring\\commandstartedevent::getserviceid' => 
   array (
@@ -36803,10 +36611,6 @@ return array (
   'mongodb\\driver\\monitoring\\commandsucceededevent::getrequestid' => 
   array (
     0 => 'string',
-  ),
-  'mongodb\\driver\\monitoring\\commandsucceededevent::getserver' => 
-  array (
-    0 => 'MongoDB\\Driver\\Server',
   ),
   'mongodb\\driver\\monitoring\\commandsucceededevent::getserviceid' => 
   array (
@@ -36892,19 +36696,10 @@ return array (
   array (
     0 => 'bool',
   ),
-  'mongodb\\driver\\readconcern::serialize' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\readconcern::unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
-  ),
   'mongodb\\driver\\readpreference::__construct' => 
   array (
     0 => 'void',
-    'mode' => 'int|string',
+    'mode' => 'string',
     'tagSets=' => 'array<array-key, mixed>|null',
     'options=' => 'array<array-key, mixed>|null',
   ),
@@ -36920,10 +36715,6 @@ return array (
   array (
     0 => 'int',
   ),
-  'mongodb\\driver\\readpreference::getmode' => 
-  array (
-    0 => 'int',
-  ),
   'mongodb\\driver\\readpreference::getmodestring' => 
   array (
     0 => 'string',
@@ -36932,35 +36723,26 @@ return array (
   array (
     0 => 'array<array-key, mixed>',
   ),
-  'mongodb\\driver\\readpreference::serialize' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\readpreference::unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
-  ),
   'mongodb\\driver\\server::executebulkwrite' => 
   array (
     0 => 'MongoDB\\Driver\\WriteResult',
     'namespace' => 'string',
     'bulkWrite' => 'MongoDB\\Driver\\BulkWrite',
-    'options=' => 'MongoDB\\Driver\\WriteConcern|array<array-key, mixed>|null',
+    'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\server::executecommand' => 
   array (
     0 => 'MongoDB\\Driver\\Cursor',
     'db' => 'string',
     'command' => 'MongoDB\\Driver\\Command',
-    'options=' => 'MongoDB\\Driver\\ReadPreference|array<array-key, mixed>|null',
+    'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\server::executequery' => 
   array (
     0 => 'MongoDB\\Driver\\Cursor',
     'namespace' => 'string',
     'query' => 'MongoDB\\Driver\\Query',
-    'options=' => 'MongoDB\\Driver\\ReadPreference|array<array-key, mixed>|null',
+    'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\server::executereadcommand' => 
   array (
@@ -37030,15 +36812,6 @@ return array (
   'mongodb\\driver\\serverapi::bsonserialize' => 
   array (
     0 => 'stdClass',
-  ),
-  'mongodb\\driver\\serverapi::serialize' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\serverapi::unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
   ),
   'mongodb\\driver\\session::aborttransaction' => 
   array (
@@ -37122,15 +36895,6 @@ return array (
   array (
     0 => 'bool',
   ),
-  'mongodb\\driver\\writeconcern::serialize' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\writeconcern::unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
-  ),
   'mongodb\\driver\\writeconcernerror::getcode' => 
   array (
     0 => 'int',
@@ -37161,19 +36925,19 @@ return array (
   ),
   'mongodb\\driver\\writeresult::getdeletedcount' => 
   array (
-    0 => 'int|null',
+    0 => 'int',
   ),
   'mongodb\\driver\\writeresult::getinsertedcount' => 
   array (
-    0 => 'int|null',
+    0 => 'int',
   ),
   'mongodb\\driver\\writeresult::getmatchedcount' => 
   array (
-    0 => 'int|null',
+    0 => 'int',
   ),
   'mongodb\\driver\\writeresult::getmodifiedcount' => 
   array (
-    0 => 'int|null',
+    0 => 'int',
   ),
   'mongodb\\driver\\writeresult::getserver' => 
   array (
@@ -37181,7 +36945,7 @@ return array (
   ),
   'mongodb\\driver\\writeresult::getupsertedcount' => 
   array (
-    0 => 'int|null',
+    0 => 'int',
   ),
   'mongodb\\driver\\writeresult::getupsertedids' => 
   array (
