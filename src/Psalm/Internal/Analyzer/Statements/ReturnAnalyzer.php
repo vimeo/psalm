@@ -338,7 +338,8 @@ final class ReturnAnalyzer
                             if (!$is_from_generator) {
                                 if (IssueBuffer::accepts(
                                     new HiddenGeneratorReturn(
-                                        'The value returned by generator ' . $cased_method_id . ' may be inaccessible to callers.',
+                                        'The value returned by generator ' . $cased_method_id
+                                            . ' may be inaccessible to callers.',
                                         new CodeLocation($source, $stmt->expr),
                                     ),
                                     $statements_analyzer->getSuppressedIssues(),
