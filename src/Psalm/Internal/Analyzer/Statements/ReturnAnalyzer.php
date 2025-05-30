@@ -754,7 +754,7 @@ final class ReturnAnalyzer
             }
 
             $could_be_array_or_traversable = true;
-            if (!$atomic instanceof Type\Atomic\TGenericObject) {
+            if (!$atomic instanceof Type\Atomic\TNamedObject) {
                 continue;
             }
 
@@ -762,9 +762,15 @@ final class ReturnAnalyzer
                 continue;
             }
 
+            if ($atomic instanceof Type\Atomic\TGenericObject) {
+                $atomic_generator_return = $atomic->type_params[3] ?? type::getMixed();
+            } else {
+                $atomic_generator_return = Type::getMixed();
+            }
+
             $generator_return = Type::combineUnionTypes(
                 $generator_return,
-                $atomic->type_params[3] ?? type::getMixed(),
+                $atomic_generator_return,
                 $codebase,
             );
         }
