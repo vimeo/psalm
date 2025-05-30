@@ -28,6 +28,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\FalsableReturnStatement;
+use Psalm\Issue\HiddenGeneratorReturn;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidReturnStatement;
 use Psalm\Issue\LessSpecificReturnStatement;
@@ -330,9 +331,26 @@ final class ReturnAnalyzer
                         }
                     }
 
-                    if ($local_return_type->isGenerator() && $storage->has_yield) {
-                        return;
+                    if ($storage->has_yield) {
+                        $generator_return = self::extractGeneratorReturnType($codebase, $local_return_type);
+                        if (null !== $generator_return) {
+                            [$generator_return_type, $is_from_generator] = $generator_return;
+                            if (!$is_from_generator) {
+                                if (IssueBuffer::accepts(
+                                    new HiddenGeneratorReturn(
+                                        'The value returned by generator ' . $cased_method_id . ' may be inaccessible to callers.',
+                                        new CodeLocation($source, $stmt->expr),
+                                    ),
+                                    $statements_analyzer->getSuppressedIssues(),
+                                )) {
+                                    return;
+                                }
+                            }
+
+                            $local_return_type = $generator_return_type;
+                        }
                     }
+
 
                     if ($stmt_type->hasMixed()) {
                         if ($local_return_type->isVoid() || $local_return_type->isNever()) {
@@ -715,5 +733,49 @@ final class ReturnAnalyzer
             return $parent_return_type;
         }
         return $return_type;
+    }
+
+    /**
+     * @return null|array{0: Union, 1: bool}
+     */
+    private static function extractGeneratorReturnType(Codebase $codebase, Union $actual_return_type): ?array
+    {
+        $generator_return = null;
+        $could_be_array_or_traversable = false;
+
+        foreach ($actual_return_type->getAtomicTypes() as $atomic) {
+            if (!$atomic instanceof Type\Atomic\TArray &&
+                !$atomic instanceof Type\Atomic\TIterable &&
+                !$atomic instanceof Type\Atomic\TMixed &&
+                !$atomic->hasTraversableInterface($codebase)
+            ) {
+                continue;
+            }
+
+            $could_be_array_or_traversable = true;
+            if (!$atomic instanceof Type\Atomic\TGenericObject) {
+                continue;
+            }
+
+            if ($atomic->value !== 'Generator') {
+                continue;
+            }
+
+            $generator_return = Type::combineUnionTypes(
+                $generator_return,
+                $atomic->type_params[3] ?? type::getMixed(),
+                $codebase,
+            );
+        }
+
+        if (!$could_be_array_or_traversable) {
+            return null;
+        }
+
+        if (null === $generator_return) {
+            return [Type::getMixed(), false];
+        }
+
+        return [$generator_return, true];
     }
 }
