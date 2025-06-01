@@ -217,6 +217,7 @@ final class TaintFlowGraph extends DataFlowGraph
         $this->sources = [];
 
         ksort($this->forward_edges);
+        ksort($this->specializations);
 
         $config = Config::getInstance();
 
