@@ -1,0 +1,13 @@
+<?php
+namespace Foo;
+
+trait StubbedTrait
+{
+    /**
+     * @param int $a
+     */
+    public function run_stubbed_trait($a): float
+    {
+        return $a * 1.5;
+    }
+}
