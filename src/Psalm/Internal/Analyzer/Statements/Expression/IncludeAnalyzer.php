@@ -158,7 +158,8 @@ final class IncludeAnalyzer
                 if ($statements_analyzer->hasParentFilePath($path_to_file)
                     || !$codebase->file_storage_provider->has($path_to_file)
                     || ($statements_analyzer->hasAlreadyRequiredFilePath($path_to_file)
-                        && !$codebase->file_storage_provider->get($path_to_file)->has_extra_statements)
+                        && (!$codebase->file_storage_provider->get($path_to_file)->has_extra_statements
+                            || in_array($stmt->type, [PhpParser\Node\Expr\Include_::TYPE_INCLUDE_ONCE, PhpParser\Node\Expr\Include_::TYPE_REQUIRE_ONCE])))
                 ) {
                     return true;
                 }
