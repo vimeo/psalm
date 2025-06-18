@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Type\Atomic;
 
 use Override;
+
 use function implode;
 
 /**
@@ -14,7 +15,7 @@ use function implode;
  */
 final class TIntMaskVerifier extends TInt
 {
-    public ?int $mask = null;
+    public ?int $mask;
 
     /**
      * @param array<int> $potential_ints
@@ -24,7 +25,13 @@ final class TIntMaskVerifier extends TInt
         bool $from_docblock = false,
     ) {
         parent::__construct($from_docblock);
+    
+        $this->mask = 0;
+        foreach ($this->potential_ints as $int) {
+            $this->mask |= $int;
+        }
     }
+
 
     #[Override]
     public function getKey(bool $include_extra = true): string
@@ -38,17 +45,16 @@ final class TIntMaskVerifier extends TInt
         return false;
     }
 
+    /**
+     * Checks if the given integer is a valid value based on the mask.
+     *
+     * @param int $i The integer to check.
+     * @return bool True if the integer is valid, false otherwise.
+     */
     public function isValidValue(int $i): bool
     {
         if ($i === 0) {
             return true;
-        }
-
-        if ($this->mask === null) {
-            $this->mask = 0;
-            foreach ($this->potential_ints as $int) {
-                $this->mask |= $int;
-            }
         }
 
         return ($this->mask & $i) === $i;

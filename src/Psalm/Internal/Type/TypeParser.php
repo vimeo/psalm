@@ -76,11 +76,9 @@ use Psalm\Type\Union;
 use function array_key_exists;
 use function array_key_first;
 use function array_keys;
-use function array_map;
 use function array_merge;
 use function array_pop;
 use function array_shift;
-use function array_unique;
 use function array_unshift;
 use function array_values;
 use function assert;
@@ -535,37 +533,6 @@ final class TypeParser
         throw new LogicException('Should never get here');
     }
 
-    /**
-     * @param  non-empty-list<int>  $potential_ints
-     * @return  non-empty-list<TLiteralInt>
-     */
-    public static function getComputedIntsFromMask(array $potential_ints, bool $from_docblock = false): array
-    {
-        /** @var list<int> */
-        $potential_values = [];
-
-        foreach ($potential_ints as $ith) {
-            $new_values = [];
-
-            $new_values[] = $ith;
-
-            if ($ith !== 0) {
-                foreach ($potential_values as $potential_value) {
-                    $new_values[] = $ith | $potential_value;
-                }
-            }
-
-            $potential_values = [...$new_values, ...$potential_values];
-        }
-
-        array_unshift($potential_values, 0);
-        $potential_values = array_unique($potential_values);
-
-        return array_map(
-            static fn($int): TLiteralInt => new TLiteralInt($int, $from_docblock),
-            array_values($potential_values),
-        );
-    }
 
     /**
      * @param  array<string, array<string, Union>> $template_type_map
