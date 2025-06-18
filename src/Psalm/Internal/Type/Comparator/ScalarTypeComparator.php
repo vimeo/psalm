@@ -386,7 +386,6 @@ final class ScalarTypeComparator
         }
 
         if ($container_type_part instanceof TIntMaskVerifier) {
-
             if ($input_type_part instanceof TLiteralInt) {
                 return $container_type_part->isValidValue((int) $input_type_part->value);
             }

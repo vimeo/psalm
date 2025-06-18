@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Psalm\Type\Atomic;
 
 use Override;
+use function implode;
 
 /**
  * An Atomic type that performs checks for TIntMask and TIntMaskOf.
+ *
  * @psalm-immutable
  */
 final class TIntMaskVerifier extends TInt
@@ -19,7 +21,7 @@ final class TIntMaskVerifier extends TInt
      */
     public function __construct(
         public array $potential_ints,
-        bool $from_docblock = false
+        bool $from_docblock = false,
     ) {
         parent::__construct($from_docblock);
     }
@@ -51,6 +53,4 @@ final class TIntMaskVerifier extends TInt
 
         return ($this->mask & $i) === $i;
     }
-
-
 }
