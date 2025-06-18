@@ -21,6 +21,7 @@ use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntMask;
+use Psalm\Type\Atomic\TIntMaskVerifier;
 use Psalm\Type\Atomic\TIntMaskOf;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyOf;
@@ -374,7 +375,7 @@ final class TypeExpander
                 $potential_ints[] = $new_value_type->value;
             }
 
-            return TypeParser::getComputedIntsFromMask($potential_ints);
+            return [new TIntMaskVerifier($potential_ints)];
         }
 
         if ($return_type instanceof TIntMaskOf) {
@@ -408,7 +409,7 @@ final class TypeExpander
                 $potential_ints[] = $new_value_type->value;
             }
 
-            return TypeParser::getComputedIntsFromMask($potential_ints);
+            return [new TIntMaskVerifier($potential_ints)];
         }
 
         if ($return_type instanceof TConditional) {

@@ -32,6 +32,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
+use Psalm\Type\Atomic\TIntMaskVerifier;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TClassConstant;
@@ -981,7 +982,7 @@ final class TypeParser
                 $potential_ints[] = $atomic_type->value;
             }
 
-            return new Union(self::getComputedIntsFromMask($potential_ints, $from_docblock));
+            return new TIntMaskVerifier($potential_ints, $from_docblock);
         }
 
         if ($generic_type_value === 'int-mask-of') {
