@@ -700,10 +700,9 @@ final class FunctionCallReturnTypeFetcher
                 continue;
             }
 
-            $current_arg_is_variadic = $function_storage->params[$i]->is_variadic;
             $taintable_arg_index = [$i];
 
-            if ($current_arg_is_variadic) {
+            if ($function_storage->params[$i]->is_variadic) {
                 $max_params = count($args) - 1;
                 for ($arg_index = $i + 1; $arg_index <= $max_params; $arg_index++) {
                     $taintable_arg_index[] = $arg_index;
