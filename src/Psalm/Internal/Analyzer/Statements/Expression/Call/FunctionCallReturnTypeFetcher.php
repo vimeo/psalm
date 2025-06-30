@@ -664,17 +664,19 @@ final class FunctionCallReturnTypeFetcher
                 $codebase->config->eventDispatcher->dispatchRemoveTaints($event),
             );
 
-            self::taintUsingFlows(
-                $statements_analyzer,
-                $function_storage,
-                $statements_analyzer->data_flow_graph,
-                $function_id,
-                $stmt->getArgs(),
-                $node_location,
-                $function_call_node,
-                array_merge($removed_taints, $conditionally_removed_taints),
-                $added_taints,
-            );
+            if (!$stmt->isFirstClassCallable()) {
+                self::taintUsingFlows(
+                    $statements_analyzer,
+                    $function_storage,
+                    $statements_analyzer->data_flow_graph,
+                    $function_id,
+                    $stmt->getArgs(),
+                    $node_location,
+                    $function_call_node,
+                    array_merge($removed_taints, $conditionally_removed_taints),
+                    $added_taints,
+                );
+            }
         }
 
         self::taintUsingStorage($function_storage, $statements_analyzer->data_flow_graph, $function_call_node);
@@ -703,10 +705,9 @@ final class FunctionCallReturnTypeFetcher
                 continue;
             }
 
-            $current_arg_is_variadic = $function_storage->params[$i]->is_variadic;
             $taintable_arg_index = [$i];
 
-            if ($current_arg_is_variadic) {
+            if ($function_storage->params[$i]->is_variadic) {
                 $max_params = count($args) - 1;
                 for ($arg_index = $i + 1; $arg_index <= $max_params; $arg_index++) {
                     $taintable_arg_index[] = $arg_index;
