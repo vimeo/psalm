@@ -19,6 +19,20 @@ final class ReturnTypeTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'suppressHiddenGeneratorReturn' => [
+                'code' => '<?php
+                    /**
+                     * @return iterable<"f">
+                     * @psalm-suppress HiddenGeneratorReturn
+                     */
+                    function generator(): iterable
+                    {
+                        yield "f";
+
+                        return 1;
+                    }
+                ',
+            ],
             'arrayCombine' => [
                 'code' => '<?php
                     class a {}
@@ -1350,6 +1364,20 @@ final class ReturnTypeTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'hiddenGeneratorReturn' => [
+                'code' => '<?php
+                    /**
+                     * @return iterable<"f">
+                     */
+                    function generator(): iterable
+                    {
+                        yield "f";
+
+                        return 1;
+                    }
+                ',
+                'error_message' => 'HiddenGeneratorReturn',
+            ],
             'wrongReturnType1' => [
                 'code' => '<?php
                     function fooFoo(): string {
