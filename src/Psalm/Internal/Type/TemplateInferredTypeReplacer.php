@@ -431,10 +431,12 @@ final class TemplateInferredTypeReplacer
             $matching_if_types = [];
             $matching_else_types = [];
 
-            foreach ($template_type->getAtomicTypes() as $candidate_atomic_type) {
+            $l = $template_type->getAtomicTypes();
+            foreach (isset($l['mixed']) ? [$l['mixed']] : $l as $candidate_atomic_type) {
+                $candidate = new Union([$candidate_atomic_type]);
                 if (UnionTypeComparator::isContainedBy(
                     $codebase,
-                    new Union([$candidate_atomic_type]),
+                    $candidate,
                     $conditional_type,
                     false,
                     false,
@@ -447,7 +449,7 @@ final class TemplateInferredTypeReplacer
                 ) {
                     $matching_if_types[] = $candidate_atomic_type;
                 } elseif (null === Type::intersectUnionTypes(
-                    new Union([$candidate_atomic_type]),
+                    $candidate,
                     $conditional_type,
                     $codebase,
                     false,
