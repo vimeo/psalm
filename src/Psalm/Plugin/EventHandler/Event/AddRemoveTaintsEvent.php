@@ -18,30 +18,10 @@ final class AddRemoveTaintsEvent
      * @internal
      */
     public function __construct(
-        private readonly ArrayItem|Expr $expr,
-        private readonly Context $context,
-        private readonly StatementsSource $statements_source,
-        private readonly Codebase $codebase,
+        public readonly ArrayItem|Expr $expr,
+        public readonly Context $context,
+        public readonly StatementsSource $statements_source,
+        public readonly Codebase $codebase,
     ) {
-    }
-
-    public function getExpr(): ArrayItem|Expr
-    {
-        return $this->expr;
-    }
-
-    public function getContext(): Context
-    {
-        return $this->context;
-    }
-
-    public function getStatementsSource(): StatementsSource
-    {
-        return $this->statements_source;
-    }
-
-    public function getCodebase(): Codebase
-    {
-        return $this->codebase;
     }
 }
