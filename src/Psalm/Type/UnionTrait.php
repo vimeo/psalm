@@ -425,6 +425,22 @@ trait UnionTrait
     /**
      * @psalm-mutation-free
      */
+    public function hasIterableType(Codebase $codebase): bool
+    {
+        if (isset($this->types['iterable'])) {
+            return true;
+        }
+        foreach ($this->types as $t) {
+            if ($t->isIterable($codebase)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
     public function hasList(): bool
     {
         return isset($this->types['array'])
