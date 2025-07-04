@@ -51,11 +51,11 @@ use Psalm\Type\Union;
 
 use function array_any;
 use function array_filter;
+use function array_key_exists;
 use function array_merge;
 use function array_values;
 use function count;
 use function explode;
-use function in_array;
 use function preg_last_error_msg;
 use function preg_match;
 use function preg_replace;
@@ -150,7 +150,7 @@ final class FunctionLikeDocblockScanner
         if ($docblock_info->ignore_nullable_return
             && $storage->return_type
             && ($codebase->config->ignore_internal_nullable_issues
-                || !in_array($file_storage->file_path, $codebase->config->internal_stubs)
+                || !array_key_exists($file_storage->file_path, $codebase->config->internal_stubs)
             )
         ) {
             /** @psalm-suppress InaccessibleProperty We just created this type */
@@ -161,7 +161,7 @@ final class FunctionLikeDocblockScanner
         if ($docblock_info->ignore_falsable_return
             && $storage->return_type
             && ($codebase->config->ignore_internal_falsable_issues
-                || !in_array($file_storage->file_path, $codebase->config->internal_stubs)
+                || !array_key_exists($file_storage->file_path, $codebase->config->internal_stubs)
             )
         ) {
             /** @psalm-suppress InaccessibleProperty We just created this type */
@@ -1046,7 +1046,7 @@ final class FunctionLikeDocblockScanner
         if ($docblock_info->ignore_nullable_return
             && $storage->return_type
             && ($codebase->config->ignore_internal_nullable_issues
-                || !in_array($file_storage->file_path, $codebase->config->internal_stubs)
+                || !array_key_exists($file_storage->file_path, $codebase->config->internal_stubs)
             )
         ) {
             /** @psalm-suppress InaccessibleProperty We just created this type */
@@ -1057,7 +1057,7 @@ final class FunctionLikeDocblockScanner
         if ($docblock_info->ignore_falsable_return
             && $storage->return_type
             && ($codebase->config->ignore_internal_falsable_issues
-                || !in_array($file_storage->file_path, $codebase->config->internal_stubs)
+                || !array_key_exists($file_storage->file_path, $codebase->config->internal_stubs)
             )
         ) {
             /** @psalm-suppress InaccessibleProperty We just created this type */
