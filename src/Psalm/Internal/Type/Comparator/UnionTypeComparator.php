@@ -247,7 +247,7 @@ final class UnionTypeComparator
                 }
 
                 if ($input_type_part instanceof Atomic\TIterable
-                    && $container_type->hasIterableType($codebase)
+                    && ($container_type->hasArray() || $container_type->containsClassLike('traversable'))
                 ) {
                     $scalar_type_match_found = false;
                     $is_atomic_contained_by = true;
