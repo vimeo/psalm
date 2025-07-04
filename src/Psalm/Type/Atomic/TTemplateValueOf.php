@@ -84,12 +84,16 @@ final class TTemplateValueOf extends Atomic
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase,
-    ): self {
+    ): Atomic {
         $as = TemplateInferredTypeReplacer::replace(
             $this->as,
             $template_result,
             $codebase,
         );
+        $mixed = $as->getAtomicTypes()['mixed'] ?? null;
+        if ($mixed !== null) {
+            return $mixed;
+        }
         if ($as === $this->as) {
             return $this;
         }

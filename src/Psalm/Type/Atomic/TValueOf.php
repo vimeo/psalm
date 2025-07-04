@@ -116,6 +116,9 @@ final class TValueOf extends Atomic
         $value_types = [];
 
         foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TMixed) {
+                return new Union([$atomic_type]);
+            }
             if ($atomic_type instanceof TArray) {
                 $value_atomics = $atomic_type->type_params[1];
             } elseif ($atomic_type instanceof TKeyedArray) {
