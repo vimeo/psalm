@@ -78,7 +78,7 @@ final class TTemplateValueOf extends Atomic
     }
 
     /**
-     * @return static
+     * @return static|TMixed
      */
     #[Override]
     public function replaceTemplateTypesWithArgTypes(

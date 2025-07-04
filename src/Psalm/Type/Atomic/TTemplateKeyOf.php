@@ -78,7 +78,7 @@ final class TTemplateKeyOf extends Atomic
     }
 
     /**
-     * @return static
+     * @return TArrayKey|static
      */
     #[Override]
     public function replaceTemplateTypesWithArgTypes(
