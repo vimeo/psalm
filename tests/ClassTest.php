@@ -944,6 +944,26 @@ final class ClassTest extends TestCase
                     interface InterfaceB extends InterfaceA {}
                     PHP,
             ],
+            'ClassConstantWithTernary' => [
+                'code' => <<<'PHP'
+                    <?php
+                    const DUMMY = rand(-1, 1);
+                    class Foo {
+                        public const C_BOOL = DUMMY < 0 ? true : false;
+                        public const C_FALSE_OR_INT = DUMMY === 0 ? false : 123;
+                        public const C_INT = DUMMY ?: 123;
+                    }
+                    $bool = Foo::C_BOOL;
+                    $falseOrInt = Foo::C_FALSE_OR_INT;
+                    $int = Foo::C_INT;
+                    PHP,
+                'assertions' => [
+                    '$bool' => 'mixed',
+                    '$falseOrInt' => 'mixed',
+                    '$int' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment', 'UndefinedConstant'],
+            ],
         ];
     }
 
