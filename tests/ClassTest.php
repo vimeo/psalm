@@ -958,11 +958,10 @@ final class ClassTest extends TestCase
                     $int = Foo::C_INT;
                     PHP,
                 'assertions' => [
-                    '$bool' => 'mixed',
-                    '$falseOrInt' => 'mixed',
-                    '$int' => 'mixed',
+                    '$bool' => 'bool',
+                    '$falseOrInt' => 'false|int',
+                    '$int' => 'int',
                 ],
-                'ignored_issues' => ['MixedAssignment', 'UndefinedConstant'],
             ],
         ];
     }
