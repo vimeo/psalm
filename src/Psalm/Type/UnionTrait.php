@@ -424,6 +424,7 @@ trait UnionTrait
 
     /**
      * @psalm-mutation-free
+     * @psalm-api
      */
     public function hasIterableType(Codebase $codebase): bool
     {
