@@ -55,6 +55,8 @@ final class DynamicClassInstantiationUsingAVariable extends TestCase
             ',
         );
 
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
         $context = new Context();
 
         $this->analyzeFile('somefile.php', $context);
