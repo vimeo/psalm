@@ -90,9 +90,8 @@ final class TTemplateKeyOf extends Atomic
             $template_result,
             $codebase,
         );
-        $mixed = $as->getAtomicTypes()['mixed'] ?? null;
-        if ($mixed !== null) {
-            return new TArrayKey($mixed->from_docblock);
+        if ($as->hasMixed()) {
+            return new TArrayKey($as->from_docblock);
         }
 
         if ($as === $this->as) {

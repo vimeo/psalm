@@ -479,10 +479,10 @@ abstract class Atomic implements TypeNode, Stringable
 
     public function isIterable(Codebase $codebase): bool
     {
-        return $this instanceof TIterable
-            || $this->hasTraversableInterface($codebase)
-            || $this instanceof TArray
-            || $this instanceof TKeyedArray;
+        return $this instanceof TArray
+            || $this instanceof TKeyedArray
+            || $this instanceof TIterable
+            || $this->hasTraversableInterface($codebase);
     }
 
     /**
