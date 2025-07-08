@@ -158,16 +158,16 @@ final class VariableUseGraph extends DataFlowGraph
         foreach ($this->forward_edges[$generated_source->id] as $to_id => $path) {
             $path_type = $path->type;
 
-            if ($path->type === 'variable-use'
-                || $path->type === 'closure-use'
-                || $path->type === 'global-use'
-                || $path->type === 'use-inside-instance-property'
-                || $path->type === 'use-inside-static-property'
-                || $path->type === 'use-inside-call'
-                || $path->type === 'use-inside-conditional'
-                || $path->type === 'use-inside-isset'
-                || $path->type === 'arg'
-                || $path->type === 'comparison'
+            if ($path_type === 'variable-use'
+                || $path_type === 'closure-use'
+                || $path_type === 'global-use'
+                || $path_type === 'use-inside-instance-property'
+                || $path_type === 'use-inside-static-property'
+                || $path_type === 'use-inside-call'
+                || $path_type === 'use-inside-conditional'
+                || $path_type === 'use-inside-isset'
+                || $path_type === 'arg'
+                || $path_type === 'comparison'
             ) {
                 return null;
             }
@@ -189,7 +189,8 @@ final class VariableUseGraph extends DataFlowGraph
             }
 
             $new_destination = new DataFlowNode($to_id, $to_id, null);
-            $new_destination->path_types = [...$generated_source->path_types, ...[$path_type]];
+            $new_destination->path_types = $generated_source->path_types;
+            $new_destination->path_types []= $path_type;
 
             $new_child_nodes[$to_id] = $new_destination;
         }
