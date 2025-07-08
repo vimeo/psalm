@@ -72,9 +72,8 @@ abstract class DataFlowGraph
         ) {
             $fetch_nesting = 0;
 
-            $previous_path_types = array_reverse($previous_path_types);
-
-            foreach ($previous_path_types as $previous_path_type) {
+            for ($x = count($previous_path_types)-1; $x >= 0; $x--) {
+                $previous_path_type = $previous_path_types[$x];
                 if ($previous_path_type === $expression_type . '-assignment') {
                     if ($fetch_nesting === 0) {
                         return false;
