@@ -23,6 +23,7 @@ use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIntMaskVerifier;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
@@ -905,7 +906,8 @@ abstract class Type
                 $intersection_performed = true;
             }
         }
-        if ($type_1_atomic instanceof TInt && $type_2_atomic instanceof TInt) {
+        if ($type_1_atomic instanceof TInt && $type_2_atomic instanceof TInt &&
+            !($type_1_atomic instanceof TIntMaskVerifier || $type_2_atomic instanceof TIntMaskVerifier)) {
             $int_intersection = TIntRange::intersectIntRanges(
                 TIntRange::convertToIntRange($type_1_atomic),
                 TIntRange::convertToIntRange($type_2_atomic),
