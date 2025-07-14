@@ -52,6 +52,7 @@
         <xs:attribute name="allConstantsGlobal" type="xs:boolean" default="false" />
         <xs:attribute name="forceJit" type="xs:boolean" default="false" />
         <xs:attribute name="noCache" type="xs:boolean" default="false" />
+        <xs:attribute name="arrayCache" type="xs:boolean" default="true" />
         <xs:attribute name="findUnusedVariablesAndParams" type="xs:boolean" default="false" />
         <xs:attribute name="findUnusedPsalmSuppress" type="xs:boolean" default="false" />
         <xs:attribute name="findUnusedBaselineEntry" type="xs:boolean" default="true" />
