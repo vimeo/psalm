@@ -9,7 +9,6 @@ use Psalm\Internal\DataFlow\Path;
 
 use function abs;
 use function array_keys;
-use function array_reverse;
 use function array_sum;
 use function count;
 use function str_starts_with;
