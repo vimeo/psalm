@@ -281,6 +281,18 @@ When `true`, Psalm will exit immediately if JIT acceleration (up to +20% perform
 ```
 When `true`, Psalm will disable usage of the cache, the equivalent of running with `--no-cache`. Defaults to `false`.
 
+#### arrayCache
+```xml
+<psalm
+  arrayCache="[bool]"
+>
+```
+When `false`, Psalm will disable usage of the array cache. 
+
+The array cache is used together with the file cache to avoid re-loading cache entries when re-scanning the same file, which offers a nice performance improvement.
+
+Defaults to `true`.
+
 #### disallowLiteralKeysOnUnshapedArrays
 ```xml
 <psalm

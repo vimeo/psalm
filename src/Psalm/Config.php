@@ -221,6 +221,8 @@ final class Config
      */
     public ?string $cache_directory = null;
 
+    public bool $array_cache = true;
+
     private bool $cache_directory_initialized = false;
 
     /**
@@ -943,6 +945,7 @@ final class Config
         $config_xml = simplexml_import_dom($dom_document);
 
         $booleanAttributes = [
+            'arrayCache' => 'array_cache',
             'useDocblockTypes' => 'use_docblock_types',
             'useDocblockPropertyTypes' => 'use_docblock_property_types',
             'docblockPropertyTypesSealProperties' => 'docblock_property_types_seal_properties',
