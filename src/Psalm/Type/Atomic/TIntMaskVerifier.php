@@ -59,4 +59,15 @@ final class TIntMaskVerifier extends TInt
 
         return ($this->mask & $i) === $i;
     }
+
+    /**
+     * Checks if this verifier is a superset of the given verifier.
+     *
+     * @param TIntMaskVerifier $input_type_part The verifier to check against.
+     * @return bool True if this verifier is a superset of the other, false otherwise.
+     */
+    public function isSupersetOf(TIntMaskVerifier $input_type_part): bool
+    {
+        return ($this->mask & $input_type_part->mask) === $input_type_part->mask;
+    }
 }
