@@ -19,47 +19,11 @@ final class AfterStatementAnalysisEvent
      * @internal
      */
     public function __construct(
-        private readonly Stmt $stmt,
-        private readonly Context $context,
-        private readonly StatementsSource $statements_source,
-        private readonly Codebase $codebase,
-        private array $file_replacements = [],
+        public readonly Stmt $stmt,
+        public readonly Context $context,
+        public readonly StatementsSource $statements_source,
+        public readonly Codebase $codebase,
+        public array $file_replacements = [],
     ) {
-    }
-
-    public function getStmt(): Stmt
-    {
-        return $this->stmt;
-    }
-
-    public function getContext(): Context
-    {
-        return $this->context;
-    }
-
-    public function getStatementsSource(): StatementsSource
-    {
-        return $this->statements_source;
-    }
-
-    public function getCodebase(): Codebase
-    {
-        return $this->codebase;
-    }
-
-    /**
-     * @return FileManipulation[]
-     */
-    public function getFileReplacements(): array
-    {
-        return $this->file_replacements;
-    }
-
-    /**
-     * @param FileManipulation[] $file_replacements
-     */
-    public function setFileReplacements(array $file_replacements): void
-    {
-        $this->file_replacements = $file_replacements;
     }
 }
