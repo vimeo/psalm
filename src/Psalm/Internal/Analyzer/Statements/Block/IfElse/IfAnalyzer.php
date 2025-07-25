@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Block\IfElse;
 
 use PhpParser;
@@ -25,6 +27,7 @@ use Psalm\Type;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
+use function array_any;
 use function array_combine;
 use function array_diff_key;
 use function array_filter;
@@ -56,7 +59,7 @@ final class IfAnalyzer
         IfConditionalScope $if_conditional_scope,
         Context $if_context,
         Context $outer_context,
-        array $pre_assignment_else_redefined_vars
+        array $pre_assignment_else_redefined_vars,
     ): ?bool {
         $cond_referenced_var_ids = $if_conditional_scope->cond_referenced_var_ids;
 
@@ -69,7 +72,7 @@ final class IfAnalyzer
             $active_if_types,
         );
 
-        if (array_filter(
+        if (array_any(
             $outer_context->clauses,
             static fn(Clause $clause): bool => (bool) $clause->possibilities,
         )) {
@@ -141,10 +144,10 @@ final class IfAnalyzer
 
         $if_context->reconciled_expression_clauses = [];
 
-        $outer_context->vars_possibly_in_scope = array_merge(
-            $if_context->vars_possibly_in_scope,
-            $outer_context->vars_possibly_in_scope,
-        );
+        $outer_context->vars_possibly_in_scope = [
+            ...$if_context->vars_possibly_in_scope,
+            ...$outer_context->vars_possibly_in_scope,
+        ];
 
         $old_if_context = clone $if_context;
 
@@ -167,12 +170,12 @@ final class IfAnalyzer
             $outer_context->removeVarFromConflictingClauses($var_id);
         }
 
-        $if_scope->if_actions = $final_actions = ScopeAnalyzer::getControlActions(
+        $final_actions = ScopeAnalyzer::getControlActions(
             $stmt->stmts,
             $statements_analyzer->node_data,
             [],
         );
-
+        // has a return/throw at end
         $has_ending_statements = $final_actions === [ScopeAnalyzer::ACTION_END];
 
         $has_leaving_statements = $has_ending_statements
@@ -289,10 +292,10 @@ final class IfAnalyzer
                     $if_scope->new_vars_possibly_in_scope = $vars_possibly_in_scope;
                 }
 
-                $if_context->loop_scope->vars_possibly_in_scope = array_merge(
-                    $vars_possibly_in_scope,
-                    $if_context->loop_scope->vars_possibly_in_scope,
-                );
+                $if_context->loop_scope->vars_possibly_in_scope = [
+                    ...$vars_possibly_in_scope,
+                    ...$if_context->loop_scope->vars_possibly_in_scope,
+                ];
             } elseif (!$has_leaving_statements) {
                 $if_scope->new_vars_possibly_in_scope = $vars_possibly_in_scope;
             }
@@ -319,7 +322,7 @@ final class IfAnalyzer
         PhpParser\Node\Expr $cond,
         Context $post_leaving_if_context,
         Context $post_if_context,
-        array $assigned_in_conditional_var_ids
+        array $assigned_in_conditional_var_ids,
     ): void {
         // this filters out coercions to expected types in ArgumentAnalyzer
         $assigned_in_conditional_var_ids = array_filter($assigned_in_conditional_var_ids);
@@ -423,7 +426,7 @@ final class IfAnalyzer
         array $assigned_var_ids,
         array $possibly_assigned_var_ids,
         array $newly_reconciled_var_ids,
-        bool $update_new_vars = true
+        bool $update_new_vars = true,
     ): void {
         $redefined_vars = $if_context->getRedefinedVars($outer_context->vars_in_scope);
 

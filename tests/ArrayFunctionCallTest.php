@@ -1,17 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
+use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use const DIRECTORY_SEPARATOR;
 
-class ArrayFunctionCallTest extends TestCase
+final class ArrayFunctionCallTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    #[Override]
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -442,6 +446,31 @@ class ArrayFunctionCallTest extends TestCase
                     '$d' => 'non-empty-array<int|string, int|string>',
                 ],
             ],
+            'arrayReverseListDontPreserveKey' => [
+                'code' => '<?php
+                    /** @return list{0: 1, 1: 1.1, 2: 2, 3: false, 4?: string|true, 5?: true} */
+                    function f(): array {
+                        return [1, 1.1, 2, false, "", true];
+                    }
+                    /** @return list{0: 0, 1: 1, 2: 2, 3?: 3, 4?: 4} */
+                    function g(): array { return [0, 1, 2]; }
+
+                    $r = array_reverse(f());
+                    $s = array_reverse(g());',
+                'assertions' => [
+                    '$r===' => 'list{0: bool|string, 1: 2|bool|string, 2: 2|false|float(1.1), 3: 1|2|float(1.1), 4?: 1|float(1.1), 5?: 1}',
+                    '$s===' => 'list{0: 2|3|4, 1: 1|2|3, 2: 0|1|2, 3?: 0|1, 4?: 0}',
+                ],
+            ],
+            'arrayReverseListInt' => [
+                'code' => '<?php
+                    /** @return list<int> */
+                    function f(): array { return []; }
+                    $a = array_reverse(f());',
+                'assertions' => [
+                    '$a' => 'list<int>',
+                ],
+            ],
             'arrayReverseDontPreserveKeyExplicitArg' => [
                 'code' => '<?php
                     $d = array_reverse(["a", "b", 1, "d" => 4], false);',
@@ -484,6 +513,35 @@ class ArrayFunctionCallTest extends TestCase
                 'assertions' => [
                     '$r' => 'array<string, int>',
                 ],
+            ],
+            'variousUArrays' => [
+                'code' => '<?php
+                    $array1 = array("a" => "green", "b" => "brown", "c" => "blue", "red");
+                    $array2 = array("a" => "GREEN", "B" => "brown", "yellow", "red");
+                    $array3 = array("a" => "GREEN");
+
+                    function compareKey(string $a, string $b): int { return $a <=> $b; }
+                    function compareValue(mixed $a, mixed $b): int { return -1; }
+
+                    // Key comparison
+                    array_diff_ukey($array1, $array2, $array3, "compareKey");
+                    array_diff_uassoc($array1, $array2, $array3, "compareKey");
+                    array_intersect_ukey($array1, $array2, $array3, "compareKey");
+                    array_intersect_uassoc($array1, $array2, $array3, "compareKey");
+
+                    // Key+value comparison
+                    array_udiff_uassoc($array1, $array2, $array3, "compareKey", "compareValue");
+                    array_uintersect_uassoc($array1, $array2, $array3, "compareKey", "compareValue");
+
+                    // Value comparison
+                    array_udiff($array1, $array2, $array3, "compareValue");
+                    array_udiff_assoc($array1, $array2, $array3,  "compareValue");
+                    array_uintersect($array1, $array2, $array3, "compareValue");
+                    array_uintersect_assoc($array1, $array2, $array3,  "compareValue");
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'arrayPopMixed' => [
                 'code' => '<?php
@@ -2697,6 +2755,7 @@ class ArrayFunctionCallTest extends TestCase
         ];
     }
 
+    #[Override]
     public function providerInvalidCodeParse(): iterable
     {
         return [
@@ -3100,6 +3159,53 @@ class ArrayFunctionCallTest extends TestCase
                         SORT_NATURAL
                     );',
                 'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - All arguments of array_multisort after argument 4, which are after the last by reference passed array argument and its flags, are redundant and can be removed, since the sorting happens by reference',
+            ],
+            'badArrayCb1' => [
+                'code' => '<?php
+                    $array1 = array("a" => "green", "b" => "brown", "c" => "blue", "red");
+                    $array2 = array("a" => "GREEN", "B" => "brown", "yellow", "red");
+                    $array3 = array("a" => "GREEN");
+
+                    function compareKey(string $a, string $b): int { return $a <=> $b; }
+                    function compareValue(mixed $a, mixed $b): int { return -1; }
+
+                    // Key comparison
+                    array_diff_ukey($array1, $array2, $array3, "compareKey", "compareKey");
+                ',
+                'error_message' => 'InvalidArgument',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'badArrayCb2' => [
+                'code' => '<?php
+                    $array1 = array("a" => "green", "b" => "brown", "c" => "blue", "red");
+                    $array2 = array("a" => "GREEN", "B" => "brown", "yellow", "red");
+                    $array3 = array("a" => "GREEN");
+
+                    function compareKey(string $a, string $b): int { return $a <=> $b; }
+                    function compareValue(mixed $a, mixed $b): int { return -1; }
+
+                    // Key+value comparison
+                    array_udiff_uassoc($array1, $array2, $array3, "compareKey");
+                ',
+                'error_message' => 'InvalidArgument',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'badArrayCb3' => [
+                'code' => '<?php
+                    $array1 = array("a" => "green", "b" => "brown", "c" => "blue", "red");
+                    $array2 = array("a" => "GREEN", "B" => "brown", "yellow", "red");
+                    $array3 = array("a" => "GREEN");
+
+                    function compareKey(int $a): int { return $a; }
+
+                    // Value comparison
+                    array_udiff($array1, $array2, $array3, "compareKey");
+                ',
+                'error_message' => 'PossiblyInvalidArgument',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
         ];
     }

@@ -1,15 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
+use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
-class DocblockInheritanceTest extends TestCase
+final class DocblockInheritanceTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    #[Override]
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -147,9 +151,37 @@ class DocblockInheritanceTest extends TestCase
                         return $f->map();
                     }',
             ],
+            'inheritCorrectParamOnTypeChange' => [
+                'code' => '<?php
+                    class A
+                    {
+                        /** @param array<int, int>|int $className */
+                        public function a(array|int $className): int
+                        {
+                            return 0;
+                        }
+                    }
+
+                    class B extends A
+                    {
+                        /** @param array<int, int>|int|bool $className */
+                        public function a(array|int|bool $className): int
+                        {
+                            return 0;
+                        }
+                    }
+
+                    print_r((new A)->a(1));
+                    print_r((new B)->a(true));
+                    ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
+    #[Override]
     public function providerInvalidCodeParse(): iterable
     {
         return [

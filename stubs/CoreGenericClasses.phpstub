@@ -501,9 +501,7 @@ final class WeakMap implements ArrayAccess, Countable, IteratorAggregate, Traver
      */
     public function offsetUnset($offset) {}
 
-    /**
-     * @return Traversable<TKey, TVal>
-     */
+    /** @return Traversable<TKey, TVal> */
     public function getIterator() { }
 }
 

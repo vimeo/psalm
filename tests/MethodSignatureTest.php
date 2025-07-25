@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
+use Override;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
@@ -10,7 +13,7 @@ use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use const DIRECTORY_SEPARATOR;
 
-class MethodSignatureTest extends TestCase
+final class MethodSignatureTest extends TestCase
 {
     use InvalidCodeAnalysisWithIssuesTestTrait;
     use ValidCodeAnalysisTestTrait;
@@ -291,6 +294,7 @@ class MethodSignatureTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    #[Override]
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -399,6 +403,15 @@ class MethodSignatureTest extends TestCase
                 'assertions' => [
                     '$b' => 'B',
                 ],
+            ],
+            'returnIgnoresInlineComments' => [
+                'code' => '<?php
+                    class A {
+                        /** @return bool {@see true}*/
+                        public static function foo():bool {
+                            return true;
+                        }
+                    }',
             ],
             'allowSomeCovariance' => [
                 'code' => '<?php
@@ -917,6 +930,9 @@ class MethodSignatureTest extends TestCase
                     {
                         public function a(mixed $a): void {}
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'doesNotRequireInterfaceDestructorsToHaveReturnType' => [
                 'code' => '<?php
@@ -980,6 +996,7 @@ class MethodSignatureTest extends TestCase
         ];
     }
 
+    #[Override]
     public function providerInvalidCodeParse(): iterable
     {
         return [
@@ -1662,6 +1679,28 @@ class MethodSignatureTest extends TestCase
                     }
                 ',
                 'error_message' => 'MethodSignatureMismatch',
+            ],
+            'methodAnnotationReturnMismatch' => [
+                'code' => '<?php
+                /**
+                * @method array bar()
+                */
+                interface Foo
+                {
+                    public function bar(): string;
+                }',
+                'error_message' => 'MismatchingDocblockReturnType',
+            ],
+            'methodAnnotationParamMismatch' => [
+                'code' => '<?php
+                /**
+                * @method string bar(string $i)
+                */
+                interface Foo
+                {
+                    public function bar(int $i): string;
+                }',
+                'error_message' => 'MismatchingDocblockParamType',
             ],
         ];
     }

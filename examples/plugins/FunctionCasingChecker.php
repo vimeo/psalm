@@ -23,6 +23,7 @@ use function strtolower;
  */
 final class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface, AfterMethodCallAnalysisInterface
 {
+    #[\Override]
     public static function afterMethodCallAnalysis(AfterMethodCallAnalysisEvent $event): void
     {
         $expr = $event->getExpr();
@@ -55,11 +56,12 @@ final class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface,
                     $statements_source->getSuppressedIssues(),
                 );
             }
-        } catch (Exception $e) {
+        } catch (Exception) {
             // can throw if storage is missing
         }
     }
 
+    #[\Override]
     public static function afterFunctionCallAnalysis(AfterFunctionCallAnalysisEvent $event): void
     {
         $expr = $event->getExpr();
@@ -93,7 +95,7 @@ final class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface,
                     $statements_source->getSuppressedIssues(),
                 );
             }
-        } catch (Exception $e) {
+        } catch (Exception) {
             // can throw if storage is missing
         }
     }

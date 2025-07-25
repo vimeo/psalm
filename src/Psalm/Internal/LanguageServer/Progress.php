@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\LanguageServer;
 
+use Override;
 use Psalm\Progress\Progress as Base;
 
 use function str_replace;
@@ -19,6 +22,7 @@ final class Progress extends Base
         $this->server = $server;
     }
 
+    #[Override]
     public function debug(string $message): void
     {
         if ($this->server) {
@@ -26,6 +30,7 @@ final class Progress extends Base
         }
     }
 
+    #[Override]
     public function write(string $message): void
     {
         if ($this->server) {

@@ -1,6 +1,6 @@
 # TaintedTextWithQuotes
 
-Emitted when user-controlled input that can contain quotation marks can be passed into to an `echo` statement.
+Emitted when user-controlled input that can contain quotation marks can be passed into an `echo` statement.
 
 ## Risk
 

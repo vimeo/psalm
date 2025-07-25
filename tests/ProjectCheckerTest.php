@@ -1,28 +1,29 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
+use Override;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\IncludeCollector;
+use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
 use Psalm\Internal\Provider\FakeFileProvider;
+use Psalm\Internal\Provider\FileReferenceCacheProvider;
+use Psalm\Internal\Provider\FileStorageCacheProvider;
+use Psalm\Internal\Provider\ParserCacheProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
-use Psalm\Internal\VersionUtils;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\AfterCodebasePopulatedInterface;
 use Psalm\Plugin\EventHandler\Event\AfterCodebasePopulatedEvent;
 use Psalm\Report;
 use Psalm\Report\ReportOptions;
-use Psalm\Tests\Internal\Provider\ClassLikeStorageInstanceCacheProvider;
-use Psalm\Tests\Internal\Provider\FakeFileReferenceCacheProvider;
-use Psalm\Tests\Internal\Provider\FileStorageInstanceCacheProvider;
-use Psalm\Tests\Internal\Provider\ParserInstanceCacheProvider;
 use Psalm\Tests\Internal\Provider\ProjectCacheProvider;
 use Psalm\Tests\Progress\EchoProgress;
+use Psalm\Tests\TestConfig;
 
-use function define;
-use function defined;
 use function get_class;
 use function getcwd;
 use function microtime;
@@ -33,29 +34,25 @@ use function realpath;
 
 use const DIRECTORY_SEPARATOR;
 
-class ProjectCheckerTest extends TestCase
+final class ProjectCheckerTest extends TestCase
 {
     protected static TestConfig $config;
 
     protected ProjectAnalyzer $project_analyzer;
 
+    #[Override]
     public static function setUpBeforeClass(): void
     {
+        parent::setUpBeforeClass();
+
         // hack to stop Psalm seeing the phpunit arguments
         global $argv;
         $argv = [];
 
         self::$config = new TestConfig();
-
-        if (!defined('PSALM_VERSION')) {
-            define('PSALM_VERSION', VersionUtils::getPsalmVersion());
-        }
-
-        if (!defined('PHP_PARSER_VERSION')) {
-            define('PHP_PARSER_VERSION', VersionUtils::getPhpParserVersion());
-        }
     }
 
+    #[Override]
     public function setUp(): void
     {
         RuntimeCaches::clearAll();
@@ -69,10 +66,10 @@ class ProjectCheckerTest extends TestCase
             $config,
             new Providers(
                 $this->file_provider,
-                new ParserInstanceCacheProvider(),
-                new FileStorageInstanceCacheProvider(),
-                new ClassLikeStorageInstanceCacheProvider(),
-                new FakeFileReferenceCacheProvider(),
+                new ParserCacheProvider($config, '', false),
+                new FileStorageCacheProvider($config, '', false),
+                new ClassLikeStorageCacheProvider($config, '', false),
+                new FileReferenceCacheProvider($config, '', false),
                 new ProjectCacheProvider(),
             ),
             new ReportOptions(),
@@ -98,7 +95,7 @@ class ProjectCheckerTest extends TestCase
 
         ob_start();
         $this->project_analyzer->check('tests/fixtures/DummyProject');
-        $output = ob_get_clean();
+        $output = (string) ob_get_clean();
 
         $this->assertStringContainsString('Target PHP version: 8.1 (set by tests)', $output);
         $this->assertStringContainsString('Scanning files...', $output);
@@ -127,6 +124,7 @@ class ProjectCheckerTest extends TestCase
              * @return void
              * @phpcsSuppress SlevomatCodingStandard.TypeHints.ReturnTypeHint
              */
+            #[Override]
             public static function afterCodebasePopulated(AfterCodebasePopulatedEvent $event)
             {
                 self::$called = true;
@@ -230,7 +228,7 @@ class ProjectCheckerTest extends TestCase
             ),
         );
 
-        $bat_file_path = getcwd()
+        $bat_file_path = (string) getcwd()
             . DIRECTORY_SEPARATOR . 'tests'
             . DIRECTORY_SEPARATOR . 'fixtures'
             . DIRECTORY_SEPARATOR . 'DummyProject'
@@ -240,7 +238,7 @@ class ProjectCheckerTest extends TestCase
 
 namespace Vimeo\Test\DummyProject;
 
-class Bat
+final class Bat
 {
     public function __construct()
     {
@@ -285,7 +283,7 @@ class Bat
 
         ob_start();
         $this->project_analyzer->checkDir('tests/fixtures/DummyProject');
-        $output = ob_get_clean();
+        $output = (string) ob_get_clean();
 
         $this->assertStringContainsString('Target PHP version: 8.1 (set by tests)', $output);
         $this->assertStringContainsString('Scanning files...', $output);
@@ -323,10 +321,10 @@ class Bat
         // checkPaths expects absolute paths,
         // otherwise it's unable to match them against configured folders
         $this->project_analyzer->checkPaths([
-            realpath(getcwd() . '/tests/fixtures/DummyProject/Bar.php'),
-            realpath(getcwd() . '/tests/fixtures/DummyProject/SomeTrait.php'),
+            (string) realpath((string) getcwd() . '/tests/fixtures/DummyProject/Bar.php'),
+            (string) realpath((string) getcwd() . '/tests/fixtures/DummyProject/SomeTrait.php'),
         ]);
-        $output = ob_get_clean();
+        $output = (string) ob_get_clean();
 
         $this->assertStringContainsString('Target PHP version: 8.1 (set by tests)', $output);
         $this->assertStringContainsString('Scanning files...', $output);
@@ -364,10 +362,10 @@ class Bat
         // checkPaths expects absolute paths,
         // otherwise it's unable to match them against configured folders
         $this->project_analyzer->checkPaths([
-            realpath(getcwd() . '/tests/fixtures/DummyProject/Bar.php'),
-            realpath(getcwd() . '/tests/fixtures/DummyProject/SomeTrait.php'),
+            (string) realpath((string) getcwd() . '/tests/fixtures/DummyProject/Bar.php'),
+            (string) realpath((string) getcwd() . '/tests/fixtures/DummyProject/SomeTrait.php'),
         ]);
-        $output = ob_get_clean();
+        $output = (string) ob_get_clean();
 
         $this->assertStringContainsString('Target PHP version: 8.1 (set by tests)', $output);
         $this->assertStringContainsString('Scanning files...', $output);

@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\TypeVisitor;
 
+use Override;
 use Psalm\Type;
 use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -20,6 +23,7 @@ final class TemplateTypeCollector extends TypeVisitor
      */
     private array $template_types = [];
 
+    #[Override]
     protected function enterNode(TypeNode $type): ?int
     {
         if ($type instanceof TTemplateParam) {

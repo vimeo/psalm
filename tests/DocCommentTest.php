@@ -1,15 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
+use Override;
 use PHPUnit\Framework\TestCase as BaseTestCase;
 use PhpParser\Comment\Doc;
 use Psalm\DocComment;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Internal\Scanner\ParsedDocblock;
 
-class DocCommentTest extends BaseTestCase
+final class DocCommentTest extends BaseTestCase
 {
+    #[Override]
     public function setUp(): void
     {
         RuntimeCaches::clearAll();
@@ -197,6 +201,23 @@ class DocCommentTest extends BaseTestCase
              * @throws \Exception
              *
              * @return bool
+             */
+
+            PHP;
+        $docComment = DocComment::parsePreservingLength(
+            new Doc($expectedDoc),
+        );
+
+        $this->assertSame($expectedDoc, $docComment->render(''));
+    }
+
+    public function testParsingNumericComment(): void
+    {
+        ParsedDocblock::addNewLineBetweenAnnotations(true);
+
+        $expectedDoc = <<<'PHP'
+            /**
+             * @42 Should not crash
              */
 
             PHP;

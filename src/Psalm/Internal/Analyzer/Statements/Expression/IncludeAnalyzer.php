@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use AssertionError;
@@ -14,6 +16,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\TaintSink;
+use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Issue\MissingFile;
 use Psalm\Issue\UnresolvableInclude;
@@ -22,6 +25,7 @@ use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type\TaintKind;
 use Symfony\Component\Filesystem\Path;
 
+use function array_diff;
 use function constant;
 use function defined;
 use function dirname;
@@ -54,7 +58,7 @@ final class IncludeAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Include_ $stmt,
         Context $context,
-        ?Context $global_context = null
+        ?Context $global_context = null,
     ): bool {
         $codebase = $statements_analyzer->getCodebase();
         $config = $codebase->config;
@@ -132,6 +136,13 @@ final class IncludeAnalyzer
             $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
             $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
+            $taints = array_diff($added_taints, $removed_taints);
+            if ($taints !== []) {
+                $taint_source = TaintSource::fromNode($include_param_sink);
+                $taint_source->taints = $taints;
+                $statements_analyzer->data_flow_graph->addSource($taint_source);
+            }
+
             foreach ($stmt_expr_type->parent_nodes as $parent_node) {
                 $statements_analyzer->data_flow_graph->addPath(
                     $parent_node,
@@ -155,6 +166,9 @@ final class IncludeAnalyzer
 
             if ($current_file_analyzer->project_analyzer->fileExists($path_to_file)
                 && !$current_file_analyzer->project_analyzer->isDirectory($path_to_file)) {
+                if ($config->ignore_include_side_effects) {
+                    return true;
+                }
                 if ($statements_analyzer->hasParentFilePath($path_to_file)
                     || !$codebase->file_storage_provider->has($path_to_file)
                     || ($statements_analyzer->hasAlreadyRequiredFilePath($path_to_file)
@@ -202,7 +216,7 @@ final class IncludeAnalyzer
                         $context,
                         $global_context,
                     );
-                } catch (UnpreparedAnalysisException $e) {
+                } catch (UnpreparedAnalysisException) {
                     if ($config->skip_checks_on_unresolvable_includes) {
                         $context->check_classes = false;
                         $context->check_variables = false;
@@ -278,7 +292,7 @@ final class IncludeAnalyzer
         ?NodeDataProvider $type_provider,
         ?StatementsAnalyzer $statements_analyzer,
         string $file_name,
-        Config $config
+        Config $config,
     ): ?string {
         if (Path::isRelative($file_name)) {
             $file_name = $config->base_dir . DIRECTORY_SEPARATOR . $file_name;
@@ -330,7 +344,7 @@ final class IncludeAnalyzer
                 $dir_level = 1;
 
                 if (isset($stmt->getArgs()[1])) {
-                    if ($stmt->getArgs()[1]->value instanceof PhpParser\Node\Scalar\LNumber) {
+                    if ($stmt->getArgs()[1]->value instanceof PhpParser\Node\Scalar\Int_) {
                         $dir_level = $stmt->getArgs()[1]->value->value;
                     } else {
                         if ($statements_analyzer) {
@@ -435,12 +449,12 @@ final class IncludeAnalyzer
         $path_to_file = str_replace('/./', '/', $path_to_file);
 
         // first remove unnecessary / duplicates
-        $path_to_file = preg_replace('/\/[\/]+/', '/', $path_to_file);
+        $path_to_file = (string) preg_replace('/\/[\/]+/', '/', $path_to_file);
 
         $reduce_pattern = '/\/[^\/]+\/\.\.\//';
 
         while (preg_match($reduce_pattern, $path_to_file)) {
-            $path_to_file = preg_replace($reduce_pattern, '/', $path_to_file, 1);
+            $path_to_file = (string) preg_replace($reduce_pattern, '/', $path_to_file, 1);
         }
 
         if (DIRECTORY_SEPARATOR !== '/') {

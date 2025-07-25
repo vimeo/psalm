@@ -11,8 +11,12 @@
     xsi:schemaLocation="https://getpsalm.org/schema/config config.xsd"
     limitMethodComplexity="true"
     errorBaseline="psalm-baseline.xml"
+    allFunctionsGlobal="true"
+    ensureOverrideAttribute="true"
+    allConstantsGlobal="true"
     findUnusedPsalmSuppress="true"
-    findUnusedBaselineEntry="false"
+    findUnusedBaselineEntry="true"
+    findUnusedIssueHandlerSuppression="true"
 >
     <stubs>
         <file name="stubs/phpparser.phpstub"/>
@@ -25,6 +29,7 @@
         <file name="psalm-language-server"/>
         <file name="psalm-plugin"/>
         <file name="psalm-refactor"/>
+        <file name="psalm-review"/>
         <file name="psalter"/>
         <ignoreFiles>
             <file name="src/Psalm/Internal/PhpTraverser/CustomTraverser.php"/>
@@ -32,7 +37,7 @@
             <file name="tests/Internal/CallMapTest.php"/>
             <file name="vendor/symfony/console/Command/Command.php"/>
             <directory name="tests/fixtures"/>
-            <file name="vendor/felixfbecker/advanced-json-rpc/lib/Dispatcher.php" />
+            <file name="vendor/danog/advanced-json-rpc/lib/Dispatcher.php" />
             <directory name="vendor/netresearch/jsonmapper" />
             <directory name="vendor/phpunit" />
             <directory name="vendor/mockery/mockery"/>
@@ -63,24 +68,6 @@
             </errorLevel>
         </DeprecatedMethod>
 
-        <DeprecatedClass>
-            <errorLevel type="suppress">
-                <referencedClass name="PackageVersions\Versions"/>
-            </errorLevel>
-        </DeprecatedClass>
-
-        <UnusedParam>
-            <errorLevel type="suppress">
-                <directory name="examples"/>
-            </errorLevel>
-        </UnusedParam>
-
-        <PossiblyUnusedParam>
-            <errorLevel type="suppress">
-                <directory name="examples"/>
-            </errorLevel>
-        </PossiblyUnusedParam>
-
         <UnusedClass>
             <errorLevel type="suppress">
                 <directory name="examples"/>
@@ -103,12 +90,6 @@
                 <directory name="tests"/>
             </errorLevel>
         </PossiblyUndefinedIntArrayOffset>
-
-        <ImpureMethodCall>
-            <errorLevel type="suppress">
-                <directory name="src/Psalm/Storage/Assertion"/>
-            </errorLevel>
-        </ImpureMethodCall>
 
         <MissingThrowsDocblock errorLevel="info"/>
 
@@ -167,11 +148,32 @@
             </errorLevel>
         </PropertyTypeCoercion>
 
+        <InvalidArrayOffset>
+            <errorLevel type="suppress">
+                <file name="vendor/nikic/php-parser/lib/PhpParser/Node/Stmt/Class_.php" />
+                <file name="vendor/nikic/php-parser/lib/PhpParser/Node/Stmt/ClassMethod.php" />
+            </errorLevel>
+        </InvalidArrayOffset>
+
+        <InvalidPropertyAssignmentValue>
+            <errorLevel type="suppress">
+                <file name="vendor/nikic/php-parser/lib/PhpParser/Node/MatchArm.php" />
+            </errorLevel>
+        </InvalidPropertyAssignmentValue>
+
         <MixedAssignment>
             <errorLevel type="suppress">
                 <directory name="vendor/nikic/php-parser" />
             </errorLevel>
         </MixedAssignment>
+
+        <PropertyNotSetInConstructor>
+            <errorLevel type="suppress">
+                <referencedProperty name="PhpParser\Node\Const_::$namespacedName" />
+                <referencedProperty name="PhpParser\Node\Stmt\ClassLike::$namespacedName" />
+                <referencedProperty name="PhpParser\Node\Stmt\Function_::$namespacedName" />
+            </errorLevel>
+        </PropertyNotSetInConstructor>
     </issueHandlers>
 
     <forbiddenFunctions>

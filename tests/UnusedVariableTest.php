@@ -1,23 +1,28 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
+use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use const DIRECTORY_SEPARATOR;
 
-class UnusedVariableTest extends TestCase
+final class UnusedVariableTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
 
+    #[Override]
     public function setUp(): void
     {
         parent::setUp();
         $this->project_analyzer->getCodebase()->reportUnusedVariables();
     }
 
+    #[Override]
     public function providerValidCodeParse(): array
     {
         return [
@@ -1398,7 +1403,6 @@ class UnusedVariableTest extends TestCase
             'usedInUndefinedFunction' => [
                 'code' => '<?php
                     /**
-                     * @psalm-suppress MixedInferredReturnType
                      * @psalm-suppress MixedReturnStatement
                      */
                     function test(): string {
@@ -2608,6 +2612,7 @@ class UnusedVariableTest extends TestCase
         ];
     }
 
+    #[Override]
     public function providerInvalidCodeParse(): array
     {
         return [

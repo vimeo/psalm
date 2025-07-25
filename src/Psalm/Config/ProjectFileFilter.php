@@ -1,26 +1,27 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Config;
 
+use Override;
 use Psalm\Exception\ConfigException;
 use SimpleXMLElement;
 
+use function str_starts_with;
 use function stripos;
-use function strpos;
 
 /** @internal */
 final class ProjectFileFilter extends FileFilter
 {
     private ?ProjectFileFilter $file_filter = null;
 
-    /**
-     * @return static
-     */
+    #[Override]
     public static function loadFromXMLElement(
         SimpleXMLElement $e,
         string $base_dir,
-        bool $inclusive
-    ): ProjectFileFilter {
+        bool $inclusive,
+    ): static {
         $filter = parent::loadFromXMLElement($e, $base_dir, $inclusive);
 
         if (isset($e->ignoreFiles)) {
@@ -34,6 +35,7 @@ final class ProjectFileFilter extends FileFilter
         return $filter;
     }
 
+    #[Override]
     public function allows(string $file_name, bool $case_sensitive = false): bool
     {
         if ($this->inclusive && $this->file_filter) {
@@ -60,7 +62,7 @@ final class ProjectFileFilter extends FileFilter
     {
         foreach ($this->ignore_type_stats as $exclude_dir => $_) {
             if ($case_sensitive) {
-                if (strpos($file_name, $exclude_dir) === 0) {
+                if (str_starts_with($file_name, $exclude_dir)) {
                     return false;
                 }
             } else {
@@ -77,7 +79,7 @@ final class ProjectFileFilter extends FileFilter
     {
         foreach ($this->declare_strict_types as $exclude_dir => $_) {
             if ($case_sensitive) {
-                if (strpos($file_name, $exclude_dir) === 0) {
+                if (str_starts_with($file_name, $exclude_dir)) {
                     return true;
                 }
             } else {

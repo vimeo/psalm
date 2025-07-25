@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use Override;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\TypeCombiner;
@@ -16,11 +19,13 @@ use Psalm\Type\Union;
  */
 final class ClosureFromCallableReturnTypeProvider implements MethodReturnTypeProviderInterface
 {
+    #[Override]
     public static function getClassLikeNames(): array
     {
         return ['Closure'];
     }
 
+    #[Override]
     public static function getMethodReturnType(MethodReturnTypeProviderEvent $event): ?Union
     {
         $source = $event->getSource();

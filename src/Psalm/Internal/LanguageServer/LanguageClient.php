@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\LanguageServer;
 
-use JsonMapper;
 use LanguageServerProtocol\LogMessage;
 use LanguageServerProtocol\LogTrace;
 use Psalm\Internal\LanguageServer\Client\Progress\LegacyProgress;
@@ -12,10 +11,14 @@ use Psalm\Internal\LanguageServer\Client\Progress\Progress;
 use Psalm\Internal\LanguageServer\Client\Progress\ProgressInterface;
 use Psalm\Internal\LanguageServer\Client\TextDocument as ClientTextDocument;
 use Psalm\Internal\LanguageServer\Client\Workspace as ClientWorkspace;
+use Revolt\EventLoop;
+use Throwable;
 
 use function is_null;
 use function json_decode;
 use function json_encode;
+
+use const JSON_THROW_ON_ERROR;
 
 /**
  * @internal
@@ -35,30 +38,24 @@ final class LanguageClient
     /**
      * The client handler
      */
-    private ClientHandler $handler;
-
-    /**
-     * The Language Server
-     */
-    private LanguageServer $server;
-
-    /**
-     * The Client Configuration
-     */
-    public ClientConfiguration $clientConfiguration;
+    private readonly ClientHandler $handler;
 
     public function __construct(
         ProtocolReader $reader,
         ProtocolWriter $writer,
-        LanguageServer $server,
-        ClientConfiguration $clientConfiguration
+        /**
+         * The Language Server
+         */
+        private readonly LanguageServer $server,
+        /**
+         * The Client Configuration
+         */
+        public ClientConfiguration $clientConfiguration,
     ) {
         $this->handler = new ClientHandler($reader, $writer);
-        $this->server = $server;
 
         $this->textDocument = new ClientTextDocument($this->handler, $this->server);
-        $this->workspace = new ClientWorkspace($this->handler, new JsonMapper, $this->server);
-        $this->clientConfiguration = $clientConfiguration;
+        $this->workspace = new ClientWorkspace($this->handler, $this->server);
     }
 
     /**
@@ -68,13 +65,13 @@ final class LanguageClient
     {
         $capabilities = $this->server->clientCapabilities;
         if ($capabilities->workspace->configuration ?? false) {
-            $this->workspace->requestConfiguration('psalm')->onResolve(function ($error, $value): void {
-                if ($error) {
-                    $this->server->logError('There was an error getting configuration');
-                } else {
-                    /** @var array<int, object> $value */
-                    [$config] = $value;
+            EventLoop::queue(function (): void {
+                try {
+                    /** @var object $config */
+                    [$config] = $this->workspace->requestConfiguration('psalm');
                     $this->configurationRefreshed((array) $config);
+                } catch (Throwable $e) {
+                    $this->server->logError('There was an error getting configuration: ' . $e->getMessage());
                 }
             });
         }
@@ -155,7 +152,7 @@ final class LanguageClient
         }
 
         /** @var array */
-        $array = json_decode(json_encode($config), true);
+        $array = json_decode(json_encode($config, JSON_THROW_ON_ERROR), true, 512, JSON_THROW_ON_ERROR);
 
         if (isset($array['hideWarnings'])) {
             $this->clientConfiguration->hideWarnings = (bool) $array['hideWarnings'];

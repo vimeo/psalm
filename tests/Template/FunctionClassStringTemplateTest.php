@@ -1,16 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\Template;
 
+use Override;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
-class FunctionClassStringTemplateTest extends TestCase
+final class FunctionClassStringTemplateTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    #[Override]
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -404,7 +408,6 @@ class FunctionClassStringTemplateTest extends TestCase
                      * @psalm-template RequestedType
                      * @psalm-param class-string<RequestedType> $className
                      * @psalm-return RequestedType&MockObject
-                     * @psalm-suppress MixedInferredReturnType
                      * @psalm-suppress MixedReturnStatement
                      */
                     function mockHelper(string $className)
@@ -442,7 +445,6 @@ class FunctionClassStringTemplateTest extends TestCase
                      * @psalm-template RequestedType
                      * @psalm-param class-string<RequestedType> $className
                      * @psalm-return RequestedType&MockObject
-                     * @psalm-suppress MixedInferredReturnType
                      * @psalm-suppress MixedReturnStatement
                      */
                     function mockHelper(string $className)
@@ -480,7 +482,6 @@ class FunctionClassStringTemplateTest extends TestCase
                      * @psalm-template RequestedType
                      * @psalm-param class-string<RequestedType> $className
                      * @psalm-return MockObject&RequestedType
-                     * @psalm-suppress MixedInferredReturnType
                      * @psalm-suppress MixedReturnStatement
                      */
                     function mockHelper(string $className)
@@ -776,6 +777,7 @@ class FunctionClassStringTemplateTest extends TestCase
         ];
     }
 
+    #[Override]
     public function providerInvalidCodeParse(): iterable
     {
         return [

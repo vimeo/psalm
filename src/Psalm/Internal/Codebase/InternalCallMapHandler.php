@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Codebase;
 
 use PhpParser;
@@ -21,12 +23,13 @@ use function array_shift;
 use function assert;
 use function count;
 use function dirname;
-use function file_exists;
+use function max;
+use function min;
+use function str_ends_with;
+use function str_starts_with;
 use function strlen;
-use function strpos;
 use function strtolower;
 use function substr;
-use function version_compare;
 
 /**
  * @internal
@@ -35,9 +38,8 @@ use function version_compare;
  */
 final class InternalCallMapHandler
 {
-    private const PHP_MAJOR_VERSION = 8;
-    private const PHP_MINOR_VERSION = 3;
-    private const LOWEST_AVAILABLE_DELTA = 71;
+    private const MIN_CALLMAP_VERSION = 70;
+    private const MAX_CALLMAP_VERSION = 84;
 
     private static ?int $loaded_php_major_version = null;
     private static ?int $loaded_php_minor_version = null;
@@ -64,7 +66,7 @@ final class InternalCallMapHandler
         Codebase $codebase,
         string $method_id,
         array $args,
-        ?NodeDataProvider $nodes
+        ?NodeDataProvider $nodes,
     ): TCallable {
         $possible_callables = self::getCallablesFromCallMap($method_id);
 
@@ -92,7 +94,7 @@ final class InternalCallMapHandler
         array $callables,
         array $args,
         ?NodeTypeProvider $nodes,
-        string $method_id
+        string $method_id,
     ): TCallable {
         if (count($callables) === 1) {
             return $callables[0];
@@ -246,13 +248,7 @@ final class InternalCallMapHandler
         $possible_callables = [];
 
         foreach ($call_map_functions as $call_map_function_args) {
-            $return_type_string = array_shift($call_map_function_args);
-
-            if (!$return_type_string) {
-                $return_type = Type::getMixed();
-            } else {
-                $return_type = Type::parseString($return_type_string);
-            }
+            $return_type = Type::parseString(array_shift($call_map_function_args));
 
             $function_params = [];
 
@@ -269,19 +265,17 @@ final class InternalCallMapHandler
                     $by_reference = true;
                 }
 
-                if (substr($arg_name, -1) === '=') {
+                if (str_ends_with($arg_name, '=')) {
                     $arg_name = substr($arg_name, 0, -1);
                     $optional = true;
                 }
 
-                if (strpos($arg_name, '...') === 0) {
+                if (str_starts_with($arg_name, '...')) {
                     $arg_name = substr($arg_name, 3);
                     $variadic = true;
                 }
 
-                $param_type = $arg_type
-                    ? Type::parseString($arg_type)
-                    : Type::getMixed();
+                $param_type = Type::parseString($arg_type);
 
                 $out_type = null;
 
@@ -295,7 +289,7 @@ final class InternalCallMapHandler
                 // removes `rw_` leftover from `&rw_haystack` or `&rw_needle` or `&rw_actual_name`
                 // it doesn't have any specific meaning apart from `&` signifying that
                 // the parameter is passed by reference (handled above)
-                if ($by_reference && strlen($arg_name) > 3 && strpos($arg_name, 'rw_') === 0) {
+                if ($by_reference && strlen($arg_name) > 3 && str_starts_with($arg_name, 'rw_')) {
                     $arg_name = substr($arg_name, 3);
                 }
 
@@ -344,18 +338,13 @@ final class InternalCallMapHandler
      * @return non-empty-array<string, array<int|string, string>>
      * @psalm-assert !null self::$taint_sink_map
      * @psalm-assert !null self::$call_map
+     * @psalm-suppress UnresolvableInclude
      */
     public static function getCallMap(): array
     {
         $codebase = ProjectAnalyzer::getInstance()->getCodebase();
         $analyzer_major_version = $codebase->getMajorAnalysisPhpVersion();
         $analyzer_minor_version = $codebase->getMinorAnalysisPhpVersion();
-
-        $analyzer_version = $analyzer_major_version . '.' . $analyzer_minor_version;
-        $current_version = self::PHP_MAJOR_VERSION . '.' . self::PHP_MINOR_VERSION;
-
-        $analyzer_version_int = (int) ($analyzer_major_version . $analyzer_minor_version);
-        $current_version_int = (int) (self::PHP_MAJOR_VERSION . self::PHP_MINOR_VERSION);
 
         if (self::$call_map !== null
             && $analyzer_major_version === self::$loaded_php_major_version
@@ -364,17 +353,23 @@ final class InternalCallMapHandler
             return self::$call_map;
         }
 
-        /** @var non-empty-array<string, array<int|string, string>> */
-        $call_map_data = require(dirname(__DIR__, 4) . '/dictionaries/CallMap.php');
+        $analyzer_version_int = min(
+            self::MAX_CALLMAP_VERSION,
+            max(
+                self::MIN_CALLMAP_VERSION,
+                (int) ($analyzer_major_version . $analyzer_minor_version),
+            ),
+        );
 
-        $call_map = [];
-
-        foreach ($call_map_data as $key => $value) {
-            $cased_key = strtolower($key);
-            $call_map[$cased_key] = $value;
-        }
+        /** @var non-empty-array<lowercase-string, array<int|string, string>> */
+        $call_map = require(dirname(__DIR__, 4) . "/dictionaries/CallMap_$analyzer_version_int.php");
 
         self::$call_map = $call_map;
+
+        assert(!empty(self::$call_map));
+
+        self::$loaded_php_major_version = $analyzer_major_version;
+        self::$loaded_php_minor_version = $analyzer_minor_version;
 
         /**
          * @var non-empty-array<string, non-empty-list<list<TaintKind::*>>>
@@ -388,46 +383,6 @@ final class InternalCallMapHandler
         }
 
         self::$taint_sink_map = $taint_map;
-
-        if (version_compare($analyzer_version, $current_version, '<')) {
-            // the following assumes both minor and major versions a single digits
-            for ($i = $current_version_int; $i > $analyzer_version_int && $i >= self::LOWEST_AVAILABLE_DELTA; --$i) {
-                $delta_file = dirname(__DIR__, 4) . '/dictionaries/CallMap_' . $i . '_delta.php';
-                if (!file_exists($delta_file)) {
-                    continue;
-                }
-                /**
-                 * @var array{
-                 *     added: array<string, array<int|string, string>>,
-                 *     changed: array<string, array{
-                 *         old: array<int|string, string>,
-                 *         new: array<int|string, string>
-                 *     }>,
-                 *     removed: array<string, array<int|string, string>>
-                 * }
-                 */
-                $diff_call_map = require($delta_file);
-
-                foreach ($diff_call_map['added'] as $key => $_) {
-                    $cased_key = strtolower($key);
-                    unset(self::$call_map[$cased_key]);
-                }
-
-                foreach ($diff_call_map['removed'] as $key => $value) {
-                    $cased_key = strtolower($key);
-                    self::$call_map[$cased_key] = $value;
-                }
-
-                foreach ($diff_call_map['changed'] as $key => ['old' => $value]) {
-                    $cased_key = strtolower($key);
-                    self::$call_map[$cased_key] = $value;
-                }
-            }
-        }
-        assert(!empty(self::$call_map));
-
-        self::$loaded_php_major_version = $analyzer_major_version;
-        self::$loaded_php_minor_version = $analyzer_minor_version;
 
         return self::$call_map;
     }

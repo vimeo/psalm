@@ -1,18 +1,22 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\TypeReconciliation;
 
+use Override;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use const DIRECTORY_SEPARATOR;
 
-class TypeTest extends TestCase
+final class TypeTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    #[Override]
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -1344,12 +1348,24 @@ class TypeTest extends TestCase
                     if (\is_object($a)) {
                     }',
             ],
+            'multipleComments' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var string $line */
+                    /** other comment */
+                    echo $line;
+                PHP,
+                'assertions' => [
+                    '$line===' => 'string',
+                ],
+            ],
         ];
     }
 
     /**
      * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
      */
+    #[Override]
     public function providerInvalidCodeParse(): iterable
     {
         return [

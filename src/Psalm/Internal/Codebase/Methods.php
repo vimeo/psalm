@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Codebase;
 
 use InvalidArgumentException;
@@ -35,6 +37,7 @@ use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
@@ -44,7 +47,6 @@ use function assert;
 use function count;
 use function explode;
 use function in_array;
-use function is_int;
 use function reset;
 use function strtolower;
 
@@ -55,13 +57,7 @@ use function strtolower;
  */
 final class Methods
 {
-    private ClassLikeStorageProvider $classlike_storage_provider;
-
     public bool $collect_locations = false;
-
-    public FileReferenceProvider $file_reference_provider;
-
-    private ClassLikes $classlikes;
 
     public MethodReturnTypeProvider $return_type_provider;
 
@@ -72,13 +68,10 @@ final class Methods
     public MethodVisibilityProvider $visibility_provider;
 
     public function __construct(
-        ClassLikeStorageProvider $storage_provider,
-        FileReferenceProvider $file_reference_provider,
-        ClassLikes $classlikes
+        private readonly ClassLikeStorageProvider $classlike_storage_provider,
+        public FileReferenceProvider $file_reference_provider,
+        private readonly ClassLikes $classlikes,
     ) {
-        $this->classlike_storage_provider = $storage_provider;
-        $this->file_reference_provider = $file_reference_provider;
-        $this->classlikes = $classlikes;
         $this->return_type_provider = new MethodReturnTypeProvider();
         $this->existence_provider = new MethodExistenceProvider();
         $this->visibility_provider = new MethodVisibilityProvider();
@@ -100,7 +93,7 @@ final class Methods
         ?string $source_file_path = null,
         bool $use_method_existence_provider = true,
         bool $is_used = false,
-        bool $with_pseudo = false
+        bool $with_pseudo = false,
     ): bool {
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;
@@ -124,7 +117,7 @@ final class Methods
 
         try {
             $class_storage = $this->classlike_storage_provider->get($fq_class_name);
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException) {
             return false;
         }
 
@@ -349,7 +342,7 @@ final class Methods
         MethodIdentifier $method_id,
         ?StatementsSource $source = null,
         ?array $args = null,
-        ?Context $context = null
+        ?Context $context = null,
     ): array {
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;
@@ -495,7 +488,7 @@ final class Methods
         Codebase $codebase,
         Union $type,
         string $appearing_fq_class_name,
-        string $base_fq_class_name
+        string $base_fq_class_name,
     ): Union {
         $class_storage = $codebase->classlike_storage_provider->get($appearing_fq_class_name);
         $extends = $class_storage->template_extended_params;
@@ -518,7 +511,7 @@ final class Methods
      */
     public static function getExtendedTemplatedTypes(
         TTemplateParam $atomic_type,
-        array $extends
+        array $extends,
     ): array {
         $extra_added_types = [];
 
@@ -561,7 +554,7 @@ final class Methods
         ?string &$self_class,
         ?SourceAnalyzer $source_analyzer = null,
         ?array $args = null,
-        ?TemplateResult $template_result = null
+        ?TemplateResult $template_result = null,
     ): ?Union {
         $original_fq_class_name = $method_id->fq_class_name;
         $original_method_name = $method_id->method_name;
@@ -591,6 +584,7 @@ final class Methods
 
             if ($class_storage->abstract && isset($class_storage->overridden_method_ids[$original_method_name])) {
                 $appearing_method_id = reset($class_storage->overridden_method_ids[$original_method_name]);
+                assert($appearing_method_id !== false);
             } else {
                 return null;
             }
@@ -635,9 +629,8 @@ final class Methods
 
                     if (UnionTypeComparator::isContainedBy(
                         $source_analyzer->getCodebase(),
-                        is_int($case_value) ?
-                            Type::getInt(false, $case_value) :
-                            Type::getString($case_value),
+                        // XXX: why TString? Perhaps it should be string|int?
+                        new Union([$case_value ?? new TString()]),
                         $first_arg_type,
                     )) {
                         $types[] = new TEnumCase($original_fq_class_name, $case_name);
@@ -814,7 +807,7 @@ final class Methods
                                 $overridden_storage_return_type,
                                 $source_analyzer->getCodebase(),
                             );
-                        } catch (InvalidArgumentException $e) {
+                        } catch (InvalidArgumentException) {
                             // TODO: fix
                         }
                     } else {
@@ -941,7 +934,7 @@ final class Methods
 
     public function getMethodReturnTypeLocation(
         MethodIdentifier $method_id,
-        ?CodeLocation &$defined_location = null
+        ?CodeLocation &$defined_location = null,
     ): ?CodeLocation {
         $method_id = $this->getDeclaringMethodId($method_id);
 
@@ -981,7 +974,7 @@ final class Methods
         string $fq_class_name,
         string $method_name_lc,
         string $declaring_fq_class_name,
-        string $declaring_method_name_lc
+        string $declaring_method_name_lc,
     ): void {
         $class_storage = $this->classlike_storage_provider->get($fq_class_name);
 
@@ -999,7 +992,7 @@ final class Methods
         string $fq_class_name,
         string $method_name_lc,
         string $appearing_fq_class_name,
-        string $appearing_method_name_lc
+        string $appearing_method_name_lc,
     ): void {
         $class_storage = $this->classlike_storage_provider->get($fq_class_name);
 
@@ -1012,7 +1005,7 @@ final class Methods
     /** @psalm-mutation-free */
     public function getDeclaringMethodId(
         MethodIdentifier $method_id,
-        bool $with_pseudo = false
+        bool $with_pseudo = false,
     ): ?MethodIdentifier {
         $fq_class_name = $this->classlikes->getUnAliasedName($method_id->fq_class_name);
 
@@ -1025,6 +1018,8 @@ final class Methods
         }
 
         if ($class_storage->abstract && isset($class_storage->overridden_method_ids[$method_name])) {
+            assert(!empty($class_storage->overridden_method_ids[$method_name]));
+
             return reset($class_storage->overridden_method_ids[$method_name]);
         }
 
@@ -1039,7 +1034,7 @@ final class Methods
      * Get the class this method appears in (vs is declared in, which could give a trait
      */
     public function getAppearingMethodId(
-        MethodIdentifier $method_id
+        MethodIdentifier $method_id,
     ): ?MethodIdentifier {
         $fq_class_name = $this->classlikes->getUnAliasedName($method_id->fq_class_name);
 
@@ -1148,22 +1143,20 @@ final class Methods
         }
 
         $method_name = $method_id->method_name;
-
-        $storage = $class_storage->methods[$method_name] ?? null;
-
-        if ($storage === null && $with_pseudo) {
-            $storage = $class_storage->pseudo_methods[$method_name]
+        $method_storage = $class_storage->methods[$method_name] ?? null;
+        if ($method_storage === null && $with_pseudo) {
+            $method_storage = $class_storage->pseudo_methods[$method_name]
                 ?? $class_storage->pseudo_static_methods[$method_name]
                 ?? null;
         }
 
-        if ($storage === null) {
+        if ($method_storage === null) {
             throw new UnexpectedValueException(
                 '$storage should not be null for ' . $method_id,
             );
         }
 
-        return $storage;
+        return $method_storage;
     }
 
     /** @psalm-mutation-free */
@@ -1171,7 +1164,7 @@ final class Methods
     {
         try {
             $class_storage = $this->classlike_storage_provider->get($method_id->fq_class_name);
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException) {
             return false;
         }
 

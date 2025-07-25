@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Codebase;
 
+use Override;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -12,6 +15,7 @@ use Psalm\Issue\TaintedCallable;
 use Psalm\Issue\TaintedCookie;
 use Psalm\Issue\TaintedCustom;
 use Psalm\Issue\TaintedEval;
+use Psalm\Issue\TaintedExtract;
 use Psalm\Issue\TaintedFile;
 use Psalm\Issue\TaintedHeader;
 use Psalm\Issue\TaintedHtml;
@@ -19,11 +23,13 @@ use Psalm\Issue\TaintedInclude;
 use Psalm\Issue\TaintedLdap;
 use Psalm\Issue\TaintedSSRF;
 use Psalm\Issue\TaintedShell;
+use Psalm\Issue\TaintedSleep;
 use Psalm\Issue\TaintedSql;
 use Psalm\Issue\TaintedSystemSecret;
 use Psalm\Issue\TaintedTextWithQuotes;
 use Psalm\Issue\TaintedUnserialize;
 use Psalm\Issue\TaintedUserSecret;
+use Psalm\Issue\TaintedXpath;
 use Psalm\IssueBuffer;
 use Psalm\Type\TaintKind;
 
@@ -63,6 +69,7 @@ final class TaintFlowGraph extends DataFlowGraph
     /** @var array<string, array<string, true>> */
     private array $specializations = [];
 
+    #[Override]
     public function addNode(DataFlowNode $node): void
     {
         $this->nodes[$node->id] = $node;
@@ -220,15 +227,12 @@ final class TaintFlowGraph extends DataFlowGraph
                 $generated_sources = $this->getSpecializedSources($source);
 
                 foreach ($generated_sources as $generated_source) {
-                    $new_sources = array_merge(
-                        $new_sources,
-                        $this->getChildNodes(
-                            $generated_source,
-                            $source_taints,
-                            $sinks,
-                            $visited_source_ids,
-                        ),
-                    );
+                    $new_sources = [...$new_sources, ...$this->getChildNodes(
+                        $generated_source,
+                        $source_taints,
+                        $sinks,
+                        $visited_source_ids,
+                    )];
                 }
             }
 
@@ -245,7 +249,7 @@ final class TaintFlowGraph extends DataFlowGraph
         DataFlowNode $generated_source,
         array $source_taints,
         array $sinks,
-        array $visited_source_ids
+        array $visited_source_ids,
     ): array {
         $new_sources = [];
 
@@ -313,150 +317,122 @@ final class TaintFlowGraph extends DataFlowGraph
                         . ' -> ' . $this->getSuccessorPath($sinks[$to_id]);
 
                     foreach ($matching_taints as $matching_taint) {
-                        switch ($matching_taint) {
-                            case TaintKind::INPUT_CALLABLE:
-                                $issue = new TaintedCallable(
-                                    'Detected tainted text',
-                                    $issue_location,
-                                    $issue_trace,
-                                    $path,
-                                );
-                                break;
-
-                            case TaintKind::INPUT_UNSERIALIZE:
-                                $issue = new TaintedUnserialize(
-                                    'Detected tainted code passed to unserialize or similar',
-                                    $issue_location,
-                                    $issue_trace,
-                                    $path,
-                                );
-                                break;
-
-                            case TaintKind::INPUT_INCLUDE:
-                                $issue = new TaintedInclude(
-                                    'Detected tainted code passed to include or similar',
-                                    $issue_location,
-                                    $issue_trace,
-                                    $path,
-                                );
-                                break;
-
-                            case TaintKind::INPUT_EVAL:
-                                $issue = new TaintedEval(
-                                    'Detected tainted code passed to eval or similar',
-                                    $issue_location,
-                                    $issue_trace,
-                                    $path,
-                                );
-                                break;
-
-                            case TaintKind::INPUT_SQL:
-                                $issue = new TaintedSql(
-                                    'Detected tainted SQL',
-                                    $issue_location,
-                                    $issue_trace,
-                                    $path,
-                                );
-                                break;
-
-                            case TaintKind::INPUT_HTML:
-                                $issue = new TaintedHtml(
-                                    'Detected tainted HTML',
-                                    $issue_location,
-                                    $issue_trace,
-                                    $path,
-                                );
-                                break;
-
-                            case TaintKind::INPUT_HAS_QUOTES:
-                                $issue = new TaintedTextWithQuotes(
-                                    'Detected tainted text with possible quotes',
-                                    $issue_location,
-                                    $issue_trace,
-                                    $path,
-                                );
-                                break;
-
-                            case TaintKind::INPUT_SHELL:
-                                $issue = new TaintedShell(
-                                    'Detected tainted shell code',
-                                    $issue_location,
-                                    $issue_trace,
-                                    $path,
-                                );
-                                break;
-
-                            case TaintKind::USER_SECRET:
-                                $issue = new TaintedUserSecret(
-                                    'Detected tainted user secret leaking',
-                                    $issue_location,
-                                    $issue_trace,
-                                    $path,
-                                );
-                                break;
-
-                            case TaintKind::SYSTEM_SECRET:
-                                $issue = new TaintedSystemSecret(
-                                    'Detected tainted system secret leaking',
-                                    $issue_location,
-                                    $issue_trace,
-                                    $path,
-                                );
-                                break;
-
-                            case TaintKind::INPUT_SSRF:
-                                $issue = new TaintedSSRF(
-                                    'Detected tainted network request',
-                                    $issue_location,
-                                    $issue_trace,
-                                    $path,
-                                );
-                                break;
-
-                            case TaintKind::INPUT_LDAP:
-                                $issue = new TaintedLdap(
-                                    'Detected tainted LDAP request',
-                                    $issue_location,
-                                    $issue_trace,
-                                    $path,
-                                );
-                                break;
-
-                            case TaintKind::INPUT_COOKIE:
-                                $issue = new TaintedCookie(
-                                    'Detected tainted cookie',
-                                    $issue_location,
-                                    $issue_trace,
-                                    $path,
-                                );
-                                break;
-
-                            case TaintKind::INPUT_FILE:
-                                $issue = new TaintedFile(
-                                    'Detected tainted file handling',
-                                    $issue_location,
-                                    $issue_trace,
-                                    $path,
-                                );
-                                break;
-
-                            case TaintKind::INPUT_HEADER:
-                                $issue = new TaintedHeader(
-                                    'Detected tainted header',
-                                    $issue_location,
-                                    $issue_trace,
-                                    $path,
-                                );
-                                break;
-
-                            default:
-                                $issue = new TaintedCustom(
-                                    'Detected tainted ' . $matching_taint,
-                                    $issue_location,
-                                    $issue_trace,
-                                    $path,
-                                );
-                        }
+                        $issue = match ($matching_taint) {
+                            TaintKind::INPUT_CALLABLE => new TaintedCallable(
+                                'Detected tainted text',
+                                $issue_location,
+                                $issue_trace,
+                                $path,
+                            ),
+                            TaintKind::INPUT_UNSERIALIZE => new TaintedUnserialize(
+                                'Detected tainted code passed to unserialize or similar',
+                                $issue_location,
+                                $issue_trace,
+                                $path,
+                            ),
+                            TaintKind::INPUT_INCLUDE => new TaintedInclude(
+                                'Detected tainted code passed to include or similar',
+                                $issue_location,
+                                $issue_trace,
+                                $path,
+                            ),
+                            TaintKind::INPUT_EVAL => new TaintedEval(
+                                'Detected tainted code passed to eval or similar',
+                                $issue_location,
+                                $issue_trace,
+                                $path,
+                            ),
+                            TaintKind::INPUT_SQL => new TaintedSql(
+                                'Detected tainted SQL',
+                                $issue_location,
+                                $issue_trace,
+                                $path,
+                            ),
+                            TaintKind::INPUT_HTML => new TaintedHtml(
+                                'Detected tainted HTML',
+                                $issue_location,
+                                $issue_trace,
+                                $path,
+                            ),
+                            TaintKind::INPUT_HAS_QUOTES => new TaintedTextWithQuotes(
+                                'Detected tainted text with possible quotes',
+                                $issue_location,
+                                $issue_trace,
+                                $path,
+                            ),
+                            TaintKind::INPUT_SHELL => new TaintedShell(
+                                'Detected tainted shell code',
+                                $issue_location,
+                                $issue_trace,
+                                $path,
+                            ),
+                            TaintKind::USER_SECRET => new TaintedUserSecret(
+                                'Detected tainted user secret leaking',
+                                $issue_location,
+                                $issue_trace,
+                                $path,
+                            ),
+                            TaintKind::SYSTEM_SECRET => new TaintedSystemSecret(
+                                'Detected tainted system secret leaking',
+                                $issue_location,
+                                $issue_trace,
+                                $path,
+                            ),
+                            TaintKind::INPUT_SSRF => new TaintedSSRF(
+                                'Detected tainted network request',
+                                $issue_location,
+                                $issue_trace,
+                                $path,
+                            ),
+                            TaintKind::INPUT_LDAP => new TaintedLdap(
+                                'Detected tainted LDAP request',
+                                $issue_location,
+                                $issue_trace,
+                                $path,
+                            ),
+                            TaintKind::INPUT_COOKIE => new TaintedCookie(
+                                'Detected tainted cookie',
+                                $issue_location,
+                                $issue_trace,
+                                $path,
+                            ),
+                            TaintKind::INPUT_FILE => new TaintedFile(
+                                'Detected tainted file handling',
+                                $issue_location,
+                                $issue_trace,
+                                $path,
+                            ),
+                            TaintKind::INPUT_HEADER => new TaintedHeader(
+                                'Detected tainted header',
+                                $issue_location,
+                                $issue_trace,
+                                $path,
+                            ),
+                            TaintKind::INPUT_XPATH => new TaintedXpath(
+                                'Detected tainted xpath query',
+                                $issue_location,
+                                $issue_trace,
+                                $path,
+                            ),
+                            TaintKind::INPUT_SLEEP => new TaintedSleep(
+                                'Detected tainted sleep',
+                                $issue_location,
+                                $issue_trace,
+                                $path,
+                            ),
+                            TaintKind::INPUT_EXTRACT => new TaintedExtract(
+                                'Detected tainted extract',
+                                $issue_location,
+                                $issue_trace,
+                                $path,
+                            ),
+                            default => new TaintedCustom(
+                                'Detected tainted ' . $matching_taint,
+                                $issue_location,
+                                $issue_trace,
+                                $path,
+                            ),
+                        };
 
                         IssueBuffer::maybeAdd($issue);
                     }
@@ -467,7 +443,8 @@ final class TaintFlowGraph extends DataFlowGraph
             $new_destination->previous = $generated_source;
             $new_destination->taints = $new_taints;
             $new_destination->specialized_calls = $generated_source->specialized_calls;
-            $new_destination->path_types = [...$generated_source->path_types, $path_type];
+            $new_destination->path_types = $generated_source->path_types;
+            $new_destination->path_types []= $path_type;
 
             $key = $to_id .
                 ' ' . json_encode($new_destination->specialized_calls, JSON_THROW_ON_ERROR) .
@@ -521,7 +498,7 @@ final class TaintFlowGraph extends DataFlowGraph
 
         return array_filter(
             $generated_sources,
-            [$this, 'doesForwardEdgeExist'],
+            $this->doesForwardEdgeExist(...),
         );
     }
 

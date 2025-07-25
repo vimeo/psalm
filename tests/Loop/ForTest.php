@@ -1,18 +1,22 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\Loop;
 
+use Override;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use const DIRECTORY_SEPARATOR;
 
-class ForTest extends TestCase
+final class ForTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    #[Override]
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -141,7 +145,7 @@ class ForTest extends TestCase
                      * @param list<int> $arr
                      */
                     function cartesianProduct(array $arr) : void {
-                        for ($i = 20; $arr[$i] === 5 && $i > 0; $i--) {}
+                        for ($i = 20; $i > 0 && $arr[$i] === 5 ; $i--) {}
                     }',
             ],
             'noCrashOnLongThing' => [
@@ -189,6 +193,7 @@ class ForTest extends TestCase
         ];
     }
 
+    #[Override]
     public function providerInvalidCodeParse(): iterable
     {
         return [

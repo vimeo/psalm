@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
 
-class ThrowsInGlobalScopeTest extends TestCase
+final class ThrowsInGlobalScopeTest extends TestCase
 {
     public function testUncaughtDocumentedThrowCall(): void
     {

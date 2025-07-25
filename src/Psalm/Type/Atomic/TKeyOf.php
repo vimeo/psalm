@@ -1,8 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
-use Psalm\Type\Atomic\TList;
+use Override;
 use Psalm\Type\Union;
 
 use function array_merge;
@@ -15,15 +17,12 @@ use function array_values;
  */
 final class TKeyOf extends TArrayKey
 {
-    /** @var Union */
-    public $type;
-
-    public function __construct(Union $type, bool $from_docblock = false)
+    public function __construct(public Union $type, bool $from_docblock = false)
     {
-        $this->type = $type;
         parent::__construct($from_docblock);
     }
 
+    #[Override]
     public function getKey(bool $include_extra = true): string
     {
         return 'key-of<' . $this->type . '>';
@@ -32,20 +31,23 @@ final class TKeyOf extends TArrayKey
     /**
      * @param  array<lowercase-string, string> $aliased_classes
      */
+    #[Override]
     public function toPhpString(
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $analysis_php_version_id
+        int $analysis_php_version_id,
     ): ?string {
         return null;
     }
 
+    #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
     }
 
+    #[Override]
     public function getAssertionString(): string
     {
         return 'mixed';
@@ -57,7 +59,6 @@ final class TKeyOf extends TArrayKey
             if (!$type instanceof TArray
                 && !$type instanceof TClassConstant
                 && !$type instanceof TKeyedArray
-                && !$type instanceof TList
                 && !$type instanceof TPropertiesOf
             ) {
                 return false;
@@ -68,15 +69,11 @@ final class TKeyOf extends TArrayKey
 
     public static function getArrayKeyType(
         Union $type,
-        bool $keep_template_params = false
+        bool $keep_template_params = false,
     ): ?Union {
         $key_types = [];
 
         foreach ($type->getAtomicTypes() as $atomic_type) {
-            if ($atomic_type instanceof TList) {
-                $atomic_type = $atomic_type->getKeyedArray();
-            }
-
             if ($atomic_type instanceof TArray) {
                 $array_key_atomics = $atomic_type->type_params[0];
             } elseif ($atomic_type instanceof TKeyedArray) {

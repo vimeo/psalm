@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use Override;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface;
@@ -18,11 +21,13 @@ use function in_array;
  */
 final class ImagickPixelColorReturnTypeProvider implements MethodReturnTypeProviderInterface
 {
+    #[Override]
     public static function getClassLikeNames(): array
     {
         return ['imagickpixel'];
     }
 
+    #[Override]
     public static function getMethodReturnType(MethodReturnTypeProviderEvent $event): ?Union
     {
         $source = $event->getSource();

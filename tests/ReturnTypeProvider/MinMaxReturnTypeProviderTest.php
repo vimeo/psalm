@@ -1,14 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\ReturnTypeProvider;
 
+use Override;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
-class MinMaxReturnTypeProviderTest extends TestCase
+final class MinMaxReturnTypeProviderTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
 
+    #[Override]
     public function providerValidCodeParse(): iterable
     {
         yield 'literalInt' => [

@@ -1,18 +1,22 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\Loop;
 
+use Override;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use const DIRECTORY_SEPARATOR;
 
-class ForeachTest extends TestCase
+final class ForeachTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    #[Override]
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -1191,6 +1195,21 @@ class ForeachTest extends TestCase
                     foreach ($gen as $i) {}
                 PHP,
             ],
+            'generatorWithVoidSend' => [
+                'code' => <<<'PHP'
+                    <?php
+
+                    /**
+                     * @return Generator<string, int, void, void>
+                     */
+                    function test(): Generator {
+                        yield 'test' => 1;
+                    }
+
+                    foreach (test() as $_) {
+                    }
+                PHP,
+            ],
             'nullableGenerator' => [
                 'code' => <<<'PHP'
                     <?php
@@ -1229,6 +1248,7 @@ class ForeachTest extends TestCase
         ];
     }
 
+    #[Override]
     public function providerInvalidCodeParse(): iterable
     {
         return [

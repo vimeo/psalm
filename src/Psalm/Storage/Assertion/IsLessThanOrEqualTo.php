@@ -1,26 +1,30 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Storage\Assertion;
 
+use Override;
 use Psalm\Storage\Assertion;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 
 /**
  * @psalm-immutable
  */
 final class IsLessThanOrEqualTo extends Assertion
 {
-    public int $value;
-
-    public function __construct(int $value)
+    use UnserializeMemoryUsageSuppressionTrait;
+    public function __construct(public readonly int $value)
     {
-        $this->value = $value;
     }
 
+    #[Override]
     public function getNegation(): Assertion
     {
         return new IsGreaterThan($this->value);
     }
 
+    #[Override]
     public function isNegation(): bool
     {
         return true;
@@ -31,6 +35,7 @@ final class IsLessThanOrEqualTo extends Assertion
         return '!>' . $this->value;
     }
 
+    #[Override]
     public function isNegationOf(Assertion $assertion): bool
     {
         return $assertion instanceof IsGreaterThan && $this->value === $assertion->value;

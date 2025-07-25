@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm;
 
 use Exception;
@@ -70,6 +72,7 @@ use ReflectionType;
 use UnexpectedValueException;
 
 use function array_combine;
+use function array_key_exists;
 use function array_pop;
 use function array_reverse;
 use function array_values;
@@ -86,7 +89,9 @@ use function krsort;
 use function ksort;
 use function preg_match;
 use function preg_replace;
+use function str_contains;
 use function str_replace;
+use function str_starts_with;
 use function strlen;
 use function strpos;
 use function strrpos;
@@ -96,236 +101,170 @@ use function substr_count;
 
 use const PHP_VERSION_ID;
 
+/**
+ * @api
+ */
 final class Codebase
 {
-    /**
-     * @var Config
-     */
-    public $config;
-
     /**
      * A map of fully-qualified use declarations to the files
      * that reference them (keyed by filename)
      *
      * @var array<lowercase-string, array<int, CodeLocation>>
      */
-    public $use_referencing_locations = [];
+    public array $use_referencing_locations = [];
 
-    /**
-     * @var FileStorageProvider
-     */
-    public $file_storage_provider;
+    public FileStorageProvider $file_storage_provider;
 
-    /**
-     * @var ClassLikeStorageProvider
-     */
-    public $classlike_storage_provider;
+    public ClassLikeStorageProvider $classlike_storage_provider;
 
-    /**
-     * @var bool
-     */
-    public $collect_references = false;
+    public bool $collect_references = false;
 
-    /**
-     * @var bool
-     */
-    public $collect_locations = false;
+    public bool $collect_locations = false;
 
     /**
      * @var null|'always'|'auto'
      */
-    public $find_unused_code;
+    public ?string $find_unused_code = null;
 
-    /**
-     * @var FileProvider
-     */
-    public $file_provider;
+    public FileProvider $file_provider;
 
-    /**
-     * @var FileReferenceProvider
-     */
-    public $file_reference_provider;
+    public FileReferenceProvider $file_reference_provider;
 
-    /**
-     * @var StatementsProvider
-     */
-    public $statements_provider;
+    public StatementsProvider $statements_provider;
 
-    private Progress $progress;
+    public readonly Progress $progress;
 
     /**
      * @var array<string, Union>
      */
-    private static $stubbed_constants = [];
+    private static array $stubbed_constants = [];
 
     /**
      * Whether to register autoloaded information
-     *
-     * @var bool
      */
-    public $register_autoload_files = false;
+    public bool $register_autoload_files = false;
 
     /**
      * Whether to log functions just at the file level or globally (for stubs)
-     *
-     * @var bool
      */
-    public $register_stub_files = false;
+    public bool $register_stub_files = false;
 
-    /**
-     * @var bool
-     */
-    public $find_unused_variables = false;
+    public bool $all_functions_global = false;
 
-    /**
-     * @var Scanner
-     */
-    public $scanner;
+    public bool $all_constants_global = false;
 
-    /**
-     * @var Analyzer
-     */
-    public $analyzer;
+    public bool $find_unused_variables = false;
 
-    /**
-     * @var Functions
-     */
-    public $functions;
+    public Scanner $scanner;
 
-    /**
-     * @var ClassLikes
-     */
-    public $classlikes;
+    public Analyzer $analyzer;
 
-    /**
-     * @var Methods
-     */
-    public $methods;
+    public Functions $functions;
 
-    /**
-     * @var Properties
-     */
-    public $properties;
+    public ClassLikes $classlikes;
 
-    /**
-     * @var Populator
-     */
-    public $populator;
+    public Methods $methods;
 
-    /**
-     * @var ?TaintFlowGraph
-     */
-    public $taint_flow_graph;
+    public Properties $properties;
 
-    /**
-     * @var bool
-     */
-    public $server_mode = false;
+    public Populator $populator;
 
-    /**
-     * @var bool
-     */
-    public $store_node_types = false;
+    public ?TaintFlowGraph $taint_flow_graph = null;
+
+    public bool $server_mode = false;
+
+    public bool $store_node_types = false;
 
     /**
      * Whether or not to infer types from usage. Computationally expensive, so turned off by default
-     *
-     * @var bool
      */
-    public $infer_types_from_usage = false;
+    public bool $infer_types_from_usage = false;
 
-    /**
-     * @var bool
-     */
-    public $alter_code = false;
+    public bool $alter_code = false;
 
-    /**
-     * @var bool
-     */
-    public $diff_methods = false;
+    public bool $diff_methods = false;
+
+    /** whether or not we only checked a part of the codebase */
+    public bool $diff_run = false;
+
+    public bool $language_server = false;
 
     /**
      * @var array<lowercase-string, string>
      */
-    public $methods_to_move = [];
+    public array $methods_to_move = [];
 
     /**
      * @var array<lowercase-string, string>
      */
-    public $methods_to_rename = [];
+    public array $methods_to_rename = [];
 
     /**
      * @var array<string, string>
      */
-    public $properties_to_move = [];
+    public array $properties_to_move = [];
 
     /**
      * @var array<string, string>
      */
-    public $properties_to_rename = [];
+    public array $properties_to_rename = [];
 
     /**
      * @var array<string, string>
      */
-    public $class_constants_to_move = [];
+    public array $class_constants_to_move = [];
 
     /**
      * @var array<string, string>
      */
-    public $class_constants_to_rename = [];
+    public array $class_constants_to_rename = [];
 
     /**
      * @var array<lowercase-string, string>
      */
-    public $classes_to_move = [];
+    public array $classes_to_move = [];
 
     /**
      * @var array<lowercase-string, string>
      */
-    public $call_transforms = [];
+    public array $call_transforms = [];
 
     /**
      * @var array<string, string>
      */
-    public $property_transforms = [];
+    public array $property_transforms = [];
 
     /**
      * @var array<string, string>
      */
-    public $class_constant_transforms = [];
+    public array $class_constant_transforms = [];
 
     /**
      * @var array<lowercase-string, string>
      */
-    public $class_transforms = [];
+    public array $class_transforms = [];
 
-    /**
-     * @var bool
-     */
-    public $allow_backwards_incompatible_changes = true;
+    public bool $allow_backwards_incompatible_changes = true;
 
-    /** @var int */
-    public $analysis_php_version_id = PHP_VERSION_ID;
+    public int $analysis_php_version_id = PHP_VERSION_ID;
 
     /** @var 'cli'|'config'|'composer'|'tests'|'runtime' */
-    public $php_version_source = 'runtime';
+    public string $php_version_source = 'runtime';
 
-    /**
-     * @var bool
-     */
-    public $track_unused_suppressions = false;
+    public bool $track_unused_suppressions = false;
+
+    public bool $literal_array_key_check = false;
 
     /** @internal */
     public function __construct(
-        Config $config,
+        public Config $config,
         Providers $providers,
-        ?Progress $progress = null
+        ?Progress $progress = null,
     ) {
         if ($progress === null) {
             $progress = new VoidProgress();
         }
-
-        $this->config = $config;
         $this->file_storage_provider = $providers->file_storage_provider;
         $this->classlike_storage_provider = $providers->classlike_storage_provider;
         $this->progress = $progress;
@@ -355,7 +294,6 @@ final class Codebase
             $this->config,
             $providers->classlike_storage_provider,
             $providers->file_reference_provider,
-            $providers->statements_provider,
             $this->scanner,
         );
 
@@ -415,8 +353,9 @@ final class Codebase
             $parser_cache_provider = $this->statements_provider->parser_cache_provider;
 
             foreach ($candidate_files as $candidate_file_path) {
-                if ($parser_cache_provider->loadExistingFileContentsFromCache($candidate_file_path)
-                    !== $this->file_provider->getContents($candidate_file_path)
+                $hash = $parser_cache_provider->getHash($candidate_file_path);
+                if ($hash !== null &&
+                    $hash !== $this->file_provider->getContents($candidate_file_path)
                 ) {
                     $diff_files[] = $candidate_file_path;
                 }
@@ -517,12 +456,16 @@ final class Codebase
     /**
      * @return list<PhpParser\Node\Stmt>
      */
-    public function getStatementsForFile(string $file_path): array
+    public function getStatementsForFile(string $file_path, ?Progress $progress = null): array
     {
         return $this->statements_provider->getStatementsForFile(
             $file_path,
             $this->analysis_php_version_id,
-            $this->progress,
+            $this->diff_methods
+                || $this->diff_run
+                || $this->language_server
+                || $this->file_reference_provider->cache?->persistent,
+            $progress ?? $this->progress,
         );
     }
 
@@ -580,11 +523,11 @@ final class Codebase
             throw new UnexpectedValueException('Should not be checking references');
         }
 
-        if (strpos($symbol, '::$') !== false) {
+        if (str_contains($symbol, '::$')) {
             return $this->findReferencesToProperty($symbol);
         }
 
-        if (strpos($symbol, '::') !== false) {
+        if (str_contains($symbol, '::')) {
             return $this->findReferencesToMethod($symbol);
         }
 
@@ -653,6 +596,14 @@ final class Codebase
     }
 
     /**
+     * @param array<string, Union> $stubs
+     */
+    public function addGlobalConstantTypes(array $stubs): void
+    {
+        self::$stubbed_constants += $stubs;
+    }
+
+    /**
      * @return array<string, Union>
      */
     public function getAllStubbedConstants(): array
@@ -672,7 +623,7 @@ final class Codebase
         string $fq_class_name,
         ?CodeLocation $code_location = null,
         ?string $calling_fq_class_name = null,
-        ?string $calling_method_id = null
+        ?string $calling_method_id = null,
     ): bool {
         return $this->classlikes->classOrInterfaceExists(
             $fq_class_name,
@@ -691,7 +642,7 @@ final class Codebase
         string $fq_class_name,
         ?CodeLocation $code_location = null,
         ?string $calling_fq_class_name = null,
-        ?string $calling_method_id = null
+        ?string $calling_method_id = null,
     ): bool {
         return $this->classlikes->classOrInterfaceOrEnumExists(
             $fq_class_name,
@@ -715,7 +666,7 @@ final class Codebase
         string $fq_class_name,
         ?CodeLocation $code_location = null,
         ?string $calling_fq_class_name = null,
-        ?string $calling_method_id = null
+        ?string $calling_method_id = null,
     ): bool {
         return $this->classlikes->classExists(
             $fq_class_name,
@@ -748,7 +699,7 @@ final class Codebase
         string $fq_interface_name,
         ?CodeLocation $code_location = null,
         ?string $calling_fq_class_name = null,
-        ?string $calling_method_id = null
+        ?string $calling_method_id = null,
     ): bool {
         return $this->classlikes->interfaceExists(
             $fq_interface_name,
@@ -800,7 +751,7 @@ final class Codebase
      */
     public function getFunctionLikeStorage(
         StatementsAnalyzer $statements_analyzer,
-        string $function_id
+        string $function_id,
     ): FunctionLikeStorage {
         $doesMethodExist =
             MethodIdentifier::isValidMethodIdReference($function_id)
@@ -823,16 +774,13 @@ final class Codebase
 
     /**
      * Whether or not a given method exists
-     *
-     * @param  string|MethodIdentifier      $method_id
-     * @param  string|MethodIdentifier|null $calling_method_id
      */
     public function methodExists(
-        $method_id,
+        string|MethodIdentifier $method_id,
         ?CodeLocation $code_location = null,
-        $calling_method_id = null,
+        string|MethodIdentifier|null $calling_method_id = null,
         ?string $file_path = null,
-        bool $is_used = true
+        bool $is_used = true,
     ): bool {
         return $this->methods->methodExists(
             MethodIdentifier::wrap($method_id),
@@ -846,28 +794,26 @@ final class Codebase
     }
 
     /**
-     * @param  string|MethodIdentifier $method_id
      * @return array<int, FunctionLikeParameter>
      */
-    public function getMethodParams($method_id): array
+    public function getMethodParams(string|MethodIdentifier $method_id): array
     {
         return $this->methods->getMethodParams(MethodIdentifier::wrap($method_id));
     }
 
-    /**
-     * @param  string|MethodIdentifier $method_id
-     */
-    public function isVariadic($method_id): bool
+    public function isVariadic(string|MethodIdentifier $method_id): bool
     {
         return $this->methods->isVariadic(MethodIdentifier::wrap($method_id));
     }
 
     /**
-     * @param  string|MethodIdentifier $method_id
      * @param  list<Arg> $call_args
      */
-    public function getMethodReturnType($method_id, ?string &$self_class, array $call_args = []): ?Union
-    {
+    public function getMethodReturnType(
+        string|MethodIdentifier $method_id,
+        ?string &$self_class,
+        array $call_args = [],
+    ): ?Union {
         return $this->methods->getMethodReturnType(
             MethodIdentifier::wrap($method_id),
             $self_class,
@@ -876,20 +822,14 @@ final class Codebase
         );
     }
 
-    /**
-     * @param  string|MethodIdentifier $method_id
-     */
-    public function getMethodReturnsByRef($method_id): bool
+    public function getMethodReturnsByRef(string|MethodIdentifier $method_id): bool
     {
         return $this->methods->getMethodReturnsByRef(MethodIdentifier::wrap($method_id));
     }
 
-    /**
-     * @param  string|MethodIdentifier $method_id
-     */
     public function getMethodReturnTypeLocation(
-        $method_id,
-        ?CodeLocation &$defined_location = null
+        string|MethodIdentifier $method_id,
+        ?CodeLocation &$defined_location = null,
     ): ?CodeLocation {
         return $this->methods->getMethodReturnTypeLocation(
             MethodIdentifier::wrap($method_id),
@@ -897,10 +837,7 @@ final class Codebase
         );
     }
 
-    /**
-     * @param  string|MethodIdentifier $method_id
-     */
-    public function getDeclaringMethodId($method_id): ?string
+    public function getDeclaringMethodId(string|MethodIdentifier $method_id): ?string
     {
         $new_method_id = $this->methods->getDeclaringMethodId(MethodIdentifier::wrap($method_id));
 
@@ -909,10 +846,8 @@ final class Codebase
 
     /**
      * Get the class this method appears in (vs is declared in, which could give a trait)
-     *
-     * @param  string|MethodIdentifier $method_id
      */
-    public function getAppearingMethodId($method_id): ?string
+    public function getAppearingMethodId(string|MethodIdentifier $method_id): ?string
     {
         $new_method_id = $this->methods->getAppearingMethodId(MethodIdentifier::wrap($method_id));
 
@@ -920,18 +855,14 @@ final class Codebase
     }
 
     /**
-     * @param  string|MethodIdentifier $method_id
      * @return array<string, MethodIdentifier>
      */
-    public function getOverriddenMethodIds($method_id): array
+    public function getOverriddenMethodIds(string|MethodIdentifier $method_id): array
     {
         return $this->methods->getOverriddenMethodIds(MethodIdentifier::wrap($method_id));
     }
 
-    /**
-     * @param  string|MethodIdentifier $method_id
-     */
-    public function getCasedMethodId($method_id): string
+    public function getCasedMethodId(string|MethodIdentifier $method_id): string
     {
         return $this->methods->getCasedMethodId(MethodIdentifier::wrap($method_id));
     }
@@ -942,7 +873,7 @@ final class Codebase
 
         try {
             $file_storage = $this->file_storage_provider->get($file_path);
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException) {
             return;
         }
 
@@ -988,12 +919,12 @@ final class Codebase
      * Get Markup content from Reference
      */
     public function getMarkupContentForSymbolByReference(
-        Reference $reference
+        Reference $reference,
     ): ?PHPMarkdownContent {
         //Direct Assignment
         if (is_numeric($reference->symbol[0])) {
             return new PHPMarkdownContent(
-                preg_replace(
+                (string) preg_replace(
                     '/^[^:]*:/',
                     '',
                     $reference->symbol,
@@ -1031,8 +962,8 @@ final class Codebase
             [, $symbol_name] = explode('::', $reference->symbol);
 
             //Class Property
-            if (strpos($reference->symbol, '$') !== false) {
-                $property_id = preg_replace('/^\\\\/', '', $reference->symbol);
+            if (str_contains($reference->symbol, '$')) {
+                $property_id = (string) preg_replace('/^\\\\/', '', $reference->symbol);
                 /** @psalm-suppress PossiblyUndefinedIntArrayOffset */
                 [$fq_class_name, $property_name] = explode('::$', $property_id);
                 $class_storage = $this->classlikes->getStorageFor($fq_class_name);
@@ -1127,7 +1058,7 @@ final class Codebase
         }
 
         //Procedural Variable
-        if (strpos($reference->symbol, '$') === 0) {
+        if (str_starts_with($reference->symbol, '$')) {
             $type = VariableFetchAnalyzer::getGlobalType($reference->symbol, $this->analysis_php_version_id);
             if (!$type->isMixed()) {
                 return new PHPMarkdownContent(
@@ -1148,7 +1079,7 @@ final class Codebase
                 $storage->name,
                 $storage->description,
             );
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException) {
             //continue on as normal
         }
 
@@ -1201,228 +1132,10 @@ final class Codebase
         return new PHPMarkdownContent($reference->symbol);
     }
 
-    /**
-     * @psalm-suppress PossiblyUnusedMethod
-     * @deprecated will be removed in Psalm 6. use {@see Codebase::getSymbolLocationByReference()} instead
-     */
-    public function getSymbolInformation(string $file_path, string $symbol): ?array
-    {
-        if (is_numeric($symbol[0])) {
-            return ['type' => preg_replace('/^[^:]*:/', '', $symbol)];
-        }
-
-        try {
-            if (strpos($symbol, '::')) {
-                if (strpos($symbol, '()')) {
-                    $symbol = substr($symbol, 0, -2);
-
-                    /** @psalm-suppress ArgumentTypeCoercion */
-                    $method_id = new MethodIdentifier(...explode('::', $symbol));
-
-                    $declaring_method_id = $this->methods->getDeclaringMethodId($method_id);
-
-                    if (!$declaring_method_id) {
-                        return null;
-                    }
-
-                    $storage = $this->methods->getStorage($declaring_method_id);
-
-                    return [
-                        'type' => '<?php ' . $storage->getCompletionSignature(),
-                        'description' => $storage->description,
-                    ];
-                }
-
-                [, $symbol_name] = explode('::', $symbol);
-
-                if (strpos($symbol, '$') !== false) {
-                    $storage = $this->properties->getStorage($symbol);
-
-                    return [
-                        'type' => '<?php ' . $storage->getInfo() . ' ' . $symbol_name,
-                        'description' => $storage->description,
-                    ];
-                }
-
-                [$fq_classlike_name, $const_name] = explode('::', $symbol);
-
-                $class_constants = $this->classlikes->getConstantsForClass(
-                    $fq_classlike_name,
-                    ReflectionProperty::IS_PRIVATE,
-                );
-
-                if (!isset($class_constants[$const_name])) {
-                    return null;
-                }
-
-                return [
-                    'type' => '<?php ' . $const_name,
-                    'description' => $class_constants[$const_name]->description,
-                ];
-            }
-
-            if (strpos($symbol, '()')) {
-                $function_id = strtolower(substr($symbol, 0, -2));
-                $file_storage = $this->file_storage_provider->get($file_path);
-
-                if (isset($file_storage->functions[$function_id])) {
-                    $function_storage = $file_storage->functions[$function_id];
-
-                    return [
-                        'type' => '<?php ' . $function_storage->getCompletionSignature(),
-                        'description' => $function_storage->description,
-                    ];
-                }
-
-                if (!$function_id) {
-                    return null;
-                }
-
-                $function = $this->functions->getStorage(null, $function_id);
-                return [
-                    'type' => '<?php ' . $function->getCompletionSignature(),
-                    'description' => $function->description,
-                ];
-            }
-
-            if (strpos($symbol, '$') === 0) {
-                $type = VariableFetchAnalyzer::getGlobalType($symbol, $this->analysis_php_version_id);
-                if (!$type->isMixed()) {
-                    return ['type' => '<?php ' . $type];
-                }
-            }
-
-            try {
-                $storage = $this->classlike_storage_provider->get($symbol);
-                return [
-                    'type' => '<?php ' . ($storage->abstract ? 'abstract ' : '') . 'class ' . $storage->name,
-                    'description' => $storage->description,
-                ];
-            } catch (InvalidArgumentException $e) {
-            }
-
-            if (strpos($symbol, '\\')) {
-                $const_name_parts = explode('\\', $symbol);
-                $const_name = array_pop($const_name_parts);
-                $namespace_name = implode('\\', $const_name_parts);
-
-                $namespace_constants = NamespaceAnalyzer::getConstantsForNamespace(
-                    $namespace_name,
-                    ReflectionProperty::IS_PUBLIC,
-                );
-                if (isset($namespace_constants[$const_name])) {
-                    $type = $namespace_constants[$const_name];
-                    return ['type' => '<?php const ' . $symbol . ' ' . $type];
-                }
-            } else {
-                $file_storage = $this->file_storage_provider->get($file_path);
-                if (isset($file_storage->constants[$symbol])) {
-                    return ['type' => '<?php const ' . $symbol . ' ' . $file_storage->constants[$symbol]];
-                }
-                $constant = ConstFetchAnalyzer::getGlobalConstType($this, $symbol, $symbol);
-
-                if ($constant) {
-                    return ['type' => '<?php const ' . $symbol . ' ' . $constant];
-                }
-            }
-            return null;
-        } catch (Exception $e) {
-            error_log($e->getMessage());
-
-            return null;
-        }
-    }
-
-    /**
-     * @psalm-suppress PossiblyUnusedMethod
-     * @deprecated will be removed in Psalm 6. use {@see Codebase::getSymbolLocationByReference()} instead
-     */
-    public function getSymbolLocation(string $file_path, string $symbol): ?CodeLocation
-    {
-        if (is_numeric($symbol[0])) {
-            $symbol = preg_replace('/:.*/', '', $symbol);
-            $symbol_parts = explode('-', $symbol);
-
-            $file_contents = $this->getFileContents($file_path);
-
-            return new Raw(
-                $file_contents,
-                $file_path,
-                $this->config->shortenFileName($file_path),
-                (int) $symbol_parts[0],
-                (int) $symbol_parts[1],
-            );
-        }
-
-        try {
-            if (strpos($symbol, '::')) {
-                if (strpos($symbol, '()')) {
-                    $symbol = substr($symbol, 0, -2);
-
-                    /** @psalm-suppress ArgumentTypeCoercion */
-                    $method_id = new MethodIdentifier(...explode('::', $symbol));
-
-                    $declaring_method_id = $this->methods->getDeclaringMethodId($method_id);
-
-                    if (!$declaring_method_id) {
-                        return null;
-                    }
-
-                    $storage = $this->methods->getStorage($declaring_method_id);
-
-                    return $storage->location;
-                }
-
-                if (strpos($symbol, '$') !== false) {
-                    $storage = $this->properties->getStorage($symbol);
-
-                    return $storage->location;
-                }
-
-                [$fq_classlike_name, $const_name] = explode('::', $symbol);
-
-                $class_constants = $this->classlikes->getConstantsForClass(
-                    $fq_classlike_name,
-                    ReflectionProperty::IS_PRIVATE,
-                );
-
-                if (!isset($class_constants[$const_name])) {
-                    return null;
-                }
-
-                return $class_constants[$const_name]->location;
-            }
-
-            if (strpos($symbol, '()')) {
-                $file_storage = $this->file_storage_provider->get($file_path);
-
-                $function_id = strtolower(substr($symbol, 0, -2));
-
-                if (isset($file_storage->functions[$function_id])) {
-                    return $file_storage->functions[$function_id]->location;
-                }
-
-                if (!$function_id) {
-                    return null;
-                }
-
-                return $this->functions->getStorage(null, $function_id)->location;
-            }
-
-            return $this->classlike_storage_provider->get($symbol)->location;
-        } catch (UnexpectedValueException $e) {
-            error_log($e->getMessage());
-
-            return null;
-        } catch (InvalidArgumentException $e) {
-            return null;
-        }
-    }
-
     public function getSymbolLocationByReference(Reference $reference): ?CodeLocation
     {
         if (is_numeric($reference->symbol[0])) {
-            $symbol = preg_replace('/:.*/', '', $reference->symbol);
+            $symbol = (string) preg_replace('/:.*/', '', $reference->symbol);
             $symbol_parts = explode('-', $symbol);
 
             if (!isset($symbol_parts[0]) || !isset($symbol_parts[1])) {
@@ -1463,7 +1176,7 @@ final class Codebase
                     return $storage->location;
                 }
 
-                if (strpos($reference->symbol, '$') !== false) {
+                if (str_contains($reference->symbol, '$')) {
                     $storage = $this->properties->getStorage(
                         $reference->symbol,
                     );
@@ -1515,13 +1228,12 @@ final class Codebase
             error_log($e->getMessage());
 
             return null;
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException) {
             return null;
         }
     }
 
     /**
-     * @psalm-suppress PossiblyUnusedMethod
      * @return array{0: string, 1: Range}|null
      */
     public function getReferenceAtPosition(string $file_path, Position $position): ?array
@@ -1538,7 +1250,7 @@ final class Codebase
      */
     public function getReferenceAtPositionAsReference(
         string $file_path,
-        Position $position
+        Position $position,
     ): ?Reference {
         $is_open = $this->file_provider->isOpen($file_path);
 
@@ -1651,11 +1363,11 @@ final class Codebase
      */
     public function getSignatureInformation(
         string $function_symbol,
-        ?string $file_path = null
+        ?string $file_path = null,
     ): ?SignatureInformation {
         $signature_label = '';
         $signature_documentation = null;
-        if (strpos($function_symbol, '::') !== false) {
+        if (str_contains($function_symbol, '::')) {
             /** @psalm-suppress ArgumentTypeCoercion */
             $method_id = new MethodIdentifier(...explode('::', $function_symbol));
 
@@ -1684,7 +1396,7 @@ final class Codebase
                 $params = $function_storage->params;
                 $signature_label = $function_storage->cased_name;
                 $signature_documentation = $function_storage->description;
-            } catch (Exception $exception) {
+            } catch (Exception) {
                 if (InternalCallMapHandler::inCallMap($function_symbol)) {
                     $callables = InternalCallMapHandler::getCallablesFromCallMap($function_symbol);
 
@@ -1877,7 +1589,7 @@ final class Codebase
         string $gap,
         bool $snippets_supported = false,
         ?array $allow_visibilities = null,
-        array $ignore_fq_class_names = []
+        array $ignore_fq_class_names = [],
     ): array {
         if ($allow_visibilities === null) {
             $allow_visibilities = [
@@ -1912,9 +1624,16 @@ final class Codebase
                         $method_storages += $class_storage->pseudo_static_methods;
                     }
 
+                    $had = [];
                     foreach ($method_storages as $method_storage) {
                         if (!in_array($method_storage->visibility, $allow_visibilities)) {
                             continue;
+                        }
+                        if ($method_storage->cased_name !== null) {
+                            if (array_key_exists($method_storage->cased_name, $had)) {
+                                continue;
+                            }
+                            $had[$method_storage->cased_name] = true;
                         }
                         if ($method_storage->is_static || $gap === '->') {
                             $completion_item = new CompletionItem(
@@ -2050,7 +1769,7 @@ final class Codebase
 
         $res = [];
         foreach ($items as $item) {
-            if ($item->insertText && strpos($item->insertText, $literal_part) === 0) {
+            if ($item->insertText && str_starts_with($item->insertText, $literal_part)) {
                 $res[] = $item;
             }
         }
@@ -2064,7 +1783,7 @@ final class Codebase
     public function getCompletionItemsForPartialSymbol(
         string $type_string,
         int $offset,
-        string $file_path
+        string $file_path,
     ): array {
         $fq_suggestion = false;
 
@@ -2083,7 +1802,7 @@ final class Codebase
         foreach ($file_storage->classlikes_in_file as $fq_class_name => $_) {
             try {
                 $class_storage = $this->classlike_storage_provider->get($fq_class_name);
-            } catch (Exception $e) {
+            } catch (Exception) {
                 continue;
             }
 
@@ -2130,7 +1849,7 @@ final class Codebase
             ) {
                 $file_contents = $this->getFileContents($file_path);
 
-                $class_name = preg_replace('/^.*\\\/', '', $fq_class_name, 1);
+                $class_name = (string) preg_replace('/^.*\\\/', '', $fq_class_name, 1);
 
                 if ($aliases->uses_end) {
                     $position = self::getPositionFromOffset($aliases->uses_end, $file_contents);
@@ -2158,7 +1877,7 @@ final class Codebase
             try {
                 $class_storage = $this->classlike_storage_provider->get($fq_class_name);
                 $description = $class_storage->description;
-            } catch (Exception $e) {
+            } catch (Exception) {
                 $description = null;
             }
 
@@ -2198,14 +1917,14 @@ final class Codebase
             }
             $in_namespace_map = false;
             foreach ($namespace_map as $namespace_name => $namespace_alias) {
-                if (strpos($function_lowercase, $namespace_name . '\\') === 0) {
+                if (str_starts_with($function_lowercase, $namespace_name . '\\')) {
                     $function_name = $namespace_alias . '\\' . substr($function_name, strlen($namespace_name) + 1);
                     $in_namespace_map = true;
                 }
             }
             // If the function is not use'd, and it's not a global function
             // prepend it with a backslash.
-            if (!$in_namespace_map && strpos($function_name, '\\') !== false) {
+            if (!$in_namespace_map && str_contains($function_name, '\\')) {
                 $function_name = '\\' . $function_name;
             }
             $completion_items[] = new CompletionItem(
@@ -2287,7 +2006,7 @@ final class Codebase
      * @return list<CompletionItem>
      */
     public function getCompletionItemsForArrayKeys(
-        string $type_string
+        string $type_string,
     ): array {
         $completion_items = [];
         $type = Type::parseString($type_string);
@@ -2356,7 +2075,7 @@ final class Codebase
         bool $ignore_null = false,
         bool $ignore_false = false,
         bool $allow_interface_equality = false,
-        bool $allow_float_int_equality = true
+        bool $allow_float_int_equality = true,
     ): bool {
         return UnionTypeComparator::isContainedBy(
             $this,
@@ -2385,7 +2104,7 @@ final class Codebase
      */
     public function canTypeBeContainedByType(
         Union $input_type,
-        Union $container_type
+        Union $container_type,
     ): bool {
         return UnionTypeComparator::canBeContainedBy($this, $input_type, $container_type);
     }
@@ -2424,20 +2143,19 @@ final class Codebase
         string $fq_classlike_name,
         bool $analyze_too = false,
         bool $store_failure = true,
-        array $phantom_classes = []
+        array $phantom_classes = [],
     ): void {
         $this->scanner->queueClassLikeForScanning($fq_classlike_name, $analyze_too, $store_failure, $phantom_classes);
     }
 
     /**
      * @param array<string> $taints
-     * @psalm-suppress PossiblyUnusedMethod
      */
     public function addTaintSource(
         Union $expr_type,
         string $taint_id,
         array $taints = TaintKindGroup::ALL_INPUT,
-        ?CodeLocation $code_location = null
+        ?CodeLocation $code_location = null,
     ): Union {
         if (!$this->taint_flow_graph) {
             return $expr_type;
@@ -2458,12 +2176,11 @@ final class Codebase
 
     /**
      * @param array<string> $taints
-     * @psalm-suppress PossiblyUnusedMethod
      */
     public function addTaintSink(
         string $taint_id,
         array $taints = TaintKindGroup::ALL_INPUT,
-        ?CodeLocation $code_location = null
+        ?CodeLocation $code_location = null,
     ): void {
         if (!$this->taint_flow_graph) {
             return;

@@ -1,0 +1,29 @@
+name: Run Psalm (mac OS)
+
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+
+    steps:
+    - uses: actions/checkout@v4
+    - uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.4'
+        ini-values: zend.assertions=1
+        tools: composer:v2
+        coverage: none
+      env:
+        fail-fast: true
+
+    - name: Install dependencies
+      run: composer install --prefer-dist --no-progress --no-suggest
+      env:
+        COMPOSER_ROOT_VERSION: dev-master
+
+    - name: Run Psalm
+      run: ./psalm --output-format=github --force-jit

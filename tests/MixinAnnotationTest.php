@@ -1,17 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
+use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\InvalidCodeAnalysisWithIssuesTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
-class MixinAnnotationTest extends TestCase
+final class MixinAnnotationTest extends TestCase
 {
     use InvalidCodeAnalysisWithIssuesTestTrait;
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
 
+    #[Override]
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -596,9 +600,32 @@ class MixinAnnotationTest extends TestCase
                     '$g' => 'list<FooModel>',
                 ],
             ],
+            'mixinInheritMagicMethods' => [
+                'code' => '<?php
+                    /**
+                     * @method $this active()
+                     */
+                    class A {
+                        public function __call(string $name, array $arguments) {}
+                    }
+
+                    /**
+                     * @mixin A
+                     */
+                    class B {
+                        public function __call(string $name, array $arguments) {}
+                    }
+
+                    $b = new B;
+                    $c = $b->active();',
+                'assertions' => [
+                    '$c' => 'B',
+                ],
+            ],
         ];
     }
 
+    #[Override]
     public function providerInvalidCodeParse(): iterable
     {
         return [
@@ -650,7 +677,7 @@ class MixinAnnotationTest extends TestCase
                     }
 
                     (new A)->foo = "bar";',
-                'error_message' => 'UndefinedMagicPropertyAssignment',
+                'error_message' => 'UndefinedDocblockClass',
             ],
             'undefinedMixinClassWithMethodCall' => [
                 'code' => '<?php

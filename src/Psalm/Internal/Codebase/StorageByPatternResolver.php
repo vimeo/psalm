@@ -10,8 +10,8 @@ use Psalm\Storage\EnumCaseStorage;
 
 use function preg_match;
 use function sprintf;
+use function str_contains;
 use function str_replace;
-use function strpos;
 
 /**
  * @internal
@@ -26,11 +26,11 @@ final class StorageByPatternResolver
      */
     public function resolveConstants(
         ClassLikeStorage $class_like_storage,
-        string $pattern
+        string $pattern,
     ): array {
         $constants = $class_like_storage->constants;
 
-        if (strpos($pattern, '*') === false) {
+        if (!str_contains($pattern, '*')) {
             if (isset($constants[$pattern])) {
                 return [$pattern => $constants[$pattern]];
             }
@@ -59,10 +59,10 @@ final class StorageByPatternResolver
      */
     public function resolveEnums(
         ClassLikeStorage $class_like_storage,
-        string $pattern
+        string $pattern,
     ): array {
         $enum_cases = $class_like_storage->enum_cases;
-        if (strpos($pattern, '*') === false) {
+        if (!str_contains($pattern, '*')) {
             if (isset($enum_cases[$pattern])) {
                 return [$pattern => $enum_cases[$pattern]];
             }

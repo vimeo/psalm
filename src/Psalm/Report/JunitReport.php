@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Report;
 
 use DOMDocument;
 use DOMElement;
+use Override;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Report;
@@ -19,6 +22,7 @@ use function trim;
  */
 final class JunitReport extends Report
 {
+    #[Override]
     public function create(): string
     {
         $errors = 0;

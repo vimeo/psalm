@@ -13,22 +13,16 @@ use Psalm\Type\Union;
 
 final class ArgTypeInferer
 {
-    private Context $context;
-    private StatementsAnalyzer $statements_analyzer;
-
     /**
      * @internal
      */
-    public function __construct(Context $context, StatementsAnalyzer $statements_analyzer)
-    {
-        $this->context = $context;
-        $this->statements_analyzer = $statements_analyzer;
+    public function __construct(
+        private readonly Context $context,
+        private readonly StatementsAnalyzer $statements_analyzer,
+    ) {
     }
 
-    /**
-     * @return false|Union
-     */
-    public function infer(PhpParser\Node\Arg $arg)
+    public function infer(PhpParser\Node\Arg $arg): null|Union
     {
         $already_inferred_type = $this->statements_analyzer->node_data->getType($arg->value);
 
@@ -37,7 +31,7 @@ final class ArgTypeInferer
         }
 
         if (ExpressionAnalyzer::analyze($this->statements_analyzer, $arg->value, $this->context) === false) {
-            return false;
+            return null;
         }
 
         return $this->statements_analyzer->node_data->getType($arg->value) ?? Type::getMixed();

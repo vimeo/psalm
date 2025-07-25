@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use Override;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Issue\InvalidArgument;
 use Psalm\IssueBuffer;
@@ -13,7 +16,6 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Union;
 
 use function array_combine;
-use function assert;
 use function count;
 
 /**
@@ -24,11 +26,13 @@ final class ArrayCombineReturnTypeProvider implements FunctionReturnTypeProvider
     /**
      * @return array<lowercase-string>
      */
+    #[Override]
     public static function getFunctionIds(): array
     {
         return ['array_combine'];
     }
 
+    #[Override]
     public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): ?Union
     {
         $statements_source = $event->getStatementsSource();
@@ -120,8 +124,6 @@ final class ArrayCombineReturnTypeProvider implements FunctionReturnTypeProvider
             $keys_array,
             $values,
         );
-
-        assert($result !== false);
 
         if (!$result) {
             return Type::getEmptyArray();

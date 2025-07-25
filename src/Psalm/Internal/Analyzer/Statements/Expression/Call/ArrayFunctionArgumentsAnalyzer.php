@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use AssertionError;
@@ -36,21 +38,20 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_filter;
-use function array_merge;
 use function array_pop;
 use function array_shift;
 use function array_unshift;
 use function assert;
 use function count;
 use function explode;
+use function in_array;
 use function is_numeric;
-use function strpos;
+use function str_contains;
 use function strtolower;
 use function substr;
 
@@ -67,7 +68,7 @@ final class ArrayFunctionArgumentsAnalyzer
         Context $context,
         array $args,
         string $method_id,
-        bool $check_functions
+        bool $check_functions,
     ): void {
         $closure_index = $method_id === 'array_map' ? 0 : 1;
 
@@ -78,7 +79,7 @@ final class ArrayFunctionArgumentsAnalyzer
                 continue;
             }
 
-            if ($i === 1 && $method_id === 'array_filter') {
+            if ($i === 1 && in_array($method_id, ArgumentsAnalyzer::ARRAY_FILTERLIKE, true)) {
                 break;
             }
 
@@ -110,6 +111,8 @@ final class ArrayFunctionArgumentsAnalyzer
 
             if ($method_id === 'array_filter') {
                 $max_closure_param_count = count($args) > 2 ? 2 : 1;
+            } elseif (in_array($method_id, ArgumentsAnalyzer::ARRAY_FILTERLIKE, true)) {
+                $max_closure_param_count = 2;
             }
 
             $new = [];
@@ -143,7 +146,7 @@ final class ArrayFunctionArgumentsAnalyzer
         StatementsAnalyzer $statements_analyzer,
         array $args,
         Context $context,
-        string $method_id
+        string $method_id,
     ): ?bool {
         $array_arg = $args[0]->value;
         $nb_args = count($args);
@@ -336,7 +339,7 @@ final class ArrayFunctionArgumentsAnalyzer
     public static function handleSplice(
         StatementsAnalyzer $statements_analyzer,
         array $args,
-        Context $context
+        Context $context,
     ): ?bool {
         $context->inside_call = true;
         $array_arg = $args[0]->value;
@@ -355,9 +358,6 @@ final class ArrayFunctionArgumentsAnalyzer
         if (($array_arg_type = $statements_analyzer->node_data->getType($array_arg))
             && $array_arg_type->hasArray()
         ) {
-            /**
-             * @var TArray|TKeyedArray
-             */
             $array_type = $array_arg_type->getArray();
             if ($generic_array_type = ArrayType::infer($array_type)) {
                 $array_size = $generic_array_type->count;
@@ -459,12 +459,11 @@ final class ArrayFunctionArgumentsAnalyzer
                         $length_min = (int) $length_literal->value;
                     }
                 } else {
-                    $literals = array_merge(
-                        $length_arg_type->getLiteralStrings(),
-                        $length_arg_type->getLiteralInts(),
-                        $length_arg_type->getLiteralFloats(),
-                    );
-                    foreach ($literals as $literal) {
+                    foreach ([
+                        ...$length_arg_type->getLiteralStrings(),
+                        ...$length_arg_type->getLiteralInts(),
+                        ...$length_arg_type->getLiteralFloats(),
+                    ] as $literal) {
                         if ($literal->isNumericType()
                             && ($literal_val = (int) $literal->value)
                             && ((isset($length_min) && $length_min> $literal_val) || !isset($length_min))) {
@@ -620,7 +619,7 @@ final class ArrayFunctionArgumentsAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Arg $arg,
         Context $context,
-        bool $is_array_shift
+        bool $is_array_shift,
     ): void {
         $var_id = ExpressionIdentifier::getVarId(
             $arg->value,
@@ -635,10 +634,6 @@ final class ArrayFunctionArgumentsAnalyzer
                 $array_atomic_types = [];
 
                 foreach ($context->vars_in_scope[$var_id]->getAtomicTypes() as $array_atomic_type) {
-                    if ($array_atomic_type instanceof TList) {
-                        $array_atomic_type = $array_atomic_type->getKeyedArray();
-                    }
-
                     if ($array_atomic_type instanceof TKeyedArray) {
                         if ($is_array_shift && $array_atomic_type->is_list
                             && !$context->inside_loop
@@ -743,7 +738,7 @@ final class ArrayFunctionArgumentsAnalyzer
         int $min_closure_param_count,
         int $max_closure_param_count,
         array $array_arg_types,
-        bool $check_functions
+        bool $check_functions,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -769,7 +764,7 @@ final class ArrayFunctionArgumentsAnalyzer
             foreach ($function_ids as $function_id) {
                 $function_id = strtolower($function_id);
 
-                if (strpos($function_id, '::') !== false) {
+                if (str_contains($function_id, '::')) {
                     if ($function_id[0] === '$') {
                         $function_id = substr($function_id, 1);
                     }
@@ -807,7 +802,7 @@ final class ArrayFunctionArgumentsAnalyzer
 
                         try {
                             $method_storage = $codebase->methods->getStorage($function_id_part);
-                        } catch (UnexpectedValueException $e) {
+                        } catch (UnexpectedValueException) {
                             // the method may not exist, but we're suppressing that issue
                             continue;
                         }
@@ -908,7 +903,7 @@ final class ArrayFunctionArgumentsAnalyzer
         PhpParser\Node\Arg $closure_arg,
         int $min_closure_param_count,
         int $max_closure_param_count,
-        array $array_arg_types
+        array $array_arg_types,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 

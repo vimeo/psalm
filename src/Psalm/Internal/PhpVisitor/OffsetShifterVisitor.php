@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\PhpVisitor;
 
+use Override;
 use PhpParser;
 
 /**
@@ -11,23 +14,17 @@ use PhpParser;
  */
 final class OffsetShifterVisitor extends PhpParser\NodeVisitorAbstract
 {
-    private int $file_offset;
-
-    private int $line_offset;
-
-    /** @var array<int, int> */
-    private array $extra_offsets;
-
     /**
      * @param array<int, int> $extra_offsets
      */
-    public function __construct(int $offset, int $line_offset, array $extra_offsets)
-    {
-        $this->file_offset = $offset;
-        $this->line_offset = $line_offset;
-        $this->extra_offsets = $extra_offsets;
+    public function __construct(
+        private readonly int $file_offset,
+        private readonly int $line_offset,
+        private array $extra_offsets,
+    ) {
     }
 
+    #[Override]
     public function enterNode(PhpParser\Node $node): ?int
     {
         /** @var array{startFilePos: int, endFilePos: int, startLine: int} */

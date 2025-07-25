@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\Internal;
 
+use Override;
 use PHPUnit\Framework\TestCase;
 use Psalm\Internal\CliUtils;
 
@@ -9,19 +12,21 @@ use function realpath;
 
 use const DIRECTORY_SEPARATOR;
 
-class CliUtilsTest extends TestCase
+final class CliUtilsTest extends TestCase
 {
     /**
      * @var list<string>
      */
     private array $argv = [];
 
+    #[Override]
     protected function setUp(): void
     {
         global $argv;
         $this->argv = $argv;
     }
 
+    #[Override]
     protected function tearDown(): void
     {
         global $argv;

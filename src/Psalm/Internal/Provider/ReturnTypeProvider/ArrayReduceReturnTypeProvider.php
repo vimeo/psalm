@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use Override;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
@@ -16,7 +19,6 @@ use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
 
@@ -24,7 +26,7 @@ use function count;
 use function explode;
 use function in_array;
 use function reset;
-use function strpos;
+use function str_contains;
 use function strtolower;
 use function substr;
 
@@ -36,11 +38,13 @@ final class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderI
     /**
      * @return array<lowercase-string>
      */
+    #[Override]
     public static function getFunctionIds(): array
     {
         return ['array_reduce'];
     }
 
+    #[Override]
     public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Union
     {
         $statements_source = $event->getStatementsSource();
@@ -72,14 +76,11 @@ final class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderI
 
         if (isset($array_arg_types['array'])
             && ($array_arg_types['array'] instanceof TArray
-                || $array_arg_types['array'] instanceof TList
                 || $array_arg_types['array'] instanceof TKeyedArray)
         ) {
             $array_arg_atomic_type = $array_arg_types['array'];
 
-            if ($array_arg_atomic_type instanceof TList) {
-                $array_arg_atomic_type = $array_arg_atomic_type->getKeyedArray();
-            }
+
 
             if ($array_arg_atomic_type instanceof TKeyedArray) {
                 $array_arg_atomic_type = $array_arg_atomic_type->getGenericArrayType();
@@ -220,7 +221,7 @@ final class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderI
                             $part_match_found = true;
                         }
                     } elseif ($mapping_function_id_part) {
-                        if (strpos($mapping_function_id_part, '::') !== false) {
+                        if (str_contains($mapping_function_id_part, '::')) {
                             if ($mapping_function_id_part[0] === '$') {
                                 $mapping_function_id_part = substr($mapping_function_id_part, 1);
                             }

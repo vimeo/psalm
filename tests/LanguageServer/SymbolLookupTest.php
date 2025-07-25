@@ -1,26 +1,30 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\LanguageServer;
 
 use LanguageServerProtocol\Position;
 use LanguageServerProtocol\Range;
+use Override;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\LanguageServer\Reference;
 use Psalm\Internal\Provider\FakeFileProvider;
+use Psalm\Internal\Provider\FileReferenceCacheProvider;
+use Psalm\Internal\Provider\ParserCacheProvider;
 use Psalm\Internal\Provider\Providers;
-use Psalm\Tests\Internal\Provider\FakeFileReferenceCacheProvider;
-use Psalm\Tests\Internal\Provider\ParserInstanceCacheProvider;
 use Psalm\Tests\Internal\Provider\ProjectCacheProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 
-class SymbolLookupTest extends TestCase
+final class SymbolLookupTest extends TestCase
 {
     protected Codebase $codebase;
 
+    #[Override]
     public function setUp(): void
     {
         parent::setUp();
@@ -31,10 +35,10 @@ class SymbolLookupTest extends TestCase
 
         $providers = new Providers(
             $this->file_provider,
-            new ParserInstanceCacheProvider(),
+            new ParserCacheProvider($config, '', false),
             null,
             null,
-            new FakeFileReferenceCacheProvider(),
+            new FileReferenceCacheProvider($config, '', false),
             new ProjectCacheProvider(),
         );
 
@@ -45,6 +49,7 @@ class SymbolLookupTest extends TestCase
             $providers,
             null,
             [],
+            1,
             1,
             null,
             $this->codebase,
@@ -626,7 +631,7 @@ class SymbolLookupTest extends TestCase
         Position $position,
         ?string $expected_symbol,
         ?int $expected_argument_number,
-        ?int $expected_param_count
+        ?int $expected_param_count,
     ): void {
         $config = $this->codebase->config;
         $config->throw_exception = false;

@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - 6.x
   release:
     types:
       - published
@@ -26,7 +27,7 @@ jobs:
           cancel_others: true
           do_not_skip: '["release"]'
           # list files that may affect or are included into the built phar
-          paths: '["bin/**", "assets/**", "build/**", "dictionaries/**", "src/**", "stubs/**", "psalm", "psalm-language-server", "psalm-plugin", "psalm-refactor", "psalter", "box.json.dist", "composer.json", "config.xsd", "keys.asc.gpg", "scoper.inc.php"]'
+          paths: '["bin/**", ".github/**", "assets/**", "build/**", "dictionaries/**", "src/**", "stubs/**", "psalm", "psalm-language-server", "psalm-plugin", "psalm-refactor", "psalm-review", "psalter", "box.json.dist", "composer.json", "config.xsd", "keys.asc.gpg", "scoper.inc.php"]'
 
   build-phar:
     permissions:
@@ -38,7 +39,7 @@ jobs:
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '7.4'
+          php-version: '8.2'
           tools: composer:v2
           coverage: none
         env:
@@ -74,7 +75,7 @@ jobs:
           # env:
           #   COMPOSER_ROOT_VERSION: dev-master
 
-      - run: bin/build-phar.sh
+      - run: bin/ci/build-phar.sh
         env:
           GPG_SIGNING: 1
           GPG_SECRET_KEY: ${{ secrets.GPG_SECRET_KEY }}
@@ -90,7 +91,8 @@ jobs:
           tag: ${{ github.ref }}
           
       - name: Release psalm/phar
-        run: bin/github-deploy-phar.sh
+        run: bin/ci/github-deploy-phar.sh
         env:
+          EVENT_NAME: ${{ github.event_name }}
           PHAR_REPO_TOKEN: ${{ secrets.PHAR_REPO_TOKEN }}
 

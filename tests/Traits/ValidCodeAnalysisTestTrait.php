@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\Traits;
 
 use Psalm\Config;
@@ -39,7 +41,7 @@ trait ValidCodeAnalysisTestTrait
         string $code,
         array $assertions = [],
         array $ignored_issues = [],
-        ?string $php_version = null
+        ?string $php_version = null,
     ): void {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'PHP80-') !== false) {

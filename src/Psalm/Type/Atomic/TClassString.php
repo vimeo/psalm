@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
+use Override;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
@@ -13,8 +16,8 @@ use function array_values;
 use function count;
 use function preg_quote;
 use function preg_replace;
+use function str_contains;
 use function stripos;
-use function strpos;
 use function strtolower;
 
 /**
@@ -25,35 +28,14 @@ use function strtolower;
  */
 class TClassString extends TString
 {
-    /**
-     * @var string
-     */
-    public $as;
-
-    public ?TNamedObject $as_type;
-
-    /** @var bool */
-    public $is_loaded = false;
-
-    /** @var bool */
-    public $is_interface = false;
-
-    /** @var bool */
-    public $is_enum = false;
-
     public function __construct(
-        string $as = 'object',
-        ?TNamedObject $as_type = null,
-        bool $is_loaded = false,
-        bool $is_interface = false,
-        bool $is_enum = false,
-        bool $from_docblock = false
+        public string $as = 'object',
+        public ?TNamedObject $as_type = null,
+        public bool $is_loaded = false,
+        public bool $is_interface = false,
+        public bool $is_enum = false,
+        bool $from_docblock = false,
     ) {
-        $this->as = $as;
-        $this->as_type = $as_type;
-        $this->is_loaded = $is_loaded;
-        $this->is_interface = $is_interface;
-        $this->is_enum = $is_enum;
         parent::__construct($from_docblock);
     }
     /**
@@ -69,6 +51,7 @@ class TClassString extends TString
         $cloned->as_type = $as_type;
         return $cloned;
     }
+    #[Override]
     public function getKey(bool $include_extra = true): string
     {
         if ($this->is_interface) {
@@ -82,6 +65,7 @@ class TClassString extends TString
         return $key . ($this->as === 'object' ? '' : '<' . $this->as_type . '>');
     }
 
+    #[Override]
     public function getId(bool $exact = true, bool $nested = false): string
     {
         if ($this->is_interface) {
@@ -95,6 +79,7 @@ class TClassString extends TString
         return ($this->is_loaded ? 'loaded-' : '') . $key . ($this->as === 'object' ? '' : '<' . $this->as_type . '>');
     }
 
+    #[Override]
     public function getAssertionString(): string
     {
         return 'class-string';
@@ -103,11 +88,12 @@ class TClassString extends TString
     /**
      * @param  array<lowercase-string, string> $aliased_classes
      */
+    #[Override]
     public function toPhpString(
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $analysis_php_version_id
+        int $analysis_php_version_id,
     ): ?string {
         return 'string';
     }
@@ -115,11 +101,12 @@ class TClassString extends TString
     /**
      * @param array<lowercase-string, string> $aliased_classes
      */
+    #[Override]
     public function toNamespacedString(
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        bool $use_phpdoc_format
+        bool $use_phpdoc_format,
     ): string {
         if ($this->as === 'object') {
             return 'class-string';
@@ -133,7 +120,7 @@ class TClassString extends TString
             ) . '>';
         }
 
-        if (!$namespace && strpos($this->as, '\\') === false) {
+        if (!$namespace && !str_contains($this->as, '\\')) {
             return 'class-string<' . $this->as . '>';
         }
 
@@ -144,11 +131,13 @@ class TClassString extends TString
         return 'class-string<\\' . $this->as . '>';
     }
 
+    #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
     }
 
+    #[Override]
     protected function getChildNodeKeys(): array
     {
         return $this->as_type ? ['as_type'] : [];
@@ -157,6 +146,7 @@ class TClassString extends TString
     /**
      * @return static
      */
+    #[Override]
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
         Codebase $codebase,
@@ -167,7 +157,7 @@ class TClassString extends TString
         ?string $calling_function = null,
         bool $replace = true,
         bool $add_lower_bound = false,
-        int $depth = 0
+        int $depth = 0,
     ): self {
         if (!$this->as_type) {
             return $this;

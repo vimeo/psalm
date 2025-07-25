@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\LanguageServer;
 
 use PHPUnit\Framework\TestCase;
@@ -37,7 +39,7 @@ final class PathMapperTest extends TestCase
         ?string $client_root_reconfigured,
         string $client_root_provided_later,
         string $client_path,
-        string $server_ath
+        string $server_ath,
     ): void {
         $mapper = new PathMapper($server_root, $client_root_reconfigured);
         $mapper->configureClientRoot($client_root_provided_later);
@@ -53,7 +55,7 @@ final class PathMapperTest extends TestCase
         ?string $client_root_preconfigured,
         string $client_root_provided_later,
         string $client_path,
-        string $server_path
+        string $server_path,
     ): void {
         $mapper = new PathMapper($server_root, $client_root_preconfigured);
         $mapper->configureClientRoot($client_root_provided_later);

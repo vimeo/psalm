@@ -1,9 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal;
 
+use Psalm\Internal\Provider\Providers;
+
 use function basename;
+use function file_exists;
 use function getenv;
+use function is_readable;
 use function pathinfo;
 use function substr;
 use function trim;
@@ -39,5 +45,21 @@ final class Composer
         return "json" === pathinfo($composer_json_path, PATHINFO_EXTENSION)
             ? substr($composer_json_path, 0, -4).'lock'
             : $composer_json_path . '.lock';
+    }
+
+    private static ?string $lockFile = null;
+
+    public static function getLockFile(string $root): string
+    {
+        if (self::$lockFile !== null) {
+            return self::$lockFile;
+        }
+        $root = self::getLockFilePath($root);
+        if (file_exists($root) && is_readable($root)) {
+            $root = Providers::safeFileGetContents($root);
+        } else {
+            $root = '';
+        }
+        return self::$lockFile = $root;
     }
 }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Codebase;
 
 use Exception;
@@ -28,7 +30,9 @@ use function implode;
 use function in_array;
 use function is_bool;
 use function rtrim;
-use function strpos;
+use function str_contains;
+use function str_ends_with;
+use function str_starts_with;
 use function strtolower;
 use function substr;
 
@@ -37,8 +41,6 @@ use function substr;
  */
 final class Functions
 {
-    private FileStorageProvider $file_storage_provider;
-
     /**
      * @var array<lowercase-string, FunctionStorage>
      */
@@ -52,12 +54,10 @@ final class Functions
 
     public DynamicFunctionStorageProvider $dynamic_storage_provider;
 
-    private Reflection $reflection;
-
-    public function __construct(FileStorageProvider $storage_provider, Reflection $reflection)
-    {
-        $this->file_storage_provider = $storage_provider;
-        $this->reflection = $reflection;
+    public function __construct(
+        private readonly FileStorageProvider $file_storage_provider,
+        private readonly Reflection $reflection,
+    ) {
         $this->return_type_provider = new FunctionReturnTypeProvider();
         $this->existence_provider = new FunctionExistenceProvider();
         $this->params_provider = new FunctionParamsProvider();
@@ -73,15 +73,14 @@ final class Functions
         ?StatementsAnalyzer $statements_analyzer,
         string $function_id,
         ?string $root_file_path = null,
-        ?string $checked_file_path = null
+        ?string $checked_file_path = null,
     ): FunctionStorage {
         if ($function_id[0] === '\\') {
             $function_id = substr($function_id, 1);
         }
 
-        $from_stubs = false;
         if (isset(self::$stubbed_functions[$function_id])) {
-            $from_stubs = self::$stubbed_functions[$function_id];
+            return self::$stubbed_functions[$function_id];
         }
 
         $file_storage = null;
@@ -113,10 +112,6 @@ final class Functions
                 return $this->reflection->getFunctionStorage($function_id);
             }
 
-            if ($from_stubs) {
-                return $from_stubs;
-            }
-
             throw new UnexpectedValueException(
                 'Expecting non-empty $root_file_path and $checked_file_path',
             );
@@ -135,10 +130,6 @@ final class Functions
                 }
             }
 
-            if ($from_stubs) {
-                return $from_stubs;
-            }
-
             throw new UnexpectedValueException(
                 'Expecting ' . $function_id . ' to have storage in ' . $checked_file_path,
             );
@@ -149,10 +140,6 @@ final class Functions
         $declaring_file_storage = $this->file_storage_provider->get($declaring_file_path);
 
         if (!isset($declaring_file_storage->functions[$function_id])) {
-            if ($from_stubs) {
-                return $from_stubs;
-            }
-
             throw new UnexpectedValueException(
                 'Not expecting ' . $function_id . ' to not have storage in ' . $declaring_file_path,
             );
@@ -166,13 +153,21 @@ final class Functions
         self::$stubbed_functions[strtolower($function_id)] = $storage;
     }
 
+    /**
+     * @param array<lowercase-string, FunctionStorage> $stubs
+     */
+    public function addGlobalFunctions(array $stubs): void
+    {
+        self::$stubbed_functions += $stubs;
+    }
+
     public function hasStubbedFunction(string $function_id): bool
     {
         return isset(self::$stubbed_functions[strtolower($function_id)]);
     }
 
     /**
-     * @return array<string, FunctionStorage>
+     * @return array<lowercase-string, FunctionStorage>
      */
     public function getAllStubbedFunctions(): array
     {
@@ -184,7 +179,7 @@ final class Functions
      */
     public function functionExists(
         StatementsAnalyzer $statements_analyzer,
-        string $function_id
+        string $function_id,
     ): bool {
         if ($this->existence_provider->has($function_id)) {
             $function_exists = $this->existence_provider->doesFunctionExist($statements_analyzer, $function_id);
@@ -249,7 +244,7 @@ final class Functions
         $imported_function_namespaces = $aliases->functions;
         $imported_namespaces = $aliases->uses;
 
-        if (strpos($function_name, '\\') !== false) {
+        if (str_contains($function_name, '\\')) {
             $function_name_parts = explode('\\', $function_name);
             $first_namespace = array_shift($function_name_parts);
             $first_namespace_lcase = strtolower($first_namespace);
@@ -278,7 +273,7 @@ final class Functions
         string $stub,
         int $offset,
         string $file_path,
-        Codebase $codebase
+        Codebase $codebase,
     ): array {
         if ($stub[0] === '*') {
             $stub = substr($stub, 1);
@@ -322,10 +317,10 @@ final class Functions
 
         if ($current_namespace_aliases) {
             foreach ($current_namespace_aliases->functions as $alias_name => $function_name) {
-                if (strpos($alias_name, $stub) === 0) {
+                if (str_starts_with($alias_name, $stub)) {
                     try {
                         $match_function_patterns[] = $function_name;
-                    } catch (Exception $e) {
+                    } catch (Exception) {
                     }
                 }
             }
@@ -346,8 +341,8 @@ final class Functions
             foreach ($match_function_patterns as $pattern) {
                 $pattern_lc = strtolower($pattern);
 
-                if (substr($pattern, -1, 1) === '*') {
-                    if (strpos($function_name, rtrim($pattern_lc, '*')) !== 0) {
+                if (str_ends_with($pattern, '*')) {
+                    if (!str_starts_with($function_name, rtrim($pattern_lc, '*'))) {
                         continue;
                     }
                 } elseif ($function_name !== $pattern) {
@@ -403,7 +398,7 @@ final class Functions
         ?NodeTypeProvider $type_provider,
         string $function_id,
         ?array $args,
-        bool &$must_use = true
+        bool &$must_use = true,
     ): bool {
         if (ImpureFunctionsList::isImpure($function_id)) {
             return false;
@@ -417,11 +412,11 @@ final class Functions
             }
         }
 
-        if (strpos($function_id, 'image') === 0) {
+        if (str_starts_with($function_id, 'image')) {
             return false;
         }
 
-        if (strpos($function_id, 'readline') === 0) {
+        if (str_starts_with($function_id, 'readline')) {
             return false;
         }
 
@@ -451,7 +446,7 @@ final class Functions
 
                         try {
                             return $codebase->methods->getStorage($count_method_id)->mutation_free;
-                        } catch (Exception $e) {
+                        } catch (Exception) {
                             // do nothing
                         }
                     }

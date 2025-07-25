@@ -1,6 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
+
+use Override;
 
 /**
  * Denotes a floating point value where the exact numeric value is known.
@@ -9,20 +13,18 @@ namespace Psalm\Type\Atomic;
  */
 final class TLiteralFloat extends TFloat
 {
-    /** @var float */
-    public $value;
-
-    public function __construct(float $value, bool $from_docblock = false)
+    public function __construct(public float $value, bool $from_docblock = false)
     {
-        $this->value = $value;
         parent::__construct($from_docblock);
     }
 
+    #[Override]
     public function getKey(bool $include_extra = true): string
     {
         return 'float(' . $this->value . ')';
     }
 
+    #[Override]
     public function getId(bool $exact = true, bool $nested = false): string
     {
         if (!$exact) {
@@ -35,11 +37,12 @@ final class TLiteralFloat extends TFloat
     /**
      * @param  array<lowercase-string, string> $aliased_classes
      */
+    #[Override]
     public function toNamespacedString(
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        bool $use_phpdoc_format
+        bool $use_phpdoc_format,
     ): string {
         return 'float';
     }

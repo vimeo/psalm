@@ -1,11 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
+
+use Override;
 
 use function preg_quote;
 use function preg_replace;
+use function str_contains;
 use function stripos;
-use function strpos;
 use function strtolower;
 
 /**
@@ -15,19 +19,17 @@ use function strtolower;
  */
 final class TLiteralClassString extends TLiteralString
 {
-    /**
-     * Whether or not this type can represent a child of the class named in $value
-     *
-     * @var bool
-     */
-    public $definite_class = false;
-
-    public function __construct(string $value, bool $definite_class = false, bool $from_docblock = false)
-    {
+    public function __construct(
+        string $value, /**
+         * Whether or not this type can represent a child of the class named in $value
+         */
+        public bool $definite_class = false,
+        bool $from_docblock = false,
+    ) {
         parent::__construct($value, $from_docblock);
-        $this->definite_class = $definite_class;
     }
 
+    #[Override]
     public function getKey(bool $include_extra = true): string
     {
         return 'class-string(' . $this->value . ')';
@@ -36,20 +38,23 @@ final class TLiteralClassString extends TLiteralString
     /**
      * @param  array<lowercase-string, string> $aliased_classes
      */
+    #[Override]
     public function toPhpString(
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $analysis_php_version_id
+        int $analysis_php_version_id,
     ): string {
         return 'string';
     }
 
+    #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
     }
 
+    #[Override]
     public function getId(bool $exact = true, bool $nested = false): string
     {
         if (!$exact) {
@@ -59,6 +64,7 @@ final class TLiteralClassString extends TLiteralString
         return $this->value . '::class';
     }
 
+    #[Override]
     public function getAssertionString(): string
     {
         return $this->getKey();
@@ -67,11 +73,12 @@ final class TLiteralClassString extends TLiteralString
     /**
      * @param array<lowercase-string, string> $aliased_classes
      */
+    #[Override]
     public function toNamespacedString(
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        bool $use_phpdoc_format
+        bool $use_phpdoc_format,
     ): string {
         if ($use_phpdoc_format) {
             return 'string';
@@ -93,7 +100,7 @@ final class TLiteralClassString extends TLiteralString
             ) . '::class';
         }
 
-        if (!$namespace && strpos($this->value, '\\') === false) {
+        if (!$namespace && !str_contains($this->value, '\\')) {
             return $this->value . '::class';
         }
 

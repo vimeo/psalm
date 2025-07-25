@@ -1,28 +1,31 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Storage\Assertion;
 
+use Override;
 use Psalm\Storage\Assertion;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 
 /**
  * @psalm-immutable
  */
 final class HasExactCount extends Assertion
 {
-    /** @var positive-int */
-    public $count;
-
+    use UnserializeMemoryUsageSuppressionTrait;
     /** @param positive-int $count */
-    public function __construct(int $count)
+    public function __construct(public readonly int $count)
     {
-        $this->count = $count;
     }
 
+    #[Override]
     public function getNegation(): Assertion
     {
         return new DoesNotHaveExactCount($this->count);
     }
 
+    #[Override]
     public function hasEquality(): bool
     {
         return true;
@@ -33,6 +36,7 @@ final class HasExactCount extends Assertion
         return '=has-exact-count-' . $this->count;
     }
 
+    #[Override]
     public function isNegationOf(Assertion $assertion): bool
     {
         return $assertion instanceof DoesNotHaveExactCount && $this->count === $assertion->count;

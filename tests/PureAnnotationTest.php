@@ -1,15 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
+use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
-class PureAnnotationTest extends TestCase
+final class PureAnnotationTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    #[Override]
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -41,7 +45,7 @@ class PureAnnotationTest extends TestCase
                     function highlight(string $needle, string $output) : string {
                         $needle = preg_quote($needle, \'#\');
                         $needles = str_replace([\'"\', \' \'], [\'\', \'|\'], $needle);
-                        $output = preg_replace("#({$needles})#im", "<mark>$1</mark>", $output);
+                        $output = (string) preg_replace("#({$needles})#im", "<mark>$1</mark>", $output);
 
                         return $output;
                     }',
@@ -565,6 +569,7 @@ class PureAnnotationTest extends TestCase
         ];
     }
 
+    #[Override]
     public function providerInvalidCodeParse(): iterable
     {
         return [

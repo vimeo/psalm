@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Scanner;
 
+use Override;
 use PhpParser;
 use PhpParser\NodeTraverser;
 use Psalm\Aliases;
@@ -18,24 +21,15 @@ use Psalm\Storage\FileStorage;
  */
 class FileScanner implements FileSource
 {
-    public string $file_path;
-
-    public string $file_name;
-
-    public bool $will_analyze;
-
-    public function __construct(string $file_path, string $file_name, bool $will_analyze)
+    public function __construct(public string $file_path, public string $file_name, public bool $will_analyze)
     {
-        $this->file_path = $file_path;
-        $this->file_name = $file_name;
-        $this->will_analyze = $will_analyze;
     }
 
     public function scan(
         Codebase $codebase,
         FileStorage $file_storage,
         bool $storage_from_cache = false,
-        ?Progress $progress = null
+        ?Progress $progress = null,
     ): void {
         if ($progress === null) {
             $progress = new VoidProgress();
@@ -48,9 +42,8 @@ class FileScanner implements FileSource
             return;
         }
 
-        $stmts = $codebase->statements_provider->getStatementsForFile(
+        $stmts = $codebase->getStatementsForFile(
             $file_storage->file_path,
-            $codebase->analysis_php_version_id,
             $progress,
         );
 
@@ -82,30 +75,35 @@ class FileScanner implements FileSource
     }
 
     /** @psalm-mutation-free */
+    #[Override]
     public function getFilePath(): string
     {
         return $this->file_path;
     }
 
     /** @psalm-mutation-free */
+    #[Override]
     public function getFileName(): string
     {
         return $this->file_name;
     }
 
     /** @psalm-mutation-free */
+    #[Override]
     public function getRootFilePath(): string
     {
         return $this->file_path;
     }
 
     /** @psalm-mutation-free */
+    #[Override]
     public function getRootFileName(): string
     {
         return $this->file_name;
     }
 
     /** @psalm-mutation-free */
+    #[Override]
     public function getAliases(): Aliases
     {
         return new Aliases();

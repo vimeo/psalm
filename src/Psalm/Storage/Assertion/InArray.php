@@ -1,8 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Storage\Assertion;
 
+use Override;
 use Psalm\Storage\Assertion;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type\Union;
 
 /**
@@ -10,13 +14,12 @@ use Psalm\Type\Union;
  */
 final class InArray extends Assertion
 {
-    public Union $type;
-
-    public function __construct(Union $type)
+    use UnserializeMemoryUsageSuppressionTrait;
+    public function __construct(public readonly Union $type)
     {
-        $this->type = $type;
     }
 
+    #[Override]
     public function getNegation(): Assertion
     {
         return new NotInArray($this->type);
@@ -27,6 +30,7 @@ final class InArray extends Assertion
         return 'in-array-' . $this->type->getId();
     }
 
+    #[Override]
     public function isNegationOf(Assertion $assertion): bool
     {
         return $assertion instanceof NotInArray && $this->type->getId() === $assertion->type->getId();

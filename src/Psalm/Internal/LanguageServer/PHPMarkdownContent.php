@@ -7,6 +7,7 @@ namespace Psalm\Internal\LanguageServer;
 use JsonSerializable;
 use LanguageServerProtocol\MarkupContent;
 use LanguageServerProtocol\MarkupKind;
+use Override;
 use ReturnTypeWillChange;
 
 use function get_object_vars;
@@ -17,18 +18,8 @@ use function get_object_vars;
  */
 final class PHPMarkdownContent extends MarkupContent implements JsonSerializable
 {
-    public string $code;
-
-    public ?string $title = null;
-
-    public ?string $description = null;
-
-    public function __construct(string $code, ?string $title = null, ?string $description = null)
+    public function __construct(public string $code, public ?string $title = null, public ?string $description = null)
     {
-        $this->code = $code;
-        $this->title = $title;
-        $this->description = $description;
-
         $markdown = '';
         if ($title !== null) {
             $markdown = "**$title**\n\n";
@@ -38,18 +29,17 @@ final class PHPMarkdownContent extends MarkupContent implements JsonSerializable
         }
         parent::__construct(
             MarkupKind::MARKDOWN,
-            "$markdown```php\n<?php\n$code\n```",
+            "$markdown```php\n<?php declare(strict_types=1);\n$code\n```",
         );
     }
 
     /**
      * This is needed because VSCode Does not like nulls
      * meaning if a null is sent then this will not compute
-     *
-     * @return mixed
      */
+    #[Override]
     #[ReturnTypeWillChange]
-    public function jsonSerialize()
+    public function jsonSerialize(): mixed
     {
         $vars = get_object_vars($this);
         unset($vars['title'], $vars['description'], $vars['code']);

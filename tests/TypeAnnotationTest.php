@@ -1,18 +1,30 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
+use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
-class TypeAnnotationTest extends TestCase
+final class TypeAnnotationTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    #[Override]
     public function providerValidCodeParse(): iterable
     {
         return [
+            'atInArrayKey' => [
+                'code' => '<?php
+
+                /**
+                 * @param list<array{"@a": "test"}> $v
+                 */
+                function a(array $v): void {}',
+            ],
             'typeAliasBeforeClass' => [
                 'code' => '<?php
                     namespace Barrr;
@@ -833,6 +845,20 @@ class TypeAnnotationTest extends TestCase
                     '$output===' => 'array{phone: string}',
                 ],
             ],
+            'multilineTypeWithExtraSpace' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type PhoneType = array{
+                     *    phone: string, ' . '
+                     * }
+                     */
+                    class Foo {
+                        /** @var PhoneType */
+                        public static $phone;
+                    }
+                    $output = Foo::$phone;
+                    ',
+            ],
             'combineAliasOfArrayAndArrayCorrectly' => [
                 'code' => '<?php
 
@@ -935,6 +961,7 @@ class TypeAnnotationTest extends TestCase
         ];
     }
 
+    #[Override]
     public function providerInvalidCodeParse(): iterable
     {
         return [

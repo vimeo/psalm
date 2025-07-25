@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Report;
 
+use Override;
 use Psalm\Config;
 use Psalm\Internal\Json\Json;
 use Psalm\Report;
@@ -16,6 +19,7 @@ use function max;
  */
 final class SonarqubeReport extends Report
 {
+    #[Override]
     public function create(): string
     {
         $report = ['issues' => []];

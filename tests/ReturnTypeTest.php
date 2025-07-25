@@ -1,17 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
+use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use const DIRECTORY_SEPARATOR;
 
-class ReturnTypeTest extends TestCase
+final class ReturnTypeTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    #[Override]
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -1285,6 +1289,40 @@ class ReturnTypeTest extends TestCase
                         return $t;
                     }',
             ],
+            'returnByReferenceVariableInStaticMethod' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {
+                        private static string $foo = "foo";
+
+                        public static function &foo(): string {
+                            return self::$foo;
+                        }
+                    }
+                    PHP,
+            ],
+            'returnByReferenceVariableInInstanceMethod' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {
+                        private float $foo = 3.3;
+
+                        public function &foo(): float {
+                            return $this->foo;
+                        }
+                    }
+                    PHP,
+            ],
+            'returnByReferenceVariableInFunction' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function &foo(): array {
+                        /** @var array $x */
+                        static $x = [1, 2, 3];
+                        return $x;
+                    }
+                    PHP,
+            ],
             'neverReturnType' => [
                 'code' => '<?php
                     function exitProgram(bool $die): never
@@ -1308,6 +1346,7 @@ class ReturnTypeTest extends TestCase
         ];
     }
 
+    #[Override]
     public function providerInvalidCodeParse(): iterable
     {
         return [
@@ -1350,28 +1389,12 @@ class ReturnTypeTest extends TestCase
                     }',
                 'error_message' => 'MissingReturnType',
             ],
-            'mixedInferredReturnType' => [
-                'code' => '<?php
-                    function fooFoo(array $arr): string {
-                        /** @psalm-suppress MixedReturnStatement */
-                        return array_pop($arr);
-                    }',
-                'error_message' => 'MixedInferredReturnType',
-            ],
             'mixedInferredReturnStatement' => [
                 'code' => '<?php
                     function fooFoo(array $arr): string {
                         return array_pop($arr);
                     }',
                 'error_message' => 'MixedReturnStatement',
-            ],
-            'invalidReturnTypeClass' => [
-                'code' => '<?php
-                    function fooFoo(): A {
-                        return new A;
-                    }',
-                'error_message' => 'UndefinedClass',
-                'ignored_issues' => ['MixedInferredReturnType'],
             ],
             'invalidClassOnCall' => [
                 'code' => '<?php
@@ -1384,7 +1407,7 @@ class ReturnTypeTest extends TestCase
 
                     fooFoo()->bar();',
                 'error_message' => 'UndefinedClass',
-                'ignored_issues' => ['MixedInferredReturnType', 'MixedReturnStatement'],
+                'ignored_issues' => ['MixedReturnStatement'],
             ],
             'returnArrayOfNullableInvalid' => [
                 'code' => '<?php
@@ -1832,6 +1855,37 @@ class ReturnTypeTest extends TestCase
                 'error_message' => 'InvalidReturnStatement',
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'returnByReferenceNonVariableInStaticMethod' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {
+                        public static function &foo(string $x): string {
+                            return $x . "bar";
+                        }
+                    }
+                    PHP,
+                'error_message' => 'NonVariableReferenceReturn',
+            ],
+            'returnByReferenceNonVariableInInstanceMethod' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {
+                        public function &foo(): iterable {
+                            return [] + [1, 2];
+                        }
+                    }
+                    PHP,
+                'error_message' => 'NonVariableReferenceReturn',
+            ],
+            'returnByReferenceNonVariableInFunction' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function &foo(): array {
+                        return [1, 2, 3];
+                    }
+                    PHP,
+                'error_message' => 'NonVariableReferenceReturn',
             ],
             'implicitReturnFromFunctionWithNeverReturnType' => [
                 'code' => <<<'PHP'

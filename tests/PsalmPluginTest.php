@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use InvalidArgumentException;
 use Mockery;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Mockery\MockInterface;
+use Override;
 use Psalm\Internal\PluginManager\Command\DisableCommand;
 use Psalm\Internal\PluginManager\Command\EnableCommand;
 use Psalm\Internal\PluginManager\Command\ShowCommand;
@@ -19,18 +22,17 @@ use Symfony\Component\Console\Tester\CommandTester;
 use function preg_quote;
 
 /** @group PluginManager */
-class PsalmPluginTest extends TestCase
+final class PsalmPluginTest extends TestCase
 {
     use MockeryPHPUnitIntegration;
 
-    /** @var PluginList&MockInterface */
-    private $plugin_list;
+    private MockInterface $plugin_list;
 
-    /** @var PluginListFactory&MockInterface */
-    private $plugin_list_factory;
+    private MockInterface $plugin_list_factory;
 
     private Application $app;
 
+    #[Override]
     public function setUp(): void
     {
         RuntimeCaches::clearAll();

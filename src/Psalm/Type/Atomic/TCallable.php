@@ -1,11 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
+use Override;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Storage\FunctionLikeParameter;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
@@ -16,12 +20,10 @@ use Psalm\Type\Union;
  */
 final class TCallable extends Atomic implements TCallableInterface
 {
+    use UnserializeMemoryUsageSuppressionTrait;
     use CallableTrait;
 
-    /**
-     * @var string
-     */
-    public $value;
+    public string $value;
 
     /**
      * Constructs a new instance of a generic type
@@ -33,7 +35,7 @@ final class TCallable extends Atomic implements TCallableInterface
         ?array $params = null,
         ?Union $return_type = null,
         ?bool $is_pure = null,
-        bool $from_docblock = false
+        bool $from_docblock = false,
     ) {
         $this->value = $value;
         $this->params = $params;
@@ -45,15 +47,17 @@ final class TCallable extends Atomic implements TCallableInterface
     /**
      * @param  array<lowercase-string, string> $aliased_classes
      */
+    #[Override]
     public function toPhpString(
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $analysis_php_version_id
+        int $analysis_php_version_id,
     ): string {
         return 'callable';
     }
 
+    #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return $this->params === null && $this->return_type === null;
@@ -62,6 +66,7 @@ final class TCallable extends Atomic implements TCallableInterface
     /**
      * @return static
      */
+    #[Override]
     public function replaceTemplateTypesWithArgTypes(TemplateResult $template_result, ?Codebase $codebase): self
     {
         $replaced = $this->replaceCallableTemplateTypesWithArgTypes($template_result, $codebase);
@@ -78,6 +83,7 @@ final class TCallable extends Atomic implements TCallableInterface
     /**
      * @return static
      */
+    #[Override]
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
         Codebase $codebase,
@@ -88,7 +94,7 @@ final class TCallable extends Atomic implements TCallableInterface
         ?string $calling_function = null,
         bool $replace = true,
         bool $add_lower_bound = false,
-        int $depth = 0
+        int $depth = 0,
     ): self {
         $replaced = $this->replaceCallableTemplateTypesWithStandins(
             $template_result,
@@ -113,6 +119,7 @@ final class TCallable extends Atomic implements TCallableInterface
         );
     }
 
+    #[Override]
     protected function getChildNodeKeys(): array
     {
         return $this->getCallableChildNodeKeys();

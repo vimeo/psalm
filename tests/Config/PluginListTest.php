@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\Config;
 
 use InvalidArgumentException;
 use Mockery;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Mockery\MockInterface;
+use Override;
 use Psalm\Config;
 use Psalm\Internal\PluginManager\ComposerLock;
 use Psalm\Internal\PluginManager\ConfigFile;
@@ -14,19 +17,17 @@ use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\TestCase;
 
 /** @group PluginManager */
-class PluginListTest extends TestCase
+final class PluginListTest extends TestCase
 {
     use MockeryPHPUnitIntegration;
 
-    /** @var ConfigFile&MockInterface */
-    private $config_file;
+    private MockInterface $config_file;
 
-    /** @var Config&MockInterface */
-    private $config;
+    private MockInterface $config;
 
-    /** @var ComposerLock&MockInterface */
-    private $composer_lock;
+    private MockInterface $composer_lock;
 
+    #[Override]
     public function setUp(): void
     {
         RuntimeCaches::clearAll();

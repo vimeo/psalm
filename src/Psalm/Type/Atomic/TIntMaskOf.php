@@ -1,8 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
-use Psalm\Type\Atomic;
+use Override;
 
 /**
  * Represents the type that is the result of a bitmask combination of its parameters.
@@ -13,18 +15,12 @@ use Psalm\Type\Atomic;
  */
 final class TIntMaskOf extends TInt
 {
-    /** @var TClassConstant|TKeyOf|TValueOf */
-    public $value;
-
-    /**
-     * @param TClassConstant|TKeyOf|TValueOf $value
-     */
-    public function __construct(Atomic $value, bool $from_docblock = false)
+    public function __construct(public TClassConstant|TKeyOf|TValueOf $value, bool $from_docblock = false)
     {
-        $this->value = $value;
         parent::__construct($from_docblock);
     }
 
+    #[Override]
     public function getKey(bool $include_extra = true): string
     {
         return 'int-mask-of<' . $this->value->getKey() . '>';
@@ -33,11 +29,12 @@ final class TIntMaskOf extends TInt
     /**
      * @param array<lowercase-string, string> $aliased_classes
      */
+    #[Override]
     public function toNamespacedString(
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        bool $use_phpdoc_format
+        bool $use_phpdoc_format,
     ): string {
         if ($use_phpdoc_format) {
             return 'int';
@@ -48,11 +45,13 @@ final class TIntMaskOf extends TInt
             . '>';
     }
 
+    #[Override]
     protected function getChildNodeKeys(): array
     {
         return ['value'];
     }
 
+    #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;

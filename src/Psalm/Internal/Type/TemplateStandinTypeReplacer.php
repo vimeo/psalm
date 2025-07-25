@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Type;
 
 use InvalidArgumentException;
@@ -19,7 +21,6 @@ use Psalm\Type\Atomic\TDependentGetClass;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -45,6 +46,7 @@ use function array_values;
 use function count;
 use function in_array;
 use function reset;
+use function str_starts_with;
 use function strpos;
 use function strtolower;
 use function substr;
@@ -71,7 +73,7 @@ final class TemplateStandinTypeReplacer
         bool $replace = true,
         bool $add_lower_bound = false,
         ?string $bound_equality_classlike = null,
-        int $depth = 1
+        int $depth = 1,
     ): void {
         self::replace(
             $union_type,
@@ -108,7 +110,7 @@ final class TemplateStandinTypeReplacer
         bool $replace = true,
         bool $add_lower_bound = false,
         ?string $bound_equality_classlike = null,
-        int $depth = 1
+        int $depth = 1,
     ): Union {
         $atomic_types = [];
 
@@ -205,7 +207,7 @@ final class TemplateStandinTypeReplacer
         ?string $bound_equality_classlike,
         int $depth,
         bool $was_single,
-        bool &$had_template
+        bool &$had_template,
     ): array {
         if ($bracket_pos = strpos($key, '<')) {
             $key = substr($key, 0, $bracket_pos);
@@ -293,9 +295,7 @@ final class TemplateStandinTypeReplacer
                         $array_template_type = $array_template_type->getSingleAtomic();
                         $offset_template_type = $offset_template_type->getSingleAtomic();
 
-                        if ($array_template_type instanceof TList) {
-                            $array_template_type = $array_template_type->getKeyedArray();
-                        }
+
                         if ($array_template_type instanceof TKeyedArray
                             && ($offset_template_type instanceof TLiteralString
                                 || $offset_template_type instanceof TLiteralInt)
@@ -345,9 +345,6 @@ final class TemplateStandinTypeReplacer
 
             if ($template_type) {
                 foreach ($template_type->getAtomicTypes() as $template_atomic) {
-                    if ($template_atomic instanceof TList) {
-                        $template_atomic = $template_atomic->getKeyedArray();
-                    }
                     if (!$template_atomic instanceof TKeyedArray
                         && !$template_atomic instanceof TArray
                     ) {
@@ -470,15 +467,11 @@ final class TemplateStandinTypeReplacer
         string $key,
         Codebase $codebase,
         ?StatementsAnalyzer $statements_analyzer,
-        Union $input_type
+        Union $input_type,
     ): array {
         $matching_atomic_types = [];
 
         foreach ($input_type->getAtomicTypes() as $input_key => $atomic_input_type) {
-            if ($atomic_input_type instanceof TList) {
-                $atomic_input_type = $atomic_input_type->getKeyedArray();
-            }
-
             if ($bracket_pos = strpos($input_key, '<')) {
                 $input_key = substr($input_key, 0, $bracket_pos);
             }
@@ -513,7 +506,7 @@ final class TemplateStandinTypeReplacer
                 continue;
             }
 
-            if (strpos($input_key, $key . '&') === 0) {
+            if (str_starts_with($input_key, $key . '&')) {
                 $matching_atomic_types[$atomic_input_type->getId()] = $atomic_input_type;
                 continue;
             }
@@ -538,7 +531,7 @@ final class TemplateStandinTypeReplacer
                         $matching_atomic_types[$atomic_input_type->getId()] = $atomic_input_type;
                         continue;
                     }
-                } catch (InvalidArgumentException $e) {
+                } catch (InvalidArgumentException) {
                     // do nothing
                 }
             }
@@ -600,7 +593,7 @@ final class TemplateStandinTypeReplacer
                         $matching_atomic_types[$atomic_input_type->getId()] = $atomic_input_type;
                         continue;
                     }
-                } catch (InvalidArgumentException $e) {
+                } catch (InvalidArgumentException) {
                     // do nothing
                 }
             }
@@ -656,7 +649,7 @@ final class TemplateStandinTypeReplacer
         bool $add_lower_bound,
         ?string $bound_equality_classlike,
         int $depth,
-        bool &$had_template
+        bool &$had_template,
     ): array {
         if ($atomic_type->defining_class === $calling_class) {
             return [$atomic_type];
@@ -759,9 +752,6 @@ final class TemplateStandinTypeReplacer
 
                         if ($keyed_template->isSingle()) {
                             $keyed_template = $keyed_template->getSingleAtomic();
-                        }
-                        if ($keyed_template instanceof \Psalm\Type\Atomic\TList) {
-                            $keyed_template = $keyed_template->getKeyedArray();
                         }
 
                         if ($keyed_template instanceof TKeyedArray
@@ -1008,7 +998,7 @@ final class TemplateStandinTypeReplacer
         bool $add_lower_bound,
         ?string $bound_equality_classlike,
         int $depth,
-        bool $was_single
+        bool $was_single,
     ): array {
         if ($atomic_type->defining_class === $calling_class) {
             return [$atomic_type];
@@ -1153,7 +1143,7 @@ final class TemplateStandinTypeReplacer
         string $param_name,
         string $defining_class,
         array $visited_classes,
-        ?Codebase $codebase
+        ?Codebase $codebase,
     ): ?Union {
         if (isset($visited_classes[$defining_class])) {
             return null;
@@ -1252,7 +1242,7 @@ final class TemplateStandinTypeReplacer
         Codebase $codebase,
         Atomic $input_type_part,
         Atomic $container_type_part,
-        ?array &$container_type_params_covariant = null
+        ?array &$container_type_params_covariant = null,
     ): array {
         if ($input_type_part instanceof TGenericObject || $input_type_part instanceof TIterable) {
             $input_type_params = $input_type_part->type_params;

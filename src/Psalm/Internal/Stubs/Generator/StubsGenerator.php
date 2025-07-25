@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace Psalm\Internal\Stubs\Generator;
 
@@ -23,13 +23,13 @@ use Psalm\Type\Atomic\Scalar;
 use PhpParser;
 use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Node\Expr\VirtualArray;
-use Psalm\Node\Expr\VirtualArrayItem;
+use Psalm\Node\VirtualArrayItem;
 use Psalm\Node\Expr\VirtualClassConstFetch;
 use Psalm\Node\Expr\VirtualConstFetch;
 use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Node\Name\VirtualFullyQualified;
-use Psalm\Node\Scalar\VirtualDNumber;
-use Psalm\Node\Scalar\VirtualLNumber;
+use Psalm\Node\Scalar\VirtualFloat;
+use Psalm\Node\Scalar\VirtualInt;
 use Psalm\Node\Scalar\VirtualString;
 use Psalm\Node\Stmt\VirtualFunction;
 use Psalm\Node\Stmt\VirtualNamespace;
@@ -63,12 +63,12 @@ final class StubsGenerator
         $psalm_base = dirname(__DIR__, 5);
 
         foreach ($class_provider->getAll() as $storage) {
-            if (strpos($storage->name, 'Psalm\\') === 0) {
+            if (str_starts_with($storage->name, 'Psalm\\')) {
                 continue;
             }
 
             if ($storage->location
-                && strpos($storage->location->file_path, $psalm_base) === 0
+                && str_starts_with($storage->location->file_path, $psalm_base)
             ) {
                 continue;
             }
@@ -97,7 +97,7 @@ final class StubsGenerator
 
         foreach ($codebase->functions->getAllStubbedFunctions() as $function_storage) {
             if ($function_storage->location
-                && strpos($function_storage->location->file_path, $psalm_base) === 0
+                && str_starts_with($function_storage->location->file_path, $psalm_base)
             ) {
                 continue;
             }
@@ -143,7 +143,7 @@ final class StubsGenerator
         }
 
         foreach ($file_provider->getAll() as $file_storage) {
-            if (strpos($file_storage->file_path, $psalm_base) === 0) {
+            if (str_starts_with($file_storage->file_path, $psalm_base)) {
                 continue;
             }
 
@@ -365,11 +365,11 @@ final class StubsGenerator
             }
 
             if ($atomic_type instanceof TLiteralInt) {
-                return new VirtualLNumber($atomic_type->value);
+                return new VirtualInt($atomic_type->value);
             }
 
             if ($atomic_type instanceof TLiteralFloat) {
-                return new VirtualDNumber($atomic_type->value);
+                return new VirtualFloat($atomic_type->value);
             }
 
             if ($atomic_type instanceof TFalse) {
@@ -395,7 +395,7 @@ final class StubsGenerator
                     if ($atomic_type->is_list) {
                         $key_type = null;
                     } elseif (is_int($property_name)) {
-                        $key_type = new VirtualLNumber($property_name);
+                        $key_type = new VirtualInt($property_name);
                     } else {
                         $key_type = new VirtualString($property_name);
                     }

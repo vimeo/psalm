@@ -134,7 +134,17 @@ Disables parsing of `@var` PHPDocs everywhere except for properties. Setting thi
   strictBinaryOperands="[bool]"
 >
 ```
-If true we force strict typing on numerical and string operations (see https://github.com/vimeo/psalm/issues/24). Defaults to `false`.
+If true we force strict typing on numerical and string operations (see https://github.com/vimeo/psalm/issues/24). Defaults to `true`.
+
+#### allowBoolToLiteralBoolComparison
+
+```xml
+<psalm
+  allowBoolToLiteralBoolComparison="[bool]"
+>
+```
+
+If false, disallows comparing a boolean to a literal boolean (mostly a codestyle rule, not a bug detection rule; see [RedundantIdentityWithTrue](https://psalm.dev/docs/running_psalm/issues/RedundantIdentityWithTrue/)). Defaults to `true`.
 
 #### rememberPropertyAssignmentsAfterCall
 
@@ -161,7 +171,7 @@ When `true`, strings can be used as classes, meaning `$some_string::someMethod()
   disableSuppressAll="[bool]"
 >
 ```
-When `true`, disables wildcard suppression of all issues with `@psalm-suppress all`. Defaults to `false`.
+When `true`, disables wildcard suppression of all issues with `@psalm-suppress all`. Defaults to `true`.
 
 #### memoizeMethodCallResults
 
@@ -213,7 +223,7 @@ When `true`, Psalm will check that the developer has caught every exception in g
   ignoreInternalFunctionFalseReturn="[bool]"
 >
 ```
-When `true`, Psalm ignores possibly-false issues stemming from return values of internal functions (like `preg_split`) that may return false, but do so rarely. Defaults to `true`.
+When `true`, Psalm ignores possibly-false issues stemming from return values of internal functions (like `preg_split`) that may return false, but do so rarely. Defaults to `false`.
 
 #### ignoreInternalFunctionNullReturn
 
@@ -222,7 +232,7 @@ When `true`, Psalm ignores possibly-false issues stemming from return values of 
   ignoreInternalFunctionNullReturn="[bool]"
 >
 ```
-When `true`, Psalm ignores possibly-null issues stemming from return values of internal array functions (like `current`) that may return null, but do so rarely. Defaults to `true`.
+When `true`, Psalm ignores possibly-null issues stemming from return values of internal array functions (like `current`) that may return null, but do so rarely. Defaults to `false`.
 
 #### inferPropertyTypesFromConstructor
 
@@ -247,7 +257,60 @@ When `true`, Psalm will attempt to find all unused variables, the equivalent of 
   findUnusedCode="[bool]"
 >
 ```
-When `true`, Psalm will attempt to find all unused code (including unused variables), the equivalent of running with `--find-unused-code`. Defaults to `false`.
+When `true`, Psalm will attempt to find all unused code (including unused variables), the equivalent of running with `--find-unused-code`. Defaults to `true`.
+
+#### forceJit
+```xml
+<psalm
+  forceJit="[bool]"
+>
+```
+When `true`, Psalm will exit immediately if JIT acceleration (up to +20% performance) cannot be enabled, the equivalent of running with `--force-jit`. Defaults to `false`.
+
+#### noCache
+```xml
+<psalm
+  noCache="[bool]"
+>
+```
+When `true`, Psalm will disable usage of the cache, the equivalent of running with `--no-cache`. Defaults to `false`.
+
+#### arrayCache
+```xml
+<psalm
+  arrayCache="[bool]"
+>
+```
+When `false`, Psalm will disable usage of the array cache. 
+
+The array cache is used together with the file cache to avoid re-loading cache entries when re-scanning the same file, which offers a nice performance improvement.
+
+Defaults to `true`.
+
+#### disallowLiteralKeysOnUnshapedArrays
+```xml
+<psalm
+  disallowLiteralKeysOnUnshapedArrays="[bool]"
+>
+```
+When `true`, Psalm will emit issues when using literal keys on unshaped arrays (useful to enforce usage of shaped arrays). Defaults to `false`.
+
+#### allFunctionsGlobal
+```xml
+<psalm
+  allFunctionsGlobal="[bool]"
+>
+```
+When `true`, Psalm will treat all functions declared in scanned files as available to all files, even if they aren't loaded by the Composer autoloader (useful for legacy codebases which make heavy use of `require`/`include`, instead of Composer's autoloader). Defaults to `false`.
+
+#### allConstantsGlobal
+```xml
+<psalm
+  allConstantsGlobal="[bool]"
+>
+```
+
+When `true`, Psalm will treat all constants declared in scanned files as available to all files, even if they aren't loaded by the Composer autoloader (useful for legacy codebases which make heavy use of `require`/`include`, instead of Composer's autoloader). Defaults to `false`.
 
 #### findUnusedPsalmSuppress
 ```xml
@@ -279,7 +342,7 @@ When `true`, Psalm will complain when referencing an explicit integer offset on 
   ensureOverrideAttribute="[bool]"
 >
 ```
-When `true`, Psalm will report class and interface methods that override a method on a parent, but do not have an `Override` attribute. Defaults to `false`.
+When `true`, Psalm will report class and interface methods that override a method on a parent, but do not have an `Override` attribute. Defaults to `true`.
 
 #### phpVersion
 ```xml
@@ -310,7 +373,7 @@ This defaults to `false`.
 >
 ```
 
-When `true`, Psalm will treat all classes as if they had sealed methods, meaning that if you implement the magic method `__call`, you also have to add `@method` for each magic method. Defaults to false.
+When `true`, Psalm will treat all classes as if they had sealed methods, meaning that if you implement the magic method `__call`, you also have to add `@method` for each magic method. Defaults to true.
 
 #### sealAllProperties
 
@@ -320,7 +383,7 @@ When `true`, Psalm will treat all classes as if they had sealed methods, meaning
 >
 ```
 
-When `true`, Psalm will treat all classes as if they had sealed properties, meaning that Psalm will disallow getting and setting any properties not contained in a list of `@property` (or `@property-read`/`@property-write`) annotations and not explicitly defined as a `property`. Defaults to false.
+When `true`, Psalm will treat all classes as if they had sealed properties, meaning that Psalm will disallow getting and setting any properties not contained in a list of `@property` (or `@property-read`/`@property-write`) annotations and not explicitly defined as a `property`. Defaults to true.
 
 #### runTaintAnalysis
 
@@ -414,6 +477,18 @@ Defaults to `$XDG_CACHE_HOME/psalm`. If `$XDG_CACHE_HOME` is either not set or e
 ```
 Whether or not to allow `require`/`include` calls in your PHP. Defaults to `true`.
 
+#### ignoreIncludeSideEffects
+```xml
+<psalm
+  ignoreIncludeSideEffects="[bool]"
+>
+```
+Whether or not to ignore side effects of includes.  
+
+Ignoring include side effects can significantly speed up scans on legacy codebases, but changes to variables or variables defined inside of included files will not be visible to Psalm (functions, constants and classes will still be visible anyway, especially if the hoistConstants, allConstantsGlobal, allFunctionsGlobal configuration parameters are set to true).  
+
+Defaults to `false`.
+
 #### serializer
 ```xml
 <psalm
@@ -438,6 +513,14 @@ Allows you to hard-code a compressor for Psalm's cache. By default, Psalm uses `
 ```
 Allows you to hard-code the number of threads Psalm will use (similar to `--threads` on the command line). This value will be used in place of detecting threads from the host machine, but will be overridden by using `--threads` or `--debug` (which sets threads to 1) on the command line
 
+#### scanThreads
+```xml
+<psalm
+        scanThreads="[int]"
+>
+```
+Allows you to hard-code the number of threads Psalm will use during the scan phase (as opposed to the analysis phase, controlled by the `threads` field) (similar to `--scan-threads` on the command line). This value will be used in place of detecting threads from the host machine, but will be overridden by using `--scan-threads` or `--debug` (which sets threads to 1) on the command line.
+
 #### maxStringLength
 ```xml
 <psalm
@@ -459,6 +542,17 @@ This setting controls the maximum size of shaped arrays that will be transformed
 Arrays bigger than this value (100 by default) will be transformed in a generic `non-empty-array` type, instead.
 
 Please note that changing this setting might introduce unwanted side effects and those side effects won't be considered as bugs.
+
+#### longScanWarning
+```xml
+<psalm
+  longScanWarning="10.0"
+>
+```
+
+Specifies the maximum scan and analysis duration for individual files; files which take longer than the specified amount of seconds (as a floating point, so values smaller than one second are also accepted) will print out a warning to CLI (the scan will **not** be interrupted).  
+
+Only used in multithreaded mode, defaults to 10 seconds.  
 
 #### restrictReturnTypes
 
@@ -519,6 +613,11 @@ class PremiumCar extends StandardCar {
 #### findUnusedBaselineEntry
 
 Emits [UnusedBaselineEntry](issues/UnusedBaselineEntry.md) when a baseline entry
+is not being used to suppress an issue.
+
+#### findUnusedIssueHandlerSuppression
+
+Emits [UnusedIssueHandlerSuppression](issues/UnusedIssueHandlerSuppression.md) when a suppressed issue handler
 is not being used to suppress an issue.
 
 ## Project settings
@@ -589,6 +688,8 @@ or interfaces defined in a stub file, this stub should be configured with attrib
 </stubs>
 ```
 
+Note: some extension stubs are already built into Psalm, and can be enabled by requiring the extension in your `composer.json` or by using the [enableExtensions](https://psalm.dev/docs/running_psalm/configuration/#enableextensions) config key.  
+
 #### &lt;ignoreExceptions&gt;
 Optional. A list of exceptions to not report for `checkForThrowsDocblock` or `checkForThrowsInGlobalScope`. The `class` tag will make Psalm ignore only instances of the specified class, while `classAndDescendants` will make Psalm also ignore subclasses. If an exception has `onlyGlobalScope` set to `true`, only `checkForThrowsInGlobalScope` is ignored for that exception, e.g.
 ```xml
@@ -632,6 +733,15 @@ Optional. Allows you to specify a list of functions that should emit the [`Forbi
   <function name="var_dump" />
   <function name="dd" />
 </forbiddenFunctions>
+```
+
+#### &lt;forbiddenConstants&gt;
+Optional. Allows you to specify a list of constants that should emit the [`ForbiddenCode`](issues/ForbiddenCode.md) issue type.
+
+```xml
+<forbiddenConstants>
+  <constant name="FILTER_VALIDATE_URL" />
+</forbiddenConstants>
 ```
 
 ## Accessing Psalm configuration in plugins

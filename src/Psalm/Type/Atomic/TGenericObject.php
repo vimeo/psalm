@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
+use Override;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
@@ -30,9 +33,6 @@ final class TGenericObject extends TNamedObject
      */
     public array $type_params;
 
-    /** @var bool if the parameters have been remapped to another class */
-    public $remapped_params = false;
-
     /**
      * @param string                $value the name of the object
      * @param non-empty-list<Union> $type_params
@@ -41,17 +41,17 @@ final class TGenericObject extends TNamedObject
     public function __construct(
         string $value,
         array $type_params,
-        bool $remapped_params = false,
+        /** @var bool if the parameters have been remapped to another class */
+        public bool $remapped_params = false,
         bool $is_static = false,
         array $extra_types = [],
-        bool $from_docblock = false
+        bool $from_docblock = false,
     ) {
         if ($value[0] === '\\') {
             $value = substr($value, 1);
         }
 
         $this->type_params = $type_params;
-        $this->remapped_params = $remapped_params;
         parent::__construct(
             $value,
             $is_static,
@@ -61,6 +61,7 @@ final class TGenericObject extends TNamedObject
         );
     }
 
+    #[Override]
     public function getKey(bool $include_extra = true): string
     {
         $s = '';
@@ -78,6 +79,7 @@ final class TGenericObject extends TNamedObject
         return $this->value . '<' . substr($s, 0, -2) . '>' . $extra_types;
     }
 
+    #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
@@ -86,11 +88,12 @@ final class TGenericObject extends TNamedObject
     /**
      * @param  array<lowercase-string, string> $aliased_classes
      */
+    #[Override]
     public function toPhpString(
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $analysis_php_version_id
+        int $analysis_php_version_id,
     ): ?string {
         $result = $this->toNamespacedString($namespace, $aliased_classes, $this_class, true);
         $intersection = strrpos($result, '&');
@@ -100,6 +103,7 @@ final class TGenericObject extends TNamedObject
         return substr($result, $intersection+1);
     }
 
+    #[Override]
     public function equals(Atomic $other_type, bool $ensure_source_equality): bool
     {
         if (!$other_type instanceof self) {
@@ -119,11 +123,13 @@ final class TGenericObject extends TNamedObject
         return true;
     }
 
+    #[Override]
     public function getAssertionString(): string
     {
         return $this->value;
     }
 
+    #[Override]
     protected function getChildNodeKeys(): array
     {
         return [...parent::getChildNodeKeys(), 'type_params'];
@@ -132,6 +138,7 @@ final class TGenericObject extends TNamedObject
     /**
      * @return static
      */
+    #[Override]
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
         Codebase $codebase,
@@ -142,7 +149,7 @@ final class TGenericObject extends TNamedObject
         ?string $calling_function = null,
         bool $replace = true,
         bool $add_lower_bound = false,
-        int $depth = 0
+        int $depth = 0,
     ): self {
         $types = $this->replaceTypeParamsTemplateTypesWithStandins(
             $template_result,
@@ -183,6 +190,7 @@ final class TGenericObject extends TNamedObject
     /**
      * @return static
      */
+    #[Override]
     public function replaceTemplateTypesWithArgTypes(TemplateResult $template_result, ?Codebase $codebase): self
     {
         $type_params = $this->replaceTypeParamsTemplateTypesWithArgTypes(

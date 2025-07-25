@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Report;
 
+use Override;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Report;
 
@@ -10,6 +13,7 @@ use function strtr;
 
 final class GithubActionsReport extends Report
 {
+    #[Override]
     public function create(): string
     {
         $output = '';
@@ -55,8 +59,7 @@ final class GithubActionsReport extends Report
         );
     }
 
-    /** @param mixed $value */
-    private function escapeProperty($value): string
+    private function escapeProperty(mixed $value): string
     {
         return strtr(
             (string) $value,

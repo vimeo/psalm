@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use Override;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
@@ -34,6 +37,7 @@ final class ParseUrlReturnTypeProvider implements FunctionReturnTypeProviderInte
     /**
      * @return array<lowercase-string>
      */
+    #[Override]
     public static function getFunctionIds(): array
     {
         return ['parse_url'];
@@ -46,6 +50,7 @@ final class ParseUrlReturnTypeProvider implements FunctionReturnTypeProviderInte
     private static ?Union $nullable_string_or_int = null;
     private static ?Union $return_type = null;
 
+    #[Override]
     public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Union
     {
         $statements_source = $event->getStatementsSource();

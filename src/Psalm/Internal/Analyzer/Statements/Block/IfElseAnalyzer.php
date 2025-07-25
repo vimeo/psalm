@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
@@ -69,7 +71,7 @@ final class IfElseAnalyzer
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\If_ $stmt,
-        Context $context
+        Context $context,
     ): ?bool {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -94,6 +96,8 @@ final class IfElseAnalyzer
             }
         }
 
+        $branch_point = $context->branch_point ?: (int) $stmt->getAttribute('startFilePos');
+
         try {
             $if_conditional_scope = IfConditionalAnalyzer::analyze(
                 $statements_analyzer,
@@ -101,7 +105,7 @@ final class IfElseAnalyzer
                 $context,
                 $codebase,
                 $if_scope,
-                $context->branch_point ?: (int) $stmt->getAttribute('startFilePos'),
+                $branch_point,
             );
 
             // this is the context for stuff that happens within the `if` block
@@ -110,7 +114,7 @@ final class IfElseAnalyzer
             // this is the context for stuff that happens after the `if` block
             $post_if_context = $if_conditional_scope->post_if_context;
             $assigned_in_conditional_var_ids = $if_conditional_scope->assigned_in_conditional_var_ids;
-        } catch (ScopeAnalysisException $e) {
+        } catch (ScopeAnalysisException) {
             return false;
         }
 
@@ -140,7 +144,6 @@ final class IfElseAnalyzer
         $if_clauses_handled = [];
         foreach ($if_clauses as $clause) {
             $keys = array_keys($clause->possibilities);
-
             $mixed_var_ids = array_diff($mixed_var_ids, $keys);
 
             foreach ($keys as $key) {
@@ -161,7 +164,7 @@ final class IfElseAnalyzer
 
         // this will see whether any of the clauses in set A conflict with the clauses in set B
         AlgebraAnalyzer::checkForParadox(
-            $context->clauses,
+            $entry_clauses,
             $if_clauses,
             $statements_analyzer,
             $stmt->cond,
@@ -170,11 +173,9 @@ final class IfElseAnalyzer
 
         $if_clauses = Algebra::simplifyCNF($if_clauses);
 
-        $if_context_clauses = [...$entry_clauses, ...$if_clauses];
-
         $if_context->clauses = $entry_clauses
-            ? Algebra::simplifyCNF($if_context_clauses)
-            : $if_context_clauses;
+            ? Algebra::simplifyCNF([...$entry_clauses, ...$if_clauses])
+            : $if_clauses;
 
         if ($if_context->reconciled_expression_clauses) {
             $reconciled_expression_clauses = $if_context->reconciled_expression_clauses;
@@ -182,7 +183,7 @@ final class IfElseAnalyzer
             $if_context->clauses = array_values(
                 array_filter(
                     $if_context->clauses,
-                    static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses),
+                    static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses, true),
                 ),
             );
 
@@ -200,7 +201,7 @@ final class IfElseAnalyzer
 
         try {
             $if_scope->negated_clauses = Algebra::negateFormula($if_clauses);
-        } catch (ComplicatedExpressionException $e) {
+        } catch (ComplicatedExpressionException) {
             try {
                 $if_scope->negated_clauses = FormulaGenerator::getFormula(
                     $cond_object_id,
@@ -211,7 +212,7 @@ final class IfElseAnalyzer
                     $codebase,
                     false,
                 );
-            } catch (ComplicatedExpressionException $e) {
+            } catch (ComplicatedExpressionException) {
                 $if_scope->negated_clauses = [];
             }
         }
@@ -292,9 +293,8 @@ final class IfElseAnalyzer
         }
 
         if ($stmt->else) {
-            if ($codebase->alter_code) {
-                $else_context->branch_point =
-                    $else_context->branch_point ?: (int) $stmt->getAttribute('startFilePos');
+            if ($codebase->alter_code && $else_context->branch_point === null) {
+                $else_context->branch_point = (int) $stmt->getAttribute('startFilePos');
             }
         }
 
@@ -361,15 +361,15 @@ final class IfElseAnalyzer
             );
         }
 
-        $context->vars_possibly_in_scope = array_merge(
-            $context->vars_possibly_in_scope,
-            $if_scope->new_vars_possibly_in_scope,
-        );
+        $context->vars_possibly_in_scope = [
+            ...$context->vars_possibly_in_scope,
+            ...$if_scope->new_vars_possibly_in_scope,
+        ];
 
-        $context->possibly_assigned_var_ids = array_merge(
-            $context->possibly_assigned_var_ids,
-            $if_scope->possibly_assigned_var_ids ?: [],
-        );
+        $context->possibly_assigned_var_ids = [
+            ...$context->possibly_assigned_var_ids,
+            ...$if_scope->possibly_assigned_var_ids ?: [],
+        ];
 
         // vars can only be defined/redefined if there was an else (defined in every block)
         $context->assigned_var_ids = array_merge(

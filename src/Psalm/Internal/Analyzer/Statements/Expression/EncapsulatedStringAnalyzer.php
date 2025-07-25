@@ -1,14 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
-use PhpParser\Node\Scalar\EncapsedStringPart;
+use PhpParser\Node\Expr;
+use PhpParser\Node\InterpolatedStringPart;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
 use Psalm\Type\Atomic\TLiteralFloat;
@@ -21,6 +26,7 @@ use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
 
+use function array_diff;
 use function in_array;
 
 /**
@@ -30,8 +36,8 @@ final class EncapsulatedStringAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Scalar\Encapsed $stmt,
-        Context $context
+        PhpParser\Node\Scalar\InterpolatedString $stmt,
+        Context $context,
     ): bool {
         $parent_nodes = [];
 
@@ -42,11 +48,13 @@ final class EncapsulatedStringAnalyzer
         $literal_string = "";
 
         foreach ($stmt->parts as $part) {
-            if (ExpressionAnalyzer::analyze($statements_analyzer, $part, $context) === false) {
-                return false;
+            if ($part instanceof Expr) {
+                if (ExpressionAnalyzer::analyze($statements_analyzer, $part, $context) === false) {
+                    return false;
+                }
             }
 
-            if ($part instanceof EncapsedStringPart) {
+            if ($part instanceof InterpolatedStringPart) {
                 if ($literal_string !== null) {
                     $literal_string .= $part->value;
                 }
@@ -100,6 +108,13 @@ final class EncapsulatedStringAnalyzer
 
                     $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
                     $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+
+                    $taints = array_diff($added_taints, $removed_taints);
+                    if ($taints !== [] && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+                        $taint_source = TaintSource::fromNode($new_parent_node);
+                        $taint_source->taints = $taints;
+                        $statements_analyzer->data_flow_graph->addSource($taint_source);
+                    }
 
                     if ($casted_part_type->parent_nodes) {
                         foreach ($casted_part_type->parent_nodes as $parent_node) {

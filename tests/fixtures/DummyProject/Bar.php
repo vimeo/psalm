@@ -1,7 +1,7 @@
 <?php
 namespace Vimeo\Test\DummyProject;
 
-class Bar
+final class Bar
 {
     use SomeTrait;
 

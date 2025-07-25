@@ -1,28 +1,31 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Storage\Assertion;
 
+use Override;
 use Psalm\Storage\Assertion;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 
 /**
  * @psalm-immutable
  */
 final class DoesNotHaveAtLeastCount extends Assertion
 {
-    /** @var positive-int */
-    public $count;
-
+    use UnserializeMemoryUsageSuppressionTrait;
     /** @param positive-int $count */
-    public function __construct(int $count)
+    public function __construct(public readonly int $count)
     {
-        $this->count = $count;
     }
 
+    #[Override]
     public function getNegation(): Assertion
     {
         return new HasAtLeastCount($this->count);
     }
 
+    #[Override]
     public function isNegation(): bool
     {
         return true;
@@ -33,6 +36,7 @@ final class DoesNotHaveAtLeastCount extends Assertion
         return '!has-at-least-' . $this->count;
     }
 
+    #[Override]
     public function isNegationOf(Assertion $assertion): bool
     {
         return $assertion instanceof HasAtLeastCount && $this->count === $assertion->count;

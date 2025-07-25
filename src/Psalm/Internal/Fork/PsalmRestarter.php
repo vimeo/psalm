@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Fork;
 
 use Composer\XdebugHandler\XdebugHandler;
+use Override;
 
-use function array_filter;
 use function array_merge;
 use function array_splice;
 use function assert;
@@ -15,11 +17,10 @@ use function file_put_contents;
 use function implode;
 use function in_array;
 use function ini_get;
+use function is_int;
 use function preg_replace;
 use function strlen;
 use function strtolower;
-
-use const PHP_VERSION_ID;
 
 /**
  * @internal
@@ -27,12 +28,27 @@ use const PHP_VERSION_ID;
 final class PsalmRestarter extends XdebugHandler
 {
     private const REQUIRED_OPCACHE_SETTINGS = [
-        'enable_cli' => true,
+        'enable' => 1,
+        'enable_cli' => 1,
         'jit' => 1205,
-        'jit_buffer_size' => 512 * 1024 * 1024,
+        'validate_timestamps' => 0,
+        'file_update_protection' => 0,
+        'jit_buffer_size' => 128 * 1024 * 1024,
+        'max_accelerated_files' => 1_000_000,
+        'interned_strings_buffer' => 64,
+        'jit_max_root_traces' => 100_000,
+        'jit_max_side_traces' => 100_000,
+        'jit_max_exit_counters' => 100_000,
+        'jit_hot_loop' => 1,
+        'jit_hot_func' => 1,
+        'jit_hot_return' => 1,
+        'jit_hot_side_exit' => 1,
+        'jit_blacklist_root_trace' => 255,
+        'jit_blacklist_side_trace' => 255,
         'optimization_level' => '0x7FFEBFFF',
         'preload' => '',
         'log_verbosity_level' => 0,
+        'save_comments' => 1,
     ];
 
     private bool $required = false;
@@ -59,35 +75,38 @@ final class PsalmRestarter extends XdebugHandler
      * @param bool $default
      * @phpcsSuppress SlevomatCodingStandard.TypeHints.ParameterTypeHint.MissingNativeTypeHint
      */
+    #[Override]
     protected function requiresRestart($default): bool
     {
-        $this->required = (bool) array_filter(
-            $this->disabled_extensions,
-            static fn(string $extension): bool => extension_loaded($extension),
-        );
-
-        $opcache_loaded = extension_loaded('opcache') || extension_loaded('Zend OPcache');
-
-        if (PHP_VERSION_ID >= 8_00_00 && $opcache_loaded) {
-            // restart to enable JIT if it's not configured in the optimal way
-            $opcache_settings = [
-                'enable_cli' => in_array(ini_get('opcache.enable_cli'), ['1', 'true', true, 1]),
-                'jit' => (int) ini_get('opcache.jit'),
-                'log_verbosity_level' => (int) ini_get('opcache.log_verbosity_level'),
-                'optimization_level' => (string) ini_get('opcache.optimization_level'),
-                'preload' => (string) ini_get('opcache.preload'),
-                'jit_buffer_size' => self::toBytes(ini_get('opcache.jit_buffer_size')),
-            ];
-
-            foreach (self::REQUIRED_OPCACHE_SETTINGS as $ini_name => $required_value) {
-                if ($opcache_settings[$ini_name] !== $required_value) {
-                    return true;
-                }
+        foreach ($this->disabled_extensions as $extension) {
+            if (extension_loaded($extension)) {
+                $this->required = true;
+                break;
             }
         }
 
-        // opcache.save_comments is required for json mapper (used in language server) to work
-        if ($opcache_loaded && in_array(ini_get('opcache.save_comments'), ['0', 'false', 0, false])) {
+        if (!extension_loaded('opcache') && !extension_loaded('Zend OPcache')) {
+            return true;
+        }
+
+            // restart to enable JIT if it's not configured in the optimal way
+        foreach (self::REQUIRED_OPCACHE_SETTINGS as $ini_name => $required_value) {
+            $value = (string) ini_get("opcache.$ini_name");
+            if ($ini_name === 'jit_buffer_size') {
+                $value = self::toBytes($value);
+            } elseif ($ini_name === 'enable_cli') {
+                $value = in_array($value, ['1', 'true', true, 1]) ? 1 : 0;
+            } elseif (is_int($required_value)) {
+                $value = (int) $value;
+            }
+            if ($value !== $required_value) {
+                return true;
+            }
+        }
+
+            $requiredMemoryConsumption = self::getRequiredMemoryConsumption();
+
+        if ((int)ini_get('opcache.memory_consumption') < $requiredMemoryConsumption) {
             return true;
         }
 
@@ -130,38 +149,35 @@ final class PsalmRestarter extends XdebugHandler
      * @param non-empty-list<string> $command
      * @phpcsSuppress SlevomatCodingStandard.TypeHints.ParameterTypeHint.MissingNativeTypeHint
      */
+    #[Override]
     protected function restart($command): void
     {
         if ($this->required && $this->tmpIni) {
-            $regex = '/^\s*(extension\s*=.*(' . implode('|', $this->disabled_extensions) . ').*)$/mi';
+            $regex = '/^\s*((?:zend_)?extension\s*=.*(' . implode('|', $this->disabled_extensions) . ').*)$/mi';
             $content = file_get_contents($this->tmpIni);
+            assert($content !== false);
 
-            $content = preg_replace($regex, ';$1', $content);
+            $content = (string) preg_replace($regex, ';$1', $content);
 
             file_put_contents($this->tmpIni, $content);
         }
 
-        $additional_options = [];
         $opcache_loaded = extension_loaded('opcache') || extension_loaded('Zend OPcache');
 
         // executed in the parent process (before restart)
         // if it wasn't loaded then we apparently don't have opcache installed and there's no point trying
         // to tweak it
-        // If we're running on 7.4 there's no JIT available
-        if (PHP_VERSION_ID >= 8_00_00 && $opcache_loaded) {
-            $additional_options = [
-                '-dopcache.enable_cli=true',
-                '-dopcache.jit_buffer_size=512M',
-                '-dopcache.jit=1205',
-                '-dopcache.optimization_level=0x7FFEBFFF',
-                '-dopcache.preload=',
-                '-dopcache.log_verbosity_level=0',
-            ];
+        $additional_options = $opcache_loaded ? [] : ['-dzend_extension=opcache'];
+        foreach (self::REQUIRED_OPCACHE_SETTINGS as $key => $value) {
+            $additional_options []= "-dopcache.{$key}={$value}";
         }
 
-        if ($opcache_loaded) {
-            $additional_options[] = '-dopcache.save_comments=1';
+        $requiredMemoryConsumption = self::getRequiredMemoryConsumption();
+
+        if ((int)ini_get('opcache.memory_consumption') < $requiredMemoryConsumption) {
+            $additional_options []= "-dopcache.memory_consumption={$requiredMemoryConsumption}";
         }
+
 
         array_splice(
             $command,
@@ -172,5 +188,24 @@ final class PsalmRestarter extends XdebugHandler
         assert(count($command) > 1);
 
         parent::restart($command);
+    }
+
+    /**
+     * @return positive-int
+     */
+    private static function getRequiredMemoryConsumption(): int
+    {
+        // Reserve for byte-codes
+        $result = 256;
+
+        if (isset(self::REQUIRED_OPCACHE_SETTINGS['jit_buffer_size'])) {
+            $result += self::REQUIRED_OPCACHE_SETTINGS['jit_buffer_size'] / 1024 / 1024;
+        }
+
+        if (isset(self::REQUIRED_OPCACHE_SETTINGS['interned_strings_buffer'])) {
+            $result += self::REQUIRED_OPCACHE_SETTINGS['interned_strings_buffer'];
+        }
+
+        return $result;
     }
 }

@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use DateTime;
+use Override;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
@@ -11,7 +14,7 @@ use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use const DIRECTORY_SEPARATOR;
 
-class PropertyTypeTest extends TestCase
+final class PropertyTypeTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
@@ -550,6 +553,7 @@ class PropertyTypeTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    #[Override]
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -2541,6 +2545,7 @@ class PropertyTypeTest extends TestCase
             ],
             'ignoreUndefinedMethodOnUnion' => [
                 'code' => '<?php
+                    /** @psalm-no-seal-properties */
                     class NullObject {
                         /**
                          * @return null
@@ -2743,6 +2748,7 @@ class PropertyTypeTest extends TestCase
         ];
     }
 
+    #[Override]
     public function providerInvalidCodeParse(): iterable
     {
         return [
@@ -3543,6 +3549,7 @@ class PropertyTypeTest extends TestCase
             ],
             'noCrashOnMagicCall' => [
                 'code' => '<?php
+                    /** @method void setA() */
                     class A {
                         /** @var string */
                         private $a;
@@ -3553,7 +3560,7 @@ class PropertyTypeTest extends TestCase
 
                         public function __call(string $var, array $args) {}
                     }',
-                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:4',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:5',
             ],
             'reportGoodLocationForPropertyError' => [
                 'code' => '<?php

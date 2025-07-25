@@ -37,7 +37,7 @@ final class DynamicFunctionStorageProvider
      */
     public function registerClass(string $class): void
     {
-        $callable = Closure::fromCallable([$class, 'getFunctionStorage']);
+        $callable = $class::getFunctionStorage(...);
 
         foreach ($class::getFunctionIds() as $function_id) {
             $this->registerClosure($function_id, $callable);
@@ -62,7 +62,7 @@ final class DynamicFunctionStorageProvider
         StatementsAnalyzer $statements_analyzer,
         string $function_id,
         Context $context,
-        CodeLocation $code_location
+        CodeLocation $code_location,
     ): ?FunctionStorage {
         if ($stmt->isFirstClassCallable()) {
             return null;

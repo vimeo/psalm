@@ -5,15 +5,13 @@ declare(strict_types=1);
 namespace Psalm\Internal\LanguageServer;
 
 use AdvancedJsonRpc\Message as MessageBody;
-use Amp\ByteStream\ResourceInputStream;
-use Amp\Promise;
+use Amp\ByteStream\ReadableResourceStream;
 use Exception;
-use Generator;
+use Revolt\EventLoop;
 
-use function Amp\asyncCall;
 use function explode;
+use function str_ends_with;
 use function strlen;
-use function substr;
 use function trim;
 
 /**
@@ -45,16 +43,11 @@ final class ProtocolStreamReader implements ProtocolReader
      */
     public function __construct($input)
     {
-        $input = new ResourceInputStream($input);
-        asyncCall(
-            /**
-             * @return Generator<int, Promise<?string>, ?string, void>
-             */
-            function () use ($input): Generator {
+        $input = new ReadableResourceStream($input);
+        EventLoop::queue(
+            function () use ($input): void {
                 while ($this->is_accepting_new_requests) {
-                    $read_promise = $input->read();
-
-                    $chunk = yield $read_promise;
+                    $chunk = $input->read();
 
                     if ($chunk === null) {
                         break;
@@ -89,7 +82,7 @@ final class ProtocolStreamReader implements ProtocolReader
                         $this->parsing_mode = self::PARSE_BODY;
                         $this->content_length = (int) ($this->headers['Content-Length'] ?? 0);
                         $this->buffer = '';
-                    } elseif (substr($this->buffer, -2) === "\r\n") {
+                    } elseif (str_ends_with($this->buffer, "\r\n")) {
                         $parts = explode(':', $this->buffer);
                         if (isset($parts[1])) {
                             $this->headers[$parts[0]] = trim($parts[1]);
@@ -108,7 +101,7 @@ final class ProtocolStreamReader implements ProtocolReader
                         // MessageBody::parse can throw an Error, maybe log an error?
                         try {
                             $msg = new Message(MessageBody::parse($this->buffer), $this->headers);
-                        } catch (Exception $_) {
+                        } catch (Exception) {
                             $msg = null;
                         }
                         if ($msg) {

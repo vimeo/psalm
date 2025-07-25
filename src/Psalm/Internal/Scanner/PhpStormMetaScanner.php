@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Scanner;
 
 use PhpParser;
@@ -16,8 +18,8 @@ use ReflectionProperty;
 
 use function count;
 use function is_string;
+use function str_contains;
 use function str_replace;
-use function strpos;
 use function strtolower;
 
 /**
@@ -105,7 +107,7 @@ final class PhpStormMetaScanner
 
         if ($args[1]->value->name->getParts() === ['type']
             && $args[1]->value->getArgs()
-            && $args[1]->value->getArgs()[0]->value instanceof PhpParser\Node\Scalar\LNumber
+            && $args[1]->value->getArgs()[0]->value instanceof PhpParser\Node\Scalar\Int_
         ) {
             $type_offset = $args[1]->value->getArgs()[0]->value->value;
         }
@@ -114,7 +116,7 @@ final class PhpStormMetaScanner
 
         if ($args[1]->value->name->getParts() === ['elementType']
             && $args[1]->value->getArgs()
-            && $args[1]->value->getArgs()[0]->value instanceof PhpParser\Node\Scalar\LNumber
+            && $args[1]->value->getArgs()[0]->value instanceof PhpParser\Node\Scalar\Int_
         ) {
             $element_type_offset = $args[1]->value->getArgs()[0]->value->value;
         }
@@ -124,7 +126,7 @@ final class PhpStormMetaScanner
             && $identifier->name instanceof PhpParser\Node\Identifier
             && (
                 $identifier->getArgs() === []
-                || $identifier->getArgs()[0]->value instanceof PhpParser\Node\Scalar\LNumber
+                || $identifier->getArgs()[0]->value instanceof PhpParser\Node\Scalar\Int_
             )
         ) {
             $meta_fq_classlike_name = $identifier->class->toString();
@@ -134,7 +136,7 @@ final class PhpStormMetaScanner
             if ($map) {
                 $offset = 0;
                 if ($identifier->getArgs()
-                    && $identifier->getArgs()[0]->value instanceof PhpParser\Node\Scalar\LNumber
+                    && $identifier->getArgs()[0]->value instanceof PhpParser\Node\Scalar\Int_
                 ) {
                     $offset = $identifier->getArgs()[0]->value->value;
                 }
@@ -142,12 +144,12 @@ final class PhpStormMetaScanner
                 $codebase->methods->return_type_provider->registerClosure(
                     $meta_fq_classlike_name,
                     static function (
-                        MethodReturnTypeProviderEvent $event
+                        MethodReturnTypeProviderEvent $event,
                     ) use (
                         $map,
                         $offset,
                         $meta_fq_classlike_name,
-                        $meta_method_name
+                        $meta_method_name,
                     ): ?Union {
                         $statements_analyzer = $event->getSource();
                         $call_args = $event->getCallArgs();
@@ -176,10 +178,10 @@ final class PhpStormMetaScanner
                             }
 
                             if (($mapped_type = $map[''] ?? null) && is_string($mapped_type)) {
-                                if (strpos($mapped_type, '@') !== false) {
+                                if (str_contains($mapped_type, '@')) {
                                     $mapped_type = str_replace('@', $offset_arg_value, $mapped_type);
 
-                                    if (strpos($mapped_type, '.') === false) {
+                                    if (!str_contains($mapped_type, '.')) {
                                         return new Union([
                                             new TNamedObject($mapped_type),
                                         ]);
@@ -195,11 +197,11 @@ final class PhpStormMetaScanner
                 $codebase->methods->return_type_provider->registerClosure(
                     $meta_fq_classlike_name,
                     static function (
-                        MethodReturnTypeProviderEvent $event
+                        MethodReturnTypeProviderEvent $event,
                     ) use (
                         $type_offset,
                         $meta_fq_classlike_name,
-                        $meta_method_name
+                        $meta_method_name,
                     ): ?Union {
                         $statements_analyzer = $event->getSource();
                         $call_args = $event->getCallArgs();
@@ -229,11 +231,11 @@ final class PhpStormMetaScanner
                 $codebase->methods->return_type_provider->registerClosure(
                     $meta_fq_classlike_name,
                     static function (
-                        MethodReturnTypeProviderEvent $event
+                        MethodReturnTypeProviderEvent $event,
                     ) use (
                         $element_type_offset,
                         $meta_fq_classlike_name,
-                        $meta_method_name
+                        $meta_method_name,
                     ): ?Union {
                         $statements_analyzer = $event->getSource();
                         $call_args = $event->getCallArgs();
@@ -276,7 +278,7 @@ final class PhpStormMetaScanner
             && $identifier->name instanceof PhpParser\Node\Name\FullyQualified
             && (
                 $identifier->getArgs() === []
-                || $identifier->getArgs()[0]->value instanceof PhpParser\Node\Scalar\LNumber
+                || $identifier->getArgs()[0]->value instanceof PhpParser\Node\Scalar\Int_
             )
         ) {
             $function_id = strtolower($identifier->name->toString());
@@ -284,7 +286,7 @@ final class PhpStormMetaScanner
             if ($map) {
                 $offset = 0;
                 if ($identifier->getArgs()
-                    && $identifier->getArgs()[0]->value instanceof PhpParser\Node\Scalar\LNumber
+                    && $identifier->getArgs()[0]->value instanceof PhpParser\Node\Scalar\Int_
                 ) {
                     $offset = $identifier->getArgs()[0]->value->value;
                 }
@@ -292,10 +294,10 @@ final class PhpStormMetaScanner
                 $codebase->functions->return_type_provider->registerClosure(
                     $function_id,
                     static function (
-                        FunctionReturnTypeProviderEvent $event
+                        FunctionReturnTypeProviderEvent $event,
                     ) use (
                         $map,
-                        $offset
+                        $offset,
                     ): Union {
                         $statements_analyzer = $event->getStatementsSource();
                         $call_args = $event->getCallArgs();
@@ -318,10 +320,10 @@ final class PhpStormMetaScanner
                             }
 
                             if (($mapped_type = $map[''] ?? null) && is_string($mapped_type)) {
-                                if (strpos($mapped_type, '@') !== false) {
+                                if (str_contains($mapped_type, '@')) {
                                     $mapped_type = str_replace('@', $offset_arg_value, $mapped_type);
 
-                                    if (strpos($mapped_type, '.') === false) {
+                                    if (!str_contains($mapped_type, '.')) {
                                         return new Union([
                                             new TNamedObject($mapped_type),
                                         ]);
@@ -342,9 +344,9 @@ final class PhpStormMetaScanner
                 $codebase->functions->return_type_provider->registerClosure(
                     $function_id,
                     static function (
-                        FunctionReturnTypeProviderEvent $event
+                        FunctionReturnTypeProviderEvent $event,
                     ) use (
-                        $type_offset
+                        $type_offset,
                     ): Union {
                         $statements_analyzer = $event->getStatementsSource();
                         $call_args = $event->getCallArgs();
@@ -372,9 +374,9 @@ final class PhpStormMetaScanner
                 $codebase->functions->return_type_provider->registerClosure(
                     $function_id,
                     static function (
-                        FunctionReturnTypeProviderEvent $event
+                        FunctionReturnTypeProviderEvent $event,
                     ) use (
-                        $element_type_offset
+                        $element_type_offset,
                     ): Union {
                         $statements_analyzer = $event->getStatementsSource();
                         $call_args = $event->getCallArgs();

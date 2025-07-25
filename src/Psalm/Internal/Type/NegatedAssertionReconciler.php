@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Type;
 
 use Psalm\CodeLocation;
@@ -21,11 +23,11 @@ use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -35,7 +37,6 @@ use Psalm\Type\Union;
 use function array_merge;
 use function array_values;
 use function count;
-use function get_class;
 use function strtolower;
 
 /**
@@ -57,7 +58,7 @@ final class NegatedAssertionReconciler extends Reconciler
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation,
-        bool $inside_loop
+        bool $inside_loop,
     ): Union {
         $existing_var_type = ClosedInheritanceToUnion::map(
             $existing_var_type,
@@ -186,13 +187,17 @@ final class NegatedAssertionReconciler extends Reconciler
                     $iterable->type_params[1],
                 ],
             ));
-        } elseif ($assertion_type !== null && get_class($assertion_type) === TInt::class
+        } elseif ($assertion_type !== null && $assertion_type::class === TInt::class
             && isset($existing_var_type->getAtomicTypes()['array-key'])
             && !$is_equality
         ) {
             $existing_var_type->removeType('array-key');
             $existing_var_type->addType(new TString);
         } elseif ($assertion_type instanceof TNonEmptyString
+            && $existing_var_type->hasString()
+        ) {
+            // do nothing
+        } elseif ($assertion_type instanceof TNonEmptyNonspecificLiteralString
             && $existing_var_type->hasString()
         ) {
             // do nothing
@@ -209,8 +214,7 @@ final class NegatedAssertionReconciler extends Reconciler
             // fall through
         } elseif ($existing_var_type->isArray()
             && ($assertion->getAtomicType() instanceof TArray
-                || $assertion->getAtomicType() instanceof TKeyedArray
-                || $assertion->getAtomicType() instanceof TList)
+                || $assertion->getAtomicType() instanceof TKeyedArray)
         ) {
             //if both types are arrays, try to combine them
             $combined_type = TypeCombiner::combine(
@@ -323,7 +327,7 @@ final class NegatedAssertionReconciler extends Reconciler
         ?string $key,
         bool $negated,
         ?CodeLocation $code_location,
-        array $suppressed_issues
+        array $suppressed_issues,
     ): Union {
         $existing_var_type = $existing_var_type->getBuilder();
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
@@ -371,7 +375,7 @@ final class NegatedAssertionReconciler extends Reconciler
                 }
 
                 if (isset($existing_var_type->getAtomicTypes()['int'])
-                    && get_class($existing_var_type->getAtomicTypes()['int']) === Type\Atomic\TInt::class
+                    && $existing_var_type->getAtomicTypes()['int']::class === Type\Atomic\TInt::class
                 ) {
                     $redundant = false;
                     //this may be used to generate a range containing any int except the one that was asserted against
@@ -394,7 +398,7 @@ final class NegatedAssertionReconciler extends Reconciler
                 } elseif ($assertion_type->value === "") {
                     $existing_var_type->addType(new TNonEmptyString());
                 }
-            } elseif (get_class($assertion_type) === TLiteralString::class) {
+            } elseif ($assertion_type::class === TLiteralString::class) {
                 $scalar_var_type = $assertion_type;
             }
         } elseif ($assertion_type instanceof TLiteralFloat) {
@@ -414,7 +418,7 @@ final class NegatedAssertionReconciler extends Reconciler
             $case_name = $assertion_type->case_name;
 
             foreach ($existing_var_type->getAtomicTypes() as $atomic_key => $atomic_type) {
-                if (get_class($atomic_type) === TNamedObject::class
+                if ($atomic_type::class === TNamedObject::class
                     && $atomic_type->value === $fq_enum_name
                 ) {
                     $codebase = $statements_analyzer->getCodebase();

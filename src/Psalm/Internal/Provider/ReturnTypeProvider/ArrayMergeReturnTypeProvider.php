@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use Override;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
@@ -11,7 +14,6 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNull;
@@ -31,11 +33,13 @@ final class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderIn
     /**
      * @return array<lowercase-string>
      */
+    #[Override]
     public static function getFunctionIds(): array
     {
         return ['array_merge', 'array_replace'];
     }
 
+    #[Override]
     public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Union
     {
         $statements_source = $event->getStatementsSource();
@@ -69,9 +73,6 @@ final class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderIn
             }
 
             foreach ($call_arg_type->getAtomicTypes() as $type_part) {
-                if ($type_part instanceof TList) {
-                    $type_part = $type_part->getKeyedArray();
-                }
                 $unpacking_indefinite_number_of_args = false;
                 $unpacking_possibly_empty = false;
                 if ($call_arg->unpack) {

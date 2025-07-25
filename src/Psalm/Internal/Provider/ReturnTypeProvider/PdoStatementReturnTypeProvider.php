@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use Override;
 use Psalm\Config;
 use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface;
@@ -19,11 +22,13 @@ use Psalm\Type\Union;
  */
 final class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterface
 {
+    #[Override]
     public static function getClassLikeNames(): array
     {
         return ['PDOStatement'];
     }
 
+    #[Override]
     public static function getMethodReturnType(MethodReturnTypeProviderEvent $event): ?Union
     {
         $config = Config::getInstance();
@@ -60,104 +65,81 @@ final class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderIn
                 break;
             }
         }
-
-        switch ($fetch_mode) {
-            case 2: // PDO::FETCH_ASSOC - array<string,scalar|null>|false
-                return new Union([
-                    new TArray([
-                        Type::getString(),
-                        new Union([
-                            new TScalar(),
-                            new TNull(),
-                        ]),
+        return match ($fetch_mode) {
+            2 => new Union([
+                new TArray([
+                    Type::getString(),
+                    new Union([
+                        new TScalar(),
+                        new TNull(),
                     ]),
-                    new TFalse(),
-                ]);
-
-            case 4: // PDO::FETCH_BOTH - array<array-key,scalar|null>|false
-                return new Union([
-                    new TArray([
-                        Type::getArrayKey(),
-                        new Union([
-                            new TScalar(),
-                            new TNull(),
-                        ]),
+                ]),
+                new TFalse(),
+            ]),
+            4 => new Union([
+                new TArray([
+                    Type::getArrayKey(),
+                    new Union([
+                        new TScalar(),
+                        new TNull(),
                     ]),
-                    new TFalse(),
-                ]);
-
-            case 6: // PDO::FETCH_BOUND - bool
-                return Type::getBool();
-
-            case 7: // PDO::FETCH_COLUMN - scalar|null|false
-                return new Union([
-                    new TScalar(),
-                    new TNull(),
-                    new TFalse(),
-                ]);
-
-            case 8: // PDO::FETCH_CLASS - object|false
-                return new Union([
-                    new TObject(),
-                    new TFalse(),
-                ]);
-
-            case 1: // PDO::FETCH_LAZY - object|false
-                // This actually returns a PDORow object, but that class is
-                // undocumented, and its attributes are all dynamic anyway
-                return new Union([
-                    new TObject(),
-                    new TFalse(),
-                ]);
-
-            case 11: // PDO::FETCH_NAMED - array<string, scalar|null|list<scalar|null>>|false
-                return new Union([
-                    new TArray([
-                        Type::getString(),
-                        new Union([
-                            new TScalar(),
-                            new TNull(),
-                            Type::getListAtomic(
-                                new Union([
-                                    new TScalar(),
-                                    new TNull(),
-                                ]),
-                            ),
-                        ]),
+                ]),
+                new TFalse(),
+            ]),
+            6 => Type::getBool(),
+            7 => new Union([
+                new TScalar(),
+                new TNull(),
+                new TFalse(),
+            ]),
+            8 => new Union([
+                new TObject(),
+                new TFalse(),
+            ]),
+            1 => new Union([
+                new TObject(),
+                new TFalse(),
+            ]),
+            11 => new Union([
+                new TArray([
+                    Type::getString(),
+                    new Union([
+                        new TScalar(),
+                        new TNull(),
+                        Type::getListAtomic(
+                            new Union([
+                                new TScalar(),
+                                new TNull(),
+                            ]),
+                        ),
                     ]),
-                    new TFalse(),
-                ]);
-
-            case 12: // PDO::FETCH_KEY_PAIR - array<array-key,scalar|null>
-                return new Union([
-                    new TArray([
-                        Type::getArrayKey(),
-                        new Union([
-                            new TScalar(),
-                            new TNull(),
-                        ]),
+                ]),
+                new TFalse(),
+            ]),
+            12 => new Union([
+                new TArray([
+                    Type::getArrayKey(),
+                    new Union([
+                        new TScalar(),
+                        new TNull(),
                     ]),
-                ]);
-
-            case 3: // PDO::FETCH_NUM - list<scalar|null>|false
-                return new Union([
-                    Type::getListAtomic(
-                        new Union([
-                            new TScalar(),
-                            new TNull(),
-                        ]),
-                    ),
-                    new TFalse(),
-                ]);
-
-            case 5: // PDO::FETCH_OBJ - stdClass|false
-                return new Union([
-                    new TNamedObject('stdClass'),
-                    new TFalse(),
-                ]);
-        }
-
-        return null;
+                ]),
+            ]),
+            3 => new Union([
+                Type::getListAtomic(
+                    new Union([
+                        new TScalar(),
+                        new TNull(),
+                    ]),
+                ),
+                new TFalse(),
+            ]),
+            5 => new Union([
+                new TNamedObject('stdClass'),
+                new TFalse(),
+            ]),
+            default => null,
+        };
     }
 
     private static function handleFetchAll(MethodReturnTypeProviderEvent $event): ?Union
@@ -181,120 +163,101 @@ final class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderIn
         ) {
             $fetch_class_name = $second_arg_type->getSingleStringLiteral()->value;
         }
-
-        switch ($fetch_mode) {
-            case 2: // PDO::FETCH_ASSOC - list<array<string,scalar|null>>
-                return new Union([
-                    Type::getListAtomic(
-                        new Union([
-                            new TArray([
-                                Type::getString(),
-                                new Union([
-                                    new TScalar(),
-                                    new TNull(),
-                                ]),
+        return match ($fetch_mode) {
+            2 => new Union([
+                Type::getListAtomic(
+                    new Union([
+                        new TArray([
+                            Type::getString(),
+                            new Union([
+                                new TScalar(),
+                                new TNull(),
                             ]),
-                        ]),
-                    ),
-                ]);
-
-            case 4: // PDO::FETCH_BOTH - list<array<array-key,scalar|null>>
-                return new Union([
-                    Type::getListAtomic(
-                        new Union([
-                            new TArray([
-                                Type::getArrayKey(),
-                                new Union([
-                                    new TScalar(),
-                                    new TNull(),
-                                ]),
-                            ]),
-                        ]),
-                    ),
-                ]);
-
-            case 6: // PDO::FETCH_BOUND - list<bool>
-                return new Union([
-                    Type::getListAtomic(
-                        Type::getBool(),
-                    ),
-                ]);
-
-            case 7: // PDO::FETCH_COLUMN - list<scalar|null>
-                return new Union([
-                    Type::getListAtomic(
-                        new Union([
-                            new TScalar(),
-                            new TNull(),
-                        ]),
-                    ),
-                ]);
-
-            case 8: // PDO::FETCH_CLASS - list<object>
-                return new Union([
-                    Type::getListAtomic(
-                        new Union([
-                            $fetch_class_name ? new TNamedObject($fetch_class_name) : new TObject(),
-                        ]),
-                    ),
-                ]);
-
-            case 11: // PDO::FETCH_NAMED - list<array<string, scalar|null|list<scalar|null>>>
-                return new Union([
-                    Type::getListAtomic(
-                        new Union([
-                            new TArray([
-                                Type::getString(),
-                                new Union([
-                                    new TScalar(),
-                                    new TNull(),
-                                    Type::getListAtomic(
-                                        new Union([
-                                            new TScalar(),
-                                            new TNull(),
-                                        ]),
-                                    ),
-                                ]),
-                            ]),
-                        ]),
-                    ),
-                ]);
-
-            case 12: // PDO::FETCH_KEY_PAIR - array<array-key,scalar|null>
-                return new Union([
-                    new TArray([
-                        Type::getArrayKey(),
-                        new Union([
-                            new TScalar(),
-                            new TNull(),
                         ]),
                     ]),
-                ]);
-
-            case 3: // PDO::FETCH_NUM - list<list<scalar|null>>
-                return new Union([
-                    Type::getListAtomic(
-                        new Union([
-                            Type::getListAtomic(
-                                new Union([
-                                    new TScalar(),
-                                    new TNull(),
-                                ]),
-                            ),
+                ),
+            ]),
+            4 => new Union([
+                Type::getListAtomic(
+                    new Union([
+                        new TArray([
+                            Type::getArrayKey(),
+                            new Union([
+                                new TScalar(),
+                                new TNull(),
+                            ]),
                         ]),
-                    ),
-                ]);
-
-            case 5: // PDO::FETCH_OBJ - list<stdClass>
-                return new Union([
-                    Type::getListAtomic(
-                        new Union([
-                            new TNamedObject('stdClass'),
+                    ]),
+                ),
+            ]),
+            6 => new Union([
+                Type::getListAtomic(
+                    Type::getBool(),
+                ),
+            ]),
+            7 => new Union([
+                Type::getListAtomic(
+                    new Union([
+                        new TScalar(),
+                        new TNull(),
+                    ]),
+                ),
+            ]),
+            8 => new Union([
+                Type::getListAtomic(
+                    new Union([
+                        $fetch_class_name ? new TNamedObject($fetch_class_name) : new TObject(),
+                    ]),
+                ),
+            ]),
+            11 => new Union([
+                Type::getListAtomic(
+                    new Union([
+                        new TArray([
+                            Type::getString(),
+                            new Union([
+                                new TScalar(),
+                                new TNull(),
+                                Type::getListAtomic(
+                                    new Union([
+                                        new TScalar(),
+                                        new TNull(),
+                                    ]),
+                                ),
+                            ]),
                         ]),
-                    ),
-                ]);
-        }
-
-        return null;
+                    ]),
+                ),
+            ]),
+            12 => new Union([
+                new TArray([
+                    Type::getArrayKey(),
+                    new Union([
+                        new TScalar(),
+                        new TNull(),
+                    ]),
+                ]),
+            ]),
+            3 => new Union([
+                Type::getListAtomic(
+                    new Union([
+                        Type::getListAtomic(
+                            new Union([
+                                new TScalar(),
+                                new TNull(),
+                            ]),
+                        ),
+                    ]),
+                ),
+            ]),
+            5 => new Union([
+                Type::getListAtomic(
+                    new Union([
+                        new TNamedObject('stdClass'),
+                    ]),
+                ),
+            ]),
+            default => null,
+        };
     }
 }

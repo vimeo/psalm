@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
@@ -22,7 +24,7 @@ final class YieldFromAnalyzer
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\YieldFrom $stmt,
-        Context $context
+        Context $context,
     ): bool {
         $was_inside_call = $context->inside_call;
 
@@ -65,9 +67,9 @@ final class YieldFromAnalyzer
                     ) {
                         $yield_from_type = $atomic_type->type_params[3];
                     } elseif ($atomic_type instanceof TArray) {
-                        $yield_from_type = $atomic_type->type_params[1];
+                        $yield_from_type = Type::getNull();
                     } elseif ($atomic_type instanceof TKeyedArray) {
-                        $yield_from_type = $atomic_type->getGenericValueType();
+                        $yield_from_type = Type::getNull();
                     }
                 } else {
                     $yield_from_type = Type::getMixed();

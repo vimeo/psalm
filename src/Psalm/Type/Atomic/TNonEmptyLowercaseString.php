@@ -1,6 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
+
+use Override;
 
 /**
  * Denotes a non-empty-string where every character is lowercased. (which can also result from a `strtolower` call).
@@ -9,6 +13,7 @@ namespace Psalm\Type\Atomic;
  */
 final class TNonEmptyLowercaseString extends TNonEmptyString
 {
+    #[Override]
     public function getId(bool $exact = true, bool $nested = false): string
     {
         if (!$exact) {
@@ -21,6 +26,7 @@ final class TNonEmptyLowercaseString extends TNonEmptyString
     /**
      * @return false
      */
+    #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;

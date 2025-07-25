@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Cli;
 
 use AssertionError;
@@ -12,7 +14,6 @@ use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileStorageCacheProvider;
-use Psalm\Internal\Provider\ParserCacheProvider;
 use Psalm\Internal\Provider\ProjectCacheProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\IssueBuffer;
@@ -34,16 +35,14 @@ use function getcwd;
 use function getopt;
 use function implode;
 use function in_array;
-use function ini_set;
 use function is_array;
-use function is_numeric;
 use function is_string;
-use function max;
 use function microtime;
 use function preg_last_error_msg;
 use function preg_replace;
 use function preg_split;
 use function realpath;
+use function str_starts_with;
 use function strpos;
 use function substr;
 
@@ -68,7 +67,6 @@ final class Refactor
     public static function run(array $argv): void
     {
         CliUtils::checkRuntimeRequirements();
-        ini_set('memory_limit', '8192M');
 
         gc_collect_cycles();
         gc_disable();
@@ -80,16 +78,20 @@ final class Refactor
         $valid_short_options = ['f:', 'm', 'h', 'r:', 'c:'];
         $valid_long_options = [
             'help', 'debug', 'debug-by-line', 'debug-emitted-issues', 'config:', 'root:',
-            'threads:', 'move:', 'into:', 'rename:', 'to:',
+            'scan-threads:', 'threads:', 'move:', 'into:', 'rename:', 'to:',
         ];
 
         // get options from command line
         $options = getopt(implode('', $valid_short_options), $valid_long_options);
+        if ($options === false) {
+            fwrite(STDERR, 'Failed to parse cli options' . PHP_EOL);
+            exit(1);
+        }
 
         array_map(
             static function (string $arg) use ($valid_long_options): void {
-                if (strpos($arg, '--') === 0 && $arg !== '--') {
-                    $arg_name = preg_replace('/=.*$/', '', substr($arg, 2), 1);
+                if (str_starts_with($arg, '--') && $arg !== '--') {
+                    $arg_name = (string) preg_replace('/=.*$/', '', substr($arg, 2), 1);
 
                     if ($arg_name === 'refactor') {
                         // valid option for psalm, ignored by psalter
@@ -165,6 +167,7 @@ final class Refactor
         if (isset($options['root'])) {
             $options['r'] = $options['root'];
         }
+        CliUtils::setMemoryLimit($options);
 
         $current_dir = (string) getcwd();
 
@@ -303,17 +306,18 @@ final class Refactor
             chdir($current_dir);
         }
 
-        $threads = isset($options['threads']) && is_numeric($options['threads'])
-            ? (int)$options['threads']
-            : max(1, ProjectAnalyzer::getCpuCount() - 2);
+        $in_ci = CliUtils::runningInCI();
+
+        $threads = Psalm::getThreads($options, $config, $in_ci, false);
+        $scanThreads = Psalm::getThreads($options, $config, $in_ci, true);
 
         $providers = new Providers(
             new FileProvider(),
-            new ParserCacheProvider($config, false),
-            new FileStorageCacheProvider($config),
-            new ClassLikeStorageCacheProvider($config),
             null,
-            new ProjectCacheProvider(Composer::getLockFilePath($current_dir)),
+            new FileStorageCacheProvider($config, Composer::getLockFile($current_dir)),
+            new ClassLikeStorageCacheProvider($config, Composer::getLockFile($current_dir)),
+            null,
+            new ProjectCacheProvider(),
         );
 
         $debug = array_key_exists('debug', $options) || array_key_exists('debug-by-line', $options);
@@ -331,6 +335,7 @@ final class Refactor
             new ReportOptions(),
             [],
             $threads,
+            $scanThreads,
             $progress,
         );
 

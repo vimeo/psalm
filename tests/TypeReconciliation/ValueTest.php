@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\TypeReconciliation;
 
+use Override;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
@@ -12,11 +15,12 @@ use Psalm\Tests\TestConfig;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
-class ValueTest extends TestCase
+final class ValueTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    #[Override]
     public function setUp(): void
     {
         RuntimeCaches::clearAll();
@@ -34,6 +38,7 @@ class ValueTest extends TestCase
         $this->project_analyzer->setPhpVersion('7.3', 'tests');
     }
 
+    #[Override]
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -906,6 +911,7 @@ class ValueTest extends TestCase
         ];
     }
 
+    #[Override]
     public function providerInvalidCodeParse(): iterable
     {
         return [

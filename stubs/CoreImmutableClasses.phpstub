@@ -91,7 +91,7 @@ class DateTimeImmutable implements DateTimeInterface
      * @psalm-mutation-free
      * @return static
      */
-    public function setTimestamp(int $unixtimestamp) {}
+    public function setTimestamp(int $timestamp) {}
 
     /**
      * @psalm-mutation-free

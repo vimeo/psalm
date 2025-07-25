@@ -2,12 +2,6 @@
 # See https://app.circleci.com/pipelines/github/vimeo/psalm
 version: 2.1
 executors:
-  php-74:
-    docker:
-      - image: thecodingmachine/php:7.4-v4-cli
-  php-80:
-    docker:
-      - image: thecodingmachine/php:8.0-v4-cli
   php-81:
     docker:
       - image: thecodingmachine/php:8.1-v4-cli
@@ -16,7 +10,7 @@ executors:
       - image: thecodingmachine/php:8.2-v4-cli
 jobs:
   "Code Style Analysis":
-    executor: php-74
+    executor: php-81
     steps:
       - checkout
 
@@ -44,13 +38,13 @@ jobs:
           command: vendor/bin/phpcs -d memory_limit=512M
 
   phar-build:
-    executor: php-74
+    executor: php-82
     steps:
       - attach_workspace:
           at: /home/docker/project/
       - run:
           name: Build Phar file
-          command: bin/build-phar.sh
+          command: bin/ci/build-phar.sh
       - run:
           name: Smoke test Phar file
           # Change the root away from the project root to avoid conflicts with the Composer autoloader
@@ -77,13 +71,13 @@ jobs:
           at: /home/docker/project/
       - run:
           name: Analyse PHPUnit
-          command: bin/test-with-real-projects.sh phpunit
+          command: bin/ci/test-with-real-projects.sh phpunit
       - run:
           name: Analyse Psl
-          command: bin/test-with-real-projects.sh psl
+          command: bin/ci/test-with-real-projects.sh psl
       - run:
           name: Analyse Collections
-          command: bin/test-with-real-projects.sh collections
+          command: bin/ci/test-with-real-projects.sh collections
 
 # Orchestrate or schedule a set of jobs, see https://circleci.com/docs/2.0/workflows/
 workflows:

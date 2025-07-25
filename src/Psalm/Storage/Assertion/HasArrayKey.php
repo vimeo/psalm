@@ -1,8 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Storage\Assertion;
 
+use Override;
 use Psalm\Storage\Assertion;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use UnexpectedValueException;
 
 /**
@@ -10,13 +14,12 @@ use UnexpectedValueException;
  */
 final class HasArrayKey extends Assertion
 {
-    public $key;
-
-    public function __construct(string $key)
+    use UnserializeMemoryUsageSuppressionTrait;
+    public function __construct(public readonly string $key)
     {
-        $this->key = $key;
     }
 
+    #[Override]
     public function getNegation(): Assertion
     {
         throw new UnexpectedValueException('This should never be called');
@@ -27,6 +30,7 @@ final class HasArrayKey extends Assertion
         return 'has-array-key-' . $this->key;
     }
 
+    #[Override]
     public function isNegationOf(Assertion $assertion): bool
     {
         return false;
