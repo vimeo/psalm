@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use InvalidArgumentException;
@@ -25,7 +27,6 @@ use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
-use Psalm\Type\Atomic\TCallableArray;
 use Psalm\Type\Atomic\TCallableKeyedArray;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
@@ -33,7 +34,6 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
@@ -43,13 +43,15 @@ use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_diff;
 use function array_merge;
 use function array_values;
 use function count;
 use function explode;
 use function in_array;
+use function str_contains;
+use function str_ends_with;
 use function strlen;
-use function strpos;
 use function strtolower;
 use function substr;
 use function trim;
@@ -73,7 +75,7 @@ final class FunctionCallReturnTypeFetcher
         ?FunctionLikeStorage $function_storage,
         ?TCallable $callmap_callable,
         TemplateResult $template_result,
-        Context $context
+        Context $context,
     ): Union {
         $stmt_type = null;
         $config = $codebase->config;
@@ -234,7 +236,7 @@ final class FunctionCallReturnTypeFetcher
                             );
                         }
                     }
-                } catch (InvalidArgumentException $e) {
+                } catch (InvalidArgumentException) {
                     // this can happen when the function was defined in the Config startup script
                     $stmt_type = Type::getMixed();
                 }
@@ -265,6 +267,7 @@ final class FunctionCallReturnTypeFetcher
             $statements_analyzer,
             $stmt,
             $function_id,
+            $function_name->toCodeString(),
             $function_storage,
             $stmt_type,
             $template_result,
@@ -280,7 +283,7 @@ final class FunctionCallReturnTypeFetcher
 
                 $fake_call_factory = new BuilderFactory();
 
-                if (strpos($proxy_call['fqn'], '::') !== false) {
+                if (str_contains($proxy_call['fqn'], '::')) {
                     [$fqcn, $method] = explode('::', $proxy_call['fqn']);
                     $fake_call = $fake_call_factory->staticCall($fqcn, $method, $fake_call_arguments);
                 } else {
@@ -316,7 +319,7 @@ final class FunctionCallReturnTypeFetcher
         string $function_id,
         array $call_args,
         TCallable $callmap_callable,
-        Context $context
+        Context $context,
     ): Union {
         $call_map_key = strtolower($function_id);
 
@@ -361,12 +364,7 @@ final class FunctionCallReturnTypeFetcher
 
                         if (count($atomic_types) === 1) {
                             if (isset($atomic_types['array'])) {
-                                if ($atomic_types['array'] instanceof TList) {
-                                    $atomic_types['array'] = $atomic_types['array']->getKeyedArray();
-                                }
-                                if ($atomic_types['array'] instanceof TCallableArray
-                                    || $atomic_types['array'] instanceof TCallableKeyedArray
-                                ) {
+                                if ($atomic_types['array'] instanceof TCallableKeyedArray) {
                                     return Type::getInt(false, 2);
                                 }
 
@@ -539,10 +537,11 @@ final class FunctionCallReturnTypeFetcher
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\FuncCall $stmt,
         string $function_id,
+        string $cased_function_id,
         FunctionLikeStorage $function_storage,
         Union &$stmt_type,
         TemplateResult $template_result,
-        Context $context
+        Context $context,
     ): ?DataFlowNode {
         if (!$statements_analyzer->data_flow_graph) {
             return null;
@@ -564,13 +563,12 @@ final class FunctionCallReturnTypeFetcher
 
         $function_call_node = DataFlowNode::getForMethodReturn(
             $function_id,
-            $function_id,
+            $cased_function_id,
             $statements_analyzer->data_flow_graph instanceof TaintFlowGraph
                 ? ($function_storage->signature_return_type_location ?: $function_storage->location)
                 : ($function_storage->return_type_location ?: $function_storage->location),
             $function_storage->specialize_call ? $node_location : null,
         );
-
         $statements_analyzer->data_flow_graph->addNode($function_call_node);
 
         $codebase = $statements_analyzer->getCodebase();
@@ -621,9 +619,11 @@ final class FunctionCallReturnTypeFetcher
             $stmt_type = $stmt_type->addParentNodes([$function_call_node->id => $function_call_node]);
         }
 
-        if ($function_storage->return_source_params
-            && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph
-        ) {
+        if (!$statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+            return $function_call_node;
+        }
+
+        if ($function_storage->return_source_params) {
             $removed_taints = $function_storage->removed_taints;
 
             if ($function_id === 'preg_replace' && count($stmt->getArgs()) > 2) {
@@ -642,7 +642,7 @@ final class FunctionCallReturnTypeFetcher
                         $pattern = trim($pattern);
                         if ($pattern[0] === '['
                             && $pattern[1] === '^'
-                            && substr($pattern, -1) === ']'
+                            && str_ends_with($pattern, ']')
                         ) {
                             $pattern = substr($pattern, 2, -1);
 
@@ -664,30 +664,22 @@ final class FunctionCallReturnTypeFetcher
                 $codebase->config->eventDispatcher->dispatchRemoveTaints($event),
             );
 
-            self::taintUsingFlows(
-                $statements_analyzer,
-                $function_storage,
-                $statements_analyzer->data_flow_graph,
-                $function_id,
-                $stmt->getArgs(),
-                $node_location,
-                $function_call_node,
-                array_merge($removed_taints, $conditionally_removed_taints),
-                $added_taints,
-            );
+            if (!$stmt->isFirstClassCallable()) {
+                self::taintUsingFlows(
+                    $statements_analyzer,
+                    $function_storage,
+                    $statements_analyzer->data_flow_graph,
+                    $function_id,
+                    $stmt->getArgs(),
+                    $node_location,
+                    $function_call_node,
+                    array_merge($removed_taints, $conditionally_removed_taints),
+                    $added_taints,
+                );
+            }
         }
 
-        if ($function_storage->taint_source_types && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
-            $method_node = TaintSource::getForMethodReturn(
-                $function_id,
-                $function_id,
-                $node_location,
-            );
-
-            $method_node->taints = $function_storage->taint_source_types;
-
-            $statements_analyzer->data_flow_graph->addSource($method_node);
-        }
+        self::taintUsingStorage($function_storage, $statements_analyzer->data_flow_graph, $function_call_node);
 
         return $function_call_node;
     }
@@ -706,17 +698,16 @@ final class FunctionCallReturnTypeFetcher
         CodeLocation $node_location,
         DataFlowNode $function_call_node,
         array $removed_taints,
-        array $added_taints = []
+        array $added_taints = [],
     ): void {
         foreach ($function_storage->return_source_params as $i => $path_type) {
             if (!isset($args[$i])) {
                 continue;
             }
 
-            $current_arg_is_variadic = $function_storage->params[$i]->is_variadic;
             $taintable_arg_index = [$i];
 
-            if ($current_arg_is_variadic) {
+            if ($function_storage->params[$i]->is_variadic) {
                 $max_params = count($args) - 1;
                 for ($arg_index = $i + 1; $arg_index <= $max_params; $arg_index++) {
                     $taintable_arg_index[] = $arg_index;
@@ -747,6 +738,30 @@ final class FunctionCallReturnTypeFetcher
                     $removed_taints,
                 );
             }
+        }
+    }
+
+    public static function taintUsingStorage(
+        FunctionLikeStorage $function_storage,
+        TaintFlowGraph $graph,
+        DataFlowNode $function_call_node,
+    ): void {
+        // Docblock-defined taints should override inherited
+        $added_taints = [];
+        if ($function_storage->taint_source_types !== []) {
+            $added_taints = $function_storage->taint_source_types;
+        } elseif ($function_storage->added_taints !== []) {
+            $added_taints = $function_storage->added_taints;
+        }
+
+        $taints = array_diff(
+            $added_taints,
+            $function_storage->removed_taints,
+        );
+        if ($taints !== []) {
+            $taint_source = TaintSource::fromNode($function_call_node);
+            $taint_source->taints = $taints;
+            $graph->addSource($taint_source);
         }
     }
 

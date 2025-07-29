@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
@@ -12,6 +14,7 @@ use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Issue\DuplicateArrayKey;
@@ -29,7 +32,6 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -41,6 +43,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Union;
 
+use function array_diff;
 use function array_merge;
 use function array_values;
 use function count;
@@ -62,7 +65,7 @@ final class ArrayAnalyzer
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Array_ $stmt,
-        Context $context
+        Context $context,
     ): bool {
         // if the array is empty, this special type allows us to match any other array type against it
         if (count($stmt->items) === 0) {
@@ -242,13 +245,11 @@ final class ArrayAnalyzer
     }
 
     /**
-     * @param string|int $literal_array_key
-     * @return false|int
      * @psalm-assert-if-false !numeric $literal_array_key
      */
     public static function getLiteralArrayKeyInt(
-        $literal_array_key
-    ) {
+        string|int $literal_array_key,
+    ): false|int {
         if (is_int($literal_array_key)) {
             return $literal_array_key;
         }
@@ -277,8 +278,8 @@ final class ArrayAnalyzer
         StatementsAnalyzer $statements_analyzer,
         Context $context,
         ArrayCreationInfo $array_creation_info,
-        PhpParser\Node\Expr\ArrayItem $item,
-        Codebase $codebase
+        PhpParser\Node\ArrayItem $item,
+        Codebase $codebase,
     ): void {
         if ($item->unpack) {
             if (ExpressionAnalyzer::analyze($statements_analyzer, $item->value, $context) === false) {
@@ -442,6 +443,13 @@ final class ArrayAnalyzer
                     $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
                     $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
+                    $taints = array_diff($added_taints, $removed_taints);
+                    if ($taints !== [] && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+                        $taint_source = TaintSource::fromNode($new_parent_node);
+                        $taint_source->taints = $taints;
+                        $statements_analyzer->data_flow_graph->addSource($taint_source);
+                    }
+
                     foreach ($item_value_type->parent_nodes as $parent_node) {
                         $data_flow_graph->addPath(
                             $parent_node,
@@ -476,6 +484,13 @@ final class ArrayAnalyzer
 
                     $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
                     $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+
+                    $taints = array_diff($added_taints, $removed_taints);
+                    if ($taints !== [] && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+                        $taint_source = TaintSource::fromNode($new_parent_node);
+                        $taint_source->taints = $taints;
+                        $statements_analyzer->data_flow_graph->addSource($taint_source);
+                    }
 
                     foreach ($item_key_type->parent_nodes as $parent_node) {
                         $data_flow_graph->addPath(
@@ -550,17 +565,14 @@ final class ArrayAnalyzer
     private static function handleUnpackedArray(
         StatementsAnalyzer $statements_analyzer,
         ArrayCreationInfo $array_creation_info,
-        PhpParser\Node\Expr\ArrayItem $item,
+        PhpParser\Node\ArrayItem $item,
         Union $unpacked_array_type,
-        Codebase $codebase
+        Codebase $codebase,
     ): void {
         $all_non_empty = true;
 
         $has_possibly_undefined = false;
         foreach ($unpacked_array_type->getAtomicTypes() as $unpacked_atomic_type) {
-            if ($unpacked_atomic_type instanceof TList) {
-                $unpacked_atomic_type = $unpacked_atomic_type->getKeyedArray();
-            }
             if ($unpacked_atomic_type instanceof TKeyedArray) {
                 foreach ($unpacked_atomic_type->properties as $key => $property_value) {
                     if ($property_value->possibly_undefined) {

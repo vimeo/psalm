@@ -74,7 +74,7 @@ class Generator implements Traversable {
 interface ArrayAccess {
 
     /**
-     * Whether a offset exists
+     * Whether an offset exists
      * @link http://php.net/manual/en/arrayaccess.offsetexists.php
      *
      * @param TKey $offset An offset to check for.
@@ -501,9 +501,7 @@ final class WeakMap implements ArrayAccess, Countable, IteratorAggregate, Traver
      */
     public function offsetUnset($offset) {}
 
-    /**
-     * @return Traversable<TKey, TVal>
-     */
+    /** @return Traversable<TKey, TVal> */
     public function getIterator() { }
 }
 

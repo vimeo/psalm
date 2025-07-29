@@ -1,13 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
+use Override;
 use PhpParser\Node\Name;
 use PhpParser\Node\Stmt\Class_;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
 use Psalm\Exception\UnpopulatedClasslikeException;
+use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
 use Psalm\Issue\InvalidReturnStatement;
 use Psalm\Issue\InvalidReturnType;
 use Psalm\IssueBuffer;
@@ -16,7 +20,6 @@ use Psalm\Plugin\EventHandler\BeforeAddIssueInterface;
 use Psalm\Plugin\EventHandler\Event\AfterClassLikeVisitEvent;
 use Psalm\Plugin\EventHandler\Event\BeforeAddIssueEvent;
 use Psalm\PluginRegistrationSocket;
-use Psalm\Tests\Internal\Provider\ClassLikeStorageInstanceCacheProvider;
 use Psalm\Type;
 
 use function array_map;
@@ -26,10 +29,11 @@ use function getcwd;
 
 use const DIRECTORY_SEPARATOR;
 
-class CodebaseTest extends TestCase
+final class CodebaseTest extends TestCase
 {
     private Codebase $codebase;
 
+    #[Override]
     public function setUp(): void
     {
         parent::setUp();
@@ -152,6 +156,7 @@ class CodebaseTest extends TestCase
              * @return void
              * @phpcsSuppress SlevomatCodingStandard.TypeHints.ReturnTypeHint
              */
+            #[Override]
             public static function afterClassLikeVisit(AfterClassLikeVisitEvent $event)
             {
                 $stmt = $event->getStmt();
@@ -176,7 +181,7 @@ class CodebaseTest extends TestCase
         };
         (new PluginRegistrationSocket($this->codebase->config, $this->codebase))
             ->registerHooksFromClass(get_class($hook));
-        $this->codebase->classlike_storage_provider->cache = new ClassLikeStorageInstanceCacheProvider;
+        $this->codebase->classlike_storage_provider->cache = new ClassLikeStorageCacheProvider($this->codebase->config, '', false);
 
         $this->analyzeFile('somefile.php', new Context);
 
@@ -229,6 +234,7 @@ class CodebaseTest extends TestCase
 
         $eventHandler = new class implements BeforeAddIssueInterface
         {
+            #[Override]
             public static function beforeAddIssue(BeforeAddIssueEvent $event): ?bool
             {
                 $issue = $event->getIssue();
@@ -274,6 +280,7 @@ class CodebaseTest extends TestCase
         );
         $eventHandler = new class implements BeforeAddIssueInterface
         {
+            #[Override]
             public static function beforeAddIssue(BeforeAddIssueEvent $event): ?bool
             {
                 $issue = $event->getIssue();

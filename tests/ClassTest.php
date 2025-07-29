@@ -1,13 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
+use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use const DIRECTORY_SEPARATOR;
 
-class ClassTest extends TestCase
+final class ClassTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
@@ -41,6 +44,7 @@ class ClassTest extends TestCase
         );
     }
 
+    #[Override]
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -275,11 +279,13 @@ class ClassTest extends TestCase
             ],
             'typedMagicCall' => [
                 'code' => '<?php
+                    /** @psalm-no-seal-methods */
                     class B {
                         public function __call(string $methodName, array $args) : string {
                             return __METHOD__;
                         }
                     }
+                    /** @psalm-no-seal-methods */
                     class A {
                         public function __call(string $methodName, array $args) : B {
                             return new B;
@@ -339,7 +345,6 @@ class ClassTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [
                     'UndefinedClass',
-                    'MixedInferredReturnType',
                     'InvalidArgument',
                 ],
             ],
@@ -354,7 +359,6 @@ class ClassTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [
                     'UndefinedClass',
-                    'MixedInferredReturnType',
                     'InvalidArgument',
                 ],
             ],
@@ -449,7 +453,7 @@ class ClassTest extends TestCase
                         }
                     }',
             ],
-            'classAliasOnNonexistantClass' => [
+            'classAliasOnNonexistentClass' => [
                 'code' => '<?php
                     if (!class_exists(\PHPUnit\Framework\TestCase::class)) {
                         /** @psalm-suppress UndefinedClass */
@@ -943,6 +947,7 @@ class ClassTest extends TestCase
         ];
     }
 
+    #[Override]
     public function providerInvalidCodeParse(): iterable
     {
         return [
@@ -1156,7 +1161,7 @@ class ClassTest extends TestCase
                     class A extends A {}',
                 'error_message' => 'CircularReference',
             ],
-            'preventAbstractInstantiationDefiniteClasss' => [
+            'preventAbstractInstantiationDefiniteClass' => [
                 'code' => '<?php
                     abstract class A {}
 
@@ -1459,6 +1464,50 @@ class ClassTest extends TestCase
                     class BazClass implements InterFaceA, InterFaceB {}
                     PHP,
                 'error_message' => 'InheritorViolation',
+                'ignored_issues' => [],
+            ],
+            'duplicateInstanceProperties' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {
+                        public mixed $bar;
+                        public int $bar;
+                    }
+                    PHP,
+                'error_message' => 'DuplicateProperty',
+                'ignored_issues' => [],
+            ],
+            'duplicateStaticProperties' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {
+                        public static mixed $bar = null;
+                        public static string $bar = 'bar';
+                    }
+                    PHP,
+                'error_message' => 'DuplicateProperty',
+                'ignored_issues' => [],
+            ],
+            'duplicateMixedProperties' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {
+                        public bool $bar = true;
+                        public static bool $bar = false;
+                    }
+                    PHP,
+                'error_message' => 'DuplicateProperty',
+                'ignored_issues' => [],
+            ],
+            'duplicatePropertiesDifferentVisibility' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {
+                        public bool $bar;
+                        private string $bar;
+                    }
+                    PHP,
+                'error_message' => 'DuplicateProperty',
                 'ignored_issues' => [],
             ],
         ];

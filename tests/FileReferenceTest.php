@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
+use Override;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
@@ -13,10 +16,11 @@ use UnexpectedValueException;
 use function count;
 use function strpos;
 
-class FileReferenceTest extends TestCase
+final class FileReferenceTest extends TestCase
 {
     protected ProjectAnalyzer $project_analyzer;
 
+    #[Override]
     public function setUp(): void
     {
         RuntimeCaches::clearAll();
@@ -85,7 +89,7 @@ class FileReferenceTest extends TestCase
         array $expected_method_references_to_members,
         array $expected_method_references_to_missing_members,
         array $expected_file_references_to_members,
-        array $expected_file_references_to_missing_members
+        array $expected_file_references_to_missing_members,
     ): void {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {

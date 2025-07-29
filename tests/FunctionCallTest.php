@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
+use Override;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
@@ -9,11 +12,12 @@ use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use const DIRECTORY_SEPARATOR;
 
-class FunctionCallTest extends TestCase
+final class FunctionCallTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    #[Override]
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -968,7 +972,7 @@ class FunctionCallTest extends TestCase
                     '$porta' => 'false|int|null',
                     '$porte' => 'false|int|null',
                 ],
-                'ignored_issues' => ['MixedReturnStatement', 'MixedInferredReturnType'],
+                'ignored_issues' => ['MixedReturnStatement'],
             ],
             'parseUrlComponent' => [
                 'code' => '<?php
@@ -2465,6 +2469,7 @@ class FunctionCallTest extends TestCase
         ];
     }
 
+    #[Override]
     public function providerInvalidCodeParse(): iterable
     {
         return [

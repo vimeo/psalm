@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
+use Override;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
@@ -10,7 +13,7 @@ use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use const DIRECTORY_SEPARATOR;
 
-class ArrayAccessTest extends TestCase
+final class ArrayAccessTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
@@ -446,6 +449,7 @@ class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    #[Override]
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -676,7 +680,7 @@ class ArrayAccessTest extends TestCase
                     '$e' => 'DOMElement|null',
                 ],
             ],
-            'getOnArrayAcccess' => [
+            'getOnArrayAccess' => [
                 'code' => '<?php
                     /** @param ArrayAccess<int, string> $a */
                     function foo(ArrayAccess $a) : string {
@@ -1255,6 +1259,7 @@ class ArrayAccessTest extends TestCase
         ];
     }
 
+    #[Override]
     public function providerInvalidCodeParse(): iterable
     {
         return [

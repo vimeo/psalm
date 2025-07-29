@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 use InvalidArgumentException;
+use Override;
 use Psalm\Config;
 
 use function addcslashes;
@@ -17,8 +20,7 @@ use function strlen;
  */
 class TLiteralString extends TString
 {
-    /** @var string */
-    public $value;
+    public string $value;
 
     /**
      * Creates a literal string with a known value.
@@ -71,11 +73,13 @@ class TLiteralString extends TString
         return $cloned;
     }
 
+    #[Override]
     public function getKey(bool $include_extra = true): string
     {
         return 'string(' . $this->value . ')';
     }
 
+    #[Override]
     public function getId(bool $exact = true, bool $nested = false): string
     {
         if (!$exact) {
@@ -90,6 +94,7 @@ class TLiteralString extends TString
         return "'" . $no_newline_value . "'";
     }
 
+    #[Override]
     public function getAssertionString(): string
     {
         return 'string(' . $this->value . ')';
@@ -98,11 +103,12 @@ class TLiteralString extends TString
     /**
      * @param  array<lowercase-string, string> $aliased_classes
      */
+    #[Override]
     public function toNamespacedString(
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        bool $use_phpdoc_format
+        bool $use_phpdoc_format,
     ): string {
         return $use_phpdoc_format ? 'string' : "'" . $this->value . "'";
     }

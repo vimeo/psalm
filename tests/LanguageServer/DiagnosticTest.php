@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\LanguageServer;
 
-use Amp\Deferred;
+use Amp\DeferredFuture;
+use Override;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -12,25 +15,25 @@ use Psalm\Internal\LanguageServer\Message;
 use Psalm\Internal\LanguageServer\PathMapper;
 use Psalm\Internal\LanguageServer\Progress;
 use Psalm\Internal\Provider\FakeFileProvider;
+use Psalm\Internal\Provider\FileReferenceCacheProvider;
+use Psalm\Internal\Provider\ParserCacheProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\IssueBuffer;
 use Psalm\Tests\AsyncTestCase;
-use Psalm\Tests\Internal\Provider\FakeFileReferenceCacheProvider;
-use Psalm\Tests\Internal\Provider\ParserInstanceCacheProvider;
 use Psalm\Tests\Internal\Provider\ProjectCacheProvider;
 use Psalm\Tests\LanguageServer\Message as MessageBody;
 use Psalm\Tests\LanguageServer\MockProtocolStream;
 use Psalm\Tests\TestConfig;
 
-use function Amp\Promise\wait;
 use function getcwd;
 use function rand;
 
-class DiagnosticTest extends AsyncTestCase
+final class DiagnosticTest extends AsyncTestCase
 {
     protected Codebase $codebase;
     private int $increment = 0;
 
+    #[Override]
     public function setUp(): void
     {
         parent::setUp();
@@ -41,10 +44,10 @@ class DiagnosticTest extends AsyncTestCase
 
         $providers = new Providers(
             $this->file_provider,
-            new ParserInstanceCacheProvider(),
+            new ParserCacheProvider($config, '', false),
             null,
             null,
-            new FakeFileReferenceCacheProvider(),
+            new FileReferenceCacheProvider($config, '', false),
             new ProjectCacheProvider(),
         );
 
@@ -55,6 +58,7 @@ class DiagnosticTest extends AsyncTestCase
             $providers,
             null,
             [],
+            1,
             1,
             null,
             $this->codebase,
@@ -67,7 +71,7 @@ class DiagnosticTest extends AsyncTestCase
     public function testSnippetSupportDisabled(): void
     {
         // Create a new promisor
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
 
         $this->setTimeout(5000);
         $clientConfiguration = new ClientConfiguration();
@@ -87,14 +91,14 @@ class DiagnosticTest extends AsyncTestCase
             $this->codebase,
             $clientConfiguration,
             new Progress,
-            new PathMapper(getcwd(), getcwd()),
+            new PathMapper((string) getcwd(), (string) getcwd()),
         );
 
         $write->on('message', function (Message $message) use ($deferred, $server): void {
             /** @psalm-suppress NullPropertyFetch,PossiblyNullPropertyFetch,UndefinedPropertyFetch */
             if ($message->body->method === 'telemetry/event' && ($message->body->params->message ?? null) === 'initialized') {
                 $this->assertFalse($server->clientCapabilities->textDocument->completion->completionItem->snippetSupport);
-                $deferred->resolve(null);
+                $deferred->complete(null);
                 return;
             }
 
@@ -104,12 +108,12 @@ class DiagnosticTest extends AsyncTestCase
                 && ($message->body->params->value->message ?? null) === 'initialized'
             ) {
                 $this->assertFalse($server->clientCapabilities->textDocument->completion->completionItem->snippetSupport);
-                $deferred->resolve(null);
+                $deferred->complete(null);
                 return;
             }
         });
 
-        wait($deferred->promise());
+        $deferred->getFuture()->await();
     }
 
     /**

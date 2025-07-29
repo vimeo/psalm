@@ -1,9 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
+use Override;
 use Psalm\Codebase;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
@@ -17,36 +21,19 @@ use function implode;
  */
 final class TTemplateParam extends Atomic
 {
+    use UnserializeMemoryUsageSuppressionTrait;
     use HasIntersectionTrait;
-
-    /**
-     * @var string
-     */
-    public $param_name;
-
-    /**
-     * @var Union
-     */
-    public $as;
-
-    /**
-     * @var string
-     */
-    public $defining_class;
 
     /**
      * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties> $extra_types
      */
     public function __construct(
-        string $param_name,
-        Union $extends,
-        string $defining_class,
+        public string $param_name,
+        public Union $as,
+        public string $defining_class,
         array $extra_types = [],
-        bool $from_docblock = false
+        bool $from_docblock = false,
     ) {
-        $this->param_name = $param_name;
-        $this->as = $extends;
-        $this->defining_class = $defining_class;
         $this->extra_types = $extra_types;
         parent::__construct($from_docblock);
     }
@@ -64,6 +51,7 @@ final class TTemplateParam extends Atomic
         return $cloned;
     }
 
+    #[Override]
     public function getKey(bool $include_extra = true): string
     {
         if ($include_extra && $this->extra_types) {
@@ -73,11 +61,13 @@ final class TTemplateParam extends Atomic
         return $this->param_name . ':' . $this->defining_class;
     }
 
+    #[Override]
     public function getAssertionString(): string
     {
         return $this->as->getId();
     }
 
+    #[Override]
     public function getId(bool $exact = true, bool $nested = false): string
     {
         if (!$exact) {
@@ -99,11 +89,12 @@ final class TTemplateParam extends Atomic
      * @param  array<lowercase-string, string> $aliased_classes
      * @return null
      */
+    #[Override]
     public function toPhpString(
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $analysis_php_version_id
+        int $analysis_php_version_id,
     ): ?string {
         return null;
     }
@@ -111,11 +102,12 @@ final class TTemplateParam extends Atomic
     /**
      * @param  array<lowercase-string, string> $aliased_classes
      */
+    #[Override]
     public function toNamespacedString(
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        bool $use_phpdoc_format
+        bool $use_phpdoc_format,
     ): string {
         if ($use_phpdoc_format) {
             return $this->as->toNamespacedString(
@@ -136,11 +128,13 @@ final class TTemplateParam extends Atomic
         return $this->param_name . $intersection_types;
     }
 
+    #[Override]
     protected function getChildNodeKeys(): array
     {
         return ['as', 'extra_types'];
     }
 
+    #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
@@ -149,9 +143,10 @@ final class TTemplateParam extends Atomic
     /**
      * @return static
      */
+    #[Override]
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
-        ?Codebase $codebase
+        ?Codebase $codebase,
     ): self {
         $intersection = $this->replaceIntersectionTemplateTypesWithArgTypes($template_result, $codebase);
         if (!$intersection) {

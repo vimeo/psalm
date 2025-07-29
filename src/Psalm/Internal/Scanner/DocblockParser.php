@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Scanner;
 
 use Psalm\Exception\DocblockParseException;
@@ -17,7 +19,10 @@ use function min;
 use function preg_match;
 use function preg_replace;
 use function rtrim;
+use function str_contains;
+use function str_ends_with;
 use function str_replace;
+use function str_starts_with;
 use function strlen;
 use function strpos;
 use function strspn;
@@ -42,21 +47,21 @@ final class DocblockParser
         // Strip off comments.
         $docblock = trim($docblock);
 
-        if (strpos($docblock, '/**') === 0) {
+        if (str_starts_with($docblock, '/**')) {
             $docblock = substr($docblock, 3);
         }
 
-        if (substr($docblock, -2) === '*/') {
+        if (str_ends_with($docblock, '*/')) {
             $docblock = substr($docblock, 0, -2);
 
-            if (substr($docblock, -1) === '*') {
+            if (str_ends_with($docblock, '*')) {
                 $docblock = substr($docblock, 0, -1);
             }
         }
 
         // Normalize multi-line @specials.
         $lines = explode("\n", str_replace("\t", ' ', $docblock));
-        $has_r = strpos($docblock, "\r") === false ? false : true;
+        $has_r = !str_contains($docblock, "\r") ? false : true;
 
         $special = [];
 
@@ -64,7 +69,7 @@ final class DocblockParser
 
         $last = false;
         foreach ($lines as $k => $line) {
-            if (strpos($line, '@') !== false && preg_match('/^ *\*?\s*@\w/', $line)) {
+            if (str_contains($line, '@') && preg_match('/^ *\*?\s*@\w/', $line)) {
                 $last = $k;
             } elseif (trim($line) === '') {
                 $last = false;
@@ -101,8 +106,8 @@ final class DocblockParser
                 [$type] = $type_info;
                 [$data, $data_offset] = $data_info;
 
-                if (strpos($data, '*') !== false) {
-                    $data = rtrim(preg_replace('/^ *\*\s*$/m', '', $data));
+                if (str_contains($data, '*')) {
+                    $data = rtrim((string) preg_replace('/^ *\*\s*$/m', '', $data));
                 }
 
                 if (empty($special[$type])) {

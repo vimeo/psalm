@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Block\IfElse;
 
 use PhpParser;
@@ -21,6 +23,7 @@ use Psalm\Issue\ConflictingReferenceConstraint;
 use Psalm\IssueBuffer;
 use Psalm\Type\Reconciler;
 
+use function array_any;
 use function array_combine;
 use function array_diff;
 use function array_diff_key;
@@ -52,7 +55,7 @@ final class ElseIfAnalyzer
         Context $else_context,
         Context $outer_context,
         Codebase $codebase,
-        int $branch_point
+        int $branch_point,
     ): ?bool {
         $pre_conditional_context = clone $else_context;
 
@@ -69,7 +72,7 @@ final class ElseIfAnalyzer
             $elseif_context = $if_conditional_scope->if_context;
             $cond_referenced_var_ids = $if_conditional_scope->cond_referenced_var_ids;
             $assigned_in_conditional_var_ids = $if_conditional_scope->assigned_in_conditional_var_ids;
-        } catch (ScopeAnalysisException $e) {
+        } catch (ScopeAnalysisException) {
             return false;
         }
 
@@ -92,6 +95,10 @@ final class ElseIfAnalyzer
             $codebase,
         );
 
+        if (count($elseif_clauses) > 200) {
+            $elseif_clauses = [];
+        }
+
         $elseif_clauses_handled = [];
 
         foreach ($elseif_clauses as $clause) {
@@ -101,7 +108,7 @@ final class ElseIfAnalyzer
             foreach ($keys as $key) {
                 foreach ($mixed_var_ids as $mixed_var_id) {
                     if (preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
-                        $elseif_clauses_handled[] = new Clause([], $elseif_cond_id, $elseif_cond_id, true);
+                        $clause = new Clause([], $elseif_cond_id, $elseif_cond_id, true);
                         break 2;
                     }
                 }
@@ -118,7 +125,7 @@ final class ElseIfAnalyzer
             foreach ($c->possibilities as $key => $_value) {
                 foreach ($assigned_in_conditional_var_ids as $conditional_assigned_var_id => $_) {
                     if (preg_match('/^'.preg_quote($conditional_assigned_var_id, '/').'(\[|-|$)/', $key)) {
-                        $entry_clauses[] =  new Clause([], $elseif_cond_id, $elseif_cond_id, true);
+                        $c =  new Clause([], $elseif_cond_id, $elseif_cond_id, true);
                         break 2;
                     }
                 }
@@ -136,25 +143,27 @@ final class ElseIfAnalyzer
             $assigned_in_conditional_var_ids,
         );
 
-        $elseif_context_clauses = [...$entry_clauses, ...$elseif_clauses];
+        $elseif_clauses = Algebra::simplifyCNF($elseif_clauses);
+
+        $elseif_context->clauses = $entry_clauses
+            ? Algebra::simplifyCNF([...$entry_clauses, ...$elseif_clauses])
+            : $elseif_clauses;
 
         if ($elseif_context->reconciled_expression_clauses) {
             $reconciled_expression_clauses = $elseif_context->reconciled_expression_clauses;
 
-            $elseif_context_clauses = array_values(
+            $elseif_context->clauses = array_values(
                 array_filter(
-                    $elseif_context_clauses,
+                    $elseif_context->clauses,
                     static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses, true),
                 ),
             );
         }
 
-        $elseif_context->clauses = Algebra::simplifyCNF($elseif_context_clauses);
-
         $active_elseif_types = [];
 
         try {
-            if (array_filter(
+            if (array_any(
                 $entry_clauses,
                 static fn(Clause $clause): bool => (bool) $clause->possibilities,
             )) {
@@ -186,7 +195,7 @@ final class ElseIfAnalyzer
             $negated_elseif_types = Algebra::getTruthsFromFormula(
                 Algebra::negateFormula($elseif_clauses),
             );
-        } catch (ComplicatedExpressionException $e) {
+        } catch (ComplicatedExpressionException) {
             $reconcilable_elseif_types = [];
             $negated_elseif_types = [];
         }
@@ -371,25 +380,25 @@ final class ElseIfAnalyzer
 
             if ($has_leaving_statements && $elseif_context->loop_scope) {
                 if (!$has_continue_statement && !$has_break_statement) {
-                    $if_scope->new_vars_possibly_in_scope = array_merge(
-                        $vars_possibly_in_scope,
-                        $if_scope->new_vars_possibly_in_scope,
-                    );
+                    $if_scope->new_vars_possibly_in_scope = [
+                        ...$vars_possibly_in_scope,
+                        ...$if_scope->new_vars_possibly_in_scope,
+                    ];
                     $if_scope->possibly_assigned_var_ids = array_merge(
                         $possibly_assigned_var_ids,
                         $if_scope->possibly_assigned_var_ids,
                     );
                 }
 
-                $elseif_context->loop_scope->vars_possibly_in_scope = array_merge(
-                    $vars_possibly_in_scope,
-                    $elseif_context->loop_scope->vars_possibly_in_scope,
-                );
+                $elseif_context->loop_scope->vars_possibly_in_scope = [
+                    ...$vars_possibly_in_scope,
+                    ...$elseif_context->loop_scope->vars_possibly_in_scope,
+                ];
             } elseif (!$has_leaving_statements) {
-                $if_scope->new_vars_possibly_in_scope = array_merge(
-                    $vars_possibly_in_scope,
-                    $if_scope->new_vars_possibly_in_scope,
-                );
+                $if_scope->new_vars_possibly_in_scope = [
+                    ...$vars_possibly_in_scope,
+                    ...$if_scope->new_vars_possibly_in_scope,
+                ];
                 $if_scope->possibly_assigned_var_ids = array_merge(
                     $possibly_assigned_var_ids,
                     $if_scope->possibly_assigned_var_ids,
@@ -405,7 +414,7 @@ final class ElseIfAnalyzer
             $if_scope->negated_clauses = Algebra::simplifyCNF(
                 [...$if_scope->negated_clauses, ...Algebra::negateFormula($elseif_clauses)],
             );
-        } catch (ComplicatedExpressionException $e) {
+        } catch (ComplicatedExpressionException) {
             $if_scope->negated_clauses = [];
         }
 

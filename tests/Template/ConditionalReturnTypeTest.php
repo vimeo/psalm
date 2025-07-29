@@ -1,14 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\Template;
 
+use Override;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
-class ConditionalReturnTypeTest extends TestCase
+final class ConditionalReturnTypeTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
 
+    #[Override]
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -461,6 +465,31 @@ class ConditionalReturnTypeTest extends TestCase
                     '$c' => 'string',
                 ],
             ],
+            'InheritFuncNumArgs' => [
+                'code' => '<?php
+                    abstract class A
+                    {
+                        /**
+                         * @psalm-return (func_num_args() is 1 ? string : int)
+                         */
+                        public static function get(bool $a, ?bool $b = null)
+                        {
+                            if ($b) {
+                                return 1;
+                            }
+                            return "";
+                        }
+                    }
+
+                    class B extends A
+                    {
+
+                        public static function getB(bool $a): int
+                        {
+                            return self::get($a, true);
+                        }
+                    }',
+            ],
             'namespaceFuncNumArgs' => [
                 'code' => '<?php
                     namespace Foo;
@@ -652,7 +681,7 @@ class ConditionalReturnTypeTest extends TestCase
                     '$expect_mixed_from_literal' => 'mixed',
                 ],
             ],
-            'isArryCheckOnTemplate' => [
+            'isArrayCheckOnTemplate' => [
                 'code' => '<?php
                     /**
                      * @template TResult as string|list<string>
@@ -885,71 +914,38 @@ class ConditionalReturnTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '7.2',
             ],
-            'ineritedConditionalTemplatedReturnType' => [
+            'ineritedreturnTypeBasedOnPhpVersionId' => [
                 'code' => '<?php
-                    /** @template InstanceType */
-                    interface ContainerInterface
+                    class A {
+                    /**
+                     * @psalm-return (PHP_VERSION_ID is int<70300, max> ? string : int)
+                     */
+                    function getSomething()
                     {
-                        /**
-                         * @template TRequestedInstance extends InstanceType
-                         * @param class-string<TRequestedInstance>|string $name
-                         * @return ($name is class-string ? TRequestedInstance : InstanceType)
-                         */
-                        public function build(string $name): mixed;
+                        return mt_rand(1, 10) > 5 ? "a value" : 42;
                     }
 
                     /**
-                     * @template InstanceType
-                     * @template-implements ContainerInterface<InstanceType>
+                     * @psalm-return (PHP_VERSION_ID is int<70100, max> ? string : int)
                      */
-                    abstract class MixedContainer implements ContainerInterface
+                    function getSomethingElse()
                     {
-                        /** @param InstanceType $instance */
-                        public function __construct(private readonly mixed $instance)
-                        {}
-
-                        public function build(string $name): mixed
-                        {
-                            return $this->instance;
-                        }
+                        return mt_rand(1, 10) > 5 ? "a value" : 42;
+                    }
                     }
 
-                    /**
-                     * @template InstanceType of object
-                     * @template-extends MixedContainer<InstanceType>
-                     */
-                    abstract class ObjectContainer extends MixedContainer
-                    {
-                        public function build(string $name): object
-                        {
-                            return parent::build($name);
-                        }
-                    }
+                    class B extends A {}
 
-                    /** @template-extends ObjectContainer<stdClass> */
-                    final class SpecificObjectContainer extends ObjectContainer
-                    {
-                    }
-
-                    final class SpecificObject extends stdClass {}
-
-                    $container = new SpecificObjectContainer(new stdClass());
-                    $object = $container->build(SpecificObject::class);
-                    $nonSpecificObject = $container->build("whatever");
-
-                    /** @var ObjectContainer<object> $container */
-                    $container = null;
-                    $justObject = $container->build("whatever");
-                    $specificObject = $container->build(stdClass::class);
+                    $class = new B();
+                    $something = $class->getSomething();
+                    $somethingElse = $class->getSomethingElse();
                 ',
                 'assertions' => [
-                    '$object===' => 'SpecificObject',
-                    '$nonSpecificObject===' => 'stdClass',
-                    '$justObject===' => 'object',
-                    '$specificObject===' => 'stdClass',
+                    '$something' => 'int',
+                    '$somethingElse' => 'string',
                 ],
                 'ignored_issues' => [],
-                'php_version' => '8.1',
+                'php_version' => '7.2',
             ],
             'nonEmptyLiteralString' => [
                 'code' => '<?php
@@ -976,6 +972,128 @@ class ConditionalReturnTypeTest extends TestCase
                 'assertions' => [
                     '$something' => 'int|string',
                     '$something2' => 'string',
+                ],
+                'ignored_issues' => [],
+            ],
+            'lowercaseStringIsNotNonEmptyWithUnion' => [
+                'code' => '<?php
+                    /**
+                     * @param string|int $stringOrInt
+                     * @psalm-return ($stringOrInt is (non-empty-string)|int ? string : int)
+                     */
+                    function getSomething($stringOrInt)
+                    {
+                        if (!$stringOrInt) {
+                            return 1;
+                        }
+                        return "";
+                    }
+                    /** @var string $string */
+                    $string;
+                    $something = getSomething($string);
+                    /** @var non-empty-string $nonEmptyString */
+                    $nonEmptyString;
+                    $something2 = getSomething($nonEmptyString);
+                ',
+                'assertions' => [
+                    '$something' => 'int|string',
+                    '$something2' => 'string',
+                ],
+                'ignored_issues' => [],
+            ],
+            'literalStringIsNotNonEmpty' => [
+                'code' => '<?php
+                    /**
+                     * @param literal-string $literalString
+                     * @psalm-return ($literalString is non-empty-string ? string : int)
+                     */
+                    function getSomething(string $literalString)
+                    {
+                        if (!$literalString) {
+                            return 1;
+                        }
+                        return "";
+                    }
+                    /** @var literal-string $literalString */
+                    $literalString;
+                    $something = getSomething($literalString);
+                    /** @var non-empty-literal-string $nonEmptyliteralString */
+                    $nonEmptyliteralString;
+                    $something2 = getSomething($nonEmptyliteralString);
+                ',
+                'assertions' => [
+                    '$something' => 'int|string',
+                    '$something2' => 'string',
+                ],
+                'ignored_issues' => [],
+            ],
+            'literalStringIsNotNonEmptyWithUnion' => [
+                'code' => '<?php
+                    /**
+                     * @param literal-string|int $literalStringOrInt
+                     * @psalm-return ($literalStringOrInt is non-empty-string|int ? string : int)
+                     */
+                    function getSomething($literalStringOrInt)
+                    {
+                        if (!$literalStringOrInt) {
+                            return 1;
+                        }
+                        return "";
+                    }
+                    /** @var literal-string $literalString */
+                    $literalString;
+                    $something = getSomething($literalString);
+                    /** @var non-empty-literal-string $nonEmptyliteralString */
+                    $nonEmptyliteralString;
+                    $something2 = getSomething($nonEmptyliteralString);
+                ',
+                'assertions' => [
+                    '$something' => 'int|string',
+                    '$something2' => 'string',
+                ],
+                'ignored_issues' => [],
+            ],
+            'lowercaseStringAndNotEmpty' => [
+                'code' => '<?php
+                    /**
+                     * @param lowercase-string $string
+                     * @psalm-return ($string is non-empty-string ? string : int)
+                     */
+                    function lowercaseIsNonEmpty($string)
+                    {
+                        if (!$string) {
+                            return 1;
+                        }
+                        return "";
+                    }
+                    /**
+                     * @param lowercase-string $string
+                     * @psalm-return ($string is non-empty-lowercase-string ? string : int)
+                     */
+                    function lowercaseIsNonEmptyLowercase($string)
+                    {
+                        if (!$string) {
+                            return 1;
+                        }
+                        return "";
+                    }
+
+                    /** @var lowercase-string $lowercaseString */
+                    $lowercaseString;
+                    /** @var non-empty-lowercase-string $nonEmptyLowercaseString */
+                    $nonEmptyLowercaseString;
+
+                    $lowercaseString1 = lowercaseIsNonEmpty($lowercaseString);
+                    $lowercaseString2 = lowercaseIsNonEmptyLowercase($lowercaseString);
+
+                    $nonEmptyLowercaseString1 = lowercaseIsNonEmpty($nonEmptyLowercaseString);
+                    $nonEmptyLowercaseString2 = lowercaseIsNonEmptyLowercase($nonEmptyLowercaseString);
+                ',
+                'assertions' => [
+                    '$lowercaseString1' => 'int|string',
+                    '$lowercaseString2' => 'int|string',
+                    '$nonEmptyLowercaseString1' => 'string',
+                    '$nonEmptyLowercaseString2' => 'string',
                 ],
                 'ignored_issues' => [],
             ],

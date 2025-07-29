@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
+use Override;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
@@ -10,7 +13,7 @@ use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use const DIRECTORY_SEPARATOR;
 
-class BinaryOperationTest extends TestCase
+final class BinaryOperationTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
@@ -193,7 +196,7 @@ class BinaryOperationTest extends TestCase
     public function testStrictTrueEquivalence(): void
     {
         $config = Config::getInstance();
-        $config->strict_binary_operands = true;
+        $config->allow_bool_to_literal_bool_comparison = false;
 
         $this->addFile(
             'somefile.php',
@@ -216,7 +219,7 @@ class BinaryOperationTest extends TestCase
     public function testStringFalseInequivalence(): void
     {
         $config = Config::getInstance();
-        $config->strict_binary_operands = true;
+        $config->allow_bool_to_literal_bool_comparison = false;
 
         $this->addFile(
             'somefile.php',
@@ -272,7 +275,7 @@ class BinaryOperationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    public function testConcatenationWithNumberInStrictMode(): void
+    public function testConcatenationWithIntInStrictMode(): void
     {
         $config = Config::getInstance();
         $config->strict_binary_operands = true;
@@ -283,6 +286,71 @@ class BinaryOperationTest extends TestCase
                     $a = "hi" . 5;',
         );
 
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testConcatenationWithArrayKeyInStrictMode(): void
+    {
+        $config = Config::getInstance();
+        $config->strict_binary_operands = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    interface I {
+                        /** @return array-key */
+                        public function t();
+                    }
+
+                    function test(I $i): void {
+                        $a = "hi" . $i->t();
+                    }
+                    ',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testConcatenationWithAllowedUnionTypeInStrictMode(): void
+    {
+        $config = Config::getInstance();
+        $config->strict_binary_operands = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    interface I {
+                        /** @return int|string */
+                        public function t();
+                    }
+
+                    function test(I $i): void {
+                        $a = "hi" . $i->t();
+                    }
+                    ',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testConcatenationWithBadUnionTypeInStrictMode(): void
+    {
+        $config = Config::getInstance();
+        $config->strict_binary_operands = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    interface I {
+                        /** @return int|float */
+                        public function t();
+                    }
+
+                    function test(I $i): void {
+                        $a = "hi" . $i->t();
+                    }
+                    ',
+        );
         $this->expectException(CodeException::class);
         $this->expectExceptionMessage('InvalidOperand');
 
@@ -313,6 +381,7 @@ class BinaryOperationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    #[Override]
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -588,6 +657,44 @@ class BinaryOperationTest extends TestCase
                 'assertions' => [
                     '$a' => 'float',
                     '$b' => 'float',
+                ],
+            ],
+            'intArithmeticAssignmentAdditionFromFunction' => [
+                'code' => '<?php
+                    function intFunc(): int {
+                        return 5;
+                    }
+                    $a = 1;
+                    $a += intFunc();',
+                'assertions' => [
+                    '$a===' => 'int',
+                ],
+            ],
+            'intArithmeticAssignmentAddition' => [
+                'code' => '<?php
+                    $a = 1;
+                    $a += 5;',
+                'assertions' => [
+                    '$a===' => '6',
+                ],
+            ],
+            'intArithmeticAssignmentSubtractionFromFunction' => [
+                'code' => '<?php
+                    function intFunc(): int {
+                        return 5;
+                    }
+                    $a = 8;
+                    $a -= intFunc();',
+                'assertions' => [
+                    '$a===' => 'int',
+                ],
+            ],
+            'intArithmeticAssignmentSubtraction' => [
+                'code' => '<?php
+                    $a = 8;
+                    $a -= 5;',
+                'assertions' => [
+                    '$a===' => '3',
                 ],
             ],
             'exponent' => [
@@ -962,6 +1069,40 @@ class BinaryOperationTest extends TestCase
                     '$b' => 'float|int',
                 ],
             ],
+            'incrementInLoop' => [
+                'code' => '<?php
+                    for ($i = 0; $i < 10; $i++) {
+                        if (rand(0,1)) {
+                            break;
+                        }
+                    }
+                    for ($j = 100; $j < 110; $j++) {
+                        if (rand(0,1)) {
+                            break;
+                        }
+                    }',
+                'assertions' => [
+                    '$i' => 'int<0, 10>',
+                    '$j' => 'int<100, 110>',
+                ],
+            ],
+            'decrementInLoop' => [
+                'code' => '<?php
+                    for ($i = 10; $i > 0; $i--) {
+                        if (rand(0,1)) {
+                            break;
+                        }
+                    }
+                    for ($j = 110; $j > 100; $j--) {
+                        if (rand(0,1)) {
+                            break;
+                        }
+                    }',
+                'assertions' => [
+                    '$i' => 'int<0, 10>',
+                    '$j' => 'int<100, 110>',
+                ],
+            ],
             'coalesceFilterOutNullEvenWithTernary' => [
                 'code' => '<?php
 
@@ -1086,6 +1227,7 @@ class BinaryOperationTest extends TestCase
         ];
     }
 
+    #[Override]
     public function providerInvalidCodeParse(): iterable
     {
         return [

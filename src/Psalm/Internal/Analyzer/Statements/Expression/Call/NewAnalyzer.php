@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use PhpParser;
@@ -19,6 +21,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\DataFlow\TaintSink;
+use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
@@ -58,6 +61,7 @@ use Psalm\Type\Atomic\TUnknownClassString;
 use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 
+use function array_diff;
 use function array_map;
 use function array_values;
 use function count;
@@ -76,7 +80,7 @@ final class NewAnalyzer extends CallAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\New_ $stmt,
         Context $context,
-        ?TemplateResult $template_result = null
+        ?TemplateResult $template_result = null,
     ): bool {
         $fq_class_name = null;
 
@@ -310,7 +314,7 @@ final class NewAnalyzer extends CallAnalyzer
         string $fq_class_name,
         bool $from_static,
         bool $can_extend,
-        ?TemplateResult $template_result = null
+        ?TemplateResult $template_result = null,
     ): void {
         $storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
@@ -353,7 +357,7 @@ final class NewAnalyzer extends CallAnalyzer
         if ($storage->abstract && !$can_extend) {
             if (IssueBuffer::accepts(
                 new AbstractInstantiation(
-                    'Unable to instantiate a abstract class ' . $fq_class_name,
+                    'Unable to instantiate an abstract class ' . $fq_class_name,
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
@@ -688,7 +692,7 @@ final class NewAnalyzer extends CallAnalyzer
         PhpParser\Node\Expr $stmt_class,
         Config $config,
         ?string &$fq_class_name,
-        bool &$can_extend
+        bool &$can_extend,
     ): void {
         $was_inside_general_use = $context->inside_general_use;
         $context->inside_general_use = true;
@@ -737,6 +741,13 @@ final class NewAnalyzer extends CallAnalyzer
 
                 $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
                 $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+
+                $taints = array_diff($added_taints, $removed_taints);
+                if ($added_taints !== []) {
+                    $taint_source = TaintSource::fromNode($custom_call_sink);
+                    $taint_source->taints = $taints;
+                    $statements_analyzer->data_flow_graph->addSource($taint_source);
+                }
 
                 foreach ($stmt_class_type->parent_nodes as $parent_node) {
                     $statements_analyzer->data_flow_graph->addPath(
@@ -795,7 +806,7 @@ final class NewAnalyzer extends CallAnalyzer
         PhpParser\Node\Expr\New_ $stmt,
         Union $stmt_class_type,
         Config $config,
-        bool &$can_extend
+        bool &$can_extend,
     ): ?Union {
         $new_types = [];
 

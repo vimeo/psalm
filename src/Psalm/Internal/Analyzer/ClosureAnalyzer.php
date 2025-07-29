@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer;
 
+use Override;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -12,6 +15,7 @@ use Psalm\Issue\DuplicateParam;
 use Psalm\Issue\PossiblyUndefinedVariable;
 use Psalm\Issue\UndefinedVariable;
 use Psalm\IssueBuffer;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
@@ -19,7 +23,7 @@ use Psalm\Type\Union;
 use function in_array;
 use function is_string;
 use function preg_match;
-use function strpos;
+use function str_starts_with;
 use function strtolower;
 
 /**
@@ -28,6 +32,7 @@ use function strtolower;
  */
 final class ClosureAnalyzer extends FunctionLikeAnalyzer
 {
+    use UnserializeMemoryUsageSuppressionTrait;
     /**
      * @param PhpParser\Node\Expr\Closure|PhpParser\Node\Expr\ArrowFunction $function
      */
@@ -47,6 +52,7 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
 
 
     /** @psalm-mutation-free */
+    #[Override]
     public function getTemplateTypeMap(): ?array
     {
         return $this->source->getTemplateTypeMap();
@@ -69,7 +75,7 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
     public static function analyzeExpression(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\FunctionLike $stmt,
-        Context $context
+        Context $context,
     ): bool {
         $closure_analyzer = new ClosureAnalyzer($stmt, $statements_analyzer);
 
@@ -101,7 +107,7 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
         }
 
         foreach ($context->vars_in_scope as $var => $type) {
-            if (strpos($var, '$this->') === 0) {
+            if (str_starts_with($var, '$this->')) {
                 $use_context->vars_in_scope[$var] = $type;
             }
         }
@@ -119,7 +125,7 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
         }
 
         foreach ($context->vars_possibly_in_scope as $var => $_) {
-            if (strpos($var, '$this->') === 0) {
+            if (str_starts_with($var, '$this->')) {
                 $use_context->vars_possibly_in_scope[$var] = true;
             }
         }
@@ -230,7 +236,7 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
     private static function analyzeClosureUses(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Closure $stmt,
-        Context $context
+        Context $context,
     ): ?bool {
         $param_names = [];
 

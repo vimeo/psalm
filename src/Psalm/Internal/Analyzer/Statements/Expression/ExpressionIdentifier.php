@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
@@ -23,7 +25,7 @@ final class ExpressionIdentifier
         PhpParser\Node\Expr $stmt,
         ?string $this_class_name,
         ?FileSource $source = null,
-        ?int &$nesting = null
+        ?int &$nesting = null,
     ): ?string {
         if ($stmt instanceof PhpParser\Node\Expr\Variable && is_string($stmt->name)) {
             return '$' . $stmt->name;
@@ -75,7 +77,7 @@ final class ExpressionIdentifier
     public static function getRootVarId(
         PhpParser\Node\Expr $stmt,
         ?string $this_class_name,
-        ?FileSource $source = null
+        ?FileSource $source = null,
     ): ?string {
         if ($stmt instanceof PhpParser\Node\Expr\Variable
             || $stmt instanceof PhpParser\Node\Expr\StaticPropertyFetch
@@ -101,7 +103,7 @@ final class ExpressionIdentifier
     public static function getExtendedVarId(
         PhpParser\Node\Expr $stmt,
         ?string $this_class_name,
-        ?FileSource $source = null
+        ?FileSource $source = null,
     ): ?string {
         if ($stmt instanceof PhpParser\Node\Expr\Assign) {
             return self::getExtendedVarId($stmt->var, $this_class_name, $source);
@@ -114,7 +116,7 @@ final class ExpressionIdentifier
 
             if ($root_var_id) {
                 if ($stmt->dim instanceof PhpParser\Node\Scalar\String_
-                    || $stmt->dim instanceof PhpParser\Node\Scalar\LNumber
+                    || $stmt->dim instanceof PhpParser\Node\Scalar\Int_
                 ) {
                     $string_to_int = ArrayAnalyzer::getLiteralArrayKeyInt($stmt->dim->value);
                     $offset = $string_to_int === false

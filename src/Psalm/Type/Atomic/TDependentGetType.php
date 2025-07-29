@@ -1,6 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
+
+use Override;
 
 /**
  * Represents a string whose value is that of a type found by gettype($var)
@@ -10,21 +14,14 @@ namespace Psalm\Type\Atomic;
 final class TDependentGetType extends TString
 {
     /**
-     * Used to hold information as to what this refers to
-     *
-     * @var string
-     */
-    public $typeof;
-
-    /**
      * @param string $typeof the variable id
      */
-    public function __construct(string $typeof)
+    public function __construct(public string $typeof)
     {
-        $this->typeof = $typeof;
         parent::__construct(false);
     }
 
+    #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;

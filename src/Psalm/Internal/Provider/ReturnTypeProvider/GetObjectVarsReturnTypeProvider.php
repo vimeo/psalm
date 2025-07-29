@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use Override;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassAnalyzer;
@@ -23,8 +24,6 @@ use Psalm\Type\Union;
 use UnitEnum;
 use stdClass;
 
-use function is_int;
-use function is_string;
 use function reset;
 use function strtolower;
 
@@ -33,6 +32,7 @@ use function strtolower;
  */
 final class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
+    #[Override]
     public static function getFunctionIds(): array
     {
         return ['get_object_vars'];
@@ -47,7 +47,7 @@ final class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProvide
         Union $first_arg_type,
         SourceAnalyzer $statements_source,
         Context $context,
-        CodeLocation $location
+        CodeLocation $location,
     ): Atomic {
         self::$fallback ??= new TArray([Type::getString(), Type::getMixed()]);
 
@@ -64,11 +64,11 @@ final class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProvide
                 }
                 $enum_case_storage = $enum_classlike_storage->enum_cases[$object_type->case_name];
                 $case_value = $enum_case_storage->getValue($statements_source->getCodebase()->classlikes);
-                if (is_int($case_value)) {
-                    $properties['value'] = new Union([new Atomic\TLiteralInt($case_value)]);
-                } elseif (is_string($case_value)) {
-                    $properties['value'] = new Union([Type::getAtomicStringFromLiteral($case_value)]);
+
+                if ($case_value !== null) {
+                    $properties['value'] = new Union([$case_value]);
                 }
+
                 return new TKeyedArray($properties);
             }
 
@@ -154,6 +154,7 @@ final class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProvide
         return self::$fallback;
     }
 
+    #[Override]
     public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): ?Union
     {
         $statements_source = $event->getStatementsSource();

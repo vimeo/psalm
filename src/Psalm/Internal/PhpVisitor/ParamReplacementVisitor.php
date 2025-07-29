@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\PhpVisitor;
 
+use Override;
 use PhpParser;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
@@ -16,10 +19,6 @@ use function strlen;
  */
 final class ParamReplacementVisitor extends PhpParser\NodeVisitorAbstract
 {
-    private string $old_name;
-
-    private string $new_name;
-
     /** @var list<FileManipulation> */
     private array $replacements = [];
 
@@ -27,12 +26,13 @@ final class ParamReplacementVisitor extends PhpParser\NodeVisitorAbstract
 
     private bool $new_new_name_used = false;
 
-    public function __construct(string $old_name, string $new_name)
-    {
-        $this->old_name = $old_name;
-        $this->new_name = $new_name;
+    public function __construct(
+        private readonly string $old_name,
+        private readonly string $new_name,
+    ) {
     }
 
+    #[Override]
     public function enterNode(PhpParser\Node $node): ?int
     {
         if ($node instanceof PhpParser\Node\Expr\Variable) {
@@ -45,7 +45,7 @@ final class ParamReplacementVisitor extends PhpParser\NodeVisitorAbstract
             } elseif ($node->name === $this->new_name) {
                 if ($this->new_new_name_used) {
                     $this->replacements = [];
-                    return PhpParser\NodeTraverser::STOP_TRAVERSAL;
+                    return self::STOP_TRAVERSAL;
                 }
 
                 $this->replacements[] = new FileManipulation(
@@ -58,7 +58,7 @@ final class ParamReplacementVisitor extends PhpParser\NodeVisitorAbstract
             } elseif ($node->name === $this->new_name . '_new') {
                 if ($this->new_name_replaced) {
                     $this->replacements = [];
-                    return PhpParser\NodeTraverser::STOP_TRAVERSAL;
+                    return self::STOP_TRAVERSAL;
                 }
 
                 $this->new_new_name_used = true;

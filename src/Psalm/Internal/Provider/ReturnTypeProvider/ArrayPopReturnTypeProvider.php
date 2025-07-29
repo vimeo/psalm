@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use Override;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
@@ -20,11 +23,13 @@ final class ArrayPopReturnTypeProvider implements FunctionReturnTypeProviderInte
     /**
      * @return array<lowercase-string>
      */
+    #[Override]
     public static function getFunctionIds(): array
     {
         return ['array_pop', 'array_shift'];
     }
 
+    #[Override]
     public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Union
     {
         $statements_source = $event->getStatementsSource();

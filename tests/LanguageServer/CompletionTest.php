@@ -1,15 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\LanguageServer;
 
 use LanguageServerProtocol\Position;
+use Override;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
+use Psalm\Internal\Provider\FileReferenceCacheProvider;
+use Psalm\Internal\Provider\ParserCacheProvider;
 use Psalm\Internal\Provider\Providers;
-use Psalm\Tests\Internal\Provider\FakeFileReferenceCacheProvider;
-use Psalm\Tests\Internal\Provider\ParserInstanceCacheProvider;
 use Psalm\Tests\Internal\Provider\ProjectCacheProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
@@ -17,10 +20,11 @@ use Psalm\Type;
 
 use function count;
 
-class CompletionTest extends TestCase
+final class CompletionTest extends TestCase
 {
     protected Codebase $codebase;
 
+    #[Override]
     public function setUp(): void
     {
         parent::setUp();
@@ -31,20 +35,22 @@ class CompletionTest extends TestCase
 
         $providers = new Providers(
             $this->file_provider,
-            new ParserInstanceCacheProvider(),
+            new ParserCacheProvider($config, '', false),
             null,
             null,
-            new FakeFileReferenceCacheProvider(),
+            new FileReferenceCacheProvider($config, '', false),
             new ProjectCacheProvider(),
         );
 
         $this->codebase = new Codebase($config, $providers);
+        $this->codebase->language_server = true;
 
         $this->project_analyzer = new ProjectAnalyzer(
             $config,
             $providers,
             null,
             [],
+            1,
             1,
             null,
             $this->codebase,

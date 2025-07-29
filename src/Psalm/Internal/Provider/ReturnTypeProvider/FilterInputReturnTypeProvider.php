@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use Override;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
@@ -32,16 +35,18 @@ use const INPUT_SERVER;
 /**
  * @internal
  */
-class FilterInputReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class FilterInputReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>
      */
+    #[Override]
     public static function getFunctionIds(): array
     {
         return ['filter_input'];
     }
 
+    #[Override]
     public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): ?Union
     {
         $statements_analyzer = $event->getStatementsSource();
@@ -159,13 +164,13 @@ class FilterInputReturnTypeProvider implements FunctionReturnTypeProviderInterfa
             return $fails_or_not_set_type;
         }
 
-        $possible_types = array(
-            '$_GET'    => INPUT_GET,
-            '$_POST'   => INPUT_POST,
+        $possible_types = [
+            '$_GET' => INPUT_GET,
+            '$_POST' => INPUT_POST,
             '$_COOKIE' => INPUT_COOKIE,
             '$_SERVER' => INPUT_SERVER,
-            '$_ENV'    => INPUT_ENV,
-        );
+            '$_ENV' => INPUT_ENV,
+        ];
 
         $first_arg_type_type = $first_arg_type->getSingleIntLiteral();
         $global_name = array_search($first_arg_type_type->value, $possible_types);
@@ -209,7 +214,7 @@ class FilterInputReturnTypeProvider implements FunctionReturnTypeProviderInterfa
         }
 
         if (FilterUtils::hasFlag($flags_int_used, FILTER_REQUIRE_ARRAY)
-            && in_array($first_arg_type_type->value, array(INPUT_COOKIE, INPUT_SERVER, INPUT_ENV), true)) {
+            && in_array($first_arg_type_type->value, [INPUT_COOKIE, INPUT_SERVER, INPUT_ENV], true)) {
             // these globals can never be an array
             return $fails_or_not_set_type;
         }
@@ -238,8 +243,7 @@ class FilterInputReturnTypeProvider implements FunctionReturnTypeProviderInterfa
             [$_, $input_type] = $array_atomic->type_params;
             $input_type = $input_type->setPossiblyUndefined(true);
         } else {
-            // this is impossible
-            throw new UnexpectedValueException('This should not happen');
+            return null;
         }
 
         return FilterUtils::getReturnType(

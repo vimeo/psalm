@@ -38,7 +38,7 @@ All other functionality – the language server, security analysis, manipulating
 
 Psalm is almost always run on PHP code that parses a lint check (`php -l <filename>`) – i.e. syntactically-correct code. Psalm is not a replacement for that syntax check.
 
-Given Psalm is almost always used on syntatically-correct code it should use a parser built for that purpose, and `nikic/php-parser` is the gold-standard.
+Given Psalm is almost always used on syntactically-correct code it should use a parser built for that purpose, and `nikic/php-parser` is the gold-standard.
 
 Where Psalm needs to run on syntactically-incorrect code (e.g. in language server mode) Psalm should still use the same parser (and work around any issues that it produces).
 

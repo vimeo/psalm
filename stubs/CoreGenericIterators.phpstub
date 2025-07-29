@@ -477,7 +477,7 @@ class EmptyIterator implements Iterator {
 }
 
 /**
- * @template-extends SeekableIterator<string, FilesystemIterator|SplFileInfo|string>
+ * @template-extends DirectoryIterator<string, FilesystemIterator|SplFileInfo|string>
  */
 class FilesystemIterator extends DirectoryIterator
 {
@@ -523,7 +523,7 @@ class FilesystemIterator extends DirectoryIterator
 
 
 /**
- * @template-extends SeekableIterator<string, GlobIterator|SplFileInfo|string>
+ * @template-extends FilesystemIterator<string, GlobIterator|SplFileInfo|string>
  */
 class GlobIterator extends FilesystemIterator implements Countable {
     /**
@@ -774,7 +774,7 @@ class RecursiveArrayIterator extends ArrayIterator implements RecursiveIterator 
     const CHILD_ARRAYS_ONLY = 4 ;
 
     /**
-     * @return RecursiveArrayIterator<TKey, TValue>
+     * @return ?RecursiveArrayIterator<TKey, TValue>
      */
     public function getChildren() {}
 

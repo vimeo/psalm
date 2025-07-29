@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use Override;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
@@ -10,7 +13,6 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
@@ -28,7 +30,7 @@ final class ArrayPointerAdjustmentReturnTypeProvider implements FunctionReturnTy
     /**
      * These functions are already handled by the CoreGenericFunctions stub
      */
-    const IGNORE_FUNCTION_IDS_FOR_FALSE_RETURN_TYPE = [
+    public const IGNORE_FUNCTION_IDS_FOR_FALSE_RETURN_TYPE = [
         'reset',
         'end',
         'current',
@@ -37,11 +39,13 @@ final class ArrayPointerAdjustmentReturnTypeProvider implements FunctionReturnTy
     /**
      * @return array<lowercase-string>
      */
+    #[Override]
     public static function getFunctionIds(): array
     {
         return ['current', 'next', 'prev', 'reset', 'end'];
     }
 
+    #[Override]
     public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Union
     {
         $statements_source = $event->getStatementsSource();
@@ -74,9 +78,7 @@ final class ArrayPointerAdjustmentReturnTypeProvider implements FunctionReturnTy
                 continue;
             }
 
-            if ($atomic_type instanceof TList) {
-                $atomic_type = $atomic_type->getKeyedArray();
-            }
+
 
             if ($atomic_type instanceof TArray) {
                 $value_type = $atomic_type->type_params[1];

@@ -1,15 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
+use Override;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
 use function count;
-use function get_class;
 
 /**
  * Denotes a simple array of the form `array<TKey, TValue>`. It expects an array with two elements, both union types.
@@ -18,6 +21,7 @@ use function get_class;
  */
 class TArray extends Atomic
 {
+    use UnserializeMemoryUsageSuppressionTrait;
     /**
      * @use GenericTrait<array{Union, Union}>
      */
@@ -28,10 +32,7 @@ class TArray extends Atomic
      */
     public array $type_params;
 
-    /**
-     * @var string
-     */
-    public $value = 'array';
+    public string $value = 'array';
 
     /**
      * Constructs a new instance of a generic type
@@ -44,6 +45,7 @@ class TArray extends Atomic
         parent::__construct($from_docblock);
     }
 
+    #[Override]
     public function getKey(bool $include_extra = true): string
     {
         return 'array';
@@ -52,23 +54,26 @@ class TArray extends Atomic
     /**
      * @param  array<lowercase-string, string> $aliased_classes
      */
+    #[Override]
     public function toPhpString(
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $analysis_php_version_id
+        int $analysis_php_version_id,
     ): string {
         return $this->getKey();
     }
 
+    #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return $this->type_params[0]->isArrayKey() && $this->type_params[1]->isMixed();
     }
 
+    #[Override]
     public function equals(Atomic $other_type, bool $ensure_source_equality): bool
     {
-        if (get_class($other_type) !== static::class) {
+        if ($other_type::class !== static::class) {
             return false;
         }
 
@@ -92,6 +97,7 @@ class TArray extends Atomic
         return true;
     }
 
+    #[Override]
     public function getAssertionString(): string
     {
         if ($this->type_params[0]->isMixed() && $this->type_params[1]->isMixed()) {
@@ -109,6 +115,7 @@ class TArray extends Atomic
     /**
      * @return static
      */
+    #[Override]
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
         Codebase $codebase,
@@ -119,7 +126,7 @@ class TArray extends Atomic
         ?string $calling_function = null,
         bool $replace = true,
         bool $add_lower_bound = false,
-        int $depth = 0
+        int $depth = 0,
     ): self {
         $type_params = $this->replaceTypeParamsTemplateTypesWithStandins(
             $template_result,
@@ -144,6 +151,7 @@ class TArray extends Atomic
     /**
      * @return static
      */
+    #[Override]
     public function replaceTemplateTypesWithArgTypes(TemplateResult $template_result, ?Codebase $codebase): self
     {
         $type_params = $this->replaceTypeParamsTemplateTypesWithArgTypes(
@@ -158,6 +166,7 @@ class TArray extends Atomic
         return $this;
     }
 
+    #[Override]
     protected function getChildNodeKeys(): array
     {
         return ['type_params'];

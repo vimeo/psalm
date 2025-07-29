@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Report;
 
+use Override;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\DataFlowNodeData;
 use Psalm\Internal\Analyzer\IssueData;
@@ -11,6 +14,7 @@ use function substr;
 
 final class PhpStormReport extends Report
 {
+    #[Override]
     public function create(): string
     {
         $output = '';

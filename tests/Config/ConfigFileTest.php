@@ -1,13 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\Config;
 
+use Override;
 use Psalm\Config;
 use Psalm\Exception\ConfigException;
 use Psalm\Internal\PluginManager\ConfigFile;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\TestCase;
 
+use function assert;
 use function file_get_contents;
 use function file_put_contents;
 use function getcwd;
@@ -19,16 +23,30 @@ use function unlink;
 use const PHP_EOL;
 
 /** @group PluginManager */
-class ConfigFileTest extends TestCase
+final class ConfigFileTest extends TestCase
 {
     private string $file_path;
 
+    #[Override]
+    public static function setUpBeforeClass(): void
+    {
+        parent::setUpBeforeClass();
+
+        // hack to isolate Psalm from PHPUnit cli arguments
+        global $argv;
+        $argv = [];
+    }
+
+    #[Override]
     public function setUp(): void
     {
         RuntimeCaches::clearAll();
-        $this->file_path = tempnam(sys_get_temp_dir(), 'psalm-test-config');
+        $temp_name = tempnam(sys_get_temp_dir(), 'psalm-test-config');
+        assert($temp_name !== false);
+        $this->file_path = $temp_name;
     }
 
+    #[Override]
     public function tearDown(): void
     {
         @unlink($this->file_path);
@@ -65,6 +83,8 @@ class ConfigFileTest extends TestCase
 
         $config_file = new ConfigFile((string)getcwd(), $this->file_path);
         $config_file->addPlugin('a\b\c');
+        $file_contents = file_get_contents($this->file_path);
+        assert($file_contents !== false);
 
         $this->assertTrue(static::compareContentWithTemplateAndTrailingLineEnding(
             '<?xml version="1.0" encoding="UTF-8"?>
@@ -73,7 +93,7 @@ class ConfigFileTest extends TestCase
             >
                 <plugins><pluginClass xmlns="' . Config::CONFIG_NAMESPACE . '" class="a\b\c"/></plugins>
             </psalm>',
-            file_get_contents($this->file_path),
+            $file_contents,
         ));
     }
 
@@ -90,11 +110,13 @@ class ConfigFileTest extends TestCase
 
         $config_file = new ConfigFile((string)getcwd(), $this->file_path);
         $config_file->addPlugin('a\b\c');
+        $file_contents = file_get_contents($this->file_path);
+        assert($file_contents !== false);
 
         $this->assertTrue(static::compareContentWithTemplateAndTrailingLineEnding(
             '<?xml version="1.0"?>
             <psalm><plugins><pluginClass xmlns="' . Config::CONFIG_NAMESPACE . '" class="a\b\c"/></plugins></psalm>',
-            file_get_contents($this->file_path),
+            $file_contents,
         ));
     }
 
@@ -110,10 +132,12 @@ class ConfigFileTest extends TestCase
 
         $config_file = new ConfigFile((string)getcwd(), $this->file_path);
         $config_file->removePlugin('a\b\c');
+        $file_contents = file_get_contents($this->file_path);
+        assert($file_contents !== false);
 
         $this->assertSame(
             $noPlugins,
-            file_get_contents($this->file_path),
+            $file_contents,
         );
     }
 
@@ -134,10 +158,12 @@ class ConfigFileTest extends TestCase
 
         $config_file = new ConfigFile((string)getcwd(), $this->file_path);
         $config_file->removePlugin('a\b\c');
+        $file_contents = file_get_contents($this->file_path);
+        assert($file_contents !== false);
 
         $this->assertXmlStringEqualsXmlString(
             $noPlugins,
-            file_get_contents($this->file_path),
+            $file_contents,
         );
     }
 
@@ -160,10 +186,12 @@ class ConfigFileTest extends TestCase
 
         $config_file = new ConfigFile((string)getcwd(), $this->file_path);
         $config_file->removePlugin('a\b\c');
+        $file_contents = file_get_contents($this->file_path);
+        assert($file_contents !== false);
 
         $this->assertXmlStringEqualsXmlString(
             $noPlugins,
-            file_get_contents($this->file_path),
+            $file_contents,
         );
     }
 
@@ -195,10 +223,12 @@ class ConfigFileTest extends TestCase
 
         $config_file = new ConfigFile((string)getcwd(), $this->file_path);
         $config_file->removePlugin('a\b\c');
+        $file_contents = file_get_contents($this->file_path);
+        assert($file_contents !== false);
 
         $this->assertXmlStringEqualsXmlString(
             $noPlugins,
-            file_get_contents($this->file_path),
+            $file_contents,
         );
     }
 
@@ -268,8 +298,9 @@ class ConfigFileTest extends TestCase
         $passed = false;
 
         foreach ([PHP_EOL, "\n", "\r", "\r\n"] as $eol) {
-            if (!$passed && $contents === ($expected_template . $eol)) {
+            if ($contents === ($expected_template . $eol)) {
                 $passed = true;
+                break;
             }
         }
 

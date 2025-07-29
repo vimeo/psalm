@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\InstancePropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Issue\InvalidArgument;
@@ -19,7 +22,7 @@ final class IssetAnalyzer
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Isset_ $stmt,
-        Context $context
+        Context $context,
     ): void {
         foreach ($stmt->vars as $isset_var) {
             if ($isset_var instanceof PhpParser\Node\Expr\PropertyFetch
@@ -30,7 +33,16 @@ final class IssetAnalyzer
                 $var_id = '$this->' . $isset_var->name->name;
 
                 if (!isset($context->vars_in_scope[$var_id])) {
-                    $context->vars_in_scope[$var_id] = Type::getMixed();
+                    if (isset($context->vars_in_scope['$this'])) {
+                        InstancePropertyFetchAnalyzer::analyze(
+                            $statements_analyzer,
+                            $isset_var,
+                            $context,
+                        );
+                    }
+                    if (!isset($context->vars_in_scope[$var_id])) {
+                        $context->vars_in_scope[$var_id] = Type::getMixed();
+                    }
                     $context->vars_possibly_in_scope[$var_id] = true;
                 }
             } elseif (!self::isValidStatement($isset_var)) {
@@ -53,7 +65,7 @@ final class IssetAnalyzer
     public static function analyzeIssetVar(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $stmt,
-        Context $context
+        Context $context,
     ): void {
         $context->inside_isset = true;
 

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use PhpParser\Comment\Doc;
@@ -9,7 +11,7 @@ use Psalm\Internal\PhpVisitor\Reflector\ClassLikeDocblockParser;
 
 use function array_values;
 
-class ClassLikeDocblockParserTest extends TestCase
+final class ClassLikeDocblockParserTest extends TestCase
 {
     public function testDocblockDescription(): void
     {

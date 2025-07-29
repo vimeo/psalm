@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
@@ -16,6 +18,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\ImpureMethodCall;
@@ -32,6 +35,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_diff;
 use function in_array;
 use function strlen;
 
@@ -45,7 +49,7 @@ final class BinaryOpAnalyzer
         PhpParser\Node\Expr\BinaryOp $stmt,
         Context $context,
         int $nesting = 0,
-        bool $from_stmt = false
+        bool $from_stmt = false,
     ): bool {
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat && $nesting > 100) {
             $statements_analyzer->node_data->setType($stmt, Type::getString());
@@ -168,6 +172,13 @@ final class BinaryOpAnalyzer
 
                 $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
                 $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+
+                $taints = array_diff($added_taints, $removed_taints);
+                if ($taints !== [] && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+                    $taint_source = TaintSource::fromNode($new_parent_node);
+                    $taint_source->taints = $taints;
+                    $statements_analyzer->data_flow_graph->addSource($taint_source);
+                }
 
                 if ($stmt_left_type && $stmt_left_type->parent_nodes) {
                     foreach ($stmt_left_type->parent_nodes as $parent_node) {
@@ -373,7 +384,7 @@ final class BinaryOpAnalyzer
         PhpParser\Node\Expr $stmt,
         PhpParser\Node\Expr $left,
         PhpParser\Node\Expr $right,
-        string $type = 'binaryop'
+        string $type = 'binaryop',
     ): void {
         if ($stmt->getLine() === -1) {
             throw new UnexpectedValueException('bad');
@@ -455,7 +466,7 @@ final class BinaryOpAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\BinaryOp\Equal $stmt,
         Union $stmt_left_type,
-        Union $stmt_right_type
+        Union $stmt_right_type,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -469,7 +480,7 @@ final class BinaryOpAnalyzer
                                 '__tostring',
                             ),
                         );
-                    } catch (UnexpectedValueException $e) {
+                    } catch (UnexpectedValueException) {
                         continue;
                     }
 
@@ -503,7 +514,7 @@ final class BinaryOpAnalyzer
                                 '__tostring',
                             ),
                         );
-                    } catch (UnexpectedValueException $e) {
+                    } catch (UnexpectedValueException) {
                         continue;
                     }
 

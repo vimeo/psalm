@@ -4,18 +4,19 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\Cache;
 
+use Override;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\IncludeCollector;
+use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
 use Psalm\Internal\Provider\FakeFileProvider;
+use Psalm\Internal\Provider\FileReferenceCacheProvider;
+use Psalm\Internal\Provider\FileStorageCacheProvider;
+use Psalm\Internal\Provider\ParserCacheProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\IssueBuffer;
-use Psalm\Tests\Internal\Provider\ClassLikeStorageInstanceCacheProvider;
-use Psalm\Tests\Internal\Provider\FakeFileReferenceCacheProvider;
-use Psalm\Tests\Internal\Provider\FileStorageInstanceCacheProvider;
-use Psalm\Tests\Internal\Provider\ParserInstanceCacheProvider;
 use Psalm\Tests\Internal\Provider\ProjectCacheProvider;
 use Psalm\Tests\TestCase;
 
@@ -24,8 +25,19 @@ use function str_replace;
 
 use const DIRECTORY_SEPARATOR;
 
-class CacheTest extends TestCase
+final class CacheTest extends TestCase
 {
+    #[Override]
+    public static function setUpBeforeClass(): void
+    {
+        parent::setUpBeforeClass();
+
+        // hack to isolate Psalm from PHPUnit cli arguments
+        global $argv;
+        $argv = [];
+    }
+
+    #[Override]
     public function setUp(): void
     {
         parent::setUp();
@@ -33,6 +45,7 @@ class CacheTest extends TestCase
         RuntimeCaches::clearAll();
     }
 
+    #[Override]
     public function tearDown(): void
     {
         RuntimeCaches::clearAll();
@@ -65,7 +78,7 @@ class CacheTest extends TestCase
      * @dataProvider provideCacheInteractions
      */
     public function testCacheInteractions(
-        array $interactions
+        array $interactions,
     ): void {
         $config = Config::loadFromXML(
             __DIR__ . DIRECTORY_SEPARATOR . 'test_base_dir',
@@ -83,10 +96,10 @@ class CacheTest extends TestCase
         $file_provider = new FakeFileProvider();
         $providers = new Providers(
             $file_provider,
-            new ParserInstanceCacheProvider(),
-            new FileStorageInstanceCacheProvider(),
-            new ClassLikeStorageInstanceCacheProvider(),
-            new FakeFileReferenceCacheProvider(),
+            new ParserCacheProvider($config, '', false),
+            new FileStorageCacheProvider($config, '', false),
+            new ClassLikeStorageCacheProvider($config, '', false),
+            new FileReferenceCacheProvider($config, '', false),
             new ProjectCacheProvider(),
         );
 
@@ -128,7 +141,7 @@ class CacheTest extends TestCase
                     'files' => [
                         'src/A.php' => <<<'PHP'
                             <?php
-                            class A {
+                            final class A {
                                 public function do(B $b): void
                                 {
                                     $b->do();
@@ -137,7 +150,7 @@ class CacheTest extends TestCase
                             PHP,
                         'src/B.php' => <<<'PHP'
                             <?php
-                            class B {
+                            final class B {
                                 public function do(): void
                                 {
                                     echo 'B';
@@ -165,7 +178,7 @@ class CacheTest extends TestCase
                     'files' => [
                         'src/A.php' => <<<'PHP'
                             <?php
-                            class A {
+                            final class A {
                                 public function foo(B $b): int
                                 {
                                     return $b->value;
@@ -174,7 +187,7 @@ class CacheTest extends TestCase
                             PHP,
                         'src/B.php' => <<<'PHP'
                             <?php
-                            class B {
+                            final class B {
                                 public ?int $value = 0;
                             }
                             PHP,
@@ -190,7 +203,7 @@ class CacheTest extends TestCase
                     'files' => [
                         'src/B.php' => <<<'PHP'
                             <?php
-                            class B {
+                            final class B {
                                 public int $value = 0;
                             }
                             PHP,
@@ -210,7 +223,7 @@ class CacheTest extends TestCase
                             /**
                              * @template T
                              */
-                            class A {
+                            final class A {
                                 /**
                                  * @param T $baz
                                  */
@@ -222,7 +235,7 @@ class CacheTest extends TestCase
                         'src/B.php' => <<<'PHP'
                             <?php
 
-                            class B {
+                            final class B {
                                 public function foo(): void
                                 {
                                     (new A)->foo(1);
@@ -240,7 +253,7 @@ class CacheTest extends TestCase
                             /**
                              * @template K
                              */
-                            class A {
+                            final class A {
                                 /**
                                  * @param T $baz
                                  */
@@ -268,7 +281,7 @@ class CacheTest extends TestCase
                     'files' => [
                         'src/A.php' => <<<'PHP'
                             <?php
-                            class A {
+                            final class A {
                                 public function __construct(private string $foo)
                                 {
                                 }
@@ -285,7 +298,7 @@ class CacheTest extends TestCase
                     'files' => [
                         'src/A.php' => <<<'PHP'
                             <?php
-                            class A
+                            final class A
                             {
                                 public function __construct()
                                 {
@@ -301,7 +314,6 @@ class CacheTest extends TestCase
                         'src/A.php' => [
                             "UndefinedThisPropertyFetch: Instance property A::\$foo is not defined",
                             "MixedReturnStatement: Could not infer a return type",
-                            "MixedInferredReturnType: Could not verify return type 'string' for A::bar",
                         ],
                     ],
                 ],

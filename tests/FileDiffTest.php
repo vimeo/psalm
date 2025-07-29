@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use PhpParser;
@@ -14,7 +16,7 @@ use function get_class;
 use function strpos;
 use function var_export;
 
-class FileDiffTest extends TestCase
+final class FileDiffTest extends TestCase
 {
     /**
      * @dataProvider getChanges
@@ -27,7 +29,7 @@ class FileDiffTest extends TestCase
         array $same_signatures,
         array $changed_methods,
         array $diff_map_offsets,
-        array $deletion_ranges
+        array $deletion_ranges,
     ): void {
         if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
@@ -84,7 +86,7 @@ class FileDiffTest extends TestCase
         array $same_methods,
         array $same_signatures,
         array $changed_methods,
-        array $diff_map_offsets
+        array $diff_map_offsets,
     ): void {
         if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();

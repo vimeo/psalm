@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Fetch;
 
 use PhpParser;
@@ -40,13 +42,15 @@ final class InstancePropertyFetchAnalyzer
         PhpParser\Node\Expr\PropertyFetch $stmt,
         Context $context,
         bool $in_assignment = false,
-        bool $is_static_access = false
+        bool $is_static_access = false,
     ): bool {
         $was_inside_general_use = $context->inside_general_use;
         $context->inside_general_use = true;
 
         if (!$stmt->name instanceof PhpParser\Node\Identifier) {
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->name, $context) === false) {
+                $context->inside_general_use = $was_inside_general_use;
+
                 return false;
             }
         }
@@ -311,7 +315,7 @@ final class InstancePropertyFetchAnalyzer
         PhpParser\Node\Expr\PropertyFetch $stmt,
         Codebase $codebase,
         ?string $stmt_var_id,
-        bool $in_assignment
+        bool $in_assignment,
     ): void {
         $stmt_type = $context->vars_in_scope[$var_id];
 

@@ -1,6 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
+
+use Override;
 
 /**
  * Denotes the `literal-string` type, where the exact value is unknown but
@@ -10,6 +14,7 @@ namespace Psalm\Type\Atomic;
  */
 class TNonspecificLiteralString extends TString
 {
+    #[Override]
     public function getId(bool $exact = true, bool $nested = true): string
     {
         if (!$exact) {
@@ -19,11 +24,13 @@ class TNonspecificLiteralString extends TString
         return 'literal-string';
     }
 
+    #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
     }
 
+    #[Override]
     public function getAssertionString(): string
     {
         return 'string';

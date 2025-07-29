@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use Override;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Exception\ComplicatedExpressionException;
@@ -41,11 +44,13 @@ final class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderI
     /**
      * @return array<lowercase-string>
      */
+    #[Override]
     public static function getFunctionIds(): array
     {
         return ['array_filter'];
     }
 
+    #[Override]
     public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Union
     {
         $statements_source = $event->getStatementsSource();
@@ -58,7 +63,7 @@ final class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderI
             return Type::getMixed();
         }
 
-        $fallback = new TArray([Type::getArrayKey(), Type::getMixed()]);
+        $fallback = Type::getArrayAtomic();
         $array_arg = $call_args[0]->value ?? null;
         if (!$array_arg) {
             $first_arg_array = $fallback;
@@ -173,7 +178,7 @@ final class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderI
                 $statements_source,
             );
 
-            $mapping_function_ids = array();
+            $mapping_function_ids = [];
             if ($callable_extended_var_id) {
                 $possibly_function_ids = $context->vars_in_scope[$callable_extended_var_id] ?? null;
                 // @todo for array callables
@@ -187,9 +192,9 @@ final class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderI
             if ($function_call_arg->value instanceof PhpParser\Node\Scalar\String_
                 || $function_call_arg->value instanceof PhpParser\Node\Expr\Array_
                 || $function_call_arg->value instanceof PhpParser\Node\Expr\BinaryOp\Concat
-                || $mapping_function_ids !== array()
+                || $mapping_function_ids !== []
             ) {
-                if ($mapping_function_ids === array()) {
+                if ($mapping_function_ids === []) {
                     $mapping_function_ids = CallAnalyzer::getFunctionIdsFromCallableArg(
                         $statements_source,
                         $function_call_arg->value,
@@ -291,7 +296,7 @@ final class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderI
                                 $statements_source,
                                 $codebase,
                             );
-                        } catch (ComplicatedExpressionException $e) {
+                        } catch (ComplicatedExpressionException) {
                             $filter_clauses = [];
                         }
 

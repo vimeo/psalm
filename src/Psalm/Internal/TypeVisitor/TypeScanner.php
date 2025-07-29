@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\TypeVisitor;
 
+use Override;
 use Psalm\Internal\Codebase\Scanner;
 use Psalm\Storage\FileStorage;
 use Psalm\Type\Atomic\TClassConstant;
@@ -17,28 +20,17 @@ use function strtolower;
  */
 final class TypeScanner extends TypeVisitor
 {
-    private Scanner $scanner;
-
-    private ?FileStorage $file_storage = null;
-
-    /**
-     * @var array<string, mixed>
-     */
-    private array $phantom_classes;
-
     /**
      * @param  array<string, mixed> $phantom_classes
      */
     public function __construct(
-        Scanner $scanner,
-        ?FileStorage $file_storage,
-        array $phantom_classes
+        private readonly Scanner $scanner,
+        private readonly ?FileStorage $file_storage,
+        private array $phantom_classes,
     ) {
-        $this->scanner = $scanner;
-        $this->file_storage = $file_storage;
-        $this->phantom_classes = $phantom_classes;
     }
 
+    #[Override]
     protected function enterNode(TypeNode $type): ?int
     {
         if ($type instanceof TNamedObject) {

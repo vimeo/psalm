@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider;
 
 use PhpParser;
 use PhpParser\ErrorHandler\Collecting;
-use PhpParser\Lexer\Emulative;
 use PhpParser\Node\Stmt;
 use PhpParser\Parser;
+use PhpParser\PhpVersion;
 use Psalm\CodeLocation\ParseErrorLocation;
 use Psalm\Codebase;
 use Psalm\Config;
@@ -28,30 +30,16 @@ use function array_intersect_key;
 use function array_map;
 use function array_merge;
 use function count;
-use function filemtime;
-use function hash;
 use function md5;
+use function str_starts_with;
 use function strlen;
 use function strpos;
-
-use const PHP_VERSION_ID;
 
 /**
  * @internal
  */
 final class StatementsProvider
 {
-    private FileProvider $file_provider;
-
-    public ?ParserCacheProvider $parser_cache_provider = null;
-
-    /**
-     * @var int|bool
-     */
-    private $this_modified_time;
-
-    private ?FileStorageCacheProvider $file_storage_cache_provider = null;
-
     /**
      * @var array<string, array<string, bool>>
      */
@@ -82,19 +70,12 @@ final class StatementsProvider
      */
     private array $deletion_ranges = [];
 
-    private static ?Emulative $lexer = null;
-
     private static ?Parser $parser = null;
 
     public function __construct(
-        FileProvider $file_provider,
-        ?ParserCacheProvider $parser_cache_provider = null,
-        ?FileStorageCacheProvider $file_storage_cache_provider = null
+        private readonly FileProvider $file_provider,
+        public ?ParserCacheProvider $parser_cache_provider = null,
     ) {
-        $this->file_provider = $file_provider;
-        $this->parser_cache_provider = $parser_cache_provider;
-        $this->this_modified_time = filemtime(__FILE__);
-        $this->file_storage_cache_provider = $file_storage_cache_provider;
     }
 
     /**
@@ -103,7 +84,8 @@ final class StatementsProvider
     public function getStatementsForFile(
         string $file_path,
         int $analysis_php_version_id,
-        ?Progress $progress = null
+        bool $do_diff,
+        ?Progress $progress = null,
     ): array {
         unset($this->errors[$file_path]);
 
@@ -111,25 +93,14 @@ final class StatementsProvider
             $progress = new VoidProgress();
         }
 
-        $from_cache = false;
-
-        $version = PHP_PARSER_VERSION . $this->this_modified_time;
-
         $file_contents = $this->file_provider->getContents($file_path);
-        $modified_time = $this->file_provider->getModifiedTime($file_path);
 
         $config = Config::getInstance();
-
-        if (PHP_VERSION_ID >= 8_01_00) {
-            $file_content_hash = hash('xxh128', $version . $file_contents);
-        } else {
-            $file_content_hash = hash('md4', $version . $file_contents);
-        }
 
         if (!$this->parser_cache_provider
             || (!$config->isInProjectDirs($file_path) && strpos($file_path, 'vendor'))
         ) {
-            $progress->debug('Parsing ' . $file_path . "\n");
+            $progress->debug('Parsing ' . $file_path . " because we cannot use cache\n");
 
             $has_errors = false;
 
@@ -138,26 +109,34 @@ final class StatementsProvider
 
         $stmts = $this->parser_cache_provider->loadStatementsFromCache(
             $file_path,
-            $modified_time,
-            $file_content_hash,
+            $file_contents,
         );
 
-        if ($stmts === null) {
-            $progress->debug('Parsing ' . $file_path . "\n");
+        if ($stmts !== null) {
+            $this->diff_map[$file_path] = [];
+            $this->deletion_ranges[$file_path] = [];
 
-            $existing_statements = $this->parser_cache_provider->loadExistingStatementsFromCache($file_path);
+            return $stmts;
+        }
 
-            $existing_file_contents = $this->parser_cache_provider->loadExistingFileContentsFromCache($file_path);
+        $progress->debug("Parsing $file_path because the cache is absent or outdated\n");
 
-            // this happens after editing temporary file
-            if ($existing_file_contents === $file_contents && $existing_statements) {
+        $existing_statements = null;
+        $existing_file_contents = null;
+        $existing_statements_copy = null;
+        $file_changes = null;
+        if ($do_diff) {
+            $existing_file_contents = $this->parser_cache_provider->getHash($file_path);
+
+            $existing_statements = $this->parser_cache_provider->loadStatementsFromCache(
+                $file_path,
+                $existing_file_contents,
+            );
+
+            // Race condition, another thread wrote the same data we already have
+            if ($existing_file_contents === $file_contents && $existing_statements !== null) {
                 $this->diff_map[$file_path] = [];
-                $this->parser_cache_provider->saveStatementsToCache(
-                    $file_path,
-                    $file_content_hash,
-                    $existing_statements,
-                    true,
-                );
+                $this->deletion_ranges[$file_path] = [];
 
                 return $existing_statements;
             }
@@ -166,8 +145,8 @@ final class StatementsProvider
 
             $existing_statements_copy = null;
 
-            if ($existing_statements
-                && $existing_file_contents
+            if ($existing_statements !== null
+                && $existing_file_contents  !== null
                 && abs(strlen($existing_file_contents) - strlen($file_contents)) < 5_000
             ) {
                 $file_changes = FileDiffer::getDiff($existing_file_contents, $file_contents);
@@ -182,96 +161,82 @@ final class StatementsProvider
                     $file_changes = null;
                 }
             }
+        }
 
-            $has_errors = false;
+        $has_errors = false;
 
-            $stmts = self::parseStatements(
-                $file_contents,
-                $analysis_php_version_id,
-                $has_errors,
-                $file_path,
-                $existing_file_contents,
-                $existing_statements_copy,
-                $file_changes,
-            );
+        $stmts = self::parseStatements(
+            $file_contents,
+            $analysis_php_version_id,
+            $has_errors,
+            $file_path,
+            $existing_file_contents,
+            $existing_statements_copy,
+            $file_changes,
+        );
 
-            if ($existing_file_contents && $existing_statements && (!$has_errors || $stmts)) {
-                [$unchanged_members, $unchanged_signature_members, $changed_members, $diff_map, $deletion_ranges]
-                    = FileStatementsDiffer::diff(
-                        $existing_statements,
-                        $stmts,
-                        $existing_file_contents,
-                        $file_contents,
-                    );
-
-                $unchanged_members = array_fill_keys($unchanged_members, true);
-                $unchanged_signature_members = array_fill_keys($unchanged_signature_members, true);
-
-                // do NOT change this to hash, it will fail on Windows for whatever reason
-                $file_path_hash = md5($file_path);
-
-                $changed_members = array_map(
-                    static function (string $key) use ($file_path_hash): string {
-                        if (strpos($key, 'use:') === 0) {
-                            return $key . ':' . $file_path_hash;
-                        }
-
-                        return $key;
-                    },
-                    $changed_members,
+        if ($existing_file_contents !== null && $existing_statements !== null && (!$has_errors || $stmts)) {
+            [$unchanged_members, $unchanged_signature_members, $changed_members, $diff_map, $deletion_ranges]
+                = FileStatementsDiffer::diff(
+                    $existing_statements,
+                    $stmts,
+                    $existing_file_contents,
+                    $file_contents,
                 );
 
-                $changed_members = array_fill_keys($changed_members, true);
+            $unchanged_members = array_fill_keys($unchanged_members, true);
+            $unchanged_signature_members = array_fill_keys($unchanged_signature_members, true);
 
-                if (isset($this->unchanged_members[$file_path])) {
-                    $this->unchanged_members[$file_path] = array_intersect_key(
-                        $this->unchanged_members[$file_path],
-                        $unchanged_members,
-                    );
-                } else {
-                    $this->unchanged_members[$file_path] = $unchanged_members;
-                }
+            // do NOT change this to hash, it will fail on Windows for whatever reason
+            $file_path_hash = md5($file_path);
 
-                if (isset($this->unchanged_signature_members[$file_path])) {
-                    $this->unchanged_signature_members[$file_path] = array_intersect_key(
-                        $this->unchanged_signature_members[$file_path],
-                        $unchanged_signature_members,
-                    );
-                } else {
-                    $this->unchanged_signature_members[$file_path] = $unchanged_signature_members;
-                }
+            $changed_members = array_map(
+                static function (string $key) use ($file_path_hash): string {
+                    if (str_starts_with($key, 'use:')) {
+                        return $key . ':' . $file_path_hash;
+                    }
 
-                if (isset($this->changed_members[$file_path])) {
-                    $this->changed_members[$file_path] = array_merge(
-                        $this->changed_members[$file_path],
-                        $changed_members,
-                    );
-                } else {
-                    $this->changed_members[$file_path] = $changed_members;
-                }
+                    return $key;
+                },
+                $changed_members,
+            );
 
-                $this->diff_map[$file_path] = $diff_map;
-                $this->deletion_ranges[$file_path] = $deletion_ranges;
-            } elseif ($has_errors && !$stmts) {
-                $this->errors[$file_path] = true;
+            $changed_members = array_fill_keys($changed_members, true);
+
+            if (isset($this->unchanged_members[$file_path])) {
+                $this->unchanged_members[$file_path] = array_intersect_key(
+                    $this->unchanged_members[$file_path],
+                    $unchanged_members,
+                );
+            } else {
+                $this->unchanged_members[$file_path] = $unchanged_members;
             }
 
-            if ($this->file_storage_cache_provider) {
-                $this->file_storage_cache_provider->removeCacheForFile($file_path);
+            if (isset($this->unchanged_signature_members[$file_path])) {
+                $this->unchanged_signature_members[$file_path] = array_intersect_key(
+                    $this->unchanged_signature_members[$file_path],
+                    $unchanged_signature_members,
+                );
+            } else {
+                $this->unchanged_signature_members[$file_path] = $unchanged_signature_members;
             }
 
-            $this->parser_cache_provider->cacheFileContents($file_path, $file_contents);
-        } else {
-            $from_cache = true;
-            $this->diff_map[$file_path] = [];
-            $this->deletion_ranges[$file_path] = [];
+            if (isset($this->changed_members[$file_path])) {
+                $this->changed_members[$file_path] = array_merge(
+                    $this->changed_members[$file_path],
+                    $changed_members,
+                );
+            } else {
+                $this->changed_members[$file_path] = $changed_members;
+            }
+
+            $this->diff_map[$file_path] = $diff_map;
+            $this->deletion_ranges[$file_path] = $deletion_ranges;
+        } elseif ($has_errors && !$stmts) {
+            $this->errors[$file_path] = true;
         }
 
-        $this->parser_cache_provider->saveStatementsToCache($file_path, $file_content_hash, $stmts, $from_cache);
-
-        if (!$stmts) {
-            return [];
-        }
+        $this->parser_cache_provider->saveStatementsToCache($file_path, $file_contents, $stmts);
 
         return $stmts;
     }
@@ -289,7 +254,7 @@ final class StatementsProvider
      */
     public function addChangedMembers(array $more_changed_members): void
     {
-        $this->changed_members = array_merge($more_changed_members, $this->changed_members);
+        $this->changed_members = [...$more_changed_members, ...$this->changed_members];
     }
 
     /**
@@ -305,7 +270,7 @@ final class StatementsProvider
      */
     public function addUnchangedSignatureMembers(array $more_unchanged_members): void
     {
-        $this->unchanged_signature_members = array_merge($more_unchanged_members, $this->unchanged_signature_members);
+        $this->unchanged_signature_members = [...$more_unchanged_members, ...$this->unchanged_signature_members];
     }
 
     /**
@@ -356,7 +321,7 @@ final class StatementsProvider
      */
     public function addDiffMap(array $diff_map): void
     {
-        $this->diff_map = array_merge($diff_map, $this->diff_map);
+        $this->diff_map = [...$diff_map, ...$this->diff_map];
     }
 
     /**
@@ -364,7 +329,7 @@ final class StatementsProvider
      */
     public function addDeletionRanges(array $deletion_ranges): void
     {
-        $this->deletion_ranges = array_merge($deletion_ranges, $this->deletion_ranges);
+        $this->deletion_ranges = [...$deletion_ranges, ...$this->deletion_ranges];
     }
 
     public function resetDiffs(): void
@@ -388,23 +353,13 @@ final class StatementsProvider
         ?string $file_path = null,
         ?string $existing_file_contents = null,
         ?array  $existing_statements = null,
-        ?array  $file_changes = null
+        ?array  $file_changes = null,
     ): array {
-        $attributes = [
-            'comments', 'startLine', 'startFilePos', 'endFilePos',
-        ];
-
-        if (!self::$lexer) {
+        if (!self::$parser) {
             $major_version = Codebase::transformPhpVersionId($analysis_php_version_id, 10_000);
             $minor_version = Codebase::transformPhpVersionId($analysis_php_version_id % 10_000, 100);
-            self::$lexer = new Emulative([
-                'usedAttributes' => $attributes,
-                'phpVersion' => $major_version . '.' . $minor_version,
-            ]);
-        }
-
-        if (!self::$parser) {
-            self::$parser = (new PhpParser\ParserFactory())->create(PhpParser\ParserFactory::ONLY_PHP7, self::$lexer);
+            $php_version = PhpVersion::fromComponents($major_version, $minor_version);
+            self::$parser = (new PhpParser\ParserFactory())->createForVersion($php_version);
         }
 
         $used_cached_statements = false;
@@ -430,7 +385,7 @@ final class StatementsProvider
                 try {
                     /** @var list<Stmt> */
                     $stmts = self::$parser->parse($file_contents, $error_handler) ?: [];
-                } catch (Throwable $t) {
+                } catch (Throwable) {
                     $stmts = [];
 
                     // hope this got caught below
@@ -440,7 +395,7 @@ final class StatementsProvider
             try {
                 /** @var list<Stmt> */
                 $stmts = self::$parser->parse($file_contents, $error_handler) ?: [];
-            } catch (Throwable $t) {
+            } catch (Throwable) {
                 $stmts = [];
 
                 // hope this got caught below
@@ -479,11 +434,6 @@ final class StatementsProvider
         $resolving_traverser->traverse($stmts);
 
         return $stmts;
-    }
-
-    public static function clearLexer(): void
-    {
-        self::$lexer = null;
     }
 
     public static function clearParser(): void

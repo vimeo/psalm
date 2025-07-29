@@ -1,14 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\FileUpdates;
 
+use Override;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
 use Psalm\Internal\Provider\FakeFileProvider;
+use Psalm\Internal\Provider\FileReferenceCacheProvider;
+use Psalm\Internal\Provider\FileStorageCacheProvider;
+use Psalm\Internal\Provider\ParserCacheProvider;
 use Psalm\Internal\Provider\Providers;
-use Psalm\Tests\Internal\Provider\ClassLikeStorageInstanceCacheProvider;
-use Psalm\Tests\Internal\Provider\FakeFileReferenceCacheProvider;
-use Psalm\Tests\Internal\Provider\FileStorageInstanceCacheProvider;
-use Psalm\Tests\Internal\Provider\ParserInstanceCacheProvider;
 use Psalm\Tests\Internal\Provider\ProjectCacheProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
@@ -19,8 +22,9 @@ use function strpos;
 
 use const DIRECTORY_SEPARATOR;
 
-class CachedStorageTest extends TestCase
+final class CachedStorageTest extends TestCase
 {
+    #[Override]
     public function setUp(): void
     {
         parent::setUp();
@@ -31,10 +35,10 @@ class CachedStorageTest extends TestCase
 
         $providers = new Providers(
             $this->file_provider,
-            new ParserInstanceCacheProvider(),
-            new FileStorageInstanceCacheProvider(),
-            new ClassLikeStorageInstanceCacheProvider(),
-            new FakeFileReferenceCacheProvider(),
+            new ParserCacheProvider($config, '', false),
+            new FileStorageCacheProvider($config, '', false),
+            new ClassLikeStorageCacheProvider($config, '', false),
+            new FileReferenceCacheProvider($config, '', false),
             new ProjectCacheProvider(),
         );
 
@@ -57,23 +61,23 @@ class CachedStorageTest extends TestCase
         $codebase = $this->project_analyzer->getCodebase();
 
         $vendor_files = [
-            getcwd() . DIRECTORY_SEPARATOR . 'V1.php' => '<?php
+            (string) getcwd() . DIRECTORY_SEPARATOR . 'V1.php' => '<?php
                 namespace AnotherPackage;
                 interface StorageInterface {
                    public function getRecord(): OperationInterface;
                 }',
-            getcwd() . DIRECTORY_SEPARATOR . 'V2.php' => '<?php
+            (string) getcwd() . DIRECTORY_SEPARATOR . 'V2.php' => '<?php
                 namespace AnotherPackage;
                 interface OperationInterface {
                    public function getResult(): ResultInterface;
                 }',
-            getcwd() . DIRECTORY_SEPARATOR . 'V3.php' => '<?php
+            (string) getcwd() . DIRECTORY_SEPARATOR . 'V3.php' => '<?php
                 namespace AnotherPackage;
                 interface ResultInterface {}',
         ];
 
         $analyzable_files = [
-            getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+            (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                 use AnotherPackage\StorageInterface;
                 class C {
                     /** @var ?StorageInterface */

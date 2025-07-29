@@ -1,13 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Codebase;
 
+use Override;
 use Psalm\CodeLocation;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\DataFlow\Path;
 
 use function abs;
-use function array_merge;
 use function count;
 
 /**
@@ -16,7 +18,7 @@ use function count;
 final class VariableUseGraph extends DataFlowGraph
 {
     /** @var array<string, array<string, true>> */
-    protected array $backward_edges = [];
+    private array $backward_edges = [];
 
     /** @var array<string, DataFlowNode> */
     private array $nodes = [];
@@ -24,6 +26,7 @@ final class VariableUseGraph extends DataFlowGraph
     /** @var array<string, list<CodeLocation>> */
     private array $origin_locations_by_id = [];
 
+    #[Override]
     public function addNode(DataFlowNode $node): void
     {
         $this->nodes[$node->id] = $node;
@@ -33,12 +36,13 @@ final class VariableUseGraph extends DataFlowGraph
      * @param array<string> $added_taints
      * @param array<string> $removed_taints
      */
+    #[Override]
     public function addPath(
         DataFlowNode $from,
         DataFlowNode $to,
         string $path_type,
         ?array $added_taints = null,
-        ?array $removed_taints = null
+        ?array $removed_taints = null,
     ): void {
         $from_id = $from->id;
         $to_id = $to->id;
@@ -83,10 +87,7 @@ final class VariableUseGraph extends DataFlowGraph
                     return true;
                 }
 
-                $new_child_nodes = array_merge(
-                    $new_child_nodes,
-                    $child_nodes,
-                );
+                $new_child_nodes = [...$new_child_nodes, ...$child_nodes];
             }
 
             $sources = $new_child_nodes;
@@ -146,7 +147,7 @@ final class VariableUseGraph extends DataFlowGraph
      */
     private function getChildNodes(
         DataFlowNode $generated_source,
-        array $visited_source_ids
+        array $visited_source_ids,
     ): ?array {
         $new_child_nodes = [];
 
@@ -157,16 +158,16 @@ final class VariableUseGraph extends DataFlowGraph
         foreach ($this->forward_edges[$generated_source->id] as $to_id => $path) {
             $path_type = $path->type;
 
-            if ($path->type === 'variable-use'
-                || $path->type === 'closure-use'
-                || $path->type === 'global-use'
-                || $path->type === 'use-inside-instance-property'
-                || $path->type === 'use-inside-static-property'
-                || $path->type === 'use-inside-call'
-                || $path->type === 'use-inside-conditional'
-                || $path->type === 'use-inside-isset'
-                || $path->type === 'arg'
-                || $path->type === 'comparison'
+            if ($path_type === 'variable-use'
+                || $path_type === 'closure-use'
+                || $path_type === 'global-use'
+                || $path_type === 'use-inside-instance-property'
+                || $path_type === 'use-inside-static-property'
+                || $path_type === 'use-inside-call'
+                || $path_type === 'use-inside-conditional'
+                || $path_type === 'use-inside-isset'
+                || $path_type === 'arg'
+                || $path_type === 'comparison'
             ) {
                 return null;
             }
@@ -188,7 +189,8 @@ final class VariableUseGraph extends DataFlowGraph
             }
 
             $new_destination = new DataFlowNode($to_id, $to_id, null);
-            $new_destination->path_types = [...$generated_source->path_types, ...[$path_type]];
+            $new_destination->path_types = $generated_source->path_types;
+            $new_destination->path_types []= $path_type;
 
             $new_child_nodes[$to_id] = $new_destination;
         }
@@ -202,7 +204,7 @@ final class VariableUseGraph extends DataFlowGraph
      */
     private function getParentNodes(
         DataFlowNode $destination,
-        array $visited_source_ids
+        array $visited_source_ids,
     ): array {
         $new_parent_nodes = [];
 

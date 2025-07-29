@@ -4,15 +4,17 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\Template;
 
+use Override;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
-class ValueOfTemplateTest extends TestCase
+final class ValueOfTemplateTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    #[Override]
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -27,6 +29,17 @@ class ValueOfTemplateTest extends TestCase
                         return array_values($array);
                     }
                 ',
+            ],
+            'mixedValueOf' => [
+                'code' => '<?php
+                    /** @var array<int>|mixed */
+                    $a = [];
+
+                    /** @psalm-suppress MixedArgument */
+                    $a = array_values($a);',
+                'assertions' => [
+                    '$a' => 'list<mixed>',
+                ],
             ],
             'SKIPPED-acceptsIfInArrayFn' => [
                 'code' => '<?php
@@ -71,6 +84,7 @@ class ValueOfTemplateTest extends TestCase
         ];
     }
 
+    #[Override]
     public function providerInvalidCodeParse(): iterable
     {
         return [

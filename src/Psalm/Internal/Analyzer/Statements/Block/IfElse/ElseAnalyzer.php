@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Block\IfElse;
 
 use PhpParser;
@@ -36,7 +38,7 @@ final class ElseAnalyzer
         ?PhpParser\Node\Stmt\Else_ $else,
         IfScope $if_scope,
         Context $else_context,
-        Context $outer_context
+        Context $outer_context,
     ): ?bool {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -198,22 +200,22 @@ final class ElseAnalyzer
             if ($has_leaving_statements) {
                 if ($else_context->loop_scope) {
                     if (!$has_continue_statement && !$has_break_statement) {
-                        $if_scope->new_vars_possibly_in_scope = array_merge(
-                            $vars_possibly_in_scope,
-                            $if_scope->new_vars_possibly_in_scope,
-                        );
+                        $if_scope->new_vars_possibly_in_scope = [
+                            ...$vars_possibly_in_scope,
+                            ...$if_scope->new_vars_possibly_in_scope,
+                        ];
                     }
 
-                    $else_context->loop_scope->vars_possibly_in_scope = array_merge(
-                        $vars_possibly_in_scope,
-                        $else_context->loop_scope->vars_possibly_in_scope,
-                    );
+                    $else_context->loop_scope->vars_possibly_in_scope = [
+                        ...$vars_possibly_in_scope,
+                        ...$else_context->loop_scope->vars_possibly_in_scope,
+                    ];
                 }
             } else {
-                $if_scope->new_vars_possibly_in_scope = array_merge(
-                    $vars_possibly_in_scope,
-                    $if_scope->new_vars_possibly_in_scope,
-                );
+                $if_scope->new_vars_possibly_in_scope = [
+                    ...$vars_possibly_in_scope,
+                    ...$if_scope->new_vars_possibly_in_scope,
+                ];
 
                 $if_scope->possibly_assigned_var_ids = array_merge(
                     $possibly_assigned_var_ids,

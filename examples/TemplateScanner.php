@@ -16,19 +16,16 @@ use function trim;
 
 final class TemplateScanner extends Psalm\Internal\Scanner\FileScanner
 {
-    const VIEW_CLASS = 'Your\\View\\Class';
+    final public const VIEW_CLASS = 'Your\\View\\Class';
 
+    #[\Override]
     public function scan(
         Codebase $codebase,
         FileStorage $file_storage,
         bool $storage_from_cache = false,
         ?Progress $progress = null
     ): void {
-        $stmts = $codebase->statements_provider->getStatementsForFile(
-            $file_storage->file_path,
-            7_04_00,
-            $progress,
-        );
+        $stmts = $codebase->getStatementsForFile($file_storage->file_path);
 
         if ($stmts === []) {
             return;

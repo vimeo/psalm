@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\FileManipulation;
 
+use Override;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
@@ -13,10 +16,11 @@ use Psalm\Tests\TestConfig;
 
 use function strpos;
 
-class PropertyMoveTest extends TestCase
+final class PropertyMoveTest extends TestCase
 {
     protected ProjectAnalyzer $project_analyzer;
 
+    #[Override]
     public function setUp(): void
     {
         RuntimeCaches::clearAll();
@@ -31,7 +35,7 @@ class PropertyMoveTest extends TestCase
     public function testValidCode(
         string $input_code,
         string $output_code,
-        array $properties_to_move
+        array $properties_to_move,
     ): void {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {

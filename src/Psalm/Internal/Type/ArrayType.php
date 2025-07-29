@@ -17,26 +17,16 @@ use function count;
  */
 final class ArrayType
 {
-    public Union $key;
-
-    public Union $value;
-
-    public bool $is_list;
-
-    public ?int $count = null;
-
-    public function __construct(Union $key, Union $value, bool $is_list, ?int $count)
+    public function __construct(public Union $key, public Union $value, public bool $is_list, public ?int $count)
     {
-        $this->key = $key;
-        $this->value = $value;
-        $this->is_list = $is_list;
-        $this->count = $count;
     }
 
     /**
      * @return (
-     *     $type is TArrayKey ? self : (
-     *         $type is TArray ? self : null
+     *     $type is TKeyedArray ? self : (
+     *         $type is TNonEmptyArray ? self : (
+     *             $type is TArray ? self : null
+     *         )
      *     )
      * )
      */

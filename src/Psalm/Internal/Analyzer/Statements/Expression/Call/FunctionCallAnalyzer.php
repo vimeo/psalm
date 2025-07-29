@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use PhpParser;
@@ -17,6 +19,7 @@ use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\TaintSink;
+use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\TemplateResult;
@@ -48,7 +51,6 @@ use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
@@ -61,6 +63,7 @@ use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_diff;
 use function array_map;
 use function array_merge;
 use function array_shift;
@@ -84,7 +87,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\FuncCall $stmt,
         Context $context,
-        ?TemplateResult $template_result = null
+        ?TemplateResult $template_result = null,
     ): bool {
         $function_name = $stmt->name;
 
@@ -237,10 +240,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             $function_call_info->function_id,
         );
 
-        $template_result->lower_bounds = array_merge(
-            $template_result->lower_bounds,
-            $already_inferred_lower_bounds,
-        );
+        $template_result->lower_bounds = [...$template_result->lower_bounds, ...$already_inferred_lower_bounds];
 
         if ($function_name instanceof PhpParser\Node\Name && $function_call_info->function_id) {
             $stmt_type = FunctionCallReturnTypeFetcher::fetch(
@@ -428,7 +428,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         PhpParser\Node\Expr\FuncCall $stmt,
         PhpParser\Node\Name $function_name,
         Context $context,
-        CodeLocation $code_location
+        CodeLocation $code_location,
     ): FunctionCallInfo {
         $function_call_info = new FunctionCallInfo();
 
@@ -561,7 +561,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                         $function_call_info->defined_constants = $function_storage->defined_constants;
                         $function_call_info->global_variables = $function_storage->global_variables;
                     }
-                } catch (UnexpectedValueException $e) {
+                } catch (UnexpectedValueException) {
                     $function_call_info->function_params = [
                         new FunctionLikeParameter('args', false, null, null, null, null, false, false, true),
                     ];
@@ -607,7 +607,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         PhpParser\Node\Expr\FuncCall $stmt,
         PhpParser\Node\Expr\FuncCall $real_stmt,
         PhpParser\Node\Expr $function_name,
-        Context $context
+        Context $context,
     ): FunctionCallInfo {
         $function_call_info = new FunctionCallInfo();
 
@@ -662,9 +662,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     continue;
                 }
 
-                if ($var_type_part instanceof TList) {
-                    $var_type_part = $var_type_part->getKeyedArray();
-                }
+
 
                 if ($var_type_part instanceof TClosure || $var_type_part instanceof TCallable) {
                     if (!$var_type_part->is_pure) {
@@ -764,7 +762,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                         if (strpos($var_type_part->value, '::')) {
                             $parts = explode('::', strtolower($var_type_part->value));
                             $fq_class_name = $parts[0];
-                            $fq_class_name = preg_replace('/^\\\/', '', $fq_class_name, 1);
+                            $fq_class_name = (string) preg_replace('/^\\\/', '', $fq_class_name, 1);
                             $potential_method_id = new MethodIdentifier($fq_class_name, $parts[1]);
                         } else {
                             $function_call_info->new_function_name = new VirtualFullyQualified(
@@ -857,6 +855,13 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
                 $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
+                $taints = array_diff($added_taints, $removed_taints);
+                if ($taints !== []) {
+                    $taint_source = TaintSource::fromNode($custom_call_sink);
+                    $taint_source->taints = $taints;
+                    $statements_analyzer->data_flow_graph->addSource($taint_source);
+                }
+
                 foreach ($stmt_name_type->parent_nodes as $parent_node) {
                     $statements_analyzer->data_flow_graph->addPath(
                         $parent_node,
@@ -882,7 +887,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         PhpParser\Node\Expr\FuncCall $real_stmt,
         PhpParser\Node\Expr $function_name,
         Context $context,
-        Atomic $atomic_type
+        Atomic $atomic_type,
     ): void {
         $old_data_provider = $statements_analyzer->node_data;
 
@@ -938,7 +943,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         Codebase $codebase,
         PhpParser\Node\Expr\FuncCall $stmt,
         PhpParser\Node\Arg $first_arg,
-        Context $context
+        Context $context,
     ): void {
         $first_arg_value_id = spl_object_id($first_arg->value);
 
@@ -1030,7 +1035,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         PhpParser\Node\Expr\FuncCall $stmt,
         PhpParser\Node $function_name,
         FunctionCallInfo $function_call_info,
-        Context $context
+        Context $context,
     ): void {
         $config = $codebase->config;
 
@@ -1118,7 +1123,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
     private static function callUsesByReferenceArguments(
         FunctionCallInfo $function_call_info,
-        PhpParser\Node\Expr\FuncCall $stmt
+        PhpParser\Node\Expr\FuncCall $stmt,
     ): bool {
         // If the function doesn't have any by-reference parameters
         // we shouldn't look any further.

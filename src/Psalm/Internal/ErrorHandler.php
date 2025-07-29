@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal;
 
 use RuntimeException;
@@ -14,7 +16,6 @@ use function set_error_handler;
 use function set_exception_handler;
 
 use const E_ALL;
-use const E_STRICT;
 use const STDERR;
 
 /**
@@ -29,7 +30,7 @@ final class ErrorHandler
     /**
      * @param array<int,string> $argv
      */
-    public static function install(array $argv = array()): void
+    public static function install(array $argv = []): void
     {
         self::$args = implode(' ', $argv);
         self::setErrorReporting();
@@ -59,7 +60,7 @@ final class ErrorHandler
 
     private static function setErrorReporting(): void
     {
-        error_reporting(E_ALL | E_STRICT);
+        error_reporting(E_ALL);
         ini_set('display_errors', '1');
     }
 
@@ -69,7 +70,7 @@ final class ErrorHandler
             int $error_code,
             string $error_message,
             string $error_filename = 'unknown',
-            int $error_line = -1
+            int $error_line = -1,
         ): bool {
             if (ErrorHandler::$exceptions_enabled && ($error_code & error_reporting())) {
                 throw new RuntimeException(
@@ -91,7 +92,7 @@ final class ErrorHandler
          * then print more of the backtrace than is done by default to stderr,
          * then exit with a non-zero exit code to indicate failure.
          */
-        set_exception_handler(static function (Throwable $throwable): void {
+        set_exception_handler(static function (Throwable $throwable): never {
             fwrite(STDERR, "Uncaught $throwable\n");
             $version = defined('PSALM_VERSION') ? PSALM_VERSION : '(unknown version)';
             fwrite(STDERR, "(Psalm $version crashed due to an uncaught Throwable)\n");

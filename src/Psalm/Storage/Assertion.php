@@ -1,13 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Storage;
 
+use Override;
 use Psalm\Type\Atomic;
+use Stringable;
 
 /**
  * @psalm-immutable
  */
-abstract class Assertion
+abstract class Assertion implements Stringable
 {
     use ImmutableNonCloneableTrait;
     use UnserializeMemoryUsageSuppressionTrait;
@@ -16,6 +20,7 @@ abstract class Assertion
 
     abstract public function isNegationOf(self $assertion): bool;
 
+    #[Override]
     abstract public function __toString(): string;
 
     public function isNegation(): bool

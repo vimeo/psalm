@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\Internal\Codebase;
 
+use Override;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
+use Psalm\Internal\Provider\FileReferenceCacheProvider;
+use Psalm\Internal\Provider\ParserCacheProvider;
 use Psalm\Internal\Provider\Providers;
-use Psalm\Tests\Internal\Provider\FakeFileReferenceCacheProvider;
-use Psalm\Tests\Internal\Provider\ParserInstanceCacheProvider;
 use Psalm\Tests\Internal\Provider\ProjectCacheProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
@@ -24,6 +25,7 @@ final class MethodGetCompletionItemsForClassishThingTest extends TestCase
 {
     private Codebase $codebase;
 
+    #[Override]
     public function setUp(): void
     {
         parent::setUp();
@@ -34,10 +36,10 @@ final class MethodGetCompletionItemsForClassishThingTest extends TestCase
 
         $providers = new Providers(
             $this->file_provider,
-            new ParserInstanceCacheProvider(),
+            new ParserCacheProvider($config, '', false),
             null,
             null,
-            new FakeFileReferenceCacheProvider(),
+            new FileReferenceCacheProvider($config, '', false),
             new ProjectCacheProvider(),
         );
 
@@ -48,6 +50,7 @@ final class MethodGetCompletionItemsForClassishThingTest extends TestCase
             $providers,
             null,
             [],
+            1,
             1,
             null,
             $this->codebase,
@@ -281,6 +284,7 @@ final class MethodGetCompletionItemsForClassishThingTest extends TestCase
                 'magicObjProp2',
     
                 'magicObjMethod',
+                //'magicStaticMethod',
     
                 'publicObjProp',
                 'protectedObjProp',
@@ -361,6 +365,7 @@ final class MethodGetCompletionItemsForClassishThingTest extends TestCase
                 'magicObjProp2',
     
                 'magicObjMethod',
+                //'magicStaticMethod',
     
                 'publicObjProp',
                 'protectedObjProp',
@@ -438,6 +443,7 @@ final class MethodGetCompletionItemsForClassishThingTest extends TestCase
                 'magicObjProp2',
     
                 'magicObjMethod',
+                //'magicStaticMethod',
     
                 'publicObjProp',
                 'protectedObjProp',

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 
 use PhpParser;
@@ -49,7 +51,6 @@ use function array_search;
 use function array_shift;
 use function array_values;
 use function count;
-use function get_class;
 use function reset;
 use function strtolower;
 
@@ -79,7 +80,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
         bool $is_intersection,
         ?string $lhs_var_id,
         AtomicMethodCallAnalysisResult $result,
-        ?TemplateResult $inferred_template_result = null
+        ?TemplateResult $inferred_template_result = null,
     ): void {
         if ($lhs_type_part instanceof TTemplateParam
             && !$lhs_type_part->as->isMixed()
@@ -537,7 +538,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
         Atomic $lhs_type_part,
         ?string $lhs_var_id,
         AtomicMethodCallAnalysisResult $result,
-        array $intersection_types
+        array $intersection_types,
     ): array {
         $all_intersection_return_type = null;
         $all_intersection_existent_method_ids = [];
@@ -594,7 +595,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
         AtomicMethodCallAnalysisResult $result,
         Union $return_type_candidate,
         ?Union $all_intersection_return_type,
-        Codebase $codebase
+        Codebase $codebase,
     ): void {
         if ($all_intersection_return_type) {
             $return_type_candidate = Type::intersectUnionTypes(
@@ -616,9 +617,9 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
         ?string $lhs_var_id,
         Context $context,
         bool $is_intersection,
-        AtomicMethodCallAnalysisResult $result
+        AtomicMethodCallAnalysisResult $result,
     ): void {
-        switch (get_class($lhs_type_part)) {
+        switch ($lhs_type_part::class) {
             case TNull::class:
             case TFalse::class:
                 // handled above
@@ -737,7 +738,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
         StatementsSource $source,
         PhpParser\Node\Expr\MethodCall $stmt,
         StatementsAnalyzer $statements_analyzer,
-        string $fq_class_name
+        string $fq_class_name,
     ): array {
         $naive_method_exists = false;
 
@@ -827,7 +828,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
         PhpParser\Node\Expr\MethodCall $stmt,
         StatementsAnalyzer $statements_analyzer,
         string $fq_class_name,
-        ?string $lhs_var_id
+        ?string $lhs_var_id,
     ): array {
         $naive_method_exists = false;
 
@@ -915,13 +916,13 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
         Context $context,
         ?TCallable $lhs_type_part_callable,
         AtomicMethodCallAnalysisResult $result,
-        ?TemplateResult $inferred_template_result = null
+        ?TemplateResult $inferred_template_result = null,
     ): void {
         $method_id = 'object::__invoke';
         $result->existent_method_ids[$method_id] = true;
         $result->has_valid_method_call_type = true;
 
-        if ($lhs_type_part_callable !== null) {
+        if ($lhs_type_part_callable !== null && !$stmt->isFirstClassCallable()) {
             $result->return_type = $lhs_type_part_callable->return_type ?? Type::getMixed();
             $callableArgumentCount = count($lhs_type_part_callable->params ?? []);
             $providedArgumentsCount = count($stmt->getArgs());

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
@@ -13,7 +15,6 @@ use Psalm\Issue\UnhandledMatchCondition;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\BinaryOp\VirtualIdentical;
 use Psalm\Node\Expr\VirtualArray;
-use Psalm\Node\Expr\VirtualArrayItem;
 use Psalm\Node\Expr\VirtualConstFetch;
 use Psalm\Node\Expr\VirtualFuncCall;
 use Psalm\Node\Expr\VirtualNew;
@@ -22,6 +23,7 @@ use Psalm\Node\Expr\VirtualThrow;
 use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Node\Name\VirtualFullyQualified;
 use Psalm\Node\VirtualArg;
+use Psalm\Node\VirtualArrayItem;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TEnumCase;
@@ -31,7 +33,7 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Reconciler;
 use UnexpectedValueException;
 
-use function array_filter;
+use function array_any;
 use function array_map;
 use function array_merge;
 use function array_reverse;
@@ -49,7 +51,7 @@ final class MatchAnalyzer
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Match_ $stmt,
-        Context $context
+        Context $context,
     ): bool {
         $was_inside_call = $context->inside_call;
 
@@ -215,9 +217,7 @@ final class MatchAnalyzer
             $statements_analyzer->addSuppressedIssues(['RedundantConditionGivenDocblockType']);
         }
 
-        if (ExpressionAnalyzer::analyze($statements_analyzer, $ternary, $context) === false) {
-            return false;
-        }
+        $v = ExpressionAnalyzer::analyze($statements_analyzer, $ternary, $context);
 
         if (!in_array('RedundantCondition', $suppressed_issues, true)) {
             $statements_analyzer->removeSuppressedIssues(['RedundantCondition']);
@@ -225,6 +225,10 @@ final class MatchAnalyzer
 
         if (!in_array('RedundantConditionGivenDocblockType', $suppressed_issues, true)) {
             $statements_analyzer->removeSuppressedIssues(['RedundantConditionGivenDocblockType']);
+        }
+
+        if ($v === false) {
+            return false;
         }
 
         if ($switch_var_id && $last_arm->conds) {
@@ -281,7 +285,7 @@ final class MatchAnalyzer
                 );
 
                 if (isset($vars_in_scope_reconciled[$switch_var_id])) {
-                    $array_literal_types = array_filter(
+                    $array_literal_types = array_any(
                         $vars_in_scope_reconciled[$switch_var_id]->getAtomicTypes(),
                         static fn(Atomic $type): bool => $type instanceof TLiteralInt
                             || $type instanceof TLiteralString
@@ -316,11 +320,12 @@ final class MatchAnalyzer
 
     /**
      * @param non-empty-list<PhpParser\Node\Expr> $conds
+     * @param array<string, mixed> $attributes
      */
     private static function convertCondsToConditional(
         array $conds,
         PhpParser\Node\Expr $match_condition,
-        array $attributes
+        array $attributes,
     ): PhpParser\Node\Expr {
         if (count($conds) === 1) {
             return new VirtualIdentical(
@@ -331,7 +336,7 @@ final class MatchAnalyzer
         }
 
         $array_items = array_map(
-            static fn(PhpParser\Node\Expr $cond): PhpParser\Node\Expr\ArrayItem =>
+            static fn(PhpParser\Node\Expr $cond): PhpParser\Node\ArrayItem =>
                 new VirtualArrayItem($cond, null, false, $cond->getAttributes()),
             $conds,
         );

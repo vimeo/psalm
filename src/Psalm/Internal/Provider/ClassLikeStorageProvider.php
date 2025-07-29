@@ -1,12 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider;
 
 use InvalidArgumentException;
 use LogicException;
+use Psalm\Issue\DuplicateClass;
+use Psalm\IssueBuffer;
 use Psalm\Storage\ClassLikeStorage;
 
-use function array_merge;
 use function strtolower;
 
 /**
@@ -26,11 +29,8 @@ final class ClassLikeStorageProvider
      */
     private static array $new_storage = [];
 
-    public ?ClassLikeStorageCacheProvider $cache = null;
-
-    public function __construct(?ClassLikeStorageCacheProvider $cache = null)
+    public function __construct(public ?ClassLikeStorageCacheProvider $cache = null)
     {
-        $this->cache = $cache;
     }
 
     /**
@@ -83,7 +83,7 @@ final class ClassLikeStorageProvider
     /**
      * @return array<string, ClassLikeStorage>
      */
-    public function getAll(): array
+    public static function getAll(): array
     {
         return self::$storage;
     }
@@ -101,8 +101,33 @@ final class ClassLikeStorageProvider
      */
     public function addMore(array $more): void
     {
-        self::$new_storage = array_merge(self::$new_storage, $more);
-        self::$storage = array_merge(self::$storage, $more);
+        foreach ($more as $k => $storage) {
+            if (isset(self::$storage[$k])) {
+                $duplicate_storage = self::$storage[$k];
+                $duplicate_location = $duplicate_storage->location ?? $duplicate_storage->stmt_location;
+                $location = $storage->location ?? $storage->stmt_location;
+                if ($duplicate_location !== null
+                    && $location !== null
+                    && $duplicate_location->getHash() !== $location->getHash()
+                ) {
+                    IssueBuffer::maybeAdd(
+                        new DuplicateClass(
+                            'Class ' . $k . ' has already been defined'
+                            . ' in ' . $location->file_path,
+                            $location,
+                        ),
+                    );
+
+                    //$storage->file_storage->has_visitor_issues = true;
+
+                    $duplicate_storage->has_visitor_issues = true;
+
+                    continue;
+                }
+            }
+            self::$new_storage[$k] = $storage;
+            self::$storage[$k] = $storage;
+        }
     }
 
     public function makeNew(string $fq_classlike_name_lc): void

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\PluginManager;
 
 use DOMDocument;
@@ -21,16 +23,14 @@ final class ConfigFile
 {
     private string $path;
 
-    private string $current_dir;
-
     private ?string $psalm_header = null;
 
     private ?int $psalm_tag_end_pos = null;
 
-    public function __construct(string $current_dir, ?string $explicit_path)
-    {
-        $this->current_dir = $current_dir;
-
+    public function __construct(
+        private readonly string $current_dir,
+        ?string $explicit_path,
+    ) {
         if ($explicit_path) {
             $this->path = $explicit_path;
         } else {
@@ -111,6 +111,7 @@ final class ConfigFile
         $doc = new DOMDocument();
 
         $file_contents = file_get_contents($this->path);
+        assert($file_contents !== false);
 
         if (($tag_start = strpos($file_contents, '<psalm')) !== false) {
             $tag_end = strpos($file_contents, '>', $tag_start + 1);

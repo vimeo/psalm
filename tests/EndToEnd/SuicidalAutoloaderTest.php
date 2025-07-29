@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\EndToEnd;
 
 use PHPUnit\Framework\TestCase;
@@ -8,7 +10,7 @@ use function version_compare;
 
 use const PHP_VERSION;
 
-class SuicidalAutoloaderTest extends TestCase
+final class SuicidalAutoloaderTest extends TestCase
 {
     use PsalmRunnerTrait;
 

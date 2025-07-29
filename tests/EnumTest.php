@@ -1,15 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
+use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
-class EnumTest extends TestCase
+final class EnumTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
 
+    #[Override]
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -610,6 +614,31 @@ class EnumTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'classStringAsBackedEnumValue' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {}
+
+                    enum FooEnum: string {
+                        case Foo = Foo::class;
+                    }
+
+                    /**
+                     * @param class-string $s
+                     */
+                    function noop(string $s): string
+                    {
+                        return $s;
+                    }
+
+                    $foo = FooEnum::Foo->value;
+                    noop($foo);
+                    noop(FooEnum::Foo->value);
+                PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'backedEnumCaseValueFromClassConstant' => [
                 'code' => <<<'PHP'
                     <?php
@@ -626,6 +655,28 @@ class EnumTest extends TestCase
                         case BAR = FooBar::BAR;
                     }
                     PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'stringBackedEnumCaseValueFromStringGlobalConstant' => [
+                'code' => '<?php
+                    enum Bar: string
+                    {
+                        case Foo = \DATE_ATOM;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'intBackedEnumCaseValueFromIntGlobalConstant' => [
+                'code' => '<?php
+                    enum Bar: int
+                    {
+                        case Foo = \UPLOAD_ERR_OK;
+                    }
+                ',
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
@@ -653,28 +704,6 @@ class EnumTest extends TestCase
                         }
                     }
                     PHP,
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.1',
-            ],
-            'stringBackedEnumCaseValueFromStringGlobalConstant' => [
-                'code' => '<?php
-                    enum Bar: string
-                    {
-                        case Foo = \DATE_ATOM;
-                    }
-                ',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.1',
-            ],
-            'intBackedEnumCaseValueFromIntGlobalConstant' => [
-                'code' => '<?php
-                    enum Bar: int
-                    {
-                        case Foo = \UPLOAD_ERR_OK;
-                    }
-                ',
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
@@ -716,6 +745,7 @@ class EnumTest extends TestCase
         ];
     }
 
+    #[Override]
     public function providerInvalidCodeParse(): iterable
     {
         return [

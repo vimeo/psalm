@@ -1,16 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\TypeReconciliation;
 
+use Override;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
-class ConditionalTest extends TestCase
+final class ConditionalTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    #[Override]
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -1228,6 +1232,19 @@ class ConditionalTest extends TestCase
                         }
                     }',
             ],
+            'thingInstanceOfThis' => [
+                'code' => '<?php
+                    abstract class A {
+                        /** @psalm-param mixed $other */
+                        public function equals($other): void {
+                            if ($other instanceof $this) {
+                                /** @psalm-check-type $other = A&static */
+                                return;
+                            }
+                        }
+                    }
+                ',
+            ],
             'reconcileCallable' => [
                 'code' => '<?php
                     function reflectCallable(callable $callable): ReflectionFunctionAbstract {
@@ -1399,7 +1416,7 @@ class ConditionalTest extends TestCase
                         takes_int($int);
                     }',
             ],
-            'looseEqualityShouldNotConverMixedToString' => [
+            'looseEqualityShouldNotConvertMixedToString' => [
                 'code' => '<?php
                     /** @var mixed */
                     $int = 0;
@@ -1676,7 +1693,7 @@ class ConditionalTest extends TestCase
                 'code' => '<?php
                     /**
                      * @param array<string, int> $arr
-                     * @return non-empty-array<string, int>
+                     * @return array<string, int>
                      */
                     function foo(array $arr) : array {
                         if (isset($arr["a"])) {
@@ -1798,7 +1815,6 @@ class ConditionalTest extends TestCase
                         /**
                          * @psalm-suppress MixedArrayAccess
                          * @psalm-suppress MixedReturnStatement
-                         * @psalm-suppress MixedInferredReturnType
                          * @psalm-suppress MixedArrayAssignment
                          */
                         public function foo() : stdClass {
@@ -2189,7 +2205,6 @@ class ConditionalTest extends TestCase
 
                         /**
                          * @psalm-suppress MixedReturnStatement
-                         * @psalm-suppress MixedInferredReturnType
                          * @psalm-suppress MixedArrayAccess
                          */
                         public static function get(string $k1, string $k2) : ?string {
@@ -2508,7 +2523,7 @@ class ConditionalTest extends TestCase
                                     continue;
                                 }
 
-                                $remaining = trim(preg_replace(\'@^[ \t]*\* *@m\', \' \', substr($return_block, $i + 1)));
+                                $remaining = trim((string) preg_replace(\'@^[ \t]*\* *@m\', \' \', substr($return_block, $i + 1)));
 
                                 if ($remaining) {
                                     /** @var array<string> */
@@ -3175,6 +3190,7 @@ class ConditionalTest extends TestCase
         ];
     }
 
+    #[Override]
     public function providerInvalidCodeParse(): iterable
     {
         return [

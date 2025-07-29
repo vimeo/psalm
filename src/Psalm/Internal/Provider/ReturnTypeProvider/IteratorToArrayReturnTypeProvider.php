@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use Override;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
@@ -27,6 +30,7 @@ final class IteratorToArrayReturnTypeProvider implements FunctionReturnTypeProvi
     /**
      * @return array<lowercase-string>
      */
+    #[Override]
     public static function getFunctionIds(): array
     {
         return [
@@ -34,6 +38,7 @@ final class IteratorToArrayReturnTypeProvider implements FunctionReturnTypeProvi
         ];
     }
 
+    #[Override]
     public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Union
     {
         $statements_source = $event->getStatementsSource();
@@ -57,6 +62,12 @@ final class IteratorToArrayReturnTypeProvider implements FunctionReturnTypeProvi
             while ($call_arg_atomic_type = array_shift($atomic_types)) {
                 if ($call_arg_atomic_type instanceof TTemplateParam) {
                     $atomic_types = array_merge($atomic_types, $call_arg_atomic_type->as->getAtomicTypes());
+                    continue;
+                }
+
+                if ($call_arg_atomic_type instanceof TIterable) {
+                    $key_type = $call_arg_atomic_type->type_params[0];
+                    $value_type = $call_arg_atomic_type->type_params[1];
                     continue;
                 }
 
@@ -105,6 +116,7 @@ final class IteratorToArrayReturnTypeProvider implements FunctionReturnTypeProvi
                 if ($key_type->isSingle() && $key_type->hasTemplate()) {
                     $template_types = $key_type->getTemplateTypes();
                     $template_type = array_shift($template_types);
+                    assert($template_type !== null);
                     if ($template_type->as->hasMixed()) {
                         $template_type = $template_type->replaceAs(Type::getArrayKey());
                         $key_type = new Union([$template_type]);

@@ -1,8 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Storage\Assertion;
 
+use Override;
 use Psalm\Storage\Assertion;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type\Atomic;
 
 /**
@@ -10,27 +14,25 @@ use Psalm\Type\Atomic;
  */
 final class IsNotAClass extends Assertion
 {
-    /** @var Atomic\TTemplateParamClass|Atomic\TNamedObject */
-    public Atomic $type;
-    public bool $allow_string;
-
+    use UnserializeMemoryUsageSuppressionTrait;
     /** @param Atomic\TTemplateParamClass|Atomic\TNamedObject $type */
-    public function __construct(Atomic $type, bool $allow_string)
+    public function __construct(public readonly Atomic $type, public readonly bool $allow_string)
     {
-        $this->type = $type;
-        $this->allow_string = $allow_string;
     }
 
+    #[Override]
     public function isNegation(): bool
     {
         return true;
     }
 
+    #[Override]
     public function getNegation(): Assertion
     {
         return new IsAClass($this->type, $this->allow_string);
     }
 
+    #[Override]
     public function getAtomicType(): Atomic
     {
         return $this->type;
@@ -41,6 +43,7 @@ final class IsNotAClass extends Assertion
         return 'isa-' . ($this->allow_string ? 'string-' : '') . $this->type;
     }
 
+    #[Override]
     public function isNegationOf(Assertion $assertion): bool
     {
         return $assertion instanceof IsAClass

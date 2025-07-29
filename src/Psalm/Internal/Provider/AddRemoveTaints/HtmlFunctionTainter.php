@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider\AddRemoveTaints;
 
+use Override;
 use PhpParser;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\AddTaintsInterface;
@@ -24,6 +27,7 @@ final class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInter
      *
      * @return list<string>
      */
+    #[Override]
     public static function addTaints(AddRemoveTaintsEvent $event): array
     {
         $item = $event->getExpr();
@@ -76,6 +80,7 @@ final class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInter
      *
      * @return list<string>
      */
+    #[Override]
     public static function removeTaints(AddRemoveTaintsEvent $event): array
     {
         $item = $event->getExpr();

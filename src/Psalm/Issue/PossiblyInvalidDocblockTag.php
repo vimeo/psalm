@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Issue;
 
 final class PossiblyInvalidDocblockTag extends CodeIssue

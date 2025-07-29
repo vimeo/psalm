@@ -1,16 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\Template;
 
+use Override;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
-class FunctionTemplateTest extends TestCase
+final class FunctionTemplateTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    #[Override]
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -1419,7 +1423,6 @@ class FunctionTemplateTest extends TestCase
                      * @param E $e
                      * @param mixed $d
                      * @return ?E
-                     * @psalm-suppress MixedInferredReturnType
                      */
                     function reduce_values($e, $d) {
                         if (rand(0, 1)) {
@@ -1442,7 +1445,6 @@ class FunctionTemplateTest extends TestCase
                      * @param E $e
                      * @param mixed $d
                      * @return ?E
-                     * @psalm-suppress MixedInferredReturnType
                      */
                     function reduce_values($e, $d)
                     {
@@ -1781,9 +1783,84 @@ class FunctionTemplateTest extends TestCase
                      */
                     function test2(BType $_value): void {}',
             ],
+            'staticIssue' => [
+                'code' => '<?php
+
+                    /**
+                     * @template TTKey as array-key
+                     * @template TTValue
+                     *
+                     * @psalm-consistent-constructor
+                     * @psalm-consistent-templates
+                     */
+                    final class a {
+
+                        /**
+                         * @var array<TTKey, TTValue>
+                         */
+                        protected array $array = [];
+
+                        /**
+                         * Constructor
+                         *
+                         * @param array<TTKey, TTValue> $array
+                         */
+                        public function __construct(array $array = []) {
+                            $this->array = $array;
+                        }
+
+                        /**
+                         * @template TNewValue
+                         * @param TNewValue $item
+                         *
+                         * @psalm-self-out a<TTKey|int, TTValue|TNewValue>
+                         * @return self<TTKey|int, TTValue|TNewValue>
+                         */
+                        public function add($item): self {
+                            /** @var self<TTKey|int, TTValue|TNewValue> $this */
+                            $this->array[] = $item;
+                            return $this;
+                        }
+
+                        /**
+                         * @template TRet as list<int|string|float>
+                         * @param callable(TTValue, TTKey): TRet $func
+                         *
+                         * @return self<TTKey, TTValue>
+                         */
+                        public function sortByArr(callable $func, int $order = -1): self {
+                            return new self($this->array);
+                        }
+                    }
+
+
+                    class FilterBase {
+                        public function setId(): static {
+                            return $this;
+                        }
+                    }
+
+                    class FilterControls extends FilterBase {
+                    }
+
+
+                    $list = new a();
+                    $list->add(
+                        (new FilterControls())->setId(),
+                    );
+
+                    $test = $list->sortByArr(
+                        /** 
+                         * @return list{0: mixed, 1: mixed}
+                         */
+                        static fn ($item): array => [$item, $item],
+                        1,
+                    );',
+            ],
         ];
     }
 
+    #[Override]
     public function providerInvalidCodeParse(): iterable
     {
         return [

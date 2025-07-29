@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\LanguageServer\Client\Progress;
 
 use LogicException;
+use Override;
 use Psalm\Internal\LanguageServer\ClientHandler;
 
 /** @internal */
@@ -13,21 +16,19 @@ final class Progress implements ProgressInterface
     private const STATUS_FINISHED = 'finished';
 
     private string $status = self::STATUS_INACTIVE;
-
-    private ClientHandler $handler;
-    private string $token;
     private bool $withPercentage = false;
 
-    public function __construct(ClientHandler $handler, string $token)
-    {
-        $this->handler = $handler;
-        $this->token = $token;
+    public function __construct(
+        private readonly ClientHandler $handler,
+        private readonly string $token,
+    ) {
     }
 
+    #[Override]
     public function begin(
         string $title,
         ?string $message = null,
-        ?int $percentage = null
+        ?int $percentage = null,
     ): void {
         if ($this->status === self::STATUS_ACTIVE) {
             throw new LogicException('Progress has already been started');
@@ -59,6 +60,7 @@ final class Progress implements ProgressInterface
         $this->status = self::STATUS_ACTIVE;
     }
 
+    #[Override]
     public function end(?string $message = null): void
     {
         if ($this->status === self::STATUS_FINISHED) {
@@ -85,6 +87,7 @@ final class Progress implements ProgressInterface
         $this->status = self::STATUS_FINISHED;
     }
 
+    #[Override]
     public function update(?string $message = null, ?int $percentage = null): void
     {
         if ($this->status === self::STATUS_FINISHED) {

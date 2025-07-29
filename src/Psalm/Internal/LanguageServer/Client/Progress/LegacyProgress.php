@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\LanguageServer\Client\Progress;
 
 use LanguageServerProtocol\LogMessage;
 use LanguageServerProtocol\MessageType;
 use LogicException;
+use Override;
 use Psalm\Internal\LanguageServer\ClientHandler;
 
 /** @internal */
@@ -15,15 +18,14 @@ final class LegacyProgress implements ProgressInterface
     private const STATUS_FINISHED = 'finished';
 
     private string $status = self::STATUS_INACTIVE;
-
-    private ClientHandler $handler;
     private ?string $title = null;
 
-    public function __construct(ClientHandler $handler)
-    {
-        $this->handler = $handler;
+    public function __construct(
+        private readonly ClientHandler $handler,
+    ) {
     }
 
+    #[Override]
     public function begin(string $title, ?string $message = null, ?int $percentage = null): void
     {
 
@@ -42,6 +44,7 @@ final class LegacyProgress implements ProgressInterface
         $this->status = self::STATUS_ACTIVE;
     }
 
+    #[Override]
     public function update(?string $message = null, ?int $percentage = null): void
     {
         if ($this->status === self::STATUS_FINISHED) {
@@ -55,6 +58,7 @@ final class LegacyProgress implements ProgressInterface
         $this->notify($message);
     }
 
+    #[Override]
     public function end(?string $message = null): void
     {
         if ($this->status === self::STATUS_FINISHED) {

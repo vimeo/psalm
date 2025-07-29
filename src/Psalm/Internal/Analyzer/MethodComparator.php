@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer;
 
 use PhpParser\Node\Stmt\ClassMethod;
@@ -22,6 +24,8 @@ use Psalm\Issue\ImplementedReturnTypeMismatch;
 use Psalm\Issue\LessSpecificImplementedReturnType;
 use Psalm\Issue\MethodSignatureMismatch;
 use Psalm\Issue\MethodSignatureMustProvideReturnType;
+use Psalm\Issue\MismatchingDocblockParamType;
+use Psalm\Issue\MismatchingDocblockReturnType;
 use Psalm\Issue\MissingImmutableAnnotation;
 use Psalm\Issue\MoreSpecificImplementedParamType;
 use Psalm\Issue\OverriddenMethodAccess;
@@ -37,9 +41,9 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
-use function array_filter;
+use function array_any;
 use function in_array;
-use function strpos;
+use function str_starts_with;
 use function strtolower;
 
 /**
@@ -64,7 +68,7 @@ final class MethodComparator
         CodeLocation $code_location,
         array $suppressed_issues,
         bool $prevent_abstract_override = true,
-        bool $prevent_method_signature_mismatch = true
+        bool $prevent_method_signature_mismatch = true,
     ): ?bool {
         $implementer_method_id = new MethodIdentifier(
             $implementer_classlike_storage->name,
@@ -124,7 +128,7 @@ final class MethodComparator
             && (($guide_method_storage->return_type && InternalCallMapHandler::inCallMap($cased_guide_method_id))
                 || $guide_method_storage->signature_return_type
             ) && !$implementer_method_storage->signature_return_type
-            && !array_filter(
+            && !array_any(
                 $implementer_method_storage->attributes,
                 static fn(AttributeStorage $s): bool => $s->fq_class_name === 'ReturnTypeWillChange',
             )
@@ -237,6 +241,56 @@ final class MethodComparator
     }
 
     /**
+     * @param array<lowercase-string, MethodStorage> $pseudo_methods
+     */
+    public static function comparePseudoMethods(
+        array $pseudo_methods,
+        string $fq_class_name,
+        Codebase $codebase,
+        ClassLikeStorage $class_storage,
+    ): void {
+        foreach ($pseudo_methods as $pseudo_method_name => $pseudo_method_storage) {
+            $pseudo_method_id = new MethodIdentifier(
+                $fq_class_name,
+                $pseudo_method_name,
+            );
+
+            $overridden_method_ids = $codebase->methods->getOverriddenMethodIds($pseudo_method_id);
+            if (isset($class_storage->methods[$pseudo_method_id->method_name])) {
+                $overridden_method_ids[$class_storage->name] = $pseudo_method_id;
+            }
+
+            if ($overridden_method_ids
+                && $pseudo_method_name !== '__construct'
+                && $pseudo_method_storage->location
+            ) {
+                foreach ($overridden_method_ids as $overridden_method_id) {
+                    $parent_method_storage = $codebase->methods->getStorage($overridden_method_id);
+
+                    $overridden_fq_class_name = $overridden_method_id->fq_class_name;
+
+                    $parent_storage = $codebase->classlike_storage_provider->get($overridden_fq_class_name);
+
+                    self::compare(
+                        $codebase,
+                        null,
+                        $class_storage,
+                        $parent_storage,
+                        $pseudo_method_storage,
+                        $parent_method_storage,
+                        $fq_class_name,
+                        $pseudo_method_storage->visibility ?: 0,
+                        $class_storage->location ?: $pseudo_method_storage->location,
+                        $class_storage->suppressed_issues,
+                        true,
+                        false,
+                    );
+                }
+            }
+        }
+    }
+
+    /**
      * @param  string[]         $suppressed_issues
      */
     private static function checkForObviousMethodMismatches(
@@ -252,7 +306,7 @@ final class MethodComparator
         bool $prevent_abstract_override,
         bool $trait_mismatches_are_fatal,
         CodeLocation $code_location,
-        array $suppressed_issues
+        array $suppressed_issues,
     ): void {
         if ($implementer_visibility > $guide_visibility) {
             if ($trait_mismatches_are_fatal
@@ -359,7 +413,7 @@ final class MethodComparator
         string $cased_implementer_method_id,
         bool $prevent_method_signature_mismatch,
         CodeLocation $code_location,
-        array $suppressed_issues
+        array $suppressed_issues,
     ): void {
         // ignore errors from stubbed/out of project files
         $config = Config::getInstance();
@@ -451,7 +505,7 @@ final class MethodComparator
                 && $implementer_classlike_storage->user_defined
                 && $implementer_param->location
                 && $guide_method_storage->cased_name
-                && (strpos($guide_method_storage->cased_name, '__') !== 0
+                && (!str_starts_with($guide_method_storage->cased_name, '__')
                     || ($guide_classlike_storage->preserve_constructor_signature
                         && $guide_method_storage->cased_name === '__construct'))
                 && $config->isInProjectDirs(
@@ -499,7 +553,10 @@ final class MethodComparator
                 }
             }
 
-            if ($implementer_param->signature_type) {
+            if ($guide_classlike_storage->user_defined
+                && $implementer_param->signature_type
+                && $guide_param->signature_type
+            ) {
                 self::compareMethodSignatureParams(
                     $codebase,
                     $i,
@@ -571,7 +628,7 @@ final class MethodComparator
         string $cased_guide_method_id,
         string $cased_implementer_method_id,
         CodeLocation $code_location,
-        array $suppressed_issues
+        array $suppressed_issues,
     ): void {
         $guide_param_signature_type = $guide_param->signature_type
             ? TypeExpander::expandUnion(
@@ -735,7 +792,7 @@ final class MethodComparator
         Union $guide_param_type,
         Union $implementer_param_type,
         CodeLocation $code_location,
-        array $suppressed_issues
+        array $suppressed_issues,
     ): void {
         $implementer_method_storage_param_type = TypeExpander::expandUnion(
             $codebase,
@@ -788,7 +845,7 @@ final class MethodComparator
         $builder = $implementer_method_storage_param_type->getBuilder();
         foreach ($builder->getAtomicTypes() as $k => $t) {
             if ($t instanceof TTemplateParam
-                && strpos($t->defining_class, 'fn-') === 0
+                && str_starts_with($t->defining_class, 'fn-')
             ) {
                 $builder->removeType($k);
 
@@ -802,7 +859,7 @@ final class MethodComparator
         $builder = $guide_method_storage_param_type->getBuilder();
         foreach ($builder->getAtomicTypes() as $k => $t) {
             if ($t instanceof TTemplateParam
-                && strpos($t->defining_class, 'fn-') === 0
+                && str_starts_with($t->defining_class, 'fn-')
             ) {
                 $builder->removeType($k);
 
@@ -869,6 +926,18 @@ final class MethodComparator
                         ),
                         $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
                     );
+                } elseif ($guide_class_name == $implementer_called_class_name) {
+                    IssueBuffer::maybeAdd(
+                        new MismatchingDocblockParamType(
+                            'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id
+                            . ' has wrong type \'' .
+                            $implementer_method_storage_param_type->getId() . '\' in @method annotation, expecting \'' .
+                            $guide_method_storage_param_type->getId() . '\'',
+                            $implementer_method_storage->params[$i]->location
+                                ?: $code_location,
+                        ),
+                        $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
+                    );
                 } else {
                     IssueBuffer::maybeAdd(
                         new ImplementedParamTypeMismatch(
@@ -901,7 +970,7 @@ final class MethodComparator
         string $implementer_called_class_name,
         string $cased_implementer_method_id,
         CodeLocation $code_location,
-        array $suppressed_issues
+        array $suppressed_issues,
     ): void {
         $guide_signature_return_type = TypeExpander::expandUnion(
             $codebase,
@@ -945,7 +1014,7 @@ final class MethodComparator
 
         if (!$is_contained_by) {
             if ($implementer_signature_return_type === null
-                && array_filter(
+                && array_any(
                     $implementer_method_storage->attributes,
                     static fn(AttributeStorage $s): bool => $s->fq_class_name === 'ReturnTypeWillChange',
                 )) {
@@ -994,7 +1063,7 @@ final class MethodComparator
         string $implementer_called_class_name,
         ?MethodIdentifier $implementer_declaring_method_id,
         CodeLocation $code_location,
-        array $suppressed_issues
+        array $suppressed_issues,
     ): void {
         $implementer_method_storage_return_type = TypeExpander::expandUnion(
             $codebase,
@@ -1096,6 +1165,17 @@ final class MethodComparator
                     ),
                     $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
                 );
+            } elseif ($guide_class_name == $implementer_called_class_name) {
+                IssueBuffer::maybeAdd(
+                    new MismatchingDocblockReturnType(
+                        'The inherited return type \'' . $guide_method_storage_return_type->getId()
+                        . '\' for ' . $cased_guide_method_id . ' is different to the corresponding '
+                        . '@method annotation \'' . $implementer_method_storage_return_type->getId() . '\'',
+                        $implementer_method_storage->return_type_location
+                            ?: $code_location,
+                    ),
+                    $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
+                );
             } else {
                 IssueBuffer::maybeAdd(
                     new ImplementedReturnTypeMismatch(
@@ -1119,7 +1199,7 @@ final class MethodComparator
         array $template_extended_params,
         string $base_class_name,
         Union &$templated_type,
-        Codebase $codebase
+        Codebase $codebase,
     ): void {
         if (isset($template_extended_params[$base_class_name])) {
             $map = $template_extended_params[$base_class_name];

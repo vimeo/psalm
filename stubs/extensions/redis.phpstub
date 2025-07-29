@@ -475,7 +475,7 @@ class Redis {
 
     public function xadd(string $key, string $id, array $values, int $maxlen = 0, bool $approx = false): string|false {}
 
-    public function xclaim(string $key, string $group, string $consumer, int $min_iddle, array $ids, array $options): string|array|false {}
+    public function xclaim(string $key, string $group, string $consumer, int $min_idle, array $ids, array $options): string|array|false {}
 
     public function xdel(string $key, array $ids): Redis|int|false {}
 

@@ -8,7 +8,7 @@ If this class is used and part of the public API, annotate it with `@psalm-api`.
 ```php
 <?php
 
-class A {}
-class B {}
+final class A {}
+final class B {}
 $a = new A();
 ```

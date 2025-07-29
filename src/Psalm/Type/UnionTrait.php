@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type;
 
 use InvalidArgumentException;
+use Override;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Internal\TypeVisitor\CanContainObjectTypeVisitor;
@@ -15,6 +18,7 @@ use Psalm\Internal\TypeVisitor\TypeScanner;
 use Psalm\StatementsSource;
 use Psalm\Storage\FileStorage;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
@@ -25,7 +29,6 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -34,6 +37,7 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
+use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNonspecificLiteralInt;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
@@ -45,14 +49,12 @@ use Psalm\Type\Atomic\TTrue;
 use function array_filter;
 use function array_unique;
 use function count;
-use function get_class;
 use function implode;
 use function ksort;
 use function reset;
 use function sort;
+use function str_contains;
 use function strpos;
-
-use const ARRAY_FILTER_USE_BOTH;
 
 /**
  * @psalm-immutable
@@ -61,7 +63,7 @@ use const ARRAY_FILTER_USE_BOTH;
 trait UnionTrait
 {
     /**
-     * Constructs an Union instance
+     * Constructs a Union instance
      *
      * @psalm-external-mutation-free
      * @param non-empty-array<Atomic>     $types
@@ -218,7 +220,7 @@ trait UnionTrait
 
         if (count($types) > 1) {
             foreach ($types as $i => $type) {
-                if (strpos($type, ' as ') && strpos($type, '(') === false) {
+                if (strpos($type, ' as ') && !str_contains($type, '(')) {
                     $types[$i] = '(' . $type . ')';
                 }
             }
@@ -245,7 +247,7 @@ trait UnionTrait
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        bool $use_phpdoc_format
+        bool $use_phpdoc_format,
     ): string {
         $other_types = [];
 
@@ -262,9 +264,9 @@ trait UnionTrait
             } elseif ($type instanceof TLiteralString) {
                 $literal_strings[] = $type_string;
             } else {
-                if (get_class($type) === TString::class) {
+                if ($type::class === TString::class) {
                     $has_non_literal_string = true;
-                } elseif (get_class($type) === TInt::class) {
+                } elseif ($type::class === TInt::class) {
                     $has_non_literal_int = true;
                 }
                 $other_types[] = $type_string;
@@ -295,7 +297,7 @@ trait UnionTrait
         ?string $namespace,
         array   $aliased_classes,
         ?string $this_class,
-        int     $analysis_php_version_id
+        int     $analysis_php_version_id,
     ): ?string {
         if (!$this->isSingleAndMaybeNullable()) {
             if ($analysis_php_version_id < 8_00_00) {
@@ -379,10 +381,13 @@ trait UnionTrait
             }
         }
 
-        return !array_filter(
-            $types,
-            static fn($atomic_type): bool => !$atomic_type->canBeFullyExpressedInPhp($analysis_php_version_id),
-        );
+        foreach ($types as $t) {
+            if (!$t->canBeFullyExpressedInPhp($analysis_php_version_id)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -406,9 +411,6 @@ trait UnionTrait
      */
     public function getArray(): Atomic
     {
-        if ($this->types['array'] instanceof TList) {
-            return $this->types['array']->getKeyedArray();
-        }
         return $this->types['array'];
     }
 
@@ -418,6 +420,23 @@ trait UnionTrait
     public function hasIterable(): bool
     {
         return isset($this->types['iterable']);
+    }
+
+    /**
+     * @psalm-mutation-free
+     * @psalm-api
+     */
+    public function hasIterableType(Codebase $codebase): bool
+    {
+        if (isset($this->types['iterable'])) {
+            return true;
+        }
+        foreach ($this->types as $t) {
+            if ($t->isIterable($codebase)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -443,13 +462,19 @@ trait UnionTrait
      */
     public function isTemplatedClassString(): bool
     {
-        return $this->isSingle()
-            && count(
-                array_filter(
-                    $this->types,
-                    static fn($type): bool => $type instanceof TTemplateParamClass,
-                ),
-            ) === 1;
+        if (!$this->isSingle()) {
+            return false;
+        }
+        $has = false;
+        foreach ($this->types as $t) {
+            if ($t instanceof TTemplateParamClass) {
+                if ($has) {
+                    return false;
+                }
+                $has = true;
+            }
+        }
+        return $has;
     }
 
     /**
@@ -457,10 +482,12 @@ trait UnionTrait
      */
     public function hasArrayAccessInterface(Codebase $codebase): bool
     {
-        return (bool)array_filter(
-            $this->types,
-            static fn($type): bool => $type->hasArrayAccessInterface($codebase),
-        );
+        foreach ($this->types as $t) {
+            if ($t->hasArrayAccessInterface($codebase)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -468,7 +495,12 @@ trait UnionTrait
      */
     public function hasCallableType(): bool
     {
-        return $this->getCallableTypes() || $this->getClosureTypes();
+        foreach ($this->types as $t) {
+            if ($t instanceof TCallable || $t instanceof TClosure) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -679,8 +711,15 @@ trait UnionTrait
      */
     public function hasInt(): bool
     {
-        return isset($this->types['int']) || isset($this->types['array-key']) || $this->literal_int_types
-            || array_filter($this->types, static fn(Atomic $type): bool => $type instanceof TIntRange);
+        if (isset($this->types['int']) || isset($this->types['array-key']) || $this->literal_int_types) {
+            return true;
+        }
+        foreach ($this->types as $t) {
+            if ($t instanceof TIntRange) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -741,17 +780,20 @@ trait UnionTrait
      */
     public function hasTemplate(): bool
     {
-        return (bool) array_filter(
-            $this->types,
-            static fn(Atomic $type): bool => $type instanceof TTemplateParam
-                || ($type instanceof TNamedObject
-                    && $type->extra_types
-                    && array_filter(
-                        $type->extra_types,
-                        static fn($t): bool => $t instanceof TTemplateParam,
-                    )
-                ),
-        );
+        foreach ($this->types as $t) {
+            if ($t instanceof TTemplateParam) {
+                return true;
+            }
+
+            if ($t instanceof TNamedObject) {
+                foreach ($t->extra_types as $sub) {
+                    if ($sub instanceof TTemplateParam) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     /**
@@ -759,10 +801,12 @@ trait UnionTrait
      */
     public function hasConditional(): bool
     {
-        return (bool) array_filter(
-            $this->types,
-            static fn(Atomic $type): bool => $type instanceof TConditional,
-        );
+        foreach ($this->types as $t) {
+            if ($t instanceof TConditional) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -770,20 +814,22 @@ trait UnionTrait
      */
     public function hasTemplateOrStatic(): bool
     {
-        return (bool) array_filter(
-            $this->types,
-            static fn(Atomic $type): bool => $type instanceof TTemplateParam
-                || ($type instanceof TNamedObject
-                    && ($type->is_static
-                        || ($type->extra_types
-                            && array_filter(
-                                $type->extra_types,
-                                static fn($t): bool => $t instanceof TTemplateParam,
-                            )
-                        )
-                    )
-                ),
-        );
+        foreach ($this->types as $t) {
+            if ($t instanceof TTemplateParam) {
+                return true;
+            }
+            if ($t instanceof TNamedObject) {
+                if ($t->is_static) {
+                    return true;
+                }
+                foreach ($t->extra_types as $sub) {
+                    if ($sub instanceof TTemplateParam) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     /**
@@ -799,18 +845,19 @@ trait UnionTrait
      */
     public function isMixed(bool $check_templates = false): bool
     {
-        return count(
-            array_filter(
-                $this->types,
-                static fn($type, $key): bool => $key === 'mixed'
-                    || $type instanceof TMixed
-                    || ($check_templates
-                        && $type instanceof TTemplateParam
-                        && $type->as->isMixed()
-                    ),
-                ARRAY_FILTER_USE_BOTH,
-            ),
-        ) === count($this->types);
+        foreach ($this->types as $key => $t) {
+            if ($key === 'mixed' || $t instanceof TMixed) {
+                continue;
+            }
+            if ($check_templates
+                && $t instanceof TTemplateParam
+                && $t->as->isMixed()
+            ) {
+                continue;
+            }
+            return false;
+        }
+        return true;
     }
 
     /**
@@ -829,7 +876,7 @@ trait UnionTrait
     public function isVanillaMixed(): bool
     {
         return isset($this->types['mixed'])
-            && get_class($this->types['mixed']) === TMixed::class
+            && $this->types['mixed']::class === TMixed::class
             && !$this->types['mixed']->from_loop_isset
             && count($this->types) === 1;
     }
@@ -986,16 +1033,17 @@ trait UnionTrait
      */
     public function isInt(bool $check_templates = false): bool
     {
-        return count(
-            array_filter(
-                $this->types,
-                static fn($type): bool => $type instanceof TInt
-                    || ($check_templates
-                        && $type instanceof TTemplateParam
-                        && $type->as->isInt()
-                    ),
-            ),
-        ) === count($this->types);
+        foreach ($this->types as $type) {
+            if (!($type instanceof TInt
+                || ($check_templates
+                    && $type instanceof TTemplateParam
+                    && $type->as->isInt()
+                )
+            )) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -1017,16 +1065,17 @@ trait UnionTrait
      */
     public function isString(bool $check_templates = false): bool
     {
-        return count(
-            array_filter(
-                $this->types,
-                static fn($type): bool => $type instanceof TString
-                    || ($check_templates
-                        && $type instanceof TTemplateParam
-                        && $type->as->isString()
-                    ),
-            ),
-        ) === count($this->types);
+        foreach ($this->types as $type) {
+            if (!($type instanceof TString
+                || ($check_templates
+                    && $type instanceof TTemplateParam
+                    && $type->as->isString()
+                ))
+            ) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -1035,17 +1084,20 @@ trait UnionTrait
      */
     public function isNonEmptyString(bool $check_templates = false): bool
     {
-        return count(
-            array_filter(
-                $this->types,
-                static fn($type): bool => $type instanceof TNonEmptyString
+        foreach ($this->types as $type) {
+            if (!($type instanceof TNonEmptyString
+                    || $type instanceof TNonEmptyNonspecificLiteralString
                     || ($type instanceof TLiteralString && $type->value !== '')
                     || ($check_templates
                         && $type instanceof TTemplateParam
                         && $type->as->isNonEmptyString()
-                    ),
-            ),
-        ) === count($this->types);
+                    )
+                )
+            ) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -1081,6 +1133,23 @@ trait UnionTrait
     public function isSingleStringLiteral(): bool
     {
         return count($this->types) === 1 && count($this->literal_string_types) === 1;
+    }
+
+
+    /**
+     * @psalm-mutation-free
+     * @return bool true if this type is a safe operand for string concatenation (int|string|array-key)
+     */
+    public function isConcatSafe(): bool
+    {
+        foreach ($this->types as $type) {
+            if (!($type instanceof TInt)
+            && !($type instanceof TString)
+            && !($type instanceof TArrayKey)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -1213,9 +1282,9 @@ trait UnionTrait
 
     /**
      * @psalm-mutation-free
-     * @return TLiteralInt|TLiteralString|TLiteralFloat
+     * @psalm-suppress InvalidFalsableReturnType
      */
-    public function getSingleLiteral()
+    public function getSingleLiteral(): TLiteralInt|TLiteralString|TLiteralFloat
     {
         if (!$this->isSingleLiteral()) {
             throw new InvalidArgumentException("Not a single literal");
@@ -1247,7 +1316,7 @@ trait UnionTrait
 
     /**
      * @psalm-mutation-free
-     * @return bool true if this is a int literal with only one possible value
+     * @return bool true if this is an int literal with only one possible value
      */
     public function isSingleIntLiteral(): bool
     {
@@ -1280,7 +1349,7 @@ trait UnionTrait
         bool $inferred = true,
         bool $inherited = false,
         bool $prevent_template_covariance = false,
-        ?string $calling_method_id = null
+        ?string $calling_method_id = null,
     ): bool {
         if ($this->checked) {
             return true;
@@ -1311,7 +1380,7 @@ trait UnionTrait
     public function queueClassLikesForScanning(
         Codebase $codebase,
         ?FileStorage $file_storage = null,
-        array $phantom_classes = []
+        array $phantom_classes = [],
     ): void {
         $scanner_visitor = new TypeScanner(
             $codebase->scanner,
@@ -1382,7 +1451,7 @@ trait UnionTrait
         self $other_type,
         bool $ensure_source_equality = true,
         bool $ensure_parent_node_equality = true,
-        bool $ensure_possibly_undefined_equality = true
+        bool $ensure_possibly_undefined_equality = true,
     ): bool {
         if ($other_type === $this) {
             return true;
@@ -1548,6 +1617,7 @@ trait UnionTrait
         return $this->types === [];
     }
 
+    #[Override]
     public function visit(TypeVisitor $visitor): bool
     {
         foreach ($this->types as $type) {

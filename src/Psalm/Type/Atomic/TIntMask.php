@@ -1,6 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
+
+use Override;
 
 use function substr;
 
@@ -12,16 +16,13 @@ use function substr;
  */
 final class TIntMask extends TInt
 {
-    /** @var non-empty-array<TLiteralInt|TClassConstant> */
-    public $values;
-
     /** @param non-empty-array<TLiteralInt|TClassConstant> $values */
-    public function __construct(array $values, bool $from_docblock = false)
+    public function __construct(public array $values, bool $from_docblock = false)
     {
-        $this->values = $values;
         parent::__construct($from_docblock);
     }
 
+    #[Override]
     public function getKey(bool $include_extra = true): string
     {
         $s = '';
@@ -33,6 +34,7 @@ final class TIntMask extends TInt
         return 'int-mask<' . substr($s, 0, -2) . '>';
     }
 
+    #[Override]
     public function getId(bool $exact = true, bool $nested = false): string
     {
         $s = '';
@@ -47,11 +49,12 @@ final class TIntMask extends TInt
     /**
      * @param  array<lowercase-string, string> $aliased_classes
      */
+    #[Override]
     public function toNamespacedString(
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        bool $use_phpdoc_format
+        bool $use_phpdoc_format,
     ): string {
         if ($use_phpdoc_format) {
             return 'int';
@@ -66,6 +69,7 @@ final class TIntMask extends TInt
         return 'int-mask<' . substr($s, 0, -2) . '>';
     }
 
+    #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;

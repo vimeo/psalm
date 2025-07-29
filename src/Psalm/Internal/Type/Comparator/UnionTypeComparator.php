@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
@@ -42,7 +44,7 @@ final class UnionTypeComparator
         bool $ignore_false = false,
         ?TypeComparisonResult $union_comparison_result = null,
         bool $allow_interface_equality = false,
-        bool $allow_float_int_equality = true
+        bool $allow_float_int_equality = true,
     ): bool {
         if ($container_type->isVanillaMixed()) {
             return true;
@@ -244,6 +246,13 @@ final class UnionTypeComparator
                     $is_atomic_contained_by = true;
                 }
 
+                if ($input_type_part instanceof Atomic\TIterable
+                    && ($container_type->hasArray() || $container_type->containsClassLike('traversable'))
+                ) {
+                    $scalar_type_match_found = false;
+                    $is_atomic_contained_by = true;
+                }
+
                 if ($atomic_comparison_result) {
                     if ($atomic_comparison_result->type_coerced) {
                         $some_type_coerced = true;
@@ -355,7 +364,7 @@ final class UnionTypeComparator
      */
     public static function isContainedByInPhp(
         ?Union $input_type,
-        Union $container_type
+        Union $container_type,
     ): bool {
         if ($container_type->isMixed()) {
             return true;
@@ -403,7 +412,7 @@ final class UnionTypeComparator
         Union $container_type,
         bool $ignore_null = false,
         bool $ignore_false = false,
-        array &$matching_input_keys = []
+        array &$matching_input_keys = [],
     ): bool {
         if ($container_type->hasMixed()) {
             return true;
@@ -455,7 +464,7 @@ final class UnionTypeComparator
         Codebase $codebase,
         Union $type1,
         Union $type2,
-        bool $allow_interface_equality = true
+        bool $allow_interface_equality = true,
     ): bool {
         if ($type1->hasMixed() || $type2->hasMixed()) {
             return true;
@@ -468,7 +477,7 @@ final class UnionTypeComparator
         foreach (self::getTypeParts($codebase, $type1) as $type1_part) {
             foreach (self::getTypeParts($codebase, $type2) as $type2_part) {
                 //special case for TIntRange because it can contain a part of another TIntRange.
-                //For exemple int<0,10> and int<5, 15> can be identical but none contain the other
+                //For example int<0,10> and int<5, 15> can be identical but none contain the other
                 if ($type1_part instanceof TIntRange && $type2_part instanceof TIntRange) {
                     $intersection_range = TIntRange::intersectIntRanges(
                         $type1_part,
@@ -498,7 +507,7 @@ final class UnionTypeComparator
      */
     private static function getTypeParts(
         Codebase $codebase,
-        Union $union_type
+        Union $union_type,
     ): array {
         $atomic_types = [];
         foreach ($union_type->getAtomicTypes() as $atomic_type) {

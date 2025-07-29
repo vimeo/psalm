@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\TypeVisitor;
 
+use Override;
 use Psalm\Codebase;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TMixed;
@@ -14,13 +17,12 @@ final class CanContainObjectTypeVisitor extends TypeVisitor
 {
     private bool $contains_object_type = false;
 
-    private Codebase $codebase;
-
-    public function __construct(Codebase $codebase)
-    {
-        $this->codebase = $codebase;
+    public function __construct(
+        private readonly Codebase $codebase,
+    ) {
     }
 
+    #[Override]
     protected function enterNode(TypeNode $type): ?int
     {
         if (($type instanceof Union

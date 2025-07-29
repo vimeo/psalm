@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
+use Override;
 use Psalm\Codebase;
-use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Storage\EnumCaseStorage;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type\Atomic;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Union;
 
 use function array_map;
@@ -20,12 +22,9 @@ use function assert;
  */
 final class TValueOf extends Atomic
 {
-    /** @var Union */
-    public $type;
-
-    public function __construct(Union $type, bool $from_docblock = false)
+    use UnserializeMemoryUsageSuppressionTrait;
+    public function __construct(public Union $type, bool $from_docblock = false)
     {
-        $this->type = $type;
         parent::__construct($from_docblock);
     }
 
@@ -35,32 +34,35 @@ final class TValueOf extends Atomic
     private static function getValueTypeForNamedObject(
         array $cases,
         TNamedObject $atomic_type,
-        Codebase $codebase
+        Codebase $codebase,
     ): Union {
         if ($atomic_type instanceof TEnumCase) {
             assert(isset($cases[$atomic_type->case_name]), 'Should\'ve been verified in TValueOf#getValueType');
             $value = $cases[$atomic_type->case_name]->getValue($codebase->classlikes);
             assert($value !== null, 'Backed enum must have a value.');
-            return new Union([ConstantTypeResolver::getLiteralTypeFromScalarValue($value)]);
+
+            return new Union([$value]);
         }
 
         return new Union(array_map(
             static function (EnumCaseStorage $case) use ($codebase): Atomic {
                 $case_value = $case->getValue($codebase->classlikes);
-                assert($case_value !== null);
                 // Backed enum must have a value
-                return ConstantTypeResolver::getLiteralTypeFromScalarValue($case_value);
+                assert($case_value !== null);
+                return $case_value;
             },
             array_values($cases),
         ));
     }
 
+    #[Override]
     protected function getChildNodeKeys(): array
     {
         return ['type'];
     }
 
 
+    #[Override]
     public function getKey(bool $include_extra = true): string
     {
         return 'value-of<' . $this->type . '>';
@@ -69,20 +71,23 @@ final class TValueOf extends Atomic
     /**
      * @param  array<lowercase-string, string> $aliased_classes
      */
+    #[Override]
     public function toPhpString(
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $analysis_php_version_id
+        int $analysis_php_version_id,
     ): ?string {
         return null;
     }
 
+    #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
     }
 
+    #[Override]
     public function getAssertionString(): string
     {
         return 'mixed';
@@ -94,7 +99,6 @@ final class TValueOf extends Atomic
             if (!$type instanceof TArray
                 && !$type instanceof TClassConstant
                 && !$type instanceof TKeyedArray
-                && !$type instanceof TList
                 && !$type instanceof TPropertiesOf
                 && !$type instanceof TNamedObject
             ) {
@@ -107,15 +111,16 @@ final class TValueOf extends Atomic
     public static function getValueType(
         Union $type,
         Codebase $codebase,
-        bool $keep_template_params = false
+        bool $keep_template_params = false,
     ): ?Union {
         $value_types = [];
 
         foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TMixed) {
+                return new Union([$atomic_type]);
+            }
             if ($atomic_type instanceof TArray) {
                 $value_atomics = $atomic_type->type_params[1];
-            } elseif ($atomic_type instanceof TList) {
-                $value_atomics = $atomic_type->type_param;
             } elseif ($atomic_type instanceof TKeyedArray) {
                 $value_atomics = $atomic_type->getGenericValueType();
             } elseif ($atomic_type instanceof TTemplateParam) {

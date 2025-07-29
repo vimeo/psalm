@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use Override;
 use PhpParser;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
@@ -25,7 +28,6 @@ use Psalm\Storage\Assertion;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -37,12 +39,13 @@ use function array_map;
 use function array_shift;
 use function array_slice;
 use function array_values;
+use function assert;
 use function count;
 use function explode;
 use function in_array;
 use function mt_rand;
 use function reset;
-use function strpos;
+use function str_contains;
 use function substr;
 
 /**
@@ -53,11 +56,13 @@ final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInte
     /**
      * @return array<lowercase-string>
      */
+    #[Override]
     public static function getFunctionIds(): array
     {
         return ['array_map'];
     }
 
+    #[Override]
     public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Union
     {
         $statements_source = $event->getStatementsSource();
@@ -144,9 +149,7 @@ final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInte
 
             if (isset($arg_types['array'])) {
                 $array_arg_atomic_type = $arg_types['array'];
-                if ($array_arg_atomic_type instanceof TList) {
-                    $array_arg_atomic_type = $array_arg_atomic_type->getKeyedArray();
-                }
+
                 $array_arg_type = ArrayType::infer($array_arg_atomic_type);
             }
         }
@@ -164,6 +167,7 @@ final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInte
             if ($function_call_type->hasCallableType()) {
                 $closure_types = $function_call_type->getClosureTypes() ?: $function_call_type->getCallableTypes();
                 $closure_atomic_type = reset($closure_types);
+                assert($closure_atomic_type !== false);
 
                 $closure_return_type = $closure_atomic_type->return_type ?: Type::getMixed();
 
@@ -295,7 +299,7 @@ final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInte
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $fake_call,
         Context $context,
-        ?array &$assertions = null
+        ?array &$assertions = null,
     ): ?Union {
         $old_data_provider = $statements_analyzer->node_data;
 
@@ -381,7 +385,7 @@ final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInte
         PhpParser\Node\Arg $function_call_arg,
         array $array_args,
         ?array &$assertions = null,
-        ?int $fake_var_discriminator = null
+        ?int $fake_var_discriminator = null,
     ): Union {
         $mapping_return_type = null;
 
@@ -416,7 +420,7 @@ final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInte
                     );
                 }
 
-                if (strpos($mapping_function_id_part, '::') !== false) {
+                if (str_contains($mapping_function_id_part, '::')) {
                     $is_instance = false;
 
                     if ($mapping_function_id_part[0] === '$') {
@@ -526,7 +530,7 @@ final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInte
     public static function cleanContext(Context $context, int $fake_var_discriminator): void
     {
         foreach ($context->vars_in_scope as $var_in_scope => $_) {
-            if (strpos($var_in_scope, "__fake_{$fake_var_discriminator}_") !== false) {
+            if (str_contains($var_in_scope, "__fake_{$fake_var_discriminator}_")) {
                 unset($context->vars_in_scope[$var_in_scope]);
             }
         }

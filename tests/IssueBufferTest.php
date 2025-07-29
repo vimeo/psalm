@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use Psalm\Codebase;
@@ -15,7 +17,7 @@ use function microtime;
 use function ob_get_clean;
 use function ob_start;
 
-class IssueBufferTest extends TestCase
+final class IssueBufferTest extends TestCase
 {
 
     public function testFinishDoesNotCorruptInternalState(): void
@@ -118,15 +120,15 @@ class IssueBufferTest extends TestCase
         $codebase->analyzer = $analyzer;
         $codebase->config = $config;
 
-        $projectAnalzyer = $this->createMock(ProjectAnalyzer::class);
-        $projectAnalzyer->method('getCodebase')->willReturn($codebase);
+        $projectAnalyzer = $this->createMock(ProjectAnalyzer::class);
+        $projectAnalyzer->method('getCodebase')->willReturn($codebase);
 
-        $projectAnalzyer->stdout_report_options = new ReportOptions();
-        $projectAnalzyer->generated_report_options = [];
+        $projectAnalyzer->stdout_report_options = new ReportOptions();
+        $projectAnalyzer->generated_report_options = [];
 
         ob_start();
-        IssueBuffer::finish($projectAnalzyer, false, microtime(true), false, $baseline);
-        $output = ob_get_clean();
+        IssueBuffer::finish($projectAnalyzer, false, microtime(true), false, $baseline);
+        $output = (string) ob_get_clean();
         $this->assertStringNotContainsString("ERROR", $output, "all issues baselined");
         IssueBuffer::clear();
     }
@@ -137,7 +139,7 @@ class IssueBufferTest extends TestCase
         $project_analyzer->stdout_report_options = new ReportOptions;
         ob_start();
         IssueBuffer::printSuccessMessage($project_analyzer);
-        $output = ob_get_clean();
+        $output = (string) ob_get_clean();
 
         $this->assertStringContainsString('No errors found!', $output);
     }

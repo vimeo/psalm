@@ -21,7 +21,7 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function is_string;
-use function strpos;
+use function str_contains;
 use function strtolower;
 
 /**
@@ -59,7 +59,7 @@ final class HighOrderFunctionArgHandler
         StatementsAnalyzer $statements_analyzer,
         TemplateResult $inferred_template_result,
         HighOrderFunctionArgInfo $input_function,
-        Union $container_function_type
+        Union $container_function_type,
     ): TemplateResult {
         // Try to infer container callable by $inferred_template_result
         $container_type = TemplateInferredTypeReplacer::replace(
@@ -116,7 +116,7 @@ final class HighOrderFunctionArgHandler
         PhpParser\Node\Expr $arg_expr,
         StatementsAnalyzer $statements_analyzer,
         HighOrderFunctionArgInfo $high_order_callable_info,
-        TemplateResult $high_order_template_result
+        TemplateResult $high_order_template_result,
     ): void {
         // Psalm can infer simple callable/closure.
         // But can't infer first-class-callable or high-order function.
@@ -152,7 +152,7 @@ final class HighOrderFunctionArgHandler
         Context $context,
         PhpParser\Node\Expr $input_arg_expr,
         StatementsAnalyzer $statements_analyzer,
-        FunctionLikeParameter $container_param
+        FunctionLikeParameter $container_param,
     ): ?HighOrderFunctionArgInfo {
         if (!self::isSupported($container_param)) {
             return null;
@@ -274,7 +274,7 @@ final class HighOrderFunctionArgHandler
                     $class_storage,
                 );
             }
-        } catch (UnexpectedValueException $e) {
+        } catch (UnexpectedValueException) {
             return null;
         }
 
@@ -293,8 +293,7 @@ final class HighOrderFunctionArgHandler
                 return false;
             }
 
-            if ($a instanceof Type\Atomic\TCallableArray ||
-                $a instanceof Type\Atomic\TCallableString ||
+            if ($a instanceof Type\Atomic\TCallableString ||
                 $a instanceof Type\Atomic\TCallableKeyedArray
             ) {
                 return false;
@@ -306,7 +305,7 @@ final class HighOrderFunctionArgHandler
 
     private static function fromLiteralString(
         Union $constant,
-        StatementsAnalyzer $statements_analyzer
+        StatementsAnalyzer $statements_analyzer,
     ): ?HighOrderFunctionArgInfo {
         $literal = $constant->isSingle() ? $constant->getSingleAtomic() : null;
 
@@ -318,7 +317,7 @@ final class HighOrderFunctionArgHandler
 
         return new HighOrderFunctionArgInfo(
             HighOrderFunctionArgInfo::TYPE_STRING_CALLABLE,
-            strpos($literal->value, '::') !== false
+            str_contains($literal->value, '::')
                 ? $codebase->methods->getStorage(MethodIdentifier::wrap($literal->value))
                 : $codebase->functions->getStorage($statements_analyzer, strtolower($literal->value)),
         );

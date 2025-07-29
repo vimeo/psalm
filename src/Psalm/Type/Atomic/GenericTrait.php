@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
+use Override;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
@@ -9,7 +12,6 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Union;
 
 use function array_map;
@@ -39,6 +41,7 @@ trait GenericTrait
         return $cloned;
     }
 
+    #[Override]
     public function getId(bool $exact = true, bool $nested = false): string
     {
         $s = '';
@@ -70,11 +73,12 @@ trait GenericTrait
     /**
      * @param  array<lowercase-string, string> $aliased_classes
      */
+    #[Override]
     public function toNamespacedString(
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        bool $use_phpdoc_format
+        bool $use_phpdoc_format,
     ): string {
         $base_value = $this instanceof TNamedObject
             ? parent::toNamespacedString($namespace, $aliased_classes, $this_class, $use_phpdoc_format)
@@ -169,11 +173,9 @@ trait GenericTrait
         ?string $calling_function = null,
         bool $replace = true,
         bool $add_lower_bound = false,
-        int $depth = 0
+        int $depth = 0,
     ): ?array {
-        if ($input_type instanceof TList) {
-            $input_type = $input_type->getKeyedArray();
-        }
+
 
         $input_object_type_params = [];
 
@@ -240,7 +242,7 @@ trait GenericTrait
      */
     protected function replaceTypeParamsTemplateTypesWithArgTypes(
         TemplateResult $template_result,
-        ?Codebase $codebase
+        ?Codebase $codebase,
     ): ?array {
         $type_params = $this->type_params;
         foreach ($type_params as $offset => $type_param) {

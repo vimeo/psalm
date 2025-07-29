@@ -17,6 +17,7 @@
             <xs:element name="stubs" type="StubsType" minOccurs="0" maxOccurs="1" />
             <xs:element name="plugins" type="PluginsType" minOccurs="0" maxOccurs="1" />
             <xs:element name="forbiddenFunctions" type="ExitFunctionsType" minOccurs="0" maxOccurs="1" />
+            <xs:element name="forbiddenConstants" type="ConstantType" minOccurs="0" maxOccurs="1" />
             <xs:element name="issueHandlers" type="IssueHandlersType" minOccurs="0" maxOccurs="1" />
             <xs:element name="ignoreExceptions" type="ExceptionsType" minOccurs="0" maxOccurs="1" />
             <xs:element name="globals" type="GlobalsType" minOccurs="0" maxOccurs="1" />
@@ -29,7 +30,8 @@
         <xs:attribute name="cacheDirectory" type="xs:string" />
         <xs:attribute name="errorBaseline" type="xs:string" />
         <xs:attribute name="maxStringLength" type="xs:string" />
-        <xs:attribute name="maxShapedArraySize" type="xs:string" default="100" />
+        <xs:attribute name="maxShapedArraySize" type="xs:integer" default="100" />
+        <xs:attribute name="longScanWarning" type="xs:float" default="10.0" />
         <xs:attribute name="name" type="xs:string" />
         <xs:attribute name="phpVersion" type="xs:string" />
         <xs:attribute name="serializer" type="xs:string" />
@@ -37,27 +39,35 @@
 
         <xs:attribute name="addParamDefaultToDocblockType" type="xs:boolean" default="false" />
         <xs:attribute name="allowFileIncludes" type="xs:boolean" default="true" />
+        <xs:attribute name="ignoreIncludeSideEffects" type="xs:boolean" default="false" />
         <xs:attribute name="allowStringToStandInForClass" type="xs:boolean" default="false" />
         <xs:attribute name="checkForThrowsDocblock" type="xs:boolean" default="false" />
         <xs:attribute name="checkForThrowsInGlobalScope" type="xs:boolean" default="false" />
         <xs:attribute name="ensureArrayIntOffsetsExist" type="xs:boolean" default="false" />
         <xs:attribute name="ensureArrayStringOffsetsExist" type="xs:boolean" default="false" />
-        <xs:attribute name="ensureOverrideAttribute" type="xs:boolean" default="false" />
-        <xs:attribute name="findUnusedCode" type="xs:boolean" default="false" />
+        <xs:attribute name="ensureOverrideAttribute" type="xs:boolean" default="true" />
+        <xs:attribute name="findUnusedCode" type="xs:boolean" default="true" />
+        <xs:attribute name="disallowLiteralKeysOnUnshapedArrays" type="xs:boolean" default="false" />
+        <xs:attribute name="allFunctionsGlobal" type="xs:boolean" default="false" />
+        <xs:attribute name="allConstantsGlobal" type="xs:boolean" default="false" />
+        <xs:attribute name="forceJit" type="xs:boolean" default="false" />
+        <xs:attribute name="noCache" type="xs:boolean" default="false" />
+        <xs:attribute name="arrayCache" type="xs:boolean" default="true" />
         <xs:attribute name="findUnusedVariablesAndParams" type="xs:boolean" default="false" />
         <xs:attribute name="findUnusedPsalmSuppress" type="xs:boolean" default="false" />
-        <!-- TODO: Update default to true in Psalm 6 -->
-        <xs:attribute name="findUnusedBaselineEntry" type="xs:boolean" default="false" />
+        <xs:attribute name="findUnusedBaselineEntry" type="xs:boolean" default="true" />
+        <xs:attribute name="findUnusedIssueHandlerSuppression" type="xs:boolean" default="true" />
         <xs:attribute name="hideExternalErrors" type="xs:boolean" default="false" />
         <xs:attribute name="hoistConstants" type="xs:boolean" default="false" />
-        <xs:attribute name="ignoreInternalFunctionFalseReturn" type="xs:boolean" default="true" />
-        <xs:attribute name="ignoreInternalFunctionNullReturn" type="xs:boolean" default="true" />
+        <xs:attribute name="ignoreInternalFunctionFalseReturn" type="xs:boolean" default="false" />
+        <xs:attribute name="ignoreInternalFunctionNullReturn" type="xs:boolean" default="false" />
         <xs:attribute name="includePhpVersionsInErrorBaseline" type="xs:boolean" default="false" />
         <xs:attribute name="inferPropertyTypesFromConstructor" type="xs:boolean" default="true" />
         <xs:attribute name="memoizeMethodCallResults" type="xs:boolean" default="false" />
         <xs:attribute name="rememberPropertyAssignmentsAfterCall" type="xs:boolean" default="true" />
         <xs:attribute name="resolveFromConfigFile" type="xs:boolean" default="true" />
-        <xs:attribute name="strictBinaryOperands" type="xs:boolean" default="false" />
+        <xs:attribute name="strictBinaryOperands" type="xs:boolean" default="true" />
+        <xs:attribute name="allowBoolToLiteralBoolComparison" type="xs:boolean" default="true" />
         <xs:attribute name="throwExceptionOnError" type="xs:boolean" default="false" />
         <xs:attribute name="disableVarParsing" type="xs:boolean" default="false" />
         <xs:attribute name="errorLevel" type="xs:integer" default="2" />
@@ -68,8 +78,8 @@
         <xs:attribute name="usePhpDocMethodsWithoutMagicCall" type="xs:boolean" default="false" />
         <xs:attribute name="usePhpDocPropertiesWithoutMagicCall" type="xs:boolean" default="false" />
         <xs:attribute name="skipChecksOnUnresolvableIncludes" type="xs:boolean" default="false" />
-        <xs:attribute name="sealAllMethods" type="xs:boolean" default="false" />
-        <xs:attribute name="sealAllProperties" type="xs:boolean" default="false" />
+        <xs:attribute name="sealAllMethods" type="xs:boolean" default="true" />
+        <xs:attribute name="sealAllProperties" type="xs:boolean" default="true" />
         <xs:attribute name="runTaintAnalysis" type="xs:boolean" default="false" />
         <xs:attribute name="usePhpStormMetaPath" type="xs:boolean" default="true" />
         <xs:attribute name="allowInternalNamedArgumentCalls" type="xs:boolean" default="true" />
@@ -77,9 +87,10 @@
         <xs:attribute name="reportInfo" type="xs:boolean" default="true" />
         <xs:attribute name="restrictReturnTypes" type="xs:boolean" default="false" />
         <xs:attribute name="limitMethodComplexity" type="xs:boolean" default="false" />
-        <xs:attribute name="disableSuppressAll" type="xs:boolean" default="false" />
+        <xs:attribute name="disableSuppressAll" type="xs:boolean" default="true" />
         <xs:attribute name="triggerErrorExits" type="TriggerErrorExitsType" default="default" />
         <xs:attribute name="threads" type="xs:integer" />
+        <xs:attribute name="scanThreads" type="xs:integer" />
         <xs:anyAttribute processContents="skip" />
     </xs:complexType>
 
@@ -177,6 +188,13 @@
         <xs:anyAttribute processContents="skip" />
     </xs:complexType>
 
+    <xs:complexType name="ConstantType">
+        <xs:sequence>
+            <xs:element name="constant" maxOccurs="unbounded" type="NameAttributeType" />
+        </xs:sequence>
+        <xs:anyAttribute processContents="skip" />
+    </xs:complexType>
+
     <xs:complexType name="PluginsType">
         <xs:choice minOccurs="0" maxOccurs="unbounded">
             <xs:element name="plugin">
@@ -207,6 +225,7 @@
             <xs:element name="AssignmentToVoid" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="CheckType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="CircularReference" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="ClassMustBeFinal" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ComplexFunction" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ComplexMethod" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ConfigIssue" type="IssueHandlerType" minOccurs="0" />
@@ -231,6 +250,7 @@
             <xs:element name="DuplicateFunction" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="DuplicateMethod" type="MethodIssueHandlerType" minOccurs="0" />
             <xs:element name="DuplicateParam" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="DuplicateProperty" type="PropertyIssueHandlerType" minOccurs="0" />
             <xs:element name="EmptyArrayAccess" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ExtensionRequirementViolation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="FalsableReturnStatement" type="IssueHandlerType" minOccurs="0" />
@@ -306,6 +326,7 @@
             <xs:element name="LessSpecificImplementedReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="LessSpecificReturnStatement" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="LessSpecificReturnType" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="LiteralKeyUnshapedArray" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="LoopInvalidation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MethodSignatureMismatch" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MethodSignatureMustOmitReturnType" type="IssueHandlerType" minOccurs="0" />
@@ -336,7 +357,6 @@
             <xs:element name="MixedAssignment" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MixedClone" type="ArgumentIssueHandlerType" minOccurs="0" />
             <xs:element name="MixedFunctionCall" type="IssueHandlerType" minOccurs="0" />
-            <xs:element name="MixedInferredReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MixedMethodCall" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MixedOperand" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MixedPropertyAssignment" type="IssueHandlerType" minOccurs="0" />
@@ -354,6 +374,7 @@
             <xs:element name="NonInvariantDocblockPropertyType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="NonInvariantPropertyType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="NonStaticSelfCall" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="NonVariableReferenceReturn" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="NoValue" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="NullableReturnStatement" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="NullArgument" type="ArgumentIssueHandlerType" minOccurs="0" />
@@ -437,6 +458,7 @@
             <xs:element name="TaintedCookie" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedCustom" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedEval" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="TaintedExtract" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedFile" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedHeader" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedHtml" type="IssueHandlerType" minOccurs="0" />
@@ -444,12 +466,14 @@
             <xs:element name="TaintedInput" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedLdap" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedShell" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="TaintedSleep" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedSql" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedSSRF" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedSystemSecret" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedTextWithQuotes" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedUnserialize" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedUserSecret" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="TaintedXpath" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TooFewArguments" type="ArgumentIssueHandlerType" minOccurs="0" />
             <xs:element name="TooManyArguments" type="ArgumentIssueHandlerType" minOccurs="0" />
             <xs:element name="TooManyTemplateParams" type="FunctionIssueHandlerType" minOccurs="0" />
@@ -496,6 +520,7 @@
             <xs:element name="UnusedClosureParam" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedConstructor" type="MethodIssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedDocblockParam" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="UnusedIssueHandlerSuppression" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedForeachValue" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedFunctionCall" type="FunctionIssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedMethod" type="MethodIssueHandlerType" minOccurs="0" />
@@ -729,6 +754,7 @@
 
     <xs:simpleType name="ExtensionType">
         <xs:restriction base="xs:string">
+            <xs:enumeration value="amqp"/>
             <xs:enumeration value="apcu"/>
             <xs:enumeration value="decimal"/>
             <xs:enumeration value="dom"/>
@@ -741,6 +767,7 @@
             <xs:enumeration value="mysqli"/>
             <xs:enumeration value="pdo"/>
             <xs:enumeration value="random"/>
+            <xs:enumeration value="rdkafka"/>
             <xs:enumeration value="redis"/>
             <xs:enumeration value="simplexml"/>
             <xs:enumeration value="soap"/>

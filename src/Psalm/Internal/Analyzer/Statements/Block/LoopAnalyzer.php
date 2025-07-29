@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
@@ -18,11 +20,15 @@ use Psalm\Internal\Scope\LoopScope;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
+use Psalm\Type\Union;
+use UnexpectedValueException;
 
 use function array_keys;
 use function array_merge;
 use function array_unique;
+use function count;
 use function in_array;
+use function is_string;
 use function spl_object_id;
 
 /**
@@ -46,7 +52,7 @@ final class LoopAnalyzer
         LoopScope $loop_scope,
         ?Context &$continue_context = null,
         bool $is_do = false,
-        bool $always_enters_loop = false
+        bool $always_enters_loop = false,
     ): ?bool {
         $traverser = new PhpParser\NodeTraverser;
 
@@ -137,10 +143,7 @@ final class LoopAnalyzer
                 }
             }
 
-            $loop_parent_context->vars_possibly_in_scope = array_merge(
-                $continue_context->vars_possibly_in_scope,
-                $loop_parent_context->vars_possibly_in_scope,
-            );
+            $loop_parent_context->vars_possibly_in_scope += $continue_context->vars_possibly_in_scope;
         } else {
             $original_parent_context = clone $loop_parent_context;
 
@@ -268,10 +271,7 @@ final class LoopAnalyzer
 
                 $continue_context->has_returned = false;
 
-                $loop_parent_context->vars_possibly_in_scope = array_merge(
-                    $continue_context->vars_possibly_in_scope,
-                    $loop_parent_context->vars_possibly_in_scope,
-                );
+                $loop_parent_context->vars_possibly_in_scope += $continue_context->vars_possibly_in_scope;
 
                 // if there are no changes to the types, no need to re-examine
                 if (!$has_changes) {
@@ -440,10 +440,10 @@ final class LoopAnalyzer
                     $loop_parent_context->removeVarFromConflictingClauses($var_id);
                 } else {
                     $loop_parent_context->vars_in_scope[$var_id] =
-                        $loop_parent_context->vars_in_scope[$var_id]->setParentNodes(array_merge(
-                            $loop_parent_context->vars_in_scope[$var_id]->parent_nodes,
-                            $continue_context->vars_in_scope[$var_id]->parent_nodes,
-                        ))
+                        $loop_parent_context->vars_in_scope[$var_id]->setParentNodes([
+                            ...$loop_parent_context->vars_in_scope[$var_id]->parent_nodes,
+                            ...$continue_context->vars_in_scope[$var_id]->parent_nodes,
+                        ])
                     ;
                 }
             }
@@ -455,7 +455,7 @@ final class LoopAnalyzer
 
             try {
                 $negated_pre_condition_clauses = Algebra::negateFormula(array_merge(...$pre_condition_clauses));
-            } catch (ComplicatedExpressionException $e) {
+            } catch (ComplicatedExpressionException) {
                 $negated_pre_condition_clauses = [];
             }
 
@@ -490,23 +490,7 @@ final class LoopAnalyzer
         }
 
         if ($always_enters_loop) {
-            foreach ($continue_context->vars_in_scope as $var_id => $type) {
-                // if there are break statements in the loop it's not certain
-                // that the loop has finished executing, so the assertions at the end
-                // the loop in the while conditional may not hold
-                if (in_array(ScopeAnalyzer::ACTION_BREAK, $loop_scope->final_actions, true)
-                    || in_array(ScopeAnalyzer::ACTION_CONTINUE, $loop_scope->final_actions, true)
-                ) {
-                    if (isset($loop_scope->possibly_defined_loop_parent_vars[$var_id])) {
-                        $loop_parent_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
-                            $type,
-                            $loop_scope->possibly_defined_loop_parent_vars[$var_id],
-                        );
-                    }
-                } else {
-                    $loop_parent_context->vars_in_scope[$var_id] = $type;
-                }
-            }
+            self::setLoopVars($continue_context, $loop_parent_context, $loop_scope);
         }
 
         if ($inner_do_context) {
@@ -522,11 +506,174 @@ final class LoopAnalyzer
         return null;
     }
 
+    /**
+     * @param array<string, Union> $init_var_types
+     * @param array<string, int> $assigned_var_ids
+     * @param list<PhpParser\Node\Expr> $pre_conditions
+     * @param PhpParser\Node\Expr[] $post_expressions
+     * @return false|null
+     */
+    public static function analyzeForOrWhile(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Stmt\For_|PhpParser\Node\Stmt\While_ $stmt,
+        Context $context,
+        bool $while_true,
+        array $init_var_types,
+        array $assigned_var_ids,
+        array $pre_conditions,
+        array $post_expressions,
+    ): ?bool {
+        $pre_context = null;
+
+        if ($while_true) {
+            $pre_context = clone $context;
+        }
+
+        $for_context = clone $context;
+
+        $for_context->inside_loop = true;
+        $for_context->break_types[] = 'loop';
+
+        $codebase = $statements_analyzer->getCodebase();
+
+        if ($codebase->alter_code && $for_context->branch_point === null) {
+            $for_context->branch_point = (int) $stmt->getAttribute('startFilePos');
+        }
+
+        $loop_scope = new LoopScope($for_context, $context);
+
+        $loop_scope->protected_var_ids = array_merge(
+            $assigned_var_ids,
+            $context->protected_var_ids,
+        );
+
+        if (self::analyze(
+            $statements_analyzer,
+            $stmt->stmts,
+            $pre_conditions,
+            $post_expressions,
+            $loop_scope,
+            $inner_loop_context,
+        ) === false) {
+            return false;
+        }
+
+        if (!$inner_loop_context) {
+            throw new UnexpectedValueException('There should be an inner loop context');
+        }
+
+        $always_enters_loop = $while_true || self::doesEnterLoop($statements_analyzer, $stmt, $init_var_types);
+
+        $can_leave_loop = !$while_true
+            || in_array(ScopeAnalyzer::ACTION_BREAK, $loop_scope->final_actions, true);
+
+        if ($always_enters_loop && $can_leave_loop) {
+            self::setLoopVars($inner_loop_context, $context, $loop_scope);
+        }
+
+        $for_context->loop_scope = null;
+
+        if ($can_leave_loop) {
+            $context->vars_possibly_in_scope = [
+                ...$context->vars_possibly_in_scope,
+                ...$for_context->vars_possibly_in_scope,
+            ];
+        } elseif ($pre_context) {
+            $context->vars_possibly_in_scope = $pre_context->vars_possibly_in_scope;
+        }
+
+        if ($context->collect_exceptions) {
+            $context->mergeExceptions($for_context);
+        }
+
+        return null;
+    }
+
+    public static function setLoopVars(Context $inner_context, Context $context, LoopScope $loop_scope): void
+    {
+        foreach ($inner_context->vars_in_scope as $var_id => $type) {
+            // if there are break statements in the loop it's not certain
+            // that the loop has finished executing, so the assertions at the end
+            // the loop in the while conditional may not hold
+            if (in_array(ScopeAnalyzer::ACTION_BREAK, $loop_scope->final_actions, true)
+                || in_array(ScopeAnalyzer::ACTION_CONTINUE, $loop_scope->final_actions, true)
+            ) {
+                if (isset($loop_scope->possibly_defined_loop_parent_vars[$var_id])) {
+                    $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                        $type,
+                        $loop_scope->possibly_defined_loop_parent_vars[$var_id],
+                    );
+                }
+            } else {
+                $context->vars_in_scope[$var_id] = $type;
+            }
+        }
+    }
+
+    /**
+     * @param array<string, Union> $init_var_types
+     */
+    private static function doesEnterLoop(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Stmt\For_|PhpParser\Node\Stmt\While_ $stmt,
+        array $init_var_types,
+    ): bool {
+        $always_enters_loop = false;
+
+        if ($stmt instanceof PhpParser\Node\Stmt\While_) {
+            if ($cond_type = $statements_analyzer->node_data->getType($stmt->cond)) {
+                $always_enters_loop = $cond_type->isAlwaysTruthy();
+            }
+        } else {
+            foreach ($stmt->cond as $cond) {
+                if ($cond_type = $statements_analyzer->node_data->getType($cond)) {
+                    $always_enters_loop = $cond_type->isAlwaysTruthy();
+                }
+
+                if (count($stmt->init) === 1
+                    && count($stmt->cond) === 1
+                    && $cond instanceof PhpParser\Node\Expr\BinaryOp
+                    && ($cond_value = $statements_analyzer->node_data->getType($cond->right))
+                    && ($cond_value->isSingleIntLiteral() || $cond_value->isSingleStringLiteral())
+                    && $cond->left instanceof PhpParser\Node\Expr\Variable
+                    && is_string($cond->left->name)
+                    && isset($init_var_types[$cond->left->name])
+                    && $init_var_types[$cond->left->name]->isSingleIntLiteral()
+                ) {
+                    $init_value = $init_var_types[$cond->left->name]->getSingleLiteral()->value;
+                    $cond_value = $cond_value->getSingleLiteral()->value;
+
+                    if ($cond instanceof PhpParser\Node\Expr\BinaryOp\Smaller && $init_value < $cond_value) {
+                        $always_enters_loop = true;
+                        break;
+                    }
+
+                    if ($cond instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual && $init_value <= $cond_value) {
+                        $always_enters_loop = true;
+                        break;
+                    }
+
+                    if ($cond instanceof PhpParser\Node\Expr\BinaryOp\Greater && $init_value > $cond_value) {
+                        $always_enters_loop = true;
+                        break;
+                    }
+
+                    if ($cond instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual && $init_value >= $cond_value) {
+                        $always_enters_loop = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        return $always_enters_loop;
+    }
+
     private static function updateLoopScopeContexts(
         LoopScope $loop_scope,
         Context $loop_context,
         Context $continue_context,
-        Context $pre_outer_context
+        Context $pre_outer_context,
     ): void {
         if (!in_array(ScopeAnalyzer::ACTION_CONTINUE, $loop_scope->final_actions, true)) {
             $loop_context->vars_in_scope = $pre_outer_context->vars_in_scope;
@@ -554,10 +701,10 @@ final class LoopAnalyzer
         }
 
         // merge vars possibly in scope at the end of each loop
-        $loop_context->vars_possibly_in_scope = array_merge(
-            $loop_context->vars_possibly_in_scope,
-            $loop_scope->vars_possibly_in_scope,
-        );
+        $loop_context->vars_possibly_in_scope = [
+            ...$loop_context->vars_possibly_in_scope,
+            ...$loop_scope->vars_possibly_in_scope,
+        ];
     }
 
     /**
@@ -570,7 +717,7 @@ final class LoopAnalyzer
         array $pre_condition_clauses,
         Context $loop_context,
         Context $outer_context,
-        bool $is_do
+        bool $is_do,
     ): array {
         $pre_referenced_var_ids = $loop_context->cond_referenced_var_ids;
         $loop_context->cond_referenced_var_ids = [];

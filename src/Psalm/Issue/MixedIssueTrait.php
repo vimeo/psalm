@@ -1,27 +1,29 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Issue;
 
+use Override;
 use Psalm\CodeLocation;
 
 trait MixedIssueTrait
 {
     /**
-     * @var ?CodeLocation
      * @readonly
      */
-    public $origin_location;
+    public ?CodeLocation $origin_location = null;
 
     public function __construct(
         string $message,
         CodeLocation $code_location,
-        ?CodeLocation $origin_location = null
+        ?CodeLocation $origin_location = null,
     ) {
-        $this->code_location = $code_location;
-        $this->message = $message;
+        parent::__construct($message, $code_location);
         $this->origin_location = $origin_location;
     }
 
+    #[Override]
     public function getMixedOriginMessage(): string
     {
         return $this->message
@@ -30,6 +32,7 @@ trait MixedIssueTrait
                 : '');
     }
 
+    #[Override]
     public function getOriginalLocation(): ?CodeLocation
     {
         return $this->origin_location;

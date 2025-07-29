@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\TypeVisitor;
 
+use Override;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\MutableTypeVisitor;
@@ -14,14 +17,14 @@ use Psalm\Type\Union;
  */
 final class FromDocblockSetter extends MutableTypeVisitor
 {
-    private bool $from_docblock;
-    public function __construct(bool $from_docblock)
-    {
-        $this->from_docblock = $from_docblock;
+    public function __construct(
+        private readonly bool $from_docblock,
+    ) {
     }
     /**
      * @return self::STOP_TRAVERSAL|self::DONT_TRAVERSE_CHILDREN|null
      */
+    #[Override]
     protected function enterNode(TypeNode &$type): ?int
     {
         if (!$type instanceof Atomic && !$type instanceof Union && !$type instanceof MutableUnion) {

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\PhpVisitor\Reflector;
 
 use PhpParser;
@@ -28,7 +30,7 @@ final class AttributeResolver
         FileStorage $file_storage,
         Aliases $aliases,
         PhpParser\Node\Attribute $stmt,
-        ?string $fq_classlike_name
+        ?string $fq_classlike_name,
     ): AttributeStorage {
         if ($stmt->name instanceof PhpParser\Node\Name\FullyQualified) {
             $fq_type_string = (string)$stmt->name;

@@ -1,13 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\FileUpdates;
 
+use Override;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
+use Psalm\Internal\Provider\FileReferenceCacheProvider;
+use Psalm\Internal\Provider\ParserCacheProvider;
 use Psalm\Internal\Provider\Providers;
-use Psalm\Tests\Internal\Provider\FakeFileReferenceCacheProvider;
-use Psalm\Tests\Internal\Provider\ParserInstanceCacheProvider;
 use Psalm\Tests\Internal\Provider\ProjectCacheProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
@@ -18,8 +21,9 @@ use function strpos;
 
 use const DIRECTORY_SEPARATOR;
 
-class AnalyzedMethodTest extends TestCase
+final class AnalyzedMethodTest extends TestCase
 {
+    #[Override]
     public function setUp(): void
     {
         parent::setUp();
@@ -30,10 +34,10 @@ class AnalyzedMethodTest extends TestCase
 
         $providers = new Providers(
             $this->file_provider,
-            new ParserInstanceCacheProvider(),
+            new ParserCacheProvider($config, '', false),
             null,
             null,
-            new FakeFileReferenceCacheProvider(),
+            new FileReferenceCacheProvider($config, '', false),
             new ProjectCacheProvider(),
         );
 
@@ -55,7 +59,7 @@ class AnalyzedMethodTest extends TestCase
         array $end_files,
         array $initial_analyzed_methods,
         array $unaffected_analyzed_methods,
-        array $ignored_issues = []
+        array $ignored_issues = [],
     ): void {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {
@@ -113,7 +117,7 @@ class AnalyzedMethodTest extends TestCase
         return [
             'basicRequire' => [
                 'start_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                         namespace Foo;
 
                         class A{
@@ -125,7 +129,7 @@ class AnalyzedMethodTest extends TestCase
                                 return "hello";
                             }
                         }',
-                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                         namespace Foo;
 
                         class B {
@@ -141,7 +145,7 @@ class AnalyzedMethodTest extends TestCase
                         }',
                 ],
                 'end_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                         namespace Foo;
 
                         class A{
@@ -153,7 +157,7 @@ class AnalyzedMethodTest extends TestCase
                                 return "hello";
                             }
                         }',
-                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                         namespace Foo;
 
                         class B {
@@ -169,21 +173,21 @@ class AnalyzedMethodTest extends TestCase
                         }',
                 ],
                 'initial_analyzed_methods' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::foofoo' => 1,
                         'foo\a::barbar' => 1,
                     ],
-                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
                         'foo\b::foo' => 1,
                         'foo\b::bar' => 1,
                         'foo\b::noreturntype' => 1,
                     ],
                 ],
                 'unaffected_analyzed_methods' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::barbar' => 1,
                     ],
-                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
                         'foo\b::bar' => 1,
                         'foo\b::noreturntype' => 1,
                     ],
@@ -194,14 +198,14 @@ class AnalyzedMethodTest extends TestCase
             ],
             'invalidateAfterPropertyChange' => [
                 'start_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                         namespace Foo;
 
                         class A {
                             /** @var string */
                             public $foo = "bar";
                         }',
-                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                         namespace Foo;
 
                         class B {
@@ -215,14 +219,14 @@ class AnalyzedMethodTest extends TestCase
                         }',
                 ],
                 'end_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                         namespace Foo;
 
                         class A {
                             /** @var int */
                             public $foo = 5;
                         }',
-                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                         namespace Foo;
 
                         class B {
@@ -236,27 +240,27 @@ class AnalyzedMethodTest extends TestCase
                         }',
                 ],
                 'initial_analyzed_methods' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
                         'foo\b::foo' => 1,
                         'foo\b::bar' => 1,
                     ],
                 ],
                 'unaffected_analyzed_methods' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
                         'foo\b::bar' => 1,
                     ],
                 ],
             ],
             'invalidateAfterStaticPropertyChange' => [
                 'start_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                         namespace Foo;
 
                         class A {
                             /** @var string */
                             public static $foo = "bar";
                         }',
-                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                         namespace Foo;
 
                         class B {
@@ -270,14 +274,14 @@ class AnalyzedMethodTest extends TestCase
                         }',
                 ],
                 'end_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                         namespace Foo;
 
                         class A {
                             /** @var int */
                             public static $foo = 5;
                         }',
-                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                         namespace Foo;
 
                         class B {
@@ -291,27 +295,27 @@ class AnalyzedMethodTest extends TestCase
                         }',
                 ],
                 'initial_analyzed_methods' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
                         'foo\b::foo' => 1,
                         'foo\b::bar' => 1,
                     ],
                 ],
                 'unaffected_analyzed_methods' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
                         'foo\b::bar' => 1,
                     ],
                 ],
             ],
             'invalidateAfterStaticFlipPropertyChange' => [
                 'start_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                         namespace Foo;
 
                         class A {
                             /** @var string */
                             public static $foo = "bar";
                         }',
-                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                         namespace Foo;
 
                         class B {
@@ -325,14 +329,14 @@ class AnalyzedMethodTest extends TestCase
                         }',
                 ],
                 'end_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                         namespace Foo;
 
                         class A {
                             /** @var string */
                             public $foo = "bar";
                         }',
-                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                         namespace Foo;
 
                         class B {
@@ -346,26 +350,26 @@ class AnalyzedMethodTest extends TestCase
                         }',
                 ],
                 'initial_analyzed_methods' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
                         'foo\b::foo' => 1,
                         'foo\b::bar' => 1,
                     ],
                 ],
                 'unaffected_analyzed_methods' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
                         'foo\b::bar' => 1,
                     ],
                 ],
             ],
             'invalidateAfterConstantChange' => [
                 'start_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                         namespace Foo;
 
                         class A {
                             public const FOO = "bar";
                         }',
-                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                         namespace Foo;
 
                         class B {
@@ -379,13 +383,13 @@ class AnalyzedMethodTest extends TestCase
                         }',
                 ],
                 'end_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                         namespace Foo;
 
                         class A {
                             public const FOO = 5;
                         }',
-                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                         namespace Foo;
 
                         class B {
@@ -399,20 +403,20 @@ class AnalyzedMethodTest extends TestCase
                         }',
                 ],
                 'initial_analyzed_methods' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
                         'foo\b::foo' => 1,
                         'foo\b::bar' => 1,
                     ],
                 ],
                 'unaffected_analyzed_methods' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
                         'foo\b::bar' => 1,
                     ],
                 ],
             ],
             'dontInvalidateTraitMethods' => [
                 'start_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                         namespace Foo;
 
                         class A {
@@ -420,7 +424,7 @@ class AnalyzedMethodTest extends TestCase
 
                             public function fooFoo(): void { }
                         }',
-                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                         namespace Foo;
 
                         class B {
@@ -434,7 +438,7 @@ class AnalyzedMethodTest extends TestCase
 
                             public function noReturnType() {}
                         }',
-                     getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                     (string) getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
                         namespace Foo;
 
                         trait T {
@@ -444,7 +448,7 @@ class AnalyzedMethodTest extends TestCase
                         }',
                 ],
                 'end_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                         namespace Foo;
 
                         class A {
@@ -452,7 +456,7 @@ class AnalyzedMethodTest extends TestCase
 
                             public function fooFoo(?string $foo = null): void { }
                         }',
-                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                         namespace Foo;
 
                         class B {
@@ -466,7 +470,7 @@ class AnalyzedMethodTest extends TestCase
 
                             public function noReturnType() {}
                         }',
-                     getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                     (string) getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
                         namespace Foo;
 
                         trait T {
@@ -476,24 +480,24 @@ class AnalyzedMethodTest extends TestCase
                         }',
                 ],
                 'initial_analyzed_methods' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'T.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'T.php' => [
                         'foo\a::barbar&foo\t::barbar' => 1,
                     ],
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::foofoo' => 1,
                     ],
-                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
                         'foo\b::foo' => 1,
                         'foo\b::bar' => 1,
                         'foo\b::noreturntype' => 1,
                     ],
                 ],
                 'unaffected_analyzed_methods' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'T.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'T.php' => [
                         'foo\a::barbar&foo\t::barbar' => 1,
                     ],
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [],
-                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [],
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
                         'foo\b::bar' => 1,
                         'foo\b::noreturntype' => 1,
                     ],
@@ -504,7 +508,7 @@ class AnalyzedMethodTest extends TestCase
             ],
             'invalidateTraitMethodsWhenTraitRemoved' => [
                 'start_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                         namespace Foo;
 
                         class A {
@@ -512,7 +516,7 @@ class AnalyzedMethodTest extends TestCase
 
                             public function fooFoo(?string $foo = null): void { }
                         }',
-                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                         namespace Foo;
 
                         class B {
@@ -524,7 +528,7 @@ class AnalyzedMethodTest extends TestCase
                                 echo (new A)->barBar();
                             }
                         }',
-                     getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                     (string) getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
                         namespace Foo;
 
                         trait T {
@@ -534,13 +538,13 @@ class AnalyzedMethodTest extends TestCase
                         }',
                 ],
                 'end_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                         namespace Foo;
 
                         class A {
                             public function fooFoo(): void { }
                         }',
-                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                         namespace Foo;
 
                         class B {
@@ -552,7 +556,7 @@ class AnalyzedMethodTest extends TestCase
                                 echo (new A)->barBar();
                             }
                         }',
-                     getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                     (string) getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
                         namespace Foo;
 
                         trait T {
@@ -562,26 +566,26 @@ class AnalyzedMethodTest extends TestCase
                         }',
                 ],
                 'initial_analyzed_methods' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'T.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'T.php' => [
                         'foo\a::barbar&foo\t::barbar' => 1,
                     ],
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::foofoo' => 1,
                     ],
-                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
                         'foo\b::foo' => 1,
                         'foo\b::bar' => 1,
                     ],
                 ],
                 'unaffected_analyzed_methods' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'T.php' => [],
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [],
-                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [],
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'T.php' => [],
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [],
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [],
                 ],
             ],
             'invalidateTraitMethodsWhenTraitReplaced' => [
                 'start_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                         namespace Foo;
 
                         class A {
@@ -589,7 +593,7 @@ class AnalyzedMethodTest extends TestCase
 
                             public function fooFoo(): void { }
                         }',
-                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                         namespace Foo;
 
                         class B {
@@ -601,7 +605,7 @@ class AnalyzedMethodTest extends TestCase
                                 echo (new A)->barBar();
                             }
                         }',
-                     getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                     (string) getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
                         namespace Foo;
 
                         trait T {
@@ -611,7 +615,7 @@ class AnalyzedMethodTest extends TestCase
                         }',
                 ],
                 'end_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                         namespace Foo;
 
                         class A {
@@ -621,7 +625,7 @@ class AnalyzedMethodTest extends TestCase
                                 return 5;
                             }
                         }',
-                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                         namespace Foo;
 
                         class B {
@@ -633,7 +637,7 @@ class AnalyzedMethodTest extends TestCase
                                 echo (new A)->barBar();
                             }
                         }',
-                     getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                     (string) getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
                         namespace Foo;
 
                         trait T {
@@ -643,26 +647,26 @@ class AnalyzedMethodTest extends TestCase
                         }',
                 ],
                 'initial_analyzed_methods' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'T.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'T.php' => [
                         'foo\a::barbar&foo\t::barbar' => 1,
                     ],
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::foofoo' => 1,
                     ],
-                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
                         'foo\b::foo' => 1,
                         'foo\b::bar' => 1,
                     ],
                 ],
                 'unaffected_analyzed_methods' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'T.php' => [],
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [],
-                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [],
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'T.php' => [],
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [],
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [],
                 ],
             ],
             'invalidateTraitMethodsWhenMethodChanged' => [
                 'start_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                         namespace Foo;
 
                         class A {
@@ -670,7 +674,7 @@ class AnalyzedMethodTest extends TestCase
 
                             public function fooFoo(): void { }
                         }',
-                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                         namespace Foo;
 
                         class B {
@@ -682,7 +686,7 @@ class AnalyzedMethodTest extends TestCase
                                 echo (new A)->barBar();
                             }
                         }',
-                    getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
                         namespace Foo;
 
                         trait T {
@@ -696,7 +700,7 @@ class AnalyzedMethodTest extends TestCase
                         }',
                 ],
                 'end_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                         namespace Foo;
 
                         class A {
@@ -704,7 +708,7 @@ class AnalyzedMethodTest extends TestCase
 
                             public function fooFoo(?string $foo = null): void { }
                         }',
-                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                         namespace Foo;
 
                         class B {
@@ -716,7 +720,7 @@ class AnalyzedMethodTest extends TestCase
                                 echo (new A)->barBar();
                             }
                         }',
-                     getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                     (string) getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
                         namespace Foo;
 
                         trait T {
@@ -730,35 +734,35 @@ class AnalyzedMethodTest extends TestCase
                         }',
                 ],
                 'initial_analyzed_methods' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'T.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'T.php' => [
                         'foo\a::barbar&foo\t::barbar' => 1,
                         'foo\a::bat&foo\t::bat' => 1,
                     ],
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::foofoo' => 1,
                     ],
-                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
                         'foo\b::foo' => 1,
                         'foo\b::bar' => 1,
                     ],
                 ],
                 'unaffected_analyzed_methods' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'T.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'T.php' => [
                         'foo\a::bat&foo\t::bat' => 1,
                     ],
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [],
-                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [],
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [],
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [],
                 ],
             ],
             'invalidateTraitMethodsWhenMethodSuperimposed' => [
                 'start_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                         namespace Foo;
 
                         class A {
                             use T;
                         }',
-                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                         namespace Foo;
 
                         class B {
@@ -766,7 +770,7 @@ class AnalyzedMethodTest extends TestCase
                                 return (new A)->barBar();
                             }
                         }',
-                     getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                     (string) getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
                         namespace Foo;
 
                         trait T {
@@ -776,7 +780,7 @@ class AnalyzedMethodTest extends TestCase
                         }',
                 ],
                 'end_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                         namespace Foo;
 
                         class A {
@@ -786,7 +790,7 @@ class AnalyzedMethodTest extends TestCase
                                 return 5;
                             }
                         }',
-                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                         namespace Foo;
 
                         class B {
@@ -794,7 +798,7 @@ class AnalyzedMethodTest extends TestCase
                                 return (new A)->barBar();
                             }
                         }',
-                     getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                     (string) getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
                         namespace Foo;
 
                         trait T {
@@ -804,21 +808,21 @@ class AnalyzedMethodTest extends TestCase
                         }',
                 ],
                 'initial_analyzed_methods' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'T.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'T.php' => [
                         'foo\a::barbar&foo\t::barbar' => 1,
                     ],
-                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
                         'foo\b::bar' => 1,
                     ],
                 ],
                 'unaffected_analyzed_methods' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'T.php' => [],
-                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [],
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'T.php' => [],
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [],
                 ],
             ],
             'dontInvalidateConstructor' => [
                 'start_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                         namespace Foo;
 
                         class A {
@@ -839,7 +843,7 @@ class AnalyzedMethodTest extends TestCase
                         }',
                 ],
                 'end_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                         namespace Foo;
 
                         class A {
@@ -861,14 +865,14 @@ class AnalyzedMethodTest extends TestCase
                 ],
 
                 'initial_analyzed_methods' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::__construct' => 2,
                         'foo\a::setfoo' => 1,
                         'foo\a::reallysetfoo' => 1,
                     ],
                 ],
                 'unaffected_analyzed_methods' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::__construct' => 2,
                         'foo\a::setfoo' => 1,
                         'foo\a::reallysetfoo' => 1,
@@ -877,7 +881,7 @@ class AnalyzedMethodTest extends TestCase
             ],
             'invalidateConstructorWhenDependentMethodChanges' => [
                 'start_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                         namespace Foo;
 
                         class A {
@@ -898,7 +902,7 @@ class AnalyzedMethodTest extends TestCase
                         }',
                 ],
                 'end_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                         namespace Foo;
 
                         class A {
@@ -919,21 +923,21 @@ class AnalyzedMethodTest extends TestCase
                         }',
                 ],
                 'initial_analyzed_methods' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::__construct' => 2,
                         'foo\a::setfoo' => 1,
                         'foo\a::reallysetfoo' => 1,
                     ],
                 ],
                 'unaffected_analyzed_methods' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::setfoo' => 1,
                     ],
                 ],
             ],
             'invalidateConstructorWhenDependentMethodInSubclassChanges' => [
                 'start_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                         namespace Foo;
 
                         abstract class A {
@@ -943,7 +947,7 @@ class AnalyzedMethodTest extends TestCase
 
                             abstract protected function setFoo() : void;
                         }',
-                    getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => '<?php
                         namespace Foo;
 
                         class AChild extends A {
@@ -960,7 +964,7 @@ class AnalyzedMethodTest extends TestCase
                         }',
                 ],
                 'end_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                         namespace Foo;
 
                         abstract class A {
@@ -970,7 +974,7 @@ class AnalyzedMethodTest extends TestCase
 
                             abstract protected function setFoo() : void;
                         }',
-                    getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => '<?php
                         namespace Foo;
 
                         class AChild extends A {
@@ -987,29 +991,29 @@ class AnalyzedMethodTest extends TestCase
                         }',
                 ],
                 'initial_analyzed_methods' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::__construct' => 1,
                         'foo\a::setfoo' => 1,
                     ],
-                    getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => [
                         'foo\achild::setfoo' => 1,
                         'foo\achild::reallysetfoo' => 1,
                         'foo\achild::__construct' => 2,
                     ],
                 ],
                 'unaffected_analyzed_methods' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::__construct' => 1,
                         'foo\a::setfoo' => 1,
                     ],
-                    getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => [
                         'foo\achild::setfoo' => 1,
                     ],
                 ],
             ],
             'invalidateConstructorWhenDependentMethodInSubclassChanges2' => [
                 'start_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                         namespace Foo;
 
                         class A {
@@ -1024,7 +1028,7 @@ class AnalyzedMethodTest extends TestCase
                                 $this->foo = "bar";
                             }
                         }',
-                    getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => '<?php
                         namespace Foo;
 
                         class AChild extends A {
@@ -1034,7 +1038,7 @@ class AnalyzedMethodTest extends TestCase
                         }',
                 ],
                 'end_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                         namespace Foo;
 
                         class A {
@@ -1049,7 +1053,7 @@ class AnalyzedMethodTest extends TestCase
                                 $this->foo = "baz";
                             }
                         }',
-                    getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => '<?php
                         namespace Foo;
 
                         class AChild extends A {
@@ -1059,22 +1063,22 @@ class AnalyzedMethodTest extends TestCase
                         }',
                 ],
                 'initial_analyzed_methods' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::__construct' => 2,
                         'foo\a::setfoo' => 1,
                     ],
-                    getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => [
                         'foo\achild::__construct' => 2,
                     ],
                 ],
                 'unaffected_analyzed_methods' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [],
-                    getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => [],
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [],
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => [],
                 ],
             ],
             'invalidateConstructorWhenDependentTraitMethodChanges' => [
                 'start_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                         namespace Foo;
 
                         class A {
@@ -1087,7 +1091,7 @@ class AnalyzedMethodTest extends TestCase
                                 $this->setFoo();
                             }
                         }',
-                    getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
                         namespace Foo;
 
                         trait T {
@@ -1097,7 +1101,7 @@ class AnalyzedMethodTest extends TestCase
                         }',
                 ],
                 'end_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                         namespace Foo;
 
                         class A {
@@ -1110,7 +1114,7 @@ class AnalyzedMethodTest extends TestCase
                                 $this->setFoo();
                             }
                         }',
-                    getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
                         namespace Foo;
 
                         trait T {
@@ -1120,21 +1124,21 @@ class AnalyzedMethodTest extends TestCase
                         }',
                 ],
                 'initial_analyzed_methods' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'T.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'T.php' => [
                         'foo\a::setfoo&foo\t::setfoo' => 1,
                     ],
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::__construct' => 2,
                     ],
                 ],
                 'unaffected_analyzed_methods' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'T.php' => [],
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [],
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'T.php' => [],
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [],
                 ],
             ],
             'rescanPropertyAssertingMethod' => [
                 'start_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                         namespace Foo;
 
                         class A {
@@ -1149,7 +1153,7 @@ class AnalyzedMethodTest extends TestCase
                         }',
                 ],
                 'end_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                         namespace Foo;
 
                         class A {
@@ -1164,13 +1168,13 @@ class AnalyzedMethodTest extends TestCase
                         }',
                 ],
                 'initial_analyzed_methods' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::__construct' => 2,
                         'foo\a::bar' => 1,
                     ],
                 ],
                 'unaffected_analyzed_methods' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::__construct' => 2,
                     ],
                 ],
@@ -1182,7 +1186,7 @@ class AnalyzedMethodTest extends TestCase
             ],
             'noChangeAfterSyntaxError' => [
                 'start_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                         namespace Foo;
 
                         class A {
@@ -1196,7 +1200,7 @@ class AnalyzedMethodTest extends TestCase
                         }',
                 ],
                 'end_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                         namespace Foo;
 
                         class A {
@@ -1210,13 +1214,13 @@ class AnalyzedMethodTest extends TestCase
                         }',
                 ],
                 'initial_analyzed_methods' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::__construct' => 2,
                         'foo\a::bar' => 1,
                     ],
                 ],
                 'unaffected_analyzed_methods' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::__construct' => 2,
                         'foo\a::bar' => 1,
                     ],
@@ -1224,7 +1228,7 @@ class AnalyzedMethodTest extends TestCase
             ],
             'nothingBeforeSyntaxError' => [
                 'start_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                         namespace Foo;
 
                         class A {
@@ -1238,7 +1242,7 @@ class AnalyzedMethodTest extends TestCase
                         }',
                 ],
                 'end_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                         namespace Foo;
 
                         class A {
@@ -1252,13 +1256,13 @@ class AnalyzedMethodTest extends TestCase
                         }',
                 ],
                 'initial_analyzed_methods' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::__construct' => 2,
                         'foo\a::bar' => 1,
                     ],
                 ],
                 'unaffected_analyzed_methods' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::__construct' => 2,
                         'foo\a::bar' => 1,
                     ],
@@ -1266,7 +1270,7 @@ class AnalyzedMethodTest extends TestCase
             ],
             'modifyPropertyOfChildClass' => [
                 'start_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                         namespace Foo;
 
                         abstract class A {
@@ -1279,7 +1283,7 @@ class AnalyzedMethodTest extends TestCase
                                 $this->b = $b;
                             }
                         }',
-                    getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => '<?php
                         namespace Foo;
 
                         class AChild extends A {
@@ -1287,7 +1291,7 @@ class AnalyzedMethodTest extends TestCase
                         }',
                 ],
                 'end_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                         namespace Foo;
 
                         abstract class A {
@@ -1300,7 +1304,7 @@ class AnalyzedMethodTest extends TestCase
                                 $this->b = $b;
                             }
                         }',
-                    getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => '<?php
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => '<?php
                         namespace Foo;
 
                         class AChild extends A {
@@ -1308,18 +1312,18 @@ class AnalyzedMethodTest extends TestCase
                         }',
                 ],
                 'initial_analyzed_methods' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::__construct' => 2,
                     ],
-                    getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => [
                         'foo\achild::__construct' => 2,
                     ],
                 ],
                 'unaffected_analyzed_methods' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::__construct' => 2,
                     ],
-                    getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => [],
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => [],
                 ],
             ],
         ];

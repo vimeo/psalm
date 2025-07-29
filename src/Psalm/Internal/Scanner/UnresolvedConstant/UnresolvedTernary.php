@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Scanner\UnresolvedConstant;
 
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
@@ -13,19 +15,10 @@ final class UnresolvedTernary extends UnresolvedConstantComponent
 {
     use ImmutableNonCloneableTrait;
 
-    public UnresolvedConstantComponent $cond;
-
-    public ?UnresolvedConstantComponent $if = null;
-
-    public UnresolvedConstantComponent $else;
-
     public function __construct(
-        UnresolvedConstantComponent $cond,
-        ?UnresolvedConstantComponent $if,
-        UnresolvedConstantComponent $else
+        public readonly UnresolvedConstantComponent $cond,
+        public readonly ?UnresolvedConstantComponent $if,
+        public readonly UnresolvedConstantComponent $else,
     ) {
-        $this->cond = $cond;
-        $this->if = $if;
-        $this->else = $else;
     }
 }

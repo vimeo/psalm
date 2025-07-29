@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
+use Override;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
@@ -22,17 +25,11 @@ trait CallableTrait
     /**
      * @var list<FunctionLikeParameter>|null
      */
-    public $params = [];
+    public ?array $params = [];
 
-    /**
-     * @var Union|null
-     */
-    public $return_type;
+    public ?Union $return_type = null;
 
-    /**
-     * @var ?bool
-     */
-    public $is_pure;
+    public ?bool $is_pure = null;
 
     /**
      * Constructs a new instance of a generic type
@@ -45,7 +42,7 @@ trait CallableTrait
         ?array $params = null,
         ?Union $return_type = null,
         ?bool $is_pure = null,
-        bool $from_docblock = false
+        bool $from_docblock = false,
     ) {
         $this->value = $value;
         $this->params = $params;
@@ -111,6 +108,7 @@ trait CallableTrait
         return $return_type_string;
     }
 
+    #[Override]
     public function getKey(bool $include_extra = true): string
     {
         $param_string = $this->getParamString();
@@ -123,11 +121,12 @@ trait CallableTrait
     /**
      * @param  array<lowercase-string, string> $aliased_classes
      */
+    #[Override]
     public function toNamespacedString(
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        bool $use_phpdoc_format
+        bool $use_phpdoc_format,
     ): string {
         if ($use_phpdoc_format) {
             if ($this instanceof TNamedObject) {
@@ -178,11 +177,12 @@ trait CallableTrait
     /**
      * @param  array<lowercase-string, string> $aliased_classes
      */
+    #[Override]
     public function toPhpString(
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $analysis_php_version_id
+        int $analysis_php_version_id,
     ): string {
         if ($this instanceof TNamedObject) {
             return parent::toNamespacedString($namespace, $aliased_classes, $this_class, true);
@@ -191,6 +191,7 @@ trait CallableTrait
         return $this->value;
     }
 
+    #[Override]
     public function getId(bool $exact = true, bool $nested = false): string
     {
         $param_string = '';
@@ -232,7 +233,7 @@ trait CallableTrait
         ?string $calling_function = null,
         bool $replace = true,
         bool $add_lower_bound = false,
-        int $depth = 0
+        int $depth = 0,
     ): ?array {
         $replaced = false;
         $params = $this->params;
@@ -300,7 +301,7 @@ trait CallableTrait
      */
     protected function replaceCallableTemplateTypesWithArgTypes(
         TemplateResult $template_result,
-        ?Codebase $codebase
+        ?Codebase $codebase,
     ): ?array {
         $replaced = false;
 

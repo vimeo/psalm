@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\PhpVisitor;
 
 use LogicException;
+use Override;
 use PhpParser;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Name;
@@ -32,21 +35,19 @@ use Psalm\Plugin\EventHandler\Event\AfterClassLikeVisitEvent;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
+use SplObjectStorage;
 use UnexpectedValueException;
 
-use function array_merge;
 use function array_pop;
+use function defined;
 use function end;
 use function explode;
-use function get_class;
 use function in_array;
 use function is_string;
 use function reset;
 use function spl_object_id;
 use function strpos;
 use function strtolower;
-
-use const PHP_VERSION_ID;
 
 /**
  * @internal
@@ -55,15 +56,9 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
 {
     private Aliases $aliases;
 
-    private FileScanner $file_scanner;
+    private readonly string $file_path;
 
-    private Codebase $codebase;
-
-    private string $file_path;
-
-    private bool $scan_deep;
-
-    private FileStorage $file_storage;
+    private readonly bool $scan_deep;
 
     /**
      * @var array<FunctionLikeNodeScanner>
@@ -90,22 +85,26 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
      * @var array<int, bool>
      */
     private array $bad_classes = [];
-    private EventDispatcher $eventDispatcher;
+    private readonly EventDispatcher $eventDispatcher;
+
+    /**
+     * @var SplObjectStorage<PhpParser\Node\FunctionLike, null>
+     */
+    private readonly SplObjectStorage $closure_statements;
 
     public function __construct(
-        Codebase $codebase,
-        FileScanner $file_scanner,
-        FileStorage $file_storage
+        private readonly Codebase $codebase,
+        private readonly FileScanner $file_scanner,
+        private readonly FileStorage $file_storage,
     ) {
-        $this->codebase = $codebase;
-        $this->file_scanner = $file_scanner;
         $this->file_path = $file_scanner->file_path;
         $this->scan_deep = $file_scanner->will_analyze;
-        $this->file_storage = $file_storage;
         $this->aliases = $this->file_storage->aliases = new Aliases();
         $this->eventDispatcher = $this->codebase->config->eventDispatcher;
+        $this->closure_statements = new SplObjectStorage();
     }
 
+    #[Override]
     public function enterNode(PhpParser\Node $node): ?int
     {
         foreach ($node->getComments() as $comment) {
@@ -154,12 +153,12 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
 
             if ($classlike_node_scanner->start($node) === false) {
                 $this->bad_classes[spl_object_id($node)] = true;
-                return PhpParser\NodeTraverser::DONT_TRAVERSE_CURRENT_AND_CHILDREN;
+                return self::DONT_TRAVERSE_CURRENT_AND_CHILDREN;
             }
 
             $this->classlike_node_scanners[] = $classlike_node_scanner;
 
-            $this->type_aliases = array_merge($this->type_aliases, $classlike_node_scanner->type_aliases);
+            $this->type_aliases = [...$this->type_aliases, ...$classlike_node_scanner->type_aliases];
         } elseif ($node instanceof PhpParser\Node\Stmt\TryCatch) {
             foreach ($node->catches as $catch) {
                 foreach ($catch->types as $catch_type) {
@@ -171,13 +170,37 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                     }
                 }
             }
-        } elseif ($node instanceof PhpParser\Node\FunctionLike) {
+        } elseif ($node instanceof PhpParser\Node\FunctionLike
+                  || $node instanceof PhpParser\Node\Stmt\Expression
+                     && ($node->expr instanceof PhpParser\Node\Expr\ArrowFunction
+                         || $node->expr instanceof PhpParser\Node\Expr\Closure)
+                  || $node instanceof PhpParser\Node\Arg
+                     && ($node->value instanceof PhpParser\Node\Expr\ArrowFunction
+                         || $node->value instanceof PhpParser\Node\Expr\Closure)
+                  || $node instanceof PhpParser\Node\ArrayItem
+                     && ($node->value instanceof PhpParser\Node\Expr\ArrowFunction
+                         || $node->value instanceof PhpParser\Node\Expr\Closure)
+         ) {
+            $doc_comment = null;
             if ($node instanceof PhpParser\Node\Stmt\Function_
                 || $node instanceof PhpParser\Node\Stmt\ClassMethod
             ) {
                 if ($this->skip_if_descendants) {
                     return null;
                 }
+            } elseif ($node instanceof PhpParser\Node\Stmt\Expression) {
+                $doc_comment = $node->getDocComment();
+                /** @var PhpParser\Node\FunctionLike */
+                $node = $node->expr;
+                $this->closure_statements->attach($node);
+            } elseif ($node instanceof PhpParser\Node\Arg || $node instanceof PhpParser\Node\ArrayItem) {
+                $doc_comment = $node->getDocComment();
+                /** @var PhpParser\Node\FunctionLike */
+                $node = $node->value;
+                $this->closure_statements->attach($node);
+            } elseif ($this->closure_statements->contains($node)) {
+                // This is a closure that was already processed at the statement level.
+                return null;
             }
 
             $classlike_storage = null;
@@ -204,7 +227,7 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                 $functionlike_types,
             );
 
-            $functionlike_node_scanner->start($node);
+            $functionlike_node_scanner->start($node, false, $doc_comment);
 
             $this->functionlike_node_scanners[] = $functionlike_node_scanner;
 
@@ -219,13 +242,11 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                     $classlike_storage->class_implements['stringable'] = 'Stringable';
                 }
 
-                if (PHP_VERSION_ID >= 8_00_00) {
-                    $this->codebase->scanner->queueClassLikeForScanning('Stringable');
-                }
+                $this->codebase->scanner->queueClassLikeForScanning('Stringable');
             }
 
             if (!$this->scan_deep) {
-                return PhpParser\NodeTraverser::DONT_TRAVERSE_CHILDREN;
+                return self::DONT_TRAVERSE_CHILDREN;
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\Global_) {
             $functionlike_node_scanner = end($this->functionlike_node_scanners);
@@ -270,7 +291,11 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
 
                 $fq_const_name = Type::getFQCLNFromString($const->name->name, $this->aliases);
 
-                if ($this->codebase->register_stub_files || $this->codebase->register_autoload_files) {
+                if (($this->codebase->register_stub_files
+                    || $this->codebase->register_autoload_files
+                    || $this->codebase->all_constants_global
+                    ) && (!defined($fq_const_name) || !$const_type->isMixed())
+                ) {
                     $this->codebase->addGlobalConstantType($fq_const_name, $const_type);
                 }
 
@@ -349,7 +374,7 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                     $template_types,
                     $this->type_aliases,
                 );
-            } catch (DocblockParseException $e) {
+            } catch (DocblockParseException) {
                 // do nothing
             }
 
@@ -478,6 +503,7 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
     /**
      * @return null
      */
+    #[Override]
     public function leaveNode(PhpParser\Node $node)
     {
         if ($node instanceof PhpParser\Node\Stmt\Namespace_) {
@@ -560,7 +586,7 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                     ) {
                         $e = reset($functionlike_node_scanner->storage->docblock_issues);
 
-                        $fqcn_parts = explode('\\', get_class($e));
+                        $fqcn_parts = explode('\\', $e::class);
                         $issue_type = array_pop($fqcn_parts);
 
                         $message = $e instanceof TaintedInput
@@ -593,30 +619,35 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
     }
 
     /** @psalm-mutation-free */
+    #[Override]
     public function getFilePath(): string
     {
         return $this->file_path;
     }
 
     /** @psalm-mutation-free */
+    #[Override]
     public function getFileName(): string
     {
         return $this->file_scanner->getFileName();
     }
 
     /** @psalm-mutation-free */
+    #[Override]
     public function getRootFilePath(): string
     {
         return $this->file_scanner->getRootFilePath();
     }
 
     /** @psalm-mutation-free */
+    #[Override]
     public function getRootFileName(): string
     {
         return $this->file_scanner->getRootFileName();
     }
 
     /** @psalm-mutation-free */
+    #[Override]
     public function getAliases(): Aliases
     {
         return $this->aliases;
@@ -625,6 +656,7 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
     /**
      * @phpcsSuppress SlevomatCodingStandard.TypeHints.ReturnTypeHint.MissingAnyTypeHint
      */
+    #[Override]
     public function afterTraverse(array $nodes)
     {
         $this->file_storage->type_aliases = $this->type_aliases;

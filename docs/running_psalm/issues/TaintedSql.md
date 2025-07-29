@@ -1,6 +1,6 @@
 # TaintedSql
 
-Emitted when user-controlled input can be passed into to a SQL command.
+Emitted when user-controlled input can be passed into a SQL command.
 
 ```php
 <?php

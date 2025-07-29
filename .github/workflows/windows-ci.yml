@@ -54,13 +54,20 @@ jobs:
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.0'
+          php-version: '8.4'
           ini-values: zend.assertions=1, assert.exception=1, opcache.enable_cli=1, opcache.jit=function, opcache.jit_buffer_size=512M
+          #ini-values: zend.assertions=1, assert.exception=1
           tools: composer:v2
           coverage: none
-          extensions: none, curl, dom, filter, intl, json, libxml, mbstring, openssl, opcache, pcre, phar, reflection, simplexml, spl, tokenizer, xml, xmlwriter
+          #extensions: none, curl, dom, filter, intl, json, libxml, mbstring, openssl, opcache, pcre, phar, reflection, simplexml, spl, tokenizer, xml, xmlwriter
+          extensions: none, curl, dom, filter, intl, json, libxml, mbstring, openssl, pcre, phar, reflection, simplexml, spl, tokenizer, xml, xmlwriter
         env:
           fail-fast: true
+
+      - name: PHP Version
+        run: |
+          php -v
+          php -r 'var_dump(PHP_VERSION_ID);'
 
       - uses: actions/checkout@v4
 
@@ -93,7 +100,7 @@ jobs:
           COMPOSER_ROOT_VERSION: dev-master
 
       - name: Generate test suits
-        run: php bin/generate_testsuites.php $env:CHUNK_COUNT
+        run: php bin/ci/generate_testsuites.php $env:CHUNK_COUNT
 
       - name: Run unit tests
         run: vendor/bin/paratest --processes=$env:PARALLEL_PROCESSES --testsuite=chunk_$env:CHUNK_NUMBER --log-junit build/phpunit/phpunit.xml

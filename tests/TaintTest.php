@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use Psalm\Context;
@@ -14,7 +16,7 @@ use function trim;
 
 use const DIRECTORY_SEPARATOR;
 
-class TaintTest extends TestCase
+final class TaintTest extends TestCase
 {
     /**
      * @dataProvider providerValidCodeParse
@@ -749,6 +751,29 @@ class TaintTest extends TestCase
                     $d = mysqli_real_escape_string($mysqli, $_GET["d"]);
 
                     $mysqli->query("$a$b$c$d");',
+            ],
+            'querySimpleXMLElement' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-taint-escape xpath
+                     */
+                    function my_escaping_function_for_xpath(string $input) : string {};
+
+                    function queryExpression(SimpleXMLElement $xml) : array|false|null {
+                        $expression = $_GET["expression"];
+                        $expression = my_escaping_function_for_xpath($expression);
+                        return $xml->xpath($expression);
+                    }',
+            ],
+            'escapeSeconds' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-taint-escape sleep
+                     */
+                    function my_escaping_function_for_seconds(mixed $input) : int {};
+
+                    $seconds = my_escaping_function_for_seconds($_GET["seconds"]);
+                    sleep($seconds);',
             ],
         ];
     }
@@ -2512,6 +2537,66 @@ class TaintTest extends TestCase
                     $function = new ReflectionFunction($name);
                     $function->invoke();',
                 'error_message' => 'TaintedCallable',
+            ],
+            'querySimpleXMLElement' => [
+                'code' => '<?php
+                    function queryExpression(SimpleXMLElement $xml) : array|false|null {
+                        $expression = $_GET["expression"];
+                        return $xml->xpath($expression);
+                    }',
+                'error_message' => 'TaintedXpath',
+            ],
+            'queryDOMXPath' => [
+                'code' => '<?php
+                    function queryExpression(DOMXPath $xpath) : mixed {
+                        $expression = $_GET["expression"];
+                        return $xpath->query($expression);
+                    }',
+                'error_message' => 'TaintedXpath',
+            ],
+            'evaluateDOMXPath' => [
+                'code' => '<?php
+                    function evaluateExpression(DOMXPath $xpath) : mixed {
+                        $expression = $_GET["expression"];
+                        return $xpath->evaluate($expression);
+                    }',
+                'error_message' => 'TaintedXpath',
+            ],
+            'taintedSleep' => [
+                'code' => '<?php
+                    sleep($_GET["seconds"]);',
+                'error_message' => 'TaintedSleep',
+            ],
+            'taintedUsleep' => [
+                'code' => '<?php
+                    usleep($_GET["microseconds"]);',
+                'error_message' => 'TaintedSleep',
+            ],
+            'taintedTimeNanosleepSeconds' => [
+                'code' => '<?php
+                    time_nanosleep($_GET["seconds"], 42);',
+                'error_message' => 'TaintedSleep',
+            ],
+            'taintedTimeNanosleepNanoseconds' => [
+                'code' => '<?php
+                    time_nanosleep(42, $_GET["nanoseconds"]);',
+                'error_message' => 'TaintedSleep',
+            ],
+            'taintedTimeSleepUntil' => [
+                'code' => '<?php
+                    time_sleep_until($_GET["timestamp"]);',
+                'error_message' => 'TaintedSleep',
+            ],
+            'taintedExtract' => [
+                'code' => '<?php
+                    $array = $_GET;
+                    extract($array);',
+                'error_message' => 'TaintedExtract',
+            ],
+            'extractPost' => [
+                'code' => '<?php
+                    extract($_POST);',
+                'error_message' => 'TaintedExtract',
             ],
             'taintedExecuteQueryFunction' => [
                 'code' => '<?php

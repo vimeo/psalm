@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 
 use Exception;
@@ -15,7 +17,6 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
-use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
@@ -60,7 +61,7 @@ final class MethodCallReturnTypeFetcher
         ?Atomic $static_type,
         array $args,
         AtomicMethodCallAnalysisResult $result,
-        TemplateResult $template_result
+        TemplateResult $template_result,
     ): Union {
         $call_map_id = $declaring_method_id ?? $method_id;
 
@@ -286,7 +287,7 @@ final class MethodCallReturnTypeFetcher
         MethodIdentifier $method_id,
         ?MethodIdentifier $declaring_method_id,
         string $cased_method_id,
-        Context $context
+        Context $context,
     ): void {
         if (!$statements_analyzer->data_flow_graph
             || !$declaring_method_id
@@ -531,18 +532,6 @@ final class MethodCallReturnTypeFetcher
             return;
         }
 
-        if ($method_storage->taint_source_types) {
-            $method_node = TaintSource::getForMethodReturn(
-                (string) $method_id,
-                $cased_method_id,
-                $method_storage->signature_return_type_location ?: $method_storage->location,
-            );
-
-            $method_node->taints = $method_storage->taint_source_types;
-
-            $statements_analyzer->data_flow_graph->addSource($method_node);
-        }
-
         FunctionCallReturnTypeFetcher::taintUsingFlows(
             $statements_analyzer,
             $method_storage,
@@ -553,6 +542,12 @@ final class MethodCallReturnTypeFetcher
             $method_call_node,
             $method_storage->removed_taints,
         );
+
+        FunctionCallReturnTypeFetcher::taintUsingStorage(
+            $method_storage,
+            $statements_analyzer->data_flow_graph,
+            $method_call_node,
+        );
     }
 
     public static function replaceTemplateTypes(
@@ -560,7 +555,7 @@ final class MethodCallReturnTypeFetcher
         TemplateResult $template_result,
         MethodIdentifier $method_id,
         int $arg_count,
-        Codebase $codebase
+        Codebase $codebase,
     ): Union {
         if ($template_result->template_types) {
             $bindable_template_types = $return_type_candidate->getTemplateTypes();
@@ -575,7 +570,7 @@ final class MethodCallReturnTypeFetcher
                 ) {
                     if ($template_type->param_name === 'TFunctionArgCount') {
                         $template_result->lower_bounds[$template_type->param_name] = [
-                            'fn-' . strtolower((string) $method_id) => [
+                            'fn-' . $method_id->method_name => [
                                 new TemplateBound(
                                     Type::getInt(false, $arg_count),
                                 ),
@@ -583,7 +578,7 @@ final class MethodCallReturnTypeFetcher
                         ];
                     } elseif ($template_type->param_name === 'TPhpMajorVersion') {
                         $template_result->lower_bounds[$template_type->param_name] = [
-                            'fn-' . strtolower((string) $method_id) => [
+                            'fn-' . $method_id->method_name => [
                                 new TemplateBound(
                                     Type::getInt(false, $codebase->getMajorAnalysisPhpVersion()),
                                 ),
@@ -591,7 +586,7 @@ final class MethodCallReturnTypeFetcher
                         ];
                     } elseif ($template_type->param_name === 'TPhpVersionId') {
                         $template_result->lower_bounds[$template_type->param_name] = [
-                            'fn-' . strtolower((string) $method_id) => [
+                            'fn-' . $method_id->method_name => [
                                 new TemplateBound(
                                     Type::getInt(
                                         false,

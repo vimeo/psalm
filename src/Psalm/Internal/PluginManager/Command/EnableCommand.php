@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\PluginManager\Command;
 
 use InvalidArgumentException;
+use Override;
 use Psalm\Internal\PluginManager\PluginListFactory;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -21,14 +24,13 @@ use function is_string;
  */
 final class EnableCommand extends Command
 {
-    private PluginListFactory $plugin_list_factory;
-
-    public function __construct(PluginListFactory $plugin_list_factory)
-    {
-        $this->plugin_list_factory = $plugin_list_factory;
+    public function __construct(
+        private readonly PluginListFactory $plugin_list_factory,
+    ) {
         parent::__construct();
     }
 
+    #[Override]
     protected function configure(): void
     {
         $this
@@ -44,6 +46,7 @@ final class EnableCommand extends Command
         $this->addUsage('\'Plugin\Class\Name\' [-c path/to/psalm.xml]');
     }
 
+    #[Override]
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
@@ -63,7 +66,7 @@ final class EnableCommand extends Command
 
         try {
             $plugin_class = $plugin_list->resolvePluginClass($plugin_name);
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException) {
             $io->error('Unknown plugin class ' . $plugin_name);
 
             return 2;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
@@ -66,19 +68,20 @@ use function mt_rand;
 use function preg_match;
 use function preg_replace;
 use function spl_object_id;
+use function str_contains;
 use function str_replace;
-use function strpos;
+use function str_starts_with;
 use function strtolower;
 
 /**
  * @internal
  */
-class CallAnalyzer
+abstract class CallAnalyzer
 {
     public static function collectSpecialInformation(
         FunctionLikeAnalyzer $source,
         string $method_name,
-        Context $context
+        Context $context,
     ): void {
         $method_name_lc = strtolower($method_name);
         $fq_class_name = (string)$source->getFQCLN();
@@ -105,10 +108,6 @@ class CallAnalyzer
                 if ($context->collect_initializations) {
                     if (isset($context->initialized_methods[(string) $method_id])) {
                         return;
-                    }
-
-                    if ($context->initialized_methods === null) {
-                        $context->initialized_methods = [];
                     }
 
                     $context->initialized_methods[(string) $method_id] = true;
@@ -190,10 +189,6 @@ class CallAnalyzer
                 return;
             }
 
-            if ($context->initialized_methods === null) {
-                $context->initialized_methods = [];
-            }
-
             $context->initialized_methods[(string) $declaring_method_id] = true;
 
             $method_storage = $codebase->methods->getStorage($declaring_method_id);
@@ -225,7 +220,7 @@ class CallAnalyzer
                 $local_vars_in_scope = [];
 
                 foreach ($context->vars_in_scope as $var_id => $type) {
-                    if (strpos($var_id, '$this->') === 0) {
+                    if (str_starts_with($var_id, '$this->')) {
                         if ($type->initialized) {
                             $local_vars_in_scope[$var_id] = $context->vars_in_scope[$var_id];
 
@@ -278,7 +273,7 @@ class CallAnalyzer
         TemplateResult $template_result,
         Context $context,
         CodeLocation $code_location,
-        StatementsAnalyzer $statements_analyzer
+        StatementsAnalyzer $statements_analyzer,
     ): bool {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -309,7 +304,6 @@ class CallAnalyzer
             $declaring_method_id = $class_storage->declaring_method_ids[$method_name];
 
             $declaring_fq_class_name = $declaring_method_id->fq_class_name;
-            $declaring_method_name = $declaring_method_id->method_name;
 
             if ($declaring_fq_class_name !== $fq_class_name) {
                 $declaring_class_storage = $codebase->classlike_storage_provider->get($declaring_fq_class_name);
@@ -317,11 +311,7 @@ class CallAnalyzer
                 $declaring_class_storage = $class_storage;
             }
 
-            if (!isset($declaring_class_storage->methods[$declaring_method_name])) {
-                throw new UnexpectedValueException('Storage should not be empty here');
-            }
-
-            $method_storage = $declaring_class_storage->methods[$declaring_method_name];
+            $method_storage = $codebase->methods->getStorage($declaring_method_id);
 
             if ($declaring_class_storage->user_defined
                 && !$method_storage->has_docblock_param_types
@@ -393,7 +383,7 @@ class CallAnalyzer
         ?string $appearing_class_name,
         ?ClassLikeStorage $calling_class_storage,
         array $existing_template_types = [],
-        array $class_template_params = []
+        array $class_template_params = [],
     ): array {
         $template_types = $existing_template_types;
 
@@ -465,7 +455,7 @@ class CallAnalyzer
         string $fq_class_name,
         string $template_name,
         array $template_extended_params,
-        array $found_generic_params
+        array $found_generic_params,
     ): Union {
         if (isset($found_generic_params[$template_name][$fq_class_name])) {
             return $found_generic_params[$template_name][$fq_class_name];
@@ -498,7 +488,7 @@ class CallAnalyzer
      */
     public static function getFunctionIdsFromCallableArg(
         FileSource $file_source,
-        PhpParser\Node\Expr $callable_arg
+        PhpParser\Node\Expr $callable_arg,
     ): array {
         if ($callable_arg instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
             if ($callable_arg->left instanceof PhpParser\Node\Expr\ClassConstFetch
@@ -518,7 +508,7 @@ class CallAnalyzer
         }
 
         if ($callable_arg instanceof PhpParser\Node\Scalar\String_) {
-            $potential_id = preg_replace('/^\\\/', '', $callable_arg->value, 1);
+            $potential_id = (string) preg_replace('/^\\\/', '', $callable_arg->value, 1);
 
             if (preg_match('/^[A-Za-z0-9_]+(\\\[A-Za-z0-9_]+)*(::[A-Za-z0-9_]+)?$/', $potential_id)) {
                 assert($potential_id !== '');
@@ -603,7 +593,7 @@ class CallAnalyzer
         StatementsAnalyzer $statements_analyzer,
         string &$function_id,
         CodeLocation $code_location,
-        bool $can_be_in_root_scope
+        bool $can_be_in_root_scope,
     ): bool {
         $cased_function_id = $function_id;
         $function_id = strtolower($function_id);
@@ -612,7 +602,7 @@ class CallAnalyzer
 
         if (!$codebase->functions->functionExists($statements_analyzer, $function_id)) {
             /** @var non-empty-lowercase-string */
-            $root_function_id = preg_replace('/.*\\\/', '', $function_id);
+            $root_function_id = (string) preg_replace('/.*\\\/', '', $function_id);
 
             if ($can_be_in_root_scope
                 && $function_id !== $root_function_id
@@ -622,7 +612,8 @@ class CallAnalyzer
             } else {
                 IssueBuffer::maybeAdd(
                     new UndefinedFunction(
-                        'Function ' . $cased_function_id . ' does not exist',
+                        'Function ' . $cased_function_id . ' does not exist'
+                            .', consider enabling the allFunctionsGlobal config option if scanning legacy codebases',
                         $code_location,
                         $function_id,
                     ),
@@ -648,7 +639,7 @@ class CallAnalyzer
         array $args,
         TemplateResult $template_result,
         Context $context,
-        StatementsAnalyzer $statements_analyzer
+        StatementsAnalyzer $statements_analyzer,
     ): void {
         $type_assertions = [];
 
@@ -673,16 +664,16 @@ class CallAnalyzer
                 }
             } elseif ($var_possibilities->var_id === '$this' && $thisName !== null) {
                 $assertion_var_id = $thisName;
-            } elseif (strpos($var_possibilities->var_id, '$this->') === 0 && $thisName !== null) {
+            } elseif (str_starts_with($var_possibilities->var_id, '$this->') && $thisName !== null) {
                 $assertion_var_id = $thisName . str_replace('$this->', '->', $var_possibilities->var_id);
-            } elseif (strpos($var_possibilities->var_id, 'self::') === 0 && $context->self) {
+            } elseif (str_starts_with($var_possibilities->var_id, 'self::') && $context->self) {
                 $assertion_var_id = $context->self . str_replace('self::', '::', $var_possibilities->var_id);
-            } elseif (strpos($var_possibilities->var_id, '::$') !== false) {
+            } elseif (str_contains($var_possibilities->var_id, '::$')) {
                 // allow assertions to bring external static props into scope
                 $assertion_var_id = $var_possibilities->var_id;
             } elseif (isset($context->vars_in_scope[$var_possibilities->var_id])) {
                 $assertion_var_id = $var_possibilities->var_id;
-            } elseif (strpos($var_possibilities->var_id, '->') !== false) {
+            } elseif (str_contains($var_possibilities->var_id, '->')) {
                 $exploded = explode('->', $var_possibilities->var_id);
 
                 if (count($exploded) < 2) {
@@ -879,7 +870,7 @@ class CallAnalyzer
                     $simplified_clauses,
                 );
 
-                $type_assertions = array_merge($type_assertions, $assert_type_assertions);
+                $type_assertions = [...$type_assertions, ...$assert_type_assertions];
             }
         }
 
@@ -973,7 +964,7 @@ class CallAnalyzer
         StatementsAnalyzer $statements_analyzer,
         TemplateResult $template_result,
         CodeLocation $code_location,
-        ?string $function_id
+        ?string $function_id,
     ): void {
         if ($template_result->lower_bounds && $template_result->upper_bounds) {
             foreach ($template_result->upper_bounds as $template_name => $defining_map) {

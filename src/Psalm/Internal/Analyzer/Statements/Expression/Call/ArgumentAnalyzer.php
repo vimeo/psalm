@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use PhpParser;
@@ -20,6 +22,7 @@ use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
@@ -56,13 +59,13 @@ use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_diff;
 use function array_filter;
 use function count;
 use function explode;
@@ -71,6 +74,8 @@ use function in_array;
 use function ord;
 use function preg_split;
 use function reset;
+use function str_contains;
+use function str_starts_with;
 use function strpos;
 use function strtolower;
 use function substr;
@@ -84,6 +89,48 @@ use const PREG_SPLIT_NO_EMPTY;
  */
 final class ArgumentAnalyzer
 {
+    // callable $this
+    // some PHP-internal functions (e.g. array_filter) will call the callback within the current context
+    // unlike user-defined functions which call the callback in their context
+    // however this doesn't apply to all
+    // e.g. header_register_callback will not throw an error immediately like user-land functions
+    // however error log "Could not call the sapi_header_callback" if it's not public
+    // this is NOT a complete list, but just what was easily available and to be extended
+    private const PHP_NATIVE_NON_PUBLIC_CB = [
+        ...ArgumentsAnalyzer::ARRAY_FILTERLIKE,
+        'array_diff_uassoc',
+        'array_diff_ukey',
+        'array_intersect_uassoc',
+        'array_intersect_ukey',
+        'array_map',
+        'array_reduce',
+        'array_udiff',
+        'array_udiff_assoc',
+        'array_udiff_uassoc',
+        'array_uintersect',
+        'array_uintersect_assoc',
+        'array_uintersect_uassoc',
+        'array_walk',
+        'array_walk_recursive',
+        'preg_replace_callback',
+        'preg_replace_callback_array',
+        'call_user_func',
+        'call_user_func_array',
+        'forward_static_call',
+        'forward_static_call_array',
+        'is_callable',
+        'ob_start',
+        'register_shutdown_function',
+        'register_tick_function',
+        'session_set_save_handler',
+        'set_error_handler',
+        'set_exception_handler',
+        'spl_autoload_register',
+        'spl_autoload_unregister',
+        'uasort',
+        'uksort',
+        'usort',
+    ];
     /**
      * @param  array<string, array<string, Union>> $class_generic_params
      * @return false|null
@@ -105,7 +152,7 @@ final class ArgumentAnalyzer
         array $class_generic_params,
         ?TemplateResult $template_result,
         bool $specialize_taint,
-        bool $in_call_map
+        bool $in_call_map,
     ): ?bool {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -243,7 +290,7 @@ final class ArgumentAnalyzer
         ?array $class_generic_params,
         ?TemplateResult $template_result,
         bool $specialize_taint,
-        bool $in_call_map
+        bool $in_call_map,
     ): ?bool {
         if (!$function_param->type) {
             if (!$codebase->infer_types_from_usage && !$statements_analyzer->data_flow_graph) {
@@ -300,7 +347,7 @@ final class ArgumentAnalyzer
             $readonly_template_result = new TemplateResult($class_generic_params, []);
 
             // This flag ensures that the template results will never be written to
-            // It also supercedes the `$add_lower_bounds` flag so that closure params
+            // It also supersedes the `$add_lower_bounds` flag so that closure params
             // don’t get overwritten
             $readonly_template_result->readonly = true;
 
@@ -334,10 +381,6 @@ final class ArgumentAnalyzer
                 $arg_type_param = null;
 
                 foreach ($arg_value_type->getAtomicTypes() as $arg_atomic_type) {
-                    if ($arg_atomic_type instanceof TList) {
-                        $arg_atomic_type = $arg_atomic_type->getKeyedArray();
-                    }
-
                     if ($arg_atomic_type instanceof TArray
                         || $arg_atomic_type instanceof TKeyedArray
                     ) {
@@ -679,7 +722,7 @@ final class ArgumentAnalyzer
         ?Atomic $unpacked_atomic_array,
         bool $specialize_taint,
         bool $in_call_map,
-        CodeLocation $function_call_location
+        CodeLocation $function_call_location,
     ): ?bool {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -689,7 +732,7 @@ final class ArgumentAnalyzer
                 && !$param_type->from_docblock
                 && !$param_type->had_template
                 && $method_id
-                && strpos($method_id->method_name, '__') !== 0
+                && !str_starts_with($method_id->method_name, '__')
             ) {
                 $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
@@ -858,9 +901,6 @@ final class ArgumentAnalyzer
                 if ($candidate_callable && $candidate_callable !== $atomic_type) {
                     // if we had an array callable, mark it as used now, since it's not possible later
                     $potential_method_id = null;
-                    if ($atomic_type instanceof TList) {
-                        $atomic_type = $atomic_type->getKeyedArray();
-                    }
 
                     if ($atomic_type instanceof TKeyedArray) {
                         $potential_method_id = CallableTypeComparator::getCallableMethodIdFromTKeyedArray(
@@ -965,10 +1005,6 @@ final class ArgumentAnalyzer
                 : null;
 
             foreach ($input_type->getAtomicTypes() as $input_type_part) {
-                if ($input_type_part instanceof TList) {
-                    $input_type_part = $input_type_part->getKeyedArray();
-                }
-
                 if ($input_type_part instanceof TKeyedArray) {
                     // If the param accept an array, we don't report arrays as wrong callbacks.
                     if (null !== $param_type_without_callable && UnionTypeComparator::isContainedBy(
@@ -1315,7 +1351,7 @@ final class ArgumentAnalyzer
         CodeLocation $arg_location,
         Context $context,
         Codebase $codebase,
-        StatementsAnalyzer $statements_analyzer
+        StatementsAnalyzer $statements_analyzer,
     ): ?bool {
         $method_identifier = $cased_method_id !== null ? ' of ' . $cased_method_id : '';
 
@@ -1338,53 +1374,10 @@ final class ArgumentAnalyzer
                         || ($lhs_atomic instanceof TNamedObject
                             && !$lhs_atomic->definite_class
                             && $lhs_atomic->value === $context->self))) {
-                    // callable $this
-                    // some PHP-internal functions (e.g. array_filter) will call the callback within the current context
-                    // unlike user-defined functions which call the callback in their context
-                    // however this doesn't apply to all
-                    // e.g. header_register_callback will not throw an error immediately like user-land functions
-                    // however error log "Could not call the sapi_header_callback" if it's not public
-                    // this is NOT a complete list, but just what was easily available and to be extended
-                    $php_native_non_public_cb = [
-                        'array_diff_uassoc',
-                        'array_diff_ukey',
-                        'array_filter',
-                        'array_intersect_uassoc',
-                        'array_intersect_ukey',
-                        'array_map',
-                        'array_reduce',
-                        'array_udiff',
-                        'array_udiff_assoc',
-                        'array_udiff_uassoc',
-                        'array_uintersect',
-                        'array_uintersect_assoc',
-                        'array_uintersect_uassoc',
-                        'array_walk',
-                        'array_walk_recursive',
-                        'preg_replace_callback',
-                        'preg_replace_callback_array',
-                        'call_user_func',
-                        'call_user_func_array',
-                        'forward_static_call',
-                        'forward_static_call_array',
-                        'is_callable',
-                        'ob_start',
-                        'register_shutdown_function',
-                        'register_tick_function',
-                        'session_set_save_handler',
-                        'set_error_handler',
-                        'set_exception_handler',
-                        'spl_autoload_register',
-                        'spl_autoload_unregister',
-                        'uasort',
-                        'uksort',
-                        'usort',
-                    ];
-
                     if ($potential_method_id->fq_class_name !== $context->self
                         || ($cased_method_id !== null
                             && !$method_id
-                            && !in_array($cased_method_id, $php_native_non_public_cb, true))
+                            && !in_array($cased_method_id, self::PHP_NATIVE_NON_PUBLIC_CB, true))
                         || ($method_id
                             && $method_id->fq_class_name !== $context->self
                             && $method_id->fq_class_name !== 'Closure')
@@ -1423,7 +1416,7 @@ final class ArgumentAnalyzer
                         return false;
                     }
                 }
-            } catch (UnexpectedValueException $e) {
+            } catch (UnexpectedValueException) {
                 // do nothing
             }
         }
@@ -1439,7 +1432,7 @@ final class ArgumentAnalyzer
         Union $param_type,
         CodeLocation $arg_location,
         PhpParser\Node\Expr $input_expr,
-        Context $context
+        Context $context,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -1509,7 +1502,7 @@ final class ArgumentAnalyzer
                     );
 
                     foreach ($function_ids as $function_id) {
-                        if (strpos($function_id, '::') !== false) {
+                        if (str_contains($function_id, '::')) {
                             if ($function_id[0] === '$') {
                                 $function_id = substr($function_id, 1);
                             }
@@ -1625,9 +1618,19 @@ final class ArgumentAnalyzer
         ?Union $signature_param_type,
         Context $context,
         bool $unpack,
-        ?Atomic $unpacked_atomic_array
+        ?Atomic $unpacked_atomic_array,
     ): void {
         if ($param_type->hasMixed()) {
+            return;
+        }
+
+        $var_id = ExpressionIdentifier::getVarId(
+            $input_expr,
+            $statements_analyzer->getFQCLN(),
+            $statements_analyzer,
+        );
+        
+        if (!$var_id) {
             return;
         }
 
@@ -1669,74 +1672,67 @@ final class ArgumentAnalyzer
             $input_type = new Union($types);
         }
 
-        $var_id = ExpressionIdentifier::getVarId(
-            $input_expr,
-            $statements_analyzer->getFQCLN(),
-            $statements_analyzer,
-        );
 
-        if ($var_id) {
-            $was_cloned = false;
+        $was_cloned = false;
 
-            if ($input_type->isNullable() && !$param_type->isNullable()) {
-                $input_type = $input_type->getBuilder();
-                $was_cloned = true;
-                $input_type->removeType('null');
-                $input_type = $input_type->freeze();
+        if ($input_type->isNullable() && !$param_type->isNullable()) {
+            $input_type = $input_type->getBuilder();
+            $was_cloned = true;
+            $input_type->removeType('null');
+            $input_type = $input_type->freeze();
+        }
+
+        if ($input_type->getId() === $param_type->getId()) {
+            if ($input_type->from_docblock) {
+                $input_type = $input_type->setFromDocblock(false);
             }
+        } elseif ($input_type->hasMixed() && $signature_param_type) {
+            $was_cloned = true;
+            $parent_nodes = $input_type->parent_nodes;
+            $by_ref = $input_type->by_ref;
+            $input_type = $signature_param_type->setProperties([
+                'ignore_nullable_issues' => $signature_param_type->isNullable(),
+                'parent_nodes' => $parent_nodes,
+                'by_ref' => $by_ref,
+            ]);
+        }
 
-            if ($input_type->getId() === $param_type->getId()) {
-                if ($input_type->from_docblock) {
-                    $input_type = $input_type->setFromDocblock(false);
+        if ($context->inside_conditional && !isset($context->assigned_var_ids[$var_id])) {
+            $context->assigned_var_ids[$var_id] = 0;
+        }
+
+        if ($was_cloned) {
+            $context->removeVarFromConflictingClauses($var_id, null, $statements_analyzer);
+        }
+
+        if ($unpack) {
+            if ($unpacked_atomic_array instanceof TArray) {
+                $unpacked_atomic_array = $unpacked_atomic_array->setTypeParams([
+                    $unpacked_atomic_array->type_params[0],
+                    $input_type,
+                ]);
+
+                $context->vars_in_scope[$var_id] = new Union([$unpacked_atomic_array]);
+            } elseif ($unpacked_atomic_array instanceof TKeyedArray
+                && $unpacked_atomic_array->is_list
+            ) {
+                if ($unpacked_atomic_array->isNonEmpty()) {
+                    $unpacked_atomic_array = Type::getNonEmptyListAtomic($input_type);
+                } else {
+                    $unpacked_atomic_array = Type::getListAtomic($input_type);
                 }
-            } elseif ($input_type->hasMixed() && $signature_param_type) {
-                $was_cloned = true;
-                $parent_nodes = $input_type->parent_nodes;
-                $by_ref = $input_type->by_ref;
-                $input_type = $signature_param_type->setProperties([
-                    'ignore_nullable_issues' => $signature_param_type->isNullable(),
-                    'parent_nodes' => $parent_nodes,
-                    'by_ref' => $by_ref,
+
+                $context->vars_in_scope[$var_id] = new Union([$unpacked_atomic_array]);
+            } else {
+                $context->vars_in_scope[$var_id] = new Union([
+                    new TArray([
+                        Type::getInt(),
+                        $input_type,
+                    ]),
                 ]);
             }
-
-            if ($context->inside_conditional && !isset($context->assigned_var_ids[$var_id])) {
-                $context->assigned_var_ids[$var_id] = 0;
-            }
-
-            if ($was_cloned) {
-                $context->removeVarFromConflictingClauses($var_id, null, $statements_analyzer);
-            }
-
-            if ($unpack) {
-                if ($unpacked_atomic_array instanceof TArray) {
-                    $unpacked_atomic_array = $unpacked_atomic_array->setTypeParams([
-                        $unpacked_atomic_array->type_params[0],
-                        $input_type,
-                    ]);
-
-                    $context->vars_in_scope[$var_id] = new Union([$unpacked_atomic_array]);
-                } elseif ($unpacked_atomic_array instanceof TKeyedArray
-                    && $unpacked_atomic_array->is_list
-                ) {
-                    if ($unpacked_atomic_array->isNonEmpty()) {
-                        $unpacked_atomic_array = Type::getNonEmptyListAtomic($input_type);
-                    } else {
-                        $unpacked_atomic_array = Type::getListAtomic($input_type);
-                    }
-
-                    $context->vars_in_scope[$var_id] = new Union([$unpacked_atomic_array]);
-                } else {
-                    $context->vars_in_scope[$var_id] = new Union([
-                        new TArray([
-                            Type::getInt(),
-                            $input_type,
-                        ]),
-                    ]);
-                }
-            } else {
-                $context->vars_in_scope[$var_id] = $input_type;
-            }
+        } else {
+            $context->vars_in_scope[$var_id] = $input_type;
         }
     }
 
@@ -1751,7 +1747,7 @@ final class ArgumentAnalyzer
         Union $input_type,
         PhpParser\Node\Expr $expr,
         Context $context,
-        bool $specialize_taint
+        bool $specialize_taint,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -1896,6 +1892,13 @@ final class ArgumentAnalyzer
                 $added_taints,
                 $removed_taints,
             );
+        }
+
+        $taints = array_diff($added_taints, $removed_taints);
+        if ($taints !== [] && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+            $taint_source = TaintSource::fromNode($argument_value_node);
+            $taint_source->taints = $taints;
+            $statements_analyzer->data_flow_graph->addSource($taint_source);
         }
     }
 }

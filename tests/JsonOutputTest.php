@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
+use Override;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
@@ -14,8 +17,9 @@ use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 
 use function substr;
 
-class JsonOutputTest extends TestCase
+final class JsonOutputTest extends TestCase
 {
+    #[Override]
     public function setUp(): void
     {
         // `TestCase::setUp()` creates its own ProjectAnalyzer and Config instance, but we don't want to do that in this
@@ -49,7 +53,7 @@ class JsonOutputTest extends TestCase
         int $error_count,
         string $message,
         int $line_number,
-        string $error
+        string $error,
     ): void {
         $this->addFile('somefile.php', $code);
         $this->analyzeFile('somefile.php', new Context());
@@ -88,7 +92,7 @@ class JsonOutputTest extends TestCase
                     function fooFoo(int $a): int {
                         return $b + 1;
                     }',
-                'error_count' => 5,
+                'error_count' => 4,
                 'message' => 'Cannot find referenced variable $b',
                 'line' => 3,
                 'error' => '$b',
@@ -98,7 +102,7 @@ class JsonOutputTest extends TestCase
                     function fooFoo(Badger\Bodger $a): Badger\Bodger {
                         return $a;
                     }',
-                'error_count' => 3,
+                'error_count' => 2,
                 'message' => 'Class, interface or enum named Badger\\Bodger does not exist',
                 'line' => 2,
                 'error' => 'Badger\\Bodger',

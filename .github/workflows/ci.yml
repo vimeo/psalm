@@ -12,7 +12,7 @@ jobs:
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '7.4'
+          php-version: '8.1'
           tools: composer:v2
           coverage: none
         env:
@@ -29,6 +29,12 @@ jobs:
       - name: Generate composer.lock
         run: |
           composer update --no-install
+        env:
+          COMPOSER_ROOT_VERSION: dev-master
+
+      - name: Check all classes are autoloadable
+        run: |
+          composer dump-autoload -o --strict-psr
         env:
           COMPOSER_ROOT_VERSION: dev-master
 
@@ -57,7 +63,7 @@ jobs:
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '7.4'
+          php-version: '8.1'
           tools: composer:v2
           coverage: none
         env:
@@ -125,10 +131,10 @@ jobs:
       fail-fast: false
       matrix:
         php-version:
-          - "8.0"
           - "8.1"
           - "8.2"
           - "8.3"
+          - "8.4"
         count: ${{ fromJson(needs.chunk-matrix.outputs.count) }}
         chunk: ${{ fromJson(needs.chunk-matrix.outputs.chunks) }}
 
@@ -180,4 +186,4 @@ jobs:
           COMPOSER_ROOT_VERSION: dev-master
 
       - name: Run unit tests
-        run: bin/tests-github-actions.sh
+        run: bin/ci/tests-github-actions.sh

@@ -1,9 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\FileManipulation;
 
-class UnusedVariableManipulationTest extends FileManipulationTestCase
+use Override;
+
+final class UnusedVariableManipulationTest extends FileManipulationTestCase
 {
+    #[Override]
     public function providerValidCodeParse(): array
     {
         return [

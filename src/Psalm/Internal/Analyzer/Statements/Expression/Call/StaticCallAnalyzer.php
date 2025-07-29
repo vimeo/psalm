@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use PhpParser;
@@ -42,7 +44,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\StaticCall $stmt,
         Context $context,
-        ?TemplateResult $template_result = null
+        ?TemplateResult $template_result = null,
     ): bool {
         $method_id = null;
 
@@ -268,7 +270,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
         Union &$return_type_candidate,
         ?MethodStorage $method_storage,
         ?TemplateResult $template_result,
-        ?Context $context = null
+        ?Context $context = null,
     ): void {
         if (!$statements_analyzer->data_flow_graph) {
             return;

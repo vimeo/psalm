@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\NodeTypeProvider;
 
+use function array_any;
 use function array_diff;
 use function array_filter;
 use function array_intersect;
@@ -38,7 +41,7 @@ final class ScopeAnalyzer
         array $stmts,
         ?NodeDataProvider $nodes,
         array $break_types,
-        bool $return_is_exit = true
+        bool $return_is_exit = true,
     ): array {
         if (empty($stmts)) {
             return [self::ACTION_NONE];
@@ -48,8 +51,9 @@ final class ScopeAnalyzer
 
         foreach ($stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Return_ ||
-                $stmt instanceof PhpParser\Node\Stmt\Throw_ ||
-                ($stmt instanceof PhpParser\Node\Stmt\Expression && $stmt->expr instanceof PhpParser\Node\Expr\Exit_)
+                ($stmt instanceof PhpParser\Node\Stmt\Expression
+                 && ($stmt->expr instanceof PhpParser\Node\Expr\Exit_
+                     || $stmt->expr instanceof PhpParser\Node\Expr\Throw_))
             ) {
                 if (!$return_is_exit && $stmt instanceof PhpParser\Node\Stmt\Return_) {
                     $stmt_return_type = null;
@@ -59,13 +63,13 @@ final class ScopeAnalyzer
 
                     // don't consider a return if the expression never returns (e.g. a throw inside a short closure)
                     if ($stmt_return_type && $stmt_return_type->isNever()) {
-                        return array_values(array_unique([...$control_actions, ...[self::ACTION_END]]));
+                        return array_values(array_unique([...$control_actions, self::ACTION_END]));
                     }
 
-                    return array_values(array_unique([...$control_actions, ...[self::ACTION_RETURN]]));
+                    return array_values(array_unique([...$control_actions, self::ACTION_RETURN]));
                 }
 
-                return array_values(array_unique([...$control_actions, ...[self::ACTION_END]]));
+                return array_values(array_unique([...$control_actions, self::ACTION_END]));
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\Expression) {
@@ -74,7 +78,7 @@ final class ScopeAnalyzer
                     && ($stmt_expr_type = $nodes->getType($stmt->expr))
                     && $stmt_expr_type->isNever()
                 ) {
-                    return array_values(array_unique([...$control_actions, ...[self::ACTION_END]]));
+                    return array_values(array_unique([...$control_actions, self::ACTION_END]));
                 }
 
                 continue;
@@ -83,40 +87,40 @@ final class ScopeAnalyzer
             if ($stmt instanceof PhpParser\Node\Stmt\Continue_) {
                 $count = !$stmt->num
                     ? 1
-                    : ($stmt->num instanceof PhpParser\Node\Scalar\LNumber ? $stmt->num->value : null);
+                    : ($stmt->num instanceof PhpParser\Node\Scalar\Int_ ? $stmt->num->value : null);
 
                 if ($break_types && $count !== null && count($break_types) >= $count) {
                     /** @psalm-suppress InvalidArrayOffset Some int-range improvements are needed */
                     if ($break_types[count($break_types) - $count] === 'switch') {
-                        return [...$control_actions, ...[self::ACTION_LEAVE_SWITCH]];
+                        return [...$control_actions, self::ACTION_LEAVE_SWITCH];
                     }
 
                     return array_values($control_actions);
                 }
 
-                return array_values(array_unique([...$control_actions, ...[self::ACTION_CONTINUE]]));
+                return array_values(array_unique([...$control_actions, self::ACTION_CONTINUE]));
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\Break_) {
                 $count = !$stmt->num
                     ? 1
-                    : ($stmt->num instanceof PhpParser\Node\Scalar\LNumber ? $stmt->num->value : null);
+                    : ($stmt->num instanceof PhpParser\Node\Scalar\Int_ ? $stmt->num->value : null);
 
                 if ($break_types && $count !== null && count($break_types) >= $count) {
                     /** @psalm-suppress InvalidArrayOffset Some int-range improvements are needed */
                     if ($break_types[count($break_types) - $count] === 'switch') {
-                        return [...$control_actions, ...[self::ACTION_LEAVE_SWITCH]];
+                        return [...$control_actions, self::ACTION_LEAVE_SWITCH];
                     }
 
                     /** @psalm-suppress InvalidArrayOffset Some int-range improvements are needed */
                     if ($break_types[count($break_types) - $count] === 'loop') {
-                        return [...$control_actions, ...[self::ACTION_LEAVE_LOOP]];
+                        return [...$control_actions, self::ACTION_LEAVE_LOOP];
                     }
 
                     return array_values($control_actions);
                 }
 
-                return array_values(array_unique([...$control_actions, ...[self::ACTION_BREAK]]));
+                return array_values(array_unique([...$control_actions, self::ACTION_BREAK]));
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\If_) {
@@ -127,7 +131,7 @@ final class ScopeAnalyzer
                     $return_is_exit,
                 );
 
-                $all_leave = !array_filter(
+                $all_leave = !array_any(
                     $if_statement_actions,
                     static fn(string $action): bool => $action === self::ACTION_NONE,
                 );
@@ -142,7 +146,7 @@ final class ScopeAnalyzer
 
                 $all_leave = $all_leave
                     && $else_statement_actions
-                    && !array_filter(
+                    && !array_any(
                         $else_statement_actions,
                         static fn(string $action): bool => $action === self::ACTION_NONE,
                     );
@@ -159,7 +163,7 @@ final class ScopeAnalyzer
                         );
 
                         $all_leave = $all_leave
-                            && !array_filter(
+                            && !array_any(
                                 $elseif_control_actions,
                                 static fn(string $action): bool => $action === self::ACTION_NONE,
                             );
@@ -199,7 +203,7 @@ final class ScopeAnalyzer
                     $case_actions = self::getControlActions(
                         $case->stmts,
                         $nodes,
-                        [...$break_types, ...['switch']],
+                        [...$break_types, 'switch'],
                         $return_is_exit,
                     );
 
@@ -256,7 +260,7 @@ final class ScopeAnalyzer
                 $loop_actions = self::getControlActions(
                     $stmt->stmts,
                     $nodes,
-                    [...$break_types, ...['loop']],
+                    [...$break_types, 'loop'],
                     $return_is_exit,
                 );
 
@@ -324,7 +328,7 @@ final class ScopeAnalyzer
                     $return_is_exit,
                 );
 
-                $try_leaves = !array_filter(
+                $try_leaves = !array_any(
                     $try_statement_actions,
                     static fn(string $action): bool => $action === self::ACTION_NONE,
                 );
@@ -343,7 +347,7 @@ final class ScopeAnalyzer
                         );
 
                         $all_leave = $all_leave
-                            && !array_filter(
+                            && !array_any(
                                 $catch_actions,
                                 static fn(string $action): bool => $action === self::ACTION_NONE,
                             );
@@ -406,9 +410,9 @@ final class ScopeAnalyzer
         for ($i = count($stmts) - 1; $i >= 0; --$i) {
             $stmt = $stmts[$i];
 
-            if ($stmt instanceof PhpParser\Node\Stmt\Throw_
-                || ($stmt instanceof PhpParser\Node\Stmt\Expression
-                    && $stmt->expr instanceof PhpParser\Node\Expr\Exit_)
+            if ($stmt instanceof PhpParser\Node\Stmt\Expression
+                && ($stmt->expr instanceof PhpParser\Node\Expr\Exit_
+                    || $stmt->expr instanceof PhpParser\Node\Expr\Throw_)
             ) {
                 return true;
             }
@@ -436,7 +440,7 @@ final class ScopeAnalyzer
         }
 
         foreach ($stmts as $stmt) {
-            if ($stmt instanceof PhpParser\Node\Stmt\Throw_) {
+            if ($stmt instanceof PhpParser\Node\Stmt\Expression && $stmt->expr instanceof PhpParser\Node\Expr\Throw_) {
                 return true;
             }
         }

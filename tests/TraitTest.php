@@ -1,17 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
+use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use const DIRECTORY_SEPARATOR;
 
-class TraitTest extends TestCase
+final class TraitTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    #[Override]
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -1038,6 +1042,7 @@ class TraitTest extends TestCase
         ];
     }
 
+    #[Override]
     public function providerInvalidCodeParse(): iterable
     {
         return [
@@ -1235,6 +1240,15 @@ class TraitTest extends TestCase
                 'error_message' => 'ConstantDeclarationInTrait',
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'duplicateTraitProperty' => [
+                'code' => '<?php
+                    trait T {
+                        public mixed $foo = 5;
+                        protected static mixed $foo;
+                    }
+                    ',
+                'error_message' => 'DuplicateProperty',
             ],
         ];
     }

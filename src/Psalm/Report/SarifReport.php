@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Report;
 
+use Override;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\DataFlowNodeData;
 use Psalm\Internal\Json\Json;
@@ -9,7 +12,7 @@ use Psalm\Report;
 
 use function file_exists;
 use function file_get_contents;
-use function strpos;
+use function str_starts_with;
 
 /**
  * SARIF report format suitable for import into any SARIF compatible solution
@@ -18,6 +21,7 @@ use function strpos;
  */
 final class SarifReport extends Report
 {
+    #[Override]
     public function create(): string
     {
         $report = [
@@ -48,7 +52,7 @@ final class SarifReport extends Report
                 ],
                 'properties' => [
                     'tags' => [
-                        (strpos($issue_data->type, 'Tainted') === 0) ? 'security' : 'maintainability',
+                        (str_starts_with($issue_data->type, 'Tainted')) ? 'security' : 'maintainability',
                     ],
                 ],
                 'helpUri' => $issue_data->link,
@@ -67,6 +71,10 @@ final class SarifReport extends Report
                     'text' => $issue_data->message,
                 ],
                 'level' => ($issue_data->severity === Config::REPORT_ERROR) ? 'error' : 'note',
+                'rank' => (float) ($issue_data->error_level > 0
+                    ? (90 + (8 - $issue_data->error_level)) // 8 to 1 => 90 to 97
+                    : (100 + $issue_data->error_level) // -1 to -2 => 99 to 98
+                ),
                 'locations' => [
                     [
                         'physicalLocation' => [

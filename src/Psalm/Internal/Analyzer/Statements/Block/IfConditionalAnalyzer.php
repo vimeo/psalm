@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
@@ -37,7 +39,7 @@ final class IfConditionalAnalyzer
         Context $outer_context,
         Codebase $codebase,
         IfScope $if_scope,
-        int $branch_point
+        int $branch_point,
     ): IfConditionalScope {
         $entry_clauses = [];
 
@@ -217,7 +219,7 @@ final class IfConditionalAnalyzer
         // get all the var ids that were referenced in the conditional, but not assigned in it
         $cond_referenced_var_ids = array_diff_key($cond_referenced_var_ids, $assigned_in_conditional_var_ids);
 
-        $cond_referenced_var_ids = array_merge($newish_var_ids, $cond_referenced_var_ids);
+        $cond_referenced_var_ids = [...$newish_var_ids, ...$cond_referenced_var_ids];
 
         return new IfConditionalScope(
             $if_context,
@@ -319,7 +321,7 @@ final class IfConditionalAnalyzer
     public static function handleParadoxicalCondition(
         StatementsAnalyzer  $statements_analyzer,
         PhpParser\Node\Expr $stmt,
-        bool $emit_redundant_with_assignation = false
+        bool $emit_redundant_with_assignation = false,
     ): void {
         $type = $statements_analyzer->node_data->getType($stmt);
 

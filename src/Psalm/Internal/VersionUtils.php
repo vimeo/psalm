@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal;
 
 use Composer\InstalledVersions;
@@ -38,7 +40,7 @@ final class VersionUtils
         return self::getVersions()[self::PHP_PARSER_PACKAGE];
     }
 
-    /** @psalm-suppress UnusedMethod called from bin/build-phar.sh */
+    /** @psalm-suppress UnusedMethod called from bin/ci/build-phar.sh */
     public static function dump(): void
     {
         $versions = self::loadComposerVersions();
@@ -92,7 +94,7 @@ final class VersionUtils
                 self::PSALM_PACKAGE => self::getVersion(self::PSALM_PACKAGE),
                 self::PHP_PARSER_PACKAGE => self::getVersion(self::PHP_PARSER_PACKAGE),
             ];
-        } catch (OutOfBoundsException $ex) {
+        } catch (OutOfBoundsException) {
         }
         return null;
     }

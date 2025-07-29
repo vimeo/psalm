@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
+use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
-class ExpressionTest extends TestCase
+final class ExpressionTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
@@ -21,6 +24,7 @@ class ExpressionTest extends TestCase
      *     }
      * >
      */
+    #[Override]
     public function providerValidCodeParse(): iterable
     {
         yield 'maxIntegerInArrayKey' => [
@@ -72,6 +76,7 @@ class ExpressionTest extends TestCase
      *     }
      * >
      */
+    #[Override]
     public function providerInvalidCodeParse(): iterable
     {
         yield 'integerOverflowInArrayKey' => [

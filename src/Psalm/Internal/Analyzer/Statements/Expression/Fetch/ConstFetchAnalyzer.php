@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Fetch;
 
 use PhpParser;
@@ -13,6 +15,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Provider\NodeDataProvider;
+use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
 use Psalm\Type;
@@ -33,7 +36,7 @@ final class ConstFetchAnalyzer
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ConstFetch $stmt,
-        Context $context
+        Context $context,
     ): void {
         $const_name = $stmt->name->toString();
 
@@ -56,6 +59,18 @@ final class ConstFetchAnalyzer
                 break;
 
             default:
+                if (isset($statements_analyzer->getCodebase()->config->forbidden_constants[$const_name])) {
+                    IssueBuffer::maybeAdd(
+                        new ForbiddenCode(
+                            'You have forbidden the use of ' . $const_name,
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+        
+                    return;
+                }
+    
                 $const_type = self::getConstType(
                     $statements_analyzer,
                     $const_name,
@@ -91,7 +106,8 @@ final class ConstFetchAnalyzer
                 } elseif ($context->check_consts) {
                     IssueBuffer::maybeAdd(
                         new UndefinedConstant(
-                            'Const ' . $const_name . ' is not defined',
+                            'Const ' . $const_name . ' is not defined'.
+                                ', consider enabling the allConstantsGlobal config option if scanning legacy codebases',
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
                         $statements_analyzer->getSuppressedIssues(),
@@ -103,7 +119,7 @@ final class ConstFetchAnalyzer
     public static function getGlobalConstType(
         Codebase $codebase,
         string $fq_const_name,
-        string $const_name
+        string $const_name,
     ): ?Union {
         if ($const_name === 'STDERR'
             || $const_name === 'STDOUT'
@@ -136,10 +152,12 @@ final class ConstFetchAnalyzer
             || array_key_exists($const_name, $predefined_constants)
         ) {
             switch ($const_name) {
-                case 'PHP_VERSION':
                 case 'DIRECTORY_SEPARATOR':
                 case 'PATH_SEPARATOR':
                 case 'PHP_EOL':
+                    return Type::getSingleLetter();
+
+                case 'PHP_VERSION':
                     return Type::getNonEmptyString();
 
                 case 'PEAR_EXTENSION_DIR':
@@ -196,7 +214,7 @@ final class ConstFetchAnalyzer
         StatementsAnalyzer $statements_analyzer,
         string $const_name,
         bool $is_fully_qualified,
-        ?Context $context
+        ?Context $context,
     ): ?Union {
         $aliased_constants = $statements_analyzer->getAliases()->constants;
 
@@ -253,7 +271,7 @@ final class ConstFetchAnalyzer
         StatementsAnalyzer $statements_analyzer,
         string $const_name,
         Union $const_type,
-        Context $context
+        Context $context,
     ): void {
         $context->vars_in_scope[$const_name] = $const_type;
         $context->constants[$const_name] = $const_type;
@@ -269,7 +287,7 @@ final class ConstFetchAnalyzer
         PhpParser\Node\Expr $first_arg_value,
         NodeDataProvider $type_provider,
         Codebase $codebase,
-        Aliases $aliases
+        Aliases $aliases,
     ): ?string {
         $const_name = null;
 
@@ -293,7 +311,7 @@ final class ConstFetchAnalyzer
     public static function analyzeConstAssignment(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Const_ $stmt,
-        Context $context
+        Context $context,
     ): void {
         foreach ($stmt->consts as $const) {
             ExpressionAnalyzer::analyze($statements_analyzer, $const->value, $context);
