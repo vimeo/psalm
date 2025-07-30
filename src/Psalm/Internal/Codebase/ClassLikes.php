@@ -29,7 +29,11 @@ use Psalm\Issue\PossiblyUnusedParam;
 use Psalm\Issue\PossiblyUnusedProperty;
 use Psalm\Issue\PossiblyUnusedReturnValue;
 use Psalm\Issue\UnusedClass;
+use Psalm\Issue\UnusedComposerPackage;
 use Psalm\Issue\UnusedConstructor;
+use Psalm\Issue\UnusedExtension;
+use Psalm\Issue\UnusedFunction;
+use Psalm\Issue\UnusedIssueHandlerSuppression;
 use Psalm\Issue\UnusedMethod;
 use Psalm\Issue\UnusedParam;
 use Psalm\Issue\UnusedProperty;
@@ -49,6 +53,7 @@ use ReflectionProperty;
 use UnexpectedValueException;
 
 use function array_filter;
+use function array_key_exists;
 use function array_keys;
 use function array_merge;
 use function array_pop;
@@ -61,6 +66,8 @@ use function implode;
 use function preg_match;
 use function preg_quote;
 use function preg_replace;
+use function str_contains;
+use function str_starts_with;
 use function strlen;
 use function strpos;
 use function strrpos;
@@ -832,11 +839,44 @@ final class ClassLikes
         $project_analyzer = ProjectAnalyzer::getInstance();
         $codebase = $project_analyzer->getCodebase();
 
+        $unused_packages = $codebase->config->required_packages;
+
+        $referenced_functions = $this->file_reference_provider->getAllReferencesToFunctions();
+        foreach ($codebase->file_storage_provider->getAll() as $f => $storage) {
+            if (!array_key_exists($f, $referenced_functions)) {
+                continue;
+            }
+            $reffed = $referenced_functions[$f];
+            foreach ($storage->functions as $name => $storage) {
+                if (array_key_exists($name, $reffed)) {
+                    $composer = $storage->composer_package;
+                    if ($composer !== null) {
+                        unset($unused_packages[$composer]);
+                    }
+                } elseif ($find_unused_code && $storage->location !== null) {
+                    IssueBuffer::maybeAdd(
+                        new UnusedFunction(
+                            'Function ' . $storage->cased_name . ' is never used',
+                            $storage->location,
+                            strtolower($name),
+                        ),
+                        $storage->suppressed_issues,
+                    );
+                }
+            }
+        }
+
         foreach ($this->existing_classlikes_lc as $fq_class_name_lc => $_) {
             try {
                 $classlike_storage = $this->classlike_storage_provider->get($fq_class_name_lc);
             } catch (InvalidArgumentException) {
                 continue;
+            }
+
+            if ($classlike_storage->composer_package !== null
+                && $this->file_reference_provider->isClassReferenced($fq_class_name_lc)
+            ) {
+                unset($unused_packages[$classlike_storage->composer_package]);
             }
 
             if ($classlike_storage->location
@@ -935,6 +975,42 @@ final class ClassLikes
                     }
                 }
             }
+        }
+
+        $ignore = $codebase->config->ignore_unused_packages;
+
+        foreach ($unused_packages as $package => $loc) {
+            if (isset($ignore[$package])) {
+                unset($ignore[$package]);
+                continue;
+            }
+            if (str_starts_with($package, 'ext-') && !str_contains($package, '/')) {
+                $package = substr($package, 4);
+                IssueBuffer::maybeAdd(new UnusedExtension("Extension $package required in composer.json is not used in the project", $loc));
+                continue;
+            }
+            // TODO: check with actual version constraint
+            if (str_starts_with($package, 'symfony/polyfill-php')) {
+                continue;
+            }
+            IssueBuffer::maybeAdd(new UnusedComposerPackage("Package $package required in composer.json is not used in the project", $loc));
+        }
+
+        foreach ($ignore as $package => $loc) {
+            if (str_starts_with($package, 'ext-') && !str_contains($package, '/')) {
+                $package = substr($package, 4);
+                IssueBuffer::maybeAdd(new UnusedIssueHandlerSuppression(
+                    "Extension $package ignored in the Psalm configuration file using ignoreUnusedExtensions"
+                    ." and required in composer.json is actually used in the project",
+                    $loc,
+                ));
+                continue;
+            }
+            IssueBuffer::maybeAdd(new UnusedIssueHandlerSuppression(
+                "Package $package ignored in the Psalm configuration file using ignoreUnusedComposerPackages"
+                ." and required in composer.json is actually used in the project",
+                $loc,
+            ));
         }
     }
 
