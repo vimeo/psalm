@@ -906,6 +906,22 @@ abstract class Type
                 $intersection_performed = true;
             }
         }
+        
+        // Handle TIntMaskVerifier intersection using mask values
+        if ($type_1_atomic instanceof TIntMaskVerifier && $type_2_atomic instanceof TIntMaskVerifier) {
+            // Only create intersection if masks are exactly the same
+            if ($type_1_atomic->mask === $type_2_atomic->mask) {
+                $intersection_performed = true;
+                // Create a new verifier with the same mask
+                // Use the original potential_ints from one of the verifiers as a base
+                return new TIntMaskVerifier($type_1_atomic->potential_ints, $type_1_atomic->from_docblock || $type_2_atomic->from_docblock);
+            }else{
+                // If masks are different, return null as intersection is not possible
+                $intersection_performed = true;
+                return null;
+            }
+        }
+        
         if ($type_1_atomic instanceof TInt && $type_2_atomic instanceof TInt &&
             !($type_1_atomic instanceof TIntMaskVerifier || $type_2_atomic instanceof TIntMaskVerifier)) {
             $int_intersection = TIntRange::intersectIntRanges(
