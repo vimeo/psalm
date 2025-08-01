@@ -33,6 +33,7 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIntMaskVerifier;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralFloat;
@@ -48,8 +49,11 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
 use function array_diff_key;
+use function array_merge;
+use function array_unique;
 use function array_values;
 use function count;
+use function in_array;
 use function is_int;
 use function is_numeric;
 use function max;
@@ -198,6 +202,11 @@ final class ArithmeticOpAnalyzer
 
             foreach ($left_type->getAtomicTypes() as $left_type_part) {
                 foreach ($right_type->getAtomicTypes() as $right_type_part) {
+
+                    // if($parent instanceof BitwiseOr) {
+                    //     error_log('NodeDataProvider::getType called with unsupported node type: ' . get_class($parent));
+                    // }
+
                     $candidate_result_type = self::analyzeOperands(
                         $statements_source,
                         $codebase,
@@ -310,6 +319,19 @@ final class ArithmeticOpAnalyzer
         bool &$has_string_increment,
         ?Union &$result_type = null,
     ): ?Union {
+        // Handle TIntMaskVerifier operations
+        if ($left_type_part instanceof TIntMaskVerifier || $right_type_part instanceof TIntMaskVerifier) {
+            return self::analyzeTIntMaskVerifierOperands(
+                $statements_source,
+                $parent,
+                $left_type_part,
+                $right_type_part,
+                $has_valid_left_operand,
+                $has_valid_right_operand,
+                $result_type
+            );
+        }
+
         if (($left_type_part instanceof TLiteralInt || $left_type_part instanceof TLiteralFloat)
             && ($right_type_part instanceof TLiteralInt || $right_type_part instanceof TLiteralFloat)
             && (
@@ -1432,5 +1454,129 @@ final class ArithmeticOpAnalyzer
             $new_result_type,
             $result_type,
         );
+    }
+
+    /**
+     * Analyze operations between TIntMaskVerifier types.
+     */
+    private static function analyzeTIntMaskVerifierOperands(
+        ?StatementsSource $statements_source,
+        PhpParser\Node $parent,
+        Atomic $left_type_part,
+        Atomic $right_type_part,
+        bool &$has_valid_left_operand,
+        bool &$has_valid_right_operand,
+        ?Union &$result_type = null,
+    ): ?Union {
+        // Handle BitwiseOr operations between TIntMaskVerifier types
+        if ($parent instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr) {
+            if ($left_type_part instanceof TIntMaskVerifier && $right_type_part instanceof TIntMaskVerifier) {
+                // Combine potential_ints from both verifiers
+                $combined_ints = array_unique(array_merge(
+                    $left_type_part->potential_ints,
+                    $right_type_part->potential_ints
+                ));
+                
+                $new_verifier = new TIntMaskVerifier($combined_ints);
+                $result_type = Type::combineUnionTypes(
+                    new Union([$new_verifier]),
+                    $result_type
+                );
+                
+                $has_valid_left_operand = true;
+                $has_valid_right_operand = true;
+                
+                return null;
+            }
+            
+            if ($left_type_part instanceof TIntMaskVerifier && $right_type_part instanceof TInt) {
+                // When combining with a regular int, create a new verifier that includes the int
+                $potential_ints = $left_type_part->potential_ints;
+                
+                if ($right_type_part instanceof TLiteralInt) {
+                    // For bitwise OR, always add the literal int to potential ints
+                    // as OR can combine any bits together
+                    $potential_ints[] = $right_type_part->value;
+                    $potential_ints = array_unique($potential_ints);
+                }
+                
+                $new_verifier = new TIntMaskVerifier($potential_ints);
+                $result_type = Type::combineUnionTypes(
+                    new Union([$new_verifier]),
+                    $result_type
+                );
+                
+                $has_valid_left_operand = true;
+                $has_valid_right_operand = true;
+                
+                return null;
+            }
+            
+            if ($left_type_part instanceof TInt && $right_type_part instanceof TIntMaskVerifier) {
+                // When combining with a regular int, create a new verifier that includes the int
+                $potential_ints = $right_type_part->potential_ints;
+                
+                if ($left_type_part instanceof TLiteralInt) {
+                    // For bitwise OR, always add the literal int to potential ints
+                    // as OR can combine any bits together
+                    $potential_ints[] = $left_type_part->value;
+                    $potential_ints = array_unique($potential_ints);
+                }
+                
+                $new_verifier = new TIntMaskVerifier($potential_ints);
+                $result_type = Type::combineUnionTypes(
+                    new Union([$new_verifier]),
+                    $result_type
+                );
+                
+                $has_valid_left_operand = true;
+                $has_valid_right_operand = true;
+                
+                return null;
+            }
+        }
+        
+        // Handle BitwiseAnd operations between TIntMaskVerifier types
+        if ($parent instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd) {
+            if ($left_type_part instanceof TIntMaskVerifier && $right_type_part instanceof TIntMaskVerifier) {
+                // For AND operations, we need to find common bits
+                $common_mask = $left_type_part->mask & $right_type_part->mask;
+                
+                // Find all potential integers that could result from AND operation
+                $potential_ints = [];
+                foreach ($left_type_part->potential_ints as $left_int) {
+                    foreach ($right_type_part->potential_ints as $right_int) {
+                        $result_int = $left_int & $right_int;
+                        if (!in_array($result_int, $potential_ints)) {
+                            $potential_ints[] = $result_int;
+                        }
+                    }
+                }
+                
+                if (!empty($potential_ints)) {
+                    $new_verifier = new TIntMaskVerifier($potential_ints);
+                    $result_type = Type::combineUnionTypes(
+                        new Union([$new_verifier]),
+                        $result_type
+                    );
+                } else {
+                    $result_type = Type::combineUnionTypes(
+                        Type::getInt(false, 0),
+                        $result_type
+                    );
+                }
+                
+                $has_valid_left_operand = true;
+                $has_valid_right_operand = true;
+                
+                return null;
+            }
+        }
+        
+        // For other operations, fall back to regular int handling
+        $has_valid_left_operand = true;
+        $has_valid_right_operand = true;
+        
+        return null;
     }
 }
