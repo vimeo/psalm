@@ -132,7 +132,7 @@ final class Review
             'snippet' => $snippet,
             'selected_text' => $selected,
         ]) {
-            self::r('clear');
+            echo "\033[2J\033[H"; // Clear the terminal
             echo "{$type}: {$message}" . PHP_EOL . PHP_EOL;
             echo $snippet . PHP_EOL;
         
