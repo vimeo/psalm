@@ -132,7 +132,13 @@ final class Review
             'snippet' => $snippet,
             'selected_text' => $selected,
         ]) {
-            self::r('clear');
+            if (strncasecmp(PHP_OS, 'WIN', 3) === 0) {
+                // Windows
+                self::r('cls');
+            } else {
+                // Linux/macOS
+                self::r('clear');
+            }
             echo "{$type}: {$message}" . PHP_EOL . PHP_EOL;
             echo $snippet . PHP_EOL;
         
