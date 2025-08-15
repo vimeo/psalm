@@ -1081,7 +1081,7 @@ final class TypeParseTest extends TestCase
 
     public function testIntMaskWithIntsWithSeparators(): void
     {
-        $this->assertSame('int-mask-verifier<10,20>', Type::parseString('int-mask<1_0, 2_0>')->getId());
+        $this->assertSame('int-mask-verifier<0,10,20>', Type::parseString('int-mask<1_0, 2_0>')->getId());
     }
 
     public function testSingleLiteralFloat(): void
@@ -1114,15 +1114,15 @@ final class TypeParseTest extends TestCase
 
         $docblock_type = Type::parseString('int-mask<1, 2, 4>');
 
-        $this->assertSame('int-mask-verifier<1,2,4>', $docblock_type->getId());
+        $this->assertSame('int-mask-verifier<0,1,2,4>', $docblock_type->getId());
 
         $docblock_type = Type::parseString('int-mask<1, 4>');
 
-        $this->assertSame('int-mask-verifier<1,4>', $docblock_type->getId());
+        $this->assertSame('int-mask-verifier<0,1,4>', $docblock_type->getId());
 
         $docblock_type = Type::parseString('int-mask<PREG_PATTERN_ORDER, PREG_OFFSET_CAPTURE, PREG_UNMATCHED_AS_NULL>');
 
-        $this->assertSame('int-mask-verifier<1,256,512>', $docblock_type->getId());
+        $this->assertSame('int-mask-verifier<0,1,256,512>', $docblock_type->getId());
     }
 
     public function testIntMaskWithClassConstant(): void

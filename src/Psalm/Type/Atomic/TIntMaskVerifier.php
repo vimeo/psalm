@@ -25,7 +25,11 @@ final class TIntMaskVerifier extends TInt
         bool $from_docblock = false,
     ) {
         parent::__construct($from_docblock);
-    
+
+        if (!in_array(0, $this->potential_ints)) {
+            array_unshift($this->potential_ints, 0);
+        }
+
         $this->mask = 0;
         foreach ($this->potential_ints as $int) {
             $this->mask |= $int;
