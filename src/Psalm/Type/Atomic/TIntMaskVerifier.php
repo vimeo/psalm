@@ -6,7 +6,11 @@ namespace Psalm\Type\Atomic;
 
 use Override;
 
+use function array_merge;
+use function array_unique;
 use function implode;
+use function in_array;
+use function sort;
 
 /**
  * An Atomic type that performs checks for TIntMask and TIntMaskOf.
@@ -73,5 +77,28 @@ final class TIntMaskVerifier extends TInt
     public function isSupersetOf(TIntMaskVerifier $input_type_part): bool
     {
         return ($this->mask & $input_type_part->mask) === $input_type_part->mask;
+    }
+
+    /**
+     * Compute all possible concrete ints that can be formed by OR-ing any subset of potential_ints.
+     * Note: This may grow exponentially with the number of elements; callers should guard usage.
+     *
+     * @return array<int> Sorted unique list of possible ints.
+     */
+    public function getPossibleInts(): array
+    {
+        $values = [0];
+        $bits = $this->potential_ints;
+
+        foreach ($bits as $bit) {
+            $new = [];
+            foreach ($values as $v) {
+                $new[] = $v | $bit;
+            }
+            $values = array_unique(array_merge($values, $new));
+        }
+
+        sort($values);
+        return $values;
     }
 }
