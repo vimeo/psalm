@@ -549,6 +549,17 @@ Arrays bigger than this value (100 by default) will be transformed in a generic 
 
 Please note that changing this setting might introduce unwanted side effects and those side effects won't be considered as bugs.
 
+#### maxIntMaskCombinations
+```xml
+<psalm
+  maxIntMaskCombinations="10"
+>
+```
+
+This setting controls the maximum number of integer mask combinations that Psalm will process when analyzing bitwise operations with `TIntMaskVerifier` types. When the number of potential combinations exceeds this limit, Psalm will fall back to using a more generic type to avoid performance issues.
+
+The default value is 10. Increasing this value may provide more precise type analysis for complex bitwise operations but could negatively impact performance.
+
 #### longScanWarning
 ```xml
 <psalm

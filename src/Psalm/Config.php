@@ -464,6 +464,8 @@ final class Config
 
     public int $max_string_length = 1_000;
 
+    public int $max_int_mask_combinations = 10;
+
     private ?IncludeCollector $include_collector = null;
 
     private ?TaintAnalysisFileFilter $taint_analysis_ignored_files = null;
@@ -1199,6 +1201,11 @@ final class Config
         if (isset($config_xml['maxShapedArraySize'])) {
             $attribute_text = (int)$config_xml['maxShapedArraySize'];
             $config->max_shaped_array_size = $attribute_text;
+        }
+
+        if (isset($config_xml['maxIntMaskCombinations'])) {
+            $attribute_text = (int)$config_xml['maxIntMaskCombinations'];
+            $config->max_int_mask_combinations = $attribute_text;
         }
 
         if (isset($config_xml['longScanWarning'])) {
