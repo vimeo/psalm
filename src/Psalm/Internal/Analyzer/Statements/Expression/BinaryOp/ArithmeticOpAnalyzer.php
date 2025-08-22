@@ -50,8 +50,6 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
 use function array_diff_key;
-use function array_merge;
-use function array_unique;
 use function array_values;
 use function count;
 use function is_int;
@@ -317,7 +315,6 @@ final class ArithmeticOpAnalyzer
         // Handle TIntMaskVerifier operations
         if ($left_type_part instanceof TIntMaskVerifier || $right_type_part instanceof TIntMaskVerifier) {
             return IntMaskOpAnalyzer::analyzeTIntMaskVerifierOperands(
-                $statements_source,
                 $parent,
                 $left_type_part,
                 $right_type_part,

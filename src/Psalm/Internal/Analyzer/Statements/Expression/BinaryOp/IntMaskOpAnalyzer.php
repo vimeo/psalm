@@ -15,6 +15,7 @@ use Psalm\Type\Union;
 
 /**
  * Analyzer for operations involving TIntMaskVerifier types.
+ * @internal
  */
 final class IntMaskOpAnalyzer
 {
@@ -22,7 +23,6 @@ final class IntMaskOpAnalyzer
      * Analyze operations between TIntMaskVerifier types.
      */
     public static function analyzeTIntMaskVerifierOperands(
-        ?StatementsSource $statements_source,
         PhpParser\Node $parent,
         Atomic $left_type_part,
         Atomic $right_type_part,
@@ -112,7 +112,7 @@ final class IntMaskOpAnalyzer
             return self::handleMaskVerifierWithInt(
                 $left_type_part,
                 $right_type_part,
-                fn($left_int, $right_value) => $left_int | $right_value,
+                fn(int $left_int, int $right_value): int => $left_int | $right_value,
                 $has_valid_left_operand,
                 $has_valid_right_operand,
                 $result_type,
@@ -124,7 +124,7 @@ final class IntMaskOpAnalyzer
             return self::handleIntWithMaskVerifier(
                 $left_type_part,
                 $right_type_part,
-                fn($left_value, $right_int) => $left_value | $right_int,
+                fn(int $left_value, int $right_int): int => $left_value | $right_int,
                 $has_valid_left_operand,
                 $has_valid_right_operand,
                 $result_type,
@@ -162,7 +162,7 @@ final class IntMaskOpAnalyzer
             return self::handleMaskVerifierWithInt(
                 $left_type_part,
                 $right_type_part,
-                fn($left_int, $right_value) => $left_int & $right_value,
+                fn(int $left_int, int $right_value): int => $left_int & $right_value,
                 $has_valid_left_operand,
                 $has_valid_right_operand,
                 $result_type,
@@ -174,7 +174,7 @@ final class IntMaskOpAnalyzer
             return self::handleIntWithMaskVerifier(
                 $left_type_part,
                 $right_type_part,
-                fn($left_value, $right_int) => $left_value & $right_int,
+                fn(int $left_value, int $right_int): int => $left_value & $right_int,
                 $has_valid_left_operand,
                 $has_valid_right_operand,
                 $result_type,
@@ -243,7 +243,7 @@ final class IntMaskOpAnalyzer
             return self::handleShiftOperation(
                 $left_type_part,
                 $right_type_part,
-                fn($int, $shift) => $int << $shift,
+                fn(int $int, int $shift): int => $int << $shift,
                 $has_valid_left_operand,
                 $has_valid_right_operand,
                 $result_type
@@ -275,7 +275,7 @@ final class IntMaskOpAnalyzer
             return self::handleShiftOperation(
                 $left_type_part,
                 $right_type_part,
-                fn($int, $shift) => $int >> $shift,
+                fn(int $int, int $shift): int => $int >> $shift,
                 $has_valid_left_operand,
                 $has_valid_right_operand,
                 $result_type
@@ -295,6 +295,7 @@ final class IntMaskOpAnalyzer
 
     /**
      * Handle operations between two TIntMaskVerifier types.
+     * @param callable(array<int>, array<int>): array<int> $array_operation
      */
     private static function handleMaskVerifierToMaskVerifier(
         array $left_potential_ints,
@@ -320,6 +321,7 @@ final class IntMaskOpAnalyzer
 
     /**
      * Handle operations between TIntMaskVerifier and TInt.
+     * @param callable(int, int): int $operation
      */
     private static function handleMaskVerifierWithInt(
         TIntMaskVerifier $mask_verifier,
@@ -377,6 +379,7 @@ final class IntMaskOpAnalyzer
 
     /**
      * Handle operations between TInt and TIntMaskVerifier.
+     * @param callable(int, int): int $operation
      */
     private static function handleIntWithMaskVerifier(
         TInt $int_type,
@@ -498,6 +501,7 @@ final class IntMaskOpAnalyzer
 
     /**
      * Handle shift operations with TIntMaskVerifier.
+     * @param callable(int, int): int $shift_operation
      */
     private static function handleShiftOperation(
         TIntMaskVerifier $mask_verifier,
