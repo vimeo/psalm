@@ -1706,32 +1706,14 @@ final class ArithmeticOpAnalyzer
             if ($left_type_part instanceof TIntMaskVerifier && $right_type_part instanceof TInt) {
                 if ($right_type_part instanceof TLiteralInt) {
                     $left_potential_ints = $left_type_part->potential_ints;
-
-                    $total_combinations = count($left_potential_ints);
-
-                    if ($total_combinations <= $max_int_mask_combinations) {
-                        $left_possible_ints = $left_type_part->getPossibleInts();
-                        $calculated_masks = [];
-                        foreach ($left_possible_ints as $left_int) {
-                            $result_int = $left_int ^ $right_type_part->value;
-                            $calculated_masks[] = new TLiteralInt($result_int);
-                        }
-                        if ($calculated_masks) {
-                            $result_type = Type::combineUnionTypes(
-                                new Union($calculated_masks),
-                                $result_type,
-                            );
-                        }
-                    } else {
-                        $new_potential_ints = $left_potential_ints;
-                        $new_potential_ints[] = $right_type_part->value;
-                        $new_potential_ints = array_unique($new_potential_ints);
-                        $new_verifier = new TIntMaskVerifier($new_potential_ints);
-                        $result_type = Type::combineUnionTypes(
-                            new Union([$new_verifier]),
-                            $result_type,
-                        );
-                    }
+                    $new_potential_ints = $left_potential_ints;
+                    $new_potential_ints[] = $right_type_part->value;
+                    $new_potential_ints = array_unique($new_potential_ints);
+                    $new_verifier = new TIntMaskVerifier($new_potential_ints);
+                    $result_type = Type::combineUnionTypes(
+                        new Union([$new_verifier]),
+                        $result_type,
+                    );
 
                     $has_valid_left_operand = true;
                     $has_valid_right_operand = true;
@@ -1749,32 +1731,14 @@ final class ArithmeticOpAnalyzer
             if ($left_type_part instanceof TInt && $right_type_part instanceof TIntMaskVerifier) {
                 if ($left_type_part instanceof TLiteralInt) {
                     $right_potential_ints = $right_type_part->potential_ints;
-
-                    $total_combinations = count($right_potential_ints);
-
-                    if ($total_combinations <= $max_int_mask_combinations) {
-                        $right_possible_ints = $right_type_part->getPossibleInts();
-                        $calculated_masks = [];
-                        foreach ($right_possible_ints as $right_int) {
-                            $result_int = $left_type_part->value ^ $right_int;
-                            $calculated_masks[] = new TLiteralInt($result_int);
-                        }
-                        if ($calculated_masks) {
-                            $result_type = Type::combineUnionTypes(
-                                new Union($calculated_masks),
-                                $result_type,
-                            );
-                        }
-                    } else {
-                        $new_potential_ints = $right_potential_ints;
-                        $new_potential_ints[] = $left_type_part->value;
-                        $new_potential_ints = array_unique($new_potential_ints);
-                        $new_verifier = new TIntMaskVerifier($new_potential_ints);
-                        $result_type = Type::combineUnionTypes(
-                            new Union([$new_verifier]),
-                            $result_type,
-                        );
-                    }
+                    $new_potential_ints = $right_potential_ints;
+                    $new_potential_ints[] = $left_type_part->value;
+                    $new_potential_ints = array_unique($new_potential_ints);
+                    $new_verifier = new TIntMaskVerifier($new_potential_ints);
+                    $result_type = Type::combineUnionTypes(
+                        new Union([$new_verifier]),
+                        $result_type,
+                    );
 
                     $has_valid_left_operand = true;
                     $has_valid_right_operand = true;
