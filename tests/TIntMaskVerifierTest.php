@@ -5,11 +5,9 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
-use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 use Psalm\Type\Atomic\TIntMaskVerifier;
-use Psalm\Type\Atomic\TLiteralInt;
 
 final class TIntMaskVerifierTest extends TestCase
 {
@@ -160,7 +158,7 @@ final class TIntMaskVerifierTest extends TestCase
                         }
                     }
 
-                    Permissions::check(Permissions::READ | Permissions::WRITE);'
+                    Permissions::check(Permissions::READ | Permissions::WRITE);',
             ],
             'intMaskReturnsSpecificType' => [
                 'code' => '<?php
@@ -341,7 +339,7 @@ final class TIntMaskVerifierTest extends TestCase
                         return 16; // Invalid: 16 is not in mask
                     }',
                 'error_message' => 'InvalidReturnStatement',
-            ]
+            ],
         ];
     }
 }

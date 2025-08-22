@@ -49,6 +49,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
 use function array_diff_key;
+use function array_intersect;
 use function array_merge;
 use function array_unique;
 use function array_values;
@@ -1471,7 +1472,7 @@ final class ArithmeticOpAnalyzer
                 $has_valid_left_operand,
                 $has_valid_right_operand,
                 $result_type,
-                $max_int_mask_combinations
+                $max_int_mask_combinations,
             );
         }
         
@@ -1482,7 +1483,7 @@ final class ArithmeticOpAnalyzer
                 $has_valid_left_operand,
                 $has_valid_right_operand,
                 $result_type,
-                $max_int_mask_combinations
+                $max_int_mask_combinations,
             );
         }
 
@@ -1493,7 +1494,6 @@ final class ArithmeticOpAnalyzer
                 $has_valid_left_operand,
                 $has_valid_right_operand,
                 $result_type,
-                $max_int_mask_combinations
             );
         }
         
@@ -1503,7 +1503,7 @@ final class ArithmeticOpAnalyzer
                 $right_type_part,
                 $has_valid_left_operand,
                 $has_valid_right_operand,
-                $result_type
+                $result_type,
             );
         }
 
@@ -1513,7 +1513,7 @@ final class ArithmeticOpAnalyzer
                 $right_type_part,
                 $has_valid_left_operand,
                 $has_valid_right_operand,
-                $result_type
+                $result_type,
             );
         }
         
@@ -1774,7 +1774,6 @@ final class ArithmeticOpAnalyzer
         bool &$has_valid_left_operand,
         bool &$has_valid_right_operand,
         ?Union &$result_type = null,
-        int $max_int_mask_combinations = 10,
     ): ?Union {
         if ($left_type_part instanceof TIntMaskVerifier && $right_type_part instanceof TIntMaskVerifier) {
             $left_potential_ints = $left_type_part->potential_ints;
