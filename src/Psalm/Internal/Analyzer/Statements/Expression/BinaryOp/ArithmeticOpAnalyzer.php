@@ -1753,6 +1753,96 @@ final class ArithmeticOpAnalyzer
                 }
             }
         }
+        
+        // Handle left shift operations
+        if ($parent instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft) {
+            if ($left_type_part instanceof TIntMaskVerifier && $right_type_part instanceof TInt) {
+                if ($right_type_part instanceof TLiteralInt) {
+                    $left_potential_ints = $left_type_part->potential_ints;
+                    $new_potential_ints = [];
+                    foreach ($left_potential_ints as $int) {
+                        $new_potential_ints[] = $int << $right_type_part->value;
+                    }
+                    $new_potential_ints = array_unique($new_potential_ints);
+                    $new_verifier = new TIntMaskVerifier($new_potential_ints);
+                    $result_type = Type::combineUnionTypes(
+                        new Union([$new_verifier]),
+                        $result_type,
+                    );
+                    
+                    $has_valid_left_operand = true;
+                    $has_valid_right_operand = true;
+                    return null;
+                } else {
+                    // Non-literal right operand - return generic int type
+                    $result_type = Type::combineUnionTypes(
+                        Type::getInt(),
+                        $result_type,
+                    );
+                    
+                    $has_valid_left_operand = true;
+                    $has_valid_right_operand = true;
+                    return null;
+                }
+            }
+            
+            if ($left_type_part instanceof TInt && $right_type_part instanceof TIntMaskVerifier) {
+                // For TInt << TIntMaskVerifier, return generic int type
+                $result_type = Type::combineUnionTypes(
+                    Type::getInt(),
+                    $result_type,
+                );
+                
+                $has_valid_left_operand = true;
+                $has_valid_right_operand = true;
+                return null;
+            }
+        }
+
+        // Handle right shift operations
+        if ($parent instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight) {
+            if ($left_type_part instanceof TIntMaskVerifier && $right_type_part instanceof TInt) {
+                if ($right_type_part instanceof TLiteralInt) {
+                    $left_potential_ints = $left_type_part->potential_ints;
+                    $new_potential_ints = [];
+                    foreach ($left_potential_ints as $int) {
+                        $new_potential_ints[] = $int >> $right_type_part->value;
+                    }
+                    $new_potential_ints = array_unique($new_potential_ints);
+                    $new_verifier = new TIntMaskVerifier($new_potential_ints);
+                    $result_type = Type::combineUnionTypes(
+                        new Union([$new_verifier]),
+                        $result_type,
+                    );
+                    
+                    $has_valid_left_operand = true;
+                    $has_valid_right_operand = true;
+                    return null;
+                } else {
+                    // Non-literal right operand - return generic int type
+                    $result_type = Type::combineUnionTypes(
+                        Type::getInt(),
+                        $result_type,
+                    );
+                    
+                    $has_valid_left_operand = true;
+                    $has_valid_right_operand = true;
+                    return null;
+                }
+            }
+            
+            if ($left_type_part instanceof TInt && $right_type_part instanceof TIntMaskVerifier) {
+                // For TInt >> TIntMaskVerifier, return generic int type
+                $result_type = Type::combineUnionTypes(
+                    Type::getInt(),
+                    $result_type,
+                );
+                
+                $has_valid_left_operand = true;
+                $has_valid_right_operand = true;
+                return null;
+            }
+        }
         return null;
     }
 }
