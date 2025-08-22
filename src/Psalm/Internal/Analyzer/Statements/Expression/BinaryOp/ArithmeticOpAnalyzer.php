@@ -1578,10 +1578,11 @@ final class ArithmeticOpAnalyzer
         
         if ($parent instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd) {
             if ($left_type_part instanceof TIntMaskVerifier && $right_type_part instanceof TIntMaskVerifier) {
+                // For BitwiseAnd, only the bits that are common to both operands should be in the result
                 $left_potential_ints = $left_type_part->potential_ints;
                 $right_potential_ints = $right_type_part->potential_ints;
-                $potential_ints = array_merge($left_potential_ints, $right_potential_ints);
-                $potential_ints = array_unique($potential_ints);
+                $potential_ints = array_intersect($left_potential_ints, $right_potential_ints);
+                $potential_ints = array_values($potential_ints);
                 $result_type = Type::combineUnionTypes(
                     new Union([new TIntMaskVerifier($potential_ints)]),
                     $result_type,
