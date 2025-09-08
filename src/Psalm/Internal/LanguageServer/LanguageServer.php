@@ -638,7 +638,7 @@ final class LanguageServer extends Dispatcher
         } else {
             /** @psalm-suppress MixedAssignment,UnusedPsalmSuppress */
             $this->versionedAnalysisDelayToken = EventLoop::delay(
-                $this->client->clientConfiguration->onChangeDebounceMs,
+                $this->client->clientConfiguration->onChangeDebounceMs / 1000,
                 fn() => $this->doVersionedAnalysis($files, $version),
             );
         }
