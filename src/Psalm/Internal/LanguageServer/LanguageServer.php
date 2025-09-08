@@ -576,7 +576,7 @@ final class LanguageServer extends Dispatcher
      */
     public function queueChangeFileAnalysis(string $file_path, string $uri, ?int $version = null): void
     {
-        $this->doVersionedAnalysisDebounce([$file_path => $uri], $version);
+        $this->doVersionedAnalysisOnChangeDebounce([$file_path => $uri], $version);
     }
 
     /**
@@ -584,7 +584,7 @@ final class LanguageServer extends Dispatcher
      */
     public function queueOpenFileAnalysis(string $file_path, string $uri, ?int $version = null): void
     {
-        $this->doVersionedAnalysis([$file_path => $uri], $version);
+        $this->doVersionedAnalysisOnOpenDebounce([$file_path => $uri], $version);
     }
 
     /**
@@ -626,11 +626,11 @@ final class LanguageServer extends Dispatcher
     }
 
     /**
-     * Debounced Queue File Analysis with optional version
+     * Debounced Queue File Analysis with optional version for onChange events
      *
      * @param array<string, string> $files
      */
-    public function doVersionedAnalysisDebounce(array $files, ?int $version = null): void
+    public function doVersionedAnalysisOnChangeDebounce(array $files, ?int $version = null): void
     {
         EventLoop::cancel($this->versionedAnalysisDelayToken);
         if ($this->client->clientConfiguration->onChangeDebounceMs === null) {
@@ -640,6 +640,30 @@ final class LanguageServer extends Dispatcher
             $this->versionedAnalysisDelayToken = EventLoop::delay(
                 $this->client->clientConfiguration->onChangeDebounceMs,
                 fn() => $this->doVersionedAnalysis($files, $version),
+            );
+        }
+    }
+
+    /**
+     * Debounced Queue File Analysis with optional version for onOpen events
+     * 
+     * @param array<string, string> $files
+     */
+    public function doVersionedAnalysisOnOpenDebounce(array $files, ?int $version = null): void
+    {
+        if ($this->client->clientConfiguration->onOpenDebounceMs === null) {
+            $this->doVersionedAnalysis($files, $version);
+        } else {
+            EventLoop::delay(
+                $this->client->clientConfiguration->onOpenDebounceMs / 1000,
+                function() use ($files, $version) {
+                    $files = array_filter(
+                        $files,
+                        fn(string $file_path) => $this->project_analyzer->getCodebase()->file_provider->isOpen($file_path),
+                        ARRAY_FILTER_USE_KEY,
+                    );
+                    $this->doVersionedAnalysis($files, $version);
+                }
             );
         }
     }
