@@ -365,7 +365,7 @@ final class LanguageServer
             $clientConfiguration->onChangeDebounceMs = (int) $options['on-change-debounce-ms'];
         }
 
-        if(isset($options['on-open-debounce-ms']) && is_numeric($options['on-open-debounce-ms'])) {
+        if (isset($options['on-open-debounce-ms']) && is_numeric($options['on-open-debounce-ms'])) {
             $clientConfiguration->onOpenDebounceMs = (int) $options['on-open-debounce-ms'];
         }
 

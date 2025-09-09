@@ -119,61 +119,61 @@ final class DiagnosticTest extends AsyncTestCase
     public function testOnChangeDebounceMs(): void
     {
       // Create a new promisor
-      $deferred = new DeferredFuture;
+        $deferred = new DeferredFuture;
 
-      $this->setTimeout(5);
-      $clientConfiguration = new ClientConfiguration();
-      $clientConfiguration->onChangeDebounceMs = 100;
-      $clientConfiguration->provideDiagnostics = true;
+        $this->setTimeout(5);
+        $clientConfiguration = new ClientConfiguration();
+        $clientConfiguration->onChangeDebounceMs = 100;
+        $clientConfiguration->provideDiagnostics = true;
 
-      $read = new MockProtocolStream();
-      $write = new MockProtocolStream();
+        $read = new MockProtocolStream();
+        $write = new MockProtocolStream();
 
-      $array = $this->generateInitializeRequest();
-      $read->write(new Message(MessageBody::parseArray($array)));
-      $array = $this->generateDidChangeRequest();
-      $read->write(new Message(MessageBody::parseArray($array)));
+        $array = $this->generateInitializeRequest();
+        $read->write(new Message(MessageBody::parseArray($array)));
+        $array = $this->generateDidChangeRequest();
+        $read->write(new Message(MessageBody::parseArray($array)));
 
-      $server = new LanguageServer(
-        $read,
-        $write,
-        $this->project_analyzer,
-        $this->codebase,
-        $clientConfiguration,
-        new Progress,
-        new PathMapper((string) getcwd(), (string) getcwd()),
-      );
+        $server = new LanguageServer(
+            $read,
+            $write,
+            $this->project_analyzer,
+            $this->codebase,
+            $clientConfiguration,
+            new Progress,
+            new PathMapper((string) getcwd(), (string) getcwd()),
+        );
 
-      $write->on('message', function (Message $message) use ($server, $deferred): void {
-        /** @psalm-suppress NullPropertyFetch,PossiblyNullPropertyFetch,UndefinedPropertyFetch */
-        if ($message->body->method === 'telemetry/event' && ($message->body->params->message ?? null) === 'initialized') {
-          $this->assertEquals(100, $server->client->clientConfiguration->onChangeDebounceMs);
-          $this->assertTrue($server->client->clientConfiguration->provideDiagnostics);
-          return;
-        }
+        $write->on('message', function (Message $message) use ($server, $deferred): void {
+          /** @psalm-suppress NullPropertyFetch,PossiblyNullPropertyFetch,UndefinedPropertyFetch */
+            if ($message->body->method === 'telemetry/event' && ($message->body->params->message ?? null) === 'initialized') {
+                $this->assertEquals(100, $server->client->clientConfiguration->onChangeDebounceMs);
+                $this->assertTrue($server->client->clientConfiguration->provideDiagnostics);
+                return;
+            }
 
-        /** @psalm-suppress NullPropertyFetch */
-        if ($message->body->method === '$/progress'
-          && ($message->body->params->value->kind ?? null) === 'end'
-          && ($message->body->params->value->message ?? null) === 'initialized'
-        ) {
-          $this->assertEquals(100, $server->client->clientConfiguration->onChangeDebounceMs);
-          $this->assertTrue($server->client->clientConfiguration->provideDiagnostics);
-          return;
-        }
+          /** @psalm-suppress NullPropertyFetch */
+            if ($message->body->method === '$/progress'
+            && ($message->body->params->value->kind ?? null) === 'end'
+            && ($message->body->params->value->message ?? null) === 'initialized'
+            ) {
+                $this->assertEquals(100, $server->client->clientConfiguration->onChangeDebounceMs);
+                $this->assertTrue($server->client->clientConfiguration->provideDiagnostics);
+                return;
+            }
 
-        /** @psalm-suppress PossiblyNullPropertyFetch,MixedPropertyFetch,UndefinedPropertyFetch */
-        if($message->body->method === 'textDocument/publishDiagnostics') {
-          $this->assertEquals('file://' . (string)getcwd() . '/tests/somefile.php', $message->body->params->uri);
-          $this->assertIsArray($message->body->params->diagnostics);
-          $this->assertCount(0, $message->body->params->diagnostics);
-          $this->assertEquals(1, $message->body->params->version);
-          $deferred->complete(null);
-          return;
-        }
-      });
+          /** @psalm-suppress PossiblyNullPropertyFetch,MixedPropertyFetch,UndefinedPropertyFetch */
+            if ($message->body->method === 'textDocument/publishDiagnostics') {
+                $this->assertEquals('file://' . (string)getcwd() . '/tests/somefile.php', $message->body->params->uri);
+                $this->assertIsArray($message->body->params->diagnostics);
+                $this->assertCount(0, $message->body->params->diagnostics);
+                $this->assertEquals(1, $message->body->params->version);
+                $deferred->complete(null);
+                return;
+            }
+        });
 
-      $deferred->getFuture()->await();
+        $deferred->getFuture()->await();
     }
 
     /**

@@ -82,6 +82,7 @@ use function trim;
 use function uniqid;
 use function urldecode;
 
+use const ARRAY_FILTER_USE_KEY;
 use const JSON_PRETTY_PRINT;
 use const STDERR;
 use const STDIN;
@@ -646,7 +647,7 @@ final class LanguageServer extends Dispatcher
 
     /**
      * Debounced Queue File Analysis with optional version for onOpen events
-     * 
+     *
      * @param array<string, string> $files
      */
     public function doVersionedAnalysisOnOpenDebounce(array $files, ?int $version = null): void
@@ -656,14 +657,15 @@ final class LanguageServer extends Dispatcher
         } else {
             EventLoop::delay(
                 $this->client->clientConfiguration->onOpenDebounceMs / 1000,
-                function() use ($files, $version) {
+                function () use ($files, $version): void {
                     $files = array_filter(
                         $files,
-                        fn(string $file_path) => $this->project_analyzer->getCodebase()->file_provider->isOpen($file_path),
+                        fn(string $file_path) => $this->project_analyzer->getCodebase()->file_provider
+                        ->isOpen($file_path),
                         ARRAY_FILTER_USE_KEY,
                     );
                     $this->doVersionedAnalysis($files, $version);
-                }
+                },
             );
         }
     }
