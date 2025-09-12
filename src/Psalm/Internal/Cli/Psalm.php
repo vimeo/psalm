@@ -996,7 +996,12 @@ final class Psalm
 
         $hasJit = false;
         if (function_exists('opcache_get_status')) {
-            if (true === (opcache_get_status()['jit']['on'] ?? false)) {
+            try {
+                $opcache_status = opcache_get_status();
+            } catch (RuntimeException) {
+                $opcache_status = [];
+            }
+            if (true === ($opcache_status['jit']['on'] ?? false)) {
                 $hasJit = true;
                 $progress->write(PHP_EOL
                     . 'JIT acceleration: ON'
@@ -1040,7 +1045,7 @@ final class Psalm
                 . "This warning may be ignored by setting the PSALM_IGNORE_NO_OVERCOMMIT=1 environment variable "
                 . "(not recommended)."
                 . PHP_EOL . PHP_EOL;
-            
+
             fwrite(STDERR, $err);
             if (getenv('PSALM_IGNORE_NO_OVERCOMMIT') !== '1') {
                 exit(1);
@@ -1489,7 +1494,7 @@ final class Psalm
         Caching:
             --consolidate-cache
                 Consolidates all cache files that Psalm uses for this specific project into a single file,
-                for quicker runs when doing whole project scans.  
+                for quicker runs when doing whole project scans.
                 Make sure to consolidate the cache again after running Psalm before saving the cache via CI.
 
             --clear-cache
