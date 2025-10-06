@@ -998,8 +998,7 @@ final class Psalm
         if (function_exists('opcache_get_status')) {
             try {
                 $opcache_status = opcache_get_status();
-            } catch (RuntimeException $e) {
-                $progress->warning('Could not determine JIT status: ' . $e->getMessage() . PHP_EOL);
+            } catch (RuntimeException) {
                 $opcache_status = [];
             }
             if (true === ($opcache_status['jit']['on'] ?? false)) {
