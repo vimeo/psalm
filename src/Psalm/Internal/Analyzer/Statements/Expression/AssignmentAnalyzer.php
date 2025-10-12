@@ -428,7 +428,7 @@ final class AssignmentAnalyzer
             return null;
         }
 
-        if (isset($context->protected_var_ids[$var_id])
+        if ($var_id !== null && isset($context->protected_var_ids[$var_id])
             && $assign_value_type->hasLiteralInt()
         ) {
             IssueBuffer::maybeAdd(
