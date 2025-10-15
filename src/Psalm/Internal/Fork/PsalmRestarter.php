@@ -49,6 +49,7 @@ final class PsalmRestarter extends XdebugHandler
         'preload' => '',
         'log_verbosity_level' => 0,
         'save_comments' => 1,
+        'restrict_api' => '',
     ];
 
     private bool $required = false;
