@@ -25,6 +25,7 @@ use Psalm\Tests\LanguageServer\Message as MessageBody;
 use Psalm\Tests\LanguageServer\MockProtocolStream;
 use Psalm\Tests\TestConfig;
 
+use function Amp\delay;
 use function getcwd;
 use function rand;
 
@@ -172,6 +173,7 @@ final class DiagnosticTest extends AsyncTestCase
                 return;
             }
         });
+        delay(0.1);
 
         $deferred->getFuture()->await();
     }
