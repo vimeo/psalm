@@ -135,6 +135,7 @@ jobs:
           - "8.2"
           - "8.3"
           - "8.4"
+          - "8.5"
         count: ${{ fromJson(needs.chunk-matrix.outputs.count) }}
         chunk: ${{ fromJson(needs.chunk-matrix.outputs.chunks) }}
 
