@@ -62,6 +62,7 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\EnumCaseStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\PropertyHookStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
@@ -79,6 +80,7 @@ use function array_values;
 use function assert;
 use function count;
 use function implode;
+use function in_array;
 use function ltrim;
 use function preg_match;
 use function preg_split;
@@ -1804,6 +1806,28 @@ final class ClassLikeNodeScanner
                 }
 
                 $property_storage->attributes[] = $attribute;
+            }
+
+            // Process property hooks
+            foreach ($stmt->hooks as $hook) {
+                $hook_name = strtolower($hook->name->toString());
+                if (in_array($hook_name, ['get', 'set'], true)) {
+                    $hook_storage = new PropertyHookStorage($hook_name);
+                    $hook_storage->is_final = $hook->isFinal();
+                    $hook_storage->by_ref = $hook->byRef;
+                    $hook_storage->location = new CodeLocation(
+                        $this->file_scanner,
+                        $hook,
+                        null,
+                        true,
+                    );
+                    $property_storage->hooks[$hook_name] = $hook_storage;
+                } else {
+                    $storage->docblock_issues[] = new ParseError(
+                        'Property hooks must be either "get" or "set"',
+                        new CodeLocation($this->file_scanner, $stmt, null, true),
+                    );
+                }
             }
         }
     }
