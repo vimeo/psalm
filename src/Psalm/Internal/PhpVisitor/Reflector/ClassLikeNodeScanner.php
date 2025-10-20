@@ -1829,6 +1829,31 @@ final class ClassLikeNodeScanner
                     );
                 }
             }
+
+            // Validate interface properties
+            if ($storage->is_interface && $this->codebase->analysis_php_version_id >= 8_04_00) {
+                if (empty($property_storage->hooks)) {
+                    $storage->docblock_issues[] = new ParseError(
+                        'Interface properties must have at least one hook',
+                        new CodeLocation($this->file_scanner, $stmt, null, true),
+                    );
+                }
+
+                if ($stmt->isStatic()) {
+                    $storage->docblock_issues[] = new ParseError(
+                        'Interface properties cannot be static',
+                        new CodeLocation($this->file_scanner, $stmt, null, true),
+                    );
+                }
+
+                // Interface properties must be explicitly declared as public
+                if (!$stmt->isPublic() || ($stmt->flags & PhpParser\Modifiers::VISIBILITY_MASK) === 0) {
+                    $storage->docblock_issues[] = new ParseError(
+                        'Interface properties must be public',
+                        new CodeLocation($this->file_scanner, $stmt, null, true),
+                    );
+                }
+            }
         }
     }
 

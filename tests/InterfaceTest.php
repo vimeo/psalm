@@ -772,6 +772,60 @@ final class InterfaceTest extends TestCase
                     }',
                 'error_message' => 'NoInterfaceProperties',
             ],
+            'interfacePropertyWithHooksBeforePhp84' => [
+                'code' => '<?php
+                    interface A {
+                        public string $value { get; }
+                    }',
+                'error_message' => 'ParseError',
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'interfacePropertyWithoutHooks' => [
+                'code' => '<?php
+                    interface A {
+                        public string $value;
+                    }',
+                'error_message' => 'ParseError',
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'privateInterfacePropertyWithHooks' => [
+                'code' => '<?php
+                    interface A {
+                        private string $value { get; }
+                    }',
+                'error_message' => 'ParseError',
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'protectedInterfacePropertyWithHooks' => [
+                'code' => '<?php
+                    interface A {
+                        protected string $value { get; }
+                    }',
+                'error_message' => 'ParseError',
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'staticInterfacePropertyWithHooks' => [
+                'code' => '<?php
+                    interface A {
+                        public static string $value { get; }
+                    }',
+                'error_message' => 'ParseError',
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'noVisibilityInterfacePropertyWithHooks' => [
+                'code' => '<?php
+                    interface SomeInterface {
+                        string $value { get; }
+                    }',
+                'error_message' => 'ParseError',
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
             'unimplementedInterfaceMethod' => [
                 'code' => '<?php
                     interface A {
