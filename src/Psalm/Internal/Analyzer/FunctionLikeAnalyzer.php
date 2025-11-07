@@ -795,18 +795,18 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         $this->getSuppressedIssues(),
                         true,
                     );
-                }
 
-                if ($codebase->alter_code
-                    && isset($project_analyzer->getIssuesToFix()['MissingThrowsDocblock'])
-                    && !IssueBuffer::isSuppressed($codeIssue, $this->getSuppressedIssues())
-                ) {
-                    $manipulator = FunctionDocblockManipulator::getForFunction(
-                        $project_analyzer,
-                        $this->source->getFilePath(),
-                        $this->function,
-                    );
-                    $manipulator->addThrowsDocblock($missingThrowsDocblockErrors);
+                    if ($codebase->alter_code
+                        && isset($project_analyzer->getIssuesToFix()['MissingThrowsDocblock'])
+                        && !IssueBuffer::isSuppressed($codeIssue, $this->getSuppressedIssues())
+                    ) {
+                        $manipulator = FunctionDocblockManipulator::getForFunction(
+                            $project_analyzer,
+                            $this->source->getFilePath(),
+                            $this->function,
+                        );
+                        $manipulator->addThrowsDocblock($missingThrowsDocblockErrors);
+                    }
                 }
             }
         }
