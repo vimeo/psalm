@@ -63149,6 +63149,7 @@ return array (
     'function_name' => 'string',
     'callback' => 'callable',
     'num_args=' => 'int',
+    'flags=' => 'int',
   ),
   'pdo\\mysql::__construct' => 
   array (
