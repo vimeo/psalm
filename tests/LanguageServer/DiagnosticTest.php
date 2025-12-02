@@ -25,6 +25,7 @@ use Psalm\Tests\LanguageServer\Message as MessageBody;
 use Psalm\Tests\LanguageServer\MockProtocolStream;
 use Psalm\Tests\TestConfig;
 
+use function Amp\delay;
 use function getcwd;
 use function rand;
 
@@ -73,7 +74,7 @@ final class DiagnosticTest extends AsyncTestCase
         // Create a new promisor
         $deferred = new DeferredFuture;
 
-        $this->setTimeout(5000);
+        $this->setTimeout(5);
         $clientConfiguration = new ClientConfiguration();
 
         $read = new MockProtocolStream();
@@ -112,6 +113,67 @@ final class DiagnosticTest extends AsyncTestCase
                 return;
             }
         });
+
+        $deferred->getFuture()->await();
+    }
+
+    public function testOnChangeDebounceMs(): void
+    {
+      // Create a new promisor
+        $deferred = new DeferredFuture;
+
+        $this->setTimeout(5);
+        $clientConfiguration = new ClientConfiguration();
+        $clientConfiguration->onChangeDebounceMs = 100;
+        $clientConfiguration->provideDiagnostics = true;
+
+        $read = new MockProtocolStream();
+        $write = new MockProtocolStream();
+
+        $array = $this->generateInitializeRequest();
+        $read->write(new Message(MessageBody::parseArray($array)));
+        $array = $this->generateDidChangeRequest();
+        $read->write(new Message(MessageBody::parseArray($array)));
+
+        $server = new LanguageServer(
+            $read,
+            $write,
+            $this->project_analyzer,
+            $this->codebase,
+            $clientConfiguration,
+            new Progress,
+            new PathMapper((string) getcwd(), (string) getcwd()),
+        );
+
+        $write->on('message', function (Message $message) use ($server, $deferred): void {
+          /** @psalm-suppress NullPropertyFetch,PossiblyNullPropertyFetch,UndefinedPropertyFetch */
+            if ($message->body->method === 'telemetry/event' && ($message->body->params->message ?? null) === 'initialized') {
+                $this->assertEquals(100, $server->client->clientConfiguration->onChangeDebounceMs);
+                $this->assertTrue($server->client->clientConfiguration->provideDiagnostics);
+                return;
+            }
+
+          /** @psalm-suppress NullPropertyFetch */
+            if ($message->body->method === '$/progress'
+            && ($message->body->params->value->kind ?? null) === 'end'
+            && ($message->body->params->value->message ?? null) === 'initialized'
+            ) {
+                $this->assertEquals(100, $server->client->clientConfiguration->onChangeDebounceMs);
+                $this->assertTrue($server->client->clientConfiguration->provideDiagnostics);
+                return;
+            }
+
+          /** @psalm-suppress PossiblyNullPropertyFetch,MixedPropertyFetch,UndefinedPropertyFetch */
+            if ($message->body->method === 'textDocument/publishDiagnostics') {
+                $this->assertEquals('file://' . (string)getcwd() . '/tests/somefile.php', $message->body->params->uri);
+                $this->assertIsArray($message->body->params->diagnostics);
+                $this->assertCount(0, $message->body->params->diagnostics);
+                $this->assertEquals(1, $message->body->params->version);
+                $deferred->complete(null);
+                return;
+            }
+        });
+        delay(0.1);
 
         $deferred->getFuture()->await();
     }
@@ -676,6 +738,32 @@ final class DiagnosticTest extends AsyncTestCase
               ],
               'trace' => 'off',
             ],
+        ];
+    }
+
+    private function generateDidChangeRequest(): array
+    {
+        return [
+          'method' => 'textDocument/didChange',
+          'params' => [
+            'textDocument' => [
+              'uri' => 'file://' . (string)getcwd() . '/tests/somefile.php',
+              'version' => 1,
+            ],
+            "contentChanges" => [[
+              "range" => null,
+              "text" => <<<PHP
+              <?php
+              class SomeClass
+              {
+                  public function __construct()
+                  {
+                  }
+              }
+              PHP,
+              "rangeLength" => null,
+            ]],
+          ],
         ];
     }
 }

@@ -42,7 +42,7 @@ use const PHP_EOL;
 final class Pool
 {
     private readonly WorkerPool $pool;
-    public function __sleep(): array
+    public function __serialize(): array
     {
         return [];
     }

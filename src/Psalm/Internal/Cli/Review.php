@@ -30,12 +30,14 @@ use function printf;
 use function readline;
 use function str_repeat;
 use function strlen;
+use function strncasecmp;
 use function strpos;
 use function substr;
 use function trim;
 
 use const JSON_THROW_ON_ERROR;
 use const PHP_EOL;
+use const PHP_OS;
 use const PHP_OS_FAMILY;
 use const STDERR;
 
@@ -132,7 +134,13 @@ final class Review
             'snippet' => $snippet,
             'selected_text' => $selected,
         ]) {
-            self::r('clear');
+            if (strncasecmp(PHP_OS, 'WIN', 3) === 0) {
+                // Windows
+                self::r('cls');
+            } else {
+                // Linux/macOS
+                self::r('clear');
+            }
             echo "{$type}: {$message}" . PHP_EOL . PHP_EOL;
             echo $snippet . PHP_EOL;
         
