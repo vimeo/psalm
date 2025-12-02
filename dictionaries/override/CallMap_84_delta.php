@@ -213,17 +213,6 @@ return array (
         'evaluate' => 'int',
       ),
     ),
-    'imagick::getimageblob' => 
-    array (
-      'old' => 
-      array (
-        0 => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'null|string',
-      ),
-    ),
     'imagick::getregistry' => 
     array (
       'old' => 
