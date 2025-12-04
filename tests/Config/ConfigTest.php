@@ -27,6 +27,7 @@ use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 
+use function array_diff;
 use function array_map;
 use function dirname;
 use function error_get_last;
@@ -1111,7 +1112,10 @@ final class ConfigTest extends TestCase
                  * @return string
                  */
                 static fn($issue_name): string => '<' . $issue_name . ' errorLevel="suppress" />' . "\n",
-                IssueHandler::getAllIssueTypes(),
+                array_diff(
+                    IssueHandler::getAllIssueTypes(),
+                    ['UnusedComposerPackage', 'UnusedExtension'],
+                ),
             ),
         );
 

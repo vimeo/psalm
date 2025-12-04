@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Codebase;
 
+use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
@@ -31,6 +32,7 @@ use function Amp\Future\await;
 use function array_filter;
 use function array_merge;
 use function array_pop;
+use function assert;
 use function ceil;
 use function count;
 use function error_reporting;
@@ -39,6 +41,10 @@ use function file_exists;
 use function min;
 use function realpath;
 use function str_ends_with;
+use function str_replace;
+use function str_starts_with;
+use function strlen;
+use function strpos;
 use function strtolower;
 use function substr;
 
@@ -83,9 +89,6 @@ use const PHP_EOL;
  *     global_constants: array<string, Union>,
  *     global_functions: array<lowercase-string, FunctionStorage>
  * }
- */
-
-/**
  * @internal
  *
  * Contains methods that aid in the scanning of Psalm's codebase
@@ -137,6 +140,8 @@ final class Scanner
      */
     private array $reflected_classlikes_lc = [];
 
+    private readonly string $vendor_prefix;
+
     private bool $is_forked = false;
 
     public function __construct(
@@ -148,6 +153,41 @@ final class Scanner
         private readonly FileReferenceProvider $file_reference_provider,
         private readonly Progress $progress,
     ) {
+        $this->vendor_prefix = $config->base_dir.DIRECTORY_SEPARATOR.'vendor'.DIRECTORY_SEPARATOR;
+    }
+
+    /**
+     * @return ?lowercase-string
+     */
+    public function getComposerPackage(CodeLocation $path): ?string
+    {
+        $path = $path->file_path;
+        $ext = $this->config->stub_files[$path] ?? null;
+        if ($ext !== null) {
+            return "ext-$ext";
+        }
+        if (str_starts_with($path, $this->vendor_prefix)) {
+            $l = strlen($this->vendor_prefix);
+            $pos = strpos($path, DIRECTORY_SEPARATOR, $l);
+            assert($pos !== false);
+            $pos = strpos(
+                $path,
+                DIRECTORY_SEPARATOR,
+                $pos+1,
+            );
+            if ($pos !== false) {
+                $res = substr(
+                    $path,
+                    $l,
+                    $pos-$l,
+                );
+                if (DIRECTORY_SEPARATOR === '\\') {
+                    $res = str_replace('\\', '/', $res);
+                }
+                return strtolower($res);
+            }
+        }
+        return null;
     }
 
     /**

@@ -6,7 +6,7 @@ namespace Psalm\Plugin;
 
 interface RegistrationInterface
 {
-    public function addStubFile(string $file_name): void;
+    public function addStubFile(string $file_name, ?string $extension = null): void;
 
     /**
      * @param class-string $handler

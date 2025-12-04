@@ -24,6 +24,8 @@
             <xs:element name="universalObjectCrates" type="UniversalObjectCratesType" minOccurs="0" maxOccurs="1" />
             <xs:element name="enableExtensions" type="ExtensionsType" minOccurs="0" maxOccurs="1" />
             <xs:element name="disableExtensions" type="ExtensionsType" minOccurs="0" maxOccurs="1" />
+            <xs:element name="ignoreUnusedExtensions" type="AnyExtensionsType" minOccurs="0" maxOccurs="1" />
+            <xs:element name="ignoreUnusedComposerPackages" type="PackagesType" minOccurs="0" maxOccurs="1" />
         </xs:choice>
 
         <xs:attribute name="autoloader" type="xs:string" />
@@ -119,6 +121,7 @@
     <xs:complexType name="StubsAttributeType">
         <xs:attribute name="name" type="xs:string" use="required" />
         <xs:attribute name="preloadClasses" type="xs:boolean" default="false" />
+        <xs:attribute name="extension" type="xs:string" default="" />
         <xs:anyAttribute processContents="skip" />
     </xs:complexType>
 
@@ -753,6 +756,18 @@
         </xs:sequence>
     </xs:complexType>
 
+    <xs:complexType name="AnyExtensionsType">
+        <xs:sequence>
+            <xs:element name="extension" maxOccurs="unbounded" type="PackageAttributeType" />
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="PackagesType">
+        <xs:sequence>
+            <xs:element name="package" maxOccurs="unbounded" type="PackageAttributeType" />
+        </xs:sequence>
+    </xs:complexType>
+
     <xs:simpleType name="ExtensionType">
         <xs:restriction base="xs:string">
             <xs:enumeration value="amqp"/>
@@ -778,5 +793,9 @@
 
     <xs:complexType name="ExtensionAttributeType">
         <xs:attribute name="name" type="ExtensionType" use="required" />
+    </xs:complexType>
+
+    <xs:complexType name="PackageAttributeType">
+        <xs:attribute name="name" type="xs:string" use="required" />
     </xs:complexType>
 </xs:schema>

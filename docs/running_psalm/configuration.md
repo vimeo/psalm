@@ -677,6 +677,31 @@ Optional. A list of extensions to disable. By default, only extensions required 
 </disableExtensions>
 ```
 
+
+#### &lt;ignoreUnusedComposerPackages&gt;
+
+Optional. A list of packages for which [UnusedComposerPackage](issues/UnusedComposerPackage.md) issues should not be emitted, even if they're not used in the current project.  
+
+Useful for example for peer dependencies (dependencies which are only used by another dependency, aren't explicitly required by that dependency's composer.json, and aren't used in the current project).  
+
+```xml
+<ignoreUnusedComposerPackages>
+  <package name="symfony/polyfill-php84"/>
+</ignoreUnusedComposerPackages>
+```
+
+#### &lt;ignoreUnusedExtensions&gt;
+
+Optional. A list of extensions for which [UnusedExtension](issues/UnusedExtension.md) issues should not be emitted, even if they're not used in the current project.
+
+Useful for example for peer dependencies (extensions which are only used by another dependency, aren't explicitly required by that dependency's composer.json, and aren't used in the current project).  
+
+```xml
+<ignoreUnusedExtensions>
+  <extension name="bcmath"/>
+</ignoreUnusedExtensions>
+```
+
 #### &lt;plugins&gt;
 Optional. A list of `<plugin filename="path_to_plugin.php" />` entries. See the [Plugins](plugins/using_plugins.md) section for more information.
 
@@ -697,12 +722,16 @@ functions without the implementations.
 
 You can find a list of stubs for common classes [here](https://github.com/JetBrains/phpstorm-stubs).
 List out each file with `<file name="path/to/file.php" />`. In case classes to be tested use parent classes
-or interfaces defined in a stub file, this stub should be configured with attribute `preloadClasses="true"`.
+or interfaces defined in a stub file, this stub should be configured with attribute `preloadClasses="true"`.  
+
+Extension stubs must also specify the name of the extension (used for dead code detection).  
 
 ```xml
 <stubs>
   <file name="path/to/file.php" />
   <file name="path/to/abstract-class.php" preloadClasses="true" />
+  <file name="path/to/extensionStub.php" extension="extension-name" />
+  <file name="path/to/extensionStub2.php" preloadClasses="true" extension="extension-name" />
 </stubs>
 ```
 
