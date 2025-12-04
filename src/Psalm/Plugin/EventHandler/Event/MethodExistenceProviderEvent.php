@@ -17,30 +17,10 @@ final class MethodExistenceProviderEvent
      * @internal
      */
     public function __construct(
-        private readonly string $fq_classlike_name,
-        private readonly string $method_name_lowercase,
-        private readonly ?StatementsSource $source = null,
-        private readonly ?CodeLocation $code_location = null,
+        public readonly string $fq_classlike_name,
+        public readonly string $method_name_lowercase,
+        public readonly ?StatementsSource $source = null,
+        public readonly ?CodeLocation $code_location = null,
     ) {
-    }
-
-    public function getFqClasslikeName(): string
-    {
-        return $this->fq_classlike_name;
-    }
-
-    public function getMethodNameLowercase(): string
-    {
-        return $this->method_name_lowercase;
-    }
-
-    public function getSource(): ?StatementsSource
-    {
-        return $this->source;
-    }
-
-    public function getCodeLocation(): ?CodeLocation
-    {
-        return $this->code_location;
     }
 }
