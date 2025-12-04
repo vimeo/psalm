@@ -13,7 +13,6 @@ use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\TaintKind;
-use Psalm\Type\TaintKindGroup;
 use Psalm\Type\Union;
 
 use function strpos;

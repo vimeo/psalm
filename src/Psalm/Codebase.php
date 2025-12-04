@@ -265,29 +265,7 @@ final class Codebase
     /**
      * @var array<string, int>
      */
-    private array $taint_map = [
-        'callable' => TaintKind::INPUT_CALLABLE,
-        'unserialize' => TaintKind::INPUT_UNSERIALIZE,
-        'include' => TaintKind::INPUT_INCLUDE,
-        'eval' => TaintKind::INPUT_EVAL,
-        'ldap' => TaintKind::INPUT_LDAP,
-        'sql' => TaintKind::INPUT_SQL,
-        'html' => TaintKind::INPUT_HTML,
-        'has_quotes' => TaintKind::INPUT_HAS_QUOTES,
-        'shell' => TaintKind::INPUT_SHELL,
-        'ssrf' => TaintKind::INPUT_SSRF,
-        'file' => TaintKind::INPUT_FILE,
-        'cookie' => TaintKind::INPUT_COOKIE,
-        'header' => TaintKind::INPUT_HEADER,
-        'xpath' => TaintKind::INPUT_XPATH,
-        'sleep' => TaintKind::INPUT_SLEEP,
-        'extract' => TaintKind::INPUT_EXTRACT,
-        'user_secret' => TaintKind::USER_SECRET,
-        'system_secret' => TaintKind::SYSTEM_SECRET,
-
-        'input' => TaintKind::ALL_INPUT,
-        'tainted' => TaintKind::ALL_INPUT,
-    ];
+    private array $taint_map = TaintKind::TAINT_NAMES;
 
     /**
      * @internal
