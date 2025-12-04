@@ -10,11 +10,11 @@ use Psalm\Type\TaintKind;
 return [
 'exec' => [TaintKind::INPUT_SHELL],
 'create_function' => [0, TaintKind::INPUT_EVAL],
-'file_get_contents' => [TaintKind::INPUT_FILE],
+'file_get_contents' => [TaintKind::INPUT_FILE|TaintKind::INPUT_SSRF],
 'file_put_contents' => [TaintKind::INPUT_FILE],
 'fopen' => [TaintKind::INPUT_FILE],
 'unlink' => [TaintKind::INPUT_FILE],
-'copy' => [TaintKind::INPUT_FILE, TaintKind::INPUT_FILE],
+'copy' => [TaintKind::INPUT_FILE|TaintKind::INPUT_SSRF, TaintKind::INPUT_FILE],
 'file' => [TaintKind::INPUT_FILE],
 'link' => [TaintKind::INPUT_FILE, TaintKind::INPUT_FILE],
 'mkdir' => [TaintKind::INPUT_FILE],

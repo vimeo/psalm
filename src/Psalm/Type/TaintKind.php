@@ -30,7 +30,6 @@ final class TaintKind
         'xpath' => self::INPUT_XPATH,
         'sleep' => self::INPUT_SLEEP,
         'extract' => self::INPUT_EXTRACT,
-        'url' => self::INPUT_URL,
         'user_secret' => self::USER_SECRET,
         'system_secret' => self::SYSTEM_SECRET,
 
@@ -54,11 +53,10 @@ final class TaintKind
     public const INPUT_XPATH = (1 << 14);
     public const INPUT_SLEEP = (1 << 15);
     public const INPUT_EXTRACT = (1 << 16);
-    public const INPUT_URL = (1 << 17);
-    public const USER_SECRET = (1 << 18);
-    public const SYSTEM_SECRET = (1 << 19);
+    public const USER_SECRET = (1 << 17);
+    public const SYSTEM_SECRET = (1 << 18);
 
-    public const ALL_INPUT = (1 << 18) - 1;
+    public const ALL_INPUT = (1 << 17) - 1;
 
     /** @internal */
     public const NUMERIC_ONLY = self::INPUT_SLEEP;
@@ -66,5 +64,5 @@ final class TaintKind
     public const BOOL_ONLY = self::INPUT_SLEEP;
 
     /** @internal Keep this synced with the above */
-    public const BUILTIN_TAINT_COUNT = 20;
+    public const BUILTIN_TAINT_COUNT = 19;
 }
