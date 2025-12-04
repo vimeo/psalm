@@ -42,7 +42,7 @@
             <directory name="vendor/netresearch/jsonmapper" />
             <directory name="vendor/phpunit" />
             <directory name="vendor/mockery/mockery"/>
-            <file name="vendor/nikic/php-parser/lib/PhpParser/Node/UnionType.php" />
+            <directory name="vendor/nikic/php-parser"/>
         </ignoreFiles>
     </projectFiles>
 
@@ -81,7 +81,6 @@
         <MissingConstructor>
             <errorLevel type="suppress">
                 <directory name="tests"/>
-                <file name="vendor/nikic/php-parser/lib/PhpParser/Node/Name.php" />
             </errorLevel>
         </MissingConstructor>
 
@@ -136,38 +135,6 @@
                 <directory name="tests"/>
             </errorLevel>
         </PossiblyUndefinedStringArrayOffset>
-
-        <MixedPropertyTypeCoercion>
-            <errorLevel type="suppress">
-                <directory name="vendor/nikic/php-parser" />
-            </errorLevel>
-        </MixedPropertyTypeCoercion>
-
-        <PropertyTypeCoercion>
-            <errorLevel type="suppress">
-                <directory name="vendor/nikic/php-parser" />
-            </errorLevel>
-        </PropertyTypeCoercion>
-
-        <InvalidArrayOffset>
-            <errorLevel type="suppress">
-                <file name="vendor/nikic/php-parser/lib/PhpParser/Node/Stmt/Class_.php" />
-                <file name="vendor/nikic/php-parser/lib/PhpParser/Node/Stmt/ClassMethod.php" />
-            </errorLevel>
-        </InvalidArrayOffset>
-
-        <InvalidPropertyAssignmentValue>
-            <errorLevel type="suppress">
-                <file name="vendor/nikic/php-parser/lib/PhpParser/Node/MatchArm.php" />
-            </errorLevel>
-        </InvalidPropertyAssignmentValue>
-
-        <MixedAssignment>
-            <errorLevel type="suppress">
-                <directory name="vendor/nikic/php-parser" />
-            </errorLevel>
-        </MixedAssignment>
-
         <PropertyNotSetInConstructor>
             <errorLevel type="suppress">
                 <referencedProperty name="PhpParser\Node\Const_::$namespacedName" />

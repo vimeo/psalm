@@ -45,7 +45,7 @@ jobs:
         env:
           fail-fast: true
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0 # required for composer to automatically detect root package version
 

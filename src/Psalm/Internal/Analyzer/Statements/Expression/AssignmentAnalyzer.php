@@ -428,7 +428,7 @@ final class AssignmentAnalyzer
             return null;
         }
 
-        if (isset($context->protected_var_ids[$var_id])
+        if ($var_id !== null && isset($context->protected_var_ids[$var_id])
             && $assign_value_type->hasLiteralInt()
         ) {
             IssueBuffer::maybeAdd(
@@ -1851,7 +1851,7 @@ final class AssignmentAnalyzer
         if ($context->inside_try) {
             // Copy previous assignment's parent nodes inside a try. Since an exception could be thrown at any
             // point this is a workaround to ensure that use of a variable also uses all previous assignments.
-            if (isset($context->vars_in_scope[$extended_var_id])) {
+            if ($extended_var_id !== null && isset($context->vars_in_scope[$extended_var_id])) {
                 $parent_nodes += $context->vars_in_scope[$extended_var_id]->parent_nodes;
             }
         }

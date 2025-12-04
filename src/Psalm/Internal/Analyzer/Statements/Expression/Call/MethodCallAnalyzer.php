@@ -210,7 +210,7 @@ final class MethodCallAnalyzer extends CallAnalyzer
                 $result,
                 $template_result,
             );
-            if (isset($context->vars_in_scope[$lhs_var_id])
+            if ($lhs_var_id !== null && isset($context->vars_in_scope[$lhs_var_id])
                 && ($possible_new_class_type = $context->vars_in_scope[$lhs_var_id]) instanceof Union
                 && !$possible_new_class_type->equals($class_type)) {
                 $possible_new_class_types[] = $context->vars_in_scope[$lhs_var_id];

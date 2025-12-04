@@ -304,6 +304,8 @@ final class Config
 
     public bool $ignore_include_side_effects = false;
 
+    public bool $respect_include_once = false;
+
     /** @var 1|2|3|4|5|6|7|8 */
     public int $level = 1;
 
@@ -955,6 +957,7 @@ final class Config
             'resolveFromConfigFile' => 'resolve_from_config_file',
             'allowFileIncludes' => 'allow_includes',
             'ignoreIncludeSideEffects' => 'ignore_include_side_effects',
+            'respectIncludeOnce' => 'respect_include_once',
             'strictBinaryOperands' => 'strict_binary_operands',
             'allowBoolToLiteralBoolComparison' => 'allow_bool_to_literal_bool_comparison',
             'rememberPropertyAssignmentsAfterCall' => 'remember_property_assignments_after_call',

@@ -495,6 +495,18 @@ Ignoring include side effects can significantly speed up scans on legacy codebas
 
 Defaults to `false`.
 
+#### respectIncludeOnce
+```xml
+<psalm
+  respectIncludeOnce="[bool]"
+>
+```
+Whether or not to process files after the first `require_once()` or `include_once()` call.  
+
+By default, Psalm treats `require_once()` and `include_once()` calls as if they were `require()` or `include()` calls in an attempt to consider all possible permutations of file include order.  Respecting `require_once()` and `include_once()` behavior can significantly speed up scans on codebases with circular `require_once()` or `include_once()` calls.  While potentially less comprehensive, this setting aims to more closely mimic PHP's runtime behavior.
+
+Defaults to `false`.
+
 #### serializer
 ```xml
 <psalm

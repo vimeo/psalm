@@ -192,13 +192,13 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                 $doc_comment = $node->getDocComment();
                 /** @var PhpParser\Node\FunctionLike */
                 $node = $node->expr;
-                $this->closure_statements->attach($node);
+                $this->closure_statements->offsetSet($node);
             } elseif ($node instanceof PhpParser\Node\Arg || $node instanceof PhpParser\Node\ArrayItem) {
                 $doc_comment = $node->getDocComment();
                 /** @var PhpParser\Node\FunctionLike */
                 $node = $node->value;
-                $this->closure_statements->attach($node);
-            } elseif ($this->closure_statements->contains($node)) {
+                $this->closure_statements->offsetSet($node);
+            } elseif ($this->closure_statements->offsetExists($node)) {
                 // This is a closure that was already processed at the statement level.
                 return null;
             }

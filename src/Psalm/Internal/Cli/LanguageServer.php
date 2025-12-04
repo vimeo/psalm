@@ -97,6 +97,7 @@ final class LanguageServer
             'in-memory::',
             'disable-xdebug::',
             'on-change-debounce-ms::',
+            'on-open-debounce-ms::',
             'use-extended-diagnostic-codes',
             'verbose',
         ];
@@ -233,6 +234,9 @@ final class LanguageServer
                 --on-change-debounce-ms=[INT]
                     The number of milliseconds to debounce onChange events.
 
+                --on-open-debounce-ms=[INT]
+                    The number of milliseconds to debounce onOpen events.
+
                 --disable-xdebug[=BOOL]
                     Disable xdebug for performance reasons. Enable for debugging
 
@@ -360,6 +364,10 @@ final class LanguageServer
 
         if (isset($options['on-change-debounce-ms']) && is_numeric($options['on-change-debounce-ms'])) {
             $clientConfiguration->onChangeDebounceMs = (int) $options['on-change-debounce-ms'];
+        }
+
+        if (isset($options['on-open-debounce-ms']) && is_numeric($options['on-open-debounce-ms'])) {
+            $clientConfiguration->onOpenDebounceMs = (int) $options['on-open-debounce-ms'];
         }
 
         $clientConfiguration->provideDefinition = !isset($options['enable-provide-definition'])

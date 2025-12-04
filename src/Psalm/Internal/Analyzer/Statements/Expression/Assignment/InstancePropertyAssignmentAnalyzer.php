@@ -1300,6 +1300,7 @@ final class InstancePropertyAssignmentAnalyzer
             if (!$property_storage->readonly
                 && !$context->collect_mutations
                 && !$context->collect_initializations
+                && $lhs_var_id !== null
                 && isset($context->vars_in_scope[$lhs_var_id])
                 && !$context->vars_in_scope[$lhs_var_id]->allow_mutations
             ) {
