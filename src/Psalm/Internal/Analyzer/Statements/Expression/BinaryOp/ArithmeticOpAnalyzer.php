@@ -33,6 +33,7 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIntMaskVerifier;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralFloat;
@@ -310,6 +311,18 @@ final class ArithmeticOpAnalyzer
         bool &$has_string_increment,
         ?Union &$result_type = null,
     ): ?Union {
+        if ($left_type_part instanceof TIntMaskVerifier || $right_type_part instanceof TIntMaskVerifier) {
+            return TIntMaskVerifierAnalyzer::analyze(
+                $parent,
+                $left_type_part,
+                $right_type_part,
+                $has_valid_left_operand,
+                $has_valid_right_operand,
+                $result_type,
+                $config->max_int_mask_combinations,
+            );
+        }
+
         if (($left_type_part instanceof TLiteralInt || $left_type_part instanceof TLiteralFloat)
             && ($right_type_part instanceof TLiteralInt || $right_type_part instanceof TLiteralFloat)
             && (

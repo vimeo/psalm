@@ -23,6 +23,7 @@ use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIntMaskVerifier;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
@@ -905,7 +906,27 @@ abstract class Type
                 $intersection_performed = true;
             }
         }
-        if ($type_1_atomic instanceof TInt && $type_2_atomic instanceof TInt) {
+        
+        // Handle TIntMaskVerifier intersection using mask values
+        if ($type_1_atomic instanceof TIntMaskVerifier && $type_2_atomic instanceof TIntMaskVerifier) {
+            // Only create intersection if masks are exactly the same
+            if ($type_1_atomic->mask === $type_2_atomic->mask) {
+                $intersection_performed = true;
+                // Create a new verifier with the same mask
+                // Use the original potential_ints from one of the verifiers as a base
+                return new TIntMaskVerifier(
+                    $type_1_atomic->potential_ints,
+                    $type_1_atomic->from_docblock || $type_2_atomic->from_docblock,
+                );
+            } else {
+                // If masks are different, return null as intersection is not possible
+                $intersection_performed = true;
+                return null;
+            }
+        }
+        
+        if ($type_1_atomic instanceof TInt && $type_2_atomic instanceof TInt &&
+            !($type_1_atomic instanceof TIntMaskVerifier || $type_2_atomic instanceof TIntMaskVerifier)) {
             $int_intersection = TIntRange::intersectIntRanges(
                 TIntRange::convertToIntRange($type_1_atomic),
                 TIntRange::convertToIntRange($type_2_atomic),
