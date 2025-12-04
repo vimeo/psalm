@@ -20,15 +20,8 @@ jobs:
 
       - uses: actions/checkout@v6
 
-      - name: Get Composer Cache Directories
-        id: composer-cache
-        run: |
-          echo "files_cache=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
-          echo "vcs_cache=$(composer config cache-vcs-dir)" >> $GITHUB_OUTPUT
-
-      - name: Generate composer.lock
-        run: |
-          composer update --no-install
+      - name: Install Dependencies
+        uses: ramsey/composer-install@v3
         env:
           COMPOSER_ROOT_VERSION: dev-master
 
@@ -38,23 +31,8 @@ jobs:
         env:
           COMPOSER_ROOT_VERSION: dev-master
 
-      - name: Cache composer cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ${{ steps.composer-cache.outputs.files_cache }}
-            ${{ steps.composer-cache.outputs.vcs_cache }}
-          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-composer-
-
-      - name: Run composer install
-        run: composer install -o
-        env:
-          COMPOSER_ROOT_VERSION: dev-master
-
       - run: |
-          git ls-files | grep \\\.php$ | grep -v ^dictionaries/scripts/* | ./vendor/bin/parallel-lint --stdin
+          git ls-files -- '*.php' ':!:dictionaries/scripts/*' | ./vendor/bin/parallel-lint --stdin
 
   code-style:
     name: Code Style Analysis
@@ -71,29 +49,10 @@ jobs:
 
       - uses: actions/checkout@v6
 
-      - name: Get Composer Cache Directories
-        id: composer-cache
-        run: |
-          echo "files_cache=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
-          echo "vcs_cache=$(composer config cache-vcs-dir)" >> $GITHUB_OUTPUT
-
-      - name: Generate composer.lock
-        run: composer update --no-install
-        env:
-          COMPOSER_ROOT_VERSION: dev-master
-
-      - name: Cache composer cache
-        uses: actions/cache@v4
+      - name: Install Dependencies
+        uses: ramsey/composer-install@v3
         with:
-          path: |
-            ${{ steps.composer-cache.outputs.files_cache }}
-            ${{ steps.composer-cache.outputs.vcs_cache }}
-          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-composer-
-
-      - name: Run composer install
-        run: composer install -o
+          composer-options: "--optimize-autoloader"
         env:
           COMPOSER_ROOT_VERSION: dev-master
 
@@ -159,30 +118,10 @@ jobs:
 
       - uses: actions/checkout@v6
 
-      - name: Get Composer Cache Directories
-        id: composer-cache
-        run: |
-          echo "files_cache=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
-          echo "vcs_cache=$(composer config cache-vcs-dir)" >> $GITHUB_OUTPUT
-
-      - name: Generate composer.lock
-        run: |
-          composer update --no-install
-        env:
-          COMPOSER_ROOT_VERSION: dev-master
-
-      - name: Cache composer cache
-        uses: actions/cache@v4
+      - name: Install Dependencies
+        uses: ramsey/composer-install@v3
         with:
-          path: |
-            ${{ steps.composer-cache.outputs.files_cache }}
-            ${{ steps.composer-cache.outputs.vcs_cache }}
-          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-composer-
-
-      - name: Run composer install
-        run: composer install -o
+          composer-options: "--optimize-autoloader"
         env:
           COMPOSER_ROOT_VERSION: dev-master
 
