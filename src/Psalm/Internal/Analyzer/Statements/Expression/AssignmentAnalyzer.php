@@ -41,6 +41,7 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\AssignmentToVoid;
 use Psalm\Issue\ImpureByReferenceAssignment;
+use Psalm\Issue\ImpureGlobalVariable;
 use Psalm\Issue\ImpurePropertyAssignment;
 use Psalm\Issue\InvalidArrayAccess;
 use Psalm\Issue\InvalidArrayOffset;
@@ -90,7 +91,6 @@ use UnexpectedValueException;
 
 use function assert;
 use function count;
-use function in_array;
 use function is_string;
 use function reset;
 use function spl_object_id;
@@ -197,11 +197,21 @@ final class AssignmentAnalyzer
             }
 
             // if we don't know where this data is going, treat as a dead-end usage
-            if (!$root_expr instanceof PhpParser\Node\Expr\Variable
-                || (is_string($root_expr->name)
-                    && in_array('$' . $root_expr->name, VariableFetchAnalyzer::SUPER_GLOBALS, true))
+            if (!$root_expr instanceof PhpParser\Node\Expr\Variable) {
+                $context->inside_general_use = true;
+            } elseif (is_string($root_expr->name)
+                && VariableFetchAnalyzer::isSuperGlobal('$' . $root_expr->name)
             ) {
                 $context->inside_general_use = true;
+                if ($context->mutation_free) {
+                    IssueBuffer::maybeAdd(
+                        new ImpureGlobalVariable(
+                            'Cannot use a global variable in a mutation-free context',
+                            new CodeLocation($statements_analyzer, $root_expr),
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+                }
             }
 
             if (ExpressionAnalyzer::analyze($statements_analyzer, $assign_value, $context) === false) {

@@ -13,6 +13,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Issue\ImpureGlobalVariable;
 use Psalm\Issue\ImpureVariable;
 use Psalm\Issue\InvalidScope;
 use Psalm\Issue\PossiblyUndefinedGlobalVariable;
@@ -44,7 +45,7 @@ use function time;
  */
 final class VariableFetchAnalyzer
 {
-    public const SUPER_GLOBALS = [
+    private const SUPER_GLOBALS = [
         '$GLOBALS',
         '$_SERVER',
         '$_GET',
@@ -160,6 +161,15 @@ final class VariableFetchAnalyzer
         }
 
         if (is_string($stmt->name) && self::isSuperGlobal('$' . $stmt->name)) {
+            if ($context->mutation_free) {
+                IssueBuffer::maybeAdd(
+                    new ImpureGlobalVariable(
+                        'Cannot use a global variable in a mutation-free context',
+                        new CodeLocation($statements_analyzer, $stmt),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
             $var_name = '$' . $stmt->name;
 
             if (isset($context->vars_in_scope[$var_name])) {
