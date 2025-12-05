@@ -199,7 +199,7 @@ final class AssignmentAnalyzer
             // if we don't know where this data is going, treat as a dead-end usage
             if (!$root_expr instanceof PhpParser\Node\Expr\Variable
                 || (is_string($root_expr->name)
-                    && in_array('$' . $root_expr->name, VariableFetchAnalyzer::SUPER_GLOBALS, true))
+                    && VariableFetchAnalyzer::isSuperGlobal('$' . $root_expr->name))
             ) {
                 $context->inside_general_use = true;
             }
