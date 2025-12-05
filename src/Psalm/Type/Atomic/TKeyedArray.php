@@ -15,6 +15,7 @@ use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
+use Throwable;
 
 use function addslashes;
 use function assert;
@@ -697,10 +698,15 @@ class TKeyedArray extends Atomic
                 $quote = true;
             }
 
-            if (preg_match('/^-?[1-9][0-9]*$/', $name)
-                && (string)(int) $name !== $name // overflow occurred
-            ) {
-                $quote = true;
+            if (preg_match('/^-?[1-9][0-9]*$/', $name)) {
+                try {
+                    // If overflow occurred
+                    if ((string)(int) $name !== $name) {
+                        $quote = true;
+                    }
+                } catch (Throwable) {
+                    $quote = true;
+                }
             }
 
             if (preg_match('/^[1-9][0-9]*_([0-9]+_)*[0-9]+$/', $name)) {
