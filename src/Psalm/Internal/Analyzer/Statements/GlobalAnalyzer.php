@@ -14,7 +14,6 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\ReferenceConstraint;
 use Psalm\Issue\ImpureGlobalVariable;
-use Psalm\Issue\ImpureStaticVariable;
 use Psalm\Issue\InvalidGlobal;
 use Psalm\IssueBuffer;
 

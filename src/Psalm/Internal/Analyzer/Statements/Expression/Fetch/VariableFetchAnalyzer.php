@@ -45,7 +45,7 @@ use function time;
  */
 final class VariableFetchAnalyzer
 {
-    public const SUPER_GLOBALS = [
+    private const SUPER_GLOBALS = [
         '$GLOBALS',
         '$_SERVER',
         '$_GET',
