@@ -42,6 +42,7 @@ use function array_merge;
 use function array_unique;
 use function in_array;
 use function is_string;
+use function substr;
 use function time;
 
 /**
@@ -123,7 +124,7 @@ final class VariableFetchAnalyzer
             }
 
             if (!$context->collect_mutations && !$context->collect_initializations) {
-                if ($context->pure) {
+                if ($context->pure && substr($context->calling_method_id, -13) !== '::__construct') {
                     IssueBuffer::maybeAdd(
                         new ImpureVariable(
                             'Cannot reference $this in a pure context',
