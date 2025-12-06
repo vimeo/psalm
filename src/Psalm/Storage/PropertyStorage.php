@@ -67,6 +67,11 @@ final class PropertyStorage implements HasAttributesInterface
 
     public ?string $description = null;
 
+    /**
+     * @var array<string, PropertyHookStorage>
+     */
+    public array $hooks = [];
+
     public function getInfo(): string
     {
         $visibility_text = match ($this->visibility) {
