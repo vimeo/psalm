@@ -36347,6 +36347,12 @@ return array (
     'lookup_table' => 'Imagick',
     'channel=' => 'int',
   ),
+  'imagick::clutimagewithinterpolate' => 
+  array (
+    0 => 'bool',
+    'lookup_table' => 'Imagick',
+    'pixel_interpolate_method' => 'int',
+  ),
   'imagick::coalesceimages' => 
   array (
     0 => 'Imagick',
@@ -36447,7 +36453,7 @@ return array (
   'imagick::convolveimage' => 
   array (
     0 => 'bool',
-    'kernel' => 'array<array-key, mixed>',
+    'kernel' => 'ImagickKernel',
     'channel=' => 'int',
   ),
   'imagick::count' => 
@@ -36571,7 +36577,7 @@ return array (
   ),
   'imagick::evaluateimages' => 
   array (
-    0 => 'bool',
+    0 => 'Imagick',
     'evaluate' => 'int',
   ),
   'imagick::exportimagepixels' => 
@@ -37132,7 +37138,7 @@ return array (
   ),
   'imagick::getresourcelimit' => 
   array (
-    0 => 'int',
+    0 => 'float',
     'type' => 'int',
   ),
   'imagick::getsamplingfactors' => 
@@ -37283,7 +37289,7 @@ return array (
   ),
   'imagick::localcontrastimage' => 
   array (
-    0 => 'void',
+    0 => 'bool',
     'radius' => 'float',
     'strength' => 'float',
   ),
@@ -37380,7 +37386,7 @@ return array (
     'columns' => 'int',
     'rows' => 'int',
     'background_color' => 'ImagickPixel|string',
-    'format=' => 'string',
+    'format=' => 'null|string',
   ),
   'imagick::newpseudoimage' => 
   array (
@@ -37424,7 +37430,7 @@ return array (
   ),
   'imagick::optimizeimagelayers' => 
   array (
-    0 => 'bool',
+    0 => 'Imagick',
   ),
   'imagick::optimizeimagetransparency' => 
   array (
@@ -37851,6 +37857,7 @@ return array (
     0 => 'bool',
     'x' => 'float',
     'y' => 'float',
+    'z' => 'float',
   ),
   'imagick::setimagebordercolor' => 
   array (
@@ -37945,6 +37952,7 @@ return array (
     0 => 'bool',
     'x' => 'float',
     'y' => 'float',
+    'z' => 'float',
   ),
   'imagick::setimageindex' => 
   array (
@@ -38029,6 +38037,7 @@ return array (
     0 => 'bool',
     'x' => 'float',
     'y' => 'float',
+    'z' => 'float',
   ),
   'imagick::setimagerenderingintent' => 
   array (
@@ -38071,6 +38080,7 @@ return array (
     0 => 'bool',
     'x' => 'float',
     'y' => 'float',
+    'z' => 'float',
   ),
   'imagick::setinterlacescheme' => 
   array (
@@ -39042,7 +39052,7 @@ return array (
   'imagickdraw::setstrokedasharray' => 
   array (
     0 => 'bool',
-    'dashes' => 'list<float|int>',
+    'dashes' => 'list<float|int>|null',
   ),
   'imagickdraw::setstrokedashoffset' => 
   array (
@@ -39259,7 +39269,7 @@ return array (
   array (
     0 => 'ImagickKernel',
     'matrix' => 'list<list<float>>',
-    'origin' => 'array<array-key, mixed>|null',
+    'origin=' => 'array<array-key, mixed>|null',
   ),
   'imagickkernel::getmatrix' => 
   array (
@@ -39376,19 +39386,19 @@ return array (
   ),
   'imagickpixel::ispixelsimilar' => 
   array (
-    0 => 'bool',
+    0 => 'bool|null',
     'color' => 'ImagickPixel',
     'fuzz' => 'float',
   ),
   'imagickpixel::ispixelsimilarquantum' => 
   array (
-    0 => 'bool',
+    0 => 'bool|null',
     'color' => 'string',
     'fuzz_quantum_range_scaled_by_square_root_of_three' => 'float',
   ),
   'imagickpixel::issimilar' => 
   array (
-    0 => 'bool',
+    0 => 'bool|null',
     'color' => 'ImagickPixel',
     'fuzz_quantum_range_scaled_by_square_root_of_three' => 'float',
   ),
@@ -39485,7 +39495,7 @@ return array (
   ),
   'imagickpixeliterator::current' => 
   array (
-    0 => 'array<array-key, mixed>',
+    0 => 'array<array-key, mixed>|null',
   ),
   'imagickpixeliterator::destroy' => 
   array (
@@ -39493,7 +39503,7 @@ return array (
   ),
   'imagickpixeliterator::getcurrentiteratorrow' => 
   array (
-    0 => 'array<array-key, mixed>',
+    0 => 'array<array-key, mixed>|null',
   ),
   'imagickpixeliterator::getiteratorrow' => 
   array (
@@ -39501,7 +39511,7 @@ return array (
   ),
   'imagickpixeliterator::getnextiteratorrow' => 
   array (
-    0 => 'array<array-key, mixed>',
+    0 => 'array<array-key, mixed>|null',
   ),
   'imagickpixeliterator::getpixeliterator' => 
   array (
@@ -48578,7 +48588,7 @@ return array (
   'mongodb\\bson\\utcdatetime::__construct' => 
   array (
     0 => 'void',
-    'milliseconds=' => 'DateTimeInterface|float|int|null|string',
+    'milliseconds=' => 'DateTimeInterface|MongoDB\\BSON\\Int64|int|null',
   ),
   'mongodb\\bson\\utcdatetime::__serialize' => 
   array (
@@ -48735,7 +48745,7 @@ return array (
   ),
   'mongodb\\driver\\cursor::getid' => 
   array (
-    0 => 'MongoDB\\Driver\\CursorId',
+    0 => 'MongoDB\\BSON\\Int64',
     'asInt64=' => 'bool',
   ),
   'mongodb\\driver\\cursor::getserver' => 
@@ -49518,21 +49528,21 @@ return array (
     0 => 'MongoDB\\Driver\\WriteResult',
     'namespace' => 'string',
     'bulk' => 'MongoDB\\Driver\\BulkWrite',
-    'options=' => 'MongoDB\\Driver\\WriteConcern|array<array-key, mixed>|null',
+    'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\manager::executecommand' => 
   array (
     0 => 'MongoDB\\Driver\\Cursor',
     'db' => 'string',
     'command' => 'MongoDB\\Driver\\Command',
-    'options=' => 'MongoDB\\Driver\\ReadPreference|array<array-key, mixed>|null',
+    'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\manager::executequery' => 
   array (
     0 => 'MongoDB\\Driver\\Cursor',
     'namespace' => 'string',
     'query' => 'MongoDB\\Driver\\Query',
-    'options=' => 'MongoDB\\Driver\\ReadPreference|array<array-key, mixed>|null',
+    'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\manager::executereadcommand' => 
   array (
@@ -50019,7 +50029,7 @@ return array (
   'mongodb\\driver\\readpreference::__construct' => 
   array (
     0 => 'void',
-    'mode' => 'int|string',
+    'mode' => 'string',
     'tagSets=' => 'array<array-key, mixed>|null',
     'options=' => 'array<array-key, mixed>|null',
   ),
@@ -50079,21 +50089,21 @@ return array (
     0 => 'MongoDB\\Driver\\WriteResult',
     'namespace' => 'string',
     'bulkWrite' => 'MongoDB\\Driver\\BulkWrite',
-    'options=' => 'MongoDB\\Driver\\WriteConcern|array<array-key, mixed>|null',
+    'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\server::executecommand' => 
   array (
     0 => 'MongoDB\\Driver\\Cursor',
     'db' => 'string',
     'command' => 'MongoDB\\Driver\\Command',
-    'options=' => 'MongoDB\\Driver\\ReadPreference|array<array-key, mixed>|null',
+    'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\server::executequery' => 
   array (
     0 => 'MongoDB\\Driver\\Cursor',
     'namespace' => 'string',
     'query' => 'MongoDB\\Driver\\Query',
-    'options=' => 'MongoDB\\Driver\\ReadPreference|array<array-key, mixed>|null',
+    'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\server::executereadcommand' => 
   array (
@@ -65619,6 +65629,12 @@ return array (
     0 => 'int',
     'key' => 'array<array-key, string>',
   ),
+  'redis::delifeq' => 
+  array (
+    0 => 'false|int',
+    'key' => 'string',
+    'value' => 'mixed',
+  ),
   'redis::discard' => 
   array (
     0 => 'bool',
@@ -65689,6 +65705,21 @@ return array (
     'key' => 'string',
     'timestamp' => 'int',
     'mode=' => 'null|string',
+  ),
+  'redis::expiremember' => 
+  array (
+    0 => 'false|int',
+    'key' => 'string',
+    'field' => 'string',
+    'ttl' => 'int',
+    'unit=' => 'null|string',
+  ),
+  'redis::expirememberat' => 
+  array (
+    0 => 'false|int',
+    'key' => 'string',
+    'field' => 'string',
+    'timestamp' => 'int',
   ),
   'redis::expiretime' => 
   array (
@@ -65900,6 +65931,11 @@ return array (
   array (
     0 => 'array<array-key, mixed>',
   ),
+  'redis::getwithmeta' => 
+  array (
+    0 => 'array<array-key, mixed>|false',
+    'key' => 'string',
+  ),
   'redis::hdel' => 
   array (
     0 => 'false|int',
@@ -65913,6 +65949,28 @@ return array (
     'key' => 'string',
     'field' => 'string',
   ),
+  'redis::hexpire' => 
+  array (
+    0 => 'array<array-key, mixed>|false',
+    'key' => 'string',
+    'ttl' => 'int',
+    'fields' => 'array<array-key, mixed>',
+    'mode=' => 'null|string',
+  ),
+  'redis::hexpireat' => 
+  array (
+    0 => 'array<array-key, mixed>|false',
+    'key' => 'string',
+    'time' => 'int',
+    'fields' => 'array<array-key, mixed>',
+    'mode=' => 'null|string',
+  ),
+  'redis::hexpiretime' => 
+  array (
+    0 => 'array<array-key, mixed>|false',
+    'key' => 'string',
+    'fields' => 'array<array-key, mixed>',
+  ),
   'redis::hget' => 
   array (
     0 => 'false|string',
@@ -65923,6 +65981,25 @@ return array (
   array (
     0 => 'array<array-key, mixed>',
     'key' => 'string',
+  ),
+  'redis::hgetdel' => 
+  array (
+    0 => 'array<array-key, mixed>|false',
+    'key' => 'string',
+    'fields' => 'array<array-key, mixed>',
+  ),
+  'redis::hgetex' => 
+  array (
+    0 => 'array<array-key, mixed>|false',
+    'key' => 'string',
+    'fields' => 'array<array-key, mixed>',
+    'expiry=' => 'array<array-key, mixed>|null|string',
+  ),
+  'redis::hgetwithmeta' => 
+  array (
+    0 => 'mixed',
+    'key' => 'string',
+    'member' => 'string',
   ),
   'redis::hincrby' => 
   array (
@@ -65960,6 +66037,40 @@ return array (
     'key' => 'string',
     'fieldvals' => 'array<array-key, mixed>',
   ),
+  'redis::hpersist' => 
+  array (
+    0 => 'array<array-key, mixed>|false',
+    'key' => 'string',
+    'fields' => 'array<array-key, mixed>',
+  ),
+  'redis::hpexpire' => 
+  array (
+    0 => 'array<array-key, mixed>|false',
+    'key' => 'string',
+    'ttl' => 'int',
+    'fields' => 'array<array-key, mixed>',
+    'mode=' => 'null|string',
+  ),
+  'redis::hpexpireat' => 
+  array (
+    0 => 'array<array-key, mixed>|false',
+    'key' => 'string',
+    'mstime' => 'int',
+    'fields' => 'array<array-key, mixed>',
+    'mode=' => 'null|string',
+  ),
+  'redis::hpexpiretime' => 
+  array (
+    0 => 'array<array-key, mixed>|false',
+    'key' => 'string',
+    'fields' => 'array<array-key, mixed>',
+  ),
+  'redis::hpttl' => 
+  array (
+    0 => 'array<array-key, mixed>|false',
+    'key' => 'string',
+    'fields' => 'array<array-key, mixed>',
+  ),
   'redis::hrandfield' => 
   array (
     0 => 'array<array-key, mixed>|false|string',
@@ -65980,6 +66091,13 @@ return array (
     'key' => 'string',
     '...fields_and_vals=' => 'string',
   ),
+  'redis::hsetex' => 
+  array (
+    0 => 'false|int',
+    'key' => 'string',
+    'fields' => 'array<array-key, mixed>',
+    'expiry=' => 'array<array-key, mixed>|null',
+  ),
   'redis::hsetnx' => 
   array (
     0 => 'bool',
@@ -65992,6 +66110,12 @@ return array (
     0 => 'false|int',
     'key' => 'string',
     'field' => 'string',
+  ),
+  'redis::httl' => 
+  array (
+    0 => 'array<array-key, mixed>|false',
+    'key' => 'string',
+    'fields' => 'array<array-key, mixed>',
   ),
   'redis::hvals' => 
   array (
@@ -66416,6 +66540,14 @@ return array (
     0 => 'bool',
     'db' => 'int',
   ),
+  'redis::servername' => 
+  array (
+    0 => 'false|string',
+  ),
+  'redis::serverversion' => 
+  array (
+    0 => 'false|string',
+  ),
   'redis::set' => 
   array (
     0 => 'bool',
@@ -66689,6 +66821,90 @@ return array (
   'redis::unwatch' => 
   array (
     0 => 'bool',
+  ),
+  'redis::vadd' => 
+  array (
+    0 => 'false|int',
+    'key' => 'string',
+    'values' => 'array<array-key, mixed>',
+    'element' => 'mixed',
+    'options=' => 'array<array-key, mixed>|null',
+  ),
+  'redis::vcard' => 
+  array (
+    0 => 'false|int',
+    'key' => 'string',
+  ),
+  'redis::vdim' => 
+  array (
+    0 => 'false|int',
+    'key' => 'string',
+  ),
+  'redis::vemb' => 
+  array (
+    0 => 'array<array-key, mixed>|false',
+    'key' => 'string',
+    'member' => 'mixed',
+    'raw=' => 'bool',
+  ),
+  'redis::vgetattr' => 
+  array (
+    0 => 'array<array-key, mixed>|false|string',
+    'key' => 'string',
+    'member' => 'mixed',
+    'decode=' => 'bool',
+  ),
+  'redis::vinfo' => 
+  array (
+    0 => 'array<array-key, mixed>|false',
+    'key' => 'string',
+  ),
+  'redis::vismember' => 
+  array (
+    0 => 'bool',
+    'key' => 'string',
+    'member' => 'mixed',
+  ),
+  'redis::vlinks' => 
+  array (
+    0 => 'array<array-key, mixed>|false',
+    'key' => 'string',
+    'member' => 'mixed',
+    'withscores=' => 'bool',
+  ),
+  'redis::vrandmember' => 
+  array (
+    0 => 'array<array-key, mixed>|false|string',
+    'key' => 'string',
+    'count=' => 'int',
+  ),
+  'redis::vrange' => 
+  array (
+    0 => 'array<array-key, mixed>|false',
+    'key' => 'string',
+    'min' => 'string',
+    'max' => 'string',
+    'count=' => 'int',
+  ),
+  'redis::vrem' => 
+  array (
+    0 => 'false|int',
+    'key' => 'string',
+    'member' => 'mixed',
+  ),
+  'redis::vsetattr' => 
+  array (
+    0 => 'false|int',
+    'key' => 'string',
+    'member' => 'mixed',
+    'attributes' => 'array<array-key, mixed>|string',
+  ),
+  'redis::vsim' => 
+  array (
+    0 => 'array<array-key, mixed>|false',
+    'key' => 'string',
+    'member' => 'mixed',
+    'options=' => 'array<array-key, mixed>|null',
   ),
   'redis::wait' => 
   array (
@@ -67483,6 +67699,12 @@ return array (
     0 => 'int',
     'key' => 'array<array-key, string>',
   ),
+  'rediscluster::delifeq' => 
+  array (
+    0 => 'RedisCluster|false|int',
+    'key' => 'string',
+    'value' => 'mixed',
+  ),
   'rediscluster::discard' => 
   array (
     0 => 'bool',
@@ -67549,6 +67771,21 @@ return array (
     'key' => 'string',
     'timestamp' => 'int',
     'mode=' => 'null|string',
+  ),
+  'rediscluster::expiremember' => 
+  array (
+    0 => 'false|int',
+    'key' => 'string',
+    'field' => 'string',
+    'ttl' => 'int',
+    'unit=' => 'null|string',
+  ),
+  'rediscluster::expirememberat' => 
+  array (
+    0 => 'false|int',
+    'key' => 'string',
+    'field' => 'string',
+    'timestamp' => 'int',
   ),
   'rediscluster::expiretime' => 
   array (
@@ -67666,6 +67903,11 @@ return array (
     'key' => 'string',
     'value' => 'int',
   ),
+  'rediscluster::getdel' => 
+  array (
+    0 => 'mixed',
+    'key' => 'string',
+  ),
   'rediscluster::getex' => 
   array (
     0 => 'RedisCluster|false|string',
@@ -67702,6 +67944,11 @@ return array (
   array (
     0 => 'array<array-key, mixed>|false',
   ),
+  'rediscluster::getwithmeta' => 
+  array (
+    0 => 'RedisCluster|array<array-key, mixed>|false',
+    'key' => 'string',
+  ),
   'rediscluster::hdel' => 
   array (
     0 => 'false|int',
@@ -67715,6 +67962,28 @@ return array (
     'key' => 'string',
     'member' => 'string',
   ),
+  'rediscluster::hexpire' => 
+  array (
+    0 => 'RedisCluster|array<array-key, mixed>|false',
+    'key' => 'string',
+    'ttl' => 'int',
+    'fields' => 'array<array-key, mixed>',
+    'mode=' => 'null|string',
+  ),
+  'rediscluster::hexpireat' => 
+  array (
+    0 => 'RedisCluster|array<array-key, mixed>|false',
+    'key' => 'string',
+    'time' => 'int',
+    'fields' => 'array<array-key, mixed>',
+    'mode=' => 'null|string',
+  ),
+  'rediscluster::hexpiretime' => 
+  array (
+    0 => 'RedisCluster|array<array-key, mixed>|false',
+    'key' => 'string',
+    'fields' => 'array<array-key, mixed>',
+  ),
   'rediscluster::hget' => 
   array (
     0 => 'false|string',
@@ -67725,6 +67994,25 @@ return array (
   array (
     0 => 'array<array-key, mixed>',
     'key' => 'string',
+  ),
+  'rediscluster::hgetdel' => 
+  array (
+    0 => 'RedisCluster|array<array-key, mixed>|false',
+    'key' => 'string',
+    'fields' => 'array<array-key, mixed>',
+  ),
+  'rediscluster::hgetex' => 
+  array (
+    0 => 'RedisCluster|array<array-key, mixed>|false',
+    'key' => 'string',
+    'fields' => 'array<array-key, mixed>',
+    'expiry=' => 'array<array-key, mixed>|null|string',
+  ),
+  'rediscluster::hgetwithmeta' => 
+  array (
+    0 => 'mixed',
+    'key' => 'string',
+    'member' => 'string',
   ),
   'rediscluster::hincrby' => 
   array (
@@ -67762,6 +68050,40 @@ return array (
     'key' => 'string',
     'key_values' => 'array<array-key, mixed>',
   ),
+  'rediscluster::hpersist' => 
+  array (
+    0 => 'RedisCluster|array<array-key, mixed>|false',
+    'key' => 'string',
+    'fields' => 'array<array-key, mixed>',
+  ),
+  'rediscluster::hpexpire' => 
+  array (
+    0 => 'RedisCluster|array<array-key, mixed>|false',
+    'key' => 'string',
+    'ttl' => 'int',
+    'fields' => 'array<array-key, mixed>',
+    'mode=' => 'null|string',
+  ),
+  'rediscluster::hpexpireat' => 
+  array (
+    0 => 'RedisCluster|array<array-key, mixed>|false',
+    'key' => 'string',
+    'mstime' => 'int',
+    'fields' => 'array<array-key, mixed>',
+    'mode=' => 'null|string',
+  ),
+  'rediscluster::hpexpiretime' => 
+  array (
+    0 => 'RedisCluster|array<array-key, mixed>|false',
+    'key' => 'string',
+    'fields' => 'array<array-key, mixed>',
+  ),
+  'rediscluster::hpttl' => 
+  array (
+    0 => 'RedisCluster|array<array-key, mixed>|false',
+    'key' => 'string',
+    'fields' => 'array<array-key, mixed>',
+  ),
   'rediscluster::hrandfield' => 
   array (
     0 => 'RedisCluster|array<array-key, mixed>|string',
@@ -67783,6 +68105,13 @@ return array (
     'member' => 'string',
     'value' => 'string',
   ),
+  'rediscluster::hsetex' => 
+  array (
+    0 => 'RedisCluster|false|int',
+    'key' => 'string',
+    'fields' => 'array<array-key, mixed>',
+    'expiry=' => 'array<array-key, mixed>|null',
+  ),
   'rediscluster::hsetnx' => 
   array (
     0 => 'bool',
@@ -67795,6 +68124,12 @@ return array (
     0 => 'int',
     'key' => 'string',
     'field' => 'string',
+  ),
+  'rediscluster::httl' => 
+  array (
+    0 => 'RedisCluster|array<array-key, mixed>|false',
+    'key' => 'string',
+    'fields' => 'array<array-key, mixed>',
   ),
   'rediscluster::hvals' => 
   array (
@@ -68348,6 +68683,90 @@ return array (
   'rediscluster::unwatch' => 
   array (
     0 => 'bool',
+  ),
+  'rediscluster::vadd' => 
+  array (
+    0 => 'RedisCluster|false|int',
+    'key' => 'string',
+    'values' => 'array<array-key, mixed>',
+    'element' => 'mixed',
+    'options=' => 'array<array-key, mixed>|null',
+  ),
+  'rediscluster::vcard' => 
+  array (
+    0 => 'RedisCluster|false|int',
+    'key' => 'string',
+  ),
+  'rediscluster::vdim' => 
+  array (
+    0 => 'RedisCluster|false|int',
+    'key' => 'string',
+  ),
+  'rediscluster::vemb' => 
+  array (
+    0 => 'RedisCluster|array<array-key, mixed>|false',
+    'key' => 'string',
+    'member' => 'mixed',
+    'raw=' => 'bool',
+  ),
+  'rediscluster::vgetattr' => 
+  array (
+    0 => 'RedisCluster|array<array-key, mixed>|false|string',
+    'key' => 'string',
+    'member' => 'mixed',
+    'decode=' => 'bool',
+  ),
+  'rediscluster::vinfo' => 
+  array (
+    0 => 'RedisCluster|array<array-key, mixed>|false',
+    'key' => 'string',
+  ),
+  'rediscluster::vismember' => 
+  array (
+    0 => 'RedisCluster|bool',
+    'key' => 'string',
+    'member' => 'mixed',
+  ),
+  'rediscluster::vlinks' => 
+  array (
+    0 => 'RedisCluster|array<array-key, mixed>|false',
+    'key' => 'string',
+    'member' => 'mixed',
+    'withscores=' => 'bool',
+  ),
+  'rediscluster::vrandmember' => 
+  array (
+    0 => 'RedisCluster|array<array-key, mixed>|false|string',
+    'key' => 'string',
+    'count=' => 'int',
+  ),
+  'rediscluster::vrange' => 
+  array (
+    0 => 'RedisCluster|array<array-key, mixed>|false',
+    'key' => 'string',
+    'min' => 'string',
+    'max' => 'string',
+    'count=' => 'int',
+  ),
+  'rediscluster::vrem' => 
+  array (
+    0 => 'RedisCluster|false|int',
+    'key' => 'string',
+    'member' => 'mixed',
+  ),
+  'rediscluster::vsetattr' => 
+  array (
+    0 => 'RedisCluster|false|int',
+    'key' => 'string',
+    'member' => 'mixed',
+    'attributes' => 'array<array-key, mixed>|string',
+  ),
+  'rediscluster::vsim' => 
+  array (
+    0 => 'RedisCluster|array<array-key, mixed>|false',
+    'key' => 'string',
+    'member' => 'mixed',
+    'options=' => 'array<array-key, mixed>|null',
   ),
   'rediscluster::waitaof' => 
   array (

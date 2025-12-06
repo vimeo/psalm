@@ -185,45 +185,6 @@ return array (
         '&w_idna_info=' => 'array<array-key, mixed>',
       ),
     ),
-    'imagick::convolveimage' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'kernel' => 'array<array-key, mixed>',
-        'channel=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'kernel' => 'ImagickKernel',
-        'channel=' => 'int',
-      ),
-    ),
-    'imagick::evaluateimages' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'evaluate' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'Imagick',
-        'evaluate' => 'int',
-      ),
-    ),
-    'imagick::getimageblob' => 
-    array (
-      'old' => 
-      array (
-        0 => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'null|string',
-      ),
-    ),
     'imagick::getregistry' => 
     array (
       'old' => 
@@ -235,64 +196,6 @@ return array (
       array (
         0 => 'false|string',
         'key' => 'string',
-      ),
-    ),
-    'imagick::getresourcelimit' => 
-    array (
-      'old' => 
-      array (
-        0 => 'int',
-        'type' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'float',
-        'type' => 'int',
-      ),
-    ),
-    'imagick::localcontrastimage' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'radius' => 'float',
-        'strength' => 'float',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'radius' => 'float',
-        'strength' => 'float',
-      ),
-    ),
-    'imagick::newimage' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'columns' => 'int',
-        'rows' => 'int',
-        'background_color' => 'ImagickPixel|string',
-        'format=' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'columns' => 'int',
-        'rows' => 'int',
-        'background_color' => 'ImagickPixel|string',
-        'format=' => 'null|string',
-      ),
-    ),
-    'imagick::optimizeimagelayers' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-      ),
-      'new' => 
-      array (
-        0 => 'Imagick',
       ),
     ),
     'imagick::similarityimage' => 
@@ -346,88 +249,6 @@ return array (
       'new' => 
       array (
         0 => 'false|string',
-      ),
-    ),
-    'imagickkernel::frommatrix' => 
-    array (
-      'old' => 
-      array (
-        0 => 'ImagickKernel',
-        'matrix' => 'list<list<float>>',
-        'origin' => 'array<array-key, mixed>|null',
-      ),
-      'new' => 
-      array (
-        0 => 'ImagickKernel',
-        'matrix' => 'list<list<float>>',
-        'origin=' => 'array<array-key, mixed>|null',
-      ),
-    ),
-    'imagickpixel::ispixelsimilar' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'color' => 'ImagickPixel',
-        'fuzz' => 'float',
-      ),
-      'new' => 
-      array (
-        0 => 'bool|null',
-        'color' => 'ImagickPixel',
-        'fuzz' => 'float',
-      ),
-    ),
-    'imagickpixel::ispixelsimilarquantum' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'color' => 'string',
-        'fuzz_quantum_range_scaled_by_square_root_of_three' => 'float',
-      ),
-      'new' => 
-      array (
-        0 => 'bool|null',
-        'color' => 'string',
-        'fuzz_quantum_range_scaled_by_square_root_of_three' => 'float',
-      ),
-    ),
-    'imagickpixel::issimilar' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'color' => 'ImagickPixel',
-        'fuzz_quantum_range_scaled_by_square_root_of_three' => 'float',
-      ),
-      'new' => 
-      array (
-        0 => 'bool|null',
-        'color' => 'ImagickPixel',
-        'fuzz_quantum_range_scaled_by_square_root_of_three' => 'float',
-      ),
-    ),
-    'imagickpixeliterator::getcurrentiteratorrow' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>|null',
-      ),
-    ),
-    'imagickpixeliterator::getnextiteratorrow' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>|null',
       ),
     ),
     'intlcalendar::clear' => 

@@ -1002,21 +1002,6 @@ return array (
         'scope=' => 'array<array-key, mixed>|null|object',
       ),
     ),
-    'mongodb\\bson\\tophp' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>|object',
-        'bson' => 'string',
-        'typemap=' => 'array<array-key, mixed>',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>|object',
-        'bson' => 'string',
-        'typemap=' => 'array<array-key, mixed>|null',
-      ),
-    ),
     'mongodb\\driver\\bulkwrite::delete' => 
     array (
       'old' => 
@@ -1108,7 +1093,7 @@ return array (
         0 => 'MongoDB\\Driver\\WriteResult',
         'namespace' => 'string',
         'bulk' => 'MongoDB\\Driver\\BulkWrite',
-        'options=' => 'MongoDB\\Driver\\WriteConcern|array<array-key, mixed>|null',
+        'options=' => 'array<array-key, mixed>|null',
       ),
     ),
     'mongodb\\driver\\manager::executequery' => 
@@ -1125,7 +1110,7 @@ return array (
         0 => 'MongoDB\\Driver\\Cursor',
         'namespace' => 'string',
         'query' => 'MongoDB\\Driver\\Query',
-        'options=' => 'MongoDB\\Driver\\ReadPreference|array<array-key, mixed>|null',
+        'options=' => 'array<array-key, mixed>|null',
       ),
     ),
     'mongodb\\driver\\manager::executereadcommand' => 
@@ -1191,7 +1176,7 @@ return array (
         0 => 'MongoDB\\Driver\\WriteResult',
         'namespace' => 'string',
         'bulkWrite' => 'MongoDB\\Driver\\BulkWrite',
-        'options=' => 'MongoDB\\Driver\\WriteConcern|array<array-key, mixed>|null',
+        'options=' => 'array<array-key, mixed>|null',
       ),
     ),
     'mongodb\\driver\\server::executequery' => 
@@ -1208,7 +1193,7 @@ return array (
         0 => 'MongoDB\\Driver\\Cursor',
         'namespace' => 'string',
         'query' => 'MongoDB\\Driver\\Query',
-        'options=' => 'MongoDB\\Driver\\ReadPreference|array<array-key, mixed>|null',
+        'options=' => 'array<array-key, mixed>|null',
       ),
     ),
     'mongodb\\driver\\server::executereadcommand' => 
@@ -1273,6 +1258,61 @@ return array (
       array (
         0 => 'void',
         'operationTime' => 'MongoDB\\BSON\\TimestampInterface',
+      ),
+    ),
+    'mongodb\\driver\\writeresult::getdeletedcount' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'int|null',
+      ),
+    ),
+    'mongodb\\driver\\writeresult::getinsertedcount' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'int|null',
+      ),
+    ),
+    'mongodb\\driver\\writeresult::getmatchedcount' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'int|null',
+      ),
+    ),
+    'mongodb\\driver\\writeresult::getmodifiedcount' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'int|null',
+      ),
+    ),
+    'mongodb\\driver\\writeresult::getupsertedcount' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'int|null',
       ),
     ),
     'openssl_pkcs7_verify' => 
@@ -4734,6 +4774,12 @@ return array (
   ),
   'removed' => 
   array (
+    'mongodb\\bson\\tophp' => 
+    array (
+      0 => 'array<array-key, mixed>|object',
+      'bson' => 'string',
+      'typemap=' => 'array<array-key, mixed>',
+    ),
     'redis::evaluate' => 
     array (
       0 => 'mixed',

@@ -35516,6 +35516,12 @@ return array (
     'lookup_table' => 'Imagick',
     'channel=' => 'float',
   ),
+  'imagick::clutimagewithinterpolate' => 
+  array (
+    0 => 'mixed',
+    'lookup_table' => 'Imagick',
+    'pixel_interpolate_method' => 'mixed',
+  ),
   'imagick::coalesceimages' => 
   array (
     0 => 'Imagick',
@@ -35605,7 +35611,7 @@ return array (
   'imagick::convolveimage' => 
   array (
     0 => 'bool',
-    'kernel' => 'array<array-key, mixed>',
+    'kernel' => 'ImagickKernel',
     'channel=' => 'int',
   ),
   'imagick::count' => 
@@ -36956,6 +36962,7 @@ return array (
     0 => 'bool',
     'x' => 'float',
     'y' => 'float',
+    'z' => 'mixed',
   ),
   'imagick::setimagebordercolor' => 
   array (
@@ -37050,6 +37057,7 @@ return array (
     0 => 'bool',
     'x' => 'float',
     'y' => 'float',
+    'z' => 'mixed',
   ),
   'imagick::setimageindex' => 
   array (
@@ -37121,6 +37129,7 @@ return array (
     0 => 'bool',
     'x' => 'float',
     'y' => 'float',
+    'z' => 'mixed',
   ),
   'imagick::setimagerenderingintent' => 
   array (
@@ -37163,6 +37172,7 @@ return array (
     0 => 'bool',
     'x' => 'float',
     'y' => 'float',
+    'z' => 'mixed',
   ),
   'imagick::setinterlacescheme' => 
   array (
@@ -38344,7 +38354,7 @@ return array (
   array (
     0 => 'ImagickKernel',
     'matrix' => 'list<list<float>>',
-    'origin' => 'array<array-key, mixed>',
+    'origin=' => 'array<array-key, mixed>',
   ),
   'imagickkernel::getmatrix' => 
   array (
@@ -46887,7 +46897,7 @@ return array (
   ),
   'mongodb\\bson\\binary::serialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\bson\\binary::unserialize' => 
   array (
@@ -46920,7 +46930,7 @@ return array (
   ),
   'mongodb\\bson\\dbpointer::serialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\bson\\dbpointer::unserialize' => 
   array (
@@ -46947,7 +46957,7 @@ return array (
   ),
   'mongodb\\bson\\decimal128::serialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\bson\\decimal128::unserialize' => 
   array (
@@ -46960,13 +46970,13 @@ return array (
   ),
   'mongodb\\bson\\fromjson' => 
   array (
-    0 => 'string',
-    'json' => 'string',
+    0 => 'mixed',
+    'json' => 'mixed',
   ),
   'mongodb\\bson\\fromphp' => 
   array (
-    0 => 'string',
-    'value' => 'array<array-key, mixed>|object',
+    0 => 'mixed',
+    'value' => 'mixed',
   ),
   'mongodb\\bson\\int64::__construct' => 
   array (
@@ -46982,7 +46992,7 @@ return array (
   ),
   'mongodb\\bson\\int64::serialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\bson\\int64::unserialize' => 
   array (
@@ -47018,7 +47028,7 @@ return array (
   ),
   'mongodb\\bson\\javascript::serialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\bson\\javascript::unserialize' => 
   array (
@@ -47048,7 +47058,7 @@ return array (
   ),
   'mongodb\\bson\\maxkey::serialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\bson\\maxkey::unserialize' => 
   array (
@@ -47066,7 +47076,7 @@ return array (
   ),
   'mongodb\\bson\\minkey::serialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\bson\\minkey::unserialize' => 
   array (
@@ -47097,7 +47107,7 @@ return array (
   ),
   'mongodb\\bson\\objectid::serialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\bson\\objectid::unserialize' => 
   array (
@@ -47145,7 +47155,7 @@ return array (
   ),
   'mongodb\\bson\\regex::serialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\bson\\regex::unserialize' => 
   array (
@@ -47182,7 +47192,7 @@ return array (
   ),
   'mongodb\\bson\\symbol::serialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\bson\\symbol::unserialize' => 
   array (
@@ -47218,7 +47228,7 @@ return array (
   ),
   'mongodb\\bson\\timestamp::serialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\bson\\timestamp::unserialize' => 
   array (
@@ -47239,13 +47249,13 @@ return array (
   ),
   'mongodb\\bson\\tocanonicalextendedjson' => 
   array (
-    0 => 'string',
-    'bson' => 'string',
+    0 => 'mixed',
+    'bson' => 'mixed',
   ),
   'mongodb\\bson\\tojson' => 
   array (
-    0 => 'string',
-    'bson' => 'string',
+    0 => 'mixed',
+    'bson' => 'mixed',
   ),
   'mongodb\\bson\\tophp' => 
   array (
@@ -47255,8 +47265,8 @@ return array (
   ),
   'mongodb\\bson\\torelaxedextendedjson' => 
   array (
-    0 => 'string',
-    'bson' => 'string',
+    0 => 'mixed',
+    'bson' => 'mixed',
   ),
   'mongodb\\bson\\undefined::__construct' => 
   array (
@@ -47272,7 +47282,7 @@ return array (
   ),
   'mongodb\\bson\\undefined::serialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\bson\\undefined::unserialize' => 
   array (
@@ -47287,7 +47297,7 @@ return array (
   'mongodb\\bson\\utcdatetime::__construct' => 
   array (
     0 => 'void',
-    'milliseconds=' => 'DateTimeInterface|float|int|null|string',
+    'milliseconds=' => 'DateTimeInterface|MongoDB\\BSON\\Int64|int|null',
   ),
   'mongodb\\bson\\utcdatetime::__set_state' => 
   array (
@@ -47304,7 +47314,7 @@ return array (
   ),
   'mongodb\\bson\\utcdatetime::serialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\bson\\utcdatetime::todatetime' => 
   array (
@@ -47444,7 +47454,7 @@ return array (
   ),
   'mongodb\\driver\\cursorid::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\cursorid::__wakeup' => 
   array (
@@ -47452,7 +47462,7 @@ return array (
   ),
   'mongodb\\driver\\cursorid::serialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\cursorid::unserialize' => 
   array (
@@ -48067,7 +48077,7 @@ return array (
   ),
   'mongodb\\driver\\exception\\sslconnectionexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\sslconnectionexception::__wakeup' => 
   array (
@@ -48166,7 +48176,7 @@ return array (
   ),
   'mongodb\\driver\\exception\\writeexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\writeexception::__wakeup' => 
   array (
@@ -48202,7 +48212,7 @@ return array (
   ),
   'mongodb\\driver\\exception\\writeexception::getwriteresult' => 
   array (
-    0 => 'MongoDB\\Driver\\WriteResult',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\writeexception::haserrorlabel' => 
   array (
@@ -48237,7 +48247,7 @@ return array (
     0 => 'MongoDB\\Driver\\Cursor',
     'db' => 'string',
     'command' => 'MongoDB\\Driver\\Command',
-    'options=' => 'MongoDB\\Driver\\ReadPreference|array<array-key, mixed>|null',
+    'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\manager::executequery' => 
   array (
@@ -48332,7 +48342,7 @@ return array (
   ),
   'mongodb\\driver\\monitoring\\commandfailedevent::getserver' => 
   array (
-    0 => 'MongoDB\\Driver\\Server',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\monitoring\\commandstartedevent::__construct' => 
   array (
@@ -48364,7 +48374,7 @@ return array (
   ),
   'mongodb\\driver\\monitoring\\commandstartedevent::getserver' => 
   array (
-    0 => 'MongoDB\\Driver\\Server',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\monitoring\\commandsubscriber::commandfailed' => 
   array (
@@ -48411,7 +48421,7 @@ return array (
   ),
   'mongodb\\driver\\monitoring\\commandsucceededevent::getserver' => 
   array (
-    0 => 'MongoDB\\Driver\\Server',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\monitoring\\logsubscriber::log' => 
   array (
@@ -48504,7 +48514,7 @@ return array (
   ),
   'mongodb\\driver\\readconcern::serialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\readconcern::unserialize' => 
   array (
@@ -48514,7 +48524,7 @@ return array (
   'mongodb\\driver\\readpreference::__construct' => 
   array (
     0 => 'void',
-    'mode' => 'int|string',
+    'mode' => 'string',
     'tagSets=' => 'array<array-key, mixed>|null',
     'options=' => 'array<array-key, mixed>|null',
   ),
@@ -48537,7 +48547,7 @@ return array (
   ),
   'mongodb\\driver\\readpreference::getmode' => 
   array (
-    0 => 'int',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\readpreference::getmodestring' => 
   array (
@@ -48549,7 +48559,7 @@ return array (
   ),
   'mongodb\\driver\\readpreference::serialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\readpreference::unserialize' => 
   array (
@@ -48576,7 +48586,7 @@ return array (
     0 => 'MongoDB\\Driver\\Cursor',
     'db' => 'string',
     'command' => 'MongoDB\\Driver\\Command',
-    'options=' => 'MongoDB\\Driver\\ReadPreference|array<array-key, mixed>|null',
+    'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\server::executequery' => 
   array (
@@ -48747,7 +48757,7 @@ return array (
   ),
   'mongodb\\driver\\writeconcern::serialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\writeconcern::unserialize' => 
   array (
@@ -48808,19 +48818,19 @@ return array (
   ),
   'mongodb\\driver\\writeresult::getdeletedcount' => 
   array (
-    0 => 'int|null',
+    0 => 'int',
   ),
   'mongodb\\driver\\writeresult::getinsertedcount' => 
   array (
-    0 => 'int|null',
+    0 => 'int',
   ),
   'mongodb\\driver\\writeresult::getmatchedcount' => 
   array (
-    0 => 'int|null',
+    0 => 'int',
   ),
   'mongodb\\driver\\writeresult::getmodifiedcount' => 
   array (
-    0 => 'int|null',
+    0 => 'int',
   ),
   'mongodb\\driver\\writeresult::getserver' => 
   array (
@@ -48828,7 +48838,7 @@ return array (
   ),
   'mongodb\\driver\\writeresult::getupsertedcount' => 
   array (
-    0 => 'int|null',
+    0 => 'int',
   ),
   'mongodb\\driver\\writeresult::getupsertedids' => 
   array (

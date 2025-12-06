@@ -36884,6 +36884,12 @@ return array (
     'lookup_table' => 'Imagick',
     'channel=' => 'float',
   ),
+  'imagick::clutimagewithinterpolate' => 
+  array (
+    0 => 'mixed',
+    'lookup_table' => 'Imagick',
+    'pixel_interpolate_method' => 'mixed',
+  ),
   'imagick::coalesceimages' => 
   array (
     0 => 'Imagick',
@@ -36984,7 +36990,7 @@ return array (
   'imagick::convolveimage' => 
   array (
     0 => 'bool',
-    'kernel' => 'array<array-key, mixed>',
+    'kernel' => 'ImagickKernel',
     'channel=' => 'int',
   ),
   'imagick::count' => 
@@ -38388,6 +38394,7 @@ return array (
     0 => 'bool',
     'x' => 'float',
     'y' => 'float',
+    'z' => 'mixed',
   ),
   'imagick::setimagebordercolor' => 
   array (
@@ -38482,6 +38489,7 @@ return array (
     0 => 'bool',
     'x' => 'float',
     'y' => 'float',
+    'z' => 'mixed',
   ),
   'imagick::setimageindex' => 
   array (
@@ -38566,6 +38574,7 @@ return array (
     0 => 'bool',
     'x' => 'float',
     'y' => 'float',
+    'z' => 'mixed',
   ),
   'imagick::setimagerenderingintent' => 
   array (
@@ -38608,6 +38617,7 @@ return array (
     0 => 'bool',
     'x' => 'float',
     'y' => 'float',
+    'z' => 'mixed',
   ),
   'imagick::setinterlacescheme' => 
   array (
@@ -39804,7 +39814,7 @@ return array (
   array (
     0 => 'ImagickKernel',
     'matrix' => 'list<list<float>>',
-    'origin' => 'array<array-key, mixed>',
+    'origin=' => 'array<array-key, mixed>',
   ),
   'imagickkernel::getmatrix' => 
   array (
@@ -48713,7 +48723,7 @@ return array (
   'mongodb\\bson\\fromphp' => 
   array (
     0 => 'string',
-    'value' => 'array<array-key, mixed>|object',
+    'value' => 'mixed',
   ),
   'mongodb\\bson\\int64::__construct' => 
   array (
@@ -49192,7 +49202,7 @@ return array (
   ),
   'mongodb\\bson\\tophp' => 
   array (
-    0 => 'array<array-key, mixed>|object',
+    0 => 'mixed',
     'bson' => 'string',
     'typemap=' => 'array<array-key, mixed>|null',
   ),
@@ -49244,7 +49254,7 @@ return array (
   'mongodb\\bson\\utcdatetime::__construct' => 
   array (
     0 => 'void',
-    'milliseconds=' => 'DateTimeInterface|float|int|null|string',
+    'milliseconds=' => 'DateTimeInterface|MongoDB\\BSON\\Int64|int|null',
   ),
   'mongodb\\bson\\utcdatetime::__serialize' => 
   array (
@@ -49401,7 +49411,7 @@ return array (
   ),
   'mongodb\\driver\\cursor::getid' => 
   array (
-    0 => 'MongoDB\\Driver\\CursorId',
+    0 => 'MongoDB\\BSON\\Int64',
     'asInt64=' => 'bool',
   ),
   'mongodb\\driver\\cursor::getserver' => 
@@ -50076,7 +50086,7 @@ return array (
   ),
   'mongodb\\driver\\exception\\sslconnectionexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\sslconnectionexception::__wakeup' => 
   array (
@@ -50175,7 +50185,7 @@ return array (
   ),
   'mongodb\\driver\\exception\\writeexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\writeexception::__wakeup' => 
   array (
@@ -50240,21 +50250,21 @@ return array (
     0 => 'MongoDB\\Driver\\WriteResult',
     'namespace' => 'string',
     'bulk' => 'MongoDB\\Driver\\BulkWrite',
-    'options=' => 'MongoDB\\Driver\\WriteConcern|array<array-key, mixed>|null',
+    'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\manager::executecommand' => 
   array (
     0 => 'MongoDB\\Driver\\Cursor',
     'db' => 'string',
     'command' => 'MongoDB\\Driver\\Command',
-    'options=' => 'MongoDB\\Driver\\ReadPreference|array<array-key, mixed>|null',
+    'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\manager::executequery' => 
   array (
     0 => 'MongoDB\\Driver\\Cursor',
     'namespace' => 'string',
     'query' => 'MongoDB\\Driver\\Query',
-    'options=' => 'MongoDB\\Driver\\ReadPreference|array<array-key, mixed>|null',
+    'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\manager::executereadcommand' => 
   array (
@@ -50741,7 +50751,7 @@ return array (
   'mongodb\\driver\\readpreference::__construct' => 
   array (
     0 => 'void',
-    'mode' => 'int|string',
+    'mode' => 'string',
     'tagSets=' => 'array<array-key, mixed>|null',
     'options=' => 'array<array-key, mixed>|null',
   ),
@@ -50801,21 +50811,21 @@ return array (
     0 => 'MongoDB\\Driver\\WriteResult',
     'namespace' => 'string',
     'bulkWrite' => 'MongoDB\\Driver\\BulkWrite',
-    'options=' => 'MongoDB\\Driver\\WriteConcern|array<array-key, mixed>|null',
+    'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\server::executecommand' => 
   array (
     0 => 'MongoDB\\Driver\\Cursor',
     'db' => 'string',
     'command' => 'MongoDB\\Driver\\Command',
-    'options=' => 'MongoDB\\Driver\\ReadPreference|array<array-key, mixed>|null',
+    'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\server::executequery' => 
   array (
     0 => 'MongoDB\\Driver\\Cursor',
     'namespace' => 'string',
     'query' => 'MongoDB\\Driver\\Query',
-    'options=' => 'MongoDB\\Driver\\ReadPreference|array<array-key, mixed>|null',
+    'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\server::executereadcommand' => 
   array (
@@ -66321,6 +66331,12 @@ return array (
     0 => 'int',
     'key' => 'array<array-key, string>',
   ),
+  'redis::delifeq' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+  ),
   'redis::discard' => 
   array (
     0 => 'mixed',
@@ -66391,6 +66407,21 @@ return array (
     'key' => 'string',
     'timestamp' => 'int',
     'mode=' => 'mixed',
+  ),
+  'redis::expiremember' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'field' => 'mixed',
+    'ttl' => 'mixed',
+    'unit=' => 'mixed',
+  ),
+  'redis::expirememberat' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'field' => 'mixed',
+    'timestamp' => 'mixed',
   ),
   'redis::expiretime' => 
   array (
@@ -66602,6 +66633,11 @@ return array (
   array (
     0 => 'mixed',
   ),
+  'redis::getwithmeta' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
   'redis::hdel' => 
   array (
     0 => 'false|int',
@@ -66615,6 +66651,28 @@ return array (
     'key' => 'string',
     'field' => 'string',
   ),
+  'redis::hexpire' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'ttl' => 'mixed',
+    'fields' => 'mixed',
+    'mode=' => 'mixed',
+  ),
+  'redis::hexpireat' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'time' => 'mixed',
+    'fields' => 'mixed',
+    'mode=' => 'mixed',
+  ),
+  'redis::hexpiretime' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'fields' => 'mixed',
+  ),
   'redis::hget' => 
   array (
     0 => 'false|string',
@@ -66625,6 +66683,25 @@ return array (
   array (
     0 => 'array<array-key, mixed>',
     'key' => 'string',
+  ),
+  'redis::hgetdel' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'fields' => 'mixed',
+  ),
+  'redis::hgetex' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'fields' => 'mixed',
+    'expiry=' => 'mixed',
+  ),
+  'redis::hgetwithmeta' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
   ),
   'redis::hincrby' => 
   array (
@@ -66662,6 +66739,40 @@ return array (
     'key' => 'string',
     'fieldvals' => 'array<array-key, mixed>',
   ),
+  'redis::hpersist' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'fields' => 'mixed',
+  ),
+  'redis::hpexpire' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'ttl' => 'mixed',
+    'fields' => 'mixed',
+    'mode=' => 'mixed',
+  ),
+  'redis::hpexpireat' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'mstime' => 'mixed',
+    'fields' => 'mixed',
+    'mode=' => 'mixed',
+  ),
+  'redis::hpexpiretime' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'fields' => 'mixed',
+  ),
+  'redis::hpttl' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'fields' => 'mixed',
+  ),
   'redis::hrandfield' => 
   array (
     0 => 'mixed',
@@ -66682,6 +66793,13 @@ return array (
     'key' => 'string',
     '...fields_and_vals=' => 'string',
   ),
+  'redis::hsetex' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'fields' => 'mixed',
+    'expiry=' => 'mixed',
+  ),
   'redis::hsetnx' => 
   array (
     0 => 'bool',
@@ -66694,6 +66812,12 @@ return array (
     0 => 'mixed',
     'key' => 'mixed',
     'field' => 'mixed',
+  ),
+  'redis::httl' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'fields' => 'mixed',
   ),
   'redis::hvals' => 
   array (
@@ -67118,6 +67242,14 @@ return array (
     0 => 'bool',
     'db' => 'int',
   ),
+  'redis::servername' => 
+  array (
+    0 => 'mixed',
+  ),
+  'redis::serverversion' => 
+  array (
+    0 => 'mixed',
+  ),
   'redis::set' => 
   array (
     0 => 'bool',
@@ -67391,6 +67523,90 @@ return array (
   'redis::unwatch' => 
   array (
     0 => 'mixed',
+  ),
+  'redis::vadd' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'values' => 'mixed',
+    'element' => 'mixed',
+    'options=' => 'mixed',
+  ),
+  'redis::vcard' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'redis::vdim' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'redis::vemb' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
+    'raw=' => 'mixed',
+  ),
+  'redis::vgetattr' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
+    'decode=' => 'mixed',
+  ),
+  'redis::vinfo' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'redis::vismember' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
+  ),
+  'redis::vlinks' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
+    'withscores=' => 'mixed',
+  ),
+  'redis::vrandmember' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'count=' => 'mixed',
+  ),
+  'redis::vrange' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'min' => 'mixed',
+    'max' => 'mixed',
+    'count=' => 'mixed',
+  ),
+  'redis::vrem' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
+  ),
+  'redis::vsetattr' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
+    'attributes' => 'mixed',
+  ),
+  'redis::vsim' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
+    'options=' => 'mixed',
   ),
   'redis::wait' => 
   array (
@@ -68185,6 +68401,12 @@ return array (
     0 => 'int',
     'key' => 'array<array-key, string>',
   ),
+  'rediscluster::delifeq' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+  ),
   'rediscluster::discard' => 
   array (
     0 => 'mixed',
@@ -68251,6 +68473,21 @@ return array (
     'key' => 'string',
     'timestamp' => 'int',
     'mode=' => 'mixed',
+  ),
+  'rediscluster::expiremember' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'field' => 'mixed',
+    'ttl' => 'mixed',
+    'unit=' => 'mixed',
+  ),
+  'rediscluster::expirememberat' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'field' => 'mixed',
+    'timestamp' => 'mixed',
   ),
   'rediscluster::expiretime' => 
   array (
@@ -68368,6 +68605,11 @@ return array (
     'key' => 'string',
     'value' => 'int',
   ),
+  'rediscluster::getdel' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
   'rediscluster::getex' => 
   array (
     0 => 'mixed',
@@ -68404,6 +68646,11 @@ return array (
   array (
     0 => 'mixed',
   ),
+  'rediscluster::getwithmeta' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
   'rediscluster::hdel' => 
   array (
     0 => 'false|int',
@@ -68417,6 +68664,28 @@ return array (
     'key' => 'string',
     'member' => 'string',
   ),
+  'rediscluster::hexpire' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'ttl' => 'mixed',
+    'fields' => 'mixed',
+    'mode=' => 'mixed',
+  ),
+  'rediscluster::hexpireat' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'time' => 'mixed',
+    'fields' => 'mixed',
+    'mode=' => 'mixed',
+  ),
+  'rediscluster::hexpiretime' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'fields' => 'mixed',
+  ),
   'rediscluster::hget' => 
   array (
     0 => 'false|string',
@@ -68427,6 +68696,25 @@ return array (
   array (
     0 => 'array<array-key, mixed>',
     'key' => 'string',
+  ),
+  'rediscluster::hgetdel' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'fields' => 'mixed',
+  ),
+  'rediscluster::hgetex' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'fields' => 'mixed',
+    'expiry=' => 'mixed',
+  ),
+  'rediscluster::hgetwithmeta' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
   ),
   'rediscluster::hincrby' => 
   array (
@@ -68464,6 +68752,40 @@ return array (
     'key' => 'string',
     'key_values' => 'array<array-key, mixed>',
   ),
+  'rediscluster::hpersist' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'fields' => 'mixed',
+  ),
+  'rediscluster::hpexpire' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'ttl' => 'mixed',
+    'fields' => 'mixed',
+    'mode=' => 'mixed',
+  ),
+  'rediscluster::hpexpireat' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'mstime' => 'mixed',
+    'fields' => 'mixed',
+    'mode=' => 'mixed',
+  ),
+  'rediscluster::hpexpiretime' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'fields' => 'mixed',
+  ),
+  'rediscluster::hpttl' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'fields' => 'mixed',
+  ),
   'rediscluster::hrandfield' => 
   array (
     0 => 'mixed',
@@ -68485,6 +68807,13 @@ return array (
     'member' => 'string',
     'value' => 'string',
   ),
+  'rediscluster::hsetex' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'fields' => 'mixed',
+    'expiry=' => 'mixed',
+  ),
   'rediscluster::hsetnx' => 
   array (
     0 => 'bool',
@@ -68497,6 +68826,12 @@ return array (
     0 => 'int',
     'key' => 'string',
     'field' => 'string',
+  ),
+  'rediscluster::httl' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'fields' => 'mixed',
   ),
   'rediscluster::hvals' => 
   array (
@@ -69050,6 +69385,90 @@ return array (
   'rediscluster::unwatch' => 
   array (
     0 => 'mixed',
+  ),
+  'rediscluster::vadd' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'values' => 'mixed',
+    'element' => 'mixed',
+    'options=' => 'mixed',
+  ),
+  'rediscluster::vcard' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'rediscluster::vdim' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'rediscluster::vemb' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
+    'raw=' => 'mixed',
+  ),
+  'rediscluster::vgetattr' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
+    'decode=' => 'mixed',
+  ),
+  'rediscluster::vinfo' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'rediscluster::vismember' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
+  ),
+  'rediscluster::vlinks' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
+    'withscores=' => 'mixed',
+  ),
+  'rediscluster::vrandmember' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'count=' => 'mixed',
+  ),
+  'rediscluster::vrange' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'min' => 'mixed',
+    'max' => 'mixed',
+    'count=' => 'mixed',
+  ),
+  'rediscluster::vrem' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
+  ),
+  'rediscluster::vsetattr' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
+    'attributes' => 'mixed',
+  ),
+  'rediscluster::vsim' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
+    'options=' => 'mixed',
   ),
   'rediscluster::waitaof' => 
   array (
