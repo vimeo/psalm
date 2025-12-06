@@ -20545,6 +20545,12 @@ return array (
     'lookup_table' => 'Imagick',
     'channel=' => 'mixed',
   ),
+  'imagick::clutimagewithinterpolate' => 
+  array (
+    0 => 'mixed',
+    'lookup_table' => 'Imagick',
+    'pixel_interpolate_method' => 'mixed',
+  ),
   'imagick::coalesceimages' => 
   array (
     0 => 'mixed',
@@ -20630,7 +20636,7 @@ return array (
   'imagick::convolveimage' => 
   array (
     0 => 'mixed',
-    'kernel' => 'mixed',
+    'kernel' => 'ImagickKernel',
     'channel=' => 'mixed',
   ),
   'imagick::count' => 
@@ -21900,6 +21906,7 @@ return array (
     0 => 'mixed',
     'x' => 'mixed',
     'y' => 'mixed',
+    'z' => 'mixed',
   ),
   'imagick::setimagebordercolor' => 
   array (
@@ -21989,6 +21996,7 @@ return array (
     0 => 'mixed',
     'x' => 'mixed',
     'y' => 'mixed',
+    'z' => 'mixed',
   ),
   'imagick::setimageindex' => 
   array (
@@ -22068,6 +22076,7 @@ return array (
     0 => 'mixed',
     'x' => 'mixed',
     'y' => 'mixed',
+    'z' => 'mixed',
   ),
   'imagick::setimagerenderingintent' => 
   array (
@@ -22110,6 +22119,7 @@ return array (
     0 => 'mixed',
     'x' => 'mixed',
     'y' => 'mixed',
+    'z' => 'mixed',
   ),
   'imagick::setinterlacescheme' => 
   array (
@@ -23289,7 +23299,7 @@ return array (
   array (
     0 => 'mixed',
     'matrix' => 'mixed',
-    'origin' => 'mixed',
+    'origin=' => 'mixed',
   ),
   'imagickkernel::getmatrix' => 
   array (

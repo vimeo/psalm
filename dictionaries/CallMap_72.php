@@ -36492,6 +36492,12 @@ return array (
     'lookup_table' => 'Imagick',
     'channel=' => 'float',
   ),
+  'imagick::clutimagewithinterpolate' => 
+  array (
+    0 => 'mixed',
+    'lookup_table' => 'Imagick',
+    'pixel_interpolate_method' => 'mixed',
+  ),
   'imagick::coalesceimages' => 
   array (
     0 => 'Imagick',
@@ -36586,7 +36592,7 @@ return array (
   'imagick::convolveimage' => 
   array (
     0 => 'bool',
-    'kernel' => 'array<array-key, mixed>',
+    'kernel' => 'ImagickKernel',
     'channel=' => 'int',
   ),
   'imagick::count' => 
@@ -37983,6 +37989,7 @@ return array (
     0 => 'bool',
     'x' => 'float',
     'y' => 'float',
+    'z' => 'mixed',
   ),
   'imagick::setimagebordercolor' => 
   array (
@@ -38077,6 +38084,7 @@ return array (
     0 => 'bool',
     'x' => 'float',
     'y' => 'float',
+    'z' => 'mixed',
   ),
   'imagick::setimageindex' => 
   array (
@@ -38161,6 +38169,7 @@ return array (
     0 => 'bool',
     'x' => 'float',
     'y' => 'float',
+    'z' => 'mixed',
   ),
   'imagick::setimagerenderingintent' => 
   array (
@@ -38203,6 +38212,7 @@ return array (
     0 => 'bool',
     'x' => 'float',
     'y' => 'float',
+    'z' => 'mixed',
   ),
   'imagick::setinterlacescheme' => 
   array (
@@ -39395,7 +39405,7 @@ return array (
   array (
     0 => 'ImagickKernel',
     'matrix' => 'list<list<float>>',
-    'origin' => 'array<array-key, mixed>',
+    'origin=' => 'array<array-key, mixed>',
   ),
   'imagickkernel::getmatrix' => 
   array (
@@ -48212,7 +48222,7 @@ return array (
   'mongodb\\bson\\fromphp' => 
   array (
     0 => 'string',
-    'value' => 'array<array-key, mixed>|object',
+    'value' => 'mixed',
   ),
   'mongodb\\bson\\int64::__construct' => 
   array (
@@ -48661,7 +48671,7 @@ return array (
   ),
   'mongodb\\bson\\tophp' => 
   array (
-    0 => 'array<array-key, mixed>|object',
+    0 => 'mixed',
     'bson' => 'string',
     'typemap=' => 'array<array-key, mixed>|null',
   ),
@@ -48713,7 +48723,7 @@ return array (
   'mongodb\\bson\\utcdatetime::__construct' => 
   array (
     0 => 'void',
-    'milliseconds=' => 'DateTimeInterface|float|int|null|string',
+    'milliseconds=' => 'DateTimeInterface|MongoDB\\BSON\\Int64|int|null',
   ),
   'mongodb\\bson\\utcdatetime::__serialize' => 
   array (
@@ -49556,7 +49566,7 @@ return array (
   ),
   'mongodb\\driver\\exception\\sslconnectionexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\sslconnectionexception::__wakeup' => 
   array (
@@ -49655,7 +49665,7 @@ return array (
   ),
   'mongodb\\driver\\exception\\writeexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\writeexception::__wakeup' => 
   array (
@@ -49724,21 +49734,21 @@ return array (
     0 => 'MongoDB\\Driver\\WriteResult',
     'namespace' => 'string',
     'bulk' => 'MongoDB\\Driver\\BulkWrite',
-    'options=' => 'MongoDB\\Driver\\WriteConcern|array<array-key, mixed>|null',
+    'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\manager::executecommand' => 
   array (
     0 => 'MongoDB\\Driver\\Cursor',
     'db' => 'string',
     'command' => 'MongoDB\\Driver\\Command',
-    'options=' => 'MongoDB\\Driver\\ReadPreference|array<array-key, mixed>|null',
+    'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\manager::executequery' => 
   array (
     0 => 'MongoDB\\Driver\\Cursor',
     'namespace' => 'string',
     'query' => 'MongoDB\\Driver\\Query',
-    'options=' => 'MongoDB\\Driver\\ReadPreference|array<array-key, mixed>|null',
+    'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\manager::executereadcommand' => 
   array (
@@ -50238,7 +50248,7 @@ return array (
   'mongodb\\driver\\readpreference::__construct' => 
   array (
     0 => 'void',
-    'mode' => 'int|string',
+    'mode' => 'string',
     'tagSets=' => 'array<array-key, mixed>|null',
     'options=' => 'array<array-key, mixed>|null',
   ),
@@ -50302,21 +50312,21 @@ return array (
     0 => 'MongoDB\\Driver\\WriteResult',
     'namespace' => 'string',
     'bulkWrite' => 'MongoDB\\Driver\\BulkWrite',
-    'options=' => 'MongoDB\\Driver\\WriteConcern|array<array-key, mixed>|null',
+    'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\server::executecommand' => 
   array (
     0 => 'MongoDB\\Driver\\Cursor',
     'db' => 'string',
     'command' => 'MongoDB\\Driver\\Command',
-    'options=' => 'MongoDB\\Driver\\ReadPreference|array<array-key, mixed>|null',
+    'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\server::executequery' => 
   array (
     0 => 'MongoDB\\Driver\\Cursor',
     'namespace' => 'string',
     'query' => 'MongoDB\\Driver\\Query',
-    'options=' => 'MongoDB\\Driver\\ReadPreference|array<array-key, mixed>|null',
+    'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\server::executereadcommand' => 
   array (

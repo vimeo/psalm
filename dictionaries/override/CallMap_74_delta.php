@@ -1435,7 +1435,7 @@ return array (
       ),
       'new' => 
       array (
-        0 => 'MongoDB\\Driver\\CursorId',
+        0 => 'MongoDB\\BSON\\Int64',
         'asInt64=' => 'bool',
       ),
     ),

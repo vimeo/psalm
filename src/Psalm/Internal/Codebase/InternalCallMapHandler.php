@@ -39,7 +39,7 @@ use function substr;
 final class InternalCallMapHandler
 {
     private const MIN_CALLMAP_VERSION = 70;
-    private const MAX_CALLMAP_VERSION = 84;
+    private const MAX_CALLMAP_VERSION = 85;
 
     private static ?int $loaded_php_major_version = null;
     private static ?int $loaded_php_minor_version = null;

@@ -3210,6 +3210,243 @@ return array (
         'pattern' => 'string',
       ),
     ),
+    'mongodb\\driver\\cursor::getid' => 
+    array (
+      'old' => 
+      array (
+        0 => 'MongoDB\\BSON\\Int64',
+        'asInt64=' => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'MongoDB\\BSON\\Int64',
+      ),
+    ),
+    'mongodb\\driver\\manager::executecommand' => 
+    array (
+      'old' => 
+      array (
+        0 => 'MongoDB\\Driver\\Cursor',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+      'new' => 
+      array (
+        0 => 'MongoDB\\Driver\\CursorInterface',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+    ),
+    'mongodb\\driver\\manager::executequery' => 
+    array (
+      'old' => 
+      array (
+        0 => 'MongoDB\\Driver\\Cursor',
+        'namespace' => 'string',
+        'query' => 'MongoDB\\Driver\\Query',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+      'new' => 
+      array (
+        0 => 'MongoDB\\Driver\\CursorInterface',
+        'namespace' => 'string',
+        'query' => 'MongoDB\\Driver\\Query',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+    ),
+    'mongodb\\driver\\manager::executereadcommand' => 
+    array (
+      'old' => 
+      array (
+        0 => 'MongoDB\\Driver\\Cursor',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+      'new' => 
+      array (
+        0 => 'MongoDB\\Driver\\CursorInterface',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+    ),
+    'mongodb\\driver\\manager::executereadwritecommand' => 
+    array (
+      'old' => 
+      array (
+        0 => 'MongoDB\\Driver\\Cursor',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+      'new' => 
+      array (
+        0 => 'MongoDB\\Driver\\CursorInterface',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+    ),
+    'mongodb\\driver\\manager::executewritecommand' => 
+    array (
+      'old' => 
+      array (
+        0 => 'MongoDB\\Driver\\Cursor',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+      'new' => 
+      array (
+        0 => 'MongoDB\\Driver\\CursorInterface',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+    ),
+    'mongodb\\driver\\server::executecommand' => 
+    array (
+      'old' => 
+      array (
+        0 => 'MongoDB\\Driver\\Cursor',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+      'new' => 
+      array (
+        0 => 'MongoDB\\Driver\\CursorInterface',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+    ),
+    'mongodb\\driver\\server::executequery' => 
+    array (
+      'old' => 
+      array (
+        0 => 'MongoDB\\Driver\\Cursor',
+        'namespace' => 'string',
+        'query' => 'MongoDB\\Driver\\Query',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+      'new' => 
+      array (
+        0 => 'MongoDB\\Driver\\CursorInterface',
+        'namespace' => 'string',
+        'query' => 'MongoDB\\Driver\\Query',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+    ),
+    'mongodb\\driver\\server::executereadcommand' => 
+    array (
+      'old' => 
+      array (
+        0 => 'MongoDB\\Driver\\Cursor',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+      'new' => 
+      array (
+        0 => 'MongoDB\\Driver\\CursorInterface',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+    ),
+    'mongodb\\driver\\server::executereadwritecommand' => 
+    array (
+      'old' => 
+      array (
+        0 => 'MongoDB\\Driver\\Cursor',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+      'new' => 
+      array (
+        0 => 'MongoDB\\Driver\\CursorInterface',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+    ),
+    'mongodb\\driver\\server::executewritecommand' => 
+    array (
+      'old' => 
+      array (
+        0 => 'MongoDB\\Driver\\Cursor',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+      'new' => 
+      array (
+        0 => 'MongoDB\\Driver\\CursorInterface',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+    ),
+    'mongodb\\driver\\writeresult::getdeletedcount' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int|null',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+      ),
+    ),
+    'mongodb\\driver\\writeresult::getinsertedcount' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int|null',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+      ),
+    ),
+    'mongodb\\driver\\writeresult::getmatchedcount' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int|null',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+      ),
+    ),
+    'mongodb\\driver\\writeresult::getmodifiedcount' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int|null',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+      ),
+    ),
+    'mongodb\\driver\\writeresult::getupsertedcount' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int|null',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+      ),
+    ),
     'multipleiterator::current' => 
     array (
       'old' => 
@@ -5604,6 +5841,19 @@ return array (
         'partitioned=' => 'bool',
       ),
     ),
+    'swoole\\lock::lock' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'operation=' => 'int',
+        'timeout=' => 'float',
+      ),
+    ),
     'swoole\\server::addprocess' => 
     array (
       'old' => 
@@ -5615,6 +5865,20 @@ return array (
       array (
         0 => 'false|int',
         'process' => 'Swoole\\Process',
+      ),
+    ),
+    'swoole\\server::stop' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'workerId=' => 'int',
+        'waitEvent=' => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'workerId=' => 'int',
       ),
     ),
     'swoole_async_set' => 
@@ -5706,6 +5970,22 @@ return array (
     array (
       0 => 'ReturnType',
       'defer=' => 'mixed',
+    ),
+    'swoole\\lock::__destruct' => 
+    array (
+      0 => 'void',
+    ),
+    'swoole\\lock::lock_read' => 
+    array (
+      0 => 'bool',
+    ),
+    'swoole\\lock::trylock' => 
+    array (
+      0 => 'bool',
+    ),
+    'swoole\\lock::trylock_read' => 
+    array (
+      0 => 'bool',
     ),
   ),
 );

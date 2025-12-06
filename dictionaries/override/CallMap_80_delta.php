@@ -11652,6 +11652,19 @@ return array (
         'name' => 'string',
       ),
     ),
+    'imagick::evaluateimages' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'evaluate' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'Imagick',
+        'evaluate' => 'int',
+      ),
+    ),
     'imagick::floodfillpaintimage' => 
     array (
       'old' => 
@@ -11796,6 +11809,19 @@ return array (
         'key' => 'string',
       ),
     ),
+    'imagick::getresourcelimit' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'type' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'float',
+        'type' => 'int',
+      ),
+    ),
     'imagick::identifyformat' => 
     array (
       'old' => 
@@ -11835,21 +11861,6 @@ return array (
         0 => 'int',
       ),
     ),
-    'imagick::localcontrastimage' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'radius' => 'float',
-        'strength' => 'float',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'radius' => 'float',
-        'strength' => 'float',
-      ),
-    ),
     'imagick::morphology' => 
     array (
       'old' => 
@@ -11885,7 +11896,7 @@ return array (
         'columns' => 'int',
         'rows' => 'int',
         'background_color' => 'ImagickPixel|string',
-        'format=' => 'string',
+        'format=' => 'null|string',
       ),
     ),
     'imagick::opaquepaintimage' => 
@@ -11907,6 +11918,17 @@ return array (
         'fuzz' => 'float',
         'invert' => 'bool',
         'channel=' => 'int',
+      ),
+    ),
+    'imagick::optimizeimagelayers' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'Imagick',
       ),
     ),
     'imagick::pingimagefile' => 
@@ -12144,6 +12166,23 @@ return array (
         'background_color' => 'ImagickPixel|string',
       ),
     ),
+    'imagick::setimageblueprimary' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'x' => 'float',
+        'y' => 'float',
+        'z' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'x' => 'float',
+        'y' => 'float',
+        'z' => 'float',
+      ),
+    ),
     'imagick::setimagebordercolor' => 
     array (
       'old' => 
@@ -12170,6 +12209,23 @@ return array (
         'channel' => 'int',
       ),
     ),
+    'imagick::setimagegreenprimary' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'x' => 'float',
+        'y' => 'float',
+        'z' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'x' => 'float',
+        'y' => 'float',
+        'z' => 'float',
+      ),
+    ),
     'imagick::setimagemattecolor' => 
     array (
       'old' => 
@@ -12181,6 +12237,40 @@ return array (
       array (
         0 => 'bool',
         'matte_color' => 'ImagickPixel|string',
+      ),
+    ),
+    'imagick::setimageredprimary' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'x' => 'float',
+        'y' => 'float',
+        'z' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'x' => 'float',
+        'y' => 'float',
+        'z' => 'float',
+      ),
+    ),
+    'imagick::setimagewhitepoint' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'x' => 'float',
+        'y' => 'float',
+        'z' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'x' => 'float',
+        'y' => 'float',
+        'z' => 'float',
       ),
     ),
     'imagick::setprogressmonitor' => 
@@ -12513,6 +12603,19 @@ return array (
         'resolution_y' => 'float',
       ),
     ),
+    'imagickdraw::setstrokedasharray' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'dashes' => 'list<float|int>',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'dashes' => 'list<float|int>|null',
+      ),
+    ),
     'imagickdraw::settextinterlinespacing' => 
     array (
       'old' => 
@@ -12586,13 +12689,13 @@ return array (
       array (
         0 => 'ImagickKernel',
         'matrix' => 'list<list<float>>',
-        'origin' => 'array<array-key, mixed>',
+        'origin=' => 'array<array-key, mixed>',
       ),
       'new' => 
       array (
         0 => 'ImagickKernel',
         'matrix' => 'list<list<float>>',
-        'origin' => 'array<array-key, mixed>|null',
+        'origin=' => 'array<array-key, mixed>|null',
       ),
     ),
     'imagickkernel::scale' => 
@@ -12623,6 +12726,21 @@ return array (
         'color=' => 'null|string',
       ),
     ),
+    'imagickpixel::ispixelsimilar' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'color' => 'ImagickPixel',
+        'fuzz' => 'float',
+      ),
+      'new' => 
+      array (
+        0 => 'bool|null',
+        'color' => 'ImagickPixel',
+        'fuzz' => 'float',
+      ),
+    ),
     'imagickpixel::ispixelsimilarquantum' => 
     array (
       'old' => 
@@ -12633,8 +12751,23 @@ return array (
       ),
       'new' => 
       array (
-        0 => 'bool',
+        0 => 'bool|null',
         'color' => 'string',
+        'fuzz_quantum_range_scaled_by_square_root_of_three' => 'float',
+      ),
+    ),
+    'imagickpixel::issimilar' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'color' => 'ImagickPixel',
+        'fuzz_quantum_range_scaled_by_square_root_of_three' => 'float',
+      ),
+      'new' => 
+      array (
+        0 => 'bool|null',
+        'color' => 'ImagickPixel',
         'fuzz_quantum_range_scaled_by_square_root_of_three' => 'float',
       ),
     ),
@@ -12677,6 +12810,28 @@ return array (
       array (
         0 => 'bool',
         'index' => 'float',
+      ),
+    ),
+    'imagickpixeliterator::getcurrentiteratorrow' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|null',
+      ),
+    ),
+    'imagickpixeliterator::getnextiteratorrow' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|null',
       ),
     ),
     'imagickpixeliterator::key' => 
@@ -17298,266 +17453,6 @@ return array (
         'month=' => 'int|null',
         'day=' => 'int|null',
         'year=' => 'int|null',
-      ),
-    ),
-    'mongodb\\bson\\binary::unserialize' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'serialized' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'data' => 'string',
-      ),
-    ),
-    'mongodb\\bson\\dbpointer::unserialize' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'serialized' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'data' => 'string',
-      ),
-    ),
-    'mongodb\\bson\\decimal128::unserialize' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'serialized' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'data' => 'string',
-      ),
-    ),
-    'mongodb\\bson\\document::unserialize' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'serialized' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'data' => 'string',
-      ),
-    ),
-    'mongodb\\bson\\int64::unserialize' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'serialized' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'data' => 'string',
-      ),
-    ),
-    'mongodb\\bson\\javascript::unserialize' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'serialized' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'data' => 'string',
-      ),
-    ),
-    'mongodb\\bson\\maxkey::unserialize' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'serialized' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'data' => 'string',
-      ),
-    ),
-    'mongodb\\bson\\minkey::unserialize' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'serialized' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'data' => 'string',
-      ),
-    ),
-    'mongodb\\bson\\objectid::unserialize' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'serialized' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'data' => 'string',
-      ),
-    ),
-    'mongodb\\bson\\packedarray::unserialize' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'serialized' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'data' => 'string',
-      ),
-    ),
-    'mongodb\\bson\\regex::unserialize' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'serialized' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'data' => 'string',
-      ),
-    ),
-    'mongodb\\bson\\symbol::unserialize' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'serialized' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'data' => 'string',
-      ),
-    ),
-    'mongodb\\bson\\timestamp::unserialize' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'serialized' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'data' => 'string',
-      ),
-    ),
-    'mongodb\\bson\\undefined::unserialize' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'serialized' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'data' => 'string',
-      ),
-    ),
-    'mongodb\\bson\\utcdatetime::unserialize' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'serialized' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'data' => 'string',
-      ),
-    ),
-    'mongodb\\driver\\cursorid::unserialize' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'serialized' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'data' => 'string',
-      ),
-    ),
-    'mongodb\\driver\\readconcern::unserialize' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'serialized' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'data' => 'string',
-      ),
-    ),
-    'mongodb\\driver\\readpreference::unserialize' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'serialized' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'data' => 'string',
-      ),
-    ),
-    'mongodb\\driver\\serverapi::unserialize' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'serialized' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'data' => 'string',
-      ),
-    ),
-    'mongodb\\driver\\writeconcern::unserialize' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'serialized' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'data' => 'string',
       ),
     ),
     'move_uploaded_file' => 
@@ -35288,6 +35183,106 @@ return array (
       0 => 'string',
       'format' => 'string',
       'value' => 'float',
+    ),
+    'mongodb\\bson\\binary::unserialize' => 
+    array (
+      0 => 'void',
+      'serialized' => 'string',
+    ),
+    'mongodb\\bson\\dbpointer::unserialize' => 
+    array (
+      0 => 'void',
+      'serialized' => 'string',
+    ),
+    'mongodb\\bson\\decimal128::unserialize' => 
+    array (
+      0 => 'void',
+      'serialized' => 'string',
+    ),
+    'mongodb\\bson\\document::unserialize' => 
+    array (
+      0 => 'void',
+      'serialized' => 'string',
+    ),
+    'mongodb\\bson\\int64::unserialize' => 
+    array (
+      0 => 'void',
+      'serialized' => 'string',
+    ),
+    'mongodb\\bson\\javascript::unserialize' => 
+    array (
+      0 => 'void',
+      'serialized' => 'string',
+    ),
+    'mongodb\\bson\\maxkey::unserialize' => 
+    array (
+      0 => 'void',
+      'serialized' => 'string',
+    ),
+    'mongodb\\bson\\minkey::unserialize' => 
+    array (
+      0 => 'void',
+      'serialized' => 'string',
+    ),
+    'mongodb\\bson\\objectid::unserialize' => 
+    array (
+      0 => 'void',
+      'serialized' => 'string',
+    ),
+    'mongodb\\bson\\packedarray::unserialize' => 
+    array (
+      0 => 'void',
+      'serialized' => 'string',
+    ),
+    'mongodb\\bson\\regex::unserialize' => 
+    array (
+      0 => 'void',
+      'serialized' => 'string',
+    ),
+    'mongodb\\bson\\symbol::unserialize' => 
+    array (
+      0 => 'void',
+      'serialized' => 'string',
+    ),
+    'mongodb\\bson\\timestamp::unserialize' => 
+    array (
+      0 => 'void',
+      'serialized' => 'string',
+    ),
+    'mongodb\\bson\\undefined::unserialize' => 
+    array (
+      0 => 'void',
+      'serialized' => 'string',
+    ),
+    'mongodb\\bson\\utcdatetime::unserialize' => 
+    array (
+      0 => 'void',
+      'serialized' => 'string',
+    ),
+    'mongodb\\driver\\cursorid::unserialize' => 
+    array (
+      0 => 'void',
+      'serialized' => 'string',
+    ),
+    'mongodb\\driver\\readconcern::unserialize' => 
+    array (
+      0 => 'void',
+      'serialized' => 'string',
+    ),
+    'mongodb\\driver\\readpreference::unserialize' => 
+    array (
+      0 => 'void',
+      'serialized' => 'string',
+    ),
+    'mongodb\\driver\\serverapi::unserialize' => 
+    array (
+      0 => 'void',
+      'serialized' => 'string',
+    ),
+    'mongodb\\driver\\writeconcern::unserialize' => 
+    array (
+      0 => 'void',
+      'serialized' => 'string',
     ),
     'number_format\'1' => 
     array (
