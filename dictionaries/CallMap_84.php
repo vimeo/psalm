@@ -40021,7 +40021,7 @@ return array (
   ),
   'imagick::getimageblob' => 
   array (
-    0 => 'null|string',
+    0 => 'string',
   ),
   'imagick::getimageblueprimary' => 
   array (
