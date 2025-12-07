@@ -531,7 +531,7 @@ final class InternalCallMapHandlerTest extends TestCase
 
             // Read the reference mode
             if ($normalizedEntry['byRef']) {
-                $parts = explode('_', $normalizedKey, 2);
+                $parts = explode(' ', $normalizedKey, 2);
                 if (count($parts) === 2) {
                     if (!($parts[0] === 'rw' || $parts[0] === 'w' || $parts[0] === 'r')) {
                         throw new InvalidArgumentException('Invalid refMode: '.$parts[0]);

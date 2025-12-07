@@ -190,13 +190,13 @@ return array (
       array (
         0 => 'bool|null',
         'command' => 'string',
-        '&w_result_code=' => 'int',
+        '&w result_code=' => 'int',
       ),
       'new' => 
       array (
         0 => 'false|null',
         'command' => 'string',
-        '&w_result_code=' => 'int',
+        '&w result_code=' => 'int',
       ),
     ),
     'register_shutdown_function' => 

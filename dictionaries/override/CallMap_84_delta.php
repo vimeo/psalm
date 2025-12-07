@@ -155,7 +155,7 @@ return array (
         'domain' => 'string',
         'flags=' => 'int',
         'variant=' => 'int',
-        '&w_idna_info=' => 'array<array-key, mixed>',
+        '&w idna_info=' => 'array<array-key, mixed>',
       ),
       'new' => 
       array (
@@ -163,7 +163,7 @@ return array (
         'domain' => 'non-empty-string',
         'flags=' => 'int',
         'variant=' => 'int',
-        '&w_idna_info=' => 'array<array-key, mixed>',
+        '&w idna_info=' => 'array<array-key, mixed>',
       ),
     ),
     'idn_to_utf8' => 
@@ -174,7 +174,7 @@ return array (
         'domain' => 'string',
         'flags=' => 'int',
         'variant=' => 'int',
-        '&w_idna_info=' => 'array<array-key, mixed>',
+        '&w idna_info=' => 'array<array-key, mixed>',
       ),
       'new' => 
       array (
@@ -182,7 +182,7 @@ return array (
         'domain' => 'non-empty-string',
         'flags=' => 'int',
         'variant=' => 'int',
-        '&w_idna_info=' => 'array<array-key, mixed>',
+        '&w idna_info=' => 'array<array-key, mixed>',
       ),
     ),
     'imagick::getregistry' => 
@@ -225,8 +225,8 @@ return array (
       array (
         0 => 'Imagick',
         'image' => 'Imagick',
-        '&w_offset=' => 'array<array-key, mixed>|null',
-        '&w_similarity=' => 'float|null',
+        '&w offset=' => 'array<array-key, mixed>|null',
+        '&w similarity=' => 'float|null',
         'threshold=' => 'float',
         'metric=' => 'int',
       ),
@@ -234,8 +234,8 @@ return array (
       array (
         0 => 'Imagick',
         'image' => 'Imagick',
-        '&w_offset=' => 'array<array-key, mixed>',
-        '&w_similarity=' => 'float',
+        '&w offset=' => 'array<array-key, mixed>',
+        '&w similarity=' => 'float',
         'threshold=' => 'float',
         'metric=' => 'int',
       ),

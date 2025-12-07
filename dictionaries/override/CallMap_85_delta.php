@@ -977,7 +977,7 @@ return array (
       array (
         0 => 'bool',
         'data' => 'string',
-        '&w_decrypted_data' => 'string',
+        '&w decrypted_data' => 'string',
         'private_key' => 'OpenSSLAsymmetricKey|OpenSSLCertificate|list{OpenSSLAsymmetricKey|OpenSSLCertificate|string, string}|string',
         'padding=' => 'int',
       ),
@@ -985,7 +985,7 @@ return array (
       array (
         0 => 'bool',
         'data' => 'string',
-        '&w_decrypted_data' => 'string',
+        '&w decrypted_data' => 'string',
         'private_key' => 'OpenSSLAsymmetricKey|OpenSSLCertificate|list{OpenSSLAsymmetricKey|OpenSSLCertificate|string, string}|string',
         'padding=' => 'int',
         'digest_algo=' => 'null|string',
@@ -997,7 +997,7 @@ return array (
       array (
         0 => 'bool',
         'data' => 'string',
-        '&w_encrypted_data' => 'string',
+        '&w encrypted_data' => 'string',
         'public_key' => 'OpenSSLAsymmetricKey|OpenSSLCertificate|list{OpenSSLAsymmetricKey|OpenSSLCertificate|string, string}|string',
         'padding=' => 'int',
       ),
@@ -1005,7 +1005,7 @@ return array (
       array (
         0 => 'bool',
         'data' => 'string',
-        '&w_encrypted_data' => 'string',
+        '&w encrypted_data' => 'string',
         'public_key' => 'OpenSSLAsymmetricKey|OpenSSLCertificate|list{OpenSSLAsymmetricKey|OpenSSLCertificate|string, string}|string',
         'padding=' => 'int',
         'digest_algo=' => 'null|string',
@@ -1017,7 +1017,7 @@ return array (
       array (
         0 => 'bool',
         'data' => 'string',
-        '&w_signature' => 'string',
+        '&w signature' => 'string',
         'private_key' => 'OpenSSLAsymmetricKey|OpenSSLCertificate|list{OpenSSLAsymmetricKey|OpenSSLCertificate|string, string}|string',
         'algorithm=' => 'int|string',
       ),
@@ -1025,7 +1025,7 @@ return array (
       array (
         0 => 'bool',
         'data' => 'string',
-        '&w_signature' => 'string',
+        '&w signature' => 'string',
         'private_key' => 'OpenSSLAsymmetricKey|OpenSSLCertificate|list{OpenSSLAsymmetricKey|OpenSSLCertificate|string, string}|string',
         'algorithm=' => 'int|string',
         'padding=' => 'int',
@@ -3717,8 +3717,8 @@ return array (
     array (
       0 => 'Imagick',
       'image' => 'Imagick',
-      '&w_offset=' => 'array<array-key, mixed>',
-      '&w_similarity=' => 'float',
+      '&w offset=' => 'array<array-key, mixed>',
+      '&w similarity=' => 'float',
       'threshold=' => 'float',
       'metric=' => 'int',
     ),
@@ -8571,8 +8571,8 @@ return array (
     'zmqpoll::poll' => 
     array (
       0 => 'int',
-      '&w_readable' => 'array<array-key, mixed>',
-      '&w_writable' => 'array<array-key, mixed>',
+      '&w readable' => 'array<array-key, mixed>',
+      '&w writable' => 'array<array-key, mixed>',
       'timeout=' => 'int',
     ),
     'zmqpoll::remove' => 

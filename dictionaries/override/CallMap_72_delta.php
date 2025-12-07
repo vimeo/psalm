@@ -81,8 +81,8 @@ return array (
       'request_oid' => 'string',
       'request_data=' => 'null|string',
       'controls=' => 'array<array-key, mixed>|null',
-      '&w_response_data=' => 'string',
-      '&w_response_oid=' => 'string',
+      '&w response_data=' => 'string',
+      '&w response_oid=' => 'string',
     ),
     'ldap_exop_passwd' => 
     array (
@@ -109,8 +109,8 @@ return array (
       0 => 'bool',
       'ldap' => 'resource',
       'result' => 'resource',
-      '&w_response_data=' => 'string',
-      '&w_response_oid=' => 'string',
+      '&w response_data=' => 'string',
+      '&w response_oid=' => 'string',
     ),
     'mb_chr' => 
     array (
@@ -226,7 +226,7 @@ return array (
     array (
       0 => 'bool',
       'infilename' => 'string',
-      '&w_certs' => 'array<array-key, mixed>',
+      '&w certs' => 'array<array-key, mixed>',
     ),
     'reflectionclass::isiterable' => 
     array (
@@ -604,20 +604,20 @@ return array (
     'sodium_crypto_secretstream_xchacha20poly1305_pull' => 
     array (
       0 => 'array<array-key, mixed>|false',
-      '&r_state' => 'string',
+      '&r state' => 'string',
       'string=' => 'string',
     ),
     'sodium_crypto_secretstream_xchacha20poly1305_push' => 
     array (
       0 => 'string',
-      '&w_state' => 'string',
+      '&w state' => 'string',
       'string=' => 'string',
       'long=' => 'string',
     ),
     'sodium_crypto_secretstream_xchacha20poly1305_rekey' => 
     array (
       0 => 'void',
-      '&w_state' => 'string',
+      '&w state' => 'string',
     ),
     'sodium_crypto_shorthash' => 
     array (
@@ -732,7 +732,7 @@ return array (
     'sodium_memzero' => 
     array (
       0 => 'void',
-      '&w_reference' => 'string',
+      '&w reference' => 'string',
     ),
     'sodium_pad' => 
     array (
