@@ -80,11 +80,6 @@ final class InternalCallMapHandlerTest extends TestCase
      */
     private static array $ignoredFunctions = [
         'datefmt_create' => ['8.0'],
-        'imagefilledpolygon',
-        'imagegd',
-        'imagegd2',
-        'imageopenpolygon',
-        'imagepolygon',
         'lzf_compress',
         'lzf_decompress',
         'mailparse_msg_extract_part',

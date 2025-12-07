@@ -24880,7 +24880,7 @@ return array (
     0 => 'int',
     'stream' => 'resource',
     'format' => 'string',
-    '&...w_vars=' => 'float|int|string',
+    '&...w vars=' => 'float|int|string',
   ),
   'fseek' => 
   array (
@@ -53711,7 +53711,7 @@ return array (
   array (
     0 => 'bool',
     '&w var1' => 'mixed',
-    '&...w_vars=' => 'mixed',
+    '&...w vars=' => 'mixed',
   ),
   'mysqli_stmt::close' => 
   array (
@@ -53808,7 +53808,7 @@ return array (
     0 => 'bool',
     'statement' => 'mysqli_stmt',
     '&w var1' => 'mixed',
-    '&...w_vars=' => 'mixed',
+    '&...w vars=' => 'mixed',
   ),
   'mysqli_stmt_close' => 
   array (
@@ -96190,7 +96190,7 @@ return array (
   array (
     0 => 'bool',
     '&rw string' => 'string',
-    '&...w_other_strings=' => 'string',
+    '&...w other_strings=' => 'string',
   ),
   'tan' => 
   array (
@@ -99723,7 +99723,7 @@ return array (
   array (
     0 => 'bool',
     '&rw string' => 'string',
-    '&...rw_strings=' => 'string',
+    '&...rw strings=' => 'string',
   ),
   'uopz_allow_exit' => 
   array (
