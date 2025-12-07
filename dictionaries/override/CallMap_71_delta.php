@@ -130,10 +130,6 @@ return array (
     array (
       0 => 'stdClass',
     ),
-    'mongodb\\driver\\serverapi::serialize' => 
-    array (
-      0 => 'string',
-    ),
     'mongodb\\driver\\serverapi::unserialize' => 
     array (
       0 => 'void',
