@@ -19,6 +19,7 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
 use RuntimeException;
 
+use function array_flip;
 use function array_keys;
 use function array_search;
 use function array_shift;
@@ -356,9 +357,12 @@ final class Context
         array $vars_to_update,
         array &$updated_vars,
     ): void {
+        // Convert to hash map for O(1) lookup instead of O(n)
+        $vars_to_update_map = array_flip($vars_to_update);
+        
         foreach ($start_context->vars_in_scope as $var_id => $old_type) {
             // this is only true if there was some sort of type negation
-            if (in_array($var_id, $vars_to_update, true)) {
+            if (isset($vars_to_update_map[$var_id])) {
                 // if we're leaving, we're effectively deleting the possibility of the if types
                 $new_type = !$has_leaving_statements && $end_context->hasVariable($var_id)
                     ? $end_context->vars_in_scope[$var_id]

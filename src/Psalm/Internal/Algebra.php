@@ -11,6 +11,7 @@ use Psalm\Type\Atomic\TKeyedArray;
 use UnexpectedValueException;
 
 use function array_filter;
+use function array_flip;
 use function array_intersect_key;
 use function array_keys;
 use function array_merge;
@@ -271,9 +272,11 @@ final class Algebra
 
                         if ($common_negated_keys) {
                             $new_possibilities = [];
+                            // Convert array to hash map for O(1) lookup instead of O(n)
+                            $common_negated_keys_map = array_flip($common_negated_keys);
 
                             foreach ($clause_a->possibilities as $var_id => $possibilities) {
-                                if (in_array($var_id, $common_negated_keys, true)) {
+                                if (isset($common_negated_keys_map[$var_id])) {
                                     continue;
                                 }
 
@@ -288,7 +291,7 @@ final class Algebra
                             }
 
                             foreach ($clause_b->possibilities as $var_id => $possibilities) {
-                                if (in_array($var_id, $common_negated_keys, true)) {
+                                if (isset($common_negated_keys_map[$var_id])) {
                                     continue;
                                 }
 

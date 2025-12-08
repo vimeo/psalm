@@ -1413,25 +1413,28 @@ final class Codebase
 
         $signature_label .= '(';
         $parameters = [];
+        $param_count = count($params);
+        $param_labels = [];
+        $current_pos = strlen($signature_label);
 
         foreach ($params as $i => $param) {
             $parameter_label = ($param->type ?: 'mixed') . ' $' . $param->name;
+            
             $parameters[] = new ParameterInformation(
                 [
-                    strlen($signature_label),
-                    strlen($signature_label) + strlen($parameter_label),
+                    $current_pos,
+                    $current_pos + strlen($parameter_label),
                 ],
                 $param->description ?? null,
             );
 
-            $signature_label .= $parameter_label;
-
-            if ($i < (count($params) - 1)) {
-                $signature_label .= ', ';
-            }
+            $param_labels[] = $parameter_label;
+            // Update position for next iteration: length of current label + ", " separator
+            $current_pos += strlen($parameter_label) + ($i < $param_count - 1 ? 2 : 0);
         }
-
-        $signature_label .= ')';
+        
+        // Build the signature string efficiently
+        $signature_label .= implode(', ', $param_labels) . ')';
 
         return new SignatureInformation(
             $signature_label,
