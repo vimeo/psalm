@@ -173,7 +173,7 @@ final class DiagnosticTest extends AsyncTestCase
                 return;
             }
         });
-        delay(0.1);
+        delay(0.5); // Wait for debounce
 
         $deferred->getFuture()->await();
     }
