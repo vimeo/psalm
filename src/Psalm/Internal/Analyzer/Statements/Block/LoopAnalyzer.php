@@ -23,6 +23,7 @@ use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_flip;
 use function array_keys;
 use function array_merge;
 use function array_unique;
@@ -206,6 +207,9 @@ final class LoopAnalyzer
 
             $recorded_issues = IssueBuffer::clearRecordingLevel();
             IssueBuffer::stopRecording();
+            
+            // Convert to hash map for O(1) lookup instead of O(n)
+            $always_assigned_before_loop_body_vars_map = array_flip($always_assigned_before_loop_body_vars);
 
             for ($i = 0; $i < $assignment_depth; ++$i) {
                 $vars_to_remove = [];
@@ -218,7 +222,7 @@ final class LoopAnalyzer
                 // but union the types with what's in the loop scope
 
                 foreach ($continue_context->vars_in_scope as $var_id => $type) {
-                    if (in_array($var_id, $always_assigned_before_loop_body_vars, true)) {
+                    if (isset($always_assigned_before_loop_body_vars_map[$var_id])) {
                         // set the vars to whatever the while/foreach loop expects them to be
                         if (!isset($pre_loop_context->vars_in_scope[$var_id])
                             || !$type->equals($pre_loop_context->vars_in_scope[$var_id])
