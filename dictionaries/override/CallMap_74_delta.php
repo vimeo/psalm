@@ -1435,7 +1435,7 @@ return array (
       ),
       'new' => 
       array (
-        0 => 'MongoDB\\Driver\\CursorId',
+        0 => 'MongoDB\\BSON\\Int64',
         'asInt64=' => 'bool',
       ),
     ),
@@ -1445,13 +1445,13 @@ return array (
       array (
         0 => 'false|string',
         'length' => 'int',
-        '&w_result_is_strong=' => 'bool',
+        '&w result_is_strong=' => 'bool',
       ),
       'new' => 
       array (
         0 => 'string',
         'length' => 'int',
-        '&w_result_is_strong=' => 'bool',
+        '&w result_is_strong=' => 'bool',
       ),
     ),
     'pack' => 
@@ -1512,7 +1512,7 @@ return array (
         'callback' => 'callable(array<array-key, string>):string',
         'subject' => 'string',
         'limit=' => 'int',
-        '&w_count=' => 'int',
+        '&w count=' => 'int',
       ),
       'new' => 
       array (
@@ -1521,7 +1521,7 @@ return array (
         'callback' => 'callable(array<array-key, string>):string',
         'subject' => 'string',
         'limit=' => 'int',
-        '&w_count=' => 'int',
+        '&w count=' => 'int',
         'flags=' => 'int',
       ),
     ),
@@ -1534,7 +1534,7 @@ return array (
         'callback' => 'callable(array<array-key, string>):string',
         'subject' => 'array<array-key, string>',
         'limit=' => 'int',
-        '&w_count=' => 'int',
+        '&w count=' => 'int',
       ),
       'new' => 
       array (
@@ -1543,7 +1543,7 @@ return array (
         'callback' => 'callable(array<array-key, string>):string',
         'subject' => 'array<array-key, string>',
         'limit=' => 'int',
-        '&w_count=' => 'int',
+        '&w count=' => 'int',
         'flags=' => 'int',
       ),
     ),
@@ -1555,7 +1555,7 @@ return array (
         'pattern' => 'array<string, callable(array<array-key, mixed>):string>',
         'subject' => 'string',
         'limit=' => 'int',
-        '&w_count=' => 'int',
+        '&w count=' => 'int',
       ),
       'new' => 
       array (
@@ -1563,7 +1563,7 @@ return array (
         'pattern' => 'array<string, callable(array<array-key, mixed>):string>',
         'subject' => 'string',
         'limit=' => 'int',
-        '&w_count=' => 'int',
+        '&w count=' => 'int',
         'flags=' => 'int',
       ),
     ),
@@ -1575,7 +1575,7 @@ return array (
         'pattern' => 'array<string, callable(array<array-key, mixed>):string>',
         'subject' => 'array<array-key, string>',
         'limit=' => 'int',
-        '&w_count=' => 'int',
+        '&w count=' => 'int',
       ),
       'new' => 
       array (
@@ -1583,7 +1583,7 @@ return array (
         'pattern' => 'array<string, callable(array<array-key, mixed>):string>',
         'subject' => 'array<array-key, string>',
         'limit=' => 'int',
-        '&w_count=' => 'int',
+        '&w count=' => 'int',
         'flags=' => 'int',
       ),
     ),

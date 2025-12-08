@@ -452,14 +452,14 @@ return array (
         0 => 'bool',
         'ftp' => 'resource',
         'size' => 'int',
-        '&w_response=' => 'string',
+        '&w response=' => 'string',
       ),
       'new' => 
       array (
         0 => 'bool',
         'ftp' => 'FTP\\Connection',
         'size' => 'int',
-        '&w_response=' => 'string',
+        '&w response=' => 'string',
       ),
     ),
     'ftp_append' => 
@@ -2128,6 +2128,136 @@ return array (
         'value' => 'null|scalar',
       ),
     ),
+    'intlbreakiterator::createcharacterinstance' => 
+    array (
+      'old' => 
+      array (
+        0 => 'IntlRuleBasedBreakIterator|null',
+        'locale=' => 'null|string',
+      ),
+      'new' => 
+      array (
+        0 => 'IntlBreakIterator|null',
+        'locale=' => 'null|string',
+      ),
+    ),
+    'intlbreakiterator::createlineinstance' => 
+    array (
+      'old' => 
+      array (
+        0 => 'IntlRuleBasedBreakIterator|null',
+        'locale=' => 'null|string',
+      ),
+      'new' => 
+      array (
+        0 => 'IntlBreakIterator|null',
+        'locale=' => 'null|string',
+      ),
+    ),
+    'intlbreakiterator::createsentenceinstance' => 
+    array (
+      'old' => 
+      array (
+        0 => 'IntlRuleBasedBreakIterator|null',
+        'locale=' => 'null|string',
+      ),
+      'new' => 
+      array (
+        0 => 'IntlBreakIterator|null',
+        'locale=' => 'null|string',
+      ),
+    ),
+    'intlbreakiterator::createtitleinstance' => 
+    array (
+      'old' => 
+      array (
+        0 => 'IntlRuleBasedBreakIterator|null',
+        'locale=' => 'null|string',
+      ),
+      'new' => 
+      array (
+        0 => 'IntlBreakIterator|null',
+        'locale=' => 'null|string',
+      ),
+    ),
+    'intlbreakiterator::createwordinstance' => 
+    array (
+      'old' => 
+      array (
+        0 => 'IntlRuleBasedBreakIterator|null',
+        'locale=' => 'null|string',
+      ),
+      'new' => 
+      array (
+        0 => 'IntlBreakIterator|null',
+        'locale=' => 'null|string',
+      ),
+    ),
+    'intlcodepointbreakiterator::createcharacterinstance' => 
+    array (
+      'old' => 
+      array (
+        0 => 'IntlRuleBasedBreakIterator|null',
+        'locale=' => 'null|string',
+      ),
+      'new' => 
+      array (
+        0 => 'IntlBreakIterator|null',
+        'locale=' => 'null|string',
+      ),
+    ),
+    'intlcodepointbreakiterator::createlineinstance' => 
+    array (
+      'old' => 
+      array (
+        0 => 'IntlRuleBasedBreakIterator|null',
+        'locale=' => 'null|string',
+      ),
+      'new' => 
+      array (
+        0 => 'IntlBreakIterator|null',
+        'locale=' => 'null|string',
+      ),
+    ),
+    'intlcodepointbreakiterator::createsentenceinstance' => 
+    array (
+      'old' => 
+      array (
+        0 => 'IntlRuleBasedBreakIterator|null',
+        'locale=' => 'null|string',
+      ),
+      'new' => 
+      array (
+        0 => 'IntlBreakIterator|null',
+        'locale=' => 'null|string',
+      ),
+    ),
+    'intlcodepointbreakiterator::createtitleinstance' => 
+    array (
+      'old' => 
+      array (
+        0 => 'IntlRuleBasedBreakIterator|null',
+        'locale=' => 'null|string',
+      ),
+      'new' => 
+      array (
+        0 => 'IntlBreakIterator|null',
+        'locale=' => 'null|string',
+      ),
+    ),
+    'intlcodepointbreakiterator::createwordinstance' => 
+    array (
+      'old' => 
+      array (
+        0 => 'IntlRuleBasedBreakIterator|null',
+        'locale=' => 'null|string',
+      ),
+      'new' => 
+      array (
+        0 => 'IntlBreakIterator|null',
+        'locale=' => 'null|string',
+      ),
+    ),
     'intldateformatter::__construct' => 
     array (
       'old' => 
@@ -2172,6 +2302,86 @@ return array (
         'timezone=' => 'DateTimeZone|IntlTimeZone|null|string',
         'calendar=' => 'IntlCalendar|int|null',
         'pattern=' => 'null|string',
+      ),
+    ),
+    'intlgregoriancalendar::createinstance' => 
+    array (
+      'old' => 
+      array (
+        0 => 'IntlGregorianCalendar|null',
+        'timezone=' => 'DateTimeZone|IntlTimeZone|null|string',
+        'locale=' => 'null|string',
+      ),
+      'new' => 
+      array (
+        0 => 'IntlCalendar|null',
+        'timezone=' => 'DateTimeZone|IntlTimeZone|null|string',
+        'locale=' => 'null|string',
+      ),
+    ),
+    'intlrulebasedbreakiterator::createcharacterinstance' => 
+    array (
+      'old' => 
+      array (
+        0 => 'IntlRuleBasedBreakIterator|null',
+        'locale=' => 'null|string',
+      ),
+      'new' => 
+      array (
+        0 => 'IntlBreakIterator|null',
+        'locale=' => 'null|string',
+      ),
+    ),
+    'intlrulebasedbreakiterator::createlineinstance' => 
+    array (
+      'old' => 
+      array (
+        0 => 'IntlRuleBasedBreakIterator|null',
+        'locale=' => 'null|string',
+      ),
+      'new' => 
+      array (
+        0 => 'IntlBreakIterator|null',
+        'locale=' => 'null|string',
+      ),
+    ),
+    'intlrulebasedbreakiterator::createsentenceinstance' => 
+    array (
+      'old' => 
+      array (
+        0 => 'IntlRuleBasedBreakIterator|null',
+        'locale=' => 'null|string',
+      ),
+      'new' => 
+      array (
+        0 => 'IntlBreakIterator|null',
+        'locale=' => 'null|string',
+      ),
+    ),
+    'intlrulebasedbreakiterator::createtitleinstance' => 
+    array (
+      'old' => 
+      array (
+        0 => 'IntlRuleBasedBreakIterator|null',
+        'locale=' => 'null|string',
+      ),
+      'new' => 
+      array (
+        0 => 'IntlBreakIterator|null',
+        'locale=' => 'null|string',
+      ),
+    ),
+    'intlrulebasedbreakiterator::createwordinstance' => 
+    array (
+      'old' => 
+      array (
+        0 => 'IntlRuleBasedBreakIterator|null',
+        'locale=' => 'null|string',
+      ),
+      'new' => 
+      array (
+        0 => 'IntlBreakIterator|null',
+        'locale=' => 'null|string',
       ),
     ),
     'iteratoriterator::getinneriterator' => 
@@ -2411,8 +2621,8 @@ return array (
         'request_oid' => 'string',
         'request_data=' => 'null|string',
         'controls=' => 'array<array-key, mixed>|null',
-        '&w_response_data=' => 'string',
-        '&w_response_oid=' => 'string',
+        '&w response_data=' => 'string',
+        '&w response_oid=' => 'string',
       ),
       'new' => 
       array (
@@ -2421,8 +2631,8 @@ return array (
         'request_oid' => 'string',
         'request_data=' => 'null|string',
         'controls=' => 'array<array-key, mixed>|null',
-        '&w_response_data=' => 'string',
-        '&w_response_oid=' => 'string',
+        '&w response_data=' => 'string',
+        '&w response_oid=' => 'string',
       ),
     ),
     'ldap_exop_passwd' => 
@@ -2434,7 +2644,7 @@ return array (
         'user=' => 'string',
         'old_password=' => 'string',
         'new_password=' => 'string',
-        '&w_controls=' => 'array<array-key, mixed>|null',
+        '&w controls=' => 'array<array-key, mixed>|null',
       ),
       'new' => 
       array (
@@ -2443,7 +2653,7 @@ return array (
         'user=' => 'string',
         'old_password=' => 'string',
         'new_password=' => 'string',
-        '&w_controls=' => 'array<array-key, mixed>|null',
+        '&w controls=' => 'array<array-key, mixed>|null',
       ),
     ),
     'ldap_exop_refresh' => 
@@ -2586,14 +2796,14 @@ return array (
         0 => 'bool',
         'ldap' => 'resource',
         'option' => 'int',
-        '&w_value=' => 'array<array-key, mixed>|int|string',
+        '&w value=' => 'array<array-key, mixed>|int|string',
       ),
       'new' => 
       array (
         0 => 'bool',
         'ldap' => 'LDAP\\Connection',
         'option' => 'int',
-        '&w_value=' => 'array<array-key, mixed>|int|string',
+        '&w value=' => 'array<array-key, mixed>|int|string',
       ),
     ),
     'ldap_get_values' => 
@@ -2863,16 +3073,16 @@ return array (
         0 => 'bool',
         'ldap' => 'resource',
         'result' => 'resource',
-        '&w_response_data=' => 'string',
-        '&w_response_oid=' => 'string',
+        '&w response_data=' => 'string',
+        '&w response_oid=' => 'string',
       ),
       'new' => 
       array (
         0 => 'bool',
         'ldap' => 'LDAP\\Connection',
         'result' => 'LDAP\\Result',
-        '&w_response_data=' => 'string',
-        '&w_response_oid=' => 'string',
+        '&w response_data=' => 'string',
+        '&w response_oid=' => 'string',
       ),
     ),
     'ldap_parse_reference' => 
@@ -2882,14 +3092,14 @@ return array (
         0 => 'bool',
         'ldap' => 'resource',
         'entry' => 'resource',
-        '&w_referrals' => 'array<array-key, mixed>',
+        '&w referrals' => 'array<array-key, mixed>',
       ),
       'new' => 
       array (
         0 => 'bool',
         'ldap' => 'LDAP\\Connection',
         'entry' => 'LDAP\\ResultEntry',
-        '&w_referrals' => 'array<array-key, mixed>',
+        '&w referrals' => 'array<array-key, mixed>',
       ),
     ),
     'ldap_parse_result' => 
@@ -2899,22 +3109,22 @@ return array (
         0 => 'bool',
         'ldap' => 'resource',
         'result' => 'resource',
-        '&w_error_code' => 'int',
-        '&w_matched_dn=' => 'string',
-        '&w_error_message=' => 'string',
-        '&w_referrals=' => 'array<array-key, mixed>',
-        '&w_controls=' => 'array<array-key, mixed>',
+        '&w error_code' => 'int',
+        '&w matched_dn=' => 'string',
+        '&w error_message=' => 'string',
+        '&w referrals=' => 'array<array-key, mixed>',
+        '&w controls=' => 'array<array-key, mixed>',
       ),
       'new' => 
       array (
         0 => 'bool',
         'ldap' => 'LDAP\\Connection',
         'result' => 'LDAP\\Result',
-        '&w_error_code' => 'int',
-        '&w_matched_dn=' => 'string',
-        '&w_error_message=' => 'string',
-        '&w_referrals=' => 'array<array-key, mixed>',
-        '&w_controls=' => 'array<array-key, mixed>',
+        '&w error_code' => 'int',
+        '&w matched_dn=' => 'string',
+        '&w error_message=' => 'string',
+        '&w referrals=' => 'array<array-key, mixed>',
+        '&w controls=' => 'array<array-key, mixed>',
       ),
     ),
     'ldap_read' => 
@@ -3210,6 +3420,243 @@ return array (
         'pattern' => 'string',
       ),
     ),
+    'mongodb\\driver\\cursor::getid' => 
+    array (
+      'old' => 
+      array (
+        0 => 'MongoDB\\BSON\\Int64',
+        'asInt64=' => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'MongoDB\\BSON\\Int64',
+      ),
+    ),
+    'mongodb\\driver\\manager::executecommand' => 
+    array (
+      'old' => 
+      array (
+        0 => 'MongoDB\\Driver\\Cursor',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+      'new' => 
+      array (
+        0 => 'MongoDB\\Driver\\CursorInterface',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+    ),
+    'mongodb\\driver\\manager::executequery' => 
+    array (
+      'old' => 
+      array (
+        0 => 'MongoDB\\Driver\\Cursor',
+        'namespace' => 'string',
+        'query' => 'MongoDB\\Driver\\Query',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+      'new' => 
+      array (
+        0 => 'MongoDB\\Driver\\CursorInterface',
+        'namespace' => 'string',
+        'query' => 'MongoDB\\Driver\\Query',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+    ),
+    'mongodb\\driver\\manager::executereadcommand' => 
+    array (
+      'old' => 
+      array (
+        0 => 'MongoDB\\Driver\\Cursor',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+      'new' => 
+      array (
+        0 => 'MongoDB\\Driver\\CursorInterface',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+    ),
+    'mongodb\\driver\\manager::executereadwritecommand' => 
+    array (
+      'old' => 
+      array (
+        0 => 'MongoDB\\Driver\\Cursor',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+      'new' => 
+      array (
+        0 => 'MongoDB\\Driver\\CursorInterface',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+    ),
+    'mongodb\\driver\\manager::executewritecommand' => 
+    array (
+      'old' => 
+      array (
+        0 => 'MongoDB\\Driver\\Cursor',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+      'new' => 
+      array (
+        0 => 'MongoDB\\Driver\\CursorInterface',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+    ),
+    'mongodb\\driver\\server::executecommand' => 
+    array (
+      'old' => 
+      array (
+        0 => 'MongoDB\\Driver\\Cursor',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+      'new' => 
+      array (
+        0 => 'MongoDB\\Driver\\CursorInterface',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+    ),
+    'mongodb\\driver\\server::executequery' => 
+    array (
+      'old' => 
+      array (
+        0 => 'MongoDB\\Driver\\Cursor',
+        'namespace' => 'string',
+        'query' => 'MongoDB\\Driver\\Query',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+      'new' => 
+      array (
+        0 => 'MongoDB\\Driver\\CursorInterface',
+        'namespace' => 'string',
+        'query' => 'MongoDB\\Driver\\Query',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+    ),
+    'mongodb\\driver\\server::executereadcommand' => 
+    array (
+      'old' => 
+      array (
+        0 => 'MongoDB\\Driver\\Cursor',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+      'new' => 
+      array (
+        0 => 'MongoDB\\Driver\\CursorInterface',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+    ),
+    'mongodb\\driver\\server::executereadwritecommand' => 
+    array (
+      'old' => 
+      array (
+        0 => 'MongoDB\\Driver\\Cursor',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+      'new' => 
+      array (
+        0 => 'MongoDB\\Driver\\CursorInterface',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+    ),
+    'mongodb\\driver\\server::executewritecommand' => 
+    array (
+      'old' => 
+      array (
+        0 => 'MongoDB\\Driver\\Cursor',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+      'new' => 
+      array (
+        0 => 'MongoDB\\Driver\\CursorInterface',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+    ),
+    'mongodb\\driver\\writeresult::getdeletedcount' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int|null',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+      ),
+    ),
+    'mongodb\\driver\\writeresult::getinsertedcount' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int|null',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+      ),
+    ),
+    'mongodb\\driver\\writeresult::getmatchedcount' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int|null',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+      ),
+    ),
+    'mongodb\\driver\\writeresult::getmodifiedcount' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int|null',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+      ),
+    ),
+    'mongodb\\driver\\writeresult::getupsertedcount' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int|null',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+      ),
+    ),
     'multipleiterator::current' => 
     array (
       'old' => 
@@ -3365,12 +3812,12 @@ return array (
       'old' => 
       array (
         0 => 'mixed',
-        '&r_array' => 'array<array-key, mixed>|object',
+        '&r array' => 'array<array-key, mixed>|object',
       ),
       'new' => 
       array (
         0 => 'mixed',
-        '&r_array' => 'array<array-key, mixed>',
+        '&r array' => 'array<array-key, mixed>',
       ),
     ),
     'norewinditerator::getinneriterator' => 
@@ -4958,12 +5405,12 @@ return array (
       'old' => 
       array (
         0 => 'mixed',
-        '&r_array' => 'array<array-key, mixed>|object',
+        '&r array' => 'array<array-key, mixed>|object',
       ),
       'new' => 
       array (
         0 => 'mixed',
-        '&r_array' => 'array<array-key, mixed>',
+        '&r array' => 'array<array-key, mixed>',
       ),
     ),
     'pspell_add_to_personal' => 
@@ -5417,12 +5864,12 @@ return array (
       'old' => 
       array (
         0 => 'false|mixed',
-        '&r_array' => 'array<array-key, mixed>|object',
+        '&r array' => 'array<array-key, mixed>|object',
       ),
       'new' => 
       array (
         0 => 'false|mixed',
-        '&r_array' => 'array<array-key, mixed>',
+        '&r array' => 'array<array-key, mixed>',
       ),
     ),
     'soapclient::__setcookie' => 
@@ -5604,6 +6051,19 @@ return array (
         'partitioned=' => 'bool',
       ),
     ),
+    'swoole\\lock::lock' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'operation=' => 'int',
+        'timeout=' => 'float',
+      ),
+    ),
     'swoole\\server::addprocess' => 
     array (
       'old' => 
@@ -5615,6 +6075,20 @@ return array (
       array (
         0 => 'false|int',
         'process' => 'Swoole\\Process',
+      ),
+    ),
+    'swoole\\server::stop' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'workerId=' => 'int',
+        'waitEvent=' => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'workerId=' => 'int',
       ),
     ),
     'swoole_async_set' => 
@@ -5706,6 +6180,22 @@ return array (
     array (
       0 => 'ReturnType',
       'defer=' => 'mixed',
+    ),
+    'swoole\\lock::__destruct' => 
+    array (
+      0 => 'void',
+    ),
+    'swoole\\lock::lock_read' => 
+    array (
+      0 => 'bool',
+    ),
+    'swoole\\lock::trylock' => 
+    array (
+      0 => 'bool',
+    ),
+    'swoole\\lock::trylock_read' => 
+    array (
+      0 => 'bool',
     ),
   ),
 );
