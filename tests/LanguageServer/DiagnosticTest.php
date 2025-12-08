@@ -26,6 +26,7 @@ use Psalm\Tests\LanguageServer\MockProtocolStream;
 use Psalm\Tests\TestConfig;
 
 use function Amp\delay;
+use function defined;
 use function getcwd;
 use function rand;
 
