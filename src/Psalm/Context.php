@@ -359,7 +359,7 @@ final class Context
     ): void {
         // Convert to hash map for O(1) lookup instead of O(n)
         $vars_to_update_map = array_flip($vars_to_update);
-        
+
         foreach ($start_context->vars_in_scope as $var_id => $old_type) {
             // this is only true if there was some sort of type negation
             if (isset($vars_to_update_map[$var_id])) {

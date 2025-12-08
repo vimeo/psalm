@@ -207,7 +207,7 @@ final class LoopAnalyzer
 
             $recorded_issues = IssueBuffer::clearRecordingLevel();
             IssueBuffer::stopRecording();
-            
+
             // Convert to hash map for O(1) lookup instead of O(n)
             $always_assigned_before_loop_body_vars_map = array_flip($always_assigned_before_loop_body_vars);
 

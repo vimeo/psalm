@@ -1419,7 +1419,7 @@ final class Codebase
 
         foreach ($params as $i => $param) {
             $parameter_label = ($param->type ?: 'mixed') . ' $' . $param->name;
-            
+
             $parameters[] = new ParameterInformation(
                 [
                     $current_pos,
