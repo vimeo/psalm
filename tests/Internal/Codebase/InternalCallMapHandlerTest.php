@@ -168,18 +168,18 @@ final class InternalCallMapHandlerTest extends TestCase
      * @var array<int|string, string|list<string>>
      */
     private static array $ignoredReturnTypeOnlyFunctions = [
-        'datetime::add' => ['8.1', '8.2', '8.3', '8.4'], // DateTime does not contain static
-        'datetime::modify' => ['8.1', '8.2', '8.3', '8.4'], // DateTime does not contain static
-        'datetime::createfromformat' => ['8.1', '8.2', '8.3', '8.4'], // DateTime does not contain static
+        'datetime::add' => ['8.1', '8.2', '8.3', '8.4', '8.5'], // DateTime does not contain static
+        'datetime::modify' => ['8.1', '8.2', '8.3', '8.4', '8.5'], // DateTime does not contain static
+        'datetime::createfromformat' => ['8.1', '8.2', '8.3', '8.4', '8.5'], // DateTime does not contain static
         'datetime::createfromimmutable' => ['8.1'],
         'datetime::createfrominterface',
         'datetimeimmutable::createfrominterface',
-        'datetime::setdate' => ['8.1', '8.2', '8.3', '8.4'], // DateTime does not contain static
-        'datetime::setisodate' => ['8.1', '8.2', '8.3', '8.4'], // DateTime does not contain static
-        'datetime::settime' => ['8.1', '8.2', '8.3', '8.4'], // DateTime does not contain static
-        'datetime::settimestamp' => ['8.1', '8.2', '8.3', '8.4'], // DateTime does not contain static
-        'datetime::settimezone' => ['8.1', '8.2', '8.3', '8.4'], // DateTime does not contain static
-        'datetime::sub' => ['8.1', '8.2', '8.3', '8.4'], // DateTime does not contain static
+        'datetime::setdate' => ['8.1', '8.2', '8.3', '8.4', '8.5'], // DateTime does not contain static
+        'datetime::setisodate' => ['8.1', '8.2', '8.3', '8.4', '8.5'], // DateTime does not contain static
+        'datetime::settime' => ['8.1', '8.2', '8.3', '8.4', '8.5'], // DateTime does not contain static
+        'datetime::settimestamp' => ['8.1', '8.2', '8.3', '8.4', '8.5'], // DateTime does not contain static
+        'datetime::settimezone' => ['8.1', '8.2', '8.3', '8.4', '8.5'], // DateTime does not contain static
+        'datetime::sub' => ['8.1', '8.2', '8.3', '8.4', '8.5'], // DateTime does not contain static
     ];
 
     /**
