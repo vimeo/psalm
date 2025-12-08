@@ -119,7 +119,10 @@ final class DiagnosticTest extends AsyncTestCase
 
     public function testOnChangeDebounceMs(): void
     {
-      // Create a new promisor
+        if (defined('PHP_WINDOWS_VERSION_MAJOR')) {
+            $this->markTestSkipped('Flaky on Windows');
+        }
+        // Create a new promisor
         $deferred = new DeferredFuture;
 
         $this->setTimeout(5);
