@@ -27,7 +27,7 @@ use function max;
 use function min;
 use function str_ends_with;
 use function str_starts_with;
-use function strlen;
+use function strpos;
 use function strtolower;
 use function substr;
 
@@ -39,7 +39,7 @@ use function substr;
 final class InternalCallMapHandler
 {
     private const MIN_CALLMAP_VERSION = 70;
-    private const MAX_CALLMAP_VERSION = 84;
+    private const MAX_CALLMAP_VERSION = 85;
 
     private static ?int $loaded_php_major_version = null;
     private static ?int $loaded_php_minor_version = null;
@@ -279,18 +279,13 @@ final class InternalCallMapHandler
 
                 $out_type = null;
 
-                if ($by_reference && strlen($arg_name) > 2 && $arg_name[0] === 'w' && $arg_name[1] === '_') {
-                    // strip prefix that is not actually a part of the parameter name
-                    $arg_name = substr($arg_name, 2);
-                    $out_type = $param_type;
-                    $param_type = Type::getMixed();
-                }
-
-                // removes `rw_` leftover from `&rw_haystack` or `&rw_needle` or `&rw_actual_name`
-                // it doesn't have any specific meaning apart from `&` signifying that
-                // the parameter is passed by reference (handled above)
-                if ($by_reference && strlen($arg_name) > 3 && str_starts_with($arg_name, 'rw_')) {
-                    $arg_name = substr($arg_name, 3);
+                if ($by_reference && false !== $p = strpos($arg_name, ' ')) {
+                    $refType = substr($arg_name, 0, $p);
+                    $arg_name = substr($arg_name, $p + 1);
+                    if ($refType === 'w') {
+                        $out_type = $param_type;
+                        $param_type = Type::getMixed();
+                    }
                 }
 
                 $function_param = new FunctionLikeParameter(

@@ -1864,7 +1864,7 @@ final class AssignmentAnalyzer
         if ($context->inside_try) {
             // Copy previous assignment's parent nodes inside a try. Since an exception could be thrown at any
             // point this is a workaround to ensure that use of a variable also uses all previous assignments.
-            if (isset($context->vars_in_scope[$extended_var_id])) {
+            if ($extended_var_id !== null && isset($context->vars_in_scope[$extended_var_id])) {
                 $parent_nodes += $context->vars_in_scope[$extended_var_id]->parent_nodes;
             }
         }
