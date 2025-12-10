@@ -17,6 +17,7 @@ use Psalm\Type\Atomic\TDependentGetType;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIntMaskVerifier;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
@@ -379,6 +380,25 @@ final class ScalarTypeComparator
                     $atomic_comparison_result->type_coerced = true;
                     $atomic_comparison_result->type_coerced_from_scalar = true;
                 }
+            }
+
+            return false;
+        }
+
+        if ($container_type_part instanceof TIntMaskVerifier) {
+            if ($input_type_part instanceof TLiteralInt) {
+                return $container_type_part->isValidValue($input_type_part->value);
+            }
+
+            if ($input_type_part instanceof TIntMaskVerifier) {
+                return $container_type_part->isSupersetOf($input_type_part);
+            }
+
+            if ($input_type_part instanceof TInt) {
+                if ($atomic_comparison_result) {
+                    $atomic_comparison_result->type_coerced = true;
+                }
+                return true;
             }
 
             return false;
