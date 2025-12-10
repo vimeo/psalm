@@ -953,6 +953,7 @@ final class Psalm
         Progress $progress,
     ): void {
         $ini_handler = new PsalmRestarter('PSALM');
+        $ini_handler->forceJit = $force_jit;
 
         if (isset($options['disable-extension'])) {
             if (is_array($options['disable-extension'])) {
@@ -1001,10 +1002,14 @@ final class Psalm
                 $progress->write(PHP_EOL
                     . 'JIT acceleration: ON'
                     . PHP_EOL . PHP_EOL);
-            } else {
+            } elseif ($force_jit) {
                 $progress->write(PHP_EOL
                     . 'JIT acceleration: OFF (an error occurred while enabling JIT)' . PHP_EOL
                     . 'Please report this to https://github.com/vimeo/psalm with your OS and PHP configuration!'
+                    . PHP_EOL . PHP_EOL);
+            } else {
+                $progress->write(PHP_EOL
+                    . 'JIT acceleration: OFF'
                     . PHP_EOL . PHP_EOL);
             }
         } else {

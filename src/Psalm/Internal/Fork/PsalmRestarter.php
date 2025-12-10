@@ -52,6 +52,7 @@ final class PsalmRestarter extends XdebugHandler
         'restrict_api' => '',
     ];
 
+    public bool $forceJit = false;
     private bool $required = false;
 
     /**
@@ -72,12 +73,9 @@ final class PsalmRestarter extends XdebugHandler
 
     /**
      * No type hint to allow xdebug-handler v1 and v2 usage
-     *
-     * @param bool $default
-     * @phpcsSuppress SlevomatCodingStandard.TypeHints.ParameterTypeHint.MissingNativeTypeHint
      */
     #[Override]
-    protected function requiresRestart($default): bool
+    protected function requiresRestart(bool $default): bool
     {
         foreach ($this->disabled_extensions as $extension) {
             if (extension_loaded($extension)) {
@@ -86,29 +84,31 @@ final class PsalmRestarter extends XdebugHandler
             }
         }
 
-        if (!extension_loaded('opcache') && !extension_loaded('Zend OPcache')) {
-            return true;
-        }
-
-            // restart to enable JIT if it's not configured in the optimal way
-        foreach (self::REQUIRED_OPCACHE_SETTINGS as $ini_name => $required_value) {
-            $value = (string) ini_get("opcache.$ini_name");
-            if ($ini_name === 'jit_buffer_size') {
-                $value = self::toBytes($value);
-            } elseif ($ini_name === 'enable_cli') {
-                $value = in_array($value, ['1', 'true', true, 1]) ? 1 : 0;
-            } elseif (is_int($required_value)) {
-                $value = (int) $value;
-            }
-            if ($value !== $required_value) {
+        if ($this->forceJit) {
+            if (!extension_loaded('opcache') && !extension_loaded('Zend OPcache')) {
                 return true;
             }
-        }
+
+            // restart to enable JIT if it's not configured in the optimal way
+            foreach (self::REQUIRED_OPCACHE_SETTINGS as $ini_name => $required_value) {
+                $value = (string) ini_get("opcache.$ini_name");
+                if ($ini_name === 'jit_buffer_size') {
+                    $value = self::toBytes($value);
+                } elseif ($ini_name === 'enable_cli') {
+                    $value = in_array($value, ['1', 'true', true, 1]) ? 1 : 0;
+                } elseif (is_int($required_value)) {
+                    $value = (int) $value;
+                }
+                if ($value !== $required_value) {
+                    return true;
+                }
+            }
 
             $requiredMemoryConsumption = self::getRequiredMemoryConsumption();
 
-        if ((int)ini_get('opcache.memory_consumption') < $requiredMemoryConsumption) {
-            return true;
+            if ((int)ini_get('opcache.memory_consumption') < $requiredMemoryConsumption) {
+                return true;
+            }
         }
 
         return $default || $this->required;
@@ -148,10 +148,9 @@ final class PsalmRestarter extends XdebugHandler
      * No type hint to allow xdebug-handler v1 and v2 usage
      *
      * @param non-empty-list<string> $command
-     * @phpcsSuppress SlevomatCodingStandard.TypeHints.ParameterTypeHint.MissingNativeTypeHint
      */
     #[Override]
-    protected function restart($command): void
+    protected function restart(array $command): void
     {
         if ($this->required && $this->tmpIni) {
             $regex = '/^\s*((?:zend_)?extension\s*=.*(' . implode('|', $this->disabled_extensions) . ').*)$/mi';
