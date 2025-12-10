@@ -566,7 +566,7 @@ final class ArrayFetchAnalyzer
             );
         }
 
-        if ($offset_type->isNullable() && !$context->inside_isset) {
+        if ($offset_type->isNullable()) {
             if (!$offset_type->ignore_nullable_issues) {
                 IssueBuffer::maybeAdd(
                     new PossiblyNullArrayOffset(

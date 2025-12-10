@@ -161,6 +161,10 @@ final class ArrayFilterParamsProvider implements FunctionParamsProviderInterface
                     $statements_source,
                 );
 
+                if ($extended_var_id === null) {
+                    return null;
+                }
+
                 $mode_type = $event->getContext()->vars_in_scope[$extended_var_id] ?? null;
             }
 
