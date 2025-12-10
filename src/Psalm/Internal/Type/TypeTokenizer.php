@@ -90,6 +90,7 @@ final class TypeTokenizer
         'public-properties-of' => true,
         'protected-properties-of' => true,
         'private-properties-of' => true,
+        'recursive-properties-of' => true,
         'non-empty-countable' => true,
         'list' => true,
         'non-empty-list' => true,
