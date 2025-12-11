@@ -5,6 +5,7 @@ namespace {
      * When applied to a function or method, a warning is emitted if the
      * return value is not used.
      *
+     * @psalm-immutable
      * @since 8.5
      */
     #[\Attribute(\Attribute::TARGET_METHOD | \Attribute::TARGET_FUNCTION)]
