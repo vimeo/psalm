@@ -578,13 +578,17 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             }
 
             if ($codebase->functions->params_provider->has($function_call_info->function_id)) {
-                $function_call_info->function_params = $codebase->functions->params_provider->getFunctionParams(
+                $from_provider = $codebase->functions->params_provider->getFunctionParams(
                     $statements_analyzer,
                     $function_call_info->function_id,
                     $args,
                     $context,
                     $code_location,
                 );
+
+                if ($from_provider !== null) {
+                    $function_call_info->function_params = $from_provider;
+                }
             }
 
             if ($codebase->store_node_types
