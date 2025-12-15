@@ -1176,7 +1176,10 @@ final class ForeachTest extends TestCase
             'generatorWithUnspecifiedSend' => [
                 'code' => <<<'PHP'
                     <?php
-                    /** @return Generator<int,int> */
+                    /**
+                     * @return Generator<int,int>
+                     * @psalm-suppress MixedReturnStatement
+                     */
                     function gen() : Generator {
                         return yield 1;
                     }
@@ -1187,7 +1190,10 @@ final class ForeachTest extends TestCase
             'generatorWithMixedSend' => [
                 'code' => <<<'PHP'
                     <?php
-                    /** @return Generator<int,int, mixed, mixed> */
+                    /**
+                     * @return Generator<int,int, mixed, mixed>
+                     * @psalm-suppress MixedReturnStatement
+                     */
                     function gen() : Generator {
                         return yield 1;
                     }
