@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Analyzer;
 
+use Attribute;
 use InvalidArgumentException;
 use LogicException;
 use PhpParser;
@@ -146,7 +147,7 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
             $interface_context,
             $class_storage,
             $this->class->attrGroups,
-            AttributesAnalyzer::TARGET_CLASS,
+            Attribute::TARGET_CLASS,
             $class_storage->suppressed_issues + $this->getSuppressedIssues(),
         );
 

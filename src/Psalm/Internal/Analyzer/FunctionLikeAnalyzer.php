@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Analyzer;
 
+use Attribute;
 use Override;
 use PhpParser;
 use PhpParser\Node\Expr\ArrowFunction;
@@ -916,7 +917,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $context,
             $storage,
             $this->function->attrGroups,
-            $storage instanceof MethodStorage ? AttributesAnalyzer::TARGET_METHOD : AttributesAnalyzer::TARGET_FUNCTION,
+            $storage instanceof MethodStorage ? Attribute::TARGET_METHOD : Attribute::TARGET_FUNCTION,
             $storage->suppressed_issues + $this->getSuppressedIssues(),
         );
 
@@ -1367,8 +1368,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     $context,
                     $function_param,
                     $param_stmts[$offset]->attrGroups,
-                    AttributesAnalyzer::TARGET_PARAMETER
-                        | ($function_param->promoted_property ? AttributesAnalyzer::TARGET_PROPERTY : 0),
+                    Attribute::TARGET_PARAMETER
+                        | ($function_param->promoted_property ? Attribute::TARGET_PROPERTY : 0),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
                 );
             }
