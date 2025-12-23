@@ -38,6 +38,7 @@ use function array_filter;
 use function array_intersect;
 use function array_merge;
 use function array_unique;
+use function array_unshift;
 use function count;
 use function end;
 use function implode;
@@ -183,23 +184,23 @@ final class TaintFlowGraph extends DataFlowGraph
      */
     public function getIssueTrace(DataFlowNode $source): array
     {
-        $previous_source = $source->previous;
-
-        $node = [
-            'location' => $source->code_location,
-            'label' => $source->label,
-            'entry_path_type' => end($source->path_types) ?: '',
-        ];
-
-        if ($previous_source) {
+        $out = [];
+        do {
+            /** @var DataFlowNode $source */
+            $previous_source = $source->previous;
             if ($previous_source === $source) {
-                return [];
+                break;
             }
+            $path_types = $source->path_types;
+            array_unshift($out, [
+                'location' => $source->code_location,
+                'label' => $source->label,
+                'entry_path_type' => end($path_types) ?: '',
+            ]);
+            $source = $previous_source;
+        } while ($previous_source);
 
-            return [...$this->getIssueTrace($previous_source), $node];
-        }
-
-        return [$node];
+        return $out;
     }
 
     public function connectSinksAndSources(): void
