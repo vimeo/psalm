@@ -9,8 +9,10 @@ use Psalm\Context;
 use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\IssueBuffer;
+use Psalm\Type\TaintKind;
 
 use function array_filter;
+use function array_flip;
 use function array_map;
 use function array_values;
 use function in_array;
@@ -34,6 +36,17 @@ final class TaintTest extends TestCase
         'MixedArrayAssignment', 'InvalidReturnStatement', 'InvalidArrayOffset', 'UndefinedFunction', 'ImplicitToStringCast',
         'InvalidArgument', 'UndefinedVariable',
     ];
+    public function testTaintKindNoHoles(): void
+    {
+        $constants = array_flip(TaintKind::TAINT_NAMES);
+
+        for ($i = 0; $i < TaintKind::BUILTIN_TAINT_COUNT; $i++) {
+            $current = 1 << $i;
+            if (!isset($constants[$current])) {
+                $this->fail('TaintKind is missing value for bit ' . $i);
+            }
+        }
+    }
     /**
      * @dataProvider providerValidCodeParse
      */
