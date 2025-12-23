@@ -33,6 +33,7 @@ use function rtrim;
 use function str_contains;
 use function str_ends_with;
 use function str_starts_with;
+use function strcmp;
 use function strtolower;
 use function substr;
 
@@ -44,7 +45,7 @@ final class Functions
     /**
      * @var array<lowercase-string, FunctionStorage>
      */
-    private static array $stubbed_functions;
+    private static array $global_functions;
 
     public FunctionReturnTypeProvider $return_type_provider;
 
@@ -63,7 +64,7 @@ final class Functions
         $this->params_provider = new FunctionParamsProvider();
         $this->dynamic_storage_provider = new DynamicFunctionStorageProvider();
 
-        self::$stubbed_functions = [];
+        self::$global_functions = [];
     }
 
     /**
@@ -79,8 +80,8 @@ final class Functions
             $function_id = substr($function_id, 1);
         }
 
-        if (isset(self::$stubbed_functions[$function_id])) {
-            return self::$stubbed_functions[$function_id];
+        if (isset(self::$global_functions[$function_id])) {
+            return self::$global_functions[$function_id];
         }
 
         $file_storage = null;
@@ -148,9 +149,21 @@ final class Functions
         return $declaring_file_storage->functions[$function_id];
     }
 
+    /**
+     * @param lowercase-string $function_id
+     */
     public function addGlobalFunction(string $function_id, FunctionStorage $storage): void
     {
-        self::$stubbed_functions[strtolower($function_id)] = $storage;
+        $path = $storage->location ? $storage->location->getHash() : '';
+        if (isset(self::$global_functions[$function_id])) {
+            $existing = self::$global_functions[$function_id];
+            $existing_path = $existing->location ? $existing->location->getHash() : '';
+            if (strcmp($existing_path, $path) <= 0) {
+                var_dump("Function $function_id already exists in global functions from $existing_path, skipping $path");
+                return;
+            }
+        }
+        self::$global_functions[$function_id] = $storage;
     }
 
     /**
@@ -158,20 +171,25 @@ final class Functions
      */
     public function addGlobalFunctions(array $stubs): void
     {
-        self::$stubbed_functions += $stubs;
+        foreach ($stubs as $function_id => $storage) {
+            self::addGlobalFunction($function_id, $storage);
+        }
     }
 
-    public function hasStubbedFunction(string $function_id): bool
+    /**
+     * @param lowercase-string $function_id
+     */
+    public function hasGlobalFunction(string $function_id): bool
     {
-        return isset(self::$stubbed_functions[strtolower($function_id)]);
+        return isset(self::$global_functions[$function_id]);
     }
 
     /**
      * @return array<lowercase-string, FunctionStorage>
      */
-    public function getAllStubbedFunctions(): array
+    public function getAllGlobalFunctions(): array
     {
-        return self::$stubbed_functions;
+        return self::$global_functions;
     }
 
     /**
@@ -199,7 +217,7 @@ final class Functions
             return true;
         }
 
-        if (isset(self::$stubbed_functions[$function_id])) {
+        if (isset(self::$global_functions[$function_id])) {
             return true;
         }
 
@@ -333,7 +351,7 @@ final class Functions
         }
 
         $function_map = $file_storage->functions
-            + $this->getAllStubbedFunctions()
+            + $this->getAllGlobalFunctions()
             + $this->reflection->getFunctions()
             + $codebase->config->getPredefinedFunctions();
 
@@ -499,6 +517,6 @@ final class Functions
 
     public static function clearCache(): void
     {
-        self::$stubbed_functions = [];
+        self::$global_functions = [];
     }
 }

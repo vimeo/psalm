@@ -115,6 +115,51 @@ final class ProjectCheckerTest extends TestCase
         );
     }
 
+    public function testCheckDeterministicOrder(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                (string)getcwd(),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <file name="tests/fixtures/DummyProjectFunctionOrder/b.php" />
+                        <file name="tests/fixtures/DummyProjectFunctionOrder/a.php" />
+                        <file name="tests/fixtures/DummyProjectFunctionOrder/entry.php" />
+                    </projectFiles>
+                </psalm>',
+            ),
+        );
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+
+        $this->project_analyzer->progress = new EchoProgress();
+        $this->project_analyzer->getCodebase()->config->all_constants_global = true;
+        $this->project_analyzer->getCodebase()->config->all_functions_global = true;
+
+        ob_start();
+        $this->project_analyzer->check('tests/fixtures/DummyProjectFunctionOrder');
+        $output = (string) ob_get_clean();
+        var_dump($output);
+
+        $this->assertStringContainsString('Target PHP version: 8.1 (set by tests)', $output);
+        $this->assertStringContainsString('Scanning files...', $output);
+        $this->assertStringContainsString('Analyzing files...', $output);
+
+        var_dump(IssueBuffer::getIssuesData());
+        $this->assertSame(0, IssueBuffer::getErrorCount());
+
+        $codebase = $this->project_analyzer->getCodebase();
+
+        $this->assertSame([0, 5], $codebase->analyzer->getTotalTypeCoverage($codebase));
+
+        $this->assertSame(
+            'Psalm was able to infer types for 100% of the codebase',
+            $codebase->analyzer->getTypeInferenceSummary(
+                $codebase,
+            ),
+        );
+    }
+
     public function testAfterCodebasePopulatedIsInvoked(): void
     {
         $hook = new class implements AfterCodebasePopulatedInterface {

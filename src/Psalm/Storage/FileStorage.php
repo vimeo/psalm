@@ -47,6 +47,13 @@ final class FileStorage
      */
     public array $constants = [];
 
+    /**
+     * Just storing the hash of the location to save memory.
+     *
+     * @var array<string, string>
+     */
+    public array $constants_location = [];
+
     /** @var array<string, string> */
     public array $declaring_constants = [];
 

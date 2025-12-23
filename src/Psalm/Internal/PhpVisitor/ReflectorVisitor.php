@@ -290,16 +290,22 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                 ) ?? Type::getMixed();
 
                 $fq_const_name = Type::getFQCLNFromString($const->name->name, $this->aliases);
+                $loc = new CodeLocation($this->file_scanner, $const, null, true);
 
                 if (($this->codebase->register_stub_files
                     || $this->codebase->register_autoload_files
                     || $this->codebase->all_constants_global
                     ) && (!defined($fq_const_name) || !$const_type->isMixed())
                 ) {
-                    $this->codebase->addGlobalConstantType($fq_const_name, $const_type);
+                    $this->codebase->addGlobalConstantType(
+                        $fq_const_name,
+                        $const_type,
+                        $loc->getHash(),
+                    );
                 }
 
                 $this->file_storage->constants[$fq_const_name] = $const_type;
+                $this->file_storage->constants_location[$fq_const_name] = $loc->getHash();
                 $this->file_storage->declaring_constants[$fq_const_name] = $this->file_path;
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\If_ && !$this->skip_if_descendants) {
