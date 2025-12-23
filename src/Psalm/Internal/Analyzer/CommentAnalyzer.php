@@ -244,6 +244,9 @@ final class CommentAnalyzer
         if (isset($parsed_docblock->tags['psalm-taint-escape'])) {
             foreach ($parsed_docblock->tags['psalm-taint-escape'] as $param) {
                 $param = trim($param);
+                if ($param[0] === '(') {
+                    continue;
+                }
                 try {
                     $var_comment->removed_taints |= $codebase->getOrRegisterTaint($param);
                 } catch (RuntimeException $e) {

@@ -365,6 +365,14 @@ final class Codebase
             }
             throw new RuntimeException($err);
         }
+        if ($taint_type[0] === '(') {
+            $err = "Conditional taints cannot be used in this context";
+            if ($location !== null) {
+                IssueBuffer::maybeAdd(new InvalidDocblock($err, $location));
+                return null;
+            }
+            throw new RuntimeException($err);
+        }
         $id = 1 << ($this->taint_count++);
         $this->custom_taints[$id] = $taint_type;
         $this->taint_map[$taint_type] = $id;

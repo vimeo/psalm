@@ -368,27 +368,26 @@ final class FunctionLikeDocblockScanner
         }
 
         foreach ($docblock_info->removed_taints as $removed_taint) {
-            if ($removed_taint[0] === '(') {
-                self::handleRemovedTaint(
-                    $codebase,
-                    $stmt,
-                    $aliases,
-                    $removed_taint,
-                    $function_template_types,
-                    $class_template_types,
-                    $type_aliases,
-                    $storage,
-                    $classlike_storage,
-                    $cased_function_id,
-                    $file_storage,
-                    $file_scanner,
-                );
-            } else {
-                $t = $codebase->getOrRegisterTaint($removed_taint, $location);
-                if ($t !== null) {
-                    $storage->removed_taints |= $t;
-                }
+            $t = $codebase->getOrRegisterTaint($removed_taint, $location);
+            if ($t !== null) {
+                $storage->removed_taints |= $t;
             }
+        }
+        foreach ($docblock_info->conditionally_removed_taints as $removed_taint) {
+            self::handleConditionallyRemovedTaint(
+                $codebase,
+                $stmt,
+                $aliases,
+                $removed_taint,
+                $function_template_types,
+                $class_template_types,
+                $type_aliases,
+                $storage,
+                $classlike_storage,
+                $cased_function_id,
+                $file_storage,
+                $file_scanner,
+            );
         }
 
         self::handleTaintFlow($docblock_info, $storage);
@@ -1150,7 +1149,7 @@ final class FunctionLikeDocblockScanner
      * @param array<string, non-empty-array<string, Union>> $function_template_types
      * @param array<string, non-empty-array<string, Union>> $class_template_types
      */
-    private static function handleRemovedTaint(
+    private static function handleConditionallyRemovedTaint(
         Codebase $codebase,
         PhpParser\Node\FunctionLike $stmt,
         Aliases $aliases,

@@ -9,8 +9,10 @@ use Psalm\Context;
 use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\IssueBuffer;
+use Psalm\Type\TaintKind;
 
 use function array_filter;
+use function array_flip;
 use function array_map;
 use function array_values;
 use function in_array;
@@ -34,6 +36,17 @@ final class TaintTest extends TestCase
         'MixedArrayAssignment', 'InvalidReturnStatement', 'InvalidArrayOffset', 'UndefinedFunction', 'ImplicitToStringCast',
         'InvalidArgument', 'UndefinedVariable',
     ];
+    public function testTaintKindNoHoles(): void
+    {
+        $constants = array_flip(TaintKind::TAINT_NAMES);
+
+        for ($i = 0; $i < TaintKind::BUILTIN_TAINT_COUNT; $i++) {
+            $current = 1 << $i;
+            if (!isset($constants[$current])) {
+                $this->fail('TaintKind is missing value for bit ' . $i);
+            }
+        }
+    }
     /**
      * @dataProvider providerValidCodeParse
      */
@@ -260,7 +273,7 @@ final class TaintTest extends TestCase
             ],
             'taintFilterVar' => [
                 'code' => '<?php
-                    /** @psalm-taint-sink input $value */
+                    /** @psalm-taint-sink input_except_sleep $value */
                     function taintSink(mixed $value): void {}
 
                     taintSink(filter_var($_GET["bad"], FILTER_VALIDATE_INT));
@@ -2102,7 +2115,7 @@ final class TaintTest extends TestCase
             ],
             'taintedFile' => [
                 'code' => '<?php
-                file_get_contents($_GET[\'taint\']);',
+                fopen($_GET[\'taint\'], "r");',
             'error_message' => 'TaintedFile',
             ],
             'taintedHeader' => [
@@ -2781,6 +2794,7 @@ final class TaintTest extends TestCase
                     'TaintedHtml{ echo $value; }',
                     'TaintedTextWithQuotes{ echo $value; }',
                     'TaintedShell{ exec($value); }',
+                    'TaintedSSRF{ file_get_contents($value); }',
                     'TaintedFile{ file_get_contents($value); }',
                 ],
             ],
