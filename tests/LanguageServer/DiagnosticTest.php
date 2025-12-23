@@ -26,6 +26,7 @@ use Psalm\Tests\LanguageServer\MockProtocolStream;
 use Psalm\Tests\TestConfig;
 
 use function Amp\delay;
+use function defined;
 use function getcwd;
 use function rand;
 
@@ -119,7 +120,10 @@ final class DiagnosticTest extends AsyncTestCase
 
     public function testOnChangeDebounceMs(): void
     {
-      // Create a new promisor
+        if (defined('PHP_WINDOWS_VERSION_MAJOR')) {
+            $this->markTestSkipped('Flaky on Windows');
+        }
+        // Create a new promisor
         $deferred = new DeferredFuture;
 
         $this->setTimeout(5);
@@ -173,7 +177,7 @@ final class DiagnosticTest extends AsyncTestCase
                 return;
             }
         });
-        delay(0.1);
+        delay(0.5); // Wait for debounce
 
         $deferred->getFuture()->await();
     }

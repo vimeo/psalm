@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="6.x-dev@2b0ff73c8bed091af231a0a80ac109126c92083a">
+<files psalm-version="6.x-dev@bbd217fc98c0daa0a13aea2a7f119d03ba3fc9a0">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$comment_block->tags['variablesfrom'][0]]]></code>
@@ -1653,6 +1653,9 @@
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[end($path_types)]]></code>
     </RiskyTruthyFalsyComparison>
+    <UnnecessaryVarAnnotation>
+      <code><![CDATA[DataFlowNode]]></code>
+    </UnnecessaryVarAnnotation>
   </file>
   <file src="src/Psalm/Internal/Composer.php">
     <RiskyTruthyFalsyComparison>

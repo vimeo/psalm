@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Analyzer;
 
+use Attribute;
 use Exception;
 use InvalidArgumentException;
 use LogicException;
@@ -426,7 +427,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             $class_context,
             $storage,
             $class->attrGroups,
-            AttributesAnalyzer::TARGET_CLASS,
+            Attribute::TARGET_CLASS,
             $storage->suppressed_issues + $this->getSuppressedIssues(),
         );
 
@@ -1567,7 +1568,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             $context,
             $property_storage,
             $stmt->attrGroups,
-            AttributesAnalyzer::TARGET_PROPERTY,
+            Attribute::TARGET_PROPERTY,
             $property_storage->suppressed_issues + $this->getSuppressedIssues(),
         );
 

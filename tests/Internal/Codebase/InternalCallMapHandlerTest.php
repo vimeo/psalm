@@ -80,11 +80,6 @@ final class InternalCallMapHandlerTest extends TestCase
      */
     private static array $ignoredFunctions = [
         'datefmt_create' => ['8.0'],
-        'imagefilledpolygon',
-        'imagegd',
-        'imagegd2',
-        'imageopenpolygon',
-        'imagepolygon',
         'lzf_compress',
         'lzf_decompress',
         'mailparse_msg_extract_part',
@@ -173,18 +168,18 @@ final class InternalCallMapHandlerTest extends TestCase
      * @var array<int|string, string|list<string>>
      */
     private static array $ignoredReturnTypeOnlyFunctions = [
-        'datetime::add' => ['8.1', '8.2', '8.3', '8.4'], // DateTime does not contain static
-        'datetime::modify' => ['8.1', '8.2', '8.3', '8.4'], // DateTime does not contain static
-        'datetime::createfromformat' => ['8.1', '8.2', '8.3', '8.4'], // DateTime does not contain static
+        'datetime::add' => ['8.1', '8.2', '8.3', '8.4', '8.5'], // DateTime does not contain static
+        'datetime::modify' => ['8.1', '8.2', '8.3', '8.4', '8.5'], // DateTime does not contain static
+        'datetime::createfromformat' => ['8.1', '8.2', '8.3', '8.4', '8.5'], // DateTime does not contain static
         'datetime::createfromimmutable' => ['8.1'],
         'datetime::createfrominterface',
         'datetimeimmutable::createfrominterface',
-        'datetime::setdate' => ['8.1', '8.2', '8.3', '8.4'], // DateTime does not contain static
-        'datetime::setisodate' => ['8.1', '8.2', '8.3', '8.4'], // DateTime does not contain static
-        'datetime::settime' => ['8.1', '8.2', '8.3', '8.4'], // DateTime does not contain static
-        'datetime::settimestamp' => ['8.1', '8.2', '8.3', '8.4'], // DateTime does not contain static
-        'datetime::settimezone' => ['8.1', '8.2', '8.3', '8.4'], // DateTime does not contain static
-        'datetime::sub' => ['8.1', '8.2', '8.3', '8.4'], // DateTime does not contain static
+        'datetime::setdate' => ['8.1', '8.2', '8.3', '8.4', '8.5'], // DateTime does not contain static
+        'datetime::setisodate' => ['8.1', '8.2', '8.3', '8.4', '8.5'], // DateTime does not contain static
+        'datetime::settime' => ['8.1', '8.2', '8.3', '8.4', '8.5'], // DateTime does not contain static
+        'datetime::settimestamp' => ['8.1', '8.2', '8.3', '8.4', '8.5'], // DateTime does not contain static
+        'datetime::settimezone' => ['8.1', '8.2', '8.3', '8.4', '8.5'], // DateTime does not contain static
+        'datetime::sub' => ['8.1', '8.2', '8.3', '8.4', '8.5'], // DateTime does not contain static
     ];
 
     /**
@@ -531,7 +526,7 @@ final class InternalCallMapHandlerTest extends TestCase
 
             // Read the reference mode
             if ($normalizedEntry['byRef']) {
-                $parts = explode('_', $normalizedKey, 2);
+                $parts = explode(' ', $normalizedKey, 2);
                 if (count($parts) === 2) {
                     if (!($parts[0] === 'rw' || $parts[0] === 'w' || $parts[0] === 'r')) {
                         throw new InvalidArgumentException('Invalid refMode: '.$parts[0]);

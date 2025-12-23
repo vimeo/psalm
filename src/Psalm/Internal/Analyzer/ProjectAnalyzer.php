@@ -191,7 +191,7 @@ final class ProjectAnalyzer
 
     private const PHP_VERSION_REGEX = '^(0|[1-9]\d*)\.(0|[1-9]\d*)(?:\..*)?$';
 
-    private const PHP_SUPPORTED_VERSIONS_REGEX = '^(5\.[456]|7\.[01234]|8\.[01234])(\..*)?$';
+    private const PHP_SUPPORTED_VERSIONS_REGEX = '^(5\.[456]|7\.[01234]|8\.[012345])(\..*)?$';
 
     /**
      * @param array<ReportOptions> $generated_report_options

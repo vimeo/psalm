@@ -118,6 +118,10 @@ final class ArrayMultisortParamsProvider implements FunctionParamsProviderInterf
                     $statements_source,
                 );
 
+                if ($extended_var_id === null) {
+                    return null;
+                }
+
                 $param_type = $event->getContext()->vars_in_scope[$extended_var_id] ?? null;
             }
 

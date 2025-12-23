@@ -524,7 +524,7 @@ return array (
         'user=' => 'string',
         'old_password=' => 'string',
         'new_password=' => 'string',
-        '&w_controls=' => 'array<array-key, mixed>',
+        '&w controls=' => 'array<array-key, mixed>',
       ),
     ),
     'ldap_list' => 
