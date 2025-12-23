@@ -185,7 +185,8 @@ final class TaintFlowGraph extends DataFlowGraph
     {
         $out = [];
         do {
-            $previous_source = $source->taintSource;
+            /** @var DataFlowNode $source */
+            $previous_source = $source->previous;
             if ($previous_source === $source) {
                 break;
             }
