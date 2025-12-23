@@ -60,7 +60,7 @@ jobs:
           composer update --no-install
 
       - name: Cache composer cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ${{ steps.composer-cache.outputs.files_cache }}
