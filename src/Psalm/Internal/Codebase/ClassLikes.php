@@ -24,6 +24,7 @@ use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\ClassMustBeFinal;
+use Psalm\Issue\MissingImmutableAnnotation;
 use Psalm\Issue\PossiblyUnusedMethod;
 use Psalm\Issue\PossiblyUnusedParam;
 use Psalm\Issue\PossiblyUnusedProperty;
@@ -917,6 +918,7 @@ final class ClassLikes
                                         === $fq_class_name_lc
                                 ) {
                                     self::makeImmutable(
+                                        $classlike_storage,
                                         $namespace_stmt,
                                         $project_analyzer,
                                         $classlike_storage->location->file_path,
@@ -927,6 +929,7 @@ final class ClassLikes
                             && strtolower((string) $stmt->name) === $fq_class_name_lc
                         ) {
                             self::makeImmutable(
+                                $classlike_storage,
                                 $stmt,
                                 $project_analyzer,
                                 $classlike_storage->location->file_path,
@@ -939,6 +942,7 @@ final class ClassLikes
     }
 
     public static function makeImmutable(
+        ClassLikeStorage $storage,
         PhpParser\Node\Stmt\Class_ $class_stmt,
         ProjectAnalyzer $project_analyzer,
         string $file_path,
@@ -950,6 +954,18 @@ final class ClassLikes
         );
 
         $manipulator->makeImmutable();
+
+        if (!$storage->location) {
+            return;
+        }
+
+        IssueBuffer::maybeAdd(
+            new MissingImmutableAnnotation(
+                $storage->name . ' must be marked @psalm-immutable to aid taint analysis, run with --alter to fix this',
+                $storage->location,
+            ),
+            $storage->suppressed_issues,
+        );
     }
 
     public function moveMethods(Methods $methods, ?Progress $progress = null): void

@@ -387,7 +387,7 @@ final class MethodComparator
                     $cased_guide_method_id . ' is marked @psalm-external-mutation-free, but '
                         . $implementer_classlike_storage->name . '::'
                         . ($guide_method_storage->cased_name ?: '')
-                        . ' is not marked @psalm-external-mutation-free',
+                        . ' is not marked @psalm-external-mutation-free, run with --alter to fix this',
                     $code_location,
                 ),
                 $suppressed_issues + $implementer_classlike_storage->suppressed_issues,

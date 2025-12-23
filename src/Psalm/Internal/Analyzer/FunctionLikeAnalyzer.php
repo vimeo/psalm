@@ -42,6 +42,7 @@ use Psalm\Issue\MismatchingDocblockParamType;
 use Psalm\Issue\MissingClosureParamType;
 use Psalm\Issue\MissingOverrideAttribute;
 use Psalm\Issue\MissingParamType;
+use Psalm\Issue\MissingPureAnnotation;
 use Psalm\Issue\MissingThrowsDocblock;
 use Psalm\Issue\ReferenceConstraintViolation;
 use Psalm\Issue\ReservedWord;
@@ -487,16 +488,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         $project_analyzer = $statements_analyzer->getProjectAnalyzer();
 
-        if ($codebase->alter_code
-            && (isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
-                || isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation']))
-        ) {
-            $this->track_mutations = true;
-        } elseif ($this->function instanceof Closure
-            || $this->function instanceof ArrowFunction
-        ) {
-            $this->track_mutations = true;
-        }
+        $this->track_mutations = true;
 
         if ($this->function instanceof ArrowFunction && (!$storage->return_type || $storage->return_type->isNever())) {
             // ArrowFunction perform a return implicitly so if the return type is never, we have to suppress the error
@@ -545,6 +537,15 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 && !$inferred_return_type->isTrue()
                 && !$inferred_return_type->isEmptyArray()
             ) {
+                if ($storage->location) {
+                    IssueBuffer::maybeAdd(
+                        new MissingPureAnnotation(
+                            $storage->cased_name . ' must be marked @psalm-pure to aid taint analysis, run with --alter --issues=MissingPureAnnotation to fix this',
+                            $storage->location,
+                        ),
+                        $storage->suppressed_issues,
+                    );
+                }
                 $manipulator->makePure();
             }
         }
