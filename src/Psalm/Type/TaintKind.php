@@ -12,33 +12,6 @@ namespace Psalm\Type;
  */
 final class TaintKind
 {
-    // Map of taint kind names to their bitmask values, used in taint annotations
-    public const TAINT_NAMES = [
-        'callable' => self::INPUT_CALLABLE,
-        'unserialize' => self::INPUT_UNSERIALIZE,
-        'include' => self::INPUT_INCLUDE,
-        'eval' => self::INPUT_EVAL,
-        'ldap' => self::INPUT_LDAP,
-        'sql' => self::INPUT_SQL,
-        'html' => self::INPUT_HTML,
-        'has_quotes' => self::INPUT_HAS_QUOTES,
-        'shell' => self::INPUT_SHELL,
-        'ssrf' => self::INPUT_SSRF,
-        'file' => self::INPUT_FILE,
-        'cookie' => self::INPUT_COOKIE,
-        'header' => self::INPUT_HEADER,
-        'xpath' => self::INPUT_XPATH,
-        'sleep' => self::INPUT_SLEEP,
-        'extract' => self::INPUT_EXTRACT,
-        'user_secret' => self::USER_SECRET,
-        'system_secret' => self::SYSTEM_SECRET,
-
-        'input_except_sleep' => self::ALL_INPUT & ~self::INPUT_SLEEP,
-
-        'input' => self::ALL_INPUT,
-        'tainted' => self::ALL_INPUT,
-    ];
-
     public const INPUT_CALLABLE = (1 << 0);
     public const INPUT_UNSERIALIZE = (1 << 1);
     public const INPUT_INCLUDE = (1 << 2);
@@ -67,4 +40,32 @@ final class TaintKind
 
     /** @internal Keep this synced with the above */
     public const BUILTIN_TAINT_COUNT = 18;
+
+
+    // Map of taint kind names to their bitmask values, used in taint annotations
+    public const TAINT_NAMES = [
+        'callable' => self::INPUT_CALLABLE,
+        'unserialize' => self::INPUT_UNSERIALIZE,
+        'include' => self::INPUT_INCLUDE,
+        'eval' => self::INPUT_EVAL,
+        'ldap' => self::INPUT_LDAP,
+        'sql' => self::INPUT_SQL,
+        'html' => self::INPUT_HTML,
+        'has_quotes' => self::INPUT_HAS_QUOTES,
+        'shell' => self::INPUT_SHELL,
+        'ssrf' => self::INPUT_SSRF,
+        'file' => self::INPUT_FILE,
+        'cookie' => self::INPUT_COOKIE,
+        'header' => self::INPUT_HEADER,
+        'xpath' => self::INPUT_XPATH,
+        'sleep' => self::INPUT_SLEEP,
+        'extract' => self::INPUT_EXTRACT,
+        'user_secret' => self::USER_SECRET,
+        'system_secret' => self::SYSTEM_SECRET,
+
+        'input_except_sleep' => self::ALL_INPUT & ~self::INPUT_SLEEP,
+
+        'input' => self::ALL_INPUT,
+        'tainted' => self::ALL_INPUT,
+    ];
 }
