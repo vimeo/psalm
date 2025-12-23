@@ -234,29 +234,15 @@ final class TaintTest extends TestCase
             ],
             'taintFilterVar' => [
                 'code' => '<?php
-                    $args = [
-                        filter_var($_GET["bad"], FILTER_VALIDATE_INT),
-                        filter_var($_GET["bad"], FILTER_VALIDATE_BOOLEAN),
-                        filter_var($_GET["bad"], FILTER_VALIDATE_FLOAT),
-                        filter_var($_GET["bad"], FILTER_SANITIZE_NUMBER_INT),
-                        filter_var($_GET["bad"], FILTER_SANITIZE_NUMBER_FLOAT),
-                    ];
+                    /** @psalm-taint-sink input $value */
+                    function taintSink(mixed $value): void {}
 
-                    foreach($args as $arg){
-                        new $arg;
-                        unserialize($arg);
-                        require_once $arg;
-                        eval($arg);
-                        ldap_connect($arg);
-                        ldap_search("", "", $arg);
-                        mysqli_query($conn, $arg);
-                        echo $arg;
-                        system($arg);
-                        curl_init($arg);
-                        file_get_contents($arg);
-                        setcookie($arg);
-                        header($arg);
-                    }',
+                    taintSink(filter_var($_GET["bad"], FILTER_VALIDATE_INT));
+                    taintSink(filter_var($_GET["bad"], FILTER_VALIDATE_BOOLEAN));
+                    taintSink(filter_var($_GET["bad"], FILTER_VALIDATE_FLOAT));
+                    taintSink(filter_var($_GET["bad"], FILTER_SANITIZE_NUMBER_INT));
+                    taintSink(filter_var($_GET["bad"], FILTER_SANITIZE_NUMBER_FLOAT));
+                ',
             ],
             'taintLdapEscape' => [
                 'code' => '<?php
