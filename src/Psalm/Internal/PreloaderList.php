@@ -1082,7 +1082,6 @@ final class PreloaderList {
         \Psalm\Issue\ImplicitToStringCast::class,
         \Psalm\Issue\ImpureByReferenceAssignment::class,
         \Psalm\Issue\ImpureFunctionCall::class,
-        \Psalm\Issue\ImpureGlobalVariable::class,
         \Psalm\Issue\ImpureMethodCall::class,
         \Psalm\Issue\ImpurePropertyAssignment::class,
         \Psalm\Issue\ImpurePropertyFetch::class,
