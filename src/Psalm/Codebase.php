@@ -365,6 +365,9 @@ final class Codebase
             }
             throw new RuntimeException($err);
         }
+        if ($taint_type[0] === '(') {
+            throw new AssertionError('Conditional taints cannot be registered directly');
+        }
         $id = 1 << ($this->taint_count++);
         $this->custom_taints[$id] = $taint_type;
         $this->taint_map[$taint_type] = $id;

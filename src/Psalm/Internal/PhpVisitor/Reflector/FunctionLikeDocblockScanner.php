@@ -369,7 +369,7 @@ final class FunctionLikeDocblockScanner
 
         foreach ($docblock_info->removed_taints as $removed_taint) {
             if ($removed_taint[0] === '(') {
-                self::handleRemovedTaint(
+                self::handleConditionallyRemovedTaint(
                     $codebase,
                     $stmt,
                     $aliases,
@@ -1150,7 +1150,7 @@ final class FunctionLikeDocblockScanner
      * @param array<string, non-empty-array<string, Union>> $function_template_types
      * @param array<string, non-empty-array<string, Union>> $class_template_types
      */
-    private static function handleRemovedTaint(
+    private static function handleConditionallyRemovedTaint(
         Codebase $codebase,
         PhpParser\Node\FunctionLike $stmt,
         Aliases $aliases,
