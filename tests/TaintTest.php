@@ -2116,7 +2116,7 @@ final class TaintTest extends TestCase
             ],
             'taintedFile' => [
                 'code' => '<?php
-                file_get_contents($_GET[\'taint\']);',
+                fopen($_GET[\'taint\'], "r");',
             'error_message' => 'TaintedFile',
             ],
             'taintedHeader' => [
@@ -2795,6 +2795,7 @@ final class TaintTest extends TestCase
                     'TaintedHtml{ echo $value; }',
                     'TaintedTextWithQuotes{ echo $value; }',
                     'TaintedShell{ exec($value); }',
+                    'TaintedSSRF{ file_get_contents($value); }',
                     'TaintedFile{ file_get_contents($value); }',
                 ],
             ],
