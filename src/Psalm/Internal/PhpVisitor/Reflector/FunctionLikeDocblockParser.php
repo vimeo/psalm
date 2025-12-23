@@ -353,7 +353,7 @@ final class FunctionLikeDocblockParser
                 } elseif ($param[0] === '(') {
                     $line_parts = CommentAnalyzer::splitDocLine($param);
 
-                    $info->removed_taints[] = CommentAnalyzer::sanitizeDocblockType($line_parts[0]);
+                    $info->conditionally_removed_taints[] = CommentAnalyzer::sanitizeDocblockType($line_parts[0]);
                 } else {
                     $info->removed_taints[] = explode(' ', $param)[0];
                 }

@@ -99,7 +99,12 @@ final class FunctionDocblockComment
     public array $added_taints = [];
 
     /**
-     * @var array<string>
+     * @var list<string>
+     */
+    public array $conditionally_removed_taints = [];
+
+    /**
+     * @var list<string>
      */
     public array $removed_taints = [];
 

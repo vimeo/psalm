@@ -260,7 +260,7 @@ final class TaintTest extends TestCase
             ],
             'taintFilterVar' => [
                 'code' => '<?php
-                    /** @psalm-taint-sink input $value */
+                    /** @psalm-taint-sink input_except_sleep $value */
                     function taintSink(mixed $value): void {}
 
                     taintSink(filter_var($_GET["bad"], FILTER_VALIDATE_INT));
