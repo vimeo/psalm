@@ -264,6 +264,7 @@
             <xs:element name="ImplicitToStringCast" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ImpureByReferenceAssignment" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ImpureFunctionCall" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="ImpureGlobalVariable" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ImpureMethodCall" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ImpurePropertyAssignment" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ImpurePropertyFetch" type="IssueHandlerType" minOccurs="0" />
