@@ -12,6 +12,7 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIntMaskVerifier;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyOf;
 use Psalm\Type\Atomic\TKeyedArray;
@@ -431,8 +432,24 @@ final class TemplateInferredTypeReplacer
             $matching_if_types = [];
             $matching_else_types = [];
 
-            $l = $template_type->getAtomicTypes();
-            foreach (isset($l['mixed']) ? [$l['mixed']] : $l as $candidate_atomic_type) {
+            $candidate_types_to_check = [];
+            $atomic_types = $template_type->getAtomicTypes();
+            
+            $types_to_process = isset($atomic_types['mixed']) ? [$atomic_types['mixed']] : $atomic_types;
+            
+            foreach ($types_to_process as $candidate_atomic_type) {
+                if ($candidate_atomic_type instanceof TIntMaskVerifier) {
+                    // Expand TIntMaskVerifier to all flag literal integer values
+                    $potential_ints = $candidate_atomic_type->potential_ints;
+                    foreach ($potential_ints as $value) {
+                        $candidate_types_to_check[] = new TLiteralInt($value);
+                    }
+                } else {
+                    $candidate_types_to_check[] = $candidate_atomic_type;
+                }
+            }
+
+            foreach ($candidate_types_to_check as $candidate_atomic_type) {
                 $candidate = new Union([$candidate_atomic_type]);
                 if (UnionTypeComparator::isContainedBy(
                     $codebase,
