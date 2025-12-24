@@ -35,11 +35,6 @@ use Psalm\Progress\Progress;
 use Psalm\Type\TaintKind;
 use Webmozart\Assert\Assert;
 
-use function array_diff;
-use function array_filter;
-use function array_intersect;
-use function array_merge;
-use function array_unique;
 use function array_unshift;
 use function count;
 use function end;
