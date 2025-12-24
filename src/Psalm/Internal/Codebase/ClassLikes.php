@@ -943,6 +943,9 @@ final class ClassLikes
         ProjectAnalyzer $project_analyzer,
         string $file_path,
     ): void {
+        if ($class_stmt instanceof VirtualNode) {
+            return;
+        }
         $manipulator = ClassDocblockManipulator::getForClass(
             $project_analyzer,
             $file_path,
