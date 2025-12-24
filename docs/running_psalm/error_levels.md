@@ -69,6 +69,7 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
  - [MissingDependency](issues/MissingDependency.md)
  - [MissingFile](issues/MissingFile.md)
  - [MissingImmutableAnnotation](issues/MissingImmutableAnnotation.md)
+ - [MissingPureAnnotation](issues/MissingPureAnnotation.md)
  - [MissingTemplateParam](issues/MissingTemplateParam.md)
  - [MissingThrowsDocblock](issues/MissingThrowsDocblock.md)
  - [NoEnumProperties](issues/NoEnumProperties.md)

@@ -653,6 +653,13 @@ final class ImmutableAnnotationTest extends TestCase
                     }',
                 'error_message' => 'ImpureMethodCall',
             ],
+            'mustBeImmutableInferred' => [
+                'code' => '<?php
+                    interface SomethingThatCouldBeImmutable {
+                        public function someInteger() : int;
+                    }',
+                'error_message' => 'MissingImmutableAnnotation',
+            ],
             'mustBeImmutableLikeInterfaces' => [
                 'code' => '<?php
                     /** @psalm-immutable */
@@ -682,6 +689,13 @@ final class ImmutableAnnotationTest extends TestCase
                         }
                     }',
                 'error_message' => 'MissingImmutableAnnotation',
+            ],
+            'couldBePure' => [
+                'code' => '<?php
+                    function couldBePure(int $a) : int {
+                        return $a * 2;
+                    }',
+                'error_message' => 'MissingPureAnnotation',
             ],
             'preventNonImmutableTraitInImmutableClass' => [
                 'code' => '<?php

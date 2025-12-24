@@ -127,6 +127,7 @@
  - [MissingOverrideAttribute](issues/MissingOverrideAttribute.md)
  - [MissingParamType](issues/MissingParamType.md)
  - [MissingPropertyType](issues/MissingPropertyType.md)
+ - [MissingPureAnnotation](issues/MissingPureAnnotation.md)
  - [MissingReturnType](issues/MissingReturnType.md)
  - [MissingTemplateParam](issues/MissingTemplateParam.md)
  - [MissingThrowsDocblock](issues/MissingThrowsDocblock.md)

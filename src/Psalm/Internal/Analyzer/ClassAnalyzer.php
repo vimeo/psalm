@@ -2192,7 +2192,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 IssueBuffer::maybeAdd(
                     new MissingImmutableAnnotation(
                         $fq_interface_name . ' is marked @psalm-immutable, but '
-                        . $fq_class_name . ' is not marked @psalm-immutable',
+                        . $fq_class_name . ' is not marked @psalm-immutable, run with --alter to fix this',
                         $code_location,
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
@@ -2433,7 +2433,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 IssueBuffer::maybeAdd(
                     new MissingImmutableAnnotation(
                         $parent_fq_class_name . ' is marked @psalm-immutable, but '
-                        . $fq_class_name . ' is not marked @psalm-immutable',
+                        . $fq_class_name . ' is not marked @psalm-immutable, run with --alter to fix this',
                         $code_location,
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
