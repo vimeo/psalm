@@ -899,13 +899,14 @@ final class ClassLikes
 
                 $this->findPossibleMethodParamTypes($classlike_storage);
 
-                if ($codebase->alter_code
-                    && isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation'])
-                    && !isset($codebase->analyzer->mutable_classes[$fq_class_name_lc])
+                if (!isset($codebase->analyzer->mutable_classes[$fq_class_name_lc])
                     && !$classlike_storage->external_mutation_free
                     && $classlike_storage->properties
                     && isset($classlike_storage->methods['__construct'])
                 ) {
+                    $change = $codebase->alter_code
+                        && isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation']);
+
                     $stmts = $codebase->getStatementsForFile(
                         $classlike_storage->location->file_path,
                     );
@@ -918,6 +919,7 @@ final class ClassLikes
                                         === $fq_class_name_lc
                                 ) {
                                     self::makeImmutable(
+                                        $change,
                                         $classlike_storage,
                                         $namespace_stmt,
                                         $project_analyzer,
@@ -929,6 +931,7 @@ final class ClassLikes
                             && strtolower((string) $stmt->name) === $fq_class_name_lc
                         ) {
                             self::makeImmutable(
+                                $change,
                                 $classlike_storage,
                                 $stmt,
                                 $project_analyzer,
@@ -942,19 +945,22 @@ final class ClassLikes
     }
 
     public static function makeImmutable(
+        bool $change,
         ClassLikeStorage $storage,
         PhpParser\Node\Stmt\Class_ $class_stmt,
         ProjectAnalyzer $project_analyzer,
         string $file_path,
     ): void {
-        $manipulator = ClassDocblockManipulator::getForClass(
-            $project_analyzer,
-            $file_path,
-            $class_stmt,
-        );
+        if ($change) {
+            $manipulator = ClassDocblockManipulator::getForClass(
+                $project_analyzer,
+                $file_path,
+                $class_stmt,
+            );
 
-        $manipulator->makeImmutable();
-
+            $manipulator->makeImmutable();
+        }
+        
         if (!$storage->location) {
             return;
         }

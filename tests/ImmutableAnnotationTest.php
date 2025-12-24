@@ -128,6 +128,7 @@ final class ImmutableAnnotationTest extends TestCase
                             $this->bar = $bar;
                         }
 
+                        /** @psalm-pure */
                         public function withBar(string $bar): self {
                             $new = new Foo("hello");
                             $new->bar = $bar;
@@ -555,6 +556,29 @@ final class ImmutableAnnotationTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'disallowOnlyMutationFreeInPureContext' => [
+                'code' => '<?php
+
+                    /**
+                     * @psalm-mutation-free
+                     */
+                    function getData(): array {
+                        /** @var mixed $arr */
+                        $arr = $GLOBALS["cachedData"] ?? [];
+
+                        return is_array($arr) ? $arr : [];
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @return mixed
+                     */
+                    function getDataItem(string $key) {
+                        return getData()[$key] ?? null;
+                    }',
+                'error_message' => 'InaccessibleProperty',
+            ],
+
             'immutablePropertyAssignmentInternally' => [
                 'code' => '<?php
                     /**

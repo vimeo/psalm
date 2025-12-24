@@ -498,12 +498,12 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         $statements_analyzer->analyze($function_stmts, $context, $global_context);
 
-        if ($codebase->alter_code
-            && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
-            && !$this->inferred_impure
+        if (!$this->inferred_impure
+            && !$this->inferred_has_mutation
             && ($this->function instanceof Function_
                 || $this->function instanceof ClassMethod)
             && $storage->params
+            && !$storage->pure
             && !$overridden_method_ids
         ) {
             $manipulator = FunctionDocblockManipulator::getForFunction(
@@ -546,7 +546,11 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         $storage->suppressed_issues,
                     );
                 }
-                $manipulator->makePure();
+                if ($codebase->alter_code
+                    && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
+                ) {
+                    $manipulator->makePure();
+                }
             }
         }
 

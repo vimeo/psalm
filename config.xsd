@@ -346,6 +346,7 @@
             <xs:element name="MissingOverrideAttribute" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingParamType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingPropertyType" type="PropertyIssueHandlerType" minOccurs="0" />
+            <xs:element name="MissingPureProperty" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingTemplateParam" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingThrowsDocblock" type="ClassIssueHandlerType" minOccurs="0" />
