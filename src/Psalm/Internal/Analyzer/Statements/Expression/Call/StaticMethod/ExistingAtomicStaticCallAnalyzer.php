@@ -288,33 +288,13 @@ final class ExistingAtomicStaticCallAnalyzer
             }
 
             if (!$context->inside_throw) {
-                if ($context->pure && !$method_storage->pure) {
-                    IssueBuffer::maybeAdd(
-                        new ImpureMethodCall(
-                            'Cannot call an impure method from a pure context',
-                            new CodeLocation($statements_analyzer, $stmt_name),
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                } elseif ($context->mutation_free && !$method_storage->mutation_free) {
-                    IssueBuffer::maybeAdd(
-                        new ImpureMethodCall(
-                            'Cannot call a possibly-mutating method from a mutation-free context',
-                            new CodeLocation($statements_analyzer, $stmt_name),
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                } elseif ($statements_analyzer->getSource()
-                        instanceof FunctionLikeAnalyzer
-                    && $statements_analyzer->getSource()->track_mutations
-                    && !$method_storage->pure
-                ) {
-                    if (!$method_storage->mutation_free) {
-                        $statements_analyzer->getSource()->inferred_has_mutation = true;
-                    }
-
-                    $statements_analyzer->getSource()->inferred_impure = true;
-                }
+                $statements_analyzer->signalMutation(
+                    $method_storage->allowed_mutations,
+                    $context,
+                    'method',
+                    ImpureMethodCall::class,
+                    $stmt,
+                );
             }
 
             $assertionsResolver = new AssertionsFromInheritanceResolver($codebase);

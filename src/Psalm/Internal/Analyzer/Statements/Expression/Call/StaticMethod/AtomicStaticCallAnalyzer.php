@@ -38,6 +38,7 @@ use Psalm\Node\Expr\VirtualMethodCall;
 use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClassString;
@@ -614,12 +615,10 @@ final class AtomicStaticCallAnalyzer
             if ($callstatic_method_exists) {
                 $callstatic_declaring_id = $codebase->methods->getDeclaringMethodId($callstatic_id);
                 assert($callstatic_declaring_id !== null);
-                $callstatic_pure = false;
-                $callstatic_mutation_free = false;
+                $callstatic_mutations = Mutations::ALL;
                 if ($codebase->methods->hasStorage($callstatic_declaring_id)) {
                     $callstatic_storage = $codebase->methods->getStorage($callstatic_declaring_id);
-                    $callstatic_pure = $callstatic_storage->pure;
-                    $callstatic_mutation_free = $callstatic_storage->mutation_free;
+                    $callstatic_mutations = $callstatic_storage->allowed_mutations;
                 }
                 if ($codebase->methods->return_type_provider->has($fq_class_name)) {
                     $return_type_candidate = $codebase->methods->return_type_provider->getReturnType(
@@ -668,33 +667,13 @@ final class AtomicStaticCallAnalyzer
                     }
 
                     if (!$context->inside_throw) {
-                        if ($context->pure && !$callstatic_pure) {
-                            IssueBuffer::maybeAdd(
-                                new ImpureMethodCall(
-                                    'Cannot call an impure method from a pure context',
-                                    new CodeLocation($statements_analyzer, $stmt_name),
-                                ),
-                                $statements_analyzer->getSuppressedIssues(),
-                            );
-                        } elseif ($context->mutation_free && !$callstatic_mutation_free) {
-                            IssueBuffer::maybeAdd(
-                                new ImpureMethodCall(
-                                    'Cannot call a possibly-mutating method from a mutation-free context',
-                                    new CodeLocation($statements_analyzer, $stmt_name),
-                                ),
-                                $statements_analyzer->getSuppressedIssues(),
-                            );
-                        } elseif ($statements_analyzer->getSource()
-                            instanceof FunctionLikeAnalyzer
-                            && $statements_analyzer->getSource()->track_mutations
-                            && !$callstatic_pure
-                        ) {
-                            if (!$callstatic_mutation_free) {
-                                $statements_analyzer->getSource()->inferred_has_mutation = true;
-                            }
-
-                            $statements_analyzer->getSource()->inferred_impure = true;
-                        }
+                        $statements_analyzer->signalMutation(
+                            $callstatic_mutations,
+                            $context,
+                            'method',
+                            ImpureMethodCall::class,
+                            $stmt_name,
+                        );
                     }
 
                     if ($pseudo_method_storage->return_type) {

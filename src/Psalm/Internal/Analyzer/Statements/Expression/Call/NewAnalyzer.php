@@ -455,22 +455,14 @@ final class NewAnalyzer extends CallAnalyzer
                     );
                 }
 
-                if (!$method_storage->external_mutation_free && !$context->inside_throw) {
-                    if ($context->pure) {
-                        IssueBuffer::maybeAdd(
-                            new ImpureMethodCall(
-                                'Cannot call an impure constructor from a pure context',
-                                new CodeLocation($statements_analyzer, $stmt),
-                            ),
-                            $statements_analyzer->getSuppressedIssues(),
-                        );
-                    } elseif ($statements_analyzer->getSource()
-                        instanceof FunctionLikeAnalyzer
-                        && $statements_analyzer->getSource()->track_mutations
-                    ) {
-                        $statements_analyzer->getSource()->inferred_has_mutation = true;
-                        $statements_analyzer->getSource()->inferred_impure = true;
-                    }
+                if (!$context->inside_throw) {
+                    $statements_analyzer->signalMutation(
+                        $method_storage->allowed_mutations,
+                        $context,
+                        'constructor',
+                        ImpureMethodCall::class,
+                        $stmt,
+                    );
                 }
 
                 if ($method_storage->assertions && $stmt->class instanceof PhpParser\Node\Name) {
