@@ -6,6 +6,7 @@ namespace Psalm\Internal\Codebase;
 
 use Psalm\Codebase;
 use Psalm\Config;
+use Psalm\ConstantWithLocation;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\ErrorHandler;
 use Psalm\Internal\Fork\InitScannerTask;
@@ -22,7 +23,6 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionStorage;
 use Psalm\Type;
-use Psalm\Type\Union;
 use ReflectionClass;
 use Throwable;
 use UnexpectedValueException;
@@ -80,7 +80,7 @@ use const PHP_EOL;
  *     classlike_storage:array<string, ClassLikeStorage>,
  *     file_storage:array<lowercase-string, FileStorage>,
  *     taint_data: ?TaintFlowGraph,
- *     global_constants: array<string, Union>,
+ *     global_constants: array<string, ConstantWithLocation>,
  *     global_functions: array<lowercase-string, FunctionStorage>
  * }
  */
@@ -499,11 +499,9 @@ final class Scanner
                 || $this->codebase->all_functions_global
             ) {
                 foreach ($file_storage->functions as $function_storage) {
-                    if ($function_storage->cased_name
-                        && !$this->codebase->functions->hasStubbedFunction($function_storage->cased_name)
-                    ) {
+                    if ($function_storage->cased_name !== null) {
                         $this->codebase->functions->addGlobalFunction(
-                            $function_storage->cased_name,
+                            strtolower($function_storage->cased_name),
                             $function_storage,
                         );
                     }
@@ -513,7 +511,11 @@ final class Scanner
                 || $this->codebase->all_constants_global
             ) {
                 foreach ($file_storage->constants as $name => $type) {
-                    $this->codebase->addGlobalConstantType($name, $type);
+                    $this->codebase->addGlobalConstantType(
+                        $name,
+                        $type,
+                        $file_storage->constants_location[$name],
+                    );
                 }
             }
 

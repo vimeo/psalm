@@ -6,6 +6,7 @@ namespace Psalm\Internal\PhpVisitor\Reflector;
 
 use PhpParser;
 use Psalm\Aliases;
+use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Exception\DocblockParseException;
@@ -186,11 +187,13 @@ final class ExpressionScanner
                     }
 
                     $config = Config::getInstance();
+                    $loc = new CodeLocation($file_scanner, $node, null, true);
 
                     if ($functionlike_storage && !$config->hoist_constants) {
                         $functionlike_storage->defined_constants[$const_name] = $const_type;
                     } else {
                         $file_storage->constants[$const_name] = $const_type;
+                        $file_storage->constants_location[$const_name] = $loc->getHash();
                         $file_storage->declaring_constants[$const_name] = $file_storage->file_path;
                     }
 
@@ -199,7 +202,7 @@ final class ExpressionScanner
                         || $codebase->all_constants_global
                         ) && (!defined($const_name) || !$const_type->isMixed())
                     ) {
-                        $codebase->addGlobalConstantType($const_name, $const_type);
+                        $codebase->addGlobalConstantType($const_name, $const_type, $loc->getHash());
                     }
                 }
             }

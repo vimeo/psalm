@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<psalm
+    findUnusedCode="false"
+    findUnusedBaselineEntry="false"
+    allConstantsGlobal="true"
+    allFunctionsGlobal="true"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="https://getpsalm.org/schema/config"
+    xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
+>
+    <projectFiles>
+        <file name="b.php" />
+        <file name="a.php" />
+        <file name="entry.php" />
+    </projectFiles>
+</psalm>

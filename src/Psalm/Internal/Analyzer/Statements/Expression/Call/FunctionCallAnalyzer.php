@@ -453,14 +453,14 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             && !$function_name instanceof PhpParser\Node\Name\FullyQualified
         ) {
             $function_call_info->in_call_map = InternalCallMapHandler::inCallMap($original_function_id);
-            $function_call_info->is_stubbed = $codebase_functions->hasStubbedFunction($original_function_id);
+            $function_call_info->is_stubbed = $codebase_functions->hasGlobalFunction(strtolower($original_function_id));
 
             if ($function_call_info->is_stubbed || $function_call_info->in_call_map) {
                 $function_call_info->function_id = $original_function_id;
             }
         } else {
             $function_call_info->in_call_map = InternalCallMapHandler::inCallMap($function_call_info->function_id);
-            $function_call_info->is_stubbed = $codebase_functions->hasStubbedFunction($function_call_info->function_id);
+            $function_call_info->is_stubbed = $codebase_functions->hasGlobalFunction(strtolower($function_call_info->function_id));
         }
 
         $function_call_info->function_exists

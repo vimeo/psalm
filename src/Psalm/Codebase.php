@@ -94,6 +94,7 @@ use function preg_replace;
 use function str_contains;
 use function str_replace;
 use function str_starts_with;
+use function strcmp;
 use function strlen;
 use function strpos;
 use function strrpos;
@@ -139,7 +140,7 @@ final class Codebase
     public readonly Progress $progress;
 
     /**
-     * @var array<string, Union>
+     * @var array<string, ConstantWithLocation>
      */
     private static array $stubbed_constants = [];
 
@@ -667,26 +668,40 @@ final class Codebase
         );
     }
 
-    public function addGlobalConstantType(string $const_id, Union $type): void
+    public function addGlobalConstantType(string $const_id, Union $type, string $location): void
     {
-        self::$stubbed_constants[$const_id] = $type;
+        if (isset(self::$stubbed_constants[$const_id])) {
+            $existing = self::$stubbed_constants[$const_id];
+            if (strcmp($existing->location, $location) <= 0) {
+                return;
+            }
+        }
+        self::$stubbed_constants[$const_id] = new ConstantWithLocation($type, $location);
     }
 
     public function getStubbedConstantType(string $const_id): ?Union
     {
-        return self::$stubbed_constants[$const_id] ?? null;
+        return self::$stubbed_constants[$const_id]?->type ?? null;
     }
 
     /**
-     * @param array<string, Union> $stubs
+     * @param array<string, ConstantWithLocation> $stubs
      */
     public function addGlobalConstantTypes(array $stubs): void
     {
-        self::$stubbed_constants += $stubs;
+        foreach ($stubs as $const_id => $stub) {
+            if (isset(self::$stubbed_constants[$const_id])) {
+                $existing = self::$stubbed_constants[$const_id];
+                if (strcmp($existing->location, $stub->location) <= 0) {
+                    continue;
+                }
+            }
+            self::$stubbed_constants[$const_id] = $stub;
+        }
     }
 
     /**
-     * @return array<string, Union>
+     * @return array<string, ConstantWithLocation>
      */
     public function getAllStubbedConstants(): array
     {

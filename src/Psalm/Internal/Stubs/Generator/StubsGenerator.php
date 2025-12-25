@@ -95,7 +95,7 @@ final class StubsGenerator
 
         $all_function_names = [];
 
-        foreach ($codebase->functions->getAllStubbedFunctions() as $function_storage) {
+        foreach ($codebase->functions->getAllGlobalFunctions() as $function_storage) {
             if ($function_storage->location
                 && str_starts_with($function_storage->location->file_path, $psalm_base)
             ) {
@@ -123,6 +123,7 @@ final class StubsGenerator
         }
 
         foreach ($codebase->getAllStubbedConstants() as $fq_name => $type) {
+            $type = $type->type;
             if ($type->isMixed()) {
                 continue;
             }
