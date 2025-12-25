@@ -40,6 +40,7 @@ use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualMethodCall;
 use Psalm\Node\VirtualIdentifier;
 use Psalm\Storage\Assertion;
+use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
@@ -530,23 +531,13 @@ final class ForeachAnalyzer
                     $key_type,
                 );
 
-                if (!$context->pure) {
-                    if ($statements_analyzer->getSource()
-                            instanceof FunctionLikeAnalyzer
-                        && $statements_analyzer->getSource()->track_mutations
-                    ) {
-                        $statements_analyzer->getSource()->inferred_has_mutation = true;
-                        $statements_analyzer->getSource()->inferred_impure = true;
-                    }
-                } else {
-                    IssueBuffer::maybeAdd(
-                        new ImpureMethodCall(
-                            'Cannot call a possibly-mutating iterator from a pure context',
-                            new CodeLocation($statements_analyzer, $stmt),
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                }
+                $statements_analyzer->signalMutation(
+                    Mutations::ALL,
+                    $context,
+                    'possibly-mutating iterator',
+                    ImpureMethodCall::class,
+                    $stmt,
+                );
             } elseif ($iterator_atomic_type instanceof TIterable) {
                 if ($iterator_atomic_type->extra_types) {
                     $iterator_atomic_types = [

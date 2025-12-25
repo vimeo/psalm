@@ -128,8 +128,6 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
 
     public bool $has_yield = false;
 
-    public bool $mutation_free = false;
-
     public ?string $return_type_description = null;
 
     /**
@@ -141,7 +139,7 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
 
     public bool $is_static = false;
 
-    public bool $pure = false;
+    public int $allowed_mutations = Mutations::ALL;
 
     /**
      * Whether or not the function output is dependent solely on input - a function can be

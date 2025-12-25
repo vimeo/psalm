@@ -868,7 +868,19 @@ final class ParseTreeCreator
             case '(':
                 if (in_array(
                     $type_token[0],
-                    ['callable', 'pure-callable', 'Closure', '\Closure', 'pure-Closure'],
+                    [
+                        'callable',
+                        'pure-callable',
+                        'impure-callable',
+                        'self-mutating-callable',
+                        'mutating-callable',
+
+                        'Closure', '\Closure',
+                        'pure-Closure',
+                        'impure-Closure',
+                        'self-mutating-Closure',
+                        'mutating-Closure',
+                    ],
                     true,
                 )) {
                     $new_leaf = new CallableTree(
@@ -884,7 +896,7 @@ final class ParseTreeCreator
                     );
                 } else {
                     throw new TypeParseTreeException(
-                        'Parenthesis must be preceded by “Closure”, “callable”, "pure-callable" or a valid @method'
+                        'Parenthesis must be preceded by “Closure”, "pure-Closure", "impure-Closure", "self-mutating-Closure", "mutating-Closure", "callable”, "pure-callable", "impure-callable", "self-mutating-callable", "mutating-callable", or a valid @method'
                         . ' name',
                     );
                 }

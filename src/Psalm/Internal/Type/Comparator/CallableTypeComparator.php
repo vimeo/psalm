@@ -69,9 +69,9 @@ final class CallableTypeComparator
         }
         assert($input_type_part instanceof TClosure || $input_type_part instanceof TCallable);
 
-        if ($container_type_part->is_pure && !$input_type_part->is_pure) {
+        if ($container_type_part->allowed_mutations > $input_type_part->allowed_mutations) {
             if ($atomic_comparison_result) {
-                $atomic_comparison_result->type_coerced = $input_type_part->is_pure === null;
+                $atomic_comparison_result->type_coerced = true;
             }
 
             return false;

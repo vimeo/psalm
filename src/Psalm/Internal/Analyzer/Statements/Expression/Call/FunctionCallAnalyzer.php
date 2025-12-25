@@ -40,6 +40,7 @@ use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\Event\AfterEveryFunctionCallAnalysisEvent;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionStorage;
+use Psalm\Storage\Mutations;
 use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -294,7 +295,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                             'Closure',
                             $candidate_callable->params,
                             $candidate_callable->return_type,
-                            $candidate_callable->is_pure,
+                            $candidate_callable->allowed_mutations,
                         );
                     }
                 }
@@ -663,23 +664,22 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
 
                 if ($var_type_part instanceof TClosure || $var_type_part instanceof TCallable) {
-                    if (!$var_type_part->is_pure) {
-                        if ($context->pure || $context->mutation_free) {
-                            IssueBuffer::maybeAdd(
-                                new ImpureFunctionCall(
-                                    'Cannot call an impure function from a mutation-free context',
-                                    new CodeLocation($statements_analyzer->getSource(), $stmt),
-                                ),
-                                $statements_analyzer->getSuppressedIssues(),
-                            );
-                        }
-
+                    if ($statements_analyzer->signalMutation(
+                        $var_type_part->allowed_mutations,
+                        $context,
+                        'function call',
+                        ImpureFunctionCall::class,
+                        $stmt,
+                    )) {
                         if (!$function_call_info->function_storage) {
                             $function_call_info->function_storage = new FunctionStorage();
                         }
 
-                        $function_call_info->function_storage->pure = false;
-                        $function_call_info->function_storage->mutation_free = false;
+                        $function_call_info->function_storage->allowed_mutations 
+                            = max(
+                                $function_call_info->function_storage->allowed_mutations,
+                                $var_type_part->allowed_mutations
+                            );
                     }
 
                     $function_call_info->function_params = $var_type_part->params;
@@ -1047,7 +1047,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         ) {
             $must_use = true;
 
-            $callmap_function_pure = $function_call_info->function_id && $function_call_info->in_call_map
+            $mutations = $function_call_info->function_id && $function_call_info->in_call_map
                 ? $codebase->functions->isCallMapFunctionPure(
                     $codebase,
                     $statements_analyzer->node_data,
@@ -1055,38 +1055,26 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
                     $must_use,
                 )
-                : null;
-
-            if ((!$function_call_info->in_call_map
+                : (!$function_call_info->in_call_map
                     && $function_call_info->function_storage
-                    && !$function_call_info->function_storage->pure
-                    && !$function_call_info->function_storage->mutation_free)
-                || ($callmap_function_pure === false)
-            ) {
-                if ($context->mutation_free || $context->external_mutation_free) {
-                    IssueBuffer::maybeAdd(
-                        new ImpureFunctionCall(
-                            'Cannot call an impure function from a mutation-free context',
-                            new CodeLocation($statements_analyzer, $function_name),
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                } elseif ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
-                    && $statements_analyzer->getSource()->track_mutations
-                ) {
-                    $statements_analyzer->getSource()->inferred_has_mutation = true;
-                    $statements_analyzer->getSource()->inferred_impure = true;
-                }
+                    ? $function_call_info->function_storage->allowed_mutations
+                    : null);
 
+            if ($mutations !== null && $statements_analyzer->signalMutation(
+                $mutations,
+                $context,
+                'function call',
+                ImpureFunctionCall::class,
+                $stmt,
+            )) {
+                // Has mutation.
                 if (!$config->remember_property_assignments_after_call) {
                     $context->removeMutableObjectVars();
                 }
             } elseif ($function_call_info->function_id
-                && (($function_call_info->function_storage
-                        && $function_call_info->function_storage->pure
-                        && !$function_call_info->function_storage->assertions
-                        && $must_use)
-                    || ($callmap_function_pure === true && $must_use))
+                && $mutations === Mutations::PURE
+                && $must_use
+                && !$function_call_info->function_storage->assertions
                 && $codebase->find_unused_variables
                 && !$context->inside_conditional
                 && !$context->inside_unset

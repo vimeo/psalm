@@ -16,6 +16,7 @@ use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\ImpureFunctionCall;
 use Psalm\IssueBuffer;
 use Psalm\Storage\FunctionLikeParameter;
+use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TString;
@@ -119,22 +120,14 @@ final class ExitAnalyzer
             && !$context->collect_mutations
             && !$context->collect_initializations
         ) {
-            if ($context->mutation_free || $context->external_mutation_free) {
-                $function_name = $stmt->getAttribute('kind') === Exit_::KIND_DIE ? 'die' : 'exit';
-
-                IssueBuffer::maybeAdd(
-                    new ImpureFunctionCall(
-                        'Cannot call ' . $function_name . ' with a non-integer argument from a mutation-free context',
-                        new CodeLocation($statements_analyzer, $stmt),
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
-            } elseif ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
-                && $statements_analyzer->getSource()->track_mutations
-            ) {
-                $statements_analyzer->getSource()->inferred_has_mutation = true;
-                $statements_analyzer->getSource()->inferred_impure = true;
-            }
+            $function_name = $stmt->getAttribute('kind') === Exit_::KIND_DIE ? 'die' : 'exit';
+            $statements_analyzer->signalMutation(
+                Mutations::EXTERNAL_OTHER,
+                $context,
+                $function_name . ' with a non-integer argument',
+                ImpureFunctionCall::class,
+                $stmt,
+            );
         }
 
         $statements_analyzer->node_data->setType($stmt, Type::getNever());

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm;
 
+use PhpParser\Node;
 use Psalm\Type\Union;
 
 interface StatementsSource extends FileSource
@@ -63,4 +64,19 @@ interface StatementsSource extends FileSource
     public function removeSuppressedIssues(array $new_issues): void;
 
     public function getNodeTypeProvider(): NodeTypeProvider;
+
+    /**
+     * @param Mutations::* $mutation_level
+     * @param non-empty-string $msg
+     * @param class-string<\Psalm\Issue\CodeIssue> $class
+     * 
+     * @return ?non-empty-string
+     */
+    public function signalMutation(
+        int $mutation_level,
+        Context $context,
+        string $msg,
+        string $class,
+        Node $node,
+    ): bool;
 }

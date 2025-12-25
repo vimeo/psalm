@@ -89,7 +89,7 @@ final class FunctionCallReturnTypeFetcher
                     'Closure',
                     $candidate_callable->params,
                     $candidate_callable->return_type,
-                    $candidate_callable->is_pure,
+                    $candidate_callable->allowed_mutations,
                 )]);
             } else {
                 $stmt_type = Type::getClosure();

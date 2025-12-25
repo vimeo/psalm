@@ -54,6 +54,7 @@ use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Node\Stmt\VirtualWhile;
 use Psalm\Plugin\EventHandler\Event\AfterFunctionLikeAnalysisEvent;
+use Psalm\Storage\Mutations;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
@@ -126,9 +127,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
     public bool $track_mutations = false;
 
-    public bool $inferred_impure = false;
-
-    public bool $inferred_has_mutation = false;
+    /**
+     * @var int-mask<Mutations::EXTERNAL, Mutations::INTERNAL>
+     */
+    public int $inferred_mutations = Mutations::NONE;
 
     /**
      * Holds param nodes for functions with func_get_args calls
@@ -383,24 +385,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
         }
 
-        if ($storage->pure) {
-            $context->pure = true;
-        }
-
-        if ($storage->mutation_free
-            && $cased_method_id
-            && !strpos($cased_method_id, '__construct')
-            && !($storage instanceof MethodStorage && $storage->mutation_free_inferred)
-        ) {
-            $context->mutation_free = true;
-        }
-
-        if ($storage instanceof MethodStorage
-            && $storage->external_mutation_free
-            && !$storage->mutation_free_inferred
-        ) {
-            $context->external_mutation_free = true;
-        }
+        $context->allowed_mutations = $storage->allowed_mutations;
 
         foreach ($storage->unused_docblock_parameters as $param_name => $param_location) {
             if ($storage->has_undertyped_native_parameters) {
@@ -2142,7 +2127,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 'Closure',
                 $storage->params,
                 $closure_return_type,
-                $storage instanceof FunctionStorage ? $storage->pure : null,
+                $storage instanceof FunctionStorage
+                    ? $storage->allowed_mutations
+                    : null,
                 $storage instanceof FunctionStorage ? $storage->byref_uses : [],
             );
 

@@ -28,6 +28,7 @@ use Psalm\Internal\Type\ParseTree\TemplateAsTree;
 use Psalm\Internal\Type\ParseTree\UnionTree;
 use Psalm\Internal\Type\ParseTree\Value;
 use Psalm\Storage\FunctionLikeParameter;
+use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
@@ -1321,13 +1322,28 @@ final class TypeParser
             $params[] = $param;
         }
 
-        $pure = str_starts_with($parse_tree->value, 'pure-') ? true : null;
+        $allowed_mutations = Mutations::IMPURE;
 
-        if (in_array(strtolower($parse_tree->value), ['closure', '\closure', 'pure-closure'], true)) {
-            return new TClosure('Closure', $params, null, $pure, [], [], $from_docblock);
+        $n = $parse_tree->value;
+        if (str_starts_with($n, 'impure-')) {
+            $allowed_mutations = Mutations::IMPURE;
+            $n = substr($n, strlen('impure-'));
+        } elseif (str_starts_with($n, 'external-mutation-free-')) {
+            $allowed_mutations = Mutations::EXTERNAL;
+            $n = substr($n, strlen('external-mutation-free-'));
+        } elseif (str_starts_with($n, 'mutation-free-')) {
+            $allowed_mutations = Mutations::INTERNAL;
+            $n = substr($n, strlen('mutation-free-'));
+        } elseif (str_starts_with($n, 'pure-')) {
+            $allowed_mutations = Mutations::PURE;
+            $n = substr($n, strlen('pure-'));
         }
 
-        return new TCallable('callable', $params, null, $pure, $from_docblock);
+        if (in_array(strtolower($n), ['closure', '\closure'], true)) {
+            return new TClosure('Closure', $params, null, $allowed_mutations, [], [], $from_docblock);
+        }
+
+        return new TCallable('callable', $params, null, $allowed_mutations, $from_docblock);
     }
 
     /**

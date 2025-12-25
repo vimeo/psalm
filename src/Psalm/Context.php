@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Psalm;
 
 use InvalidArgumentException;
+use PhpParser\Node;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\ReferenceConstraint;
@@ -12,7 +14,9 @@ use Psalm\Internal\Scope\CaseScope;
 use Psalm\Internal\Scope\FinallyScope;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\Internal\Type\AssertionReconciler;
+use Psalm\Issue\ImpureFunctionCall;
 use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Storage\Mutations;
 use Psalm\Type\Atomic\DependentType;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TNull;
@@ -303,19 +307,7 @@ final class Context
 
     public bool $ignore_variable_method = false;
 
-    public bool $pure = false;
-
-    /**
-     * @var bool
-     * Set by @psalm-immutable
-     */
-    public bool $mutation_free = false;
-
-    /**
-     * @var bool
-     * Set by @psalm-external-mutation-free
-     */
-    public bool $external_mutation_free = false;
+    public int $allowed_mutations = Mutations::ALL;
 
     public bool $error_suppressing = false;
 
@@ -843,6 +835,17 @@ final class Context
         foreach ($function_storage->throws as $possibly_thrown_exception => $_) {
             $this->possibly_thrown_exceptions[$possibly_thrown_exception][$hash] = $codelocation;
         }
+    }
+
+    public function getImpureMessage(string $expression, int $levelB): string
+    {
+        if ($this->allowed_mutations === $levelB) {
+            throw new InvalidArgumentException('Levels are the same');
+        }
+        $a = Mutations::TO_STRING[$this->allowed_mutations];
+        $b = Mutations::TO_STRING[$levelB];
+
+        return "The context is $a but $expression is $b";
     }
 
     public function insideUse(): bool

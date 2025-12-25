@@ -14,6 +14,7 @@ use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeAlias\LinkableTypeAlias;
 use Psalm\Internal\TypeVisitor\ClasslikeReplacer;
+use Psalm\Storage\Mutations;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
@@ -227,13 +228,24 @@ abstract class Atomic implements TypeNode, Stringable
 
                 break;
 
-            case 'callable':
-                return new TCallable();
             case 'pure-callable':
                 $type = new TCallable();
-                $type->is_pure = true;
+                $type->allowed_mutations = Mutations::NONE;
 
                 return $type;
+            case 'self-mutating-callable':
+                $type = new TCallable();
+                $type->allowed_mutations = Mutations::INTERNAL;
+
+                return $type;
+            case 'mutating-callable':
+                $type = new TCallable();
+                $type->allowed_mutations = Mutations::INTERNAL;
+
+                return $type;
+            case 'impure-callable':
+            case 'callable':
+                return new TCallable();
 
             case 'array':
             case 'associative-array':

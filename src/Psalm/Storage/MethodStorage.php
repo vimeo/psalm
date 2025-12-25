@@ -33,12 +33,6 @@ final class MethodStorage extends FunctionLikeStorage
 
     public bool $has_docblock_return_type = false;
 
-    public bool $external_mutation_free = false;
-
-    public bool $immutable = false;
-
-    public bool $mutation_free_inferred = false;
-
     /**
      * @var ?array<string, bool>
      */

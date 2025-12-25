@@ -19,6 +19,7 @@ use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\NodeTypeProvider;
 use Psalm\StatementsSource;
 use Psalm\Storage\FunctionStorage;
+use Psalm\Storage\Mutations;
 use Psalm\Type\Atomic\TNamedObject;
 use UnexpectedValueException;
 
@@ -399,38 +400,38 @@ final class Functions
         string $function_id,
         ?array $args,
         bool &$must_use = true,
-    ): bool {
+    ): int {
         if (ImpureFunctionsList::isImpure($function_id)) {
-            return false;
+            return Mutations::ALL;
         }
 
         if ($function_id === 'serialize' && isset($args[0]) && $type_provider) {
             $serialize_type = $type_provider->getType($args[0]->value);
 
             if ($serialize_type && $serialize_type->canContainObjectType($codebase)) {
-                return false;
+                return Mutations::ALL;
             }
         }
 
         if (str_starts_with($function_id, 'image')) {
-            return false;
+            return Mutations::ALL;
         }
 
         if (str_starts_with($function_id, 'readline')) {
-            return false;
+            return Mutations::ALL;
         }
 
         if (($function_id === 'var_export' || $function_id === 'print_r') && !isset($args[1])) {
-            return false;
+            return Mutations::ALL;
         }
 
         if ($function_id === 'assert') {
             $must_use = false;
-            return true;
+            return Mutations::NONE;
         }
 
         if ($function_id === 'func_num_args' || $function_id === 'func_get_args') {
-            return true;
+            return Mutations::NONE;
         }
 
         if (in_array($function_id, ['count', 'sizeof']) && isset($args[0]) && $type_provider) {
@@ -465,7 +466,7 @@ final class Functions
             || ($args !== null && count($args) === 0)
             || ($function_callable->return_type && $function_callable->return_type->isVoid())
         ) {
-            return false;
+            return Mutations::ALL;
         }
 
         $must_use = $function_id !== 'array_map'
@@ -483,7 +484,7 @@ final class Functions
                         );
 
                         if ($possible_callable && !$possible_callable->is_pure) {
-                            return false;
+                            return Mutations::ALL;
                         }
                     }
                 }
@@ -494,7 +495,7 @@ final class Functions
             }
         }
 
-        return true;
+        return Mutations::NONE;
     }
 
     public static function clearCache(): void
