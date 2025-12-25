@@ -596,23 +596,13 @@ final class ForeachAnalyzer
 
                 $has_valid_iterator = true;
 
-                if (!$context->pure) {
-                    if ($statements_analyzer->getSource()
-                            instanceof FunctionLikeAnalyzer
-                        && $statements_analyzer->getSource()->track_mutations
-                    ) {
-                        $statements_analyzer->getSource()->inferred_has_mutation = true;
-                        $statements_analyzer->getSource()->inferred_impure = true;
-                    }
-                } else {
-                    IssueBuffer::maybeAdd(
-                        new ImpureMethodCall(
-                            'Cannot call a possibly-mutating Traversable::getIterator from a pure context',
-                            new CodeLocation($statements_analyzer, $stmt),
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                }
+                $statements_analyzer->signalMutation(
+                    Mutations::ALL,
+                    $context,
+                    'possibly-mutating iterator',
+                    ImpureMethodCall::class,
+                    $stmt,
+                );
             } elseif ($iterator_atomic_type instanceof TNamedObject) {
                 if ($iterator_atomic_type->value !== 'Traversable' &&
                     $iterator_atomic_type->value !== $statements_analyzer->getClassName()
@@ -650,23 +640,13 @@ final class ForeachAnalyzer
                     $raw_object_types[] = $iterator_atomic_type->value;
                 }
 
-                if (!$context->pure) {
-                    if ($statements_analyzer->getSource()
-                            instanceof FunctionLikeAnalyzer
-                        && $statements_analyzer->getSource()->track_mutations
-                    ) {
-                        $statements_analyzer->getSource()->inferred_has_mutation = true;
-                        $statements_analyzer->getSource()->inferred_impure = true;
-                    }
-                } else {
-                    IssueBuffer::maybeAdd(
-                        new ImpureMethodCall(
-                            'Cannot call a possibly-mutating iterator from a pure context',
-                            new CodeLocation($statements_analyzer, $stmt),
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                }
+                $statements_analyzer->signalMutation(
+                    Mutations::ALL,
+                    $context,
+                    'possibly-mutating iterator',
+                    ImpureMethodCall::class,
+                    $stmt,
+                );
             }
         }
 

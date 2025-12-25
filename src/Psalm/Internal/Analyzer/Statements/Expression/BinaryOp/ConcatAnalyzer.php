@@ -26,6 +26,7 @@ use Psalm\Issue\PossiblyFalseOperand;
 use Psalm\Issue\PossiblyInvalidOperand;
 use Psalm\Issue\PossiblyNullOperand;
 use Psalm\IssueBuffer;
+use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
@@ -442,22 +443,14 @@ final class ConcatAnalyzer
                             continue;
                         }
 
-                        if ($context->mutation_free && !$storage->mutation_free) {
-                            IssueBuffer::maybeAdd(
-                                new ImpureMethodCall(
-                                    'Cannot call a possibly-mutating method '
-                                        . $atomic_type->value . '::__toString from a pure context',
-                                    new CodeLocation($statements_analyzer, $operand),
-                                ),
-                                $statements_analyzer->getSuppressedIssues(),
-                            );
-                        } elseif ($statements_analyzer->getSource()
-                                instanceof FunctionLikeAnalyzer
-                            && $statements_analyzer->getSource()->track_mutations
-                        ) {
-                            $statements_analyzer->getSource()->inferred_has_mutation = true;
-                            $statements_analyzer->getSource()->inferred_impure = true;
-                        }
+                        $statements_analyzer->signalMutation(
+                            $storage->allowed_mutations,
+                            $context,
+                            'possibly-mutating method '
+                                        . $atomic_type->value . '::__toString',
+                            ImpureMethodCall::class,
+                            $operand,
+                        );
                     }
                 }
             }
