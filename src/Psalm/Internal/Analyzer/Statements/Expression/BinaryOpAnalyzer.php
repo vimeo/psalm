@@ -7,7 +7,6 @@ namespace Psalm\Internal\Analyzer\Statements\Expression;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\AndAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\CoalesceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\ConcatAnalyzer;
@@ -342,7 +341,7 @@ final class BinaryOpAnalyzer
             if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
                 && $stmt_left_type
                 && $stmt_right_type
-                && ($context->allowed_mutations !== Mutations::ALL 
+                && ($context->allowed_mutations !== Mutations::ALL
                     || $codebase->alter_code
                 )
             ) {

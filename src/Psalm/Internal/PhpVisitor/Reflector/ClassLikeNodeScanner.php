@@ -62,6 +62,7 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\EnumCaseStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\Mutations;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
@@ -701,8 +702,7 @@ final class ClassLikeNodeScanner
                 }
             }
 
-            $storage->mutation_free = $docblock_info->mutation_free;
-            $storage->external_mutation_free = $docblock_info->external_mutation_free;
+            $storage->allowed_mutations = $docblock_info->allowed_mutations;
             $storage->specialize_instance = $docblock_info->taint_specialize;
 
             $storage->override_property_visibility = $docblock_info->override_property_visibility;
@@ -791,12 +791,11 @@ final class ClassLikeNodeScanner
                 if ($attribute->fq_class_name === 'Psalm\\Immutable'
                     || $attribute->fq_class_name === 'JetBrains\\PhpStorm\\Immutable'
                 ) {
-                    $storage->mutation_free = true;
-                    $storage->external_mutation_free = true;
+                    $storage->allowed_mutations = Mutations::NONE;
                 }
 
                 if ($attribute->fq_class_name === 'Psalm\\ExternalMutationFree') {
-                    $storage->external_mutation_free = true;
+                    $storage->allowed_mutations = Mutations::INTERNAL;
                 }
 
                 if ($attribute->fq_class_name === 'AllowDynamicProperties' && $storage->readonly) {
@@ -1229,8 +1228,8 @@ final class ClassLikeNodeScanner
         $storage->cased_name = '__construct';
         $storage->defining_fqcln = $class_storage->name;
 
-        $storage->mutation_free = $storage->external_mutation_free = true;
-        $storage->mutation_free_inferred = true;
+        $storage->allowed_mutations = Mutations::NONE;
+        $storage->inferred_allowed_mutations = Mutations::NONE;
 
         $class_storage->declaring_method_ids['__construct'] = new MethodIdentifier(
             $class_storage->name,

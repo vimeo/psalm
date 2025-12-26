@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Scanner;
 
+use Psalm\Storage\Mutations;
+
 /**
  * @internal
  */
@@ -162,9 +164,7 @@ final class FunctionDocblockComment
 
     public bool $inheritdoc = false;
 
-    public bool $mutation_free = false;
-
-    public bool $external_mutation_free = false;
+    public int $allowed_mutations = Mutations::ALL;
 
     public bool $no_named_args = false;
 

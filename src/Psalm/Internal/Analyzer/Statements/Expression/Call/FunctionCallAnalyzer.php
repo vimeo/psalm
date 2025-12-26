@@ -71,6 +71,7 @@ use function count;
 use function explode;
 use function implode;
 use function in_array;
+use function max;
 use function preg_replace;
 use function reset;
 use function spl_object_id;
@@ -675,10 +676,10 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                             $function_call_info->function_storage = new FunctionStorage();
                         }
 
-                        $function_call_info->function_storage->allowed_mutations 
+                        $function_call_info->function_storage->allowed_mutations
                             = max(
                                 $function_call_info->function_storage->allowed_mutations,
-                                $var_type_part->allowed_mutations
+                                $var_type_part->allowed_mutations,
                             );
                     }
 

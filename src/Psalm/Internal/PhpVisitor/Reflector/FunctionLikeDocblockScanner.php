@@ -40,6 +40,7 @@ use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\Mutations;
 use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
@@ -98,17 +99,12 @@ final class FunctionLikeDocblockScanner
 
         $config = Config::getInstance();
 
-        if ($docblock_info->mutation_free) {
-            $storage->mutation_free = true;
-
-            if ($storage instanceof MethodStorage) {
-                $storage->external_mutation_free = true;
-                $storage->mutation_free_inferred = false;
-            }
-        }
-
-        if ($storage instanceof MethodStorage && $docblock_info->external_mutation_free) {
-            $storage->external_mutation_free = true;
+        $storage->allowed_mutations = $docblock_info->allowed_mutations;
+        
+        if ($storage instanceof MethodStorage
+            && $storage->allowed_mutations === Mutations::NONE) {
+            // We haven't inferred anything yet, so assume the worst
+            $storage->inferred_allowed_mutations = Mutations::ALL;
         }
 
         if ($docblock_info->deprecated) {
@@ -134,12 +130,8 @@ final class FunctionLikeDocblockScanner
         }
 
         if ($docblock_info->pure) {
-            $storage->pure = true;
+            $storage->allowed_mutations = Mutations::NONE;
             $storage->specialize_call = true;
-            $storage->mutation_free = true;
-            if ($storage instanceof MethodStorage) {
-                $storage->external_mutation_free = true;
-            }
         }
 
         if ($docblock_info->specialize_call) {

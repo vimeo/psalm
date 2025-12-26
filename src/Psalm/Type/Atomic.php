@@ -229,20 +229,13 @@ abstract class Atomic implements TypeNode, Stringable
                 break;
 
             case 'pure-callable':
-                $type = new TCallable();
-                $type->allowed_mutations = Mutations::NONE;
-
-                return $type;
+                return new TCallable(
+                    allowed_mutations: Mutations::NONE,
+                );
             case 'self-mutating-callable':
-                $type = new TCallable();
-                $type->allowed_mutations = Mutations::INTERNAL;
-
-                return $type;
-            case 'mutating-callable':
-                $type = new TCallable();
-                $type->allowed_mutations = Mutations::INTERNAL;
-
-                return $type;
+                return new TCallable(
+                    allowed_mutations: Mutations::INTERNAL,
+                );
             case 'impure-callable':
             case 'callable':
                 return new TCallable();

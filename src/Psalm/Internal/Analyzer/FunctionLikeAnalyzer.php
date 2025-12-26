@@ -54,12 +54,12 @@ use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Node\Stmt\VirtualWhile;
 use Psalm\Plugin\EventHandler\Event\AfterFunctionLikeAnalysisEvent;
-use Psalm\Storage\Mutations;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClosure;
@@ -1923,8 +1923,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 }
 
                 $props = [];
-                if ($storage->external_mutation_free
-                    && !$storage->mutation_free_inferred
+                if ($storage->allowed_mutations <= Mutations::INTERNAL
+                    && $storage->inferred_allowed_mutations > Mutations::INTERNAL
                 ) {
                     $props = ['reference_free' => true];
                     if ($this->function->name->name !== '__construct') {

@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace Psalm;
 
 use InvalidArgumentException;
-use PhpParser\Node;
-use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\ReferenceConstraint;
@@ -14,7 +12,6 @@ use Psalm\Internal\Scope\CaseScope;
 use Psalm\Internal\Scope\FinallyScope;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\Internal\Type\AssertionReconciler;
-use Psalm\Issue\ImpureFunctionCall;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\Mutations;
 use Psalm\Type\Atomic\DependentType;

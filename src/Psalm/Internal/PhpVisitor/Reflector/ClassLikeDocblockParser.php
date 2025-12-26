@@ -25,6 +25,7 @@ use Psalm\Internal\Type\ParseTree\MethodWithReturnTypeTree;
 use Psalm\Internal\Type\ParseTreeCreator;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
+use Psalm\Storage\Mutations;
 
 use function array_key_first;
 use function array_shift;
@@ -264,13 +265,12 @@ final class ClassLikeDocblockParser
         if (isset($parsed_docblock->tags['psalm-immutable'])
             || isset($parsed_docblock->tags['psalm-mutation-free'])
         ) {
-            $info->mutation_free = true;
-            $info->external_mutation_free = true;
+            $info->allowed_mutations = Mutations::NONE;
             $info->taint_specialize = true;
         }
 
         if (isset($parsed_docblock->tags['psalm-external-mutation-free'])) {
-            $info->external_mutation_free = true;
+            $info->allowed_mutations = Mutations::INTERNAL;
         }
 
         if (isset($parsed_docblock->tags['psalm-taint-specialize'])) {

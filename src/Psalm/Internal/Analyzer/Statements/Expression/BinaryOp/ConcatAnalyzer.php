@@ -26,7 +26,6 @@ use Psalm\Issue\PossiblyFalseOperand;
 use Psalm\Issue\PossiblyInvalidOperand;
 use Psalm\Issue\PossiblyNullOperand;
 use Psalm\IssueBuffer;
-use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;

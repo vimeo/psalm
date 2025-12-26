@@ -76,6 +76,7 @@ use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -2186,13 +2187,17 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 );
             }
 
-            if ($interface_storage->external_mutation_free
-                && !$storage->external_mutation_free
+            if ($interface_storage->allowed_mutations
+                < $storage->allowed_mutations
             ) {
                 IssueBuffer::maybeAdd(
                     new MissingImmutableAnnotation(
-                        $fq_interface_name . ' is marked @psalm-immutable, but '
-                        . $fq_class_name . ' is not marked @psalm-immutable, run with --alter to fix this',
+                        $fq_interface_name . ' is marked with '.Mutations::TO_ATTRIBUTE_CLASS[
+                            $interface_storage->allowed_mutations
+                        ].', but '
+                        . $fq_class_name . ' is not marked with '.Mutations::TO_ATTRIBUTE_CLASS[
+                            $storage->allowed_mutations
+                        ].', run with --alter to fix this',
                         $code_location,
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
@@ -2427,25 +2432,23 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 );
             }
 
-            if ($parent_class_storage->external_mutation_free
-                && !$storage->external_mutation_free
+            if ($parent_class_storage->allowed_mutations
+                !== $storage->allowed_mutations
             ) {
+                $parentMoreStrict = $parent_class_storage->allowed_mutations
+                    < $storage->allowed_mutations;
+                $canFix = $parentMoreStrict ? ', run with --alter to fix this' : '';
+                $issue = $parentMoreStrict
+                    ? MissingImmutableAnnotation::class
+                    : MutableDependency::class;
                 IssueBuffer::maybeAdd(
-                    new MissingImmutableAnnotation(
-                        $parent_fq_class_name . ' is marked @psalm-immutable, but '
-                        . $fq_class_name . ' is not marked @psalm-immutable, run with --alter to fix this',
-                        $code_location,
-                    ),
-                    $storage->suppressed_issues + $this->getSuppressedIssues(),
-                );
-            }
-
-            if ($storage->mutation_free
-                && !$parent_class_storage->mutation_free
-            ) {
-                IssueBuffer::maybeAdd(
-                    new MutableDependency(
-                        $fq_class_name . ' is marked @psalm-immutable but ' . $parent_fq_class_name . ' is not',
+                    new $issue(
+                        $parent_fq_class_name . ' is marked with '.Mutations::TO_ATTRIBUTE_CLASS[
+                            $parent_class_storage->allowed_mutations
+                        ].', but '
+                        . $fq_class_name . ' is not marked with '.Mutations::TO_ATTRIBUTE_CLASS[
+                            $storage->allowed_mutations
+                        ]. $canFix,
                         $code_location,
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),

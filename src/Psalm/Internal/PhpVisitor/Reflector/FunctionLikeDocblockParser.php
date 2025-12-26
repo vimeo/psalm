@@ -17,6 +17,7 @@ use Psalm\Internal\Scanner\FunctionDocblockComment;
 use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\IssueBuffer;
+use Psalm\Storage\Mutations;
 
 use function array_keys;
 use function array_shift;
@@ -577,11 +578,11 @@ final class FunctionLikeDocblockParser
             || isset($parsed_docblock->tags['pure']);
 
         if (isset($parsed_docblock->tags['psalm-mutation-free'])) {
-            $info->mutation_free = true;
+            $info->allowed_mutations = Mutations::NONE;
         }
 
         if (isset($parsed_docblock->tags['psalm-external-mutation-free'])) {
-            $info->external_mutation_free = true;
+            $info->allowed_mutations = Mutations::INTERNAL;
         }
 
         if (isset($parsed_docblock->tags['no-named-arguments'])) {

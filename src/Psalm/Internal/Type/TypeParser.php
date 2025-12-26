@@ -1322,20 +1322,17 @@ final class TypeParser
             $params[] = $param;
         }
 
-        $allowed_mutations = Mutations::IMPURE;
+        $allowed_mutations = Mutations::EXTERNAL;
 
         $n = $parse_tree->value;
         if (str_starts_with($n, 'impure-')) {
-            $allowed_mutations = Mutations::IMPURE;
-            $n = substr($n, strlen('impure-'));
-        } elseif (str_starts_with($n, 'external-mutation-free-')) {
             $allowed_mutations = Mutations::EXTERNAL;
-            $n = substr($n, strlen('external-mutation-free-'));
-        } elseif (str_starts_with($n, 'mutation-free-')) {
+            $n = substr($n, strlen('impure-'));
+        } elseif (str_starts_with($n, 'self-mutating-')) {
             $allowed_mutations = Mutations::INTERNAL;
-            $n = substr($n, strlen('mutation-free-'));
+            $n = substr($n, strlen('self-mutating-'));
         } elseif (str_starts_with($n, 'pure-')) {
-            $allowed_mutations = Mutations::PURE;
+            $allowed_mutations = Mutations::NONE;
             $n = substr($n, strlen('pure-'));
         }
 

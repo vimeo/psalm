@@ -15,6 +15,7 @@ use Psalm\Storage\ClassConstantStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\Mutations;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 use Psalm\Type\Union;
@@ -273,8 +274,12 @@ final class Reflection
 
         $storage->is_static = $method->isStatic();
         $storage->abstract = $method->isAbstract();
-        $storage->mutation_free = $storage->external_mutation_free
-            = ($method_name_lc === '__construct' && $fq_class_name_lc === 'datetimezone');
+
+        if ($method_name_lc === '__construct' && $fq_class_name_lc === 'datetimezone') {
+            $storage->allowed_mutations = Mutations::NONE;
+        } else {
+            $storage->allowed_mutations = Mutations::ALL;
+        }
 
         $class_storage->declaring_method_ids[$method_name_lc] = new MethodIdentifier(
             $declaring_class->name,

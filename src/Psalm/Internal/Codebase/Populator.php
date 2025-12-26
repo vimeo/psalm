@@ -18,6 +18,7 @@ use Psalm\Progress\Progress;
 use Psalm\Storage\ClassConstantStorage;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
+use Psalm\Storage\Mutations;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TNonEmptyString;
@@ -184,16 +185,17 @@ final class Populator
             }
         }
 
-        if ($storage->mutation_free || $storage->external_mutation_free) {
+        if ($storage->allowed_mutations !== Mutations::NONE) {
             foreach ($storage->methods as $method) {
-                if (!$method->is_static && !$method->external_mutation_free) {
-                    $method->mutation_free = $storage->mutation_free;
-                    $method->external_mutation_free = $storage->external_mutation_free;
-                    $method->immutable = $storage->mutation_free;
+                if (!$method->is_static
+                    && $method->allowed_mutations !== Mutations::INTERNAL
+                ) {
+                    $method->allowed_mutations = $storage->allowed_mutations;
+                    $method->containing_class_allowed_mutations = $storage->allowed_mutations;
                 }
             }
 
-            if ($storage->mutation_free) {
+            if ($storage->allowed_mutations === Mutations::NONE) {
                 foreach ($storage->properties as $property) {
                     if (!$property->is_static) {
                         $property->readonly = true;

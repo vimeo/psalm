@@ -10,7 +10,6 @@ use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
-use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer as AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
@@ -19,6 +18,7 @@ use Psalm\Issue\UnusedMethodCall;
 use Psalm\IssueBuffer;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\Mutations;
 use Psalm\Type;
 
 /**
@@ -39,58 +39,50 @@ final class MethodCallPurityAnalyzer
         Config $config,
         AtomicMethodCallAnalysisResult $result,
     ): void {
-        $method_pure_compatible = $method_storage->external_mutation_free
-            && $statements_analyzer->node_data->isPureCompatible($stmt->var);
+        $method_allowed_mutations = $method_storage->allowed_mutations;
+        
+        if ($method_allowed_mutations === Mutations::INTERNAL
+            && (
+                // Already checked in isPureCompatible below
+                // $stmt->var->getAttribute('pure', false)
 
-        if ($context->pure
-            && !$method_storage->mutation_free
-            && !$method_pure_compatible
+                $statements_analyzer->node_data->isPureCompatible($stmt->var)
+
+                || $stmt->var->getAttribute('external_mutation_free', false)
+
+                || $method_id->fq_class_name === $context->self
+            )
         ) {
-            IssueBuffer::maybeAdd(
-                new ImpureMethodCall(
-                    'Cannot call a non-mutation-free method '
-                        . $cased_method_id . ' from a pure context',
-                    new CodeLocation($statements_analyzer, $stmt->name),
-                ),
-                $statements_analyzer->getSuppressedIssues(),
-            );
-        } elseif ($context->mutation_free
-            && !$method_storage->mutation_free
-            && !$method_pure_compatible
-        ) {
-            IssueBuffer::maybeAdd(
-                new ImpureMethodCall(
-                    'Cannot call a possibly-mutating method '
-                        . $cased_method_id . ' from a mutation-free context',
-                    new CodeLocation($statements_analyzer, $stmt->name),
-                ),
-                $statements_analyzer->getSuppressedIssues(),
-            );
-        } elseif ($context->external_mutation_free
-            && !$method_storage->mutation_free
-            && $method_id->fq_class_name !== $context->self
-            && !$method_pure_compatible
-        ) {
-            IssueBuffer::maybeAdd(
-                new ImpureMethodCall(
-                    'Cannot call a possibly-mutating method '
-                        . $cased_method_id . ' from a mutation-free context',
-                    new CodeLocation($statements_analyzer, $stmt->name),
-                ),
-                $statements_analyzer->getSuppressedIssues(),
-            );
-        } elseif (($method_storage->mutation_free
-                || ($method_storage->external_mutation_free
-                    && ($stmt->var->getAttribute('external_mutation_free', false)
-                        || $stmt->var->getAttribute('pure', false))
-                ))
+            // If the method allows internal mutations,
+            // and either:
+            //
+            // - The receiver is pure
+            // - The receiver is free from references (pureCompatible)
+            // - The receiver is free from external mutations
+            // - The method is called on $this or self
+            //
+            // then we must treat the method as if it was pure.
+            $method_allowed_mutations = Mutations::PURE;
+        }
+
+        $statements_analyzer->signalMutation(
+            $method_allowed_mutations,
+            $context,
+            'method ' . $cased_method_id,
+            ImpureMethodCall::class,
+            $stmt,
+        );
+        
+        if ($method_allowed_mutations === Mutations::NONE
             && !$context->inside_unset
         ) {
-            if ($method_storage->mutation_free
-                && (!$method_storage->mutation_free_inferred
+            if ($method_storage->allowed_mutations === Mutations::NONE
+                && ($method_storage->inferred_allowed_mutations !== Mutations::NONE
                     || $method_storage->final
                     || $method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE)
-                && ($method_storage->immutable || $config->remember_property_assignments_after_call)
+                && ($method_storage->containing_class_allowed_mutations === Mutations::NONE
+                    || $config->remember_property_assignments_after_call
+                )
             ) {
                 if ($context->inside_conditional
                     && !$method_storage->assertions
@@ -98,7 +90,7 @@ final class MethodCallPurityAnalyzer
                 ) {
                     $stmt->setAttribute('memoizable', true);
 
-                    if ($method_storage->immutable) {
+                    if ($method_storage->containing_class_allowed_mutations === Mutations::NONE) {
                         $stmt->setAttribute('pure', true);
                     }
                 }
@@ -127,19 +119,10 @@ final class MethodCallPurityAnalyzer
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     );
-                } elseif (!$method_storage->mutation_free_inferred) {
+                } elseif ($method_storage->inferred_allowed_mutations !== Mutations::NONE) {
                     $stmt->setAttribute('pure', true);
                 }
             }
-        }
-
-        if ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
-            && $statements_analyzer->getSource()->track_mutations
-            && !$method_storage->mutation_free
-            && !$method_pure_compatible
-        ) {
-            $statements_analyzer->getSource()->inferred_has_mutation = true;
-            $statements_analyzer->getSource()->inferred_impure = true;
         }
 
         if (!$config->remember_property_assignments_after_call

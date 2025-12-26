@@ -7,7 +7,6 @@ namespace Psalm\Internal\Analyzer\Statements;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CastAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -107,7 +106,7 @@ final class EchoAnalyzer
 
         if (!$context->collect_initializations && !$context->collect_mutations) {
             $statements_analyzer->signalMutation(
-                Mutations::EXTERNAL_OTHER,
+                Mutations::EXTERNAL,
                 $context,
                 'echo',
                 ImpureFunctionCall::class,

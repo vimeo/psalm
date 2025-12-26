@@ -65,8 +65,6 @@ final class TypeTokenizer
         'impure-Closure' => true,
         'self-mutating-callable' => true,
         'self-mutating-Closure' => true,
-        'mutating-callable' => true,
-        'mutating-Closure' => true,
         'literal-string' => true,
         'non-empty-literal-string' => true,
         'lowercase-string' => true,

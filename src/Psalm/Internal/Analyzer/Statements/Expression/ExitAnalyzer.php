@@ -7,7 +7,6 @@ namespace Psalm\Internal\Analyzer\Statements\Expression;
 use PhpParser\Node\Expr\Exit_;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -122,7 +121,7 @@ final class ExitAnalyzer
         ) {
             $function_name = $stmt->getAttribute('kind') === Exit_::KIND_DIE ? 'die' : 'exit';
             $statements_analyzer->signalMutation(
-                Mutations::EXTERNAL_OTHER,
+                Mutations::EXTERNAL,
                 $context,
                 $function_name . ' with a non-integer argument',
                 ImpureFunctionCall::class,

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm;
 
 use PhpParser\Node;
+use Psalm\Issue\CodeIssue;
 use Psalm\Type\Union;
 
 interface StatementsSource extends FileSource
@@ -68,8 +69,7 @@ interface StatementsSource extends FileSource
     /**
      * @param Mutations::* $mutation_level
      * @param non-empty-string $msg
-     * @param class-string<\Psalm\Issue\CodeIssue> $class
-     * 
+     * @param class-string<CodeIssue> $class
      * @return ?non-empty-string
      */
     public function signalMutation(
