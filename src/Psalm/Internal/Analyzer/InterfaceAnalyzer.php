@@ -184,6 +184,11 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
                     );
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Property) {
+                // PHP 8.4+ allows interface properties with hooks
+                if ($codebase->analysis_php_version_id >= 8_04_00 && !empty($stmt->hooks)) {
+                    continue;
+                }
+
                 IssueBuffer::maybeAdd(
                     new ParseError(
                         'Interfaces cannot have properties',
