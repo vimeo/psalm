@@ -127,9 +127,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
     public bool $track_mutations = false;
 
-    /**
-     * @var int-mask<Mutations::EXTERNAL, Mutations::INTERNAL>
-     */
     public int $inferred_mutations = Mutations::NONE;
 
     /**
@@ -1923,8 +1920,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 }
 
                 $props = [];
-                if ($storage->allowed_mutations <= Mutations::INTERNAL
-                    && $storage->inferred_allowed_mutations > Mutations::INTERNAL
+                if ($storage->allowed_mutations <= Mutations::INTERNAL_INSTANCE_READ
+                    && $storage->inferred_allowed_mutations > Mutations::INTERNAL_INSTANCE_READ
                 ) {
                     $props = ['reference_free' => true];
                     if ($this->function->name->name !== '__construct') {

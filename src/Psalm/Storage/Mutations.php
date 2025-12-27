@@ -9,57 +9,71 @@ final class Mutations
     /**
      * No mutations allowed (pure)
      *
-     * psalm-immutable on classes implies this level
      * psalm-pure on methods implies this level
      * psalm-pure on functions implies this level
-     *
-     * psalm-mutation-free on classes implies this level
-     * psalm-mutation-free on methods implies this level
-     * psalm-mutation-free on functions implies this level
      */
     const NONE = 0;
+
     /**
-     * Writing properties of $this or self (or NONE)
+     * Reading properties of $this.
      *
      * Only used for methods, ignored for functions.
      *
-     * psalm-external-mutation-free on classes implies this level
+     * psalm-immutable on classes implies this level (applied to methods)
+     * psalm-mutation-free on classes implies this level (applied to methods)
+     * psalm-mutation-free on methods implies this level
+     * psalm-mutation-free on functions implies this level
+     */
+    const INTERNAL_INSTANCE_READ = 1;
+
+    /**
+     * Writing properties of $this or self.
+     * Reading properties of $this or self.
+     *
+     * Only used for methods, ignored for functions.
+     *
+     * psalm-external-mutation-free on classes implies this level (applied to methods)
      * psalm-external-mutation-free on methods implies this level
      * psalm-external-mutation-free on functions implies this level
      */
-    const INTERNAL = 1;
+    const INTERNAL_READ_WRITE = 2;
+
     /**
-     * Writing properties of non-$this objects, echo, etc (or INTERNAL, or NONE)
+     * Writing properties of $this or self.
+     * Reading properties of $this or self.
+     * Reading and writing properties of non-$this objects, echo.
+     * Any I/O operations, global state mutations, etc.
      *
      * Default allowance level on classes, methods, and functions.
      */
-    const EXTERNAL = 2;
+    const EXTERNAL = 3;
 
     const PURE = self::NONE;
-    const INTERNALLY_MUTATING = self::INTERNAL;
-    const IMPURE = self::EXTERNAL;
-
-    const ALL = self::IMPURE;
+    const ALL = self::EXTERNAL;
 
     const TO_STRING = [
         self::NONE => 'pure',
-        self::INTERNAL => 'internally mutating',
+        self::INTERNAL_INSTANCE_READ => 'accessing instance state',
+        self::INTERNAL_READ_WRITE => 'internally mutating',
         self::EXTERNAL => 'impure',
     ];
 
     const TO_ATTRIBUTE_CLASS = [
-        self::NONE => '@psalm-immutable',
-        self::INTERNAL => '@psalm-external-mutation-free',
+        self::NONE => 'no annotation (pure not allowed on classes)',
+        self::INTERNAL_INSTANCE_READ => '@psalm-immutable or @psalm-mutation-free',
+        self::INTERNAL_READ_WRITE => '@psalm-external-mutation-free',
         self::EXTERNAL => 'no annotation (impure)',
     ];
     const TO_ATTRIBUTE_METHOD = [
         self::NONE => '@psalm-pure',
-        self::INTERNAL => '@psalm-external-mutation-free',
+        self::INTERNAL_INSTANCE_READ => '@psalm-mutation-free',
+        self::INTERNAL_READ_WRITE => '@psalm-external-mutation-free',
         self::EXTERNAL => 'no annotation (impure)',
     ];
     const TO_ATTRIBUTE_FUNCTION = [
         self::NONE => '@psalm-pure',
-        self::INTERNAL => 'no annotation (internally mutating)',
+        self::INTERNAL_INSTANCE_READ => '@psalm-mutation-free',
+        self::INTERNAL_READ_WRITE => '@psalm-external-mutation-free',
         self::EXTERNAL => 'no annotation (impure)',
     ];
 }

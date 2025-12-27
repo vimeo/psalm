@@ -872,11 +872,13 @@ final class ParseTreeCreator
                         'callable',
                         'pure-callable',
                         'self-mutating-callable',
+                        'self-accessing-callable',
                         'impure-callable',
 
                         'Closure', '\Closure',
                         'pure-Closure',
                         'self-mutating-Closure',
+                        'self-accessing-Closure',
                         'impure-Closure',
                     ],
                     true,
