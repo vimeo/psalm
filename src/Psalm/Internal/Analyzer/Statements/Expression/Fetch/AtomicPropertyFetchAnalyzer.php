@@ -498,22 +498,16 @@ final class AtomicPropertyFetchAnalyzer
 
         if (!$context->collect_mutations
             && !$context->collect_initializations
-            && !($class_storage->external_mutation_free
+            && !($class_storage->allowed_mutations <= Mutations::INTERNAL_READ_WRITE
                 && $class_property_type->allow_mutations)
         ) {
-            if ($context->pure) {
-                IssueBuffer::maybeAdd(
-                    new ImpurePropertyFetch(
+            $statements_analyzer->signalMutation(
+                Mutations::INTERNAL_INSTANCE_READ, // Matches previous logic
+                $context,
                         'Cannot access a property on a mutable object from a pure context',
-                        new CodeLocation($statements_analyzer, $stmt),
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
-            } elseif ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
-                && $statements_analyzer->getSource()->track_mutations
-            ) {
-                $statements_analyzer->getSource()->inferred_impure = true;
-            }
+                ImpurePropertyFetch::class,
+                $stmt
+            );
         }
 
         self::processTaints(

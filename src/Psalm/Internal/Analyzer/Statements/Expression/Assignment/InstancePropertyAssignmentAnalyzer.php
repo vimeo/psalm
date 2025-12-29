@@ -1305,20 +1305,13 @@ final class InstancePropertyAssignmentAnalyzer
                 && isset($context->vars_in_scope[$lhs_var_id])
                 && !$context->vars_in_scope[$lhs_var_id]->allow_mutations
             ) {
-                if ($context->mutation_free) {
-                    IssueBuffer::maybeAdd(
-                        new ImpurePropertyAssignment(
-                            'Cannot assign to a property from a mutation-free context',
-                            new CodeLocation($statements_analyzer, $stmt),
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                } elseif ($statements_analyzer->getSource()
-                    instanceof FunctionLikeAnalyzer
-                    && $statements_analyzer->getSource()->track_mutations
-                ) {
-                    $statements_analyzer->getSource()->inferred_impure = true;
-                }
+                $statements_analyzer->signalMutation(
+                    Mutations::INTERNAL_INSTANCE_READ, // Matches previous code
+                    $context,
+                    'Cannot assign to a property from a mutation-free context',
+                    ImpurePropertyAssignment::class,
+                    $stmt
+                );
             }
 
             if ($property_storage->getter_method) {
