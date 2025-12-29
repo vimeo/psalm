@@ -29,6 +29,8 @@ final class Mutations
     /**
      * Writing properties of $this or self.
      * Reading properties of $this or self.
+     * 
+     * Writing params passed by reference.
      *
      * Only used for methods, ignored for functions.
      *

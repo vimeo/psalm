@@ -77,6 +77,7 @@ use Psalm\Node\Expr\BinaryOp\VirtualShiftRight;
 use Psalm\Node\Expr\VirtualAssign;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\Assertion\Falsy;
+use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TFalse;
@@ -287,19 +288,13 @@ final class AssignmentAnalyzer
 
         if ($extended_var_id && isset($context->vars_in_scope[$extended_var_id])) {
             if ($context->vars_in_scope[$extended_var_id]->by_ref) {
-                if ($context->mutation_free) {
-                    IssueBuffer::maybeAdd(
-                        new ImpureByReferenceAssignment(
-                            'Variable ' . $extended_var_id . ' cannot be assigned to as it is passed by reference',
-                            new CodeLocation($statements_analyzer->getSource(), $assign_var),
-                        ),
-                    );
-                } elseif ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
-                    && $statements_analyzer->getSource()->track_mutations
-                ) {
-                    $statements_analyzer->getSource()->inferred_impure = true;
-                    $statements_analyzer->getSource()->inferred_has_mutation = true;
-                }
+                $statements_analyzer->signalMutation(
+                    Mutations::INTERNAL_READ_WRITE,
+                    $context,
+                    'Variable ' . $extended_var_id . ' cannot be assigned to as it is passed by reference',
+                    ImpureByReferenceAssignment::class,
+                    $assign_var
+                );
 
                 $assign_value_type = $assign_value_type->setByRef(true);
             }
