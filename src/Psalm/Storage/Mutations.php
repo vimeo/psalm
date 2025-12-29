@@ -59,21 +59,15 @@ final class Mutations
     ];
 
     const TO_ATTRIBUTE_CLASS = [
-        self::NONE => 'no annotation (pure not allowed on classes)',
-        self::INTERNAL_INSTANCE_READ => '@psalm-immutable or @psalm-mutation-free',
-        self::INTERNAL_READ_WRITE => '@psalm-external-mutation-free',
-        self::EXTERNAL => 'no annotation (impure)',
+        //self::NONE => 'no annotation (pure not allowed on classes)',
+        self::INTERNAL_INSTANCE_READ => 'psalm-immutable',
+        self::INTERNAL_READ_WRITE => 'psalm-external-mutation-free',
+        //self::EXTERNAL => 'no annotation (impure)',
     ];
-    const TO_ATTRIBUTE_METHOD = [
-        self::NONE => '@psalm-pure',
-        self::INTERNAL_INSTANCE_READ => '@psalm-mutation-free',
-        self::INTERNAL_READ_WRITE => '@psalm-external-mutation-free',
-        self::EXTERNAL => 'no annotation (impure)',
-    ];
-    const TO_ATTRIBUTE_FUNCTION = [
-        self::NONE => '@psalm-pure',
-        self::INTERNAL_INSTANCE_READ => '@psalm-mutation-free',
-        self::INTERNAL_READ_WRITE => '@psalm-external-mutation-free',
-        self::EXTERNAL => 'no annotation (impure)',
+    const TO_ATTRIBUTE_FUNCTIONLIKE = [
+        self::NONE => 'psalm-pure',
+        self::INTERNAL_INSTANCE_READ => 'psalm-mutation-free',
+        self::INTERNAL_READ_WRITE => 'psalm-external-mutation-free',
+        //self::EXTERNAL => 'no annotation (impure)',
     ];
 }

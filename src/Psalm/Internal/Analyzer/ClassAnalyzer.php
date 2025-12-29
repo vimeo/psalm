@@ -2192,10 +2192,10 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             ) {
                 IssueBuffer::maybeAdd(
                     new MissingImmutableAnnotation(
-                        $fq_interface_name . ' is marked with '.Mutations::TO_ATTRIBUTE_CLASS[
+                        $fq_interface_name . ' is marked with @'.Mutations::TO_ATTRIBUTE_CLASS[
                             $interface_storage->allowed_mutations
                         ].', but '
-                        . $fq_class_name . ' is not marked with '.Mutations::TO_ATTRIBUTE_CLASS[
+                        . $fq_class_name . ' is not marked with @'.Mutations::TO_ATTRIBUTE_CLASS[
                             $storage->allowed_mutations
                         ].', run with --alter to fix this',
                         $code_location,
@@ -2443,10 +2443,10 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     : MutableDependency::class;
                 IssueBuffer::maybeAdd(
                     new $issue(
-                        $parent_fq_class_name . ' is marked with '.Mutations::TO_ATTRIBUTE_CLASS[
+                        $parent_fq_class_name . ' is marked with @'.Mutations::TO_ATTRIBUTE_CLASS[
                             $parent_class_storage->allowed_mutations
                         ].', but '
-                        . $fq_class_name . ' is not marked with '.Mutations::TO_ATTRIBUTE_CLASS[
+                        . $fq_class_name . ' is not marked with @'.Mutations::TO_ATTRIBUTE_CLASS[
                             $storage->allowed_mutations
                         ]. $canFix,
                         $code_location,

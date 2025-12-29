@@ -15,6 +15,7 @@ use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Scanner\ParsedDocblock;
+use Psalm\Storage\Mutations;
 
 use function array_key_exists;
 use function array_reduce;
@@ -83,7 +84,7 @@ final class FunctionDocblockManipulator
     /** @var array<string, array{int, int}> */
     private array $param_typehint_offsets = [];
 
-    private bool $is_pure = false;
+    private int $allowed_mutations = Mutations::ALL;
 
     /** @var list<string> */
     private array $throwsExceptions = [];
@@ -404,9 +405,14 @@ final class FunctionDocblockManipulator
             $old_phpdoc_return_type = reset($parsed_docblock->tags['return']);
         }
 
-        if ($this->is_pure) {
+        if ($this->allowed_mutations !== Mutations::ALL) {
             $modified_docblock = true;
-            $parsed_docblock->tags['psalm-pure'] = [''];
+            unset($parsed_docblock->tags['psalm-pure']);
+            unset($parsed_docblock->tags['psalm-mutation-free']);
+            unset($parsed_docblock->tags['psalm-external-mutation-free']);
+            $parsed_docblock->tags[
+                Mutations::TO_ATTRIBUTE_FUNCTIONLIKE[$this->allowed_mutations]
+            ] = [''];
         }
         if (count($this->throwsExceptions) > 0) {
             $modified_docblock = true;
@@ -551,9 +557,9 @@ final class FunctionDocblockManipulator
         return $file_manipulations;
     }
 
-    public function makePure(): void
+    public function setAllowedMutations(int $allowed_mutations): void
     {
-        $this->is_pure = true;
+        $this->allowed_mutations = $allowed_mutations;
     }
 
     /**

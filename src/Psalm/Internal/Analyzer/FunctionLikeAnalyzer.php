@@ -383,6 +383,15 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         }
 
         $context->allowed_mutations = $storage->allowed_mutations;
+        if ($storage instanceof MethodStorage
+            && $cased_method_id
+            && str_ends_with($cased_method_id, '__construct')
+        ) {
+            $context->allowed_mutations = max(
+                $context->allowed_mutations,
+                Mutations::INTERNAL_READ_WRITE,
+            );
+        }
 
         foreach ($storage->unused_docblock_parameters as $param_name => $param_location) {
             if ($storage->has_undertyped_native_parameters) {
@@ -480,12 +489,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         $statements_analyzer->analyze($function_stmts, $context, $global_context);
 
-        if (!$this->inferred_impure
-            && !$this->inferred_has_mutation
+        if ($this->inferred_mutations < $storage->allowed_mutations
             && ($this->function instanceof Function_
                 || $this->function instanceof ClassMethod)
             && $storage->params
-            && !$storage->pure
             && !$overridden_method_ids
         ) {
             $manipulator = FunctionDocblockManipulator::getForFunction(
@@ -522,7 +529,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 if ($storage->location) {
                     IssueBuffer::maybeAdd(
                         new MissingPureAnnotation(
-                            $storage->cased_name . ' must be marked @psalm-pure to aid taint analysis, run with --alter --issues=MissingPureAnnotation to fix this',
+                            $storage->cased_name . ' must be marked @'.Mutations::TO_ATTRIBUTE_FUNCTIONLIKE[
+                                $this->inferred_mutations
+                            ].' to aid taint analysis, run with --alter --issues=MissingPureAnnotation to fix this',
                             $storage->location,
                         ),
                         $storage->suppressed_issues,
@@ -531,7 +540,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 if ($codebase->alter_code
                     && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
                 ) {
-                    $manipulator->makePure();
+                    $manipulator->setAllowedMutations($this->inferred_mutations);
                 }
             }
         }
@@ -1920,7 +1929,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 }
 
                 $props = [];
-                if ($storage->allowed_mutations <= Mutations::INTERNAL_INSTANCE_READ
+                if ($storage->allowed_mutations <= Mutations::INTERNAL_READ_WRITE
                     && $storage->inferred_allowed_mutations > Mutations::INTERNAL_INSTANCE_READ
                 ) {
                     $props = ['reference_free' => true];
