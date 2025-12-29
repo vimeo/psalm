@@ -53,6 +53,7 @@ use Psalm\Issue\UnusedParam;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Node\Stmt\VirtualWhile;
+use Psalm\Node\VirtualNode;
 use Psalm\Plugin\EventHandler\Event\AfterFunctionLikeAnalysisEvent;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
@@ -494,6 +495,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 || $this->function instanceof ClassMethod)
             && $storage->params
             && !$overridden_method_ids
+            && !$this->function instanceof VirtualNode
         ) {
             $manipulator = FunctionDocblockManipulator::getForFunction(
                 $project_analyzer,
@@ -792,6 +794,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         if ($codebase->alter_code
             && isset($project_analyzer->getIssuesToFix()['MissingThrowsDocblock'])
+            && !$this->function instanceof VirtualNode
         ) {
             $manipulator = FunctionDocblockManipulator::getForFunction(
                 $project_analyzer,
