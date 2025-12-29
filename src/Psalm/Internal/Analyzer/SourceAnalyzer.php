@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace Psalm\Internal\Analyzer;
 
 use Override;
+use PhpParser\Node;
 use Psalm\Aliases;
 use Psalm\Codebase;
+use Psalm\Context;
+use Psalm\Issue\CodeIssue;
 use Psalm\NodeTypeProvider;
 use Psalm\StatementsSource;
 use Psalm\Type\Union;
@@ -219,5 +222,37 @@ abstract class SourceAnalyzer implements StatementsSource
     public function getNodeTypeProvider(): NodeTypeProvider
     {
         return $this->source->getNodeTypeProvider();
+    }
+
+
+    /**
+     * @param Mutations::* $mutation_level
+     * @param non-empty-string $msg
+     * @param class-string<CodeIssue> $class
+     * @return ?non-empty-string
+     */
+    public function signalMutation(
+        int $mutation_level,
+        Context $context,
+        string $msg,
+        string $class,
+        Node $node,
+    ): bool {
+        if ($context->allowed_mutations < $mutation_level) {
+            \Psalm\IssueBuffer::maybeAdd(
+                new $class(
+                    $msg,
+                    new \Psalm\CodeLocation($this, $node),
+                ),
+                $this->getSuppressedIssues(),
+            );
+
+            $src = $this->getSource();
+            if ($src instanceof FunctionLikeAnalyzer && $src->track_mutations) {
+                $src->inferred_mutations = max($src->inferred_mutations, $mutation_level);
+            }
+
+            return true;
+        }
     }
 }
