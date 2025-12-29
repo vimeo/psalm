@@ -54,7 +54,7 @@ final class HighOrderFunctionArgInfo
                     'Closure',
                     $this->function_storage->params,
                     $this->function_storage->return_type,
-                    $this->function_storage->pure,
+                    $this->function_storage->allowed_mutations,
                 ),
             ]),
             self::TYPE_STRING_CALLABLE, self::TYPE_CLASS_CALLABLE => new Union([

@@ -323,7 +323,7 @@ final class CallableTypeComparator
                     'callable',
                     $params,
                     $return_type,
-                    $function_storage->pure,
+                    $function_storage->allowed_mutations,
                 );
             } catch (UnexpectedValueException) {
                 if (InternalCallMapHandler::inCallMap($input_type_part->value)) {
@@ -388,7 +388,7 @@ final class CallableTypeComparator
                         'callable',
                         $method_storage->params,
                         $converted_return_type,
-                        $method_storage->pure,
+                        $method_storage->allowed_mutations,
                     );
                 } catch (UnexpectedValueException) {
                     // do nothing
@@ -456,7 +456,7 @@ final class CallableTypeComparator
                         'callable',
                         $method_storage->params,
                         $converted_return_type,
-                        $method_storage->pure,
+                        $method_storage->allowed_mutations,
                     );
 
                     if ($template_result) {

@@ -255,7 +255,7 @@ final class AtomicStaticCallAnalyzer
                                 'Closure',
                                 $method_storage->params,
                                 $method_storage->return_type,
-                                $method_storage->pure,
+                                $method_storage->allowed_mutations,
                             )]);
                         }
                     }
@@ -497,7 +497,7 @@ final class AtomicStaticCallAnalyzer
                     'Closure',
                     $method_storage->params,
                     $method_storage->return_type,
-                    $method_storage->pure,
+                    $method_storage->allowed_mutations,
                 )]);
             } else {
                 $method_exists = $naive_method_exists
@@ -512,7 +512,7 @@ final class AtomicStaticCallAnalyzer
                         'Closure',
                         array_values($codebase->getMethodParams($method_id)),
                         $codebase->getMethodReturnType($method_id, $fq_class_name),
-                        $codebase->methods->getStorage($declaring_method_id)->pure,
+                        $codebase->methods->getStorage($declaring_method_id)->allowed_mutations,
                     )]);
                 } elseif ($codebase->methodExists(
                     $call_static_method_id = new MethodIdentifier($method_id->fq_class_name, '__callstatic'),
@@ -525,7 +525,7 @@ final class AtomicStaticCallAnalyzer
                         'Closure',
                         null,
                         $codebase->getMethodReturnType($call_static_method_id, $fq_class_name),
-                        $codebase->methods->getStorage($call_static_method_id)->pure,
+                        $codebase->methods->getStorage($call_static_method_id)->allowed_mutations,
                     )]);
                 } else {
                     if (IssueBuffer::accepts(

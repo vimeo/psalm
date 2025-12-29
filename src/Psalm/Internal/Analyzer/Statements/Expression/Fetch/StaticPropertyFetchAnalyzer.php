@@ -24,6 +24,7 @@ use Psalm\Node\Expr\VirtualPropertyFetch;
 use Psalm\Node\Expr\VirtualStaticPropertyFetch;
 use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Node\Name\VirtualFullyQualified;
+use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TLiteralString;
@@ -195,21 +196,13 @@ final class StaticPropertyFetchAnalyzer
             );
         }
 
-        if ($context->mutation_free) {
-            IssueBuffer::maybeAdd(
-                new ImpureStaticProperty(
-                    'Cannot use a static property in a mutation-free context',
-                    new CodeLocation($statements_analyzer, $stmt),
-                ),
-                $statements_analyzer->getSuppressedIssues(),
-            );
-        } elseif ($statements_analyzer->getSource()
-                instanceof FunctionLikeAnalyzer
-            && $statements_analyzer->getSource()->track_mutations
-        ) {
-            $statements_analyzer->getSource()->inferred_has_mutation = true;
-            $statements_analyzer->getSource()->inferred_impure = true;
-        }
+        $statements_analyzer->signalMutation(
+            Mutations::INTERNAL_READ_WRITE,
+            $context,
+            'static property',
+            ImpureStaticProperty::class,
+            $stmt
+        );
 
         if ($var_id && $context->hasVariable($var_id)) {
             $stmt_type = $context->vars_in_scope[$var_id];

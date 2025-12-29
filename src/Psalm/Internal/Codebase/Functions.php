@@ -483,8 +483,8 @@ final class Functions
                             $possible_callable,
                         );
 
-                        if ($possible_callable && !$possible_callable->is_pure) {
-                            return Mutations::ALL;
+                        if ($possible_callable && $possible_callable->allowed_mutations !== Mutations::NONE) {
+                            return $possible_callable->allowed_mutations;
                         }
                     }
                 }

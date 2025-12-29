@@ -230,7 +230,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                             'Closure',
                             $method_storage->params,
                             $method_storage->return_type,
-                            $method_storage->pure,
+                            $method_storage->allowed_mutations,
                         )]);
                     }
                 }
