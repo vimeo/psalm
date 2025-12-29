@@ -47,6 +47,7 @@ use Psalm\Node\VirtualArg;
 use Psalm\Node\VirtualIdentifier;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TEnumCase;
@@ -1063,21 +1064,13 @@ final class AtomicPropertyFetchAnalyzer
         ?string $var_id,
     ): void {
         if ($context->inside_isset || $context->collect_initializations) {
-            if ($context->pure) {
-                IssueBuffer::maybeAdd(
-                    new ImpurePropertyFetch(
-                        'Cannot access a property on a mutable object from a pure context',
-                        new CodeLocation($statements_analyzer, $stmt),
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
-            } elseif ($context->inside_isset
-                && $statements_analyzer->getSource()
-                instanceof FunctionLikeAnalyzer
-                && $statements_analyzer->getSource()->track_mutations
-            ) {
-                $statements_analyzer->getSource()->inferred_impure = true;
-            }
+            $statements_analyzer->signalMutation(
+                Mutations::INTERNAL_INSTANCE_READ, // Strange but matches previous code
+                $context,
+                'Cannot access a property on a mutable object from a pure context',
+                ImpurePropertyFetch::class,
+                $stmt
+            );
 
             return;
         }

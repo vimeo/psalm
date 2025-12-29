@@ -186,19 +186,13 @@ final class VariableFetchAnalyzer
         }
 
         if (!is_string($stmt->name)) {
-            if ($context->pure) {
-                IssueBuffer::maybeAdd(
-                    new ImpureVariable(
-                        'Cannot reference an unknown variable in a pure context',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt),
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
-            } elseif ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
-                && $statements_analyzer->getSource()->track_mutations
-            ) {
-                $statements_analyzer->getSource()->inferred_impure = true;
-            }
+            $statements_analyzer->signalMutation(
+                Mutations::INTERNAL_INSTANCE_READ,
+                $context,
+                'unknown variable',
+                ImpureVariable::class,
+                $stmt
+            );
 
             $was_inside_general_use = $context->inside_general_use;
             $context->inside_general_use = true;

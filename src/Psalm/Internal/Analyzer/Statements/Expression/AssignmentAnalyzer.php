@@ -1652,25 +1652,16 @@ final class AssignmentAnalyzer
             && !$context->collect_mutations
             && !$context->collect_initializations
         ) {
-            if ($context->mutation_free || $context->external_mutation_free) {
-                IssueBuffer::maybeAdd(
-                    new ImpurePropertyAssignment(
-                        'Cannot assign to a property from a mutation-free context',
-                        new CodeLocation($statements_analyzer, $assign_var),
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
-            } elseif ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
-                && $statements_analyzer->getSource()->track_mutations
-            ) {
-                if (!$assign_var->var instanceof PhpParser\Node\Expr\Variable
-                    || $assign_var->var->name !== 'this'
-                ) {
-                    $statements_analyzer->getSource()->inferred_has_mutation = true;
-                }
+            $isThis = $assign_var->var instanceof PhpParser\Node\Expr\Variable
+                && $assign_var->var->name === 'this';
 
-                $statements_analyzer->getSource()->inferred_impure = true;
-            }
+            $statements_analyzer->signalMutation(
+                $isThis ? Mutations::INTERNAL_READ_WRITE : Mutations::EXTERNAL,
+                $context,
+                'property assignment',
+                ImpurePropertyAssignment::class,
+                $assign_var,
+            );
         }
     }
 
