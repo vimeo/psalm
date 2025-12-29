@@ -1473,10 +1473,12 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 }
             }
 
-            if ($storage->mutation_free && !$trait_storage->mutation_free) {
+            if ($storage->allowed_mutations < $trait_storage->allowed_mutations) {
                 IssueBuffer::maybeAdd(
                     new MutableDependency(
-                        $storage->name . ' is marked @psalm-immutable but ' . $fq_trait_name . ' is not',
+                        $storage->name . ' is marked '.Mutations::TO_ATTRIBUTE_CLASS[
+                            $storage->allowed_mutations
+                        ].' but ' . $fq_trait_name . ' is not',
                         new CodeLocation($previous_trait_analyzer ?? $this, $trait_name),
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
