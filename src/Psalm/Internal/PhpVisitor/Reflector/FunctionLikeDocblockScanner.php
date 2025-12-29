@@ -129,14 +129,14 @@ final class FunctionLikeDocblockScanner
             $storage->variadic = true;
         }
 
-        if ($docblock_info->pure) {
-            $storage->allowed_mutations = Mutations::NONE;
+        $storage->allowed_mutations = $docblock_info->allowed_mutations;
+
+        if ($docblock_info->allowed_mutations === Mutations::NONE 
+            || $docblock_info->specialize_call
+        ) {
             $storage->specialize_call = true;
         }
 
-        if ($docblock_info->specialize_call) {
-            $storage->specialize_call = true;
-        }
 
         // we make sure we only add ignore flag for internal stubs if the config is set to true
         if ($docblock_info->ignore_nullable_return

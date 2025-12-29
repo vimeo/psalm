@@ -406,7 +406,7 @@ final class Reflection
                 }
             }
 
-            $storage->pure = true;
+            $storage->allowed_mutations = Mutations::NONE;
 
             $storage->required_param_count = 0;
 

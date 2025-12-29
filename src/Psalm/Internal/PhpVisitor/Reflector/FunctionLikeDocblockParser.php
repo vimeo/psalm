@@ -573,16 +573,15 @@ final class FunctionLikeDocblockParser
         }
 
         $info->variadic = isset($parsed_docblock->tags['psalm-variadic']);
-        $info->pure = isset($parsed_docblock->tags['psalm-pure'])
+        if (isset($parsed_docblock->tags['psalm-pure'])
             || isset($parsed_docblock->tags['phpstan-pure'])
-            || isset($parsed_docblock->tags['pure']);
-
-        if (isset($parsed_docblock->tags['psalm-mutation-free'])) {
+            || isset($parsed_docblock->tags['pure'])
+        ) {
             $info->allowed_mutations = Mutations::NONE;
-        }
-
-        if (isset($parsed_docblock->tags['psalm-external-mutation-free'])) {
-            $info->allowed_mutations = Mutations::INTERNAL;
+        } else if (isset($parsed_docblock->tags['psalm-mutation-free'])) {
+            $info->allowed_mutations = Mutations::INTERNAL_INSTANCE_READ;
+        } else if (isset($parsed_docblock->tags['psalm-external-mutation-free'])) {
+            $info->allowed_mutations = Mutations::INTERNAL_READ_WRITE;
         }
 
         if (isset($parsed_docblock->tags['no-named-arguments'])) {

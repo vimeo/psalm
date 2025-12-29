@@ -79,11 +79,6 @@ final class FunctionDocblockComment
     public bool $variadic = false;
 
     /**
-     * Whether or not the function is pure
-     */
-    public bool $pure = false;
-
-    /**
      * Whether or not to specialize a given call (useful for taint analysis)
      */
     public bool $specialize_call = false;
