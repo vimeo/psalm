@@ -238,7 +238,7 @@ abstract class Atomic implements TypeNode, Stringable
                 );
             case 'self-accessing-callable':
                 return new TCallable(
-                    allowed_mutations: Mutations::INTERNAL_INSTANCE_READ,
+                    allowed_mutations: Mutations::INTERNAL_READ,
                 );
             case 'impure-callable':
             case 'callable':

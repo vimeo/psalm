@@ -117,7 +117,7 @@ trait CallableTrait
 
         $prefix = match ($this->allowed_mutations) {
             Mutations::NONE => 'pure-',
-            Mutations::INTERNAL_INSTANCE_READ => 'self-accessing-',
+            Mutations::INTERNAL_READ => 'self-accessing-',
             Mutations::INTERNAL_READ_WRITE => 'self-mutating-',
             Mutations::EXTERNAL => 'impure-',
         };
@@ -180,7 +180,7 @@ trait CallableTrait
 
         $prefix = match ($this->allowed_mutations) {
             Mutations::NONE => 'pure-',
-            Mutations::INTERNAL_INSTANCE_READ => 'self-accessing-',
+            Mutations::INTERNAL_READ => 'self-accessing-',
             Mutations::INTERNAL_READ_WRITE => 'self-mutating-',
             Mutations::EXTERNAL => '',
         };
@@ -231,7 +231,7 @@ trait CallableTrait
 
         $prefix = match ($this->allowed_mutations) {
             Mutations::NONE => 'pure-',
-            Mutations::INTERNAL_INSTANCE_READ => 'self-accessing-',
+            Mutations::INTERNAL_READ => 'self-accessing-',
             Mutations::INTERNAL_READ_WRITE => 'self-mutating-',
             Mutations::EXTERNAL => 'impure-',
         };

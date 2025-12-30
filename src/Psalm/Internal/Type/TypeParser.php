@@ -1330,7 +1330,7 @@ final class TypeParser
             $n = substr($n, strlen('impure-'));
 
         } elseif (str_starts_with($n, 'self-accessing-')) {
-            $allowed_mutations = Mutations::INTERNAL_INSTANCE_READ;
+            $allowed_mutations = Mutations::INTERNAL_READ;
             $n = substr($n, strlen('self-accessing-'));
 
         } elseif (str_starts_with($n, 'self-mutating-')) {

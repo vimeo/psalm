@@ -579,7 +579,7 @@ final class FunctionLikeDocblockParser
         ) {
             $info->allowed_mutations = Mutations::NONE;
         } else if (isset($parsed_docblock->tags['psalm-mutation-free'])) {
-            $info->allowed_mutations = Mutations::INTERNAL_INSTANCE_READ;
+            $info->allowed_mutations = Mutations::INTERNAL_READ;
         } else if (isset($parsed_docblock->tags['psalm-external-mutation-free'])) {
             $info->allowed_mutations = Mutations::INTERNAL_READ_WRITE;
         }

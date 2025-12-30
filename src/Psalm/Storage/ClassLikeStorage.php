@@ -160,7 +160,8 @@ final class ClassLikeStorage implements HasAttributesInterface
 
     public bool $is_enum = false;
 
-    public int $allowed_mutations = Mutations::EXTERNAL;
+    /** @var Mutations::INTERNAL_READ|Mutations::INTERNAL_READ_WRITE|Mutations::ALL */
+    public int $allowed_mutations = Mutations::ALL;
 
     public bool $specialize_instance = false;
 

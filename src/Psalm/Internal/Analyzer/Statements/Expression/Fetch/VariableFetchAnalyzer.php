@@ -120,7 +120,7 @@ final class VariableFetchAnalyzer
 
             if (!$context->collect_mutations && !$context->collect_initializations) {
                 $statements_analyzer->signalMutation(
-                    Mutations::INTERNAL_INSTANCE_READ,
+                    Mutations::INTERNAL_READ,
                     $context,
                     '$this',
                     ImpureVariable::class,
@@ -187,7 +187,7 @@ final class VariableFetchAnalyzer
 
         if (!is_string($stmt->name)) {
             $statements_analyzer->signalMutation(
-                Mutations::INTERNAL_INSTANCE_READ,
+                Mutations::INTERNAL_READ,
                 $context,
                 'unknown variable',
                 ImpureVariable::class,

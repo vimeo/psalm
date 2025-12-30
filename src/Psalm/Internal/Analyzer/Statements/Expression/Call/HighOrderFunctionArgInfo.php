@@ -62,7 +62,7 @@ final class HighOrderFunctionArgInfo
                     'callable',
                     $this->function_storage->params,
                     $this->function_storage->return_type,
-                    $this->function_storage->pure,
+                    $this->function_storage->allowed_mutations,
                 ),
             ]),
             default => $this->function_storage->return_type ?? Type::getMixed(),

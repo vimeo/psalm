@@ -74,6 +74,7 @@ final class ClassLikeDocblockComment
 
     public bool $override_method_visibility = false;
 
+    /** @var Mutations::ALL|Mutations::INTERNAL_READ_WRITE|Mutations::INTERNAL_READ */
     public int $allowed_mutations = Mutations::ALL;
 
     public bool $taint_specialize = false;

@@ -468,7 +468,7 @@ final class InstancePropertyFetchAnalyzer
                             && $stmt_type->allow_mutations)
                     ) {
                         $statements_analyzer->signalMutation(
-                            Mutations::INTERNAL_INSTANCE_READ,
+                            Mutations::INTERNAL_READ,
                             $context,
                                     'Cannot access a property on a mutable object from a pure context',
                                     ImpurePropertyFetch::class,

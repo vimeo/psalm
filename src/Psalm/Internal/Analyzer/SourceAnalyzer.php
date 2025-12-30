@@ -239,6 +239,10 @@ abstract class SourceAnalyzer implements StatementsSource
         Node $node,
     ): bool {
         if ($context->allowed_mutations < $mutation_level) {
+            $msg = $context->getImpureMessage(
+                $msg,
+                $mutation_level,
+            );
             \Psalm\IssueBuffer::maybeAdd(
                 new $class(
                     $msg,
@@ -254,5 +258,7 @@ abstract class SourceAnalyzer implements StatementsSource
 
             return true;
         }
+
+        return false;
     }
 }

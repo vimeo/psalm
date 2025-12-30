@@ -44,6 +44,7 @@ use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\Mutations;
 use Psalm\Storage\Possibilities;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
@@ -225,7 +226,7 @@ final class FunctionLikeNodeScanner
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod
                 && $storage instanceof MethodStorage
                 && $classlike_storage
-                && !$classlike_storage->mutation_free
+                && $classlike_storage->allowed_mutations >= Mutations::INTERNAL_READ_WRITE
                 && $stmt->stmts
                 && count($stmt->stmts) === 1
                 && !count($stmt->params)
@@ -240,9 +241,17 @@ final class FunctionLikeNodeScanner
                 if (isset($classlike_storage->properties[$property_name])
                     && $classlike_storage->properties[$property_name]->type
                 ) {
-                    $storage->mutation_free = true;
-                    $storage->external_mutation_free = true;
-                    $storage->mutation_free_inferred = !$stmt->isFinal() && !$classlike_storage->final;
+                    $storage->allowed_mutations = min(
+                        Mutations::INTERNAL_READ,
+                        $storage->allowed_mutations,
+                    );
+                    $storage->inferred_allowed_mutations = max(
+                        !$stmt->isFinal() && !$classlike_storage->final
+                            ? Mutations::INTERNAL_READ_WRITE
+                            : Mutations::INTERNAL_READ,
+
+                        $storage->inferred_allowed_mutations,
+                    );
 
                     $classlike_storage->properties[$property_name]->getter_method = strtolower($stmt->name->name);
                 }

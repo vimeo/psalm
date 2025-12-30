@@ -24,7 +24,7 @@ final class Mutations
      * psalm-mutation-free on methods implies this level
      * psalm-mutation-free on functions implies this level
      */
-    const INTERNAL_INSTANCE_READ = 1;
+    const INTERNAL_READ = 1;
 
     /**
      * Writing properties of $this or self.
@@ -55,20 +55,20 @@ final class Mutations
 
     const TO_STRING = [
         self::NONE => 'pure',
-        self::INTERNAL_INSTANCE_READ => 'accessing instance state',
+        self::INTERNAL_READ => 'accessing instance state',
         self::INTERNAL_READ_WRITE => 'internally mutating',
         self::EXTERNAL => 'impure',
     ];
 
     const TO_ATTRIBUTE_CLASS = [
         //self::NONE => 'no annotation (pure not allowed on classes)',
-        self::INTERNAL_INSTANCE_READ => 'psalm-immutable',
+        self::INTERNAL_READ => 'psalm-immutable',
         self::INTERNAL_READ_WRITE => 'psalm-external-mutation-free',
         //self::EXTERNAL => 'no annotation (impure)',
     ];
     const TO_ATTRIBUTE_FUNCTIONLIKE = [
         self::NONE => 'psalm-pure',
-        self::INTERNAL_INSTANCE_READ => 'psalm-mutation-free',
+        self::INTERNAL_READ => 'psalm-mutation-free',
         self::INTERNAL_READ_WRITE => 'psalm-external-mutation-free',
         //self::EXTERNAL => 'no annotation (impure)',
     ];
