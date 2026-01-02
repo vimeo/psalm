@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Analyzer;
 
+use Attribute as GlobalAttribute;
 use Generator;
 use PhpParser\Node\Arg;
 use PhpParser\Node\Attribute;
@@ -46,16 +47,6 @@ final class AttributesAnalyzer
         32 => 'function/method parameter',
         40 => 'promoted property',
     ];
-
-    // Copied from Attribute class since that class might not exist at runtime
-    public const TARGET_CLASS = 1;
-    public const TARGET_FUNCTION = 2;
-    public const TARGET_METHOD = 4;
-    public const TARGET_PROPERTY = 8;
-    public const TARGET_CLASS_CONSTANT = 16;
-    public const TARGET_PARAMETER = 32;
-    public const TARGET_ALL = 63;
-    public const IS_REPEATABLE = 64;
 
     /**
      * @param array<array-key, AttributeGroup> $attribute_groups
@@ -104,7 +95,7 @@ final class AttributesAnalyzer
                 $storage instanceof ClassLikeStorage ? $storage : null,
             );
 
-            if (($attribute_class_flags & self::IS_REPEATABLE) === 0) {
+            if (($attribute_class_flags & GlobalAttribute::IS_REPEATABLE) === 0) {
                 // Not IS_REPEATABLE
                 if (isset($appearing_non_repeatable_attributes[$fq_attribute_name])) {
                     IssueBuffer::maybeAdd(
@@ -251,17 +242,17 @@ final class AttributesAnalyzer
         if (strtolower($fq_attribute_name) === "attribute") {
             // We override this here because we still want to analyze attributes
             // for PHP 7.4 when the Attribute class doesn't yet exist.
-            return self::TARGET_CLASS;
+            return GlobalAttribute::TARGET_CLASS;
         }
 
         if ($attribute_class_storage === null) {
-            return self::TARGET_ALL; // Defaults to TARGET_ALL
+            return GlobalAttribute::TARGET_ALL; // Defaults to TARGET_ALL
         }
 
         foreach ($attribute_class_storage->attributes as $attribute_attribute) {
             if ($attribute_attribute->fq_class_name === 'Attribute') {
                 if (!$attribute_attribute->args) {
-                    return self::TARGET_ALL; // Defaults to TARGET_ALL
+                    return GlobalAttribute::TARGET_ALL; // Defaults to TARGET_ALL
                 }
 
                 $first_arg = $attribute_attribute->args[array_key_first($attribute_attribute->args)];
@@ -279,7 +270,7 @@ final class AttributesAnalyzer
                 }
 
                 if (!$first_arg_type->isSingleIntLiteral()) {
-                    return self::TARGET_ALL; // Fall back to default if it's invalid
+                    return GlobalAttribute::TARGET_ALL; // Fall back to default if it's invalid
                 }
 
                 return $first_arg_type->getSingleIntLiteral()->value;
@@ -294,7 +285,7 @@ final class AttributesAnalyzer
             $suppressed_issues,
         );
 
-        return self::TARGET_ALL; // Fall back to default if it's invalid
+        return GlobalAttribute::TARGET_ALL; // Fall back to default if it's invalid
     }
 
     /**
@@ -329,22 +320,22 @@ final class AttributesAnalyzer
 
         switch ($method_id) {
             case "ReflectionClass::getattributes":
-                $target = self::TARGET_CLASS;
+                $target = GlobalAttribute::TARGET_CLASS;
                 break;
             case "ReflectionFunction::getattributes":
-                $target = self::TARGET_FUNCTION;
+                $target = GlobalAttribute::TARGET_FUNCTION;
                 break;
             case "ReflectionMethod::getattributes":
-                $target = self::TARGET_METHOD;
+                $target = GlobalAttribute::TARGET_METHOD;
                 break;
             case "ReflectionProperty::getattributes":
-                $target = self::TARGET_PROPERTY;
+                $target = GlobalAttribute::TARGET_PROPERTY;
                 break;
             case "ReflectionClassConstant::getattributes":
-                $target = self::TARGET_CLASS_CONSTANT;
+                $target = GlobalAttribute::TARGET_CLASS_CONSTANT;
                 break;
             case "ReflectionParameter::getattributes":
-                $target = self::TARGET_PARAMETER;
+                $target = GlobalAttribute::TARGET_PARAMETER;
                 break;
             default:
                 return;

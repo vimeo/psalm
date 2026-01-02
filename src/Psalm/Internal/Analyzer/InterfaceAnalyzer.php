@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Analyzer;
 
+use Attribute;
 use InvalidArgumentException;
 use LogicException;
 use PhpParser;
@@ -146,7 +147,7 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
             $interface_context,
             $class_storage,
             $this->class->attrGroups,
-            AttributesAnalyzer::TARGET_CLASS,
+            Attribute::TARGET_CLASS,
             $class_storage->suppressed_issues + $this->getSuppressedIssues(),
         );
 
@@ -183,6 +184,11 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
                     );
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Property) {
+                // PHP 8.4+ allows interface properties with hooks
+                if ($codebase->analysis_php_version_id >= 8_04_00 && !empty($stmt->hooks)) {
+                    continue;
+                }
+
                 IssueBuffer::maybeAdd(
                     new ParseError(
                         'Interfaces cannot have properties',
