@@ -812,6 +812,19 @@ final class PropertyTypeTest extends TestCase
                         return $e->attributes->item(0);
                     }',
             ],
+            'variablePropertyAssignment' => [
+                'code' => '<?php
+                    class MyClass
+                    {
+                        protected int $num;
+
+                        public function __construct()
+                        {
+                            $myString = "num";
+                            $this->$myString = 5;
+                        }
+                    }',
+            ],
             'goodArrayProperties' => [
                 'code' => '<?php
                     interface I1 {}
