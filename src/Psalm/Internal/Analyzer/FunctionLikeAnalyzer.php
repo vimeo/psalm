@@ -383,16 +383,25 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
         }
 
-        $context->allowed_mutations = $storage->allowed_mutations;
-        if ($storage instanceof MethodStorage
-            && $cased_method_id
-            && str_ends_with($cased_method_id, '__construct')
-        ) {
-            $context->allowed_mutations = max(
-                $context->allowed_mutations,
-                Mutations::INTERNAL_READ_WRITE,
-            );
+        if ($storage->pure) {
+            $context->pure = true;
         }
+
+        if ($storage->mutation_free
+            && $cased_method_id
+            && !strpos($cased_method_id, '__construct')
+            && !($storage instanceof MethodStorage && $storage->mutation_free_inferred)
+        ) {
+            $context->mutation_free = true;
+        }
+
+        if ($storage instanceof MethodStorage
+            && $storage->external_mutation_free
+            && !$storage->mutation_free_inferred
+        ) {
+            $context->external_mutation_free = true;
+        }
+
 
         foreach ($storage->unused_docblock_parameters as $param_name => $param_location) {
             if ($storage->has_undertyped_native_parameters) {

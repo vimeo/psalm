@@ -38,6 +38,7 @@ use Psalm\Issue\UnsafeGenericInstantiation;
 use Psalm\Issue\UnsafeInstantiation;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+use Psalm\Storage\Mutations;
 use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TAnonymousClassInstance;
@@ -622,7 +623,7 @@ final class NewAnalyzer extends CallAnalyzer
             );
         }
 
-        if ($storage->external_mutation_free) {
+        if ($storage->allowed_mutations <= Mutations::INTERNAL_READ_WRITE) {
             $stmt->setAttribute('external_mutation_free', true);
             $stmt_type = $statements_analyzer->node_data->getType($stmt);
 
@@ -648,7 +649,7 @@ final class NewAnalyzer extends CallAnalyzer
                 $method_storage = $codebase->methods->getStorage($declaring_method_id);
             }
 
-            if ($storage->external_mutation_free
+            if ($storage->allowed_mutations <= Mutations::INTERNAL_READ_WRITE
                 || ($method_storage && $method_storage->specialize_call)
             ) {
                 $method_source = DataFlowNode::getForMethodReturn(

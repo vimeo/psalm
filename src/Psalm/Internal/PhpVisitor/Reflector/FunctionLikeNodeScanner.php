@@ -245,13 +245,9 @@ final class FunctionLikeNodeScanner
                         Mutations::INTERNAL_READ,
                         $storage->allowed_mutations,
                     );
-                    $storage->inferred_allowed_mutations = max(
-                        !$stmt->isFinal() && !$classlike_storage->final
-                            ? Mutations::INTERNAL_READ_WRITE
-                            : Mutations::INTERNAL_READ,
-
-                        $storage->inferred_allowed_mutations,
-                    );
+                    if ($stmt->isFinal() || $classlike_storage->final) {
+                        $storage->inferred_allowed_mutations = Mutations::INTERNAL_READ;
+                    }
 
                     $classlike_storage->properties[$property_name]->getter_method = strtolower($stmt->name->name);
                 }
@@ -692,10 +688,7 @@ final class FunctionLikeNodeScanner
                     || $attribute->fq_class_name === 'JetBrains\\PhpStorm\\Pure'
                 ) {
                     $storage->specialize_call = true;
-                    $storage->mutation_free = true;
-                    if ($storage instanceof MethodStorage) {
-                        $storage->external_mutation_free = true;
-                    }
+                    $storage->allowed_mutations = Mutations::NONE;
                 }
 
                 if ($attribute->fq_class_name === 'Psalm\\Deprecated'
@@ -712,7 +705,7 @@ final class FunctionLikeNodeScanner
                 if ($attribute->fq_class_name === 'Psalm\\ExternalMutationFree'
                     && $storage instanceof MethodStorage
                 ) {
-                    $storage->external_mutation_free = true;
+                    $storage->allowed_mutations = Mutations::INTERNAL_READ_WRITE;
                 }
 
                 if ($attribute->fq_class_name === 'JetBrains\\PhpStorm\\NoReturn') {
@@ -784,8 +777,12 @@ final class FunctionLikeNodeScanner
             return;
         }
 
-        $storage->external_mutation_free = true;
-        $storage->mutation_free_inferred = true;
+        $storage->allowed_mutations = min(
+            Mutations::INTERNAL_READ_WRITE,
+            $storage->allowed_mutations,
+        );
+
+        $storage->inferred_allowed_mutations = Mutations::INTERNAL_READ;
 
         foreach ($assigned_properties as $property_name => $property_type) {
             $classlike_storage->properties[$property_name]->type = $property_type;

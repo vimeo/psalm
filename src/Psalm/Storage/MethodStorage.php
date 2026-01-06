@@ -33,7 +33,7 @@ final class MethodStorage extends FunctionLikeStorage
 
     public bool $has_docblock_return_type = false;
 
-    public int $inferred_allowed_mutations = Mutations::ALL;
+    public bool $mutation_free_inferred = false;
 
     public int $containing_class_allowed_mutations = Mutations::ALL;
 

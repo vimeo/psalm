@@ -36,6 +36,7 @@ use Psalm\Storage\AttributeStorage;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -377,14 +378,14 @@ final class MethodComparator
             );
         }
 
-        if ($guide_method_storage->external_mutation_free
-            && !$implementer_method_storage->external_mutation_free
-            && !$guide_method_storage->mutation_free_inferred
+        if ($guide_method_storage->allowed_mutations <= Mutations::INTERNAL_READ_WRITE
+            && $implementer_method_storage->allowed_mutations > Mutations::INTERNAL_READ_WRITE
+            && $guide_method_storage->inferred_allowed_mutations > Mutations::INTERNAL_READ
             && $prevent_method_signature_mismatch
         ) {
             IssueBuffer::maybeAdd(
                 new MissingImmutableAnnotation(
-                    $cased_guide_method_id . ' is marked @psalm-external-mutation-free, but '
+                    $cased_guide_method_id . ' is marked at least @psalm-external-mutation-free, but '
                         . $implementer_classlike_storage->name . '::'
                         . ($guide_method_storage->cased_name ?: '')
                         . ' is not marked @psalm-external-mutation-free, run with --alter to fix this',
