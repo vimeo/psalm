@@ -94,5 +94,25 @@ final class CastTest extends TestCase
             'error_levels' => [],
             'php_version' => '8.4',
         ];
+        yield 'castUnsetDeprecated' => [
+            'code' => '<?php
+                /** @var int<-5, 3> */
+                $int_range = 2;
+                (unset) $int_range;
+            ',
+            'error_message' => 'The (unset) cast is deprecated',
+            'error_levels' => [],
+            'php_version' => '7.4',
+        ];
+        yield 'castUnsetNotSupported' => [
+            'code' => '<?php
+                /** @var int<-5, 3> */
+                $int_range = 2;
+                (unset) $int_range;
+            ',
+            'error_message' => 'The (unset) cast is no longer supported',
+            'error_levels' => [],
+            'php_version' => '8.0',
+        ];
     }
 }
