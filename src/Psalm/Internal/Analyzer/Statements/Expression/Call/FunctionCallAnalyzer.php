@@ -1136,21 +1136,28 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         FunctionCallInfo $function_call_info,
         Context $context,
     ): void {
-        if (!$context->collect_initializations
-            && !$context->collect_mutations
-            && $function_call_info->function_id !== null
-            && $function_call_info->function_storage
-            && !$function_call_info->function_storage->assertions
-            && $codebase->find_unused_variables
-            && !$context->inside_unset
-            && !$context->insideUse()
-            && ($function_call_info->function_storage->no_discard
-                || $function_call_info->function_storage->removed_taints
-                || $function_call_info->function_storage->conditionally_removed_taints)
-            && !(
-                $function_call_info->function_storage->return_type &&
-                ($function_call_info->function_storage->return_type->isVoid()
-                    || $function_call_info->function_storage->return_type->isNever())
+        if ($context->collect_initializations
+            || $context->collect_mutations
+            || $function_call_info->function_id === null
+            || !$function_call_info->function_storage) {
+            return;
+        }
+
+        if ($context->inside_unset || $context->insideUse()) {
+            return;
+        }
+
+        // the PHP native NoDiscard attribute reports an error even for void and never
+        if ($function_call_info->function_storage->no_discard
+            || (!$function_call_info->function_storage->assertions
+                && $codebase->find_unused_variables
+                && ($function_call_info->function_storage->removed_taints
+                    || $function_call_info->function_storage->conditionally_removed_taints)
+                && !(
+                    $function_call_info->function_storage->return_type &&
+                    ($function_call_info->function_storage->return_type->isVoid()
+                     || $function_call_info->function_storage->return_type->isNever())
+                )
             )
         ) {
             IssueBuffer::maybeAdd(

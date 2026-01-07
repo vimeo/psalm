@@ -138,19 +138,23 @@ final class MethodCallPurityAnalyzer
             }
         }
 
-        if ($codebase->find_unused_variables
-            && !$context->inside_unset
+        // the PHP native NoDiscard attribute reports an error even for void and never
+        if (!$context->inside_unset
             && !$context->insideUse()
-            && !$method_storage->assertions
-            && (!$method_storage->throws
-                || !$context->inside_try)
-            && !(
-                $method_storage->return_type &&
-                ($method_storage->return_type->isVoid() || $method_storage->return_type->isNever())
-            )
             && ($method_storage->no_discard
-                || $method_storage->removed_taints
-                || $method_storage->conditionally_removed_taints)
+                || ($codebase->find_unused_variables
+                    && !$method_storage->assertions
+                    && (!$method_storage->throws
+                        || !$context->inside_try)
+                    && !(
+                        $method_storage->return_type &&
+                        ($method_storage->return_type->isVoid()
+                         || $method_storage->return_type->isNever())
+                    )
+                    && ($method_storage->removed_taints
+                        || $method_storage->conditionally_removed_taints)
+                )
+            )
         ) {
             IssueBuffer::maybeAdd(
                 new UnusedMethodCall(

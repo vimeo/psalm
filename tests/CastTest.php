@@ -77,6 +77,34 @@ final class CastTest extends TestCase
             'ignored_issues' => [],
             'php_version' => '8.5',
         ];
+        yield 'castNoDiscardToVoid' => [
+            'code' => '<?php
+                #[NoDiscard]
+                function foo(): string {
+                    return "a";
+                }
+
+                (void) foo();
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.5',
+        ];
+        yield 'castPsalmNoDiscardToVoid' => [
+            'code' => '<?php
+                /**
+                 * @psalm-no-discard
+                 */
+                function foo(): string {
+                    return "a";
+                }
+
+                (void) foo();
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.5',
+        ];
     }
 
     #[Override]

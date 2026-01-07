@@ -1501,6 +1501,16 @@ final class AnnotationTest extends TestCase
                     function foo($arg) {}',
                 'error_message' => 'InvalidDocblock',
             ],
+            'invalidVoidNoDiscardAttribute' => [
+                'code' => '<?php
+                    /**
+                     * @param array<int, string> $arg
+                     * @return void
+                     */
+                     #[NoDiscard]
+                    function foo($arg) {}',
+                'error_message' => 'InvalidAttribute',
+            ],
             'invalidNeverNoDiscard' => [
                 'code' => '<?php
                     /**
@@ -1511,6 +1521,17 @@ final class AnnotationTest extends TestCase
                         exit;
                     }',
                 'error_message' => 'InvalidDocblock',
+            ],
+            'invalidNeverNoDiscardAttribute' => [
+                'code' => '<?php
+                    /**
+                     * @return never
+                     */
+                    #[NoDiscard]
+                    function foo() {
+                        exit;
+                    }',
+                'error_message' => 'InvalidAttribute',
             ],
             'invalidVoidTaintEscape' => [
                 'code' => '<?php
