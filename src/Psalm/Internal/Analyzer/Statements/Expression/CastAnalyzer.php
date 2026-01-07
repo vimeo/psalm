@@ -298,6 +298,24 @@ final class CastAnalyzer
             return true;
         }
 
+        if ($stmt instanceof PhpParser\Node\Expr\Cast\Void_) {
+            if ($statements_analyzer->getCodebase()->analysis_php_version_id < 8_05_00) {
+                IssueBuffer::maybeAdd(
+                    new InvalidCast(
+                        'The (void) cast is only supported from PHP 8.5 and causes a fatal error in earlier versions',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
+
+            $expression_result = self::checkExprGeneralUse($statements_analyzer, $stmt, $context);
+
+            $statements_analyzer->node_data->setType($stmt, Type::getNever());
+
+            return $expression_result;
+        }
+
         IssueBuffer::maybeAdd(
             new UnrecognizedExpression(
                 'Psalm does not understand the cast ' . $stmt::class,
