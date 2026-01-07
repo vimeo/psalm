@@ -817,7 +817,8 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                         // therefore invariance is not a problem, if the parent type contains the child type
                     } elseif ($property_storage->location
                         && !$property_type->equals($guide_property_type, false)
-                        && $guide_class_storage->user_defined
+                        // do not check $guide_class_storage->user_defined here
+                        // otherwise all stubbed won't report an error
                     ) {
                         IssueBuffer::maybeAdd(
                             new NonInvariantDocblockPropertyType(

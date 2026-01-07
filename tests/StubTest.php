@@ -1800,4 +1800,52 @@ final class StubTest extends TestCase
 
         $this->analyzeFile($file_path, new Context());
     }
+
+    /**
+     * @runInSeparateProcess
+     */
+    public function testNonInvariantDocblockPropertyTypeStub(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/ParentClassWithProperty.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                use Foo\Bar;
+
+                final class Xyz extends Bar {
+                	/**
+                     * @var int
+                     */
+                    public $hello;
+
+                    public function __construct() {
+                        parent::__construct("b");
+                    }
+                }
+            ',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('NonInvariantDocblockPropertyType');
+        $this->analyzeFile($file_path, new Context());
+    }
 }
