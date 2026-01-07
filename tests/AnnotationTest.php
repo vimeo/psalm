@@ -1491,20 +1491,20 @@ final class AnnotationTest extends TestCase
                     function foo($arg) {}',
                 'error_message' => 'InvalidDocblock',
             ],
-            'invalidVoidRequireUsage' => [
+            'invalidVoidNoDiscard' => [
                 'code' => '<?php
                     /**
-                     * @psalm-require-usage
+                     * @psalm-no-discard
                      * @param array<int, string> $arg
                      * @return void
                      */
                     function foo($arg) {}',
                 'error_message' => 'InvalidDocblock',
             ],
-            'invalidNeverRequireUsage' => [
+            'invalidNeverNoDiscard' => [
                 'code' => '<?php
                     /**
-                     * @psalm-require-usage
+                     * @psalm-no-discard
                      * @return never
                      */
                     function foo() {

@@ -1144,7 +1144,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             && $codebase->find_unused_variables
             && !$context->inside_unset
             && !$context->insideUse()
-            && ($function_call_info->function_storage->require_usage
+            && ($function_call_info->function_storage->no_discard
                 || $function_call_info->function_storage->removed_taints
                 || $function_call_info->function_storage->conditionally_removed_taints)
             && !(

@@ -832,8 +832,8 @@ final class ReturnTypeAnalyzer
 
         if ($storage->return_type->isVoid() || $storage->return_type->isNever()) {
             $incompatible_annotation_text = false;
-            if ($storage->require_usage) {
-                $incompatible_annotation_text = '@psalm-require-usage';
+            if ($storage->no_discard) {
+                $incompatible_annotation_text = '@psalm-no-discard';
             } elseif ($storage->pure && !$storage->assertions && !$storage->return_type->isNever()) {
                 // currently not for "never", since exit is pure atm
                 // see https://github.com/vimeo/psalm/issues/10762
