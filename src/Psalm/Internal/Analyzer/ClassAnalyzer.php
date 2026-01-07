@@ -392,6 +392,28 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         }
 
         if ($storage->invalid_dependencies) {
+            foreach ($storage->invalid_dependencies as $dependency_name_lc => $_) {
+                if (!isset($storage->used_traits[$dependency_name_lc])) {
+                    continue;
+                }
+
+                foreach ($class->stmts as $stmt) {
+                    if (!$stmt instanceof PhpParser\Node\Stmt\TraitUse) {
+                        continue;
+                    }
+
+                    $this->analyzeTraitUse(
+                        $this->source->getAliases(),
+                        $stmt,
+                        $project_analyzer,
+                        $storage,
+                        $class_context,
+                        $global_context,
+                        $constructor_analyzer,
+                    );
+                }
+            }
+
             return;
         }
 

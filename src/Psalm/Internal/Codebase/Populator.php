@@ -251,7 +251,7 @@ final class Populator
 
                 $dependency->populated = false;
                 unset($dependency->invalid_dependencies[$fq_classlike_name_lc]);
-                $this->populateClassLikeStorage($dependency, $dependent_classlikes);
+                $this->populateClassLikeStorage($dependency, $dependency->dependent_classlikes);
             }
 
             unset($this->invalid_class_storages[$fq_classlike_name_lc]);
@@ -411,6 +411,9 @@ final class Populator
         }
     }
 
+    /**
+     * @param lowercase-string $used_trait_lc
+     */
     private function populateDataFromTrait(
         ClassLikeStorage $storage,
         ClassLikeStorageProvider $storage_provider,
@@ -425,6 +428,12 @@ final class Populator
             );
             $trait_storage = $storage_provider->get($used_trait_lc);
         } catch (InvalidArgumentException) {
+            $this->progress->debug('Populator could not find dependency (' . __LINE__ . ")\n");
+
+            $storage->invalid_dependencies[$used_trait_lc] = true;
+
+            $this->invalid_class_storages[$used_trait_lc][] = $storage;
+
             return;
         }
 
@@ -589,14 +598,21 @@ final class Populator
         $new_parents = array_keys($interface_storage->parent_interfaces);
         $new_parents[] = $interface_storage->name;
         foreach ($new_parents as $new_parent) {
+            $new_parent_lc = strtolower($new_parent);
             try {
-                $new_parent = strtolower(
+                $new_parent_lc = strtolower(
                     $this->classlikes->getUnAliasedName(
-                        $new_parent,
+                        $new_parent_lc,
                     ),
                 );
-                $new_parent_interface_storage = $storage_provider->get($new_parent);
+                $new_parent_interface_storage = $storage_provider->get($new_parent_lc);
             } catch (InvalidArgumentException) {
+                $this->progress->debug('Populator could not find dependency (' . __LINE__ . ")\n");
+
+                $storage->invalid_dependencies[$new_parent_lc] = true;
+
+                $this->invalid_class_storages[$new_parent_lc][] = $storage;
+
                 continue;
             }
 
@@ -663,6 +679,9 @@ final class Populator
         }
     }
 
+    /**
+     * @param lowercase-string $parent_interface_lc
+     */
     private function populateInterfaceDataFromParentInterface(
         ClassLikeStorage $storage,
         ClassLikeStorageProvider $storage_provider,
@@ -680,6 +699,9 @@ final class Populator
             $this->progress->debug('Populator could not find dependency (' . __LINE__ . ")\n");
 
             $storage->invalid_dependencies[$parent_interface_lc] = true;
+
+            $this->invalid_class_storages[$parent_interface_lc][] = $storage;
+
             return;
         }
 
@@ -706,6 +728,9 @@ final class Populator
         }
     }
 
+    /**
+     * @param lowercase-string $implemented_interface_lc
+     */
     private function populateDataFromImplementedInterface(
         ClassLikeStorage $storage,
         ClassLikeStorageProvider $storage_provider,
@@ -723,6 +748,9 @@ final class Populator
             $this->progress->debug('Populator could not find dependency (' . __LINE__ . ")\n");
 
             $storage->invalid_dependencies[$implemented_interface_lc] = true;
+
+            $this->invalid_class_storages[$implemented_interface_lc][] = $storage;
+
             return;
         }
 
