@@ -1982,11 +1982,11 @@ final class UnusedCodeTest extends TestCase
                     new a;',
                 'error_message' => 'ClassMustBeFinal',
             ],
-            'unusedFunctionCallRequireUsageAnnotation' => [
+            'unusedFunctionCallNoDiscardAnnotation' => [
                 'code' => <<<'PHP'
                     <?php
                     /**
-                     * @psalm-require-usage
+                     * @psalm-no-discard
                      *
                      * @return int
                      */
@@ -2021,12 +2021,12 @@ final class UnusedCodeTest extends TestCase
                     PHP,
                 'error_message' => 'UnusedFunctionCall',
             ],
-            'unusedMethodCallRequireUsageAnnotation' => [
+            'unusedMethodCallNoDiscardAnnotation' => [
                 'code' => <<<'PHP'
                     <?php
                     class Bar {
                         /**
-                         * @psalm-require-usage
+                         * @psalm-no-discard
                          *
                          * @return int
                          */

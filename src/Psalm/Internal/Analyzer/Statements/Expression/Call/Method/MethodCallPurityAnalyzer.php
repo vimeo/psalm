@@ -148,7 +148,7 @@ final class MethodCallPurityAnalyzer
                 $method_storage->return_type &&
                 ($method_storage->return_type->isVoid() || $method_storage->return_type->isNever())
             )
-            && ($method_storage->require_usage
+            && ($method_storage->no_discard
                 || $method_storage->removed_taints
                 || $method_storage->conditionally_removed_taints)
         ) {

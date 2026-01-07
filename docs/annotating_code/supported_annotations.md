@@ -533,14 +533,14 @@ echo $counter->count; // outputs 1
 $counter->count = 5; // This will fail, as it's mutating a property directly
 ```
 
-### `@psalm-require-usage`
+### `@psalm-no-discard`
 
-Used to annotate an impure function or method the unused result of which Psalm should report.
+Like PHP 8.5 `#[NoDiscard]` attribute
 
 ```php
 <?php
 /**
- * @psalm-require-usage
+ * @psalm-no-discard
  *
  * @return int
  */
