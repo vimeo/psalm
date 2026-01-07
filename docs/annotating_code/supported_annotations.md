@@ -535,7 +535,7 @@ $counter->count = 5; // This will fail, as it's mutating a property directly
 
 ### `@psalm-no-discard`
 
-Like PHP 8.5 `#[NoDiscard]` attribute
+Like PHP 8.5 `#[NoDiscard]` attribute, except that it can also be resolved with @psalm-suppress instead of using a `(void)` cast, since that is only available in PHP 8.5+. 
 
 ```php
 <?php

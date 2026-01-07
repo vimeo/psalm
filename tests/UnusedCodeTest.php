@@ -1998,6 +1998,22 @@ final class UnusedCodeTest extends TestCase
                     PHP,
                 'error_message' => 'UnusedFunctionCall',
             ],
+            'unusedFunctionCallNoDiscardAttribute' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @return int
+                     */
+                    #[NoDiscard]
+                    function foo() {
+                        return rand();
+                    }
+
+                    foo();
+                    PHP,
+                'error_message' => 'UnusedFunctionCall',
+                'ignored_issues' => ['UndefinedAttributeClass'],
+            ],
             'unusedFunctionCallTaintEscapeAnnotation' => [
                 'code' => <<<'PHP'
                     <?php
@@ -2040,6 +2056,28 @@ final class UnusedCodeTest extends TestCase
                     PHP,
                 'error_message' => 'UnusedMethodCall',
                 'ignored_issues' => ['PossiblyUnusedReturnValue'],
+            ],
+            'unusedMethodCallNoDiscardAttribute' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Bar {
+                        /**
+                         * @return int
+                         */
+                        #[NoDiscard]
+                        public function foo() {
+                            return rand();
+                        }
+                    }
+
+                    $bar = new Bar();
+                    $bar->foo();
+                    PHP,
+                'error_message' => 'UnusedMethodCall',
+                'ignored_issues' => [
+                    'PossiblyUnusedReturnValue',
+                    'UndefinedAttributeClass',
+                ],
             ],
             'unusedMethodCallTaintEscapeAnnotation' => [
                 'code' => <<<'PHP'

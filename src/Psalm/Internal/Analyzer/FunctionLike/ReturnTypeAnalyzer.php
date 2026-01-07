@@ -31,6 +31,7 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\ImplicitToStringCast;
+use Psalm\Issue\InvalidAttribute;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidFalsableReturnType;
 use Psalm\Issue\InvalidNullableReturnType;
@@ -832,8 +833,27 @@ final class ReturnTypeAnalyzer
 
         if ($storage->return_type->isVoid() || $storage->return_type->isNever()) {
             $incompatible_annotation_text = false;
+            $return_type_text = $storage->return_type->isVoid() ? 'void' : 'never';
             if ($storage->no_discard) {
-                $incompatible_annotation_text = '@psalm-no-discard';
+                $has_attribute = false;
+                foreach ($storage->attributes as $attribute) {
+                    if ($attribute->fq_class_name === 'NoDiscard') {
+                        $has_attribute = true;
+                        break;
+                    }
+                }
+
+                if ($has_attribute) {
+                    IssueBuffer::maybeAdd(
+                        new InvalidAttribute(
+                            'NoDiscard attribute is incompatible with '
+                            . 'return type "' . $return_type_text . '"',
+                            $storage->return_type_location,
+                        ),
+                    );
+                } else {
+                    $incompatible_annotation_text = '@psalm-no-discard';
+                }
             } elseif ($storage->pure && !$storage->assertions && !$storage->return_type->isNever()) {
                 // currently not for "never", since exit is pure atm
                 // see https://github.com/vimeo/psalm/issues/10762
@@ -843,7 +863,6 @@ final class ReturnTypeAnalyzer
             }
 
             if ($incompatible_annotation_text !== false) {
-                $return_type_text = $storage->return_type->isVoid() ? 'void' : 'never';
                 IssueBuffer::maybeAdd(
                     new InvalidDocblock(
                         'Return type "' . $return_type_text . '" is incompatible with '
