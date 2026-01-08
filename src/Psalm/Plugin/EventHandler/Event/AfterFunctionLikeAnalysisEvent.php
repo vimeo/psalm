@@ -21,59 +21,13 @@ final class AfterFunctionLikeAnalysisEvent
      * @internal
      */
     public function __construct(
-        private readonly Node\FunctionLike $stmt,
-        private readonly FunctionLikeStorage $functionlike_storage,
-        private readonly StatementsSource $statements_source,
-        private readonly Codebase $codebase,
-        private array $file_replacements,
-        private readonly NodeTypeProvider $node_type_provider,
-        private readonly Context $context,
+        public readonly Node\FunctionLike $stmt,
+        public readonly FunctionLikeStorage $functionlike_storage,
+        public readonly StatementsSource $statements_source,
+        public readonly Codebase $codebase,
+        public array $file_replacements,
+        public readonly NodeTypeProvider $node_type_provider,
+        public readonly Context $context,
     ) {
-    }
-
-    public function getStmt(): Node\FunctionLike
-    {
-        return $this->stmt;
-    }
-
-    public function getFunctionlikeStorage(): FunctionLikeStorage
-    {
-        return $this->functionlike_storage;
-    }
-
-    public function getStatementsSource(): StatementsSource
-    {
-        return $this->statements_source;
-    }
-
-    public function getCodebase(): Codebase
-    {
-        return $this->codebase;
-    }
-
-    /**
-     * @return FileManipulation[]
-     */
-    public function getFileReplacements(): array
-    {
-        return $this->file_replacements;
-    }
-
-    /**
-     * @param FileManipulation[] $file_replacements
-     */
-    public function setFileReplacements(array $file_replacements): void
-    {
-        $this->file_replacements = $file_replacements;
-    }
-
-    public function getNodeTypeProvider(): NodeTypeProvider
-    {
-        return $this->node_type_provider;
-    }
-
-    public function getContext(): Context
-    {
-        return $this->context;
     }
 }
