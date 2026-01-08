@@ -1356,6 +1356,94 @@ final class UnusedCodeTest extends TestCase
                     new A;
                     PHP,
             ],
+            'usedFunctionCallNoDiscardAnnotation' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @psalm-no-discard
+                     *
+                     * @return int
+                     */
+                    function foo() {
+                        return rand();
+                    }
+
+                    echo foo();
+                    PHP,
+            ],
+            'usedFunctionCallNoDiscardAttribute' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @psalm-suppress UndefinedAttributeClass
+                     * @return int
+                     */
+                    #[NoDiscard]
+                    function foo() {
+                        return rand();
+                    }
+
+                    echo foo();
+                    PHP,
+            ],
+            'usedFunctionCallTaintEscapeAnnotation' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param string|array $str
+                     * @param bool $escape
+                     * @psalm-taint-escape ($escape is true ? "html" : null)
+                     */
+                    function processVar($str, bool $escape = true) : string {
+                        if (is_array($str)) {
+                                return "";
+                        }
+
+                        if ($escape) {
+                            $str = str_replace(["<", ">"], "", $str);
+                        }
+                        return $str;
+                    }
+
+                    echo processVar($_GET["text"], true);
+                    PHP,
+            ],
+            'usedMethodCallNoDiscardAnnotation' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Bar {
+                        /**
+                         * @psalm-no-discard
+                         *
+                         * @return int
+                         */
+                        public function foo() {
+                            return rand();
+                        }
+                    }
+
+                    $bar = new Bar();
+                    echo $bar->foo();
+                    PHP,
+            ],
+            'usedMethodCallNoDiscardAttribute' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Bar {
+                        /**
+                         * @psalm-suppress UndefinedAttributeClass
+                         * @return int
+                         */
+                        #[NoDiscard]
+                        public function foo() {
+                            return rand();
+                        }
+                    }
+
+                    $bar = new Bar();
+                    echo $bar->foo();
+                    PHP,
+            ],
             'callNeverReturnsSuppressed' => [
                 'code' => '<?php
                     namespace Foo;
