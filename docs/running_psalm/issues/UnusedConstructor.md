@@ -1,6 +1,6 @@
 # UnusedConstructor
 
-Emitted when `--find-dead-code` is turned on and Psalm cannot find any uses of a given private constructor or function
+Emitted when `--find-unused-code` is turned on and Psalm cannot find any uses of a given private constructor or function
 
 ```php
 <?php
