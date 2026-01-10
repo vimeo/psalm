@@ -143,6 +143,34 @@ final class ArrayColumnTest extends TestCase
                 }
             ',
         ];
+
+        yield 'arrayColumnWithNonStringScalarKey' => [
+            'code' => '<?php
+                /** @return non-empty-list<list{null, null}> */
+                function makeNullList() { return [[null, null]]; }
+                /** @return non-empty-list<list{bool, null}> */
+                function makeBoolList() { return [[false, null]]; }
+                /** @return non-empty-list<list{float, null}> */
+                function makeFloatList() { return [[1.5, null]]; }
+                /** @return non-empty-list<list{1.5, null}> */
+                function makeFloatLiteralList() { return [[1.5, null]]; }
+                /** @return non-empty-list<list{string|null, null}> */
+                function makeStringNullList() { return [[null, null]]; }
+
+                $a = array_column(makeNullList(), 1, 0);
+                $b = array_column(makeBoolList(), 1, 0);
+                $c = array_column(makeFloatList(), 1, 0);
+                $d = array_column(makeFloatLiteralList(), 1, 0);
+                $e = array_column(makeStringNullList(), 1, 0);
+            ',
+            'assertions' => [
+                '$a' => 'non-empty-array<string, null>',
+                '$b' => 'non-empty-array<int, null>',
+                '$c' => 'non-empty-array<int, null>',
+                '$d' => 'non-empty-array<int, null>',
+                '$e' => 'non-empty-array<string, null>',
+            ],
+        ];
     }
 
     #[Override]
@@ -157,6 +185,16 @@ final class ArrayColumnTest extends TestCase
                 }
             ',
             'error_message' => 'MixedMethodCall',
+        ];
+
+        yield 'arrayColumnWithUnconvertableKey' => [
+            'code' => '<?php
+                /** @return non-empty-list<list{object, null}> */
+                function makeObjectList() { return [[(object) [], null]]; }
+
+                $a = array_column(makeObjectList(), 1, 0);
+            ',
+            'error_message' => 'ValueNotConvertibleToArrayKey',
         ];
     }
 }
