@@ -1850,12 +1850,35 @@ final class FunctionTemplateTest extends TestCase
                     );
 
                     $test = $list->sortByArr(
-                        /** 
+                        /**
                          * @return list{0: mixed, 1: mixed}
                          */
                         static fn ($item): array => [$item, $item],
                         1,
                     );',
+            ],
+            'staticScope#11368' => [
+                'code' => '<?php
+                    abstract class Uuid
+                    {
+                        /**
+                         * @template T of self
+                         * @param T $uuid
+                         */
+                        final public function equals($uuid): void {}
+                    }
+
+                    class UserId1 extends Uuid {}
+                    class UserId2 extends Uuid {}
+
+                    class User
+                    {
+                        public function equals(self $user): void
+                        {
+                            (new UserId1())->equals(new UserId1());
+                        }
+                    }
+                ',
             ],
         ];
     }
@@ -2476,6 +2499,30 @@ final class FunctionTemplateTest extends TestCase
                      */
                     function test2(BType $_value): void {}',
                 'error_message' => 'InvalidTemplateParam',
+            ],
+            'staticScope#11368' => [
+                'code' => '<?php
+                    abstract class Uuid
+                    {
+                        /**
+                         * @template T of static
+                         * @param T $uuid
+                         */
+                        final public function equals($uuid): void {}
+                    }
+
+                    class UserId1 extends Uuid {}
+                    class UserId2 extends Uuid {}
+
+                    class User
+                    {
+                        public function equals(self $user): void
+                        {
+                            (new UserId1())->equals(new UserId2());
+                        }
+                    }
+                ',
+                'error_message' => 'ArgumentTypeCoercion',
             ],
         ];
     }
