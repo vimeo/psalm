@@ -51,6 +51,8 @@ You can also [define your own taint sources](custom_taint_sources.md).
 
 Psalm currently defines a number of different sinks for builtin functions and methods, including `echo`, `include`, `header`.
 
+In order for the PDO SQL sink to be used you must either define PDO as a platform dependency in your composer.json or enable it in in Psalm config see https://psalm.dev/docs/running_psalm/configuration/#enableextensions.
+
 You can also [define your own taint sinks](custom_taint_sinks.md).
 
 ## Avoiding False-Positives
