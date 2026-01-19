@@ -1269,12 +1269,14 @@ final class FilterUtils
                                 continue;
                             }
 
-                            // Any string here is non-empty due to usage of FILTER_FLAG_EMPTY_STRING_NULL.
+                            // Any literal string here is non-empty due to usage of FILTER_FLAG_EMPTY_STRING_NULL.
                             if ($atomic_type instanceof TLiteralString) {
                                 $filter_types[] = new TNonEmptyNonspecificLiteralString();
                                 continue;
                             }
 
+                            // Any string here is null|non-empty due to usage of FILTER_FLAG_EMPTY_STRING_NULL.
+                            $filter_types[] = new TNull();
                             $filter_types[] = new TNonEmptyString();
                             continue;
                         }
