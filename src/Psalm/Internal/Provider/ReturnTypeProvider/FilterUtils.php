@@ -1549,6 +1549,7 @@ final class FilterUtils
             FILTER_REQUIRE_ARRAY,
             FILTER_FORCE_ARRAY,
             FILTER_FLAG_NONE, // does nothing, default
+            FILTER_FLAG_EMPTY_STRING_NULL,
         );
 
         // https://www.php.net/manual/en/filter.filters.sanitize.php

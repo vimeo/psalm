@@ -1181,7 +1181,7 @@ final class FunctionCallTest extends TestCase
                      * @return non-empty-string
                      */
                     function filterNonEmptyStringFlagEmptyStringNull(string $s): string {
-                        return filter_var($s, FILTER_DEFAULT, FILTER_FLAG_EMPTY_STRING_NULL);
+                        return filter_var($s);
                     }
 
                     /**
