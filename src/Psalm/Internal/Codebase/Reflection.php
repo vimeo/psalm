@@ -401,7 +401,7 @@ final class Reflection
                 }
             }
 
-            $storage->pure = ! $callmap_callable
+            $possibly_pure = ! $callmap_callable
                 ? ! ImpureFunctionsList::isImpure($function_id)
                 : $this->codebase->functions->isCallMapFunctionPure(
                     $this->codebase,
@@ -409,6 +409,17 @@ final class Reflection
                     $function_id,
                     null,
                 );
+
+            if ($possibly_pure
+                && ($storage->returns_by_ref
+                    || ($storage->return_type
+                        && !$storage->return_type->isVoid()
+                        && !$storage->return_type->isNever()
+                    )
+                )
+            ) {
+                $storage->pure = true;
+            }
 
             $storage->required_param_count = 0;
 
