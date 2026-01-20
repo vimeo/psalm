@@ -466,7 +466,15 @@ final class Functions
 
         if (!isset($function_callable->params)
             || ($args !== null && count($args) === 0)
-            || ($function_callable->return_type && $function_callable->return_type->isVoid())
+        ) {
+            $must_use = false;
+            return false;
+        }
+
+        if ($function_callable->return_type
+            && ($function_callable->return_type->isVoid()
+               || $function_callable->return_type->isNever()
+            )
         ) {
             $must_use = false;
             return false;
