@@ -1942,7 +1942,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
                 $props = [];
                 if ($storage->allowed_mutations <= Mutations::INTERNAL_READ_WRITE
-                    && $storage->inferred_allowed_mutations > Mutations::INTERNAL_READ
+                    && !$storage->mutation_free_inferred
                 ) {
                     $props = ['reference_free' => true];
                     if ($this->function->name->name !== '__construct') {

@@ -77,7 +77,7 @@ final class MethodCallPurityAnalyzer
             && !$context->inside_unset
         ) {
             if ($method_storage->allowed_mutations === Mutations::NONE
-                && ($method_storage->inferred_allowed_mutations !== Mutations::NONE
+                && (!$method_storage->mutation_free_inferred
                     || $method_storage->final
                     || $method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE)
                 && ($method_storage->containing_class_allowed_mutations === Mutations::NONE
@@ -119,7 +119,7 @@ final class MethodCallPurityAnalyzer
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     );
-                } elseif ($method_storage->inferred_allowed_mutations !== Mutations::NONE) {
+                } elseif (!$method_storage->mutation_free_inferred) {
                     $stmt->setAttribute('pure', true);
                 }
             }

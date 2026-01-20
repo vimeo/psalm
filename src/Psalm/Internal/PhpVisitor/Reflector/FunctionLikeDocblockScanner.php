@@ -104,7 +104,7 @@ final class FunctionLikeDocblockScanner
         if ($storage instanceof MethodStorage
             && $storage->allowed_mutations === Mutations::NONE) {
             // We haven't inferred anything yet, so assume the worst
-            $storage->inferred_allowed_mutations = Mutations::ALL;
+            $storage->mutation_free_inferred = false;
         }
 
         if ($docblock_info->deprecated) {

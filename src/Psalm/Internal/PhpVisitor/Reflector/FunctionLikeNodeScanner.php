@@ -245,9 +245,7 @@ final class FunctionLikeNodeScanner
                         Mutations::INTERNAL_READ,
                         $storage->allowed_mutations,
                     );
-                    if ($stmt->isFinal() || $classlike_storage->final) {
-                        $storage->inferred_allowed_mutations = Mutations::INTERNAL_READ;
-                    }
+                    $storage->mutation_free_inferred = !$stmt->isFinal() && !$classlike_storage->final;
 
                     $classlike_storage->properties[$property_name]->getter_method = strtolower($stmt->name->name);
                 }
@@ -782,7 +780,7 @@ final class FunctionLikeNodeScanner
             $storage->allowed_mutations,
         );
 
-        $storage->inferred_allowed_mutations = Mutations::INTERNAL_READ;
+        $storage->mutation_free_inferred = true;
 
         foreach ($assigned_properties as $property_name => $property_type) {
             $classlike_storage->properties[$property_name]->type = $property_type;
