@@ -41,7 +41,7 @@ final class MethodCallPurityAnalyzer
     ): void {
         $method_allowed_mutations = $method_storage->allowed_mutations;
         
-        if ($method_allowed_mutations === Mutations::INTERNAL
+        if ($method_allowed_mutations === Mutations::INTERNAL_READ_WRITE
             && (
                 // Already checked in isPureCompatible below
                 // $stmt->var->getAttribute('pure', false)
