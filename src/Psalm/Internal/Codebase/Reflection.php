@@ -401,7 +401,14 @@ final class Reflection
                 }
             }
 
-            $storage->pure = true;
+            $storage->pure = ! $callmap_callable
+                ? ! ImpureFunctionsList::isImpure($function_id)
+                : $this->codebase->functions->isCallMapFunctionPure(
+                    $this->codebase,
+                    null,
+                    $function_id,
+                    null,
+                );
 
             $storage->required_param_count = 0;
 
