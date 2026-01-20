@@ -185,17 +185,17 @@ final class Populator
             }
         }
 
-        if ($storage->allowed_mutations !== Mutations::NONE) {
+        if ($storage->allowed_mutations !== Mutations::ALL) {
             foreach ($storage->methods as $method) {
                 if (!$method->is_static
-                    && $method->allowed_mutations !== Mutations::INTERNAL
+                    && $method->allowed_mutations < Mutations::INTERNAL_READ_WRITE
                 ) {
                     $method->allowed_mutations = $storage->allowed_mutations;
                     $method->containing_class_allowed_mutations = $storage->allowed_mutations;
                 }
             }
 
-            if ($storage->allowed_mutations === Mutations::NONE) {
+            if ($storage->allowed_mutations <= Mutations::INTERNAL_READ) {
                 foreach ($storage->properties as $property) {
                     if (!$property->is_static) {
                         $property->readonly = true;
