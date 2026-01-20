@@ -6,7 +6,6 @@ namespace Psalm\Internal\Codebase;
 
 use Exception;
 use PhpParser\Node\Arg;
-use PhpParser\Node\Expr\Closure as ClosureNode;
 use PhpParser\Node\Scalar\String_;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -480,8 +479,6 @@ final class Functions
             return false;
         }
 
-        $must_use = $function_id !== 'array_map'
-            || (isset($args[0]) && !$args[0]->value instanceof ClosureNode);
 
         foreach ($function_callable->params as $i => $param) {
             if ($param->type && $param->type->hasCallableType() && isset($args[$i])) {
