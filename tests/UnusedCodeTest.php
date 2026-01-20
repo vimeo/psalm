@@ -1389,6 +1389,10 @@ final class UnusedCodeTest extends TestCase
                 'code' => '<?php
                     array_map("unlink", [__FILE__]);',
             ],
+            'arrayMapImpureCallback2' => [
+                'code' => '<?php
+                    array_map("header", ["Cache-Control: no-cache"]);',
+            ],
         ];
     }
 

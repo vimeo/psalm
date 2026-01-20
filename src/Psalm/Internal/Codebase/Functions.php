@@ -402,6 +402,7 @@ final class Functions
         bool &$must_use = true,
     ): bool {
         if (ImpureFunctionsList::isImpure($function_id)) {
+            $must_use = false;
             return false;
         }
 
@@ -422,6 +423,7 @@ final class Functions
         }
 
         if (($function_id === 'var_export' || $function_id === 'print_r') && !isset($args[1])) {
+            $must_use = false;
             return false;
         }
 
@@ -466,6 +468,7 @@ final class Functions
             || ($args !== null && count($args) === 0)
             || ($function_callable->return_type && $function_callable->return_type->isVoid())
         ) {
+            $must_use = false;
             return false;
         }
 
