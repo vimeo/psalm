@@ -54,6 +54,13 @@ final class Deque implements Sequence
     }
 
     /**
+     * @param int $offset The index with the value.
+     * @return TValue The value at the specified index.
+     */
+    public function offsetGet($offset) {
+    }
+
+    /**
      * @return Deque<TValue>
      * @psalm-mutation-free
      */
@@ -259,6 +266,13 @@ final class Map implements Collection, ArrayAccess
      */
     public function __construct(iterable $values = [])
     {
+    }
+
+    /**
+     * @param TKey $offset The index with the value.
+     * @return TValue The value at the specified index.
+     */
+    public function offsetGet($offset) {
     }
 
     /**
@@ -792,6 +806,13 @@ final class Vector implements Sequence
     }
 
     /**
+     * @param int $offset The index with the value.
+     * @return TValue The value at the specified index.
+     */
+    public function offsetGet($offset) {
+    }
+
+    /**
      * @return Vector<TValue>
      * @psalm-mutation-free
      */
@@ -996,6 +1017,13 @@ final class Set implements Collection, ArrayAccess
      */
     public function __construct(iterable $values = [])
     {
+    }
+
+    /**
+     * @param int $offset The index with the value.
+     * @return TValue The value at the specified index.
+     */
+    public function offsetGet($offset) {
     }
 
     /**
@@ -1207,6 +1235,13 @@ final class Stack implements Collection, ArrayAccess
     }
 
     /**
+     * @param int $offset The index with the value.
+     * @return TValue The value at the specified index.
+     */
+    public function offsetGet($offset) {
+    }
+
+    /**
      * @return Stack<TValue>
      * @psalm-mutation-free
      */
@@ -1290,6 +1325,13 @@ final class Queue implements Collection, ArrayAccess
     }
 
     /**
+     * @param int $offset The index with the value.
+     * @return TValue The value at the specified index.
+     */
+    public function offsetGet($offset) {
+    }
+
+    /**
      * @return Queue<TValue>
      * @psalm-mutation-free
      */
@@ -1370,6 +1412,13 @@ final class PriorityQueue implements Collection
      */
     public function copy(): PriorityQueue
     {
+    }
+
+    /**
+     * @param int $offset The index with the value.
+     * @return TValue The value at the specified index.
+     */
+    public function offsetGet($offset) {
     }
 
     /**
