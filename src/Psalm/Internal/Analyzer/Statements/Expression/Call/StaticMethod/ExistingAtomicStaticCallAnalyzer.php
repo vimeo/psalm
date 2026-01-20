@@ -288,7 +288,12 @@ final class ExistingAtomicStaticCallAnalyzer
             }
 
             if (!$context->inside_throw) {
-                if ($context->pure && !$method_storage->pure) {
+                if ($context->pure
+                    && !$method_storage->pure
+                    && !$method_storage->immutable
+                    && !$method_storage->mutation_free
+                    && !$method_storage->mutation_free_inferred
+                ) {
                     IssueBuffer::maybeAdd(
                         new ImpureMethodCall(
                             'Cannot call an impure method from a pure context',
@@ -296,7 +301,12 @@ final class ExistingAtomicStaticCallAnalyzer
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     );
-                } elseif ($context->mutation_free && !$method_storage->mutation_free) {
+                } elseif ($context->mutation_free
+                    && !$method_storage->pure
+                    && !$method_storage->immutable
+                    && !$method_storage->mutation_free
+                    && !$method_storage->mutation_free_inferred
+                ) {
                     IssueBuffer::maybeAdd(
                         new ImpureMethodCall(
                             'Cannot call a possibly-mutating method from a mutation-free context',
@@ -309,7 +319,7 @@ final class ExistingAtomicStaticCallAnalyzer
                     && $statements_analyzer->getSource()->track_mutations
                     && !$method_storage->pure
                 ) {
-                    if (!$method_storage->mutation_free) {
+                    if (!$method_storage->mutation_free && !$method_storage->immutable) {
                         $statements_analyzer->getSource()->inferred_has_mutation = true;
                     }
 
