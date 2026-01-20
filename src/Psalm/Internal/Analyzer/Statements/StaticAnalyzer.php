@@ -32,7 +32,7 @@ final class StaticAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         $statements_analyzer->signalMutation(
-            Mutations::INTERNAL,
+            Mutations::INTERNAL_READ,
             $context,
             'static variable',
             ImpureStaticVariable::class,
