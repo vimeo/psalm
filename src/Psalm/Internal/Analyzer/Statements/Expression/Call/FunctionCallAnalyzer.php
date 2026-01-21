@@ -1074,7 +1074,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             } elseif ($function_call_info->function_id
                 && $mutations === Mutations::PURE
                 && $must_use
-                && !$function_call_info->function_storage->assertions
+                && !($function_call_info->function_storage && $function_call_info->function_storage->assertions)
                 && $codebase->find_unused_variables
                 && !$context->inside_conditional
                 && !$context->inside_unset
