@@ -1048,7 +1048,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             $must_use = true;
 
             $mutations = $function_call_info->function_id && $function_call_info->in_call_map
-                ? $codebase->functions->isCallMapFunctionPure(
+                ? $codebase->functions->getCallMapFunctionMutations(
                     $codebase,
                     $statements_analyzer->node_data,
                     $function_call_info->function_id,

@@ -393,8 +393,10 @@ final class Functions
 
     /**
      * @param ?list<Arg> $args
+     * 
+     * @return Mutations::*
      */
-    public function isCallMapFunctionPure(
+    public function getCallMapFunctionMutations(
         Codebase $codebase,
         ?NodeTypeProvider $type_provider,
         string $function_id,
