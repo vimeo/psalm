@@ -520,7 +520,7 @@ final class AtomicPropertyFetchAnalyzer
             $context,
         );
 
-        if ($class_storage->mutation_free) {
+        if ($class_storage->allowed_mutations <= Mutations::INTERNAL_READ) {
             $class_property_type = $class_property_type->setProperties([
                 'has_mutations' => false,
             ]);

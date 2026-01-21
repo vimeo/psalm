@@ -398,8 +398,7 @@ final class Populator
                     $declaring_method_storage->overridden_somewhere = true;
 
                     if ($declaring_method_storage->mutation_free_inferred) {
-                        $declaring_method_storage->mutation_free = false;
-                        $declaring_method_storage->external_mutation_free = false;
+                        $declaring_method_storage->allowed_mutations = Mutations::ALL;
                         $declaring_method_storage->mutation_free_inferred = false;
                     }
 

@@ -383,23 +383,13 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
         }
 
-        if ($storage->pure) {
-            $context->pure = true;
-        }
-
-        if ($storage->mutation_free
-            && $cased_method_id
-            && !strpos($cased_method_id, '__construct')
-            && !($storage instanceof MethodStorage && $storage->mutation_free_inferred)
-        ) {
-            $context->mutation_free = true;
-        }
-
-        if ($storage instanceof MethodStorage
-            && $storage->external_mutation_free
-            && !$storage->mutation_free_inferred
-        ) {
-            $context->external_mutation_free = true;
+        $context->allowed_mutations = $storage->allowed_mutations;
+        if ($storage instanceof MethodStorage) {
+            if (str_ends_with($storage->cased_name, '__construct')) {
+                $context->allowed_mutations = Mutations::ALL;
+            } elseif ($storage->mutation_free_inferred) {
+                $context->allowed_mutations = Mutations::ALL;
+            }
         }
 
 

@@ -446,7 +446,7 @@ final class Functions
                         );
 
                         try {
-                            return $codebase->methods->getStorage($count_method_id)->mutation_free;
+                            return $codebase->methods->getStorage($count_method_id)->allowed_mutations;
                         } catch (Exception) {
                             // do nothing
                         }
