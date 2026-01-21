@@ -385,10 +385,17 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         $context->allowed_mutations = $storage->allowed_mutations;
         if ($storage instanceof MethodStorage) {
-            if (str_ends_with($storage->cased_name, '__construct')) {
-                $context->allowed_mutations = Mutations::ALL;
-            } elseif ($storage->mutation_free_inferred) {
-                $context->allowed_mutations = Mutations::ALL;
+            if (
+                // Allow constructors to mutate (override immutability)
+                str_ends_with($storage->cased_name, '__construct')
+
+                // ???
+                || $storage->mutation_free_inferred
+            ) {
+                $context->allowed_mutations = max(
+                    $context->allowed_mutations,
+                    Mutations::INTERNAL_READ_WRITE
+                );
             }
         }
 

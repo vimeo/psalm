@@ -839,10 +839,20 @@ final class Context
         if ($this->allowed_mutations === $levelB) {
             throw new InvalidArgumentException('Levels are the same');
         }
-        $a = Mutations::TO_STRING[$this->allowed_mutations];
-        $b = Mutations::TO_STRING[$levelB];
+        $a = match ($this->allowed_mutations) {
+            Mutations::NONE => 'is pure',
+            Mutations::INTERNAL_READ => 'accesses instance state',
+            Mutations::INTERNAL_READ_WRITE => 'internally mutates',
+            Mutations::EXTERNAL => 'is impure',
+        };
+        $b = match ($levelB) {
+            Mutations::NONE => 'is pure',
+            Mutations::INTERNAL_READ => 'is accessing instance state',
+            Mutations::INTERNAL_READ_WRITE => 'is internally mutating',
+            Mutations::EXTERNAL => 'is impure',
+        };
 
-        return "The context is $a but $expression is $b";
+        return "The context $a but $expression $b";
     }
 
     public function insideUse(): bool

@@ -53,13 +53,6 @@ final class Mutations
     const PURE = self::NONE;
     const ALL = self::EXTERNAL;
 
-    const TO_STRING = [
-        self::NONE => 'pure',
-        self::INTERNAL_READ => 'accessing instance state',
-        self::INTERNAL_READ_WRITE => 'internally mutating',
-        self::EXTERNAL => 'impure',
-    ];
-
     const TO_ATTRIBUTE_CLASS = [
         //self::NONE => 'no annotation (pure not allowed on classes)',
         self::INTERNAL_READ => 'psalm-immutable',
