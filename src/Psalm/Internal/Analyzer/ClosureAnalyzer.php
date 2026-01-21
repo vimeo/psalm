@@ -14,6 +14,7 @@ use Psalm\Issue\DuplicateParam;
 use Psalm\Issue\PossiblyUndefinedVariable;
 use Psalm\Issue\UndefinedVariable;
 use Psalm\IssueBuffer;
+use Psalm\Storage\Mutations;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
@@ -210,16 +211,10 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
             $context->vars_in_scope[$key] = $value;
         }
 
-        if ($closure_analyzer->inferred_impure
+        if ($closure_analyzer->inferred_mutations !== Mutations::NONE
             && $statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
         ) {
-            $statements_analyzer->getSource()->inferred_impure = true;
-        }
-
-        if ($closure_analyzer->inferred_has_mutation
-            && $statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
-        ) {
-            $statements_analyzer->getSource()->inferred_has_mutation = true;
+            $statements_analyzer->getSource()->inferred_mutations = $closure_analyzer->inferred_mutations;
         }
 
         if (!$statements_analyzer->node_data->getType($stmt)) {

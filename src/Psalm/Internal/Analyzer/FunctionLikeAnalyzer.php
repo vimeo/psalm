@@ -546,7 +546,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
         }
 
-        if ($this->inferred_has_mutation && $context->self) {
+        if ($this->inferred_mutations >= Mutations::INTERNAL_READ_WRITE && $context->self) {
             $this->codebase->analyzer->addMutableClass($context->self);
         }
 
