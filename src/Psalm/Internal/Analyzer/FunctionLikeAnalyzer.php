@@ -664,8 +664,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     $new_closure_return_type = $closure_return_type;
                 }
 
-                $new_closure_is_pure = !$this->inferred_impure;
-
                 $statements_analyzer->node_data->setType(
                     $this->function,
                     new Union([
@@ -673,7 +671,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                             $closure_atomic->value,
                             $closure_atomic->params,
                             $new_closure_return_type,
-                            $new_closure_is_pure,
+                            $this->inferred_mutations,
                             $closure_atomic->byref_uses,
                             $closure_atomic->extra_types,
                             $closure_atomic->from_docblock,
