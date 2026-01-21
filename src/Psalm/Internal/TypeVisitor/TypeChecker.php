@@ -26,6 +26,7 @@ use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\Mutations;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TGenericObject;
@@ -353,7 +354,7 @@ final class TypeChecker extends TypeVisitor
                     : null;
 
                 if ($method_storage instanceof MethodStorage
-                    && $method_storage->mutation_free
+                    && $method_storage->allowed_mutations <= Mutations::INTERNAL_READ
                     && !$method_storage->mutation_free_inferred
                 ) {
                     // do nothing

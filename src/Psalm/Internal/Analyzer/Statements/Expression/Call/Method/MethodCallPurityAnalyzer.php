@@ -126,12 +126,11 @@ final class MethodCallPurityAnalyzer
         }
 
         if (!$config->remember_property_assignments_after_call
-            && !$method_storage->mutation_free
-            && !$method_pure_compatible
+            && $method_allowed_mutations >= Mutations::INTERNAL_READ_WRITE
         ) {
             $context->removeMutableObjectVars();
         } elseif ($method_storage->this_property_mutations) {
-            if (!$method_pure_compatible) {
+            if ($method_allowed_mutations >= Mutations::INTERNAL_READ) {
                 $context->removeMutableObjectVars(true);
             }
 
