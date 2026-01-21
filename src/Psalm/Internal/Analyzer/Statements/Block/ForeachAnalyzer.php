@@ -598,7 +598,7 @@ final class ForeachAnalyzer
                 $statements_analyzer->signalMutation(
                     Mutations::ALL,
                     $context,
-                    'possibly-mutating iterator',
+                    'possibly-mutating Traversable::getIterator',
                     ImpureMethodCall::class,
                     $stmt,
                 );
