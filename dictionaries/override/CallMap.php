@@ -46116,10 +46116,30 @@ return array (
     0 => 'string',
     'string' => 'string',
   ),
+  'rawurldecode\'1' => 
+  array (
+    0 => 'non-empty-string',
+    'string' => 'non-empty-string',
+  ),
+  'rawurldecode\'2' => 
+  array (
+    0 => '\'\'',
+    'string' => '\'\'',
+  ),
   'rawurlencode' => 
   array (
     0 => 'string',
     'string' => 'string',
+  ),
+  'rawurlencode\'1' => 
+  array (
+    0 => 'non-empty-string',
+    'string' => 'non-empty-string',
+  ),
+  'rawurlencode\'2' => 
+  array (
+    0 => '\'\'',
+    'string' => '\'\'',
   ),
   'readdir' => 
   array (
@@ -65893,10 +65913,30 @@ return array (
     0 => 'string',
     'string' => 'string',
   ),
+  'urldecode\'1' => 
+  array (
+    0 => 'non-empty-string',
+    'string' => 'non-empty-string',
+  ),
+  'urldecode\'2' => 
+  array (
+    0 => '\'\'',
+    'string' => '\'\'',
+  ),
   'urlencode' => 
   array (
     0 => 'string',
     'string' => 'string',
+  ),
+  'urlencode\'1' => 
+  array (
+    0 => 'non-empty-string',
+    'string' => 'non-empty-string',
+  ),
+  'urlencode\'2' => 
+  array (
+    0 => '\'\'',
+    'string' => '\'\'',
   ),
   'use_soap_error_handler' => 
   array (
