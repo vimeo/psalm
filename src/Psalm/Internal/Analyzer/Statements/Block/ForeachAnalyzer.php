@@ -978,6 +978,17 @@ final class ForeachAnalyzer
                         'key',
                     );
 
+                    if ($iterator_value_type->ignore_nullable_issues_foreach) {
+                        $iterator_value_type = $iterator_value_type->setProperties([
+                            'ignore_nullable_issues' => true
+                        ]);
+                    }
+                    if ($iterator_key_type->ignore_nullable_issues_foreach) {
+                        $iterator_key_type = $iterator_key_type->setProperties([
+                            'ignore_nullable_issues' => true
+                        ]);
+                    }
+
                     if ($iterator_value_type && !$iterator_value_type->isMixed()) {
                         $value_type = Type::combineUnionTypes($value_type, $iterator_value_type);
                     }

@@ -769,6 +769,10 @@ class Reconciler
                                 /** @psalm-suppress InaccessibleProperty We just created this type */
                                 $new_base_type_candidate->ignore_nullable_issues = true;
                             }
+                            if ($existing_keys[$base_key]->ignore_nullable_issues_foreach) {
+                                /** @psalm-suppress InaccessibleProperty We just created this type */
+                                $new_base_type_candidate->ignore_nullable_issues_foreach = true;
+                            }
                         } elseif ($existing_key_type_part instanceof TClassStringMap) {
                             return Type::getMixed();
                         } elseif ($existing_key_type_part instanceof TNever

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\PhpVisitor\Reflector;
 
 use AssertionError;
+use Iterator;
 use PhpParser;
 use Psalm\Aliases;
 use Psalm\CodeLocation;
@@ -1041,15 +1042,18 @@ final class FunctionLikeDocblockScanner
             );
         }
 
-        // we make sure we only add ignore flag for internal stubs if the config is set to true
         if ($docblock_info->ignore_nullable_return
             && $storage->return_type
-            && ($codebase->config->ignore_internal_nullable_issues
-                || !in_array($file_storage->file_path, $codebase->config->internal_stubs)
-            )
         ) {
-            /** @psalm-suppress InaccessibleProperty We just created this type */
-            $storage->return_type->ignore_nullable_issues = true;
+            // we make sure we only add ignore flag for internal stubs if the config is set to true
+            if ($codebase->config->ignore_internal_nullable_issues
+                || !in_array($file_storage->file_path, $codebase->config->internal_stubs)
+            ) {
+                /** @psalm-suppress InaccessibleProperty We just created this type */
+                $storage->return_type->ignore_nullable_issues = true;
+            } elseif ($storage instanceof MethodStorage && $storage->defining_fqcln === Iterator::class) {
+                $storage->return_type->ignore_nullable_issues_foreach = true;
+            }
         }
 
         // we make sure we only add ignore flag for internal stubs if the config is set to true
