@@ -2433,20 +2433,27 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             }
 
             if ($parent_class_storage->allowed_mutations
-                !== $storage->allowed_mutations
+                < $storage->allowed_mutations
             ) {
-                $parentMoreStrict = $parent_class_storage->allowed_mutations
-                    < $storage->allowed_mutations;
-                $canFix = $parentMoreStrict ? ', run with --alter to fix this' : '';
-                $issue = $parentMoreStrict
-                    ? MissingImmutableAnnotation::class
-                    : MutableDependency::class;
                 IssueBuffer::maybeAdd(
-                    new $issue(
+                    new MissingImmutableAnnotation(
                         $parent_fq_class_name . ' is marked with @'.Mutations::TO_ATTRIBUTE_CLASS[
                             $parent_class_storage->allowed_mutations
                         ].', but '
-                        . $fq_class_name . ' is not' . $canFix,
+                        . $fq_class_name . ' is not, run with --alter to fix this',
+                        $code_location,
+                    ),
+                    $storage->suppressed_issues + $this->getSuppressedIssues(),
+                );
+            } elseif ($parent_class_storage->allowed_mutations
+                > $storage->allowed_mutations
+            ) {
+                IssueBuffer::maybeAdd(
+                    new MutableDependency(
+                        $fq_class_name . ' is marked with @'.Mutations::TO_ATTRIBUTE_CLASS[
+                            $storage->allowed_mutations
+                        ].', but parent class '
+                        . $parent_fq_class_name . ' is not',
                         $code_location,
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
