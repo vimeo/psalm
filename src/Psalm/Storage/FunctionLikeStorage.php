@@ -141,6 +141,7 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
 
     public bool $is_static = false;
 
+    /** @var Mutations::LEVEL_* */
     public int $allowed_mutations = Mutations::LEVEL_ALL;
 
     public bool $mutation_free {

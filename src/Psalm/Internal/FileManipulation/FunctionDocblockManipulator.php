@@ -84,6 +84,7 @@ final class FunctionDocblockManipulator
     /** @var array<string, array{int, int}> */
     private array $param_typehint_offsets = [];
 
+    /** @var Mutations::LEVEL_* */
     private int $allowed_mutations = Mutations::LEVEL_ALL;
 
     /** @var list<string> */
@@ -557,6 +558,7 @@ final class FunctionDocblockManipulator
         return $file_manipulations;
     }
 
+    /** @param Mutations::LEVEL_* $allowed_mutations */
     public function setAllowedMutations(int $allowed_mutations): void
     {
         $this->allowed_mutations = $allowed_mutations;

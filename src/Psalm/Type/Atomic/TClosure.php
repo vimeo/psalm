@@ -31,6 +31,7 @@ final class TClosure extends TNamedObject
     /**
      * @param list<FunctionLikeParameter> $params
      * @param array<string, bool> $byref_uses
+     * @param Mutations::LEVEL_* $allowed_mutations
      * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject> $extra_types
      */
     public function __construct(

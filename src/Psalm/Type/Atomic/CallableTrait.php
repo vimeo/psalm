@@ -36,6 +36,7 @@ trait CallableTrait
      * Constructs a new instance of a generic type
      *
      * @param list<FunctionLikeParameter> $params
+     * @param Mutations::LEVEL_* $allowed_mutations
      * @deprecated
      */
     public function __construct(
@@ -66,7 +67,10 @@ trait CallableTrait
         $cloned->return_type = $return_type;
         return $cloned;
     }
-    /** @return static */
+    /** 
+     * @param Mutations::LEVEL_* $allowed_mutations
+     * @return static
+     */
     public function setAllowedMutations(int $allowed_mutations): self
     {
         if ($this->allowed_mutations === $allowed_mutations) {

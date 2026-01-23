@@ -30,6 +30,7 @@ final class TCallable extends Atomic
      * Constructs a new instance of a generic type
      *
      * @param list<FunctionLikeParameter> $params
+     * @param Mutations::LEVEL_* $allowed_mutations
      */
     public function __construct(
         string $value = 'callable',

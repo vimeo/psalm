@@ -159,6 +159,7 @@ final class FunctionDocblockComment
 
     public bool $inheritdoc = false;
 
+    /** @var Mutations::LEVEL_* */
     public int $allowed_mutations = Mutations::LEVEL_ALL;
 
     public bool $no_named_args = false;

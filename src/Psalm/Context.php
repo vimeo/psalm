@@ -306,6 +306,7 @@ final class Context
 
     public bool $ignore_variable_method = false;
 
+    /** @var Mutations::LEVEL_* */
     public int $allowed_mutations = Mutations::LEVEL_ALL;
 
     public bool $mutation_free {
