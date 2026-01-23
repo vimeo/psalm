@@ -2197,9 +2197,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                         $fq_interface_name . ' is marked with @'.Mutations::TO_ATTRIBUTE_CLASS[
                             $interface_storage->allowed_mutations
                         ].', but '
-                        . $fq_class_name . ' is not marked with @'.Mutations::TO_ATTRIBUTE_CLASS[
-                            $storage->allowed_mutations
-                        ].', run with --alter to fix this',
+                        . $fq_class_name . ' is not, run with --alter to fix this',
                         $code_location,
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
@@ -2448,9 +2446,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                         $parent_fq_class_name . ' is marked with @'.Mutations::TO_ATTRIBUTE_CLASS[
                             $parent_class_storage->allowed_mutations
                         ].', but '
-                        . $fq_class_name . ' is not marked with @'.Mutations::TO_ATTRIBUTE_CLASS[
-                            $storage->allowed_mutations
-                        ]. $canFix,
+                        . $fq_class_name . ' is not' . $canFix,
                         $code_location,
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
