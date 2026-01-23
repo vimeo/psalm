@@ -242,6 +242,11 @@ abstract class SourceAnalyzer implements StatementsSource
         string $class,
         Node $node,
     ): bool {
+        $src = $this->getSource();
+        if ($src instanceof FunctionLikeAnalyzer && $src->track_mutations) {
+            $src->inferred_mutations = max($src->inferred_mutations, $mutation_level);
+        }
+
         if ($context->allowed_mutations < $mutation_level) {
             $msg = $context->getImpureMessage(
                 $msg,
@@ -254,11 +259,6 @@ abstract class SourceAnalyzer implements StatementsSource
                 ),
                 $this->getSuppressedIssues(),
             );
-
-            $src = $this->getSource();
-            if ($src instanceof FunctionLikeAnalyzer && $src->track_mutations) {
-                $src->inferred_mutations = max($src->inferred_mutations, $mutation_level);
-            }
 
             return true;
         }
