@@ -401,7 +401,7 @@ final class InstancePropertyAssignmentAnalyzer
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     );
-                } elseif ($declaring_class_storage->allowed_mutations > Mutations::INTERNAL_READ
+                } elseif ($declaring_class_storage->allowed_mutations >= Mutations::INTERNAL_READ_WRITE
                     && isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation'])
                     && $statements_analyzer->getSource()
                         instanceof FunctionLikeAnalyzer
