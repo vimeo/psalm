@@ -7,13 +7,17 @@ namespace Psalm\Internal\Analyzer;
 use Override;
 use PhpParser\Node;
 use Psalm\Aliases;
+use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Issue\CodeIssue;
+use Psalm\IssueBuffer;
 use Psalm\NodeTypeProvider;
 use Psalm\StatementsSource;
 use Psalm\Storage\Mutations;
 use Psalm\Type\Union;
+
+use function max;
 
 /**
  * @internal
@@ -244,10 +248,10 @@ abstract class SourceAnalyzer implements StatementsSource
                 $msg,
                 $mutation_level,
             );
-            \Psalm\IssueBuffer::maybeAdd(
+            IssueBuffer::maybeAdd(
                 new $class(
                     $msg,
-                    new \Psalm\CodeLocation($this, $node),
+                    new CodeLocation($this, $node),
                 ),
                 $this->getSuppressedIssues(),
             );

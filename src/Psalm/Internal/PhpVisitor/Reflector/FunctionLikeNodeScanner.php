@@ -62,6 +62,7 @@ use function end;
 use function explode;
 use function in_array;
 use function is_string;
+use function min;
 use function spl_object_id;
 use function str_contains;
 use function str_starts_with;

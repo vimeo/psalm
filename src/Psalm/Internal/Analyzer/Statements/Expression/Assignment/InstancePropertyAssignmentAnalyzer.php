@@ -1310,7 +1310,7 @@ final class InstancePropertyAssignmentAnalyzer
                     $context,
                     'Cannot assign to a property from a mutation-free context',
                     ImpurePropertyAssignment::class,
-                    $stmt
+                    $stmt,
                 );
             }
 

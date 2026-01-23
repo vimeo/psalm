@@ -16,6 +16,8 @@ use function array_fill_keys;
 use function array_map;
 use function count;
 use function implode;
+use function max;
+use function min;
 
 abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
 {
@@ -146,17 +148,17 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
             return $this->allowed_mutations <= Mutations::INTERNAL_READ;
         }
         set(bool $value) {
-            if ($value) {
-                $this->allowed_mutations = min(
-                    $this->allowed_mutations,
-                    Mutations::INTERNAL_READ,
-                );
-            } else {
-                $this->allowed_mutations = max(
-                    $this->allowed_mutations,
-                    Mutations::INTERNAL_READ + 1,
-                );
-            }
+    if ($value) {
+        $this->allowed_mutations = min(
+            $this->allowed_mutations,
+            Mutations::INTERNAL_READ,
+        );
+    } else {
+        $this->allowed_mutations = max(
+            $this->allowed_mutations,
+            Mutations::INTERNAL_READ + 1,
+        );
+    }
         }
     }
 
@@ -165,17 +167,17 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
             return $this->allowed_mutations <= Mutations::INTERNAL_READ_WRITE;
         }
         set(bool $value) {
-            if ($value) {
-                $this->allowed_mutations = min(
-                    $this->allowed_mutations,
-                    Mutations::INTERNAL_READ_WRITE,
-                );
-            } else {
-                $this->allowed_mutations = max(
-                    $this->allowed_mutations,
-                    Mutations::INTERNAL_READ_WRITE + 1,
-                );
-            }
+    if ($value) {
+        $this->allowed_mutations = min(
+            $this->allowed_mutations,
+            Mutations::INTERNAL_READ_WRITE,
+        );
+    } else {
+        $this->allowed_mutations = max(
+            $this->allowed_mutations,
+            Mutations::INTERNAL_READ_WRITE + 1,
+        );
+    }
         }
     }
 
@@ -184,17 +186,17 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
             return $this->allowed_mutations <= Mutations::PURE;
         }
         set(bool $value) {
-            if ($value) {
-                $this->allowed_mutations = min(
-                    $this->allowed_mutations,
-                    Mutations::PURE,
-                );
-            } else {
-                $this->allowed_mutations = max(
-                    $this->allowed_mutations,
-                    Mutations::PURE + 1,
-                );
-            }
+    if ($value) {
+        $this->allowed_mutations = min(
+            $this->allowed_mutations,
+            Mutations::PURE,
+        );
+    } else {
+        $this->allowed_mutations = max(
+            $this->allowed_mutations,
+            Mutations::PURE + 1,
+        );
+    }
         }
     }
 

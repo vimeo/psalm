@@ -14,7 +14,6 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
-use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
@@ -504,9 +503,9 @@ final class AtomicPropertyFetchAnalyzer
             $statements_analyzer->signalMutation(
                 Mutations::INTERNAL_READ, // Matches previous logic
                 $context,
-                        'Cannot access a property on a mutable object from a pure context',
+                'Cannot access a property on a mutable object from a pure context',
                 ImpurePropertyFetch::class,
-                $stmt
+                $stmt,
             );
         }
 
@@ -1063,7 +1062,7 @@ final class AtomicPropertyFetchAnalyzer
                 $context,
                 'Cannot access a property on a mutable object from a pure context',
                 ImpurePropertyFetch::class,
-                $stmt
+                $stmt,
             );
 
             return;

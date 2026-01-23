@@ -393,7 +393,6 @@ final class Functions
 
     /**
      * @param ?list<Arg> $args
-     * 
      * @return Mutations::*
      */
     public function getCallMapFunctionMutations(

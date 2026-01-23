@@ -38,7 +38,6 @@ use Psalm\Issue\UnsafeGenericInstantiation;
 use Psalm\Issue\UnsafeInstantiation;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
-use Psalm\Storage\Mutations;
 use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TAnonymousClassInstance;

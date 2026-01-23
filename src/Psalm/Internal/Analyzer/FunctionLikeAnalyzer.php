@@ -83,10 +83,12 @@ use function end;
 use function in_array;
 use function is_string;
 use function krsort;
+use function max;
 use function mb_strpos;
 use function md5;
 use function microtime;
 use function reset;
+use function str_ends_with;
 use function str_starts_with;
 use function strpos;
 use function strtolower;
@@ -394,7 +396,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             ) {
                 $context->allowed_mutations = max(
                     $context->allowed_mutations,
-                    Mutations::INTERNAL_READ_WRITE
+                    Mutations::INTERNAL_READ_WRITE,
                 );
             }
         }

@@ -26,7 +26,6 @@ use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Storage\MethodStorage;
-use Psalm\Storage\Mutations;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TGenericObject;

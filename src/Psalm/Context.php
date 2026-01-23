@@ -28,6 +28,8 @@ use function count;
 use function in_array;
 use function is_int;
 use function json_encode;
+use function max;
+use function min;
 use function preg_match;
 use function preg_quote;
 use function preg_replace;
@@ -311,17 +313,17 @@ final class Context
             return $this->allowed_mutations <= Mutations::INTERNAL_READ;
         }
         set(bool $value) {
-            if ($value) {
-                $this->allowed_mutations = min(
-                    $this->allowed_mutations,
-                    Mutations::INTERNAL_READ,
-                );
-            } else {
-                $this->allowed_mutations = max(
-                    $this->allowed_mutations,
-                    Mutations::INTERNAL_READ + 1,
-                );
-            }
+    if ($value) {
+        $this->allowed_mutations = min(
+            $this->allowed_mutations,
+            Mutations::INTERNAL_READ,
+        );
+    } else {
+        $this->allowed_mutations = max(
+            $this->allowed_mutations,
+            Mutations::INTERNAL_READ + 1,
+        );
+    }
         }
     }
 
@@ -330,17 +332,17 @@ final class Context
             return $this->allowed_mutations <= Mutations::INTERNAL_READ_WRITE;
         }
         set(bool $value) {
-            if ($value) {
-                $this->allowed_mutations = min(
-                    $this->allowed_mutations,
-                    Mutations::INTERNAL_READ_WRITE,
-                );
-            } else {
-                $this->allowed_mutations = max(
-                    $this->allowed_mutations,
-                    Mutations::INTERNAL_READ_WRITE + 1,
-                );
-            }
+    if ($value) {
+        $this->allowed_mutations = min(
+            $this->allowed_mutations,
+            Mutations::INTERNAL_READ_WRITE,
+        );
+    } else {
+        $this->allowed_mutations = max(
+            $this->allowed_mutations,
+            Mutations::INTERNAL_READ_WRITE + 1,
+        );
+    }
         }
     }
 
@@ -349,17 +351,17 @@ final class Context
             return $this->allowed_mutations <= Mutations::PURE;
         }
         set(bool $value) {
-            if ($value) {
-                $this->allowed_mutations = min(
-                    $this->allowed_mutations,
-                    Mutations::PURE,
-                );
-            } else {
-                $this->allowed_mutations = max(
-                    $this->allowed_mutations,
-                    Mutations::PURE + 1,
-                );
-            }
+    if ($value) {
+        $this->allowed_mutations = min(
+            $this->allowed_mutations,
+            Mutations::PURE,
+        );
+    } else {
+        $this->allowed_mutations = max(
+            $this->allowed_mutations,
+            Mutations::PURE + 1,
+        );
+    }
         }
     }
 

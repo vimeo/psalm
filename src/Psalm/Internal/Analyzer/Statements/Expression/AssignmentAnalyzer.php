@@ -293,7 +293,7 @@ final class AssignmentAnalyzer
                     $context,
                     'Variable ' . $extended_var_id . ' cannot be assigned to as it is passed by reference',
                     ImpureByReferenceAssignment::class,
-                    $assign_var
+                    $assign_var,
                 );
 
                 $assign_value_type = $assign_value_type->setByRef(true);

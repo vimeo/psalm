@@ -131,7 +131,7 @@ final class FunctionLikeDocblockScanner
 
         $storage->allowed_mutations = $docblock_info->allowed_mutations;
 
-        if ($docblock_info->allowed_mutations === Mutations::NONE 
+        if ($docblock_info->allowed_mutations === Mutations::NONE
             || $docblock_info->specialize_call
         ) {
             $storage->specialize_call = true;

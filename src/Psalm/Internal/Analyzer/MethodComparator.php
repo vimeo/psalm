@@ -36,7 +36,6 @@ use Psalm\Storage\AttributeStorage;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
-use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;

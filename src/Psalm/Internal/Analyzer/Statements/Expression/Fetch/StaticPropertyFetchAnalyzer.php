@@ -9,7 +9,6 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
-use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -201,7 +200,7 @@ final class StaticPropertyFetchAnalyzer
             $context,
             'static property',
             ImpureStaticProperty::class,
-            $stmt
+            $stmt,
         );
 
         if ($var_id && $context->hasVariable($var_id)) {

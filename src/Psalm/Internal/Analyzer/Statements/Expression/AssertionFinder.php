@@ -71,7 +71,6 @@ use Psalm\Storage\Assertion\NestedAssertions;
 use Psalm\Storage\Assertion\NonEmptyCountable;
 use Psalm\Storage\Assertion\NotNonEmptyCountable;
 use Psalm\Storage\Assertion\Truthy;
-use Psalm\Storage\Mutations;
 use Psalm\Storage\Possibilities;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;

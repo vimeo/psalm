@@ -20,6 +20,8 @@ use Psalm\Type\Union;
 
 use function array_values;
 use function in_array;
+use function max;
+use function min;
 
 final class ClassLikeStorage implements HasAttributesInterface
 {
@@ -168,17 +170,17 @@ final class ClassLikeStorage implements HasAttributesInterface
             return $this->allowed_mutations <= Mutations::INTERNAL_READ;
         }
         set(bool $value) {
-            if ($value) {
-                $this->allowed_mutations = min(
-                    $this->allowed_mutations,
-                    Mutations::INTERNAL_READ,
-                );
-            } else {
-                $this->allowed_mutations = max(
-                    $this->allowed_mutations,
-                    Mutations::INTERNAL_READ + 1,
-                );
-            }
+    if ($value) {
+        $this->allowed_mutations = min(
+            $this->allowed_mutations,
+            Mutations::INTERNAL_READ,
+        );
+    } else {
+        $this->allowed_mutations = max(
+            $this->allowed_mutations,
+            Mutations::INTERNAL_READ + 1,
+        );
+    }
         }
     }
 
@@ -187,17 +189,17 @@ final class ClassLikeStorage implements HasAttributesInterface
             return $this->allowed_mutations <= Mutations::INTERNAL_READ_WRITE;
         }
         set(bool $value) {
-            if ($value) {
-                $this->allowed_mutations = min(
-                    $this->allowed_mutations,
-                    Mutations::INTERNAL_READ_WRITE,
-                );
-            } else {
-                $this->allowed_mutations = max(
-                    $this->allowed_mutations,
-                    Mutations::INTERNAL_READ_WRITE + 1,
-                );
-            }
+    if ($value) {
+        $this->allowed_mutations = min(
+            $this->allowed_mutations,
+            Mutations::INTERNAL_READ_WRITE,
+        );
+    } else {
+        $this->allowed_mutations = max(
+            $this->allowed_mutations,
+            Mutations::INTERNAL_READ_WRITE + 1,
+        );
+    }
         }
     }
 

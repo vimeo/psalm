@@ -124,7 +124,7 @@ final class VariableFetchAnalyzer
                     $context,
                     '$this',
                     ImpureVariable::class,
-                    $stmt
+                    $stmt,
                 );
             }
 
@@ -191,7 +191,7 @@ final class VariableFetchAnalyzer
                 $context,
                 'unknown variable',
                 ImpureVariable::class,
-                $stmt
+                $stmt,
             );
 
             $was_inside_general_use = $context->inside_general_use;
