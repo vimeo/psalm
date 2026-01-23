@@ -141,6 +141,63 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
 
     public int $allowed_mutations = Mutations::ALL;
 
+    public bool $mutation_free {
+        get {
+            return $this->allowed_mutations <= Mutations::INTERNAL_READ;
+        }
+        set(bool $value) {
+            if ($value) {
+                $this->allowed_mutations = min(
+                    $this->allowed_mutations,
+                    Mutations::INTERNAL_READ,
+                );
+            } else {
+                $this->allowed_mutations = max(
+                    $this->allowed_mutations,
+                    Mutations::INTERNAL_READ + 1,
+                );
+            }
+        }
+    }
+
+    public bool $external_mutation_free {
+        get {
+            return $this->allowed_mutations <= Mutations::INTERNAL_READ_WRITE;
+        }
+        set(bool $value) {
+            if ($value) {
+                $this->allowed_mutations = min(
+                    $this->allowed_mutations,
+                    Mutations::INTERNAL_READ_WRITE,
+                );
+            } else {
+                $this->allowed_mutations = max(
+                    $this->allowed_mutations,
+                    Mutations::INTERNAL_READ_WRITE + 1,
+                );
+            }
+        }
+    }
+
+    public bool $pure {
+        get {
+            return $this->allowed_mutations <= Mutations::PURE;
+        }
+        set(bool $value) {
+            if ($value) {
+                $this->allowed_mutations = min(
+                    $this->allowed_mutations,
+                    Mutations::PURE,
+                );
+            } else {
+                $this->allowed_mutations = max(
+                    $this->allowed_mutations,
+                    Mutations::PURE + 1,
+                );
+            }
+        }
+    }
+
     /**
      * Whether or not the function output is dependent solely on input - a function can be
      * impure but still have this property (e.g. var_export). Useful for taint analysis.
