@@ -841,14 +841,14 @@ final class Context
         }
         $a = match ($this->allowed_mutations) {
             Mutations::NONE => 'is pure',
-            Mutations::INTERNAL_READ => 'accesses instance state',
-            Mutations::INTERNAL_READ_WRITE => 'internally mutates',
+            Mutations::INTERNAL_READ => 'allows only reading instance state',
+            Mutations::INTERNAL_READ_WRITE => 'allows only reading and mutating instance state',
             Mutations::EXTERNAL => 'is impure',
         };
         $b = match ($levelB) {
             Mutations::NONE => 'is pure',
-            Mutations::INTERNAL_READ => 'is accessing instance state',
-            Mutations::INTERNAL_READ_WRITE => 'is internally mutating',
+            Mutations::INTERNAL_READ => 'is reading instance state',
+            Mutations::INTERNAL_READ_WRITE => 'is mutating instance state',
             Mutations::EXTERNAL => 'is impure',
         };
 
