@@ -76,7 +76,7 @@ final class MethodCallPurityAnalyzer
         if ($method_allowed_mutations === Mutations::NONE
             && !$context->inside_unset
         ) {
-            if ($method_storage->allowed_mutations <= Mutations::INTERNAL_READ
+            if ($method_storage->mutation_free
                 && (!$method_storage->mutation_free_inferred
                     || $method_storage->final
                     || $method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE)

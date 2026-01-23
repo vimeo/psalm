@@ -195,7 +195,7 @@ final class Populator
                 }
             }
 
-            if ($storage->allowed_mutations <= Mutations::INTERNAL_READ) {
+            if ($storage->mutation_free) {
                 foreach ($storage->properties as $property) {
                     if (!$property->is_static) {
                         $property->readonly = true;

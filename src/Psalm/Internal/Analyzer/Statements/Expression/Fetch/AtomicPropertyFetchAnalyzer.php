@@ -498,7 +498,7 @@ final class AtomicPropertyFetchAnalyzer
 
         if (!$context->collect_mutations
             && !$context->collect_initializations
-            && !($class_storage->allowed_mutations <= Mutations::INTERNAL_READ_WRITE
+            && !($class_storage->external_mutation_free
                 && $class_property_type->allow_mutations)
         ) {
             $statements_analyzer->signalMutation(
@@ -520,7 +520,7 @@ final class AtomicPropertyFetchAnalyzer
             $context,
         );
 
-        if ($class_storage->allowed_mutations <= Mutations::INTERNAL_READ) {
+        if ($class_storage->mutation_free) {
             $class_property_type = $class_property_type->setProperties([
                 'has_mutations' => false,
             ]);

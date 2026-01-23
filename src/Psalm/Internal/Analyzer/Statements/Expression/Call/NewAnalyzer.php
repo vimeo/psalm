@@ -623,7 +623,7 @@ final class NewAnalyzer extends CallAnalyzer
             );
         }
 
-        if ($storage->allowed_mutations <= Mutations::INTERNAL_READ_WRITE) {
+        if ($storage->external_mutation_free) {
             $stmt->setAttribute('external_mutation_free', true);
             $stmt_type = $statements_analyzer->node_data->getType($stmt);
 
@@ -649,7 +649,7 @@ final class NewAnalyzer extends CallAnalyzer
                 $method_storage = $codebase->methods->getStorage($declaring_method_id);
             }
 
-            if ($storage->allowed_mutations <= Mutations::INTERNAL_READ_WRITE
+            if ($storage->external_mutation_free
                 || ($method_storage && $method_storage->specialize_call)
             ) {
                 $method_source = DataFlowNode::getForMethodReturn(

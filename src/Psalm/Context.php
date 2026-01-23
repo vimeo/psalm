@@ -327,7 +327,7 @@ final class Context
 
     public bool $external_mutation_free {
         get {
-            return $this->allowed_mutations <= Mutations::INTERNAL_READ_WRITE;
+            return $this->external_mutation_free;
         }
         set(bool $value) {
             if ($value) {

@@ -464,7 +464,7 @@ final class InstancePropertyFetchAnalyzer
 
                     if (!$context->collect_mutations
                         && !$context->collect_initializations
-                        && !($class_storage->allowed_mutations <= Mutations::INTERNAL_READ_WRITE
+                        && !($class_storage->external_mutation_free
                             && $stmt_type->allow_mutations)
                     ) {
                         $statements_analyzer->signalMutation(

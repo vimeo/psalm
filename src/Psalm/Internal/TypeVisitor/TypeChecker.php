@@ -354,7 +354,7 @@ final class TypeChecker extends TypeVisitor
                     : null;
 
                 if ($method_storage instanceof MethodStorage
-                    && $method_storage->allowed_mutations <= Mutations::INTERNAL_READ
+                    && $method_storage->mutation_free
                     && !$method_storage->mutation_free_inferred
                 ) {
                     // do nothing
