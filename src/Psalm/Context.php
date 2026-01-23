@@ -306,22 +306,22 @@ final class Context
 
     public bool $ignore_variable_method = false;
 
-    public int $allowed_mutations = Mutations::ALL;
+    public int $allowed_mutations = Mutations::LEVEL_ALL;
 
     public bool $mutation_free {
         get {
-            return $this->allowed_mutations <= Mutations::INTERNAL_READ;
+            return $this->allowed_mutations <= Mutations::LEVEL_INTERNAL_READ;
         }
         set(bool $value) {
     if ($value) {
         $this->allowed_mutations = min(
             $this->allowed_mutations,
-            Mutations::INTERNAL_READ,
+            Mutations::LEVEL_INTERNAL_READ,
         );
     } else {
         $this->allowed_mutations = max(
             $this->allowed_mutations,
-            Mutations::INTERNAL_READ + 1,
+            Mutations::LEVEL_INTERNAL_READ + 1,
         );
     }
         }
@@ -329,18 +329,18 @@ final class Context
 
     public bool $external_mutation_free {
         get {
-            return $this->allowed_mutations <= Mutations::INTERNAL_READ_WRITE;
+            return $this->allowed_mutations <= Mutations::LEVEL_INTERNAL_READ_WRITE;
         }
         set(bool $value) {
     if ($value) {
         $this->allowed_mutations = min(
             $this->allowed_mutations,
-            Mutations::INTERNAL_READ_WRITE,
+            Mutations::LEVEL_INTERNAL_READ_WRITE,
         );
     } else {
         $this->allowed_mutations = max(
             $this->allowed_mutations,
-            Mutations::INTERNAL_READ_WRITE + 1,
+            Mutations::LEVEL_INTERNAL_READ_WRITE + 1,
         );
     }
         }
@@ -348,18 +348,18 @@ final class Context
 
     public bool $pure {
         get {
-            return $this->allowed_mutations <= Mutations::PURE;
+            return $this->allowed_mutations <= Mutations::LEVEL_PURE;
         }
         set(bool $value) {
     if ($value) {
         $this->allowed_mutations = min(
             $this->allowed_mutations,
-            Mutations::PURE,
+            Mutations::LEVEL_PURE,
         );
     } else {
         $this->allowed_mutations = max(
             $this->allowed_mutations,
-            Mutations::PURE + 1,
+            Mutations::LEVEL_PURE + 1,
         );
     }
         }
@@ -899,16 +899,16 @@ final class Context
             throw new InvalidArgumentException('Levels are the same');
         }
         $a = match ($this->allowed_mutations) {
-            Mutations::NONE => 'is pure',
-            Mutations::INTERNAL_READ => 'allows only reading instance state',
-            Mutations::INTERNAL_READ_WRITE => 'allows only reading and mutating instance state',
-            Mutations::EXTERNAL => 'is impure',
+            Mutations::LEVEL_NONE => 'is pure',
+            Mutations::LEVEL_INTERNAL_READ => 'allows only reading instance state',
+            Mutations::LEVEL_INTERNAL_READ_WRITE => 'allows only reading and mutating instance state',
+            Mutations::LEVEL_EXTERNAL => 'is impure',
         };
         $b = match ($levelB) {
-            Mutations::NONE => 'is pure',
-            Mutations::INTERNAL_READ => 'is reading instance state',
-            Mutations::INTERNAL_READ_WRITE => 'is mutating instance state',
-            Mutations::EXTERNAL => 'is impure',
+            Mutations::LEVEL_NONE => 'is pure',
+            Mutations::LEVEL_INTERNAL_READ => 'is reading instance state',
+            Mutations::LEVEL_INTERNAL_READ_WRITE => 'is mutating instance state',
+            Mutations::LEVEL_EXTERNAL => 'is impure',
         };
 
         return "The context $a but $expression $b";

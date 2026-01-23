@@ -243,7 +243,7 @@ final class FunctionLikeNodeScanner
                     && $classlike_storage->properties[$property_name]->type
                 ) {
                     $storage->allowed_mutations = min(
-                        Mutations::INTERNAL_READ,
+                        Mutations::LEVEL_INTERNAL_READ,
                         $storage->allowed_mutations,
                     );
                     $storage->mutation_free_inferred = !$stmt->isFinal() && !$classlike_storage->final;
@@ -687,7 +687,7 @@ final class FunctionLikeNodeScanner
                     || $attribute->fq_class_name === 'JetBrains\\PhpStorm\\Pure'
                 ) {
                     $storage->specialize_call = true;
-                    $storage->allowed_mutations = Mutations::NONE;
+                    $storage->allowed_mutations = Mutations::LEVEL_NONE;
                 }
 
                 if ($attribute->fq_class_name === 'Psalm\\Deprecated'
@@ -704,7 +704,7 @@ final class FunctionLikeNodeScanner
                 if ($attribute->fq_class_name === 'Psalm\\ExternalMutationFree'
                     && $storage instanceof MethodStorage
                 ) {
-                    $storage->allowed_mutations = Mutations::INTERNAL_READ_WRITE;
+                    $storage->allowed_mutations = Mutations::LEVEL_INTERNAL_READ_WRITE;
                 }
 
                 if ($attribute->fq_class_name === 'JetBrains\\PhpStorm\\NoReturn') {
@@ -777,7 +777,7 @@ final class FunctionLikeNodeScanner
         }
 
         $storage->allowed_mutations = min(
-            Mutations::INTERNAL_READ_WRITE,
+            Mutations::LEVEL_INTERNAL_READ_WRITE,
             $storage->allowed_mutations,
         );
 

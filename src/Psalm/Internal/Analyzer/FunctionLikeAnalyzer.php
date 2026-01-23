@@ -130,7 +130,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
     public bool $track_mutations = false;
 
-    public int $inferred_mutations = Mutations::NONE;
+    public int $inferred_mutations = Mutations::LEVEL_NONE;
 
     /**
      * Holds param nodes for functions with func_get_args calls
@@ -396,7 +396,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             ) {
                 $context->allowed_mutations = max(
                     $context->allowed_mutations,
-                    Mutations::INTERNAL_READ_WRITE,
+                    Mutations::LEVEL_INTERNAL_READ_WRITE,
                 );
             }
         }
@@ -555,7 +555,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
         }
 
-        if ($this->inferred_mutations >= Mutations::INTERNAL_READ_WRITE && $context->self) {
+        if ($this->inferred_mutations >= Mutations::LEVEL_INTERNAL_READ_WRITE && $context->self) {
             $this->codebase->analyzer->addMutableClass($context->self);
         }
 

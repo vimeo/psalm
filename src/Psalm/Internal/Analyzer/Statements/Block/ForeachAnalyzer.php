@@ -531,7 +531,7 @@ final class ForeachAnalyzer
                 );
 
                 $statements_analyzer->signalMutation(
-                    Mutations::ALL,
+                    Mutations::LEVEL_ALL,
                     $context,
                     'possibly-mutating iterator',
                     ImpureMethodCall::class,
@@ -596,7 +596,7 @@ final class ForeachAnalyzer
                 $has_valid_iterator = true;
 
                 $statements_analyzer->signalMutation(
-                    Mutations::ALL,
+                    Mutations::LEVEL_ALL,
                     $context,
                     'possibly-mutating Traversable::getIterator',
                     ImpureMethodCall::class,
@@ -640,7 +640,7 @@ final class ForeachAnalyzer
                 }
 
                 $statements_analyzer->signalMutation(
-                    Mutations::ALL,
+                    Mutations::LEVEL_ALL,
                     $context,
                     'possibly-mutating iterator',
                     ImpureMethodCall::class,

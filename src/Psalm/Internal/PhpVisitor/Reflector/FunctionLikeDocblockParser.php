@@ -577,11 +577,11 @@ final class FunctionLikeDocblockParser
             || isset($parsed_docblock->tags['phpstan-pure'])
             || isset($parsed_docblock->tags['pure'])
         ) {
-            $info->allowed_mutations = Mutations::NONE;
+            $info->allowed_mutations = Mutations::LEVEL_NONE;
         } elseif (isset($parsed_docblock->tags['psalm-mutation-free'])) {
-            $info->allowed_mutations = Mutations::INTERNAL_READ;
+            $info->allowed_mutations = Mutations::LEVEL_INTERNAL_READ;
         } elseif (isset($parsed_docblock->tags['psalm-external-mutation-free'])) {
-            $info->allowed_mutations = Mutations::INTERNAL_READ_WRITE;
+            $info->allowed_mutations = Mutations::LEVEL_INTERNAL_READ_WRITE;
         }
 
         if (isset($parsed_docblock->tags['no-named-arguments'])) {

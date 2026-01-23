@@ -361,7 +361,7 @@ final class CallableTypeComparator
                         $input_type_part->value,
                         null,
                         $must_use,
-                    ) ? Mutations::NONE : Mutations::ALL);
+                    ) ? Mutations::LEVEL_NONE : Mutations::LEVEL_ALL);
 
                     return $matching_callable;
                 }

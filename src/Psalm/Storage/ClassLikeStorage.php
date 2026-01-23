@@ -162,23 +162,23 @@ final class ClassLikeStorage implements HasAttributesInterface
 
     public bool $is_enum = false;
 
-    /** @var Mutations::INTERNAL_READ|Mutations::INTERNAL_READ_WRITE|Mutations::ALL */
-    public int $allowed_mutations = Mutations::ALL;
+    /** @var Mutations::LEVEL_INTERNAL_READ|Mutations::LEVEL_INTERNAL_READ_WRITE|Mutations::LEVEL_ALL */
+    public int $allowed_mutations = Mutations::LEVEL_ALL;
 
     public bool $mutation_free {
         get {
-            return $this->allowed_mutations <= Mutations::INTERNAL_READ;
+            return $this->allowed_mutations <= Mutations::LEVEL_INTERNAL_READ;
         }
         set(bool $value) {
     if ($value) {
         $this->allowed_mutations = min(
             $this->allowed_mutations,
-            Mutations::INTERNAL_READ,
+            Mutations::LEVEL_INTERNAL_READ,
         );
     } else {
         $this->allowed_mutations = max(
             $this->allowed_mutations,
-            Mutations::INTERNAL_READ + 1,
+            Mutations::LEVEL_INTERNAL_READ + 1,
         );
     }
         }
@@ -186,18 +186,18 @@ final class ClassLikeStorage implements HasAttributesInterface
 
     public bool $external_mutation_free {
         get {
-            return $this->allowed_mutations <= Mutations::INTERNAL_READ_WRITE;
+            return $this->allowed_mutations <= Mutations::LEVEL_INTERNAL_READ_WRITE;
         }
         set(bool $value) {
     if ($value) {
         $this->allowed_mutations = min(
             $this->allowed_mutations,
-            Mutations::INTERNAL_READ_WRITE,
+            Mutations::LEVEL_INTERNAL_READ_WRITE,
         );
     } else {
         $this->allowed_mutations = max(
             $this->allowed_mutations,
-            Mutations::INTERNAL_READ_WRITE + 1,
+            Mutations::LEVEL_INTERNAL_READ_WRITE + 1,
         );
     }
         }

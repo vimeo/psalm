@@ -614,7 +614,7 @@ final class AtomicStaticCallAnalyzer
             if ($callstatic_method_exists) {
                 $callstatic_declaring_id = $codebase->methods->getDeclaringMethodId($callstatic_id);
                 assert($callstatic_declaring_id !== null);
-                $callstatic_mutations = Mutations::ALL;
+                $callstatic_mutations = Mutations::LEVEL_ALL;
                 if ($codebase->methods->hasStorage($callstatic_declaring_id)) {
                     $callstatic_storage = $codebase->methods->getStorage($callstatic_declaring_id);
                     $callstatic_mutations = $callstatic_storage->allowed_mutations;

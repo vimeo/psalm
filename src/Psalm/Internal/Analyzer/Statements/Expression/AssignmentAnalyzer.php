@@ -289,7 +289,7 @@ final class AssignmentAnalyzer
         if ($extended_var_id && isset($context->vars_in_scope[$extended_var_id])) {
             if ($context->vars_in_scope[$extended_var_id]->by_ref) {
                 $statements_analyzer->signalMutation(
-                    Mutations::INTERNAL_READ_WRITE,
+                    Mutations::LEVEL_INTERNAL_READ_WRITE,
                     $context,
                     'Variable ' . $extended_var_id . ' cannot be assigned to as it is passed by reference',
                     ImpureByReferenceAssignment::class,
@@ -1656,7 +1656,7 @@ final class AssignmentAnalyzer
                 && $assign_var->var->name === 'this';
 
             $statements_analyzer->signalMutation(
-                $isThis ? Mutations::INTERNAL_READ_WRITE : Mutations::EXTERNAL,
+                $isThis ? Mutations::LEVEL_INTERNAL_READ_WRITE : Mutations::LEVEL_EXTERNAL,
                 $context,
                 'property assignment',
                 ImpurePropertyAssignment::class,

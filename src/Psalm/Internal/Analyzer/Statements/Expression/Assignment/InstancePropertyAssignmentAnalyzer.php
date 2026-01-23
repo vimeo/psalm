@@ -1306,7 +1306,7 @@ final class InstancePropertyAssignmentAnalyzer
                 && !$context->vars_in_scope[$lhs_var_id]->allow_mutations
             ) {
                 $statements_analyzer->signalMutation(
-                    $lhs_var_id === '$this' ? Mutations::INTERNAL_READ_WRITE : Mutations::EXTERNAL,
+                    $lhs_var_id === '$this' ? Mutations::LEVEL_INTERNAL_READ_WRITE : Mutations::LEVEL_EXTERNAL,
                     $context,
                     'Cannot assign to a property from a mutation-free context',
                     ImpurePropertyAssignment::class,

@@ -262,17 +262,17 @@ final class ClassLikeDocblockParser
             }
         }
 
-        $info->allowed_mutations = Mutations::ALL;
+        $info->allowed_mutations = Mutations::LEVEL_ALL;
 
         if (isset($parsed_docblock->tags['psalm-immutable'])
             || isset($parsed_docblock->tags['psalm-mutation-free'])
         ) {
-            $info->allowed_mutations = Mutations::INTERNAL_READ;
+            $info->allowed_mutations = Mutations::LEVEL_INTERNAL_READ;
             $info->taint_specialize = true;
         }
 
         if (isset($parsed_docblock->tags['psalm-external-mutation-free'])) {
-            $info->allowed_mutations = Mutations::INTERNAL_READ_WRITE;
+            $info->allowed_mutations = Mutations::LEVEL_INTERNAL_READ_WRITE;
         }
 
         if (isset($parsed_docblock->tags['psalm-taint-specialize'])) {

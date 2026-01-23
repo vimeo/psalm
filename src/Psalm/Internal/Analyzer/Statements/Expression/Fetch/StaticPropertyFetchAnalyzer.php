@@ -196,7 +196,7 @@ final class StaticPropertyFetchAnalyzer
         }
 
         $statements_analyzer->signalMutation(
-            Mutations::INTERNAL_READ_WRITE,
+            Mutations::LEVEL_INTERNAL_READ_WRITE,
             $context,
             'static property',
             ImpureStaticProperty::class,

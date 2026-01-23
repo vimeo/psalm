@@ -84,7 +84,7 @@ final class FunctionDocblockManipulator
     /** @var array<string, array{int, int}> */
     private array $param_typehint_offsets = [];
 
-    private int $allowed_mutations = Mutations::ALL;
+    private int $allowed_mutations = Mutations::LEVEL_ALL;
 
     /** @var list<string> */
     private array $throwsExceptions = [];
@@ -405,7 +405,7 @@ final class FunctionDocblockManipulator
             $old_phpdoc_return_type = reset($parsed_docblock->tags['return']);
         }
 
-        if ($this->allowed_mutations !== Mutations::ALL) {
+        if ($this->allowed_mutations !== Mutations::LEVEL_ALL) {
             $modified_docblock = true;
             unset($parsed_docblock->tags['psalm-pure']);
             unset($parsed_docblock->tags['psalm-mutation-free']);
@@ -510,7 +510,7 @@ final class FunctionDocblockManipulator
             if (!$manipulator->new_php_return_type
                 || !$manipulator->return_type_is_php_compatible
                 || $manipulator->docblock_start !== $manipulator->docblock_end
-                || $manipulator->allowed_mutations !== Mutations::ALL
+                || $manipulator->allowed_mutations !== Mutations::LEVEL_ALL
             ) {
                 $file_manipulations[$manipulator->docblock_start] = new FileManipulation(
                     $manipulator->docblock_start,

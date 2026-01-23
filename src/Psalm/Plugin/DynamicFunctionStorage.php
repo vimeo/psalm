@@ -41,7 +41,7 @@ final class DynamicFunctionStorage
     /**
      * Function purity.
      */
-    public int $allowed_mutations = Mutations::ALL;
+    public int $allowed_mutations = Mutations::LEVEL_ALL;
 
     /**
      * Determines if a function can be called with a various number of arguments.

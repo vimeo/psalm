@@ -30,7 +30,7 @@ trait CallableTrait
 
     public ?Union $return_type = null;
 
-    public int $allowed_mutations = Mutations::ALL;
+    public int $allowed_mutations = Mutations::LEVEL_ALL;
 
     /**
      * Constructs a new instance of a generic type
@@ -42,7 +42,7 @@ trait CallableTrait
         string $value = 'callable',
         ?array $params = null,
         ?Union $return_type = null,
-        int $allowed_mutations = Mutations::ALL,
+        int $allowed_mutations = Mutations::LEVEL_ALL,
         bool $from_docblock = false,
     ) {
         $this->value = $value;
@@ -116,10 +116,10 @@ trait CallableTrait
         $return_type_string = $this->getReturnTypeString();
 
         $prefix = match ($this->allowed_mutations) {
-            Mutations::NONE => 'pure-',
-            Mutations::INTERNAL_READ => 'self-accessing-',
-            Mutations::INTERNAL_READ_WRITE => 'self-mutating-',
-            Mutations::EXTERNAL => 'impure-',
+            Mutations::LEVEL_NONE => 'pure-',
+            Mutations::LEVEL_INTERNAL_READ => 'self-accessing-',
+            Mutations::LEVEL_INTERNAL_READ_WRITE => 'self-mutating-',
+            Mutations::LEVEL_EXTERNAL => 'impure-',
         };
 
         return $prefix . $this->value . $param_string . $return_type_string;
@@ -179,10 +179,10 @@ trait CallableTrait
         }
 
         $prefix = match ($this->allowed_mutations) {
-            Mutations::NONE => 'pure-',
-            Mutations::INTERNAL_READ => 'self-accessing-',
-            Mutations::INTERNAL_READ_WRITE => 'self-mutating-',
-            Mutations::EXTERNAL => '',
+            Mutations::LEVEL_NONE => 'pure-',
+            Mutations::LEVEL_INTERNAL_READ => 'self-accessing-',
+            Mutations::LEVEL_INTERNAL_READ_WRITE => 'self-mutating-',
+            Mutations::LEVEL_EXTERNAL => '',
         };
         return $prefix . 'callable' . $param_string . $return_type_string;
     }
@@ -230,10 +230,10 @@ trait CallableTrait
         }
 
         $prefix = match ($this->allowed_mutations) {
-            Mutations::NONE => 'pure-',
-            Mutations::INTERNAL_READ => 'self-accessing-',
-            Mutations::INTERNAL_READ_WRITE => 'self-mutating-',
-            Mutations::EXTERNAL => 'impure-',
+            Mutations::LEVEL_NONE => 'pure-',
+            Mutations::LEVEL_INTERNAL_READ => 'self-accessing-',
+            Mutations::LEVEL_INTERNAL_READ_WRITE => 'self-mutating-',
+            Mutations::LEVEL_EXTERNAL => 'impure-',
         };
         return $prefix
             . $this->value . $param_string . $return_type_string;

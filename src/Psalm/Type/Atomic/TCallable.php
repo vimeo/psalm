@@ -35,7 +35,7 @@ final class TCallable extends Atomic
         string $value = 'callable',
         ?array $params = null,
         ?Union $return_type = null,
-        int $allowed_mutations = Mutations::ALL,
+        int $allowed_mutations = Mutations::LEVEL_ALL,
         bool $from_docblock = false,
     ) {
         $this->value = $value;

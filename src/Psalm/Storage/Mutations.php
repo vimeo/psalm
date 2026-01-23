@@ -12,7 +12,7 @@ final class Mutations
      * psalm-pure on methods implies this level
      * psalm-pure on functions implies this level
      */
-    const NONE = 0;
+    const LEVEL_NONE = 0;
 
     /**
      * Reading properties of $this.
@@ -24,7 +24,7 @@ final class Mutations
      * psalm-mutation-free on methods implies this level
      * psalm-mutation-free on functions implies this level
      */
-    const INTERNAL_READ = 1;
+    const LEVEL_INTERNAL_READ = 1;
 
     /**
      * Writing properties of $this or self.
@@ -38,7 +38,7 @@ final class Mutations
      * psalm-external-mutation-free on methods implies this level
      * psalm-external-mutation-free on functions implies this level
      */
-    const INTERNAL_READ_WRITE = 2;
+    const LEVEL_INTERNAL_READ_WRITE = 2;
 
     /**
      * Writing properties of $this or self.
@@ -48,21 +48,21 @@ final class Mutations
      *
      * Default allowance level on classes, methods, and functions.
      */
-    const EXTERNAL = 3;
+    const LEVEL_EXTERNAL = 3;
 
-    const PURE = self::NONE;
-    const ALL = self::EXTERNAL;
+    const LEVEL_PURE = self::LEVEL_NONE;
+    const LEVEL_ALL = self::LEVEL_EXTERNAL;
 
     const TO_ATTRIBUTE_CLASS = [
-        //self::NONE => 'no annotation (pure not allowed on classes)',
-        self::INTERNAL_READ => 'psalm-immutable',
-        self::INTERNAL_READ_WRITE => 'psalm-external-mutation-free',
-        //self::EXTERNAL => 'no annotation (impure)',
+        //self::LEVEL_NONE => 'no annotation (pure not allowed on classes)',
+        self::LEVEL_INTERNAL_READ => 'psalm-immutable',
+        self::LEVEL_INTERNAL_READ_WRITE => 'psalm-external-mutation-free',
+        //self::LEVEL_EXTERNAL => 'no annotation (impure)',
     ];
     const TO_ATTRIBUTE_FUNCTIONLIKE = [
-        self::NONE => 'psalm-pure',
-        self::INTERNAL_READ => 'psalm-mutation-free',
-        self::INTERNAL_READ_WRITE => 'psalm-external-mutation-free',
-        //self::EXTERNAL => 'no annotation (impure)',
+        self::LEVEL_NONE => 'psalm-pure',
+        self::LEVEL_INTERNAL_READ => 'psalm-mutation-free',
+        self::LEVEL_INTERNAL_READ_WRITE => 'psalm-external-mutation-free',
+        //self::LEVEL_EXTERNAL => 'no annotation (impure)',
     ];
 }

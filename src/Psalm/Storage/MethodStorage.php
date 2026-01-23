@@ -35,7 +35,7 @@ final class MethodStorage extends FunctionLikeStorage
 
     public bool $mutation_free_inferred = false;
 
-    public int $containing_class_allowed_mutations = Mutations::ALL;
+    public int $containing_class_allowed_mutations = Mutations::LEVEL_ALL;
 
     /**
      * @var ?array<string, bool>

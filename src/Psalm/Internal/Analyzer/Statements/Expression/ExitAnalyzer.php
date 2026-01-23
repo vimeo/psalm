@@ -121,7 +121,7 @@ final class ExitAnalyzer
         ) {
             $function_name = $stmt->getAttribute('kind') === Exit_::KIND_DIE ? 'die' : 'exit';
             $statements_analyzer->signalMutation(
-                Mutations::EXTERNAL,
+                Mutations::LEVEL_EXTERNAL,
                 $context,
                 $function_name . ' with a non-integer argument',
                 ImpureFunctionCall::class,

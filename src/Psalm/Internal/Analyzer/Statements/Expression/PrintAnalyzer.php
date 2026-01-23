@@ -88,7 +88,7 @@ final class PrintAnalyzer
 
         if (!$context->collect_initializations && !$context->collect_mutations) {
             $statements_analyzer->signalMutation(
-                Mutations::EXTERNAL,
+                Mutations::LEVEL_EXTERNAL,
                 $context,
                 'print',
                 ImpureFunctionCall::class,

@@ -141,22 +141,22 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
 
     public bool $is_static = false;
 
-    public int $allowed_mutations = Mutations::ALL;
+    public int $allowed_mutations = Mutations::LEVEL_ALL;
 
     public bool $mutation_free {
         get {
-            return $this->allowed_mutations <= Mutations::INTERNAL_READ;
+            return $this->allowed_mutations <= Mutations::LEVEL_INTERNAL_READ;
         }
         set(bool $value) {
     if ($value) {
         $this->allowed_mutations = min(
             $this->allowed_mutations,
-            Mutations::INTERNAL_READ,
+            Mutations::LEVEL_INTERNAL_READ,
         );
     } else {
         $this->allowed_mutations = max(
             $this->allowed_mutations,
-            Mutations::INTERNAL_READ + 1,
+            Mutations::LEVEL_INTERNAL_READ + 1,
         );
     }
         }
@@ -164,18 +164,18 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
 
     public bool $external_mutation_free {
         get {
-            return $this->allowed_mutations <= Mutations::INTERNAL_READ_WRITE;
+            return $this->allowed_mutations <= Mutations::LEVEL_INTERNAL_READ_WRITE;
         }
         set(bool $value) {
     if ($value) {
         $this->allowed_mutations = min(
             $this->allowed_mutations,
-            Mutations::INTERNAL_READ_WRITE,
+            Mutations::LEVEL_INTERNAL_READ_WRITE,
         );
     } else {
         $this->allowed_mutations = max(
             $this->allowed_mutations,
-            Mutations::INTERNAL_READ_WRITE + 1,
+            Mutations::LEVEL_INTERNAL_READ_WRITE + 1,
         );
     }
         }
@@ -183,18 +183,18 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
 
     public bool $pure {
         get {
-            return $this->allowed_mutations <= Mutations::PURE;
+            return $this->allowed_mutations <= Mutations::LEVEL_PURE;
         }
         set(bool $value) {
     if ($value) {
         $this->allowed_mutations = min(
             $this->allowed_mutations,
-            Mutations::PURE,
+            Mutations::LEVEL_PURE,
         );
     } else {
         $this->allowed_mutations = max(
             $this->allowed_mutations,
-            Mutations::PURE + 1,
+            Mutations::LEVEL_PURE + 1,
         );
     }
         }

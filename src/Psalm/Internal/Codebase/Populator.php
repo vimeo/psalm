@@ -185,7 +185,7 @@ final class Populator
             }
         }
 
-        if ($storage->allowed_mutations !== Mutations::ALL) {
+        if ($storage->allowed_mutations !== Mutations::LEVEL_ALL) {
             foreach ($storage->methods as $method) {
                 if (!$method->is_static && !$method->external_mutation_free) {
                     $method->allowed_mutations = $storage->allowed_mutations;
@@ -396,7 +396,7 @@ final class Populator
                     $declaring_method_storage->overridden_somewhere = true;
 
                     if ($declaring_method_storage->mutation_free_inferred) {
-                        $declaring_method_storage->allowed_mutations = Mutations::ALL;
+                        $declaring_method_storage->allowed_mutations = Mutations::LEVEL_ALL;
                         $declaring_method_storage->mutation_free_inferred = false;
                     }
 

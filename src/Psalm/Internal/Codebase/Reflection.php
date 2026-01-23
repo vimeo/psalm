@@ -276,9 +276,9 @@ final class Reflection
         $storage->abstract = $method->isAbstract();
 
         if ($method_name_lc === '__construct' && $fq_class_name_lc === 'datetimezone') {
-            $storage->allowed_mutations = Mutations::NONE;
+            $storage->allowed_mutations = Mutations::LEVEL_NONE;
         } else {
-            $storage->allowed_mutations = Mutations::ALL;
+            $storage->allowed_mutations = Mutations::LEVEL_ALL;
         }
 
         $class_storage->declaring_method_ids[$method_name_lc] = new MethodIdentifier(
@@ -406,7 +406,7 @@ final class Reflection
                 }
             }
 
-            $storage->allowed_mutations = Mutations::NONE;
+            $storage->allowed_mutations = Mutations::LEVEL_NONE;
 
             $storage->required_param_count = 0;
 

@@ -106,7 +106,7 @@ final class EchoAnalyzer
 
         if (!$context->collect_initializations && !$context->collect_mutations) {
             $statements_analyzer->signalMutation(
-                Mutations::EXTERNAL,
+                Mutations::LEVEL_EXTERNAL,
                 $context,
                 'echo',
                 ImpureFunctionCall::class,

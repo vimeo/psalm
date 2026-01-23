@@ -501,7 +501,7 @@ final class AtomicPropertyFetchAnalyzer
                 && $class_property_type->allow_mutations)
         ) {
             $statements_analyzer->signalMutation(
-                Mutations::INTERNAL_READ, // Matches previous logic
+                Mutations::LEVEL_INTERNAL_READ, // Matches previous logic
                 $context,
                 'Cannot access a property on a mutable object from a pure context',
                 ImpurePropertyFetch::class,
@@ -1058,7 +1058,7 @@ final class AtomicPropertyFetchAnalyzer
     ): void {
         if ($context->inside_isset || $context->collect_initializations) {
             $statements_analyzer->signalMutation(
-                Mutations::INTERNAL_READ, // Strange but matches previous code
+                Mutations::LEVEL_INTERNAL_READ, // Strange but matches previous code
                 $context,
                 'Cannot access a property on a mutable object from a pure context',
                 ImpurePropertyFetch::class,

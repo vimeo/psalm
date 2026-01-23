@@ -393,7 +393,7 @@ final class Functions
 
     /**
      * @param ?list<Arg> $args
-     * @return Mutations::*
+     * @return Mutations::LEVEL_*
      */
     public function getCallMapFunctionMutations(
         Codebase $codebase,
@@ -403,36 +403,36 @@ final class Functions
         bool &$must_use = true,
     ): int {
         if (ImpureFunctionsList::isImpure($function_id)) {
-            return Mutations::ALL;
+            return Mutations::LEVEL_ALL;
         }
 
         if ($function_id === 'serialize' && isset($args[0]) && $type_provider) {
             $serialize_type = $type_provider->getType($args[0]->value);
 
             if ($serialize_type && $serialize_type->canContainObjectType($codebase)) {
-                return Mutations::ALL;
+                return Mutations::LEVEL_ALL;
             }
         }
 
         if (str_starts_with($function_id, 'image')) {
-            return Mutations::ALL;
+            return Mutations::LEVEL_ALL;
         }
 
         if (str_starts_with($function_id, 'readline')) {
-            return Mutations::ALL;
+            return Mutations::LEVEL_ALL;
         }
 
         if (($function_id === 'var_export' || $function_id === 'print_r') && !isset($args[1])) {
-            return Mutations::ALL;
+            return Mutations::LEVEL_ALL;
         }
 
         if ($function_id === 'assert') {
             $must_use = false;
-            return Mutations::NONE;
+            return Mutations::LEVEL_NONE;
         }
 
         if ($function_id === 'func_num_args' || $function_id === 'func_get_args') {
-            return Mutations::NONE;
+            return Mutations::LEVEL_NONE;
         }
 
         if (in_array($function_id, ['count', 'sizeof']) && isset($args[0]) && $type_provider) {
@@ -467,7 +467,7 @@ final class Functions
             || ($args !== null && count($args) === 0)
             || ($function_callable->return_type && $function_callable->return_type->isVoid())
         ) {
-            return Mutations::ALL;
+            return Mutations::LEVEL_ALL;
         }
 
         $must_use = $function_id !== 'array_map'
@@ -484,7 +484,7 @@ final class Functions
                             $possible_callable,
                         );
 
-                        if ($possible_callable && $possible_callable->allowed_mutations !== Mutations::NONE) {
+                        if ($possible_callable && $possible_callable->allowed_mutations !== Mutations::LEVEL_NONE) {
                             return $possible_callable->allowed_mutations;
                         }
                     }
@@ -496,7 +496,7 @@ final class Functions
             }
         }
 
-        return Mutations::NONE;
+        return Mutations::LEVEL_NONE;
     }
 
     public static function clearCache(): void

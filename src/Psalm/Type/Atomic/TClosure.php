@@ -37,7 +37,7 @@ final class TClosure extends TNamedObject
         string $value = 'callable',
         ?array $params = null,
         ?Union $return_type = null,
-        int $allowed_mutations = Mutations::ALL,
+        int $allowed_mutations = Mutations::LEVEL_ALL,
         public array $byref_uses = [],
         array $extra_types = [],
         bool $from_docblock = false,
@@ -58,7 +58,7 @@ final class TClosure extends TNamedObject
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         // it can, if it's just 'Closure'
-        return $this->params === null && $this->return_type === null && $this->allowed_mutations === Mutations::ALL;
+        return $this->params === null && $this->return_type === null && $this->allowed_mutations === Mutations::LEVEL_ALL;
     }
 
     /**

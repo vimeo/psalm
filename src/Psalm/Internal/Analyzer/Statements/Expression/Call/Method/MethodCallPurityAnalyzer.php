@@ -41,7 +41,7 @@ final class MethodCallPurityAnalyzer
     ): void {
         $method_allowed_mutations = $method_storage->allowed_mutations;
         
-        if ($method_allowed_mutations === Mutations::INTERNAL_READ_WRITE
+        if ($method_allowed_mutations === Mutations::LEVEL_INTERNAL_READ_WRITE
             && (
                 // Already checked in isPureCompatible below
                 // $stmt->var->getAttribute('pure', false)
@@ -62,7 +62,7 @@ final class MethodCallPurityAnalyzer
             // - The method is called on $this or self
             //
             // then we must treat the method as if it was pure.
-            $method_allowed_mutations = Mutations::PURE;
+            $method_allowed_mutations = Mutations::LEVEL_PURE;
         }
 
         $statements_analyzer->signalMutation(
@@ -73,14 +73,14 @@ final class MethodCallPurityAnalyzer
             $stmt,
         );
         
-        if ($method_allowed_mutations === Mutations::NONE
+        if ($method_allowed_mutations === Mutations::LEVEL_NONE
             && !$context->inside_unset
         ) {
             if ($method_storage->mutation_free
                 && (!$method_storage->mutation_free_inferred
                     || $method_storage->final
                     || $method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE)
-                && ($method_storage->containing_class_allowed_mutations === Mutations::NONE
+                && ($method_storage->containing_class_allowed_mutations === Mutations::LEVEL_NONE
                     || $config->remember_property_assignments_after_call
                 )
             ) {
@@ -90,7 +90,7 @@ final class MethodCallPurityAnalyzer
                 ) {
                     $stmt->setAttribute('memoizable', true);
 
-                    if ($method_storage->containing_class_allowed_mutations === Mutations::NONE) {
+                    if ($method_storage->containing_class_allowed_mutations === Mutations::LEVEL_NONE) {
                         $stmt->setAttribute('pure', true);
                     }
                 }
@@ -126,11 +126,11 @@ final class MethodCallPurityAnalyzer
         }
 
         if (!$config->remember_property_assignments_after_call
-            && $method_allowed_mutations >= Mutations::INTERNAL_READ_WRITE
+            && $method_allowed_mutations >= Mutations::LEVEL_INTERNAL_READ_WRITE
         ) {
             $context->removeMutableObjectVars();
         } elseif ($method_storage->this_property_mutations) {
-            if ($method_allowed_mutations >= Mutations::INTERNAL_READ) {
+            if ($method_allowed_mutations >= Mutations::LEVEL_INTERNAL_READ) {
                 $context->removeMutableObjectVars(true);
             }
 
