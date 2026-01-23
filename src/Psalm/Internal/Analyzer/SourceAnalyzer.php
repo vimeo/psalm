@@ -234,7 +234,6 @@ abstract class SourceAnalyzer implements StatementsSource
      * @param Mutations::* $mutation_level
      * @param non-empty-string $msg
      * @param class-string<CodeIssue> $class
-     * @return ?non-empty-string
      */
     public function signalMutation(
         int $mutation_level,
