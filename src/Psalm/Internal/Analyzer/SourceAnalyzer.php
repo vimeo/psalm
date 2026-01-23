@@ -12,6 +12,7 @@ use Psalm\Context;
 use Psalm\Issue\CodeIssue;
 use Psalm\NodeTypeProvider;
 use Psalm\StatementsSource;
+use Psalm\Storage\Mutations;
 use Psalm\Type\Union;
 
 /**

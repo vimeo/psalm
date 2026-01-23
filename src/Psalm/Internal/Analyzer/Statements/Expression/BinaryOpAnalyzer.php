@@ -341,7 +341,7 @@ final class BinaryOpAnalyzer
             if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
                 && $stmt_left_type
                 && $stmt_right_type
-                && ($context->allowed_mutations !== Mutations::ALL
+                && ($context->allowed_mutations <= Mutations::INTERNAL_READ
                     || $codebase->alter_code
                 )
             ) {
