@@ -459,7 +459,7 @@ final class NewAnalyzer extends CallAnalyzer
                     $statements_analyzer->signalMutation(
                         $method_storage->allowed_mutations,
                         $context,
-                        'constructor',
+                        'constructor ' . $codebase->methods->getCasedMethodId($declaring_method_id),
                         ImpureMethodCall::class,
                         $stmt,
                     );
