@@ -38,6 +38,7 @@ use Psalm\Issue\UnsafeGenericInstantiation;
 use Psalm\Issue\UnsafeInstantiation;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+use Psalm\Storage\Mutations;
 use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TAnonymousClassInstance;
@@ -455,7 +456,9 @@ final class NewAnalyzer extends CallAnalyzer
                     );
                 }
 
-                if (!$context->inside_throw) {
+                if (!$context->inside_throw && 
+                    !$method_storage->external_mutation_free
+                ) {
                     $statements_analyzer->signalMutation(
                         $method_storage->allowed_mutations,
                         $context,
