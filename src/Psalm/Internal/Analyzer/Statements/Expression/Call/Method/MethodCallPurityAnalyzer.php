@@ -41,7 +41,8 @@ final class MethodCallPurityAnalyzer
     ): void {
         $method_allowed_mutations = $method_storage->allowed_mutations;
         
-        if ($method_allowed_mutations === Mutations::LEVEL_INTERNAL_READ_WRITE
+        if ($method_allowed_mutations !== Mutations::LEVEL_NONE
+            && $method_allowed_mutations <= Mutations::LEVEL_INTERNAL_READ_WRITE
             && (
                 // Already checked in isPureCompatible below
                 // $stmt->var->getAttribute('pure', false)
@@ -62,7 +63,7 @@ final class MethodCallPurityAnalyzer
             // - The method is called on $this or self
             //
             // then we must treat the method as if it was pure.
-            $method_allowed_mutations = Mutations::LEVEL_PURE;
+            $method_allowed_mutations = Mutations::LEVEL_NONE;
         }
 
         $statements_analyzer->signalMutation(

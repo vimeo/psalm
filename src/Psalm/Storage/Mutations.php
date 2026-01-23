@@ -50,7 +50,6 @@ final class Mutations
      */
     const LEVEL_EXTERNAL = 3;
 
-    const LEVEL_PURE = self::LEVEL_NONE;
     const LEVEL_ALL = self::LEVEL_EXTERNAL;
 
     const TO_ATTRIBUTE_CLASS = [

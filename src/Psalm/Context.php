@@ -349,18 +349,18 @@ final class Context
 
     public bool $pure {
         get {
-            return $this->allowed_mutations <= Mutations::LEVEL_PURE;
+            return $this->allowed_mutations <= Mutations::LEVEL_NONE;
         }
         set(bool $value) {
     if ($value) {
         $this->allowed_mutations = min(
             $this->allowed_mutations,
-            Mutations::LEVEL_PURE,
+            Mutations::LEVEL_NONE,
         );
     } else {
         $this->allowed_mutations = max(
             $this->allowed_mutations,
-            Mutations::LEVEL_PURE + 1,
+            Mutations::LEVEL_NONE + 1,
         );
     }
         }

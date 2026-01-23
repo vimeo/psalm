@@ -1073,7 +1073,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 }
             } elseif ($function_call_info->function_id
                 && $must_use
-                && $mutations === Mutations::LEVEL_PURE
+                && $mutations === Mutations::LEVEL_NONE
                 && !$function_call_info->function_storage?->assertions
                 && $codebase->find_unused_variables
                 && !$context->inside_conditional
