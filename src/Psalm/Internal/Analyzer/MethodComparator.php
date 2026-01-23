@@ -379,7 +379,7 @@ final class MethodComparator
         }
 
         if ($guide_method_storage->external_mutation_free
-            && $implementer_method_storage->allowed_mutations >= Mutations::EXTERNAL
+            && !$implementer_method_storage->external_mutation_free
             && !$guide_method_storage->mutation_free_inferred
             && $prevent_method_signature_mismatch
         ) {

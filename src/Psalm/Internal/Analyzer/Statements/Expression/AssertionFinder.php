@@ -4261,7 +4261,7 @@ final class AssertionFinder
                 }
 
                 $magic_getter = $class_definition->methods['__get'] ?? null;
-                if ($magic_getter === null || $magic_getter->allowed_mutations >= Mutations::INTERNAL_READ_WRITE) {
+                if ($magic_getter === null || !$magic_getter->mutation_free) {
                     return "{$class_definition->name}::__get is not mutation-free, so the assertion cannot be applied";
                 }
             }
