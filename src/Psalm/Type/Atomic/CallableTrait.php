@@ -67,7 +67,7 @@ trait CallableTrait
         $cloned->return_type = $return_type;
         return $cloned;
     }
-    /** 
+    /**
      * @param Mutations::LEVEL_* $allowed_mutations
      * @return static
      */

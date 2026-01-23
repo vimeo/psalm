@@ -40,7 +40,7 @@ final class DynamicFunctionStorage
 
     /**
      * Function purity.
-     * 
+     *
      * @var Mutations::LEVEL_*
      */
     public int $allowed_mutations = Mutations::LEVEL_ALL;
