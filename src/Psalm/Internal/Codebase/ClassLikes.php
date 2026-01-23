@@ -901,7 +901,7 @@ final class ClassLikes
                 $this->findPossibleMethodParamTypes($classlike_storage);
 
                 if (!isset($codebase->analyzer->mutable_classes[$fq_class_name_lc])
-                    && $classlike_storage->allowed_mutations >= Mutations::EXTERNAL
+                    && !$classlike_storage->external_mutation_free
                     && $classlike_storage->properties
                     && isset($classlike_storage->methods['__construct'])
                 ) {

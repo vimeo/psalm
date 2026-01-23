@@ -226,7 +226,7 @@ final class FunctionLikeNodeScanner
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod
                 && $storage instanceof MethodStorage
                 && $classlike_storage
-                && $classlike_storage->allowed_mutations >= Mutations::INTERNAL_READ_WRITE
+                && !$classlike_storage->mutation_free
                 && $stmt->stmts
                 && count($stmt->stmts) === 1
                 && !count($stmt->params)
