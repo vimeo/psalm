@@ -891,6 +891,7 @@ final class ArgumentAnalyzer
                     $atomic_type,
                     $container_callable_type,
                     $statements_analyzer,
+                    $context,
                     true,
                 );
 
