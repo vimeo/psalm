@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 
 use PhpParser;
+use PhpParser\Node\Expr;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Config;
@@ -26,19 +27,13 @@ use Psalm\Type;
  */
 final class MethodCallPurityAnalyzer
 {
-    public static function analyze(
+    public static function getMethodAllowedMutations(
         StatementsAnalyzer $statements_analyzer,
-        Codebase $codebase,
-        PhpParser\Node\Expr\MethodCall $stmt,
-        ?string $lhs_var_id,
-        string $cased_method_id,
+        Expr $var,
         MethodIdentifier $method_id,
         MethodStorage $method_storage,
-        ClassLikeStorage $class_storage,
         Context $context,
-        Config $config,
-        AtomicMethodCallAnalysisResult $result,
-    ): void {
+    ): int {
         $method_allowed_mutations = $method_storage->allowed_mutations;
         
         if ($method_allowed_mutations === Mutations::LEVEL_INTERNAL_READ_WRITE
@@ -46,9 +41,9 @@ final class MethodCallPurityAnalyzer
                 // Already checked in isPureCompatible below
                 // $stmt->var->getAttribute('pure', false)
 
-                $statements_analyzer->node_data->isPureCompatible($stmt->var)
+                $statements_analyzer->node_data->isPureCompatible($var)
 
-                || $stmt->var->getAttribute('external_mutation_free', false)
+                || $var->getAttribute('external_mutation_free', false)
 
                 || $method_id->fq_class_name === $context->self
             )
@@ -69,6 +64,30 @@ final class MethodCallPurityAnalyzer
             // (in a way, the receiver is "passed as an argument" to the method)
             $method_allowed_mutations = Mutations::LEVEL_NONE;
         }
+
+        return $method_allowed_mutations;
+    }
+
+    public static function analyze(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        PhpParser\Node\Expr\MethodCall $stmt,
+        ?string $lhs_var_id,
+        string $cased_method_id,
+        MethodIdentifier $method_id,
+        MethodStorage $method_storage,
+        ClassLikeStorage $class_storage,
+        Context $context,
+        Config $config,
+        AtomicMethodCallAnalysisResult $result,
+    ): void {
+        $method_allowed_mutations = self::getMethodAllowedMutations(
+            $statements_analyzer,
+            $stmt->var,
+            $method_id,
+            $method_storage,
+            $context,
+        );
 
         $statements_analyzer->signalMutation(
             $method_allowed_mutations,

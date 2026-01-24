@@ -528,14 +528,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 )
                 : Type::getVoid();
 
-            if (!$inferred_return_type->isVoid()
-                && !$inferred_return_type->isFalse()
-                && !$inferred_return_type->isNull()
-                && !$inferred_return_type->isSingleIntLiteral()
-                && !$inferred_return_type->isSingleStringLiteral()
-                && !$inferred_return_type->isTrue()
-                && !$inferred_return_type->isEmptyArray()
-            ) {
                 if ($storage->location) {
                     IssueBuffer::maybeAdd(
                         new MissingPureAnnotation(
@@ -552,7 +544,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 ) {
                     $manipulator->setAllowedMutations($this->inferred_mutations);
                 }
-            }
         }
 
         if ($this->inferred_mutations >= Mutations::LEVEL_INTERNAL_READ_WRITE && $context->self) {

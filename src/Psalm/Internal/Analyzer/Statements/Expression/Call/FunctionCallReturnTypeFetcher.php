@@ -81,6 +81,7 @@ final class FunctionCallReturnTypeFetcher
                 Type::getAtomicStringFromLiteral($function_id),
                 null,
                 $statements_analyzer,
+                $context,
                 true,
             );
 

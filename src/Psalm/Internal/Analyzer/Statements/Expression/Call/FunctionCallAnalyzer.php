@@ -289,6 +289,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                         $atomic_type,
                         null,
                         $statements_analyzer,
+                        $context,
                     );
 
                     if ($candidate_callable) {
@@ -668,7 +669,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     if ($statements_analyzer->signalMutation(
                         $var_type_part->allowed_mutations,
                         $context,
-                        'function call',
+                        'function call on ' . $var_type_part->getId(),
                         ImpureFunctionCall::class,
                         $stmt,
                     )) {
@@ -1049,8 +1050,9 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
             $mutations = $function_call_info->function_id && $function_call_info->in_call_map
                 ? $codebase->functions->getCallMapFunctionMutations(
+                    $statements_analyzer,
+                    $context,
                     $codebase,
-                    $statements_analyzer->node_data,
                     $function_call_info->function_id,
                     $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
                     $must_use,
@@ -1063,7 +1065,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             if ($mutations !== null && $statements_analyzer->signalMutation(
                 $mutations,
                 $context,
-                'function call',
+                'function call on ' . ($function_call_info->function_id ?? 'unknown function'),
                 ImpureFunctionCall::class,
                 $stmt,
             )) {

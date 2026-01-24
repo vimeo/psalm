@@ -8,6 +8,7 @@ use Exception;
 use PhpParser\Node\Arg;
 use PhpParser\Node\Expr\Variable;
 use Psalm\Codebase;
+use Psalm\Context;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
@@ -261,6 +262,7 @@ final class CallableTypeComparator
         Atomic $input_type_part,
         ?TCallable $container_type_part = null,
         ?StatementsAnalyzer $statements_analyzer = null,
+        ?Context $context = null,
         bool $expand_callable = false,
     ): ?Atomic {
 
@@ -355,13 +357,16 @@ final class CallableTypeComparator
 
                     $must_use = false;
 
-                    $matching_callable = $matching_callable->setAllowedMutations($codebase->functions->getCallMapFunctionMutations(
-                        $codebase,
-                        $statements_analyzer->node_data ?? null,
-                        $input_type_part->value,
-                        null,
-                        $must_use,
-                    ) ? Mutations::LEVEL_NONE : Mutations::LEVEL_ALL);
+                    $matching_callable = $matching_callable->setAllowedMutations(
+                        $codebase->functions->getCallMapFunctionMutations(
+                            $statements_analyzer,
+                            $context,
+                            $codebase,
+                            $input_type_part->value,
+                            null,
+                            $must_use,
+                        )
+                    );
 
                     return $matching_callable;
                 }

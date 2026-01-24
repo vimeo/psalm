@@ -7,6 +7,7 @@ namespace Psalm\Internal\Provider\ReturnTypeProvider;
 use PhpParser\Node\Arg;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
+use Psalm\Context;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
@@ -155,6 +156,7 @@ final class FilterUtils
     public static function getOptionsArgValueOrError(
         Arg $options_arg,
         StatementsAnalyzer $statements_analyzer,
+        Context $context,
         Codebase $codebase,
         CodeLocation $code_location,
         string $function_id,
@@ -201,6 +203,7 @@ final class FilterUtils
                                 $option_atomic,
                                 null,
                                 $statements_analyzer,
+                                $context,
                             )) {
                                 continue;
                             }

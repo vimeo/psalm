@@ -8,6 +8,8 @@ use Exception;
 use PhpParser\Node\Arg;
 use PhpParser\Node\Expr\Closure as ClosureNode;
 use Psalm\Codebase;
+use Psalm\Context;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\DynamicFunctionStorageProvider;
@@ -396,8 +398,9 @@ final class Functions
      * @return Mutations::LEVEL_*
      */
     public function getCallMapFunctionMutations(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
         Codebase $codebase,
-        ?NodeTypeProvider $type_provider,
         string $function_id,
         ?array $args,
         bool &$must_use = true,
@@ -406,6 +409,7 @@ final class Functions
             return Mutations::LEVEL_ALL;
         }
 
+        $type_provider = $statements_analyzer->node_data;
         if ($function_id === 'serialize' && isset($args[0]) && $type_provider) {
             $serialize_type = $type_provider->getType($args[0]->value);
 
@@ -435,10 +439,17 @@ final class Functions
             return Mutations::LEVEL_NONE;
         }
 
-        if (in_array($function_id, ['count', 'sizeof']) && isset($args[0]) && $type_provider) {
-            $count_type = $type_provider->getType($args[0]->value);
+        if ((
+                $function_id === 'count'
+                || $function_id === 'sizeof'
+            ) 
+            && isset($args[0]) && $type_provider
+        ) {
+            $var = $args[0]->value;
+            $count_type = $type_provider->getType($var);
 
             if ($count_type) {
+                $mutations = Mutations::LEVEL_NONE;
                 foreach ($count_type->getAtomicTypes() as $atomic_count_type) {
                     if ($atomic_count_type instanceof TNamedObject) {
                         $count_method_id = new MethodIdentifier(
@@ -447,12 +458,19 @@ final class Functions
                         );
 
                         try {
-                            return $codebase->methods->getStorage($count_method_id)->allowed_mutations;
+                            $mutations = max($mutations, MethodCallPurityAnalyzer::getMethodAllowedMutations(
+                                $statements_analyzer,
+                                $var,
+                                $count_method_id,
+                                $codebase->methods->getStorage($count_method_id),
+                                $context,
+                            ));
                         } catch (Exception) {
                             // do nothing
                         }
                     }
                 }
+                return $mutations;
             }
         }
 
@@ -473,6 +491,7 @@ final class Functions
         $must_use = $function_id !== 'array_map'
             || (isset($args[0]) && !$args[0]->value instanceof ClosureNode);
 
+        $mutations = Mutations::LEVEL_NONE;
         foreach ($function_callable->params as $i => $param) {
             if ($type_provider && $param->type && $param->type->hasCallableType() && isset($args[$i])) {
                 $arg_type = $type_provider->getType($args[$i]->value);
@@ -485,7 +504,7 @@ final class Functions
                         );
 
                         if ($possible_callable && $possible_callable->allowed_mutations !== Mutations::LEVEL_NONE) {
-                            return $possible_callable->allowed_mutations;
+                            $mutations = max($mutations, $possible_callable->allowed_mutations);
                         }
                     }
                 }
@@ -496,7 +515,7 @@ final class Functions
             }
         }
 
-        return Mutations::LEVEL_NONE;
+        return $mutations;
     }
 
     public static function clearCache(): void
