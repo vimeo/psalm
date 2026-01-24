@@ -71,7 +71,7 @@ final class CallableTypeComparator
         }
         assert($input_type_part instanceof TClosure || $input_type_part instanceof TCallable);
 
-        if ($container_type_part->allowed_mutations > $input_type_part->allowed_mutations) {
+        if ($container_type_part->allowed_mutations < $input_type_part->allowed_mutations) {
             if ($atomic_comparison_result) {
                 $atomic_comparison_result->type_coerced = true;
             }
