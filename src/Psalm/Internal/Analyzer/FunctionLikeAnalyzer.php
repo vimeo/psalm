@@ -1933,7 +1933,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     && !$storage->mutation_free_inferred
                 ) {
                     $props = ['reference_free' => true];
-                    $props['allow_mutations'] = false;
+                    if ($this->function->name->name !== '__construct') {
+                        $props['allow_mutations'] = false;
+                    }
                 }
 
                 if ($codebase->taint_flow_graph

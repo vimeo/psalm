@@ -1303,8 +1303,11 @@ final class InstancePropertyAssignmentAnalyzer
                 && !$context->collect_initializations
                 && $lhs_var_id !== null
                 && isset($context->vars_in_scope[$lhs_var_id])
-                && !$context->vars_in_scope[$lhs_var_id]->allow_mutations
             ) {
+                $prev = $context->allowed_mutations;
+                if (!$context->vars_in_scope[$lhs_var_id]->allow_mutations) {
+                    $context->mutation_free = true;
+                }
                 $statements_analyzer->signalMutation(
                     $lhs_var_id === '$this' ? Mutations::LEVEL_INTERNAL_READ_WRITE : Mutations::LEVEL_EXTERNAL,
                     $context,
@@ -1312,6 +1315,7 @@ final class InstancePropertyAssignmentAnalyzer
                     ImpurePropertyAssignment::class,
                     $stmt,
                 );
+                $context->allowed_mutations = $prev;
             }
 
             if ($property_storage->getter_method) {
