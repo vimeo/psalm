@@ -1308,7 +1308,7 @@ final class InstancePropertyAssignmentAnalyzer
                 $statements_analyzer->signalMutation(
                     $lhs_var_id === '$this' ? Mutations::LEVEL_INTERNAL_READ_WRITE : Mutations::LEVEL_EXTERNAL,
                     $context,
-                    'Cannot assign to a property from a mutation-free context',
+                    'property assignment to ' . $property_id,
                     ImpurePropertyAssignment::class,
                     $stmt,
                 );
