@@ -325,6 +325,7 @@ final class PureAnnotationTest extends TestCase
             'callingMethodInThrowStillPure' => [
                 'code' => '<?php
                     final class MyException extends \Exception {
+                        /** @psalm-pure */
                         public static function hello(): self
                         {
                             return new self();
@@ -385,8 +386,10 @@ final class PureAnnotationTest extends TestCase
                             return !!$this->other->other;
                         }
 
+                        /** @psalm-pure */
                         public function foo() : void {}
 
+                        /** @psalm-mutation-free */
                         public function doSomething(): void {
                             $this->checkNotNullNested();
                             $this->other->foo();
@@ -614,6 +617,7 @@ final class PureAnnotationTest extends TestCase
                 'code' => '<?php
                     namespace Bar;
 
+                    /** @psalm-external-mutation-free */
                     function impure() : ?string {
                         /** @var int */
                         static $i = 0;
