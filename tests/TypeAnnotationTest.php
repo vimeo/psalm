@@ -675,7 +675,7 @@ final class TypeAnnotationTest extends TestCase
                     $output = Foo::$callback;
                 ',
                 'assertions' => [
-                    '$output===' => 'callable():int',
+                    '$output===' => 'impure-callable():int',
                 ],
             ],
             'callableWithReturnTypeTypeAlias' => [
@@ -688,7 +688,7 @@ final class TypeAnnotationTest extends TestCase
                     $output = Foo::$callback;
                 ',
                 'assertions' => [
-                    '$output===' => 'callable():int',
+                    '$output===' => 'impure-callable():int',
                 ],
             ],
             'callableFormats' => [
@@ -739,18 +739,18 @@ final class TypeAnnotationTest extends TestCase
                     $output_ml = $foo->ml();
                 ',
                 'assertions' => [
-                    '$output_ma===' => 'callable(int, int):string',
-                    '$output_mb===' => 'callable(int, int=):string',
-                    '$output_mc===' => 'callable(int, string):void',
-                    '$output_md===' => 'callable(string):mixed',
-                    '$output_me===' => 'callable(string):mixed',
-                    '$output_mf===' => 'callable(float...):(int|null)',
-                    '$output_mg===' => 'callable(float...):(int|null)',
-                    '$output_mh===' => 'callable(array<array-key, int>):array<array-key, string>',
-                    '$output_mi===' => 'callable(array<string, int>):array<int, string>',
-                    '$output_mj===' => 'callable(array<array-key, int>...):string',
-                    '$output_mk===' => 'callable(array<array-key, int>...):string',
-                    '$output_ml===' => 'Closure(int, int):string',
+                    '$output_ma===' => 'impure-callable(int, int):string',
+                    '$output_mb===' => 'impure-callable(int, int=):string',
+                    '$output_mc===' => 'impure-callable(int, string):void',
+                    '$output_md===' => 'impure-callable(string):mixed',
+                    '$output_me===' => 'impure-callable(string):mixed',
+                    '$output_mf===' => 'impure-callable(float...):(int|null)',
+                    '$output_mg===' => 'impure-callable(float...):(int|null)',
+                    '$output_mh===' => 'impure-callable(array<array-key, int>):array<array-key, string>',
+                    '$output_mi===' => 'impure-callable(array<string, int>):array<int, string>',
+                    '$output_mj===' => 'impure-callable(array<array-key, int>...):string',
+                    '$output_mk===' => 'impure-callable(array<array-key, int>...):string',
+                    '$output_ml===' => 'impure-Closure(int, int):string',
                 ],
             ],
             'unionOfStringsContainingBraceChar' => [
