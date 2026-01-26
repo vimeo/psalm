@@ -134,6 +134,9 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                     abstract class A {
                         public int $a = 5;
 
+                        /**
+                         * @psalm-mutation-free
+                         */
                         public function foo() : self {
                             return $this;
                         }
@@ -163,6 +166,9 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                     class A {
                         public int $a = 5;
 
+                        /**
+                         * @psalm-mutation-free
+                         */
                         public function foo(string $s) : string {
                             return $string . $this->a;
                         }
@@ -196,6 +202,9 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                     class A {
                         public int $a = 5;
 
+                        /**
+                         * @psalm-mutation-free
+                         */
                         public function foo(string $s) : string {
                             return $string . $this->a;
                         }
