@@ -907,7 +907,9 @@ final class PluginTest extends TestCase
             $file_path,
             '<?php
 
+            /** @psalm-mutation-free */
             function a(): void {}
+            /** @psalm-pure */
             function b(int $e): int { return $e; }
 
             array_map("b", [1,3,3]);
@@ -1006,6 +1008,8 @@ final class PluginTest extends TestCase
             '<?php // --taint-analysis
 
             /**
+             * @psalm-mutation-free
+             * 
              * @psalm-taint-sink html $build
              */
             function output(array $build) {}
