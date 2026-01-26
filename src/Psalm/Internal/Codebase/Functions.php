@@ -398,8 +398,8 @@ final class Functions
      * @return Mutations::LEVEL_*
      */
     public function getCallMapFunctionMutations(
-        StatementsAnalyzer $statements_analyzer,
-        Context $context,
+        ?StatementsAnalyzer $statements_analyzer,
+        ?Context $context,
         Codebase $codebase,
         string $function_id,
         ?array $args,
@@ -409,7 +409,7 @@ final class Functions
             return Mutations::LEVEL_ALL;
         }
 
-        $type_provider = $statements_analyzer->node_data;
+        $type_provider = $statements_analyzer?->node_data;
         if ($function_id === 'serialize' && isset($args[0]) && $type_provider) {
             $serialize_type = $type_provider->getType($args[0]->value);
 
@@ -444,6 +444,8 @@ final class Functions
                 || $function_id === 'sizeof'
             )
             && isset($args[0]) && $type_provider
+            && $statements_analyzer
+            && $context
         ) {
             $var = $args[0]->value;
             $count_type = $type_provider->getType($var);

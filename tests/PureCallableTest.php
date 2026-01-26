@@ -39,6 +39,8 @@ final class PureCallableTest extends TestCase
             'callableToClosure' => [
                 'code' => '<?php
                     /**
+                     * @psalm-pure
+                     * 
                      * @return pure-callable
                      */
                     function foo() {
@@ -91,6 +93,8 @@ final class PureCallableTest extends TestCase
                     class A {public function __invoke(): void {} }
 
                     /**
+                     * @psalm-pure
+                     * 
                      * @param pure-callable|A $p
                      */
                     function fails($p): void {}
@@ -122,6 +126,8 @@ final class PureCallableTest extends TestCase
                 'code' => '<?php
                     /**
                      * @param pure-callable():void $p
+                     * 
+                     * @psalm-pure
                      */
                     function doSomething($p): void {}
                     doSomething(
@@ -174,6 +180,8 @@ final class PureCallableTest extends TestCase
             'goodCallableArgs' => [
                 'code' => '<?php
                     /**
+                     * @psalm-pure
+                     * 
                      * @param pure-callable(string,string):int $_p
                      */
                     function f(callable $_p): void {}
@@ -201,6 +209,8 @@ final class PureCallableTest extends TestCase
                     namespace Foo;
 
                     /**
+                     * @psalm-pure
+                     * 
                      * @param pure-callable $c
                      */
                     function bar(callable $c) : callable {
