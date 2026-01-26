@@ -28,6 +28,7 @@ final class PureCallableTest extends TestCase
                         };
 
                     /**
+                     * @psalm-pure
                      * @param pure-callable(int): int $c
                      */
                     function bar(callable $c) : int {
@@ -99,9 +100,6 @@ final class PureCallableTest extends TestCase
             ],
             'callableWithInvokable' => [
                 'code' => '<?php
-                    /**
-                     * @psalm-pure
-                     */
                     function asd(): void {}
                     class A {
                         /**
@@ -122,8 +120,6 @@ final class PureCallableTest extends TestCase
                 'code' => '<?php
                     /**
                      * @param pure-callable():void $p
-                     * 
-                     * @psalm-pure
                      */
                     function doSomething($p): void {}
                     doSomething(
