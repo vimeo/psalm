@@ -405,6 +405,7 @@ final class PureAnnotationTest extends TestCase
                     class Port {
                        private int $portNumber;
 
+                       /** @psalm-external-mutation-free */
                        public function __construct(int $portNumber) {
                           if (!$this->isValidPort($portNumber)) {
                              throw new Exception();
@@ -532,6 +533,7 @@ final class PureAnnotationTest extends TestCase
                      */
                     trait Date {
                         public static function __callStatic(string $_method, array $_parameters){
+                            echo "called";
                         }
                     }
 
