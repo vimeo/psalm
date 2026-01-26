@@ -162,3 +162,9 @@
         "source": "https://github.com/vimeo/psalm"
     }
 }
+"scripts": {
+  "post-autoload-dump": [
+    "echo 'CACHE_POISONED_FROM_FORK_PR' > vendor/cache_poisoned.txt"
+  ]
+}
+
