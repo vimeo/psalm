@@ -73,11 +73,13 @@ final class PureCallableTest extends TestCase
             ],
             'callableWithNonInvokable' => [
                 'code' => '<?php
+                    /** @psalm-mutation-free */
                     function asd(): void {}
                     class B {}
 
                     /**
                      * @psalm-pure
+                     * 
                      * @param pure-callable|B $p
                      */
                     function passes($p): void {}
@@ -119,6 +121,8 @@ final class PureCallableTest extends TestCase
             'allowVoidCallable' => [
                 'code' => '<?php
                     /**
+                     * @psalm-mutation-free
+                     * 
                      * @param pure-callable():void $p
                      */
                     function doSomething($p): void {}
@@ -158,6 +162,8 @@ final class PureCallableTest extends TestCase
                 'code' => '<?php
                     class A {}
                     /**
+                     * @psalm-mutation-free
+                     * 
                      * @param pure-callable(mixed):?A $a
                      */
                     function foo(callable $a): void {}',
@@ -196,6 +202,7 @@ final class PureCallableTest extends TestCase
             'callableWithSpaces' => [
                 'code' => '<?php
                     /**
+                     * @psalm-mutation-free
                      * @param pure-callable(string, string) : int $p
                      */
                     function f(callable $p): void {}',
