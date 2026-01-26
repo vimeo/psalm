@@ -68,6 +68,13 @@ interface StatementsSource extends FileSource
 
     /**
      * @param Mutations::LEVEL_* $mutation_level
+     */
+    public function signalMutationOnlyInferred(
+        int $mutation_level,
+    ): void;
+
+    /**
+     * @param Mutations::LEVEL_* $mutation_level
      * @param non-empty-string $msg
      * @param class-string<CodeIssue> $class
      * @return ?non-empty-string

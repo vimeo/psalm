@@ -9,6 +9,7 @@ use PhpParser\Node\Arg;
 use PhpParser\Node\Expr\Closure as ClosureNode;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
@@ -457,16 +458,21 @@ final class Functions
                         );
 
                         try {
-                            $mutations = max($mutations, MethodCallPurityAnalyzer::getMethodAllowedMutations(
-                                $statements_analyzer,
-                                $var,
-                                $count_method_id,
-                                $codebase->methods->getStorage($count_method_id),
-                                $context,
-                            ));
+                            $storage = $codebase->methods->getStorage($count_method_id);
                         } catch (Exception) {
-                            // do nothing
+                            continue;
                         }
+                        $mutations = max($mutations, MethodCallPurityAnalyzer::getMethodAllowedMutations(
+                            $statements_analyzer,
+                            $var,
+                            $count_method_id,
+                            $storage,
+                            $context,
+                        ));
+
+                        $statements_analyzer->signalMutationOnlyInferred(
+                            $storage->allowed_mutations,
+                        );
                     }
                 }
                 return $mutations;

@@ -495,10 +495,8 @@ final class AtomicPropertyFetchAnalyzer
             $lhs_type_part,
         );
 
-        if (!$context->collect_mutations
-            && !$context->collect_initializations
-            && !($class_storage->external_mutation_free
-                && $class_property_type->allow_mutations)
+        if (!($class_storage->external_mutation_free
+            && $class_property_type->allow_mutations)
         ) {
             $statements_analyzer->signalMutation(
                 Mutations::LEVEL_INTERNAL_READ, // Matches previous logic

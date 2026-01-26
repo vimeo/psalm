@@ -1645,24 +1645,22 @@ final class AssignmentAnalyzer
             $context->vars_possibly_in_scope[$var_id] = true;
         }
 
-        $property_var_pure_compatible = $statements_analyzer->node_data->isPureCompatible($assign_var->var);
+        $pureCompat = $statements_analyzer->node_data->isPureCompatible($assign_var->var);
+
+        $isThis = $assign_var->var instanceof PhpParser\Node\Expr\Variable
+            && $assign_var->var->name === 'this';
+        
+        $mutations = $isThis ? Mutations::LEVEL_INTERNAL_READ_WRITE : Mutations::LEVEL_EXTERNAL;
 
         // prevents writing to any properties in a mutation-free context
-        if (!$property_var_pure_compatible
-            && !$context->collect_mutations
-            && !$context->collect_initializations
-        ) {
-            $isThis = $assign_var->var instanceof PhpParser\Node\Expr\Variable
-                && $assign_var->var->name === 'this';
-
-            $statements_analyzer->signalMutation(
-                $isThis ? Mutations::LEVEL_INTERNAL_READ_WRITE : Mutations::LEVEL_EXTERNAL,
-                $context,
-                'property assignment',
-                ImpurePropertyAssignment::class,
-                $assign_var,
-            );
-        }
+        $statements_analyzer->signalMutation(
+            $pureCompat ? Mutations::LEVEL_NONE : $mutations,
+            $context,
+            'property assignment',
+            ImpurePropertyAssignment::class,
+            $assign_var,
+            $mutations,
+        );
     }
 
     private static function analyzeAssignmentToVariable(

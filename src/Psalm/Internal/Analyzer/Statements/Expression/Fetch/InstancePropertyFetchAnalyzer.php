@@ -462,10 +462,8 @@ final class InstancePropertyFetchAnalyzer
                         );
                     }
 
-                    if (!$context->collect_mutations
-                        && !$context->collect_initializations
-                        && !($class_storage->external_mutation_free
-                            && $stmt_type->allow_mutations)
+                    if (!($class_storage->external_mutation_free
+                        && $stmt_type->allow_mutations)
                     ) {
                         $statements_analyzer->signalMutation(
                             Mutations::LEVEL_INTERNAL_READ,

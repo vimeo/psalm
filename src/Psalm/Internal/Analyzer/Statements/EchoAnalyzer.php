@@ -104,15 +104,13 @@ final class EchoAnalyzer
             );
         }
 
-        if (!$context->collect_initializations && !$context->collect_mutations) {
-            $statements_analyzer->signalMutation(
-                Mutations::LEVEL_EXTERNAL,
-                $context,
-                'echo',
-                ImpureFunctionCall::class,
-                $stmt,
-            );
-        }
+        $statements_analyzer->signalMutation(
+            Mutations::LEVEL_EXTERNAL,
+            $context,
+            'echo',
+            ImpureFunctionCall::class,
+            $stmt,
+        );
 
         return true;
     }

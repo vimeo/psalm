@@ -95,6 +95,7 @@ final class MethodCallPurityAnalyzer
             'method ' . $cased_method_id,
             ImpureMethodCall::class,
             $stmt,
+            $method_storage->allowed_mutations,
         );
         
         if ($method_allowed_mutations === Mutations::LEVEL_NONE

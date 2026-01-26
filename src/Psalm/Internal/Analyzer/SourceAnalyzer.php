@@ -229,6 +229,14 @@ abstract class SourceAnalyzer implements StatementsSource
         return $this->source->getNodeTypeProvider();
     }
 
+    public function signalMutationOnlyInferred(
+        int $mutation_level,
+    ): void {
+        $src = $this->getSource();
+        if ($src instanceof FunctionLikeAnalyzer && $src->track_mutations) {
+            $src->inferred_mutations = max($src->inferred_mutations, $mutation_level);
+        }
+    }
 
     /**
      * @param Mutations::LEVEL_* $mutation_level
@@ -241,13 +249,21 @@ abstract class SourceAnalyzer implements StatementsSource
         string $msg,
         string $class,
         Node $node,
+        ?int $inferred_mutation_level = null,
     ): bool {
+        $inferred_mutation_level ??= $mutation_level;
+
         $src = $this->getSource();
         if ($src instanceof FunctionLikeAnalyzer && $src->track_mutations) {
-            $src->inferred_mutations = max($src->inferred_mutations, $mutation_level);
+            $src->inferred_mutations = max($src->inferred_mutations, $inferred_mutation_level);
         }
 
-        if ($context->allowed_mutations < $mutation_level) {
+        if ($context->allowed_mutations < $mutation_level
+
+            // These are secondary scan modes that shouldn't report this issue
+            && !$context->collect_mutations
+            && !$context->collect_initializations
+        ) {
             $msg = $context->getImpureMessage(
                 $msg,
                 $mutation_level,

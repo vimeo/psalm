@@ -86,15 +86,13 @@ final class PrintAnalyzer
             );
         }
 
-        if (!$context->collect_initializations && !$context->collect_mutations) {
-            $statements_analyzer->signalMutation(
-                Mutations::LEVEL_EXTERNAL,
-                $context,
-                'print',
-                ImpureFunctionCall::class,
-                $stmt,
-            );
-        }
+        $statements_analyzer->signalMutation(
+            Mutations::LEVEL_EXTERNAL,
+            $context,
+            'print',
+            ImpureFunctionCall::class,
+            $stmt,
+        );
 
         $statements_analyzer->node_data->setType($stmt, Type::getInt(false, 1));
 

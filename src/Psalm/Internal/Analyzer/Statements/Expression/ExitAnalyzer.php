@@ -114,11 +114,7 @@ final class ExitAnalyzer
             $context->inside_call = false;
         }
 
-        if ($expr_type
-            && !$expr_type->isInt()
-            && !$context->collect_mutations
-            && !$context->collect_initializations
-        ) {
+        if ($expr_type && !$expr_type->isInt()) {
             $function_name = $stmt->getAttribute('kind') === Exit_::KIND_DIE ? 'die' : 'exit';
             $statements_analyzer->signalMutation(
                 Mutations::LEVEL_EXTERNAL,

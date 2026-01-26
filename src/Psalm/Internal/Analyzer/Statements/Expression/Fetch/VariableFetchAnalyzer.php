@@ -118,15 +118,13 @@ final class VariableFetchAnalyzer
                 );
             }
 
-            if (!$context->collect_mutations && !$context->collect_initializations) {
-                $statements_analyzer->signalMutation(
-                    Mutations::LEVEL_INTERNAL_READ,
-                    $context,
-                    '$this',
-                    ImpureVariable::class,
-                    $stmt,
-                );
-            }
+            $statements_analyzer->signalMutation(
+                Mutations::LEVEL_INTERNAL_READ,
+                $context,
+                '$this',
+                ImpureVariable::class,
+                $stmt,
+            );
 
             return true;
         }
