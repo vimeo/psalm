@@ -250,6 +250,7 @@ abstract class SourceAnalyzer implements StatementsSource
         string $class,
         Node $node,
         ?int $inferred_mutation_level = null,
+        bool $overrideMsg = false,
     ): bool {
         $inferred_mutation_level ??= $mutation_level;
 
@@ -264,7 +265,7 @@ abstract class SourceAnalyzer implements StatementsSource
             && !$context->collect_mutations
             && !$context->collect_initializations
         ) {
-            $msg = $context->getImpureMessage(
+            $msg = $overrideMsg ? $msg : $context->getImpureMessage(
                 $msg,
                 $mutation_level,
             );

@@ -15,6 +15,7 @@ use Psalm\Issue\ImpureFunctionCall;
 use Psalm\Issue\PossiblyUndefinedVariable;
 use Psalm\Issue\UndefinedVariable;
 use Psalm\IssueBuffer;
+use Psalm\Storage\Mutations;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
@@ -210,7 +211,7 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
         foreach ($byref_vars as $key => $value) {
             $context->vars_in_scope[$key] = $value;
         }
-
+        
         $statements_analyzer->signalMutation(
             $closure_analyzer->inferred_mutations,
             $context,

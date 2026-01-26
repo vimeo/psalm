@@ -57,6 +57,7 @@ final class PureCallableTest extends TestCase
                 'code' => '<?php
                     /**
                      * @return pure-callable
+                     * @psalm-pure
                      */
                     function foo() {
                         return
@@ -71,13 +72,11 @@ final class PureCallableTest extends TestCase
             ],
             'callableWithNonInvokable' => [
                 'code' => '<?php
-                    /**
-                     * @psalm-pure
-                     */
                     function asd(): void {}
                     class B {}
 
                     /**
+                     * @psalm-pure
                      * @param pure-callable|B $p
                      */
                     function passes($p): void {}
@@ -86,9 +85,6 @@ final class PureCallableTest extends TestCase
             ],
             'callableWithInvokableUnion' => [
                 'code' => '<?php
-                    /**
-                     * @psalm-pure
-                     */
                     function asd(): void {}
                     class A {public function __invoke(): void {} }
 
@@ -144,6 +140,8 @@ final class PureCallableTest extends TestCase
                         private $callable;
 
                         /**
+                         * @psalm-external-mutation-free
+                         * 
                          * @psalm-param pure-callable():bool $callable
                          */
                         public function __construct(callable $callable) {
@@ -163,7 +161,9 @@ final class PureCallableTest extends TestCase
             'nullableReturnTypeShorthand' => [
                 'code' => '<?php
                     class A {}
-                    /** @param pure-callable(mixed):?A $a */
+                    /**
+                     * @param pure-callable(mixed):?A $a
+                     */
                     function foo(callable $a): void {}',
             ],
             'callablesCanBeObjects' => [
@@ -180,8 +180,6 @@ final class PureCallableTest extends TestCase
             'goodCallableArgs' => [
                 'code' => '<?php
                     /**
-                     * @psalm-pure
-                     * 
                      * @param pure-callable(string,string):int $_p
                      */
                     function f(callable $_p): void {}

@@ -33,6 +33,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Issue\ImpureFunctionCall;
 use Psalm\Issue\InvalidDocblockParamName;
 use Psalm\Issue\InvalidOverride;
 use Psalm\Issue\InvalidParamDefault;
@@ -498,34 +499,64 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         $statements_analyzer->analyze($function_stmts, $context, $global_context);
 
-        if ($this->inferred_mutations < $storage->allowed_mutations
-            && !$this->function instanceof VirtualNode
+        if (!$this->function instanceof VirtualNode
             && ($this->function instanceof Function_
                 || $this->function instanceof ClassMethod)
             && !$overridden_method_ids
             && !$context->collect_initializations
             && !$context->collect_mutations
         ) {
-            $manipulator = FunctionDocblockManipulator::getForFunction(
-                $project_analyzer,
-                $this->source->getFilePath(),
-                $this->function,
+            $yield_types = [];
+
+            $inferred_return_types = ReturnTypeCollector::getReturnTypes(
+                $codebase,
+                $type_provider,
+                $function_stmts,
+                $yield_types,
+                true,
             );
-            if ($storage->location) {
-                IssueBuffer::maybeAdd(
-                    new MissingPureAnnotation(
-                        $storage->cased_name . ' must be marked @'.Mutations::TO_ATTRIBUTE_FUNCTIONLIKE[
-                            $this->inferred_mutations
-                        ].' to aid taint analysis, run with --alter --issues=MissingPureAnnotation to fix this',
-                        $storage->location,
-                    ),
-                    $storage->suppressed_issues,
+
+            $inferred_return_type = $inferred_return_types
+                ? Type::combineUnionTypeArray(
+                    $inferred_return_types,
+                    $codebase,
+                )
+                : Type::getVoid();
+            
+            if ($inferred_return_type->isVoid()) {
+                $this->signalMutation(
+                    Mutations::LEVEL_INTERNAL_READ,
+                    $context,
+                    'pure function cannot have void return type',
+                    ImpureFunctionCall::class,
+                    $this->function,
+                    null,
+                    true,
                 );
             }
-            if ($codebase->alter_code
-                    && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
-                ) {
-                $manipulator->setAllowedMutations($this->inferred_mutations);
+
+            if ($this->inferred_mutations < $storage->allowed_mutations) {
+                $manipulator = FunctionDocblockManipulator::getForFunction(
+                    $project_analyzer,
+                    $this->source->getFilePath(),
+                    $this->function,
+                );
+                if ($storage->location) {
+                    IssueBuffer::maybeAdd(
+                        new MissingPureAnnotation(
+                            $storage->cased_name . ' must be marked @'.Mutations::TO_ATTRIBUTE_FUNCTIONLIKE[
+                                $this->inferred_mutations
+                            ].' to aid taint analysis, run with --alter --issues=MissingPureAnnotation to fix this',
+                            $storage->location,
+                        ),
+                        $storage->suppressed_issues,
+                    );
+                }
+                if ($codebase->alter_code
+                        && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
+                    ) {
+                    $manipulator->setAllowedMutations($this->inferred_mutations);
+                }
             }
         }
 
