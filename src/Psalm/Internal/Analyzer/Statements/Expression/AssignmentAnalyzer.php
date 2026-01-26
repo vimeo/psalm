@@ -291,7 +291,7 @@ final class AssignmentAnalyzer
                 $statements_analyzer->signalMutation(
                     Mutations::LEVEL_INTERNAL_READ_WRITE,
                     $context,
-                    'Variable ' . $extended_var_id . ' cannot be assigned to as it is passed by reference',
+                    'variable ' . $extended_var_id . ' passed by reference',
                     ImpureByReferenceAssignment::class,
                     $assign_var,
                 );
