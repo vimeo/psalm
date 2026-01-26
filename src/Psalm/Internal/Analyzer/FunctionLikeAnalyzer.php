@@ -1929,7 +1929,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 }
 
                 $props = [];
-                if ($storage->external_mutation_free
+                if ($storage->mutation_free
                     && !$storage->mutation_free_inferred
                 ) {
                     $props = ['reference_free' => true];
