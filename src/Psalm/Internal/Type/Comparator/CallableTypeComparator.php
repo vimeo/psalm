@@ -17,7 +17,6 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
-use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
@@ -365,7 +364,7 @@ final class CallableTypeComparator
                             $input_type_part->value,
                             null,
                             $must_use,
-                        )
+                        ),
                     );
 
                     return $matching_callable;

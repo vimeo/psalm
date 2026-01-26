@@ -18,7 +18,6 @@ use Psalm\Internal\Provider\FunctionExistenceProvider;
 use Psalm\Internal\Provider\FunctionParamsProvider;
 use Psalm\Internal\Provider\FunctionReturnTypeProvider;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
-use Psalm\NodeTypeProvider;
 use Psalm\StatementsSource;
 use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\Mutations;
@@ -30,8 +29,8 @@ use function count;
 use function end;
 use function explode;
 use function implode;
-use function in_array;
 use function is_bool;
+use function max;
 use function rtrim;
 use function str_contains;
 use function str_ends_with;
@@ -442,7 +441,7 @@ final class Functions
         if ((
                 $function_id === 'count'
                 || $function_id === 'sizeof'
-            ) 
+            )
             && isset($args[0]) && $type_provider
         ) {
             $var = $args[0]->value;

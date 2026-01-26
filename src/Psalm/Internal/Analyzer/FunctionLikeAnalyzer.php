@@ -499,33 +499,32 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         $statements_analyzer->analyze($function_stmts, $context, $global_context);
 
         if ($this->inferred_mutations < $storage->allowed_mutations
+            && !$this->function instanceof VirtualNode
             && ($this->function instanceof Function_
                 || $this->function instanceof ClassMethod)
-            && $storage->params
             && !$overridden_method_ids
-            && !$this->function instanceof VirtualNode
         ) {
             $manipulator = FunctionDocblockManipulator::getForFunction(
                 $project_analyzer,
                 $this->source->getFilePath(),
                 $this->function,
             );
-                if ($storage->location) {
-                    IssueBuffer::maybeAdd(
-                        new MissingPureAnnotation(
-                            $storage->cased_name . ' must be marked @'.Mutations::TO_ATTRIBUTE_FUNCTIONLIKE[
-                                $this->inferred_mutations
-                            ].' to aid taint analysis, run with --alter --issues=MissingPureAnnotation to fix this',
-                            $storage->location,
-                        ),
-                        $storage->suppressed_issues,
-                    );
-                }
-                if ($codebase->alter_code
+            if ($storage->location) {
+                IssueBuffer::maybeAdd(
+                    new MissingPureAnnotation(
+                        $storage->cased_name . ' must be marked @'.Mutations::TO_ATTRIBUTE_FUNCTIONLIKE[
+                            $this->inferred_mutations
+                        ].' to aid taint analysis, run with --alter --issues=MissingPureAnnotation to fix this',
+                        $storage->location,
+                    ),
+                    $storage->suppressed_issues,
+                );
+            }
+            if ($codebase->alter_code
                     && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
                 ) {
-                    $manipulator->setAllowedMutations($this->inferred_mutations);
-                }
+                $manipulator->setAllowedMutations($this->inferred_mutations);
+            }
         }
 
         if ($this->inferred_mutations >= Mutations::LEVEL_INTERNAL_READ_WRITE && $context->self) {
