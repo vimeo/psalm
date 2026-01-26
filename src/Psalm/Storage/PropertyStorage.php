@@ -67,10 +67,8 @@ final class PropertyStorage implements HasAttributesInterface
 
     public ?string $description = null;
 
-    /**
-     * @var array<string, PropertyHookStorage>
-     */
-    public array $hooks = [];
+    public ?PropertyHookStorage $hook_get = null;
+    public ?PropertyHookStorage $hook_set = null;
 
     public function getInfo(): string
     {
