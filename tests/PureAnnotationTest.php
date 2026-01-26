@@ -74,7 +74,7 @@ final class PureAnnotationTest extends TestCase
                         }
                     }',
             ],
-            'canCreateObjectWithNoExternalMutations' => [
+            'canCreateObjectWithNoExternalMutationsOk' => [
                 'code' => '<?php
                     /** @psalm-external-mutation-free */
                     class Counter {
@@ -638,7 +638,7 @@ final class PureAnnotationTest extends TestCase
                     }',
                 'error_message' => 'ImpureMethodCall',
             ],
-            'canCreateObjectWithNoExternalMutations' => [
+            'canCreateObjectWithNoExternalMutationsFail' => [
                 'code' => '<?php
                     class Counter {
                         private int $count = 0;
