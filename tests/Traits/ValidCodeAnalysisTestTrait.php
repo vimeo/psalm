@@ -6,6 +6,9 @@ namespace Psalm\Tests\Traits;
 
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Tests\FileManipulation\PureAnnotationAdditionTest;
+use Psalm\Tests\PureAnnotationTest;
+use Psalm\Tests\PureCallableTest;
 
 use function str_replace;
 use function strlen;
@@ -75,6 +78,19 @@ trait ValidCodeAnalysisTestTrait
 
         foreach ($ignored_issues as $issue_name) {
             Config::getInstance()->setCustomErrorLevel($issue_name, Config::REPORT_SUPPRESS);
+        }
+        if (!$this instanceof PureAnnotationTest
+            && !$this instanceof PureCallableTest
+            && !$this instanceof PureAnnotationAdditionTest
+        ) {
+            Config::getInstance()->setCustomErrorLevel(
+                'MissingImmutableAnnotation',
+                Config::REPORT_SUPPRESS
+            );
+            Config::getInstance()->setCustomErrorLevel(
+                'MissingPureAnnotation',
+                Config::REPORT_SUPPRESS
+            );
         }
 
         if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
