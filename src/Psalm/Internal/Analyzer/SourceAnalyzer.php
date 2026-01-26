@@ -254,7 +254,9 @@ abstract class SourceAnalyzer implements StatementsSource
     ): bool {
         $inferred_mutation_level ??= $mutation_level;
 
-        $src = $this->getSource();
+        $src = $this instanceof FunctionLikeAnalyzer
+            ? $this
+            : $this->getSource();
         if ($src instanceof FunctionLikeAnalyzer && $src->track_mutations) {
             $src->inferred_mutations = max($src->inferred_mutations, $inferred_mutation_level);
         }

@@ -176,6 +176,8 @@ final class PureCallableTest extends TestCase
             'goodCallableArgs' => [
                 'code' => '<?php
                     /**
+                     * @psalm-mutation-free
+                     * 
                      * @param pure-callable(string,string):int $_p
                      */
                     function f(callable $_p): void {}
