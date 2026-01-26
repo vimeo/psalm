@@ -510,24 +510,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $this->source->getFilePath(),
                 $this->function,
             );
-
-            $yield_types = [];
-
-            $inferred_return_types = ReturnTypeCollector::getReturnTypes(
-                $codebase,
-                $type_provider,
-                $function_stmts,
-                $yield_types,
-                true,
-            );
-
-            $inferred_return_type = $inferred_return_types
-                ? Type::combineUnionTypeArray(
-                    $inferred_return_types,
-                    $codebase,
-                )
-                : Type::getVoid();
-
                 if ($storage->location) {
                     IssueBuffer::maybeAdd(
                         new MissingPureAnnotation(

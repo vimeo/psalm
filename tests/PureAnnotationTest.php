@@ -56,19 +56,31 @@ final class PureAnnotationTest extends TestCase
                         private array $options;
                         private array $defaultOptions;
 
+                        /**
+                         * @psalm-external-mutation-free
+                         */
                         function __construct(array $options) {
                             $this->setOptions($options);
                             $this->setDefaultOptions($this->getOptions());
                         }
 
+                        /**
+                         * @psalm-mutation-free
+                         */
                         function getOptions(): array {
                             return $this->options;
                         }
 
+                        /**
+                         * @psalm-external-mutation-free
+                         */
                         public final function setOptions(array $options): void {
                             $this->options = $options;
                         }
 
+                        /**
+                         * @psalm-external-mutation-free
+                         */
                         public final function setDefaultOptions(array $defaultOptions): void {
                             $this->defaultOptions = $defaultOptions;
                         }
@@ -354,6 +366,9 @@ final class PureAnnotationTest extends TestCase
                     class A {
                         private ?A $other = null;
 
+                        /**
+                         * @psalm-external-mutation-free
+                         */
                         public function setVar(A $other): void {
                             $this->other = $other;
                         }
