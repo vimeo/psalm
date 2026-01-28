@@ -42,6 +42,7 @@ use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\AssignmentToVoid;
 use Psalm\Issue\ImpureByReferenceAssignment;
 use Psalm\Issue\ImpurePropertyAssignment;
+use Psalm\Issue\ImpureVariable;
 use Psalm\Issue\InvalidArrayAccess;
 use Psalm\Issue\InvalidArrayOffset;
 use Psalm\Issue\InvalidDocblock;
@@ -97,6 +98,7 @@ use function spl_object_id;
 use function str_contains;
 use function str_starts_with;
 use function strpos;
+use function strtok;
 use function strtolower;
 
 /**
@@ -302,6 +304,19 @@ final class AssignmentAnalyzer
                 }
 
                 $assign_value_type = $assign_value_type->setByRef(true);
+            } elseif ($context->mutation_free
+                && (VariableFetchAnalyzer::isSuperGlobal((string) strtok($extended_var_id, '['))
+                    || isset($context->references_to_external_scope[$extended_var_id])
+                    || isset($context->referenced_globals[$extended_var_id])
+                )
+            ) {
+                IssueBuffer::maybeAdd(
+                    new ImpureVariable(
+                        'Cannot modify global ' . $extended_var_id . ' in a mutation-free context',
+                        new CodeLocation($statements_analyzer->getSource(), $assign_var),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
             }
 
             // removes dependent vars from $context
@@ -323,6 +338,18 @@ final class AssignmentAnalyzer
                     $root_var_id,
                     $context->vars_in_scope[$root_var_id],
                     $statements_analyzer,
+                );
+            }
+
+            if ($root_var_id !== null
+                && $context->mutation_free
+                && VariableFetchAnalyzer::isSuperGlobal($root_var_id)) {
+                IssueBuffer::maybeAdd(
+                    new ImpureVariable(
+                        'Cannot modify superglobal ' . $root_var_id . ' in a mutation-free context',
+                        new CodeLocation($statements_analyzer->getSource(), $assign_var),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             }
         }
