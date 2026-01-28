@@ -912,6 +912,58 @@ final class PureAnnotationTest extends TestCase
                     }',
                 'error_message' => 'ImpureVariable',
             ],
+            'impureGlobal' => [
+                'code' => '<?php
+                    /**
+                     * @global string $bar
+                     *
+                     * @psalm-pure
+                     */
+                    function foo() : string {
+                        global $bar;
+                        return $bar;
+                    }',
+                'error_message' => 'ImpureVariable',
+            ],
+            'impureGlobal2' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     */
+                    function foo() : string {
+                        global $bar;
+                        if (is_string($bar)) {
+                            return $bar;
+                        }
+
+                        return "";
+                    }',
+                'error_message' => 'ImpureVariable',
+            ],
+            'impureSuperglobal' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     */
+                    function foo() : string {
+                        return $_SERVER["foo"] ?? "";
+                    }',
+                'error_message' => 'ImpureVariable',
+            ],
+            'impureSuperglobal2' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     */
+                    function foo() : string {
+                        if (isset($_SERVER["foo"])) {
+                            return $_SERVER["foo"];
+                        };
+
+                        return "";
+                    }',
+                'error_message' => 'ImpureVariable',
+            ],
             'iterableIsNotPure' => [
                 'code' => '<?php
                     namespace Test;
