@@ -184,12 +184,14 @@ final class AssignmentAnalyzer
         }
 
         $root_var_name = null;
+        $root_is_superglobal = false;
         // if we don't know where this data is going, treat as a dead-end usage
         if ($root_expr instanceof PhpParser\Node\Expr\Variable
             && is_string($root_expr->name)
         ) {
             $root_var_name = '$' . $root_expr->name;
             if (VariableFetchAnalyzer::isSuperGlobal($root_var_name)) {
+                $root_is_superglobal = true;
                 $statements_analyzer->signalMutation(
                     Mutations::LEVEL_EXTERNAL,
                     $context,
@@ -228,9 +230,7 @@ final class AssignmentAnalyzer
             // if we don't know where this data is going, treat as a dead-end usage
             if (!$root_expr instanceof PhpParser\Node\Expr\Variable) {
                 $context->inside_general_use = true;
-            } elseif ($root_var_name !== null
-                && VariableFetchAnalyzer::isSuperGlobal($root_var_name)
-            ) {
+            } elseif ($root_is_superglobal) {
                 $context->inside_general_use = true;
             }
 
