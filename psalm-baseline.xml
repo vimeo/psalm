@@ -2545,6 +2545,13 @@
       <code><![CDATA[$this_var_id]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
+  <file src="src/Psalm/Storage/PropertyHookStorage.php">
+    <PossiblyUnusedProperty>
+      <code><![CDATA[$by_ref]]></code>
+      <code><![CDATA[$is_final]]></code>
+      <code><![CDATA[$location]]></code>
+    </PossiblyUnusedProperty>
+  </file>
   <file src="src/Psalm/Type.php">
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$namespace]]></code>

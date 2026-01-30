@@ -48,7 +48,6 @@ use Psalm\Node\VirtualArg;
 use Psalm\Node\VirtualIdentifier;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\ClassLikeStorage;
-use Psalm\Storage\PropertyHookStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TEnumCase;
@@ -64,7 +63,6 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
-use function array_any;
 use function array_diff;
 use function array_filter;
 use function array_keys;
@@ -1179,10 +1177,8 @@ final class AtomicPropertyFetchAnalyzer
             $interface_property = $stmt->name instanceof PhpParser\Node\Identifier
                 ? $interface_storage->properties[$stmt->name->name] ?? null
                 : null;
-            $has_get_hook = $codebase->analysis_php_version_id >= 8_04_00 && array_any(
-                $interface_property?->hooks ?? [],
-                static fn(PropertyHookStorage $hook) => $hook->name === 'get',
-            );
+            $has_get_hook = $codebase->analysis_php_version_id >= 8_04_00 &&
+                $interface_property?->hook_get !== null;
 
             if (!$class_exists && !$is_enum_interface && !$has_get_hook) {
                 if (IssueBuffer::accepts(
