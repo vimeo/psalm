@@ -206,15 +206,13 @@ final class AssignmentAnalyzer
                 && VariableFetchAnalyzer::isSuperGlobal('$' . $root_expr->name)
             ) {
                 $context->inside_general_use = true;
-                if ($context->mutation_free) {
-                    IssueBuffer::maybeAdd(
-                        new ImpureGlobalVariable(
-                            'Cannot use a global variable in a mutation-free context',
-                            new CodeLocation($statements_analyzer, $root_expr),
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                }
+                $statements_analyzer->signalMutation(
+                    Mutations::LEVEL_EXTERNAL,
+                    $context,
+                    'superglobal ' . '$' . $root_expr->name,
+                    ImpureGlobalVariable::class,
+                    $root_expr,
+                );
             }
 
             if (ExpressionAnalyzer::analyze($statements_analyzer, $assign_value, $context) === false) {

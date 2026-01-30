@@ -157,7 +157,7 @@ final class VariableFetchAnalyzer
             $var_name = '$' . $stmt->name;
 
             $statements_analyzer->signalMutation(
-                Mutations::LEVEL_INTERNAL_READ,
+                Mutations::LEVEL_EXTERNAL,
                 $context,
                 "superglobal $var_name",
                 ImpureGlobalVariable::class,
