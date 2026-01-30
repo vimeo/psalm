@@ -171,6 +171,10 @@ final class PureCallableTest extends TestCase
             'callablesCanBeObjects' => [
                 'code' => '<?php
                     /**
+                     * Not pure because callable return type is not used.
+                     * 
+                     * @psalm-mutation-free
+                     * 
                      * @param pure-callable $c
                      */
                     function foo(callable $c) : void {
