@@ -80,7 +80,6 @@ use function array_values;
 use function assert;
 use function count;
 use function implode;
-use function in_array;
 use function ltrim;
 use function preg_match;
 use function preg_split;
@@ -1811,17 +1810,25 @@ final class ClassLikeNodeScanner
             // Process property hooks
             foreach ($stmt->hooks as $hook) {
                 $hook_name = strtolower($hook->name->toString());
-                if (in_array($hook_name, ['get', 'set'], true)) {
-                    $hook_storage = new PropertyHookStorage($hook_name);
-                    $hook_storage->is_final = $hook->isFinal();
-                    $hook_storage->by_ref = $hook->byRef;
-                    $hook_storage->location = new CodeLocation(
-                        $this->file_scanner,
-                        $hook,
-                        null,
-                        true,
+                if ($hook_name === 'get'
+                    || $hook_name === 'set'
+                ) {
+                    $hook_storage = new PropertyHookStorage(
+                        $hook_name === 'get',
+                        $hook->isFinal(),
+                        $hook->byRef,
+                        new CodeLocation(
+                            $this->file_scanner,
+                            $hook,
+                            null,
+                            true,
+                        ),
                     );
-                    $property_storage->hooks[$hook_name] = $hook_storage;
+                    if ($hook_storage->is_get) {
+                        $property_storage->hook_get = $hook_storage;
+                    } else {
+                        $property_storage->hook_set = $hook_storage;
+                    }
                 } else {
                     $storage->docblock_issues[] = new ParseError(
                         'Property hooks must be either "get" or "set"',
@@ -1832,7 +1839,7 @@ final class ClassLikeNodeScanner
 
             // Validate interface properties
             if ($storage->is_interface && $this->codebase->analysis_php_version_id >= 8_04_00) {
-                if (empty($property_storage->hooks)) {
+                if (!$property_storage->hook_get && !$property_storage->hook_set) {
                     $storage->docblock_issues[] = new ParseError(
                         'Interface properties must have at least one hook',
                         new CodeLocation($this->file_scanner, $stmt, null, true),
