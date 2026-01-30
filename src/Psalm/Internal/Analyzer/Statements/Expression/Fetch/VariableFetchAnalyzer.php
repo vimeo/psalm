@@ -154,30 +154,15 @@ final class VariableFetchAnalyzer
         }
 
         if (is_string($stmt->name) && self::isSuperGlobal('$' . $stmt->name)) {
-            if ($context->mutation_free) {
-                IssueBuffer::maybeAdd(
-                    new ImpureGlobalVariable(
-                        'Cannot use a global variable in a mutation-free context',
-                        new CodeLocation($statements_analyzer, $stmt),
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
-            }
             $var_name = '$' . $stmt->name;
 
-            if ($context->pure) {
-                IssueBuffer::maybeAdd(
-                    new ImpureGlobalVariable(
-                        'Cannot reference superglobal ' . $var_name . ' in a pure context',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt),
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
-            } elseif ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
-                      && $statements_analyzer->getSource()->track_mutations
-            ) {
-                $statements_analyzer->getSource()->inferred_impure = true;
-            }
+            $statements_analyzer->signalMutation(
+                Mutations::LEVEL_INTERNAL_READ,
+                $context,
+                "superglobal $var_name",
+                ImpureGlobalVariable::class,
+                $stmt,
+            );
 
             if (isset($context->vars_in_scope[$var_name])) {
                 $type = $context->vars_in_scope[$var_name];
