@@ -67,7 +67,6 @@ use Psalm\Node\VirtualArg;
 use Psalm\Node\VirtualIdentifier;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\ClassLikeStorage;
-use Psalm\Storage\PropertyHookStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -80,7 +79,6 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_any;
 use function array_diff;
 use function array_merge;
 use function array_pop;
@@ -992,10 +990,8 @@ final class InstancePropertyAssignmentAnalyzer
                 $interface_property = $stmt->name instanceof PhpParser\Node\Identifier
                     ? $interface_storage->properties[$stmt->name->name] ?? null
                     : null;
-                $has_set_hook = $codebase->analysis_php_version_id >= 8_04_00 && array_any(
-                    $interface_property?->hooks ?? [],
-                    static fn(PropertyHookStorage $hook) => $hook->name === 'set',
-                );
+                $has_set_hook = $codebase->analysis_php_version_id >= 8_04_00
+                    && $interface_property?->hook_set !== null;
 
                 if (!$class_exists && !$has_set_hook) {
                     if (IssueBuffer::accepts(
