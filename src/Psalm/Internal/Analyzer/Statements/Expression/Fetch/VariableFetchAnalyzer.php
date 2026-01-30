@@ -174,7 +174,7 @@ final class VariableFetchAnalyzer
 
             if ($context->pure) {
                 IssueBuffer::maybeAdd(
-                    new ImpureVariable(
+                    new ImpureGlobalVariable(
                         'Cannot reference superglobal ' . $var_name . ' in a pure context',
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                     ),

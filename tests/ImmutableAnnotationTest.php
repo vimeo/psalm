@@ -888,7 +888,7 @@ final class ImmutableAnnotationTest extends TestCase
 
                         return "asd";
                     }',
-                'error_message' => 'ImpureVariable',
+                'error_message' => 'ImpureGlobalVariable',
             ],
             'disallowGlobalMutationInMutationFreeContext2' => [
                 'code' => '<?php
@@ -903,7 +903,7 @@ final class ImmutableAnnotationTest extends TestCase
 
                         return "asd";
                     }',
-                'error_message' => 'ImpureVariable',
+                'error_message' => 'ImpureGlobalVariable',
             ],
             'disallowGlobalMutationUnsetInMutationFreeContext' => [
                 'code' => '<?php
@@ -915,7 +915,7 @@ final class ImmutableAnnotationTest extends TestCase
 
                         return "asd";
                     }',
-                'error_message' => 'ImpureVariable',
+                'error_message' => 'ImpureGlobalVariable',
             ],
             'disallowGlobalMutationUnsetInMutationFreeContext2' => [
                 'code' => '<?php
@@ -928,7 +928,7 @@ final class ImmutableAnnotationTest extends TestCase
 
                         return "asd";
                     }',
-                'error_message' => 'ImpureVariable',
+                'error_message' => 'ImpureGlobalVariable',
             ],
             'disallowGlobalMutationInMutationFreeContext3' => [
                 'code' => '<?php
@@ -942,7 +942,7 @@ final class ImmutableAnnotationTest extends TestCase
 
                         return "asd";
                     }',
-                'error_message' => 'ImpureVariable',
+                'error_message' => 'ImpureGlobalVariable',
             ],
             'disallowGlobalMutationInMutationFreeContext4' => [
                 'code' => '<?php
@@ -957,7 +957,7 @@ final class ImmutableAnnotationTest extends TestCase
 
                         return "asd";
                     }',
-                'error_message' => 'ImpureVariable',
+                'error_message' => 'ImpureGlobalVariable',
             ],
         ];
     }

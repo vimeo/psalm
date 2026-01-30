@@ -961,7 +961,7 @@ final class PureAnnotationTest extends TestCase
                         global $bar;
                         return $bar;
                     }',
-                'error_message' => 'ImpureVariable',
+                'error_message' => 'ImpureGlobalVariable',
             ],
             'impureGlobal2' => [
                 'code' => '<?php
@@ -976,7 +976,7 @@ final class PureAnnotationTest extends TestCase
 
                         return "";
                     }',
-                'error_message' => 'ImpureVariable',
+                'error_message' => 'ImpureGlobalVariable',
             ],
             'impureSuperglobal' => [
                 'code' => '<?php
@@ -986,7 +986,7 @@ final class PureAnnotationTest extends TestCase
                     function foo() : string {
                         return $_SERVER["foo"] ?? "";
                     }',
-                'error_message' => 'ImpureVariable',
+                'error_message' => 'ImpureGlobalVariable',
             ],
             'impureSuperglobal2' => [
                 'code' => '<?php
@@ -1000,7 +1000,7 @@ final class PureAnnotationTest extends TestCase
 
                         return "";
                     }',
-                'error_message' => 'ImpureVariable',
+                'error_message' => 'ImpureGlobalVariable',
             ],
             'iterableIsNotPure' => [
                 'code' => '<?php
