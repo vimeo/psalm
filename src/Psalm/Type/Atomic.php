@@ -410,6 +410,22 @@ abstract class Atomic implements TypeNode, Stringable
             case 'non-empty-mixed':
                 return new TNonEmptyMixed();
 
+            case 'pure-Closure':
+                return new TClosure(
+                    'Closure',
+                    allowed_mutations: Mutations::LEVEL_NONE,
+                );
+            case 'self-mutating-Closure':
+                return new TClosure(
+                    'Closure',
+                    allowed_mutations: Mutations::LEVEL_INTERNAL_READ_WRITE,
+                );
+            case 'self-accessing-Closure':
+                return new TClosure(
+                    'Closure',
+                    allowed_mutations: Mutations::LEVEL_INTERNAL_READ,
+                );
+            case 'impure-Closure':
             case 'Closure':
                 return new TClosure('Closure');
         }

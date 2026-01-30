@@ -78,7 +78,7 @@ final class PureCallableTest extends TestCase
                     class B {}
 
                     /**
-                     * @psalm-pure
+                     * @psalm-mutation-free
                      * 
                      * @param pure-callable|B $p
                      */
