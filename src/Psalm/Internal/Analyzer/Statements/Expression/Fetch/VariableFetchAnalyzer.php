@@ -172,6 +172,20 @@ final class VariableFetchAnalyzer
             }
             $var_name = '$' . $stmt->name;
 
+            if ($context->pure) {
+                IssueBuffer::maybeAdd(
+                    new ImpureVariable(
+                        'Cannot reference superglobal ' . $var_name . ' in a pure context',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            } elseif ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
+                      && $statements_analyzer->getSource()->track_mutations
+            ) {
+                $statements_analyzer->getSource()->inferred_impure = true;
+            }
+
             if (isset($context->vars_in_scope[$var_name])) {
                 $type = $context->vars_in_scope[$var_name];
 

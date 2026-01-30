@@ -56,6 +56,20 @@ final class GlobalAnalyzer
             ? $source->getFunctionLikeStorage($statements_analyzer)
             : null;
 
+        if ($context->pure) {
+            IssueBuffer::maybeAdd(
+                new ImpureVariable(
+                    'Cannot reference global variables in a pure context',
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        } elseif ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
+                  && $statements_analyzer->getSource()->track_mutations
+        ) {
+            $statements_analyzer->getSource()->inferred_impure = true;
+        }
+
         foreach ($stmt->vars as $var) {
             if (!$var instanceof PhpParser\Node\Expr\Variable) {
                 continue;

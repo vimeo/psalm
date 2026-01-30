@@ -548,6 +548,21 @@ final class ImmutableAnnotationTest extends TestCase
                         return getData()[$key] ?? null;
                     }',
             ],
+            'impureGlobalImmutable' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     */
+                    class A {
+                        /**
+                         * @global string $bar
+                         */
+                        public function foo() : string {
+                            global $bar;
+                            return $bar;
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -861,6 +876,88 @@ final class ImmutableAnnotationTest extends TestCase
                     $a = new A("hello");
                     unset($a->b);',
                 'error_message' => 'InaccessibleProperty',
+            ],
+            'disallowGlobalMutationInMutationFreeContext' => [
+                'code' => '<?php
+
+                    /**
+                     * @psalm-mutation-free
+                     */
+                    function getData(): string {
+                        $GLOBALS["cachedData"] = "asd";
+
+                        return "asd";
+                    }',
+                'error_message' => 'ImpureVariable',
+            ],
+            'disallowGlobalMutationInMutationFreeContext2' => [
+                'code' => '<?php
+
+                    /**
+                     * @psalm-mutation-free
+                     */
+                    function getData(): string {
+                        if (isset($GLOBALS["cachedData"])) {
+                            $GLOBALS["cachedData"] = "asd";
+                        }
+
+                        return "asd";
+                    }',
+                'error_message' => 'ImpureVariable',
+            ],
+            'disallowGlobalMutationUnsetInMutationFreeContext' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutation-free
+                     */
+                    function getData(): string {
+                        unset($GLOBALS["cachedData"]);
+
+                        return "asd";
+                    }',
+                'error_message' => 'ImpureVariable',
+            ],
+            'disallowGlobalMutationUnsetInMutationFreeContext2' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutation-free
+                     */
+                    function getData(): string {
+                        global $asd;
+                        unset($asd);
+
+                        return "asd";
+                    }',
+                'error_message' => 'ImpureVariable',
+            ],
+            'disallowGlobalMutationInMutationFreeContext3' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutation-free
+                     */
+                    function getData(): string {
+                        global $asd;
+
+                        $asd = "asd";
+
+                        return "asd";
+                    }',
+                'error_message' => 'ImpureVariable',
+            ],
+            'disallowGlobalMutationInMutationFreeContext4' => [
+                'code' => '<?php
+                    /**
+                     * @global string $asd
+                     * @psalm-mutation-free
+                     */
+                    function getData(): string {
+                        global $asd;
+
+                        $asd = "asd";
+
+                        return "asd";
+                    }',
+                'error_message' => 'ImpureVariable',
             ],
         ];
     }
