@@ -21,10 +21,7 @@ final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
 
     public ?CodeLocation $signature_type_location = null;
 
-    /**
-     * @var array<string>|null
-     */
-    public ?array $sinks = null;
+    public int $sinks = 0;
 
     public bool $assert_untainted = false;
 

@@ -671,6 +671,44 @@ final class PureAnnotationTest extends TestCase
                     }',
                 'error_message' => 'ImpureStaticVariable',
             ],
+            'useOfGlobalMakesFunctionImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function addCumulative(int $left) : int {
+                        /** @var int */
+                        global $i;
+                        $i ??= 0;
+                        $i += $left;
+                        return $left;
+                    }',
+                'error_message' => 'ImpureGlobalVariable',
+            ],
+            'useOfGlobalsMakesFunctionImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function addCumulativeGlobals(int $left) : int {
+                        $GLOBALS["i"] ??= 0;
+                        $GLOBALS["i"] += $left;
+                        return $left;
+                    }',
+                'error_message' => 'ImpureGlobalVariable',
+            ],
+            'useOfSuperGlobalsMakesFunctionImpureReadOnly' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function getFromSuperglobal() : int {
+                        return (int) $_GET["v"];
+                    }',
+                'error_message' => 'ImpureGlobalVariable',
+            ],
+            'useOfSuperGlobalsMakesFunctionImpureWriteOnly' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function writeToSuperGlobal(int $v) : void {
+                        $_GET["v"] = $v;
+                    }',
+                'error_message' => 'ImpureGlobalVariable',
+            ],
             'preventImpureArrayMapClosure' => [
                 'code' => '<?php
                     /**

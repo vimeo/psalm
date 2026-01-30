@@ -19,6 +19,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
@@ -191,7 +192,7 @@ final class FilterUtils
                     if ($filter_int_used === FILTER_CALLBACK) {
                         $only_callables = true;
                         foreach ($atomic_type->properties['options']->getAtomicTypes() as $option_atomic) {
-                            if ($option_atomic->isCallableType()) {
+                            if ($option_atomic->isCallableType() && !$option_atomic instanceof TClosure) {
                                 continue;
                             }
 
@@ -726,7 +727,7 @@ final class FilterUtils
                         $fallback_params = [$keys_union, $values_union];
                     }
 
-                    $from_array[] = new TKeyedArray(
+                    $from_array[] = TKeyedArray::make(
                         $new,
                         $atomic_type->class_strings,
                         $fallback_params,
@@ -1430,7 +1431,7 @@ final class FilterUtils
         if (!$in_array_recursion
             && !self::hasFlag($flags_int_used, FILTER_REQUIRE_ARRAY)
             && self::hasFlag($flags_int_used, FILTER_FORCE_ARRAY)) {
-            $return_type = new Union([new TKeyedArray(
+            $return_type = new Union([TKeyedArray::make(
                 [$return_type],
                 null,
                 null,
@@ -1480,9 +1481,7 @@ final class FilterUtils
         Union $return_type,
         string $function_id,
     ): Union {
-        if ($statements_analyzer->data_flow_graph
-            && !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
-        ) {
+        if ($statements_analyzer->data_flow_graph) {
             $function_return_sink = DataFlowNode::getForMethodReturn(
                 $function_id,
                 $function_id,

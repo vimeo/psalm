@@ -47,15 +47,11 @@ use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
-use Psalm\Type\TaintKindGroup;
 use Psalm\Type\Union;
 
 use function array_any;
 use function array_filter;
 use function array_merge;
-use function array_search;
-use function array_splice;
-use function array_unique;
 use function array_values;
 use function count;
 use function explode;
@@ -355,47 +351,43 @@ final class FunctionLikeDocblockScanner
 
             foreach ($storage->params as $param_storage) {
                 if ($param_storage->name === $param_name) {
-                    $param_storage->sinks[] = $taint_sink_param['taint'];
+                    $param_storage->sinks |= $taint_sink_param['taint'];
                 }
             }
         }
 
-        $docblock_info->taint_source_types = array_values(array_unique($docblock_info->taint_source_types));
-        // expand 'input' group to all items, e.g. `['other', 'input']` -> `['other', 'html', 'sql', 'shell', ...]`
-        $inputIndex = array_search(TaintKindGroup::GROUP_INPUT, $docblock_info->taint_source_types, true);
-        if ($inputIndex !== false) {
-            array_splice(
-                $docblock_info->taint_source_types,
-                $inputIndex,
-                1,
-                TaintKindGroup::ALL_INPUT,
-            );
-        }
         // merge taints from doc block to storage, enforce uniqueness and having consecutive index keys
-        $storage->taint_source_types = array_merge($storage->taint_source_types, $docblock_info->taint_source_types);
-        $storage->taint_source_types = array_values(array_unique($storage->taint_source_types));
+        $storage->taint_source_types |= $docblock_info->taint_source_types;
+        $location = new CodeLocation($file_scanner, $stmt, null, true);
 
-        $storage->added_taints = $docblock_info->added_taints;
+        foreach ($docblock_info->added_taints as $taint) {
+            $t = $codebase->getOrRegisterTaint($taint, $location);
+            if ($t !== null) {
+                $storage->added_taints |= $t;
+            }
+        }
 
         foreach ($docblock_info->removed_taints as $removed_taint) {
-            if ($removed_taint[0] === '(') {
-                self::handleRemovedTaint(
-                    $codebase,
-                    $stmt,
-                    $aliases,
-                    $removed_taint,
-                    $function_template_types,
-                    $class_template_types,
-                    $type_aliases,
-                    $storage,
-                    $classlike_storage,
-                    $cased_function_id,
-                    $file_storage,
-                    $file_scanner,
-                );
-            } else {
-                $storage->removed_taints[] = $removed_taint;
+            $t = $codebase->getOrRegisterTaint($removed_taint, $location);
+            if ($t !== null) {
+                $storage->removed_taints |= $t;
             }
+        }
+        foreach ($docblock_info->conditionally_removed_taints as $removed_taint) {
+            self::handleConditionallyRemovedTaint(
+                $codebase,
+                $stmt,
+                $aliases,
+                $removed_taint,
+                $function_template_types,
+                $class_template_types,
+                $type_aliases,
+                $storage,
+                $classlike_storage,
+                $cased_function_id,
+                $file_storage,
+                $file_scanner,
+            );
         }
 
         self::handleTaintFlow($docblock_info, $storage);
@@ -1157,7 +1149,7 @@ final class FunctionLikeDocblockScanner
      * @param array<string, non-empty-array<string, Union>> $function_template_types
      * @param array<string, non-empty-array<string, Union>> $class_template_types
      */
-    private static function handleRemovedTaint(
+    private static function handleConditionallyRemovedTaint(
         Codebase $codebase,
         PhpParser\Node\FunctionLike $stmt,
         Aliases $aliases,

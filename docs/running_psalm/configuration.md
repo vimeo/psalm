@@ -33,6 +33,12 @@ Configuration file may be split into several files using [XInclude](https://www.
 </projectFiles>
 ```
 
+## Different configuration file
+
+You can also create a different configuration file, then run Psalm with:
+```bash
+vendor/bin/psalm --config=other-psalm-config.xml
+```
 
 ## Optional &lt;psalm /&gt; attributes
 
@@ -393,7 +399,7 @@ When `true`, Psalm will treat all classes as if they had sealed properties, mean
 >
 ```
 
-When `true`, Psalm will run [Taint Analysis](../security_analysis/index.md) on your codebase. This config is the same as if you were running Psalm with `--taint-analysis`.
+When `true` (the default), Psalm will run [Taint Analysis](../security_analysis/index.md) on your codebase. This config is the same as if you were running Psalm with `--taint-analysis`.
 
 #### reportInfo
 

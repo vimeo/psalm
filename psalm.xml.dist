@@ -14,6 +14,7 @@
     allFunctionsGlobal="true"
     ensureOverrideAttribute="true"
     allConstantsGlobal="true"
+    runTaintAnalysis="true"
     findUnusedPsalmSuppress="true"
     findUnusedBaselineEntry="true"
     findUnusedIssueHandlerSuppression="true"

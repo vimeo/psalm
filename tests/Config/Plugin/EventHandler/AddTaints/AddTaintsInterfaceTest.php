@@ -72,6 +72,10 @@ final class AddTaintsInterfaceTest extends TestCase
                     <plugins>
                         <plugin filename="tests/Config/Plugin/EventHandler/AddTaints/TaintBadDataPlugin.php" />
                     </plugins>
+                    <issueHandlers>
+                        <UndefinedGlobalVariable errorLevel="suppress"/>
+                        <UndefinedVariable errorLevel="suppress"/>
+                    </issueHandlers>
                 </psalm>',
             ),
         );

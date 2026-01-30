@@ -57,7 +57,7 @@ RUN set -eux; \
 # Enable linker optimization (this sorts the hash buckets to improve cache locality, and is non-default)
 # https://github.com/docker-library/php/issues/272
 # -D_LARGEFILE_SOURCE and -D_FILE_OFFSET_BITS=64 (https://www.php.net/manual/en/intro.filesystem.php)
-ENV PHP_CFLAGS="-fstack-protector-strong -fpic -fpie -O3 -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
+ENV PHP_CFLAGS="-fstack-protector-strong -fpic -fpie -O3 -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -g"
 ENV PHP_CPPFLAGS="$PHP_CFLAGS"
 ENV PHP_LDFLAGS="-Wl,-O1 -pie"
 
@@ -185,6 +185,7 @@ RUN set -eux; \
 	php --version
 
 COPY bin/docker/docker-php-* /usr/local/bin/
+ADD https://raw.githubusercontent.com/php/php-src/refs/heads/PHP-8.4/.gdbinit /root/.gdbinit
 
 # This line invalidates cache when master branch changes
 ADD https://github.com/vimeo/psalm/commits/master.atom /dev/null

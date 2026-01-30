@@ -13,6 +13,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\ReferenceConstraint;
+use Psalm\Issue\ImpureGlobalVariable;
 use Psalm\Issue\InvalidGlobal;
 use Psalm\IssueBuffer;
 
@@ -36,6 +37,16 @@ final class GlobalAnalyzer
                     new CodeLocation($statements_analyzer, $stmt),
                 ),
                 $statements_analyzer->getSource()->getSuppressedIssues(),
+            );
+        }
+
+        if ($context->mutation_free) {
+            IssueBuffer::maybeAdd(
+                new ImpureGlobalVariable(
+                    'Cannot use a global variable in a mutation-free context',
+                    new CodeLocation($statements_analyzer, $stmt),
+                ),
+                $statements_analyzer->getSuppressedIssues(),
             );
         }
 

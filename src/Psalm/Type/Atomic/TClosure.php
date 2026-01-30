@@ -21,6 +21,12 @@ final class TClosure extends TNamedObject
 {
     use CallableTrait;
 
+    #[Override]
+    public function isCallableType(): bool
+    {
+        return true;
+    }
+    
     /**
      * @param list<FunctionLikeParameter> $params
      * @param array<string, bool> $byref_uses

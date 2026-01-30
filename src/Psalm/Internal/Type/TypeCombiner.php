@@ -13,7 +13,6 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
-use Psalm\Type\Atomic\TCallableKeyedArray;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassString;
@@ -544,7 +543,7 @@ final class TypeCombiner
             }
         }
 
-        if ($type instanceof TCallableKeyedArray) {
+        if ($type instanceof TKeyedArray && $type->is_callable) {
             if (isset($combination->value_types['callable'])) {
                 return null;
             }
@@ -652,7 +651,7 @@ final class TypeCombiner
         }
 
         if ($type instanceof TKeyedArray) {
-            if ($type instanceof TCallableKeyedArray && isset($combination->value_types['callable'])) {
+            if ($type->is_callable && isset($combination->value_types['callable'])) {
                 return null;
             }
 
@@ -776,7 +775,7 @@ final class TypeCombiner
                 $combination->all_arrays_lists = true;
             }
 
-            if ($type instanceof TCallableKeyedArray) {
+            if ($type->is_callable) {
                 if ($combination->all_arrays_callable !== false) {
                     $combination->all_arrays_callable = true;
                 }
@@ -1489,16 +1488,14 @@ final class TypeCombiner
                 );
 
                 if ($combination->all_arrays_callable) {
-                    $objectlike = new TCallableKeyedArray(
+                    $objectlike = TKeyedArray::makeCallable(
                         $combination->objectlike_entries,
                         null,
-                        $sealed || $fallback_key_type === null || $fallback_value_type === null
-                            ? null
-                            : [$fallback_key_type, $fallback_value_type],
+                        (bool)$combination->all_arrays_lists,
                         $from_docblock,
                     );
                 } else {
-                    $objectlike = new TKeyedArray(
+                    $objectlike = TKeyedArray::make(
                         $combination->objectlike_entries,
                         array_filter($combination->objectlike_class_string_keys),
                         $sealed || $fallback_key_type === null || $fallback_value_type === null
@@ -1607,7 +1604,7 @@ final class TypeCombiner
         }
 
         if ($combination->all_arrays_callable) {
-            $array_type = new TCallableKeyedArray($generic_type_params);
+            $array_type = TKeyedArray::makeCallable($generic_type_params);
         } elseif ($combination->array_always_filled
             || ($combination->array_sometimes_filled && $overwrite_empty_array)
             || ($combination->objectlike_entries
@@ -1620,7 +1617,7 @@ final class TypeCombiner
                     && $combination->objectlike_sealed
                     && isset($combination->array_type_params[1])
                 ) {
-                    $array_type = new TKeyedArray(
+                    $array_type = TKeyedArray::make(
                         [$generic_type_params[1]],
                         null,
                         [Type::getInt(), $combination->array_type_params[1]],
@@ -1633,7 +1630,7 @@ final class TypeCombiner
                         $properties []= $generic_type_params[1];
                     }
                     assert($properties !== []);
-                    $array_type = new TKeyedArray(
+                    $array_type = TKeyedArray::make(
                         $properties,
                         null,
                         null,
@@ -1650,7 +1647,7 @@ final class TypeCombiner
                     if (!$properties) {
                         $properties []= $generic_type_params[1]->setPossiblyUndefined(true);
                     }
-                    $array_type = new TKeyedArray(
+                    $array_type = TKeyedArray::make(
                         $properties,
                         null,
                         [Type::getListKey(), $generic_type_params[1]],

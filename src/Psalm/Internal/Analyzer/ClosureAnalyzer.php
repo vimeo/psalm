@@ -8,7 +8,6 @@ use Override;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\PhpVisitor\ShortClosureVisitor;
 use Psalm\Issue\DuplicateParam;
@@ -138,15 +137,15 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
 
                 $use_var_id = '$' . $use->var->name;
 
-                if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
+                if ($statements_analyzer->variable_use_graph
                     && $context->hasVariable($use_var_id)
                 ) {
                     $parent_nodes = $context->vars_in_scope[$use_var_id]->parent_nodes;
 
                     foreach ($parent_nodes as $parent_node) {
-                        $statements_analyzer->data_flow_graph->addPath(
+                        $statements_analyzer->variable_use_graph->addPath(
                             $parent_node,
-                            new DataFlowNode('closure-use', 'closure use', null),
+                            DataFlowNode::getForClosureUse(),
                             'closure-use',
                         );
                     }
@@ -184,13 +183,13 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
                 if ($context->hasVariable($use_var_id)) {
                     $use_context->vars_in_scope[$use_var_id] = $context->vars_in_scope[$use_var_id];
 
-                    if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
+                    if ($statements_analyzer->variable_use_graph) {
                         $parent_nodes = $context->vars_in_scope[$use_var_id]->parent_nodes;
 
                         foreach ($parent_nodes as $parent_node) {
-                            $statements_analyzer->data_flow_graph->addPath(
+                            $statements_analyzer->variable_use_graph->addPath(
                                 $parent_node,
-                                new DataFlowNode('closure-use', 'closure use', null),
+                                DataFlowNode::getForClosureUse(),
                                 'closure-use',
                             );
                         }

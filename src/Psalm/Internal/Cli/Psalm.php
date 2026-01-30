@@ -13,6 +13,7 @@ use Psalm\Exception\ConfigCreationException;
 use Psalm\Exception\ConfigException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\CliUtils;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\ReferenceMapGenerator;
 use Psalm\Internal\Composer;
 use Psalm\Internal\ErrorHandler;
@@ -242,10 +243,11 @@ final class Psalm
         IssueBuffer::captureServer($_SERVER);
 
         $include_collector = new IncludeCollector();
-        $first_autoloader = $include_collector->runAndCollect(
+        $autoloaders = $include_collector->runAndCollect(
             // we ignore the FQN because of a hack in scoper.inc that needs full path
             // phpcs:ignore SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName
-            static fn(): ?\Composer\Autoload\ClassLoader =>
+            /** @return list<ClassLoader> */
+            static fn(): array =>
                 CliUtils::requireAutoloaders($current_dir, isset($options['r']), $vendor_dir),
         );
 
@@ -262,7 +264,7 @@ final class Psalm
             $current_dir,
             $args,
             $vendor_dir,
-            $first_autoloader,
+            $autoloaders,
             $path_to_config,
             $output_format,
             $run_taint_analysis,
@@ -395,6 +397,9 @@ final class Psalm
         foreach ($plugins as $plugin_path) {
             $config->addPluginPath($plugin_path);
         }
+
+        // Prime cache
+        InternalCallMapHandler::getCallMap();
 
         if ($paths_to_check === null) {
             $project_analyzer->check($current_dir, $is_diff);
@@ -610,11 +615,12 @@ final class Psalm
         }
     }
 
+    /** @param list<ClassLoader> $autoloaders */
     private static function loadConfig(
         ?string $path_to_config,
         string $current_dir,
         string $output_format,
-        ?ClassLoader $first_autoloader,
+        array $autoloaders,
         bool $run_taint_analysis,
         array $options,
     ): Config {
@@ -622,7 +628,7 @@ final class Psalm
             $path_to_config,
             $current_dir,
             $output_format,
-            $first_autoloader,
+            $autoloaders,
             $run_taint_analysis,
         );
 
@@ -1113,13 +1119,14 @@ final class Psalm
 
     /**
      * @param array<int, string> $args
+     * @param list<ClassLoader> $autoloaders
      * @return array{Config,?string}
      */
     private static function initConfig(
         string $current_dir,
         array $args,
         string $vendor_dir,
-        ?ClassLoader $first_autoloader,
+        array $autoloaders,
         ?string $path_to_config,
         string $output_format,
         bool $run_taint_analysis,
@@ -1135,13 +1142,13 @@ final class Psalm
             echo "Calculating best config level based on project files\n";
             Creator::createBareConfig($current_dir, $init_source_dir, $vendor_dir);
             $config = Config::getInstance();
-            $config->setComposerClassLoader($first_autoloader);
+            $config->setComposerClassLoader($autoloaders);
         } else {
             $config = self::loadConfig(
                 $path_to_config,
                 $current_dir,
                 $output_format,
-                $first_autoloader,
+                $autoloaders,
                 $run_taint_analysis,
                 $options,
             );

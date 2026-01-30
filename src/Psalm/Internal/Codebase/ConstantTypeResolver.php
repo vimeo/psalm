@@ -145,7 +145,7 @@ final class ConstantTypeResolver
                 }
 
                 if ($left instanceof TKeyedArray && $right instanceof TKeyedArray) {
-                    $type = new TKeyedArray(
+                    $type = TKeyedArray::make(
                         $left->properties + $right->properties,
                         null,
                     );
@@ -268,7 +268,7 @@ final class ConstantTypeResolver
             if (empty($properties)) {
                 $resolved_type = Type::getEmptyArrayAtomic();
             } else {
-                $resolved_type = new TKeyedArray($properties, null, null, $is_list);
+                $resolved_type = TKeyedArray::make($properties, null, null, $is_list);
             }
 
             return $resolved_type;
@@ -381,7 +381,7 @@ final class ConstantTypeResolver
             foreach ($value as $key => $val) {
                 $types[$key] = new Union([self::getLiteralTypeFromScalarValue($val)]);
             }
-            return new TKeyedArray($types, null);
+            return TKeyedArray::make($types, null);
         }
 
         if (is_string($value)) {

@@ -26,6 +26,7 @@ use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Provider\StatementsProvider;
 use Psalm\IssueBuffer;
+use Psalm\Progress\Phase;
 use Psalm\Progress\Progress;
 use Psalm\Type;
 use Psalm\Type\Union;
@@ -248,7 +249,7 @@ final class Analyzer
         $scanned_files = $codebase->scanner->getScannedFiles();
 
         if ($codebase->taint_flow_graph) {
-            $codebase->taint_flow_graph->connectSinksAndSources();
+            $codebase->taint_flow_graph->connectSinksAndSources($codebase->progress);
         }
 
         $this->progress->finish();
@@ -281,7 +282,7 @@ final class Analyzer
         }
 
         if ($alter_code) {
-            $this->progress->startAlteringFiles();
+            $this->progress->startPhase(Phase::ALTERING);
 
             $project_analyzer->prepareMigration();
 
@@ -297,7 +298,7 @@ final class Analyzer
 
     private function doAnalysis(ProjectAnalyzer $project_analyzer, int $pool_size): void
     {
-        $this->progress->start(count($this->files_to_analyze));
+        $this->progress->expand(count($this->files_to_analyze));
 
         ksort($this->files_to_analyze);
 
@@ -322,6 +323,8 @@ final class Analyzer
             $forked_pool_data = $pool->runAll(new ShutdownAnalyzerTask);
 
             $this->progress->debug('Collecting forked analysis results' . "\n");
+            $this->progress->startPhase(Phase::MERGING_THREAD_RESULTS);
+            $this->progress->expand(count($forked_pool_data));
 
             foreach (Future::iterate($forked_pool_data) as $pool_data) {
                 $pool_data = $pool_data->await();
@@ -432,6 +435,8 @@ final class Analyzer
                     $this->type_map[$file_path] = $type_map;
                     $this->argument_map[$file_path] = $argument_map;
                 }
+
+                $this->progress->taskDone(0);
             }
         } else {
             foreach ($this->files_to_analyze as $file_path => $_) {

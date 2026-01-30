@@ -47,6 +47,7 @@ use Psalm\Issue\UnusedMethod;
 use Psalm\Issue\UnusedProperty;
 use Psalm\Issue\UnusedVariable;
 use Psalm\Plugin\EventHandler\Event\AfterCodebasePopulatedEvent;
+use Psalm\Progress\Phase;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
 use Psalm\Report;
@@ -409,7 +410,7 @@ final class ProjectAnalyzer
         }
 
         $this->progress->write($this->generatePHPVersionMessage());
-        $this->progress->startScanningFiles();
+        $this->progress->startPhase(Phase::SCAN, $this->scanThreads);
 
         $diff_no_files = false;
 
@@ -467,7 +468,7 @@ final class ProjectAnalyzer
             $this->config->eventDispatcher->dispatchAfterCodebasePopulated($event);
         }
 
-        $this->progress->startAnalyzingFiles();
+        $this->progress->startPhase(Phase::ANALYSIS, $this->threads);
 
         $this->codebase->analyzer->analyzeFiles(
             $this,
@@ -815,7 +816,7 @@ final class ProjectAnalyzer
         $this->checkDirWithConfig($dir_name, $this->config, true);
 
         $this->progress->write($this->generatePHPVersionMessage());
-        $this->progress->startScanningFiles();
+        $this->progress->startPhase(Phase::SCAN, $this->scanThreads);
 
         $this->config->initializePlugins($this);
 
@@ -823,7 +824,7 @@ final class ProjectAnalyzer
 
         $this->config->visitStubFiles($this->codebase, $this->progress);
 
-        $this->progress->startAnalyzingFiles();
+        $this->progress->startPhase(Phase::ANALYSIS, $this->threads);
 
         $this->codebase->analyzer->analyzeFiles(
             $this,
@@ -913,7 +914,7 @@ final class ProjectAnalyzer
         $this->file_reference_provider->loadReferenceCache();
 
         $this->progress->write($this->generatePHPVersionMessage());
-        $this->progress->startScanningFiles();
+        $this->progress->startPhase(Phase::SCAN, $this->scanThreads);
 
         $this->config->initializePlugins($this);
 
@@ -921,7 +922,7 @@ final class ProjectAnalyzer
 
         $this->config->visitStubFiles($this->codebase, $this->progress);
 
-        $this->progress->startAnalyzingFiles();
+        $this->progress->startPhase(Phase::ANALYSIS, $this->threads);
 
         $this->codebase->analyzer->analyzeFiles(
             $this,
@@ -937,7 +938,7 @@ final class ProjectAnalyzer
     public function checkPaths(array $paths_to_check): void
     {
         $this->progress->write($this->generatePHPVersionMessage());
-        $this->progress->startScanningFiles();
+        $this->progress->startPhase(Phase::SCAN, $this->scanThreads);
 
         $this->config->visitPreloadedStubFiles($this->codebase, $this->progress);
 
@@ -969,7 +970,7 @@ final class ProjectAnalyzer
 
         $this->config->eventDispatcher->dispatchAfterCodebasePopulated($event);
 
-        $this->progress->startAnalyzingFiles();
+        $this->progress->startPhase(Phase::ANALYSIS, $this->threads);
 
         $this->codebase->analyzer->analyzeFiles(
             $this,

@@ -162,7 +162,7 @@ class FileAnalyzer extends SourceAnalyzer
         $leftover_stmts = $this->populateCheckers($stmts);
 
         $this->node_data = new NodeDataProvider();
-        $statements_analyzer = new StatementsAnalyzer($this, $this->node_data);
+        $statements_analyzer = new StatementsAnalyzer($this, $this->node_data, true);
 
         foreach ($file_storage->docblock_issues as $docblock_issue) {
             IssueBuffer::maybeAdd($docblock_issue);
@@ -171,7 +171,7 @@ class FileAnalyzer extends SourceAnalyzer
         // if there are any leftover statements, evaluate them,
         // in turn causing the classes/interfaces be evaluated
         if ($leftover_stmts) {
-            $statements_analyzer->analyze($leftover_stmts, $this->context, $global_context, true);
+            $statements_analyzer->analyze($leftover_stmts, $this->context, $global_context);
 
             foreach ($leftover_stmts as $leftover_stmt) {
                 if ($leftover_stmt instanceof PhpParser\Node\Stmt\Return_) {

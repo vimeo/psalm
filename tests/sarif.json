@@ -1,0 +1,693 @@
+{
+    "version": "2.1.0",
+    "$schema": "https:\/\/json.schemastore.org\/sarif-2.1.0.json",
+    "runs": [
+        {
+            "tool": {
+                "driver": {
+                    "name": "Psalm",
+                    "informationUri": "https:\/\/psalm.dev",
+                    "version": "dev-master@",
+                    "rules": [
+                        {
+                            "id": "190",
+                            "name": "PossiblyInvalidCast",
+                            "shortDescription": {
+                                "text": "PossiblyInvalidCast"
+                            },
+                            "properties": {
+                                "tags": [
+                                    "maintainability"
+                                ]
+                            },
+                            "helpUri": "https:\/\/psalm.dev\/190",
+                            "help": {
+                                "markdown": "# PossiblyInvalidCast\n\nEmitted when attempting to cast a value that may not be castable\n\n```php\n<?php\n\nclass A {}\nclass B {\n    public function __toString() {\n        return 'hello';\n    }\n}\n$c = (string) (rand(0, 1) ? new A() : new B());\n```\n",
+                                "text": "# PossiblyInvalidCast\n\nEmitted when attempting to cast a value that may not be castable\n\n```php\n<?php\n\nclass A {}\nclass B {\n    public function __toString() {\n        return 'hello';\n    }\n}\n$c = (string) (rand(0, 1) ? new A() : new B());\n```\n"
+                            }
+                        },
+                        {
+                            "id": "2",
+                            "name": "ForbiddenCode",
+                            "shortDescription": {
+                                "text": "ForbiddenCode"
+                            },
+                            "properties": {
+                                "tags": [
+                                    "maintainability"
+                                ]
+                            },
+                            "helpUri": "https:\/\/psalm.dev\/002",
+                            "help": {
+                                "markdown": "# ForbiddenCode\n\nEmitted when Psalm encounters a var_dump, exec or similar expression that may make your code more vulnerable\n\n```php\n<?php\n\nvar_dump(\"bah\");\n```\n\nThis functions list can be extended by configuring `forbiddenFunctions` or `forbiddenConstants` in `psalm.xml`\n\n```xml\n<?xml version=\"1.0\"?>\n<psalm>\n    <!-- other configs -->\n\n    <forbiddenFunctions>\n        <function name=\"dd\"\/>\n        <function name=\"var_dump\"\/>\n    <\/forbiddenFunctions>\n    \n    <forbiddenConstants>\n        <constant name=\"FILTER_VALIDATE_URL\" \/>\n    <\/forbiddenConstants>\n<\/psalm>\n```\n",
+                                "text": "# ForbiddenCode\n\nEmitted when Psalm encounters a var_dump, exec or similar expression that may make your code more vulnerable\n\n```php\n<?php\n\nvar_dump(\"bah\");\n```\n\nThis functions list can be extended by configuring `forbiddenFunctions` or `forbiddenConstants` in `psalm.xml`\n\n```xml\n<?xml version=\"1.0\"?>\n<psalm>\n    <!-- other configs -->\n\n    <forbiddenFunctions>\n        <function name=\"dd\"\/>\n        <function name=\"var_dump\"\/>\n    <\/forbiddenFunctions>\n    \n    <forbiddenConstants>\n        <constant name=\"FILTER_VALIDATE_URL\" \/>\n    <\/forbiddenConstants>\n<\/psalm>\n```\n"
+                            }
+                        },
+                        {
+                            "id": "246",
+                            "name": "TaintedShell",
+                            "shortDescription": {
+                                "text": "TaintedShell"
+                            },
+                            "properties": {
+                                "tags": [
+                                    "security"
+                                ]
+                            },
+                            "helpUri": "https:\/\/psalm.dev\/246",
+                            "help": {
+                                "markdown": "# TaintedShell\n\nEmitted when user-controlled input can be passed into an `exec` call or similar.\n\n```php\n<?php\n\n$command = $_GET[\"command\"];\n\nrunCode($command);\n\nfunction runCode(string $command) {\n    exec($command);\n}\n```\n",
+                                "text": "# TaintedShell\n\nEmitted when user-controlled input can be passed into an `exec` call or similar.\n\n```php\n<?php\n\n$command = $_GET[\"command\"];\n\nrunCode($command);\n\nfunction runCode(string $command) {\n    exec($command);\n}\n```\n"
+                            }
+                        },
+                        {
+                            "id": "245",
+                            "name": "TaintedHtml",
+                            "shortDescription": {
+                                "text": "TaintedHtml"
+                            },
+                            "properties": {
+                                "tags": [
+                                    "security"
+                                ]
+                            },
+                            "helpUri": "https:\/\/psalm.dev\/245",
+                            "help": {
+                                "markdown": "# TaintedHtml\n\nEmitted when user-controlled input that can contain HTML can be passed into an `echo` statement.\n\n## Risk\n\nThis could lead to a potential Cross Site Scripting (XSS) vulnerability. Using an XSS vulnerability, an attacker could inject malicious JavaScript and execute any action JavaScript could do. Examples include:\n\n- Stealing authentication material (e.g. cookies, JWT tokens)\n- Exfiltrate sensitive information by reading the DOM\n- Keylog entries on the website (e.g. fake login form)\n\nWhether this is exploitable or not depends on a few conditions:\n\n- Is an executable mimetype set? (e.g. `text\/html`)\n- Is the content served inline or as attachment? (`Content-Disposition`)\n- Is the output properly sanitized? (e.g. stripping all HTML tags or having an allowlist of allowed characters)\n\n## Example\n\n```php\n<?php\n\n$name = $_GET[\"name\"];\n\nprintName($name);\n\nfunction printName(string $name) {\n    echo $name;\n}\n```\n\n## Mitigations\n\n- Sanitize user-input by using functions such as `htmlentities` or use an allowlist.\n- Set all cookies to `HTTPOnly`.\n- Consider using Content Security Policy (CSP), to limit the risk of XSS vulnerabilities.\n- If user input itself is HTML, see [Sanitizing HTML User Input](..\/..\/security_analysis\/avoiding_false_positives.md#sanitizing-html-user-input)\n\n## Further resources\n\n- [OWASP Wiki for Cross Site Scripting (XSS)](https:\/\/owasp.org\/www-community\/attacks\/xss\/)\n- [Content-Security-Policy - Web Fundamentals](https:\/\/developers.google.com\/web\/fundamentals\/security\/csp)\n",
+                                "text": "# TaintedHtml\n\nEmitted when user-controlled input that can contain HTML can be passed into an `echo` statement.\n\n## Risk\n\nThis could lead to a potential Cross Site Scripting (XSS) vulnerability. Using an XSS vulnerability, an attacker could inject malicious JavaScript and execute any action JavaScript could do. Examples include:\n\n- Stealing authentication material (e.g. cookies, JWT tokens)\n- Exfiltrate sensitive information by reading the DOM\n- Keylog entries on the website (e.g. fake login form)\n\nWhether this is exploitable or not depends on a few conditions:\n\n- Is an executable mimetype set? (e.g. `text\/html`)\n- Is the content served inline or as attachment? (`Content-Disposition`)\n- Is the output properly sanitized? (e.g. stripping all HTML tags or having an allowlist of allowed characters)\n\n## Example\n\n```php\n<?php\n\n$name = $_GET[\"name\"];\n\nprintName($name);\n\nfunction printName(string $name) {\n    echo $name;\n}\n```\n\n## Mitigations\n\n- Sanitize user-input by using functions such as `htmlentities` or use an allowlist.\n- Set all cookies to `HTTPOnly`.\n- Consider using Content Security Policy (CSP), to limit the risk of XSS vulnerabilities.\n- If user input itself is HTML, see [Sanitizing HTML User Input](..\/..\/security_analysis\/avoiding_false_positives.md#sanitizing-html-user-input)\n\n## Further resources\n\n- [OWASP Wiki for Cross Site Scripting (XSS)](https:\/\/owasp.org\/www-community\/attacks\/xss\/)\n- [Content-Security-Policy - Web Fundamentals](https:\/\/developers.google.com\/web\/fundamentals\/security\/csp)\n"
+                            }
+                        },
+                        {
+                            "id": "274",
+                            "name": "TaintedTextWithQuotes",
+                            "shortDescription": {
+                                "text": "TaintedTextWithQuotes"
+                            },
+                            "properties": {
+                                "tags": [
+                                    "security"
+                                ]
+                            },
+                            "helpUri": "https:\/\/psalm.dev\/274",
+                            "help": {
+                                "markdown": "# TaintedTextWithQuotes\n\nEmitted when user-controlled input that can contain quotation marks can be passed into an `echo` statement.\n\n## Risk\n\nThis could lead to a potential Cross Site Scripting (XSS) vulnerability. Using an XSS vulnerability, an attacker could inject malicious JavaScript and execute any action JavaScript could do. Examples include:\n\n- Stealing authentication material (e.g. cookies, JWT tokens)\n- Exfiltrate sensitive information by reading the DOM\n- Keylog entries on the website (e.g. fake login form)\n\nWhether this is exploitable or not depends on a few conditions:\n\n- Is an executable mimetype set? (e.g. `text\/html`)\n- Is the content served inline or as attachment? (`Content-Disposition`)\n- Is the output properly sanitized? (e.g. stripping all HTML tags or having an allowlist of allowed characters)\n\n## Example\n\n```php\n<?php\n$param = strip_tags($_GET['param']);\n?>\n\n<script>\n    console.log('<?=$param?>')\n<\/script>\n```\n\nPassing `');alert('injection');\/\/` as a `GET` param here would cause the `alert` to trigger.\n\n## Mitigations\n\n- Sanitize user input by using functions such as `htmlentities` with the `ENT_QUOTES` flag or use an allowlist.\n- Set all cookies to `HTTPOnly`.\n- Consider using Content Security Policy (CSP), to limit the risk of XSS vulnerabilities.\n- If user input itself is HTML, see [Sanitizing HTML User Input](..\/..\/security_analysis\/avoiding_false_positives.md#sanitizing-html-user-input)\n\n## Further resources\n\n- [OWASP Wiki for Cross Site Scripting (XSS)](https:\/\/owasp.org\/www-community\/attacks\/xss\/)\n- [Content-Security-Policy - Web Fundamentals](https:\/\/developers.google.com\/web\/fundamentals\/security\/csp)\n",
+                                "text": "# TaintedTextWithQuotes\n\nEmitted when user-controlled input that can contain quotation marks can be passed into an `echo` statement.\n\n## Risk\n\nThis could lead to a potential Cross Site Scripting (XSS) vulnerability. Using an XSS vulnerability, an attacker could inject malicious JavaScript and execute any action JavaScript could do. Examples include:\n\n- Stealing authentication material (e.g. cookies, JWT tokens)\n- Exfiltrate sensitive information by reading the DOM\n- Keylog entries on the website (e.g. fake login form)\n\nWhether this is exploitable or not depends on a few conditions:\n\n- Is an executable mimetype set? (e.g. `text\/html`)\n- Is the content served inline or as attachment? (`Content-Disposition`)\n- Is the output properly sanitized? (e.g. stripping all HTML tags or having an allowlist of allowed characters)\n\n## Example\n\n```php\n<?php\n$param = strip_tags($_GET['param']);\n?>\n\n<script>\n    console.log('<?=$param?>')\n<\/script>\n```\n\nPassing `');alert('injection');\/\/` as a `GET` param here would cause the `alert` to trigger.\n\n## Mitigations\n\n- Sanitize user input by using functions such as `htmlentities` with the `ENT_QUOTES` flag or use an allowlist.\n- Set all cookies to `HTTPOnly`.\n- Consider using Content Security Policy (CSP), to limit the risk of XSS vulnerabilities.\n- If user input itself is HTML, see [Sanitizing HTML User Input](..\/..\/security_analysis\/avoiding_false_positives.md#sanitizing-html-user-input)\n\n## Further resources\n\n- [OWASP Wiki for Cross Site Scripting (XSS)](https:\/\/owasp.org\/www-community\/attacks\/xss\/)\n- [Content-Security-Policy - Web Fundamentals](https:\/\/developers.google.com\/web\/fundamentals\/security\/csp)\n"
+                            }
+                        }
+                    ]
+                }
+            },
+            "results": [
+                {
+                    "ruleId": "190",
+                    "message": {
+                        "text": "non-empty-array<int|non-empty-string, array<int|non-empty-string, mixed>|string> cannot be cast to string"
+                    },
+                    "level": "error",
+                    "rank": 95,
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "taintflow-test\/vulnerable.php"
+                                },
+                                "region": {
+                                    "startLine": 7,
+                                    "endLine": 7,
+                                    "startColumn": 56,
+                                    "endColumn": 75
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "2",
+                    "message": {
+                        "text": "Unsafe shell_exec"
+                    },
+                    "level": "error",
+                    "rank": 94,
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "taintflow-test\/vulnerable.php"
+                                },
+                                "region": {
+                                    "startLine": 9,
+                                    "endLine": 9,
+                                    "startColumn": 1,
+                                    "endColumn": 26
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "246",
+                    "message": {
+                        "text": "Detected tainted shell code"
+                    },
+                    "level": "error",
+                    "rank": 98,
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "taintflow-test\/vulnerable.php"
+                                },
+                                "region": {
+                                    "startLine": 9,
+                                    "endLine": 9,
+                                    "startColumn": 12,
+                                    "endColumn": 25
+                                }
+                            }
+                        }
+                    ],
+                    "codeFlows": [
+                        {
+                            "message": {
+                                "text": "Tracing the path from user input to insecure usage"
+                            },
+                            "threadFlows": [
+                                {
+                                    "locations": [
+                                        {
+                                            "location": {
+                                                "physicalLocation": {
+                                                    "artifactLocation": {
+                                                        "uri": "taintflow-test\/vulnerable.php"
+                                                    },
+                                                    "region": {
+                                                        "startLine": 7,
+                                                        "endLine": 7,
+                                                        "startColumn": 56,
+                                                        "endColumn": 62
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "location": {
+                                                "physicalLocation": {
+                                                    "artifactLocation": {
+                                                        "uri": "taintflow-test\/vulnerable.php"
+                                                    },
+                                                    "region": {
+                                                        "startLine": 7,
+                                                        "endLine": 7,
+                                                        "startColumn": 56,
+                                                        "endColumn": 75
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "location": {
+                                                "physicalLocation": {
+                                                    "artifactLocation": {
+                                                        "uri": "taintflow-test\/vulnerable.php"
+                                                    },
+                                                    "region": {
+                                                        "startLine": 7,
+                                                        "endLine": 7,
+                                                        "startColumn": 46,
+                                                        "endColumn": 76
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "location": {
+                                                "physicalLocation": {
+                                                    "artifactLocation": {
+                                                        "uri": "taintflow-test\/vulnerable.php"
+                                                    },
+                                                    "region": {
+                                                        "startLine": 3,
+                                                        "endLine": 3,
+                                                        "startColumn": 50,
+                                                        "endColumn": 56
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "location": {
+                                                "physicalLocation": {
+                                                    "artifactLocation": {
+                                                        "uri": "taintflow-test\/vulnerable.php"
+                                                    },
+                                                    "region": {
+                                                        "startLine": 3,
+                                                        "endLine": 3,
+                                                        "startColumn": 50,
+                                                        "endColumn": 56
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "location": {
+                                                "physicalLocation": {
+                                                    "artifactLocation": {
+                                                        "uri": "taintflow-test\/vulnerable.php"
+                                                    },
+                                                    "region": {
+                                                        "startLine": 4,
+                                                        "endLine": 4,
+                                                        "startColumn": 12,
+                                                        "endColumn": 28
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "location": {
+                                                "physicalLocation": {
+                                                    "artifactLocation": {
+                                                        "uri": "taintflow-test\/vulnerable.php"
+                                                    },
+                                                    "region": {
+                                                        "startLine": 3,
+                                                        "endLine": 3,
+                                                        "startColumn": 59,
+                                                        "endColumn": 65
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "location": {
+                                                "physicalLocation": {
+                                                    "artifactLocation": {
+                                                        "uri": "taintflow-test\/vulnerable.php"
+                                                    },
+                                                    "region": {
+                                                        "startLine": 7,
+                                                        "endLine": 7,
+                                                        "startColumn": 1,
+                                                        "endColumn": 14
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "location": {
+                                                "physicalLocation": {
+                                                    "artifactLocation": {
+                                                        "uri": "taintflow-test\/vulnerable.php"
+                                                    },
+                                                    "region": {
+                                                        "startLine": 9,
+                                                        "endLine": 9,
+                                                        "startColumn": 12,
+                                                        "endColumn": 25
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "245",
+                    "message": {
+                        "text": "Detected tainted HTML"
+                    },
+                    "level": "error",
+                    "rank": 98,
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "taintflow-test\/vulnerable.php"
+                                },
+                                "region": {
+                                    "startLine": 11,
+                                    "endLine": 11,
+                                    "startColumn": 6,
+                                    "endColumn": 59
+                                }
+                            }
+                        }
+                    ],
+                    "codeFlows": [
+                        {
+                            "message": {
+                                "text": "Tracing the path from user input to insecure usage"
+                            },
+                            "threadFlows": [
+                                {
+                                    "locations": [
+                                        {
+                                            "location": {
+                                                "physicalLocation": {
+                                                    "artifactLocation": {
+                                                        "uri": "taintflow-test\/vulnerable.php"
+                                                    },
+                                                    "region": {
+                                                        "startLine": 7,
+                                                        "endLine": 7,
+                                                        "startColumn": 56,
+                                                        "endColumn": 62
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "location": {
+                                                "physicalLocation": {
+                                                    "artifactLocation": {
+                                                        "uri": "taintflow-test\/vulnerable.php"
+                                                    },
+                                                    "region": {
+                                                        "startLine": 7,
+                                                        "endLine": 7,
+                                                        "startColumn": 56,
+                                                        "endColumn": 75
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "location": {
+                                                "physicalLocation": {
+                                                    "artifactLocation": {
+                                                        "uri": "taintflow-test\/vulnerable.php"
+                                                    },
+                                                    "region": {
+                                                        "startLine": 7,
+                                                        "endLine": 7,
+                                                        "startColumn": 46,
+                                                        "endColumn": 76
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "location": {
+                                                "physicalLocation": {
+                                                    "artifactLocation": {
+                                                        "uri": "taintflow-test\/vulnerable.php"
+                                                    },
+                                                    "region": {
+                                                        "startLine": 3,
+                                                        "endLine": 3,
+                                                        "startColumn": 50,
+                                                        "endColumn": 56
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "location": {
+                                                "physicalLocation": {
+                                                    "artifactLocation": {
+                                                        "uri": "taintflow-test\/vulnerable.php"
+                                                    },
+                                                    "region": {
+                                                        "startLine": 3,
+                                                        "endLine": 3,
+                                                        "startColumn": 50,
+                                                        "endColumn": 56
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "location": {
+                                                "physicalLocation": {
+                                                    "artifactLocation": {
+                                                        "uri": "taintflow-test\/vulnerable.php"
+                                                    },
+                                                    "region": {
+                                                        "startLine": 4,
+                                                        "endLine": 4,
+                                                        "startColumn": 12,
+                                                        "endColumn": 28
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "location": {
+                                                "physicalLocation": {
+                                                    "artifactLocation": {
+                                                        "uri": "taintflow-test\/vulnerable.php"
+                                                    },
+                                                    "region": {
+                                                        "startLine": 3,
+                                                        "endLine": 3,
+                                                        "startColumn": 59,
+                                                        "endColumn": 65
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "location": {
+                                                "physicalLocation": {
+                                                    "artifactLocation": {
+                                                        "uri": "taintflow-test\/vulnerable.php"
+                                                    },
+                                                    "region": {
+                                                        "startLine": 7,
+                                                        "endLine": 7,
+                                                        "startColumn": 1,
+                                                        "endColumn": 14
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "location": {
+                                                "physicalLocation": {
+                                                    "artifactLocation": {
+                                                        "uri": "taintflow-test\/vulnerable.php"
+                                                    },
+                                                    "region": {
+                                                        "startLine": 11,
+                                                        "endLine": 11,
+                                                        "startColumn": 6,
+                                                        "endColumn": 59
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "location": {
+                                                "physicalLocation": {
+                                                    "artifactLocation": {
+                                                        "uri": "taintflow-test\/vulnerable.php"
+                                                    },
+                                                    "region": {
+                                                        "startLine": 11,
+                                                        "endLine": 11,
+                                                        "startColumn": 6,
+                                                        "endColumn": 59
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "274",
+                    "message": {
+                        "text": "Detected tainted text with possible quotes"
+                    },
+                    "level": "error",
+                    "rank": 98,
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "taintflow-test\/vulnerable.php"
+                                },
+                                "region": {
+                                    "startLine": 11,
+                                    "endLine": 11,
+                                    "startColumn": 6,
+                                    "endColumn": 59
+                                }
+                            }
+                        }
+                    ],
+                    "codeFlows": [
+                        {
+                            "message": {
+                                "text": "Tracing the path from user input to insecure usage"
+                            },
+                            "threadFlows": [
+                                {
+                                    "locations": [
+                                        {
+                                            "location": {
+                                                "physicalLocation": {
+                                                    "artifactLocation": {
+                                                        "uri": "taintflow-test\/vulnerable.php"
+                                                    },
+                                                    "region": {
+                                                        "startLine": 7,
+                                                        "endLine": 7,
+                                                        "startColumn": 56,
+                                                        "endColumn": 62
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "location": {
+                                                "physicalLocation": {
+                                                    "artifactLocation": {
+                                                        "uri": "taintflow-test\/vulnerable.php"
+                                                    },
+                                                    "region": {
+                                                        "startLine": 7,
+                                                        "endLine": 7,
+                                                        "startColumn": 56,
+                                                        "endColumn": 75
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "location": {
+                                                "physicalLocation": {
+                                                    "artifactLocation": {
+                                                        "uri": "taintflow-test\/vulnerable.php"
+                                                    },
+                                                    "region": {
+                                                        "startLine": 7,
+                                                        "endLine": 7,
+                                                        "startColumn": 46,
+                                                        "endColumn": 76
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "location": {
+                                                "physicalLocation": {
+                                                    "artifactLocation": {
+                                                        "uri": "taintflow-test\/vulnerable.php"
+                                                    },
+                                                    "region": {
+                                                        "startLine": 3,
+                                                        "endLine": 3,
+                                                        "startColumn": 50,
+                                                        "endColumn": 56
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "location": {
+                                                "physicalLocation": {
+                                                    "artifactLocation": {
+                                                        "uri": "taintflow-test\/vulnerable.php"
+                                                    },
+                                                    "region": {
+                                                        "startLine": 3,
+                                                        "endLine": 3,
+                                                        "startColumn": 50,
+                                                        "endColumn": 56
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "location": {
+                                                "physicalLocation": {
+                                                    "artifactLocation": {
+                                                        "uri": "taintflow-test\/vulnerable.php"
+                                                    },
+                                                    "region": {
+                                                        "startLine": 4,
+                                                        "endLine": 4,
+                                                        "startColumn": 12,
+                                                        "endColumn": 28
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "location": {
+                                                "physicalLocation": {
+                                                    "artifactLocation": {
+                                                        "uri": "taintflow-test\/vulnerable.php"
+                                                    },
+                                                    "region": {
+                                                        "startLine": 3,
+                                                        "endLine": 3,
+                                                        "startColumn": 59,
+                                                        "endColumn": 65
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "location": {
+                                                "physicalLocation": {
+                                                    "artifactLocation": {
+                                                        "uri": "taintflow-test\/vulnerable.php"
+                                                    },
+                                                    "region": {
+                                                        "startLine": 7,
+                                                        "endLine": 7,
+                                                        "startColumn": 1,
+                                                        "endColumn": 14
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "location": {
+                                                "physicalLocation": {
+                                                    "artifactLocation": {
+                                                        "uri": "taintflow-test\/vulnerable.php"
+                                                    },
+                                                    "region": {
+                                                        "startLine": 11,
+                                                        "endLine": 11,
+                                                        "startColumn": 6,
+                                                        "endColumn": 59
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "location": {
+                                                "physicalLocation": {
+                                                    "artifactLocation": {
+                                                        "uri": "taintflow-test\/vulnerable.php"
+                                                    },
+                                                    "region": {
+                                                        "startLine": 11,
+                                                        "endLine": 11,
+                                                        "startColumn": 6,
+                                                        "endColumn": 59
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

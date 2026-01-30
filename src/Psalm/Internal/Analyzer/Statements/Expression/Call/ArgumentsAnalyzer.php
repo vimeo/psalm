@@ -20,8 +20,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Internal\Codebase\Functions;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
-use Psalm\Internal\Codebase\TaintFlowGraph;
-use Psalm\Internal\DataFlow\TaintSink;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Stubs\Generator\StubsGenerator;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -43,7 +42,6 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
-use Psalm\Type\Atomic\TCallableKeyedArray;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralString;
@@ -890,7 +888,7 @@ final class ArgumentsAnalyzer
             }
         }
 
-        if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+        if ($statements_analyzer->taint_flow_graph
             && $cased_method_id
         ) {
             foreach ($args as $argument_offset => $_) {
@@ -901,25 +899,26 @@ final class ArgumentsAnalyzer
                 foreach ($arg_function_params[$argument_offset] as $function_param) {
                     if ($function_param->sinks) {
                         if (!$function_storage || $function_storage->specialize_call) {
-                            $sink = TaintSink::getForMethodArgument(
+                            $sink = DataFlowNode::getForMethodArgument(
                                 $cased_method_id,
                                 $cased_method_id,
                                 $argument_offset,
                                 $function_param->location,
                                 $code_location,
+                                $function_param->sinks,
                             );
                         } else {
-                            $sink = TaintSink::getForMethodArgument(
+                            $sink = DataFlowNode::getForMethodArgument(
                                 $cased_method_id,
                                 $cased_method_id,
                                 $argument_offset,
                                 $function_param->location,
+                                null,
+                                $function_param->sinks,
                             );
                         }
 
-                        $sink->taints = $function_param->sinks;
-
-                        $statements_analyzer->data_flow_graph->addSink($sink);
+                        $statements_analyzer->taint_flow_graph->addSink($sink);
                     }
                 }
             }
@@ -1647,9 +1646,7 @@ final class ArgumentsAnalyzer
 
                         foreach ($arg_value_type->getAtomicTypes() as $atomic_arg_type) {
                             $packed_var_definite_args_tmp = [];
-                            if ($atomic_arg_type instanceof TCallableKeyedArray) {
-                                $packed_var_definite_args_tmp[] = 2;
-                            } elseif ($atomic_arg_type instanceof TKeyedArray) {
+                            if ($atomic_arg_type instanceof TKeyedArray) {
                                 if ($atomic_arg_type->fallback_params !== null) {
                                     return;
                                 }

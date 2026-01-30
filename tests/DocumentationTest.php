@@ -43,6 +43,7 @@ use function preg_quote;
 use function scandir;
 use function sort;
 use function str_replace;
+use function str_starts_with;
 use function strlen;
 use function strpos;
 use function substr;
@@ -332,6 +333,9 @@ final class DocumentationTest extends TestCase
                 case 'MissingClassConstType':
                     $php_version = '8.3';
                     break;
+            }
+            if (str_starts_with($issue_name, 'Taint')) {
+                $ignored_issues = TaintTest::IGNORE;
             }
 
             $invalid_code_data[$issue_name] = [
