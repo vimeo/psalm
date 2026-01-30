@@ -41,7 +41,9 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\AssignmentToVoid;
 use Psalm\Issue\ImpureByReferenceAssignment;
+use Psalm\Issue\ImpureGlobalVariable;
 use Psalm\Issue\ImpurePropertyAssignment;
+use Psalm\Issue\ImpureVariable;
 use Psalm\Issue\InvalidArrayAccess;
 use Psalm\Issue\InvalidArrayOffset;
 use Psalm\Issue\InvalidDocblock;
@@ -91,13 +93,13 @@ use UnexpectedValueException;
 
 use function assert;
 use function count;
-use function in_array;
 use function is_string;
 use function reset;
 use function spl_object_id;
 use function str_contains;
 use function str_starts_with;
 use function strpos;
+use function strtok;
 use function strtolower;
 
 /**
@@ -198,11 +200,21 @@ final class AssignmentAnalyzer
             }
 
             // if we don't know where this data is going, treat as a dead-end usage
-            if (!$root_expr instanceof PhpParser\Node\Expr\Variable
-                || (is_string($root_expr->name)
-                    && in_array('$' . $root_expr->name, VariableFetchAnalyzer::SUPER_GLOBALS, true))
+            if (!$root_expr instanceof PhpParser\Node\Expr\Variable) {
+                $context->inside_general_use = true;
+            } elseif (is_string($root_expr->name)
+                && VariableFetchAnalyzer::isSuperGlobal('$' . $root_expr->name)
             ) {
                 $context->inside_general_use = true;
+                if ($context->mutation_free) {
+                    IssueBuffer::maybeAdd(
+                        new ImpureGlobalVariable(
+                            'Cannot use a global variable in a mutation-free context',
+                            new CodeLocation($statements_analyzer, $root_expr),
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+                }
             }
 
             if (ExpressionAnalyzer::analyze($statements_analyzer, $assign_value, $context) === false) {
@@ -297,6 +309,19 @@ final class AssignmentAnalyzer
                 );
 
                 $assign_value_type = $assign_value_type->setByRef(true);
+            } elseif ($context->mutation_free
+                && (VariableFetchAnalyzer::isSuperGlobal((string) strtok($extended_var_id, '['))
+                    || isset($context->references_to_external_scope[$extended_var_id])
+                    || isset($context->referenced_globals[$extended_var_id])
+                )
+            ) {
+                IssueBuffer::maybeAdd(
+                    new ImpureVariable(
+                        'Cannot modify global ' . $extended_var_id . ' in a mutation-free context',
+                        new CodeLocation($statements_analyzer->getSource(), $assign_var),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
             }
 
             // removes dependent vars from $context
@@ -318,6 +343,18 @@ final class AssignmentAnalyzer
                     $root_var_id,
                     $context->vars_in_scope[$root_var_id],
                     $statements_analyzer,
+                );
+            }
+
+            if ($root_var_id !== null
+                && $context->mutation_free
+                && VariableFetchAnalyzer::isSuperGlobal($root_var_id)) {
+                IssueBuffer::maybeAdd(
+                    new ImpureVariable(
+                        'Cannot modify superglobal ' . $root_var_id . ' in a mutation-free context',
+                        new CodeLocation($statements_analyzer->getSource(), $assign_var),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             }
         }

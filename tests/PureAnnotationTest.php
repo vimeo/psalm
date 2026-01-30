@@ -692,6 +692,44 @@ final class PureAnnotationTest extends TestCase
                     }',
                 'error_message' => 'ImpureStaticVariable',
             ],
+            'useOfGlobalMakesFunctionImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function addCumulative(int $left) : int {
+                        /** @var int */
+                        global $i;
+                        $i ??= 0;
+                        $i += $left;
+                        return $left;
+                    }',
+                'error_message' => 'ImpureGlobalVariable',
+            ],
+            'useOfGlobalsMakesFunctionImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function addCumulativeGlobals(int $left) : int {
+                        $GLOBALS["i"] ??= 0;
+                        $GLOBALS["i"] += $left;
+                        return $left;
+                    }',
+                'error_message' => 'ImpureGlobalVariable',
+            ],
+            'useOfSuperGlobalsMakesFunctionImpureReadOnly' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function getFromSuperglobal() : int {
+                        return (int) $_GET["v"];
+                    }',
+                'error_message' => 'ImpureGlobalVariable',
+            ],
+            'useOfSuperGlobalsMakesFunctionImpureWriteOnly' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function writeToSuperGlobal(int $v) : void {
+                        $_GET["v"] = $v;
+                    }',
+                'error_message' => 'ImpureGlobalVariable',
+            ],
             'preventImpureArrayMapClosure' => [
                 'code' => '<?php
                     /**
@@ -932,6 +970,58 @@ final class PureAnnotationTest extends TestCase
                         }
                     }',
                 'error_message' => 'ImpureVariable',
+            ],
+            'impureGlobal' => [
+                'code' => '<?php
+                    /**
+                     * @global string $bar
+                     *
+                     * @psalm-pure
+                     */
+                    function foo() : string {
+                        global $bar;
+                        return $bar;
+                    }',
+                'error_message' => 'ImpureGlobalVariable',
+            ],
+            'impureGlobal2' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     */
+                    function foo() : string {
+                        global $bar;
+                        if (is_string($bar)) {
+                            return $bar;
+                        }
+
+                        return "";
+                    }',
+                'error_message' => 'ImpureGlobalVariable',
+            ],
+            'impureSuperglobal' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     */
+                    function foo() : string {
+                        return $_SERVER["foo"] ?? "";
+                    }',
+                'error_message' => 'ImpureGlobalVariable',
+            ],
+            'impureSuperglobal2' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     */
+                    function foo() : string {
+                        if (isset($_SERVER["foo"])) {
+                            return $_SERVER["foo"];
+                        };
+
+                        return "";
+                    }',
+                'error_message' => 'ImpureGlobalVariable',
             ],
             'iterableIsNotPure' => [
                 'code' => '<?php

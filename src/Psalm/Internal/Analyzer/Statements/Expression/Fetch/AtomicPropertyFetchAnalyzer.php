@@ -1144,12 +1144,19 @@ final class AtomicPropertyFetchAnalyzer
                 }
             }
 
-            if (!$class_exists &&
-                //interfaces can't have properties. Except when they do... In PHP Core, they can
-                !in_array($fq_class_name, ['UnitEnum', 'BackedEnum'], true) &&
-                !in_array('UnitEnum', $codebase->getParentInterfaces($fq_class_name)) &&
-                !$intersects_with_enum
-            ) {
+            // In PHP Core enum interfaces have properties
+            $is_enum_interface = in_array($fq_class_name, ['UnitEnum', 'BackedEnum'], true)
+                || in_array('UnitEnum', $codebase->getParentInterfaces($fq_class_name))
+                || $intersects_with_enum;
+
+            // Since PHP 8.4 interfaces can have hook properties
+            $interface_property = $stmt->name instanceof PhpParser\Node\Identifier
+                ? $interface_storage->properties[$stmt->name->name] ?? null
+                : null;
+            $has_get_hook = $codebase->analysis_php_version_id >= 8_04_00 &&
+                $interface_property?->hook_get !== null;
+
+            if (!$class_exists && !$is_enum_interface && !$has_get_hook) {
                 if (IssueBuffer::accepts(
                     new NoInterfaceProperties(
                         'Interfaces cannot have properties',
