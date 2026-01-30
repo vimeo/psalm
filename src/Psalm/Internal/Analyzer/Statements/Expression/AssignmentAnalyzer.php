@@ -178,6 +178,38 @@ final class AssignmentAnalyzer
             $context->possibly_assigned_var_ids[$extended_var_id] = true;
         }
 
+        $root_expr = $assign_var;
+        while ($root_expr instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+            $root_expr = $root_expr->var;
+        }
+
+        $root_var_name = null;
+        // if we don't know where this data is going, treat as a dead-end usage
+        if ($root_expr instanceof PhpParser\Node\Expr\Variable
+            && is_string($root_expr->name)
+        ) {
+            $root_var_name = '$' . $root_expr->name;
+            if (VariableFetchAnalyzer::isSuperGlobal($root_var_name)) {
+                $statements_analyzer->signalMutation(
+                    Mutations::LEVEL_EXTERNAL,
+                    $context,
+                    'superglobal ' . $root_var_name,
+                    ImpureGlobalVariable::class,
+                    $root_expr,
+                );
+            } elseif (isset($context->references_to_external_scope[$extended_var_id])
+                || isset($context->referenced_globals[$extended_var_id])
+            ) {
+                $statements_analyzer->signalMutation(
+                    Mutations::LEVEL_EXTERNAL,
+                    $context,
+                    'variable ' . $root_var_name . ' from outer scope',
+                    ImpureVariable::class,
+                    $root_expr,
+                );
+            }
+        }
+
         if ($assign_value) {
             if ($var_id && $assign_value instanceof PhpParser\Node\Expr\Closure) {
                 foreach ($assign_value->uses as $closure_use) {
@@ -193,26 +225,13 @@ final class AssignmentAnalyzer
 
             $was_inside_general_use = $context->inside_general_use;
 
-            $root_expr = $assign_var;
-
-            while ($root_expr instanceof PhpParser\Node\Expr\ArrayDimFetch) {
-                $root_expr = $root_expr->var;
-            }
-
             // if we don't know where this data is going, treat as a dead-end usage
             if (!$root_expr instanceof PhpParser\Node\Expr\Variable) {
                 $context->inside_general_use = true;
-            } elseif (is_string($root_expr->name)
-                && VariableFetchAnalyzer::isSuperGlobal('$' . $root_expr->name)
+            } elseif ($root_var_name !== null
+                && VariableFetchAnalyzer::isSuperGlobal($root_var_name)
             ) {
                 $context->inside_general_use = true;
-                $statements_analyzer->signalMutation(
-                    Mutations::LEVEL_EXTERNAL,
-                    $context,
-                    'superglobal ' . '$' . $root_expr->name,
-                    ImpureGlobalVariable::class,
-                    $root_expr,
-                );
             }
 
             if (ExpressionAnalyzer::analyze($statements_analyzer, $assign_value, $context) === false) {
@@ -307,19 +326,6 @@ final class AssignmentAnalyzer
                 );
 
                 $assign_value_type = $assign_value_type->setByRef(true);
-            } elseif ($context->mutation_free
-                && (VariableFetchAnalyzer::isSuperGlobal((string) strtok($extended_var_id, '['))
-                    || isset($context->references_to_external_scope[$extended_var_id])
-                    || isset($context->referenced_globals[$extended_var_id])
-                )
-            ) {
-                IssueBuffer::maybeAdd(
-                    new ImpureVariable(
-                        'Cannot modify global ' . $extended_var_id . ' in a mutation-free context',
-                        new CodeLocation($statements_analyzer->getSource(), $assign_var),
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
             }
 
             // removes dependent vars from $context
@@ -341,18 +347,6 @@ final class AssignmentAnalyzer
                     $root_var_id,
                     $context->vars_in_scope[$root_var_id],
                     $statements_analyzer,
-                );
-            }
-
-            if ($root_var_id !== null
-                && $context->mutation_free
-                && VariableFetchAnalyzer::isSuperGlobal($root_var_id)) {
-                IssueBuffer::maybeAdd(
-                    new ImpureVariable(
-                        'Cannot modify superglobal ' . $root_var_id . ' in a mutation-free context',
-                        new CodeLocation($statements_analyzer->getSource(), $assign_var),
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
                 );
             }
         }
