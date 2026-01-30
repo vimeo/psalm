@@ -523,7 +523,12 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 )
                 : Type::getVoid();
             
-            if ($inferred_return_type->isVoid()) {
+            if ($inferred_return_type->isVoid()
+                && !(
+                    $storage->throw_locations
+                    || $storage->throws
+                )
+            ) {
                 $this->signalMutation(
                     Mutations::LEVEL_INTERNAL_READ,
                     $context,

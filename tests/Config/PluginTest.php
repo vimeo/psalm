@@ -606,6 +606,7 @@ final class PluginTest extends TestCase
                     public static function __callStatic(string $method_name, array $args) {}
                 }
 
+                /** @psalm-mutation-free */
                 function i(I $i): void {}
 
                 $foo = new Foo();
@@ -1081,12 +1082,14 @@ final class PluginTest extends TestCase
             $file_path,
             '<?php
                 /**
+                 * @psalm-pure
                  * @param mixed ...$_args
                  * @return mixed
                  */
                 function custom_array_map(...$_args) { throw new RuntimeException("???"); }
 
                 /**
+                 * @psalm-pure
                  * @param list<array{num: int}> $_list
                  */
                 function acceptsList(array $_list): void { }
