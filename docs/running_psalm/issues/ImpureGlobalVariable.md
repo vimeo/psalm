@@ -1,4 +1,4 @@
-# ImpureStaticVariable
+# ImpureGlobalVariable
 
 Emitted when attempting to use a global or superglobal variable from a function or method marked as pure
 
