@@ -39,6 +39,7 @@ final class AnnotationTest extends TestCase
                 {
                     /**
                      * @return $this
+                     * @psalm-mutation-free
                      */
                     public function execute()
                     {

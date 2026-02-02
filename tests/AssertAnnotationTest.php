@@ -1866,6 +1866,7 @@ final class AssertAnnotationTest extends TestCase
 
                     /**
                      * @psalm-assert-if-true !null $foo->bar
+                     * @psalm-mutation-free
                      */
                     function assertBarNotNull(Foo $foo): bool
                     {
