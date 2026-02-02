@@ -79,6 +79,7 @@ final class JsonOutputTest extends TestCase
         return [
             'returnTypeError' => [
                 'code' => '<?php
+                    /** @psalm-pure */
                     function fooFoo(int $a): string {
                         return $a + 1;
                     }',
@@ -89,6 +90,7 @@ final class JsonOutputTest extends TestCase
             ],
             'undefinedVar' => [
                 'code' => '<?php
+                    /** @psalm-pure */
                     function fooFoo(int $a): int {
                         return $b + 1;
                     }',
@@ -109,6 +111,9 @@ final class JsonOutputTest extends TestCase
             ],
             'missingReturnType' => [
                 'code' => '<?php
+                    /**
+                     * @psalm-mutation-free
+                     */
                     function fooFoo() {
                         return "hello";
                     }',
@@ -120,6 +125,7 @@ final class JsonOutputTest extends TestCase
             'wrongMultilineReturnType' => [
                 'code' => '<?php
                     /**
+                     * @psalm-mutation-free
                      * @return int
                      */
                     function fooFoo() {
@@ -142,7 +148,11 @@ final class JsonOutputTest extends TestCase
             ],
             'singleIssueForTypeDifference' => [
                 'code' => '<?php
-                    /** @psalm-suppress RiskyTruthyFalsyComparison */
+                    /** 
+                     * @psalm-mutation-free
+                     * 
+                     * @psalm-suppress RiskyTruthyFalsyComparison
+                     */
                     function fooFoo(?string $a, ?string $b): void {
                         if ($a || $b) {
                             if ($a || $b) {}

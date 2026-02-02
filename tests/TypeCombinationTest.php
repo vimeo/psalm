@@ -676,7 +676,7 @@ final class TypeCombinationTest extends TestCase
                 ],
             ],
             'combineCallableStringAndCallable' => [
-                'callable',
+                'callable-string|impure-callable',
                 [
                     'callable-string',
                     'callable',
@@ -711,7 +711,7 @@ final class TypeCombinationTest extends TestCase
                 ],
             ],
             'combineCallableAndCallableList' => [
-                'callable',
+                'callable-list{class-string|object, non-empty-string}|impure-callable',
                 [
                     'callable',
                     'callable-list',
