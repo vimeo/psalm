@@ -224,6 +224,7 @@ final class CodebaseTest extends TestCase
             'somefile.php',
             '<?php
                 namespace Psalm\CurrentTest;
+                /** @psalm-pure */
                 function invalidReturnType(int $value): string
                 {
                     return $value;
@@ -270,6 +271,7 @@ final class CodebaseTest extends TestCase
                 namespace Psalm\CurrentTest;
 
                 /** @psalm-suppress InvalidReturnType */
+                /** @psalm-pure */
                 function invalidReturnType(int $value): string
                 {
                     /** @psalm-suppress InvalidReturnStatement */
