@@ -88,6 +88,7 @@ final class PureCallableTest extends TestCase
             ],
             'callableWithInvokableUnion' => [
                 'code' => '<?php
+                    /** @psalm-mutation-free */
                     function asd(): void {}
                     class A {public function __invoke(): void {} }
 
@@ -102,6 +103,7 @@ final class PureCallableTest extends TestCase
             ],
             'callableWithInvokable' => [
                 'code' => '<?php
+                    /** @psalm-mutation-free */
                     function asd(): void {}
                     class A {
                         /**
@@ -148,10 +150,12 @@ final class PureCallableTest extends TestCase
                             $this->callable = $callable;
                         }
 
+                        /** @psalm-mutation-free */
                         public function callTheCallableDirectly(): bool {
                             return ($this->callable)();
                         }
 
+                        /** @psalm-mutation-free */
                         public function callTheCallableIndirectly(): bool {
                             $r = $this->callable;
                             return $r();
