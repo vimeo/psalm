@@ -212,13 +212,14 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
             $context->vars_in_scope[$key] = $value;
         }
         
+        /*
         $statements_analyzer->signalMutation(
             $closure_analyzer->inferred_mutations,
             $context,
             'closure',
             ImpureFunctionCall::class,
             $stmt,
-        );
+        );*/
 
         if (!$statements_analyzer->node_data->getType($stmt)) {
             $statements_analyzer->node_data->setType($stmt, Type::getClosure());

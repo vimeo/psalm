@@ -115,7 +115,9 @@ final class PureCallableTest extends TestCase
                     /**
                      * @param pure-callable $p
                      */
-                    function fails($p): void {}
+                    function fails($p): void {
+                        $p();
+                    }
 
                     fails(new A());
                     fails("asd");',
@@ -256,6 +258,18 @@ final class PureCallableTest extends TestCase
 
                     echo $c;',
             ],
+            'impureCallableReturnOk' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @return impure-callable(int):int
+                     */
+                    function foo(): callable {
+                        return function(int $a): int {
+                            return $a + mt_rand(0, $a);
+                        };
+                    }',
+            ],
         ];
     }
 
@@ -290,7 +304,7 @@ final class PureCallableTest extends TestCase
                     });
 
                     echo $c;',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'ArgumentTypeCoercion',
             ],
             'impureCallableReturn' => [
                 'code' => '<?php
@@ -304,7 +318,7 @@ final class PureCallableTest extends TestCase
                             return 1;
                         };
                     }',
-                'error_message' => 'InvalidReturnStatement',
+                'error_message' => 'LessSpecificReturnStatement',
             ],
         ];
     }
