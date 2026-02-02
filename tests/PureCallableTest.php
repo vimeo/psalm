@@ -90,10 +90,15 @@ final class PureCallableTest extends TestCase
                 'code' => '<?php
                     /** @psalm-mutation-free */
                     function asd(): void {}
-                    class A {public function __invoke(): void {} }
+                    class A {
+                        /**
+                         * @psalm-mutation-free
+                         */
+                        public function __invoke(): void {}
+                    }
 
                     /**
-                     * @psalm-pure
+                     * @psalm-mutation-free
                      * 
                      * @param pure-callable|A $p
                      */
@@ -113,6 +118,8 @@ final class PureCallableTest extends TestCase
                     }
 
                     /**
+                     * @psalm-mutation-free
+                     * 
                      * @param pure-callable $p
                      */
                     function fails($p): void {
