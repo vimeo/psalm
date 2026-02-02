@@ -28,9 +28,13 @@ final class ArrayAccessTest extends TestCase
         $this->addFile(
             'somefile.php',
             '<?php
+                /** @psalm-mutation-free */
                 function takesString(string $s): void {}
 
-                /** @param array<string, string> $arr */
+                /**
+                 * @param array<string, string> $arr
+                 * @psalm-mutation-free
+                 */
                 function takesArrayIteratorOfString(array $arr): void {
                     echo $arr["hello"];
                 }',
@@ -46,9 +50,13 @@ final class ArrayAccessTest extends TestCase
         $this->addFile(
             'somefile.php',
             '<?php
+                /** @psalm-mutation-free */
                 function takesString(string $s): void {}
 
-                /** @param array<string, string> $arr */
+                /**
+                 * @param array<string, string> $arr
+                 * @psalm-mutation-free
+                 */
                 function takesArrayIteratorOfString(array $arr): void {
                     if (isset($arr["hello"])) {
                         echo $arr["hello"];
@@ -84,7 +92,10 @@ final class ArrayAccessTest extends TestCase
         $this->addFile(
             'somefile.php',
             '<?php
-                /** @param array<string, mixed> $s */
+                /**
+                 * @param array<string, mixed> $s
+                 * @psalm-mutation-free
+                 */
                 function foo(array $s) : void {
                     if (isset($s["a"]) && \is_array($s["a"])) {}
                 }',
@@ -121,9 +132,13 @@ final class ArrayAccessTest extends TestCase
         $this->addFile(
             'somefile.php',
             '<?php
+                /** @psalm-mutation-free */
                 function takesString(string $s): void {}
 
-                /** @param array<int, string> $arr */
+                /**
+                 * @param array<int, string> $arr
+                 * @psalm-mutation-free
+                 */
                 function takesArrayIteratorOfString(array $arr): void {
                     echo $arr[4];
                 }',
@@ -155,7 +170,10 @@ final class ArrayAccessTest extends TestCase
         $this->addFile(
             'somefile.php',
             '<?php
-                /** @param string[][] $arr */
+                /**
+                 * @param string[][] $arr
+                 * @psalm-mutation-free
+                 */
                 function foo(array $arr) : void {
                     if (sizeof($arr) === 1 && sizeof(array_values($arr)[0]) === 1) {}
                 }',
@@ -173,6 +191,7 @@ final class ArrayAccessTest extends TestCase
             '<?php
                 /**
                  * @return mixed
+                 * @psalm-pure
                  */
                 function f(array $a) {
                     if (isset($a[1])

@@ -279,6 +279,7 @@ final class ForbiddenCodeTest extends TestCase
             <<<'PHP'
                 <?php
                 namespace Foo {
+                    /** @psalm-pure */
                     function strlen(): int {
                         return 0;
                     }
