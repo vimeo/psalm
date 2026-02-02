@@ -108,13 +108,13 @@ final class PureCallableTest extends TestCase
             ],
             'callableWithInvokable' => [
                 'code' => '<?php
-                    /** @psalm-mutation-free */
-                    function asd(): void {}
+                    /** @psalm-pure */
+                    function asd(int $a): int { return $a; }
                     class A {
                         /**
                          * @psalm-pure
                          */
-                        public function __invoke(): void {}
+                        public function __invoke(int $a): int { return $a; }
                     }
 
                     /**
