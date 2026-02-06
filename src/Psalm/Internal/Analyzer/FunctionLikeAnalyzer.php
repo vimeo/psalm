@@ -501,10 +501,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         if (!$this->function instanceof VirtualNode
             && ($this->function instanceof Function_
-                || (
-                    $this->function instanceof ClassMethod
-                    && $this->function->stmts !== null
-                )
+                || $this->function instanceof ClassMethod
             )
             && !$overridden_method_ids
             && !$context->collect_initializations

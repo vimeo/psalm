@@ -100,6 +100,7 @@ final class AnnotationTest extends TestCase
                 class ParentClass
                 {
                     /**
+                     * @psalm-mutation-free
                      * @return $this
                      */
                     public function execute()
@@ -147,6 +148,7 @@ final class AnnotationTest extends TestCase
             'somefile.php',
             '<?php
                 /**
+                 * @psalm-mutation-free
                  * @param array $_arr
                  * @return void
                  */
