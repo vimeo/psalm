@@ -166,6 +166,7 @@ final class CacheTest extends TestCase
                     'issues' => [
                         'src/A.php' => [
                             'UndefinedClass: Class, interface or enum named B does not exist',
+                            'MissingPureAnnotation: do must be marked @psalm-mutation-free to aid security analysis, run with --alter --issues=MissingPureAnnotation to fix this'
                         ],
                     ],
                 ],
