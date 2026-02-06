@@ -580,6 +580,7 @@ final class ImmutableAnnotationTest extends TestCase
                      * @psalm-mutation-free
                      */
                     function getData(): array {
+                        /** @psalm-suppress ImpureGlobalVariable */
                         /** @var mixed $arr */
                         $arr = $GLOBALS["cachedData"] ?? [];
 
@@ -587,7 +588,7 @@ final class ImmutableAnnotationTest extends TestCase
                     }
 
                     /**
-                     * @psalm-pure
+                     * @psalm-mutation-free
                      * @return mixed
                      */
                     function getDataItem(string $key) {
