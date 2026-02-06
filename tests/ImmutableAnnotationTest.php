@@ -528,6 +528,29 @@ final class ImmutableAnnotationTest extends TestCase
                         }
                     }',
             ],
+        ];
+    }
+
+    #[Override]
+    public function providerInvalidCodeParse(): iterable
+    {
+        return [
+            'impureGlobalImmutable' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     */
+                    class A {
+                        /**
+                         * @global string $bar
+                         */
+                        public function foo() : string {
+                            global $bar;
+                            return $bar;
+                        }
+                    }',
+                'error_message' => 'ImpureGlobalVariable',
+            ],
             'allowMutationFreeCallInMutationFreeContext' => [
                 'code' => '<?php
 
@@ -548,29 +571,8 @@ final class ImmutableAnnotationTest extends TestCase
                     function getDataItem(string $key) {
                         return getData()[$key] ?? null;
                     }',
+                'error_message' => 'ImpureGlobalVariable',
             ],
-            'impureGlobalImmutable' => [
-                'code' => '<?php
-                    /**
-                     * @psalm-immutable
-                     */
-                    class A {
-                        /**
-                         * @global string $bar
-                         */
-                        public function foo() : string {
-                            global $bar;
-                            return $bar;
-                        }
-                    }',
-            ],
-        ];
-    }
-
-    #[Override]
-    public function providerInvalidCodeParse(): iterable
-    {
-        return [
             'disallowOnlyMutationFreeInPureContext' => [
                 'code' => '<?php
 
