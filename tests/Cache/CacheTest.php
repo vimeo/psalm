@@ -142,7 +142,6 @@ final class CacheTest extends TestCase
                         'src/A.php' => <<<'PHP'
                             <?php
                             final class A {
-                                /** @psalm-mutation-free */
                                 public function do(B $b): void
                                 {
                                     $b->do();
@@ -152,7 +151,6 @@ final class CacheTest extends TestCase
                         'src/B.php' => <<<'PHP'
                             <?php
                             final class B {
-                                /** @psalm-mutation-free */
                                 public function do(): void
                                 {
                                     echo 'B';
@@ -228,6 +226,7 @@ final class CacheTest extends TestCase
                              */
                             final class A {
                                 /**
+                                 * @psalm-mutation-free
                                  * @param T $baz
                                  */
                                 public function foo($baz): void
@@ -239,6 +238,7 @@ final class CacheTest extends TestCase
                             <?php
 
                             final class B {
+                                /** @psalm-mutation-free */
                                 public function foo(): void
                                 {
                                     (new A)->foo(1);
@@ -258,6 +258,7 @@ final class CacheTest extends TestCase
                              */
                             final class A {
                                 /**
+                                 * @psalm-mutation-free
                                  * @param T $baz
                                  */
                                 public function foo($baz): void
@@ -284,6 +285,7 @@ final class CacheTest extends TestCase
                     'files' => [
                         'src/A.php' => <<<'PHP'
                             <?php
+                            /** @psalm-immutable */
                             final class A {
                                 public function __construct(private string $foo)
                                 {
@@ -301,8 +303,10 @@ final class CacheTest extends TestCase
                     'files' => [
                         'src/A.php' => <<<'PHP'
                             <?php
+                            /** @psalm-immutable */
                             final class A
                             {
+                                /** @psalm-mutation-free */
                                 public function __construct()
                                 {
                                 }

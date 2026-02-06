@@ -199,13 +199,19 @@ final class AssignmentAnalyzer
                     ImpureGlobalVariable::class,
                     $root_expr,
                 );
-            } elseif (isset($context->references_to_external_scope[$root_var_name])
-                || isset($context->referenced_globals[$root_var_name])
-            ) {
+            } elseif (isset($context->references_to_external_scope[$root_var_name])) {
                 $statements_analyzer->signalMutation(
                     Mutations::LEVEL_EXTERNAL,
                     $context,
                     'variable ' . $root_var_name . ' from outer scope',
+                    ImpureByReferenceAssignment::class,
+                    $root_expr,
+                );
+            } elseif (isset($context->referenced_globals[$root_var_name])) {
+                $statements_analyzer->signalMutation(
+                    Mutations::LEVEL_EXTERNAL,
+                    $context,
+                    'global variable ' . $root_var_name,
                     ImpureGlobalVariable::class,
                     $root_expr,
                 );
