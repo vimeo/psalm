@@ -501,7 +501,11 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         if (!$this->function instanceof VirtualNode
             && ($this->function instanceof Function_
-                || $this->function instanceof ClassMethod)
+                || (
+                    $this->function instanceof ClassMethod
+                    && $this->function->stmts !== null
+                )
+            )
             && !$overridden_method_ids
             && !$context->collect_initializations
             && !$context->collect_mutations
@@ -558,8 +562,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     );
                 }
                 if ($codebase->alter_code
-                        && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
-                    ) {
+                    && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
+                ) {
                     $manipulator->setAllowedMutations($this->inferred_mutations);
                 }
             }
