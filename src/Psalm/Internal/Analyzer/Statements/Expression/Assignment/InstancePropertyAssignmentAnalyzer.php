@@ -974,7 +974,14 @@ final class InstancePropertyAssignmentAnalyzer
                     }
                 }
 
-                if (!$class_exists) {
+                // Test if the property has a 'set' hook
+                $interface_property = $stmt->name instanceof PhpParser\Node\Identifier
+                    ? $interface_storage->properties[$stmt->name->name] ?? null
+                    : null;
+                $has_set_hook = $codebase->analysis_php_version_id >= 8_04_00
+                    && $interface_property?->hook_set !== null;
+
+                if (!$class_exists && !$has_set_hook) {
                     if (IssueBuffer::accepts(
                         new NoInterfaceProperties(
                             'Interfaces cannot have properties',

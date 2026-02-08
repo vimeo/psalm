@@ -1128,7 +1128,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             $uninitialized_variables[] = '$this->' . $property_name;
             $uninitialized_properties[$property_class_name . '::$' . $property_name] = $property;
 
-            if ($property->type) {
+            if ($property->type && !$property->hook_get) {
                 // Complain about all natively typed properties and all non-mixed docblock typed properties
                 if (!$property->type->from_docblock || !$property->type->isMixed()) {
                     $uninitialized_typed_properties[$property_class_name . '::$' . $property_name] = $property;

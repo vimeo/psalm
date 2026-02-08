@@ -62,6 +62,7 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\EnumCaseStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\PropertyHookStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
@@ -1806,6 +1807,61 @@ final class ClassLikeNodeScanner
                 }
 
                 $property_storage->attributes[] = $attribute;
+            }
+
+            // Process property hooks
+            foreach ($stmt->hooks as $hook) {
+                $hook_name = strtolower($hook->name->toString());
+                if ($hook_name === 'get'
+                    || $hook_name === 'set'
+                ) {
+                    $hook_storage = new PropertyHookStorage(
+                        $hook_name === 'get',
+                        $hook->isFinal(),
+                        $hook->byRef,
+                        new CodeLocation(
+                            $this->file_scanner,
+                            $hook,
+                            null,
+                            true,
+                        ),
+                    );
+                    if ($hook_storage->is_get) {
+                        $property_storage->hook_get = $hook_storage;
+                    } else {
+                        $property_storage->hook_set = $hook_storage;
+                    }
+                } else {
+                    $storage->docblock_issues[] = new ParseError(
+                        'Property hooks must be either "get" or "set"',
+                        new CodeLocation($this->file_scanner, $stmt, null, true),
+                    );
+                }
+            }
+
+            // Validate interface properties
+            if ($storage->is_interface && $this->codebase->analysis_php_version_id >= 8_04_00) {
+                if (!$property_storage->hook_get && !$property_storage->hook_set) {
+                    $storage->docblock_issues[] = new ParseError(
+                        'Interface properties must have at least one hook',
+                        new CodeLocation($this->file_scanner, $stmt, null, true),
+                    );
+                }
+
+                if ($stmt->isStatic()) {
+                    $storage->docblock_issues[] = new ParseError(
+                        'Interface properties cannot be static',
+                        new CodeLocation($this->file_scanner, $stmt, null, true),
+                    );
+                }
+
+                // Interface properties must be explicitly declared as public
+                if (!$stmt->isPublic() || ($stmt->flags & PhpParser\Modifiers::VISIBILITY_MASK) === 0) {
+                    $storage->docblock_issues[] = new ParseError(
+                        'Interface properties must be public',
+                        new CodeLocation($this->file_scanner, $stmt, null, true),
+                    );
+                }
             }
         }
     }
