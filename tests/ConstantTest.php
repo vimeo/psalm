@@ -2161,6 +2161,19 @@ final class ConstantTest extends TestCase
                     class FooBar implements FooInterface, BarInterface {}
                     PHP,
             ],
+            'phpDebugValid' => [
+                'code' => '<?php
+                    if (PHP_DEBUG === 0) {}
+                ',
+            ],
+            /*'phpDebugValid84' => [
+                'code' => '<?php
+                    if (PHP_DEBUG === false) {}
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],*/
         ];
     }
 
@@ -2729,6 +2742,48 @@ final class ConstantTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.2',
             ],
+            'phpIntMaxValue' => [
+                'code' => '<?php
+                    $max = PHP_INT_MAX;
+                    if ($max < 100) {}
+                ',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'phpIntMinValue' => [
+                'code' => '<?php
+                    $min = PHP_INT_MIN;
+                    if ($min > -100) {}
+                ',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'phpIntMaxValueRedundant' => [
+                'code' => '<?php
+                    $max = PHP_INT_MAX;
+                    if ($max > 100) {}
+                ',
+                'error_message' => 'RedundantCondition',
+            ],
+            'phpIntMinValueRedundant' => [
+                'code' => '<?php
+                    $min = PHP_INT_MIN;
+                    if ($min < -100) {}
+                ',
+                'error_message' => 'RedundantCondition',
+            ],
+            'phpDebug' => [
+                'code' => '<?php
+                    if (PHP_DEBUG === false) {}
+                ',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            /*'phpDebug84' => [
+                'code' => '<?php
+                    if (PHP_DEBUG === 0) {}
+                ',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],*/
         ];
     }
 }
