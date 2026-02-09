@@ -1356,6 +1356,94 @@ final class UnusedCodeTest extends TestCase
                     new A;
                     PHP,
             ],
+            'usedFunctionCallNoDiscardAnnotation' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @psalm-no-discard
+                     *
+                     * @return int
+                     */
+                    function foo() {
+                        return rand();
+                    }
+
+                    echo foo();
+                    PHP,
+            ],
+            'usedFunctionCallNoDiscardAttribute' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @psalm-suppress UndefinedAttributeClass
+                     * @return int
+                     */
+                    #[NoDiscard]
+                    function foo() {
+                        return rand();
+                    }
+
+                    echo foo();
+                    PHP,
+            ],
+            'usedFunctionCallTaintEscapeAnnotation' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param string|array $str
+                     * @param bool $escape
+                     * @psalm-taint-escape ($escape is true ? "html" : null)
+                     */
+                    function processVar($str, bool $escape = true) : string {
+                        if (is_array($str)) {
+                                return "";
+                        }
+
+                        if ($escape) {
+                            $str = str_replace(["<", ">"], "", $str);
+                        }
+                        return $str;
+                    }
+
+                    echo processVar($_GET["text"], true);
+                    PHP,
+            ],
+            'usedMethodCallNoDiscardAnnotation' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Bar {
+                        /**
+                         * @psalm-no-discard
+                         *
+                         * @return int
+                         */
+                        public function foo() {
+                            return rand();
+                        }
+                    }
+
+                    $bar = new Bar();
+                    echo $bar->foo();
+                    PHP,
+            ],
+            'usedMethodCallNoDiscardAttribute' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Bar {
+                        /**
+                         * @psalm-suppress UndefinedAttributeClass
+                         * @return int
+                         */
+                        #[NoDiscard]
+                        public function foo() {
+                            return rand();
+                        }
+                    }
+
+                    $bar = new Bar();
+                    echo $bar->foo();
+                    PHP,
+            ],
             'callNeverReturnsSuppressed' => [
                 'code' => '<?php
                     namespace Foo;
@@ -1625,6 +1713,7 @@ final class UnusedCodeTest extends TestCase
                         (new A("hello"))->setFoo("goodbye");
                     }',
                 'error_message' => 'UnusedMethodCall',
+                'ignored_issues' => ['UnusedProperty'],
             ],
             'unusedMethodCallForGeneratingMethod' => [
                 'code' => '<?php
@@ -1980,6 +2069,130 @@ final class UnusedCodeTest extends TestCase
                     class a {}
                     new a;',
                 'error_message' => 'ClassMustBeFinal',
+            ],
+            'unusedFunctionCallNoDiscardAnnotation' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @psalm-no-discard
+                     *
+                     * @return int
+                     */
+                    function foo() {
+                        return rand();
+                    }
+
+                    foo();
+                    PHP,
+                'error_message' => 'UnusedFunctionCall',
+            ],
+            'unusedFunctionCallNoDiscardAttribute' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @return int
+                     */
+                    #[NoDiscard]
+                    function foo() {
+                        return rand();
+                    }
+
+                    foo();
+                    PHP,
+                'error_message' => 'UnusedFunctionCall',
+                'ignored_issues' => ['UndefinedAttributeClass'],
+            ],
+            'unusedFunctionCallTaintEscapeAnnotation' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param string|array $str
+                     * @param bool $escape
+                     * @psalm-taint-escape ($escape is true ? "html" : null)
+                     */
+                    function processVar($str, bool $escape = true) : string {
+                        if (is_array($str)) {
+                                return "";
+                        }
+
+                        if ($escape) {
+                            $str = str_replace(["<", ">"], "", $str);
+                        }
+                        return $str;
+                    }
+
+                    processVar($_GET["text"], true);
+                    PHP,
+                'error_message' => 'UnusedFunctionCall',
+            ],
+            'unusedMethodCallNoDiscardAnnotation' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Bar {
+                        /**
+                         * @psalm-no-discard
+                         *
+                         * @return int
+                         */
+                        public function foo() {
+                            return rand();
+                        }
+                    }
+
+                    $bar = new Bar();
+                    $bar->foo();
+                    PHP,
+                'error_message' => 'UnusedMethodCall',
+                'ignored_issues' => ['PossiblyUnusedReturnValue'],
+            ],
+            'unusedMethodCallNoDiscardAttribute' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Bar {
+                        /**
+                         * @return int
+                         */
+                        #[NoDiscard]
+                        public function foo() {
+                            return rand();
+                        }
+                    }
+
+                    $bar = new Bar();
+                    $bar->foo();
+                    PHP,
+                'error_message' => 'UnusedMethodCall',
+                'ignored_issues' => [
+                    'PossiblyUnusedReturnValue',
+                    'UndefinedAttributeClass',
+                ],
+            ],
+            'unusedMethodCallTaintEscapeAnnotation' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Bar {
+                        /**
+                         * @param string|array $str
+                         * @param bool $escape
+                         * @psalm-taint-escape ($escape is true ? "html" : null)
+                         */
+                        public function processVar($str, bool $escape = true) : string {
+                            if (is_array($str)) {
+                                return "";
+                            }
+
+                            if ($escape) {
+                                $str = str_replace(["<", ">"], "", $str);
+                            }
+                            return $str;
+                        }
+                    }
+
+                    $bar = new Bar();
+                    $bar->processVar($_GET["text"], true);
+                    PHP,
+                'error_message' => 'UnusedMethodCall',
+                'ignored_issues' => ['PossiblyUnusedReturnValue'],
             ],
         ];
     }

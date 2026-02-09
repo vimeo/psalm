@@ -15,6 +15,7 @@ use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TypeCombiner;
+use Psalm\Issue\DeprecatedConstant;
 use Psalm\Issue\InvalidCast;
 use Psalm\Issue\PossiblyInvalidCast;
 use Psalm\Issue\RedundantCast;
@@ -286,9 +287,30 @@ final class CastAnalyzer
             return true;
         }
 
-        if ($stmt instanceof PhpParser\Node\Expr\Cast\Unset_
-            && $statements_analyzer->getCodebase()->analysis_php_version_id <= 7_04_00
-        ) {
+        if ($stmt instanceof PhpParser\Node\Expr\Cast\Unset_) {
+            if ($statements_analyzer->getCodebase()->analysis_php_version_id >= 8_00_00) {
+                IssueBuffer::maybeAdd(
+                    new InvalidCast(
+                        'The (unset) cast is no longer supported',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+
+                $statements_analyzer->node_data->setType($stmt, Type::getNever());
+                return false;
+            }
+
+            if ($statements_analyzer->getCodebase()->analysis_php_version_id >= 7_02_00) {
+                IssueBuffer::maybeAdd(
+                    new DeprecatedConstant(
+                        'The (unset) cast is deprecated',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
+
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
                 return false;
             }
@@ -296,6 +318,24 @@ final class CastAnalyzer
             $statements_analyzer->node_data->setType($stmt, Type::getNull());
 
             return true;
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\Cast\Void_) {
+            if ($statements_analyzer->getCodebase()->analysis_php_version_id < 8_05_00) {
+                IssueBuffer::maybeAdd(
+                    new InvalidCast(
+                        'The (void) cast is only supported from PHP 8.5 and causes a fatal error in earlier versions',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
+
+            $expression_result = self::checkExprGeneralUse($statements_analyzer, $stmt, $context);
+
+            $statements_analyzer->node_data->setType($stmt, Type::getNever());
+
+            return $expression_result;
         }
 
         IssueBuffer::maybeAdd(

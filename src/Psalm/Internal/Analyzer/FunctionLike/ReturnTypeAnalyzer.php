@@ -31,6 +31,8 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\ImplicitToStringCast;
+use Psalm\Issue\InvalidAttribute;
+use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidFalsableReturnType;
 use Psalm\Issue\InvalidNullableReturnType;
 use Psalm\Issue\InvalidParent;
@@ -827,6 +829,48 @@ final class ReturnTypeAnalyzer
         if ($context->self) {
             $classlike_storage = $codebase->classlike_storage_provider->get($context->self);
             $parent_class = $classlike_storage->parent_class;
+        }
+
+        if ($storage->return_type->isVoid() || $storage->return_type->isNever()) {
+            $incompatible_annotation_text = false;
+            $return_type_text = $storage->return_type->isVoid() ? 'void' : 'never';
+            if ($storage->no_discard) {
+                $has_attribute = false;
+                foreach ($storage->attributes as $attribute) {
+                    if ($attribute->fq_class_name === 'NoDiscard') {
+                        $has_attribute = true;
+                        break;
+                    }
+                }
+
+                if ($has_attribute) {
+                    IssueBuffer::maybeAdd(
+                        new InvalidAttribute(
+                            'NoDiscard attribute is incompatible with '
+                            . 'return type "' . $return_type_text . '"',
+                            $storage->return_type_location,
+                        ),
+                    );
+                } else {
+                    $incompatible_annotation_text = '@psalm-no-discard';
+                }
+            } elseif ($storage->pure && !$storage->assertions && !$storage->return_type->isNever()) {
+                // currently not for "never", since exit is pure atm
+                // see https://github.com/vimeo/psalm/issues/10762
+                $incompatible_annotation_text = '@psalm-pure';
+            } elseif ($storage->removed_taints || $storage->conditionally_removed_taints) {
+                $incompatible_annotation_text = '@psalm-taint-escape';
+            }
+
+            if ($incompatible_annotation_text !== false) {
+                IssueBuffer::maybeAdd(
+                    new InvalidDocblock(
+                        'Return type "' . $return_type_text . '" is incompatible with '
+                        . $incompatible_annotation_text,
+                        $storage->return_type_location,
+                    ),
+                );
+            }
         }
 
         if (!$storage->signature_return_type || $storage->signature_return_type === $storage->return_type) {

@@ -99,12 +99,16 @@ final class OverrideTest extends TestCase
                     <?php
                     class A {
                         /** @psalm-pure */
-                        public function f(): void {}
+                        public function f(): int {
+                            return 15;
+                        }
                     }
                     class B extends A {
                         /** @psalm-pure */
                         #[Override]
-                        public function f(): void {}
+                        public function f(): int {
+                            return 20;
+                        }
                     }
                     PHP,
             ],
