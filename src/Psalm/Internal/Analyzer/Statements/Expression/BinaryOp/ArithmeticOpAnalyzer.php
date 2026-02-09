@@ -960,25 +960,25 @@ final class ArithmeticOpAnalyzer
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Minus) {
             $result = $operand1 - $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
-            if ($operand2 === 0) {
+            if ($operand2 === 0 || $operand2 === 0.0) {
                 return Type::getNever();
             }
 
-            $result = $operand1 % $operand2;
+            $result = (int) $operand1 % (int) $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Mul) {
             $result = $operand1 * $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Pow) {
             $result = $operand1 ** $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr) {
-            $result = $operand1 | $operand2;
+            $result = (int) $operand1 | (int) $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd) {
-            $result = $operand1 & $operand2;
+            $result = (int) $operand1 & (int) $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseXor) {
-            $result = $operand1 ^ $operand2;
+            $result = (int) $operand1 ^ (int) $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft) {
-            $result = $operand1 << $operand2;
+            $result = (int) $operand1 << (int) $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight) {
-            $result = $operand1 >> $operand2;
+            $result = (int) $operand1 >> (int) $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Div) {
             if ($operand2 === 0 || $operand2 === 0.0) {
                 return Type::getNever();

@@ -59,7 +59,7 @@ final class BitwiseNotAnalyzer
                     $has_valid_operand = true;
                 } elseif ($type_part instanceof TFloat) {
                     $type_part = ($type_part instanceof TLiteralFloat) ?
-                        new TLiteralInt(~$type_part->value) :
+                        new TLiteralInt(~(int) $type_part->value) :
                         new TInt;
 
                     $stmt_expr_type->removeType($type_string);
