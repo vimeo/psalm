@@ -15,6 +15,9 @@ use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
 
+use function array_key_last;
+use function is_int;
+
 /**
  * @internal
  */
@@ -68,11 +71,76 @@ final class ArrayPopReturnTypeProvider implements FunctionReturnTypeProviderInte
                 $nullable = true;
             }
         } else {
-            // special case where we know the type of the first element
+            // special case for array_shift with lists
             if ($function_id === 'array_shift' && $first_arg_array->is_list && isset($first_arg_array->properties[0])) {
                 $value_type = $first_arg_array->properties[0];
                 if ($value_type->possibly_undefined) {
                     $value_type = $value_type->setPossiblyUndefined(false);
+                    $nullable = true;
+                }
+            } elseif ($function_id === 'array_pop' && $first_arg_array->is_list) {
+                // Handle keyed list
+                $properties = $first_arg_array->properties;
+
+                $last_key = array_key_last($properties);
+                $last_value = $properties[$last_key];
+
+                if (!$last_value->possibly_undefined) {
+                    // Last key is not optional - return its type
+                    $value_type = $last_value;
+                } else {
+                    // Last key is optional
+                    // Find the last non-optional key and collect all types from there onwards
+                    $last_non_optional_key = null;
+                    if (is_int($last_key)) {
+                        for ($i = $last_key - 1; $i >= 0; $i--) {
+                            if (isset($properties[$i]) && !$properties[$i]->possibly_undefined) {
+                                $last_non_optional_key = $i;
+                                break;
+                            }
+                        }
+                    }
+
+                    // Collect all types from last non-optional onwards (or all if none are non-optional)
+                    $types_to_combine = [];
+                    $start_index = $last_non_optional_key ?? 0;
+
+                    if (is_int($last_key) && is_int($start_index)) {
+                        for ($i = $start_index; $i <= $last_key; $i++) {
+                            if (isset($properties[$i])) {
+                                $types_to_combine[] = $properties[$i]->setPossiblyUndefined(false);
+                            }
+                        }
+                    }
+
+                    if ($types_to_combine !== []) {
+                        $value_type = Type::combineUnionTypeArray($types_to_combine, null);
+                    } else {
+                        return Type::getNull();
+                    }
+
+                    if ($last_non_optional_key === null) {
+                        // All keys are optional - can also be null
+                        $nullable = true;
+                    }
+                }
+            } elseif ($function_id === 'array_pop' && !$first_arg_array->is_list) {
+                // Regular keyed array (non-list)
+                $all_optional = true;
+                foreach ($first_arg_array->properties as $property) {
+                    if (!$property->possibly_undefined) {
+                        $all_optional = false;
+                        break;
+                    }
+                }
+
+                if ($all_optional) {
+                    $nullable = true;
+                }
+
+                $value_type = $first_arg_array->getGenericValueType();
+
+                if (!$first_arg_array->isNonEmpty()) {
                     $nullable = true;
                 }
             } else {
