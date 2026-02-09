@@ -607,6 +607,65 @@ final class PropertyTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'promotedPropertyOverwrittenNoConstructor' => [
+                'code' => '<?php
+                    class A
+                    {
+                        public function __construct(
+                            public array $abc,
+                        ) {}
+                    }
+
+                    class B extends A
+                    {
+                        public array $abc;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'promotedPropertyOverwrittenNoConstructorDeep' => [
+                'code' => '<?php
+                    class A
+                    {
+                        public function __construct(
+                            public array $abc,
+                        ) {}
+                    }
+
+                    class B extends A
+                    {
+                    }
+
+                    class C extends B
+                    {
+                        public array $abc;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'promotedPropertyOverwrittenNoConstructorDeep2' => [
+                'code' => '<?php
+                    class A
+                    {
+                        public function __construct(
+                            public array $abc,
+                        ) {}
+                    }
+
+                    class B extends A
+                    {
+                        public array $abc;
+                    }
+
+                    class C extends B
+                    {
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'propertyWithoutTypeSuppressingIssueAndAssertingNull' => [
                 'code' => '<?php
                     class A {
@@ -751,6 +810,19 @@ final class PropertyTypeTest extends TestCase
                 'code' => '<?php
                     function foo(DOMElement $e) : ?DOMAttr {
                         return $e->attributes->item(0);
+                    }',
+            ],
+            'variablePropertyAssignment' => [
+                'code' => '<?php
+                    class MyClass
+                    {
+                        protected int $num;
+
+                        public function __construct()
+                        {
+                            $myString = "num";
+                            $this->$myString = 5;
+                        }
                     }',
             ],
             'goodArrayProperties' => [
@@ -3606,6 +3678,25 @@ final class PropertyTypeTest extends TestCase
                     }
 
                     class B extends A
+                    {
+                        public function __construct() {}
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'promotedPropertyNotSetInExtendedConstructorDeep' => [
+                'code' => '<?php
+                    class A
+                    {
+                        public function __construct(
+                            public string $name,
+                        ) {}
+                    }
+
+                    class B extends A {}
+
+                    class C extends B
                     {
                         public function __construct() {}
                     }',

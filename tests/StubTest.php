@@ -1474,4 +1474,378 @@ final class StubTest extends TestCase
         $this->expectExceptionMessage('TaintedHtml - src/somefile.php');
         $this->analyzeFile($file_path, new Context());
     }
+
+    /**
+     * @runInSeparateProcess
+     */
+    public function testPropertyNotSetInConstructorWithStubParent(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/ParentClassWithProperty.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                use Foo\Bar;
+
+                final class Xyz extends Bar {
+                	/**
+                     * @var string
+                     */
+                    private $world;
+
+                    public function __construct() {
+                        parent::__construct("b");
+                    }
+                }
+            ',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('PropertyNotSetInConstructor');
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * @runInSeparateProcess
+     */
+    public function testPropertyNotSetInConstructorWithStubParentNoError(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/ParentClassWithProperty.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                use Foo\Bar;
+
+                final class Xyz extends Bar {
+                	/**
+                     * @var string
+                     */
+                    private $world;
+
+                    public function __construct() {
+                        parent::__construct("b");
+
+                        $this->world = "xyz";
+                    }
+                }
+            ',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * @runInSeparateProcess
+     */
+    public function testPropertyNotSetInConstructorWithStubParentNotCalled(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/ParentClassWithProperty.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                use Foo\Bar;
+
+                final class Xyz extends Bar {
+                	/**
+                     * @var string
+                     */
+                    private $world;
+
+                    public function __construct() {
+                        $this->world = "xyz";
+                    }
+                }
+            ',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('PropertyNotSetInConstructor');
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * @runInSeparateProcess
+     */
+    public function testPropertyNotSetInConstructorWithStubParentNotCalledNoConstruct(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/ParentClassWithProperty.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                use Foo\Bar;
+
+                final class Xyz extends Bar {
+                }
+            ',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * @runInSeparateProcess
+     */
+    public function testPropertyNotSetInConstructorWithSelfStubbed(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/SelfWithProperty.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                use Foo\Bar;
+
+                final class Xyz extends Bar {
+                	/**
+                     * @var string
+                     */
+                    private $world;
+
+                    public function __construct() {
+                        $this->world = "xyz";
+                    }
+                }
+            ',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('PropertyNotSetInConstructor');
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * @runInSeparateProcess
+     */
+    public function testPropertyNotSetInConstructorWithSelfStubbedPrivateProperty(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/SelfWithProperty.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                use Foo\Bar;
+
+                final class Xyz extends Bar {
+                	/**
+                     * @var string
+                     */
+                    private $world;
+
+                    public function __construct() {
+                        parent::__construct("b");
+                    }
+                }
+            ',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('PropertyNotSetInConstructor');
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * @runInSeparateProcess
+     */
+    public function testPropertyNotSetInConstructorWithSelfStubbedNoError(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/SelfWithProperty.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                use Foo\Bar;
+
+                final class Xyz extends Bar {
+                	/**
+                     * @var string
+                     */
+                    private $world;
+
+                    public function __construct() {
+                        parent::__construct("b");
+
+                        $this->world = "xyz";
+                    }
+                }
+            ',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * @runInSeparateProcess
+     */
+    public function testNonInvariantDocblockPropertyTypeStub(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/ParentClassWithProperty.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                use Foo\Bar;
+
+                final class Xyz extends Bar {
+                	/**
+                     * @var int
+                     */
+                    public $hello;
+
+                    public function __construct() {
+                        parent::__construct("b");
+                    }
+                }
+            ',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('NonInvariantDocblockPropertyType');
+        $this->analyzeFile($file_path, new Context());
+    }
 }
