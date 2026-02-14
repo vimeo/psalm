@@ -1047,7 +1047,7 @@ final class UnusedCodeTest extends TestCase
             'functionCallUsedInThrow' => [
                 'code' => '<?php
                     /**
-                     * @psalm-pure
+                     * @psalm-mutation-free
                      */
                     function getException(): \Exception
                     {

@@ -1085,14 +1085,14 @@ final class PluginTest extends TestCase
             $file_path,
             '<?php
                 /**
-                 * @psalm-pure
+                 * @psalm-mutation-free
                  * @param mixed ...$_args
                  * @return mixed
                  */
                 function custom_array_map(...$_args) { throw new RuntimeException("???"); }
 
                 /**
-                 * @psalm-pure
+                 * @psalm-mutation-free
                  * @param list<array{num: int}> $_list
                  */
                 function acceptsList(array $_list): void { }
