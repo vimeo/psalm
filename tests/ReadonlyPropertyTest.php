@@ -185,6 +185,7 @@ final class ReadonlyPropertyTest extends TestCase
                          */
                         public string $bar;
 
+                        /** @psalm-external-mutation-free */
                         public function __construct() {
                             $this->bar = "hello";
                         }
@@ -199,6 +200,7 @@ final class ReadonlyPropertyTest extends TestCase
                     class A {
                         public readonly string $bar;
 
+                        /** @psalm-external-mutation-free */
                         public function __construct() {
                             $this->bar = "hello";
                         }

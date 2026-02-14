@@ -165,11 +165,13 @@ final class FileReferenceTest extends TestCase
                     namespace Foo;
 
                     class A {
+                        /** @psalm-mutation-free */
                         public static function bat() : void {
                         }
                     }
 
                     class B {
+                        /** @psalm-mutation-free */
                         public function __construct() {
                             new A();
                             A::bat();
@@ -181,6 +183,7 @@ final class FileReferenceTest extends TestCase
                     }
 
                     class C {
+                        /** @psalm-mutation-free */
                         public function foo() : void {
                             new A();
                         }

@@ -92,6 +92,7 @@ final class PureAnnotationTest extends TestCase
                     class Counter {
                         private int $count = 0;
 
+                        /** @psalm-mutation-free */
                         public function __construct(int $count) {
                             $this->count = $count;
                         }
@@ -664,6 +665,7 @@ final class PureAnnotationTest extends TestCase
                     class Counter {
                         private int $count = 0;
 
+                        /** @psalm-mutation-free */
                         public function __construct(int $count) {
                             $this->count = $count;
                         }
@@ -898,6 +900,7 @@ final class PureAnnotationTest extends TestCase
                     class A {
                         public int $a;
 
+                        /** @psalm-mutation-free */
                         public function __construct(int $a) {
                             $this->a = $a;
                         }
@@ -920,6 +923,7 @@ final class PureAnnotationTest extends TestCase
                     class A {
                         public ?int $a;
 
+                        /** @psalm-mutation-free */
                         public function __construct(?int $a) {
                             $this->a = $a;
                         }
@@ -942,6 +946,7 @@ final class PureAnnotationTest extends TestCase
                     class A {
                         public ?int $a;
 
+                        /** @psalm-mutation-free */
                         public function __construct(?int $a) {
                             $this->a = $a;
                         }

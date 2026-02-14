@@ -128,6 +128,7 @@ final class IssueSuppressionTest extends TestCase
 
                 /** @psalm-suppress MissingThrowsDocblock */
                 if (rand(0, 1)) {
+                    /** @psalm-mutation-free */
                     function example2 (): void {
                         throw new Exception();
                     }
@@ -363,6 +364,7 @@ final class IssueSuppressionTest extends TestCase
                     class C {
                         private ?DateTime $mightBeNull = null;
 
+                        /** @psalm-mutation-free */
                         public function m(): string {
                             return $this->mightBeNull->format("");
                         }

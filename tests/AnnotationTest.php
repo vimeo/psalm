@@ -1926,8 +1926,8 @@ final class AnnotationTest extends TestCase
                     /**
                      * @param string &...$s
                      * @psalm-suppress UnusedParam
+                     * @psalm-mutation-free
                      */
-                    /** @psalm-mutation-free */
                     function foo(&...$s) : void {}
 
                     $a = 1;
@@ -1939,8 +1939,8 @@ final class AnnotationTest extends TestCase
                     /**
                      * @param string ...&$s
                      * @psalm-suppress UnusedParam
+                     * @psalm-mutation-free
                      */
-                    /** @psalm-mutation-free */
                     function foo(&...$s) : void {}
 
                     $b = 2;
@@ -1952,8 +1952,8 @@ final class AnnotationTest extends TestCase
                     /**
                      * @param string[] &$s
                      * @psalm-suppress UnusedParam
+                     * @psalm-mutation-free
                      */
-                    /** @psalm-mutation-free */
                     function foo(&...$s) : void {}
 
                     $c = 3;

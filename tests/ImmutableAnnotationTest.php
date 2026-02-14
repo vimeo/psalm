@@ -411,6 +411,7 @@ final class ImmutableAnnotationTest extends TestCase
                     class Item {
                         private int $i = 0;
 
+                        /** @psalm-external-mutation-free */
                         public function mutate(): void {
                             $this->i++;
                         }
@@ -518,6 +519,7 @@ final class ImmutableAnnotationTest extends TestCase
                     class Item {
                         private int $i = 0;
 
+                        /** @psalm-external-mutation-free */
                         public function mutate(): void {
                             $this->i++;
                         }
@@ -734,6 +736,7 @@ final class ImmutableAnnotationTest extends TestCase
             ],
             'couldBePure' => [
                 'code' => '<?php
+                    /** @psalm-pure */
                     function couldBePure(int $a) : int {
                         return $a * 2;
                     }',
@@ -843,6 +846,7 @@ final class ImmutableAnnotationTest extends TestCase
 
                         /**
                          * @return mixed
+                         * @psalm-mutation-free
                          */
                         public function bar()
                         {

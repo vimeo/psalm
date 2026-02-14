@@ -405,7 +405,8 @@ final class IncludeTest extends TestCase
 
                         use Foo\A;
 
-                        /** @return A */
+                        /** @return A
+                         * @psalm-pure */
                         function getThing() {
                             return new A;
                         }',
@@ -534,6 +535,7 @@ final class IncludeTest extends TestCase
                         cons;
 
                         class Base {
+                            /** @psalm-mutation-free */
                             public function __construct() {}
                         }',
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'Child.php' => '<?php

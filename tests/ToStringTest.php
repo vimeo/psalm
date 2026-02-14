@@ -290,8 +290,10 @@ final class ToStringTest extends TestCase
                         }
                     }
 
-                    /** @param string|int $b */
-                    /** @psalm-mutation-free */
+                    /** 
+                     * @param string|int $b
+                     * @psalm-mutation-free 
+                     */
                     function fooFoo($b): void {}
                     fooFoo(new A());',
                 'error_message' => 'ImplicitToStringCast',
@@ -302,6 +304,7 @@ final class ToStringTest extends TestCase
                         public function __toString();
                     }
 
+                    /** @psalm-mutation-free */
                     function takesString(string $str): void { }
 
                     function takesI(I $i): void

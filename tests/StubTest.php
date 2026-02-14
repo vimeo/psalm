@@ -626,8 +626,8 @@ final class StubTest extends TestCase
             '<?php
                 /**
                  * @param string ...$bar
+                 * @psalm-mutation-free 
                  */
-                /** @psalm-mutation-free */
                 function variadic() : void {}
                 variadic("hello");',
         );
@@ -768,12 +768,13 @@ final class StubTest extends TestCase
             '<?php
                 namespace ClassAliasStubTest;
 
-                /** @psalm-mutation-free */
+                /** @psalm-pure */
                 function foo(A $a) : void {}
 
                 foo(new B());
                 foo(new C());
 
+                /** @psalm-mutation-free */
                 function bar(B $b) : void {}
 
                 bar(new A());
@@ -986,6 +987,7 @@ final class StubTest extends TestCase
             '<?php
                 class C implements I1, I2, I3, I4 {}
 
+                /** @psalm-mutation-free */
                 function foo(I5 $d) : void {
                     $d->getMessage();
                 }
@@ -994,6 +996,7 @@ final class StubTest extends TestCase
                     $d->getMessage();
                 }
 
+                /** @psalm-mutation-free */
                 function bat(I7 $d) : void {
                     $d->getMessage();
                 }

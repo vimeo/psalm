@@ -119,6 +119,7 @@ final class ReportOutputTest extends TestCase
     {
         $file_contents = <<<'EOF'
         <?php
+        /** @psalm-pure */
         function psalmCanVerify(int $your_code): ?string {
           return $as_you_____type;
         }

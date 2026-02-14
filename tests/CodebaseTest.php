@@ -270,8 +270,10 @@ final class CodebaseTest extends TestCase
             '<?php
                 namespace Psalm\CurrentTest;
 
-                /** @psalm-suppress InvalidReturnType */
-                /** @psalm-pure */
+                /**
+                 * @psalm-suppress InvalidReturnType
+                 * @psalm-pure
+                 */
                 function invalidReturnType(int $value): string
                 {
                     /** @psalm-suppress InvalidReturnStatement */

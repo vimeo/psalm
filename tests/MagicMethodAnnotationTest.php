@@ -763,6 +763,7 @@ final class MagicMethodAnnotationTest extends TestCase
                     class A {
                         /**
                          * @return static
+                         * @psalm-mutation-free
                          */
                         public static function foo()
                         {

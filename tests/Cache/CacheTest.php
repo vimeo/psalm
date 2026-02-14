@@ -292,6 +292,7 @@ final class CacheTest extends TestCase
                                 public function __construct(private string $foo)
                                 {
                                 }
+                                /** @psalm-mutation-free */
                                 public function bar(): string
                                 {
                                     return $this->foo;
@@ -312,6 +313,7 @@ final class CacheTest extends TestCase
                                 public function __construct()
                                 {
                                 }
+                                /** @psalm-mutation-free */
                                 public function bar(): string
                                 {
                                     return $this->foo;
