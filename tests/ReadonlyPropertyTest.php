@@ -208,7 +208,7 @@ final class ReadonlyPropertyTest extends TestCase
 
                     $a = new A();
                     $a->bar = "goodbye";',
-                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:21',
+                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:21',
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
