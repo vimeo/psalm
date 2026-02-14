@@ -690,8 +690,10 @@ final class UnusedCodeTest extends TestCase
             ],
             'functionUsedAsArrayKeyInc' => [
                 'code' => '<?php
-                    /** @param array<int, int> $arr */
-                    /** @psalm-pure */
+                    /**
+                     * @param array<int, int> $arr
+                     * @psalm-pure
+                     */
                     function inc(array $arr) : array {
                         $arr[strlen("hello")]++;
                         return $arr;
