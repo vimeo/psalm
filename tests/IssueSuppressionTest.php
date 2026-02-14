@@ -87,7 +87,10 @@ final class IssueSuppressionTest extends TestCase
         $this->addFile(
             (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php',
             '<?php
-                /** @psalm-suppress all */
+                /** 
+                 * @psalm-suppress all
+                 * @psalm-mutation-free
+                 */
                 function foo(): string {
                     return "foo";
                 }',
@@ -117,7 +120,7 @@ final class IssueSuppressionTest extends TestCase
         $this->addFile(
             (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php',
             '<?php
-                /** @psalm-pure */
+                /** @psalm-mutation-free */
                 function example1 (): void {
                     /** @psalm-suppress MissingThrowsDocblock */
                     throw new Exception();
@@ -166,7 +169,10 @@ final class IssueSuppressionTest extends TestCase
         $this->addFile(
             (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php',
             '<?php
-                /** @psalm-suppress MissingThrowsDocblock */
+                /**
+                 * @psalm-mutation-free 
+                 * @psalm-suppress MissingThrowsDocblock 
+                 */
                 function example1 (): void {
                     /** @psalm-suppress MissingThrowsDocblock */
                     throw new Exception();
