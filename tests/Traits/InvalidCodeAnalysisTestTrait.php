@@ -88,18 +88,18 @@ trait InvalidCodeAnalysisTestTrait
 
             Config::getInstance()->setCustomErrorLevel($issue_name, $error_level);
         }
-        if (!$this instanceof PureAnnotationTest
-            && !$this instanceof PureCallableTest
-            && !$this instanceof PureAnnotationAdditionTest
-            && !$this instanceof ImmutableAnnotationTest
+        if ($this instanceof PureAnnotationTest
+            || $this instanceof PureCallableTest
+            || $this instanceof PureAnnotationAdditionTest
+            || $this instanceof ImmutableAnnotationTest
         ) {
             Config::getInstance()->setCustomErrorLevel(
                 'MissingImmutableAnnotation',
-                Config::REPORT_SUPPRESS
+                Config::REPORT_ERROR
             );
             Config::getInstance()->setCustomErrorLevel(
                 'MissingPureAnnotation',
-                Config::REPORT_SUPPRESS
+                Config::REPORT_ERROR
             );
         }
 

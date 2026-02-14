@@ -7,6 +7,7 @@ namespace Psalm\Tests\Traits;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Tests\FileManipulation\PureAnnotationAdditionTest;
+use Psalm\Tests\ImmutableAnnotationTest;
 use Psalm\Tests\PureAnnotationTest;
 use Psalm\Tests\PureCallableTest;
 
@@ -101,17 +102,18 @@ trait InvalidCodeAnalysisWithIssuesTestTrait
             Config::getInstance()->setCustomErrorLevel($issue_name, $error_level);
         }
 
-        if (!$this instanceof PureAnnotationTest
-            && !$this instanceof PureCallableTest
-            && !$this instanceof PureAnnotationAdditionTest
+        if ($this instanceof PureAnnotationTest
+            || $this instanceof PureCallableTest
+            || $this instanceof PureAnnotationAdditionTest
+            || $this instanceof ImmutableAnnotationTest
         ) {
             Config::getInstance()->setCustomErrorLevel(
                 'MissingImmutableAnnotation',
-                Config::REPORT_SUPPRESS
+                Config::REPORT_ERROR
             );
             Config::getInstance()->setCustomErrorLevel(
                 'MissingPureAnnotation',
-                Config::REPORT_SUPPRESS
+                Config::REPORT_ERROR
             );
         }
 
