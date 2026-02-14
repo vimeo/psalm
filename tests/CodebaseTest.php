@@ -146,7 +146,11 @@ final class CodebaseTest extends TestCase
                     /** @var string */
                     private $prop = "";
 
-                    /** @return void */
+                    /**
+                     * @psalm-mutation-free
+                     *  
+                     * @return void
+                     */
                     public function m(int $_i = 1) {}
                 }
             ',

@@ -233,6 +233,7 @@ final class ImmutableAnnotationTest extends TestCase
                     class A {
                         private string $a;
 
+                        /** @psalm-mutation-free */
                         public function __construct(string $a) {
                             $this->a = $a;
                         }
@@ -285,6 +286,7 @@ final class ImmutableAnnotationTest extends TestCase
             ],
             'memoizeImmutableCalls' => [
                 'code' => '<?php
+                    /** @psalm-mutation-free */
                     function takesString(string $s) : void {}
 
                     /**

@@ -366,10 +366,11 @@ final class StubTest extends TestCase
                     function create(string $s) {}
 
                     /**
+                     * @psalm-mutation-free
                      * @return mixed
                      * @psalm-suppress InvalidReturnType
                      */
-                    function create2(string $s) {}
+                     function create2(string $s) {}
 
                     /**
                      * @param mixed $s
@@ -992,6 +993,7 @@ final class StubTest extends TestCase
                     $d->getMessage();
                 }
 
+                /** @psalm-mutation-free */
                 function bar(I6 $d) : void {
                     $d->getMessage();
                 }
@@ -1115,6 +1117,7 @@ final class StubTest extends TestCase
 
                 class PartiallyStubbedClass  {
                     /**
+                     * @psalm-pure
                      * @param string $a
                      * @return object
                      */
