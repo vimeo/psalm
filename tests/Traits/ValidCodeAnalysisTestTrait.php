@@ -7,6 +7,7 @@ namespace Psalm\Tests\Traits;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Tests\FileManipulation\PureAnnotationAdditionTest;
+use Psalm\Tests\ImmutableAnnotationTest;
 use Psalm\Tests\PureAnnotationTest;
 use Psalm\Tests\PureCallableTest;
 
@@ -82,6 +83,7 @@ trait ValidCodeAnalysisTestTrait
         if (!$this instanceof PureAnnotationTest
             && !$this instanceof PureCallableTest
             && !$this instanceof PureAnnotationAdditionTest
+            && !$this instanceof ImmutableAnnotationTest
         ) {
             Config::getInstance()->setCustomErrorLevel(
                 'MissingImmutableAnnotation',
