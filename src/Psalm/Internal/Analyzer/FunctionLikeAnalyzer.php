@@ -533,7 +533,19 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $this->signalMutation(
                     Mutations::LEVEL_INTERNAL_READ,
                     $context,
-                    'pure function cannot have void return type',
+                    'pure functions cannot have void return type',
+                    ImpureFunctionCall::class,
+                    $this->function,
+                    null,
+                    true,
+                );
+            }
+
+            if (!$storage->params) {
+                $this->signalMutation(
+                    Mutations::LEVEL_INTERNAL_READ,
+                    $context,
+                    'pure functions must have parameters',
                     ImpureFunctionCall::class,
                     $this->function,
                     null,
