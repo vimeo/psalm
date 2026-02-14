@@ -128,7 +128,6 @@ final class IncludeTest extends TestCase
                 'files_to_check' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
                 ],
-                'ignored_issues' => ['MissingPureAnnotation'],
             ],
             'requireSingleStringType' => [
                 'files' => [
@@ -152,7 +151,6 @@ final class IncludeTest extends TestCase
                 'files_to_check' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
                 ],
-                'ignored_issues' => ['MissingPureAnnotation'],
             ],
             'nestedRequire' => [
                 'files' => [
@@ -201,7 +199,6 @@ final class IncludeTest extends TestCase
                 'files_to_check' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
                 ],
-                'ignored_issues' => ['MissingPureAnnotation'],
             ],
             'requireFunction' => [
                 'files' => [
@@ -273,7 +270,6 @@ final class IncludeTest extends TestCase
                 'files_to_check' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
                 ],
-                'ignored_issues' => ['MissingPureAnnotation'],
             ],
             'noInfiniteRequireLoop' => [
                 'files' => [
@@ -446,7 +442,6 @@ final class IncludeTest extends TestCase
                 'files_to_check' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
                 ],
-                'ignored_issues' => ['MissingPureAnnotation'],
             ],
             'closureInIncludedFile' => [
                 'files' => [
