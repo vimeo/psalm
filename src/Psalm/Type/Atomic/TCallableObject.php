@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Type\Atomic;
 
 use Override;
+use Psalm\Storage\Mutations;
 
 /**
  * Denotes an object that is also `callable` (i.e. it has `__invoke` defined).
@@ -31,11 +32,17 @@ final class TCallableObject extends TObject
     public function getKey(bool $include_extra = true): string
     {
         $key = 'callable-object';
+        $prefix = 'impure-';
         if ($this->callable !== null) {
+            $prefix = match ($this->callable->allowed_mutations) {
+                Mutations::LEVEL_NONE => 'pure-',
+                Mutations::LEVEL_INTERNAL_READ => 'self-accessing-',
+                Mutations::LEVEL_INTERNAL_READ_WRITE => 'self-mutating-',
+                Mutations::LEVEL_EXTERNAL => 'impure-',
+            };
             $key .= $this->callable->getParamString() . $this->callable->getReturnTypeString();
         }
-
-        return $key;
+        return $prefix . $key;
     }
 
     /**

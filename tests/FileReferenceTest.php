@@ -144,7 +144,7 @@ final class FileReferenceTest extends TestCase
 
                     (new A())->foo();',
                 'A::foo',
-                ['6:32:foo'],
+                ['7:32:foo'],
             ],
         ];
     }

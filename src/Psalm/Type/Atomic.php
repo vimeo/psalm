@@ -361,8 +361,17 @@ abstract class Atomic implements TypeNode, Stringable
 
                 return new TNamedObject($value);
 
+            case 'impure-callable-object':
             case 'callable-object':
                 return new TCallableObject();
+            case 'self-mutating-callable-object':
+                return new TCallableObject(
+                    callable: new TCallable(allowed_mutations: Mutations::LEVEL_INTERNAL_READ_WRITE),
+                );
+            case 'self-accessing-callable-object':
+                return new TCallableObject(
+                    callable: new TCallable(allowed_mutations: Mutations::LEVEL_INTERNAL_READ),
+                );
 
             case 'stringable-object':
                 return new TObjectWithProperties([], ['__tostring' => 'string']);

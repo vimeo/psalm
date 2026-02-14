@@ -142,7 +142,6 @@ final class CacheTest extends TestCase
                         'src/A.php' => <<<'PHP'
                             <?php
                             final class A {
-                                /** @psalm-mutation-free */
                                 public function do(B $b): void
                                 {
                                     $b->do();
@@ -167,7 +166,6 @@ final class CacheTest extends TestCase
                     'issues' => [
                         'src/A.php' => [
                             'UndefinedClass: Class, interface or enum named B does not exist',
-                            'MissingPureAnnotation: do must be marked @psalm-mutation-free to aid security analysis, run with --alter --issues=MissingPureAnnotation to fix this'
                         ],
                     ],
                 ],
@@ -181,7 +179,6 @@ final class CacheTest extends TestCase
                         'src/A.php' => <<<'PHP'
                             <?php
                             final class A {
-                                /** @psalm-mutation-free */
                                 public function foo(B $b): int
                                 {
                                     return $b->value;
@@ -228,7 +225,6 @@ final class CacheTest extends TestCase
                              */
                             final class A {
                                 /**
-                                 * @psalm-mutation-free
                                  * @param T $baz
                                  */
                                 public function foo($baz): void
@@ -240,7 +236,6 @@ final class CacheTest extends TestCase
                             <?php
 
                             final class B {
-                                /** @psalm-mutation-free */
                                 public function foo(): void
                                 {
                                     (new A)->foo(1);
@@ -260,7 +255,6 @@ final class CacheTest extends TestCase
                              */
                             final class A {
                                 /**
-                                 * @psalm-mutation-free
                                  * @param T $baz
                                  */
                                 public function foo($baz): void
@@ -287,12 +281,10 @@ final class CacheTest extends TestCase
                     'files' => [
                         'src/A.php' => <<<'PHP'
                             <?php
-                            /** @psalm-immutable */
                             final class A {
                                 public function __construct(private string $foo)
                                 {
                                 }
-                                /** @psalm-mutation-free */
                                 public function bar(): string
                                 {
                                     return $this->foo;
@@ -306,14 +298,11 @@ final class CacheTest extends TestCase
                     'files' => [
                         'src/A.php' => <<<'PHP'
                             <?php
-                            /** @psalm-immutable */
                             final class A
                             {
-                                /** @psalm-mutation-free */
                                 public function __construct()
                                 {
                                 }
-                                /** @psalm-mutation-free */
                                 public function bar(): string
                                 {
                                     return $this->foo;

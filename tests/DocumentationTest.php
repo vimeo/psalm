@@ -238,16 +238,16 @@ final class DocumentationTest extends TestCase
         foreach ($ignored_issues as $error_level) {
             $this->project_analyzer->getCodebase()->config->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
         }
-        if ($error_message !== 'MissingImmutableAnnotation') {
+        if ($error_message === 'MissingImmutableAnnotation') {
             Config::getInstance()->setCustomErrorLevel(
                 'MissingImmutableAnnotation',
-                Config::REPORT_SUPPRESS
+                Config::REPORT_ERROR
             );
         }
-        if ($error_message !== 'MissingPureAnnotation') {
+        if ($error_message === 'MissingPureAnnotation') {
             Config::getInstance()->setCustomErrorLevel(
                 'MissingPureAnnotation',
-                Config::REPORT_SUPPRESS
+                Config::REPORT_ERROR
             );
         }
 

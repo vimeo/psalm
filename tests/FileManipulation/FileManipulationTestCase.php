@@ -46,6 +46,14 @@ abstract class FileManipulationTestCase extends TestCase
         }
 
         $config = new TestConfig();
+        $config->setCustomErrorLevel(
+            'MissingImmutableAnnotation',
+            TestConfig::REPORT_ERROR
+        );
+        $config->setCustomErrorLevel(
+            'MissingPureAnnotation',
+            TestConfig::REPORT_ERROR
+        );
 
         $this->project_analyzer = new ProjectAnalyzer(
             $config,
