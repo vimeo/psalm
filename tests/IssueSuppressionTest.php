@@ -364,7 +364,6 @@ final class IssueSuppressionTest extends TestCase
                     class C {
                         private ?DateTime $mightBeNull = null;
 
-                        /** @psalm-mutation-free */
                         public function m(): string {
                             return $this->mightBeNull->format("");
                         }
