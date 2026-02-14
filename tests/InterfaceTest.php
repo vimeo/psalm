@@ -684,7 +684,10 @@ final class InterfaceTest extends TestCase
             'correctClassCasing' => [
                 'code' => '<?php
                     interface F {
-                        /** @return static */
+                        /**
+                         * @return static
+                         * @psalm-mutation-free
+                         */
                         public function m(): self;
                     }
 

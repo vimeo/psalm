@@ -29,6 +29,7 @@ final class DateTimeTest extends TestCase
             '<?php
 
                 /**
+                 * @psalm-mutation-free
                  * @return "foo"|"bar"
                  */
                 function getString(): string

@@ -595,6 +595,7 @@ final class PluginTest extends TestCase
 
                 interface I {}
                 class Foo2 implements I {
+                    /** @psalm-mutation-free */
                     public function id(): int { return 1; }
                 }
 
