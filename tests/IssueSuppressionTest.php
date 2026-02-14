@@ -120,7 +120,7 @@ final class IssueSuppressionTest extends TestCase
         $this->addFile(
             (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php',
             '<?php
-                /** @psalm-mutation-free */
+                /** @psalm-suppress MissingPureAnnotation */
                 function example1 (): void {
                     /** @psalm-suppress MissingThrowsDocblock */
                     throw new Exception();

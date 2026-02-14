@@ -70,6 +70,8 @@ final class ErrorFixTest extends TestCase
         foreach ($ignored_issues as $error_type => $error_level) {
             $config->setCustomErrorLevel($error_type, $error_level);
         }
+        $config->setCustomErrorLevel('MissingImmutableAnnotation', Config::REPORT_SUPPRESS);
+        $config->setCustomErrorLevel('MissingPureAnnotation', Config::REPORT_SUPPRESS);
 
         $analyzed_files = [];
 

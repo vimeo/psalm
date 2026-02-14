@@ -359,6 +359,7 @@ final class StubTest extends TestCase
                 }
                 namespace {
                     /**
+                     * @psalm-mutation-free
                      * @return mixed
                      * @psalm-suppress InvalidReturnType
                      */
@@ -626,6 +627,7 @@ final class StubTest extends TestCase
                 /**
                  * @param string ...$bar
                  */
+                /** @psalm-mutation-free */
                 function variadic() : void {}
                 variadic("hello");',
         );
@@ -766,6 +768,7 @@ final class StubTest extends TestCase
             '<?php
                 namespace ClassAliasStubTest;
 
+                /** @psalm-mutation-free */
                 function foo(A $a) : void {}
 
                 foo(new B());
@@ -1225,6 +1228,7 @@ final class StubTest extends TestCase
             '<?php
                 class A {
                     /**
+                     * @psalm-pure
                      * @param int $id
                      * @param ?int $lockMode
                      * @param ?int $lockVersion
