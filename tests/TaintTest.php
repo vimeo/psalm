@@ -159,6 +159,7 @@ final class TaintTest extends TestCase
                             $pdo->exec("delete from users where user_id = " . $userId);
                         }
 
+                        /** @psalm-mutation-free */
                         public function getSafeId() : string {
                             return "5";
                         }
@@ -181,6 +182,7 @@ final class TaintTest extends TestCase
                             );
                         }
 
+                        /** @psalm-pure */
                         public function getAppendedUserId(string $user_id) : string {
                             return "aaa" . $user_id;
                         }
@@ -195,6 +197,7 @@ final class TaintTest extends TestCase
                 'code' => '<?php
                     /**
                      * @psalm-assert-untainted $userId
+                     * @psalm-pure
                      */
                     function validateUserId(string $userId) : void {
                         if (!is_numeric($userId)) {
@@ -274,6 +277,7 @@ final class TaintTest extends TestCase
             'taintFilterVar' => [
                 'code' => '<?php
                     /** @psalm-taint-sink input_except_sleep $value */
+                    /** @psalm-mutation-free */
                     function taintSink(mixed $value): void {}
 
                     taintSink(filter_var($_GET["bad"], FILTER_VALIDATE_INT));
@@ -419,6 +423,7 @@ final class TaintTest extends TestCase
                         public string $id;
                         public $name = "Luke";
 
+                        /** @psalm-external-mutation-free */
                         public function __construct(string $userId) {
                             $this->id = $userId;
                         }
@@ -443,6 +448,7 @@ final class TaintTest extends TestCase
                     class User {
                         public string $id;
 
+                        /** @psalm-external-mutation-free */
                         public function __construct(string $userId) {
                             $this->id = $userId;
                         }
@@ -520,6 +526,7 @@ final class TaintTest extends TestCase
 
                     class StringRenderer {
                         /** @psalm-taint-specialize */
+                        /** @psalm-pure */
                         public function render(string $x) {
                             return $x;
                         }
@@ -539,6 +546,7 @@ final class TaintTest extends TestCase
                     }
 
                     /** @psalm-suppress InvalidReturnType */
+                    /** @psalm-mutation-free */
                     function stub(): StringRenderer { }
 
                     $notEchoed = stub()->render($_GET["untrusted"]);
@@ -643,6 +651,7 @@ final class TaintTest extends TestCase
                 'code' => '<?php
                     /**
                      * @psalm-taint-escape ($escape is true ? "html" : null)
+                     * @psalm-pure
                      */
                     function foo(string $string, bool $escape = true): string {
                         if ($escape) {
@@ -784,6 +793,7 @@ final class TaintTest extends TestCase
                 'code' => '<?php
                     /**
                      * @psalm-taint-escape xpath
+                     * @psalm-mutation-free
                      */
                     function my_escaping_function_for_xpath(string $input) : string {};
 
@@ -797,6 +807,7 @@ final class TaintTest extends TestCase
                 'code' => '<?php
                     /**
                      * @psalm-taint-escape sleep
+                     * @psalm-mutation-free
                      */
                     function my_escaping_function_for_seconds(mixed $input) : int {};
 
@@ -1348,6 +1359,7 @@ final class TaintTest extends TestCase
                     class O1 {
                         public string $s;
 
+                        /** @psalm-external-mutation-free */
                         public function __construct() {
                             $this->s = (string) $_GET["FOO"];
                         }

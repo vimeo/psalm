@@ -1831,7 +1831,10 @@ final class AnnotationTest extends TestCase
             ],
             'objectWithPropertiesAnnotationNoMatchingProperty' => [
                 'code' => '<?php
-                    /** @param object{foo:string} $o */
+                    /** 
+                     * @param object{foo:string} $o
+                     * @psalm-mutation-free
+                      */
                     function foo(object $o) : string {
                         return $o->foo;
                     }
@@ -1862,7 +1865,10 @@ final class AnnotationTest extends TestCase
             ],
             'nonEmptyArrayCalledWithEmpty' => [
                 'code' => '<?php
-                    /** @param non-empty-array<string> $arr */
+                    /** 
+                     * @param non-empty-array<string> $arr 
+                     * @psalm-mutation-free
+                     */
                     function foo(array $arr) : void {
                         foreach ($arr as $a) {}
                         echo $a;
@@ -1875,7 +1881,10 @@ final class AnnotationTest extends TestCase
                 'code' => '<?php
                     namespace ns;
 
-                    /** @param non-empty-array<string> $arr */
+                    /** 
+                     * @param non-empty-array<string> $arr
+                     * @psalm-mutation-free
+                     */
                     function foo(array $arr) : void {
                         foreach ($arr as $a) {}
                         echo $a;
@@ -1918,6 +1927,7 @@ final class AnnotationTest extends TestCase
                      * @param string &...$s
                      * @psalm-suppress UnusedParam
                      */
+                    /** @psalm-mutation-free */
                     function foo(&...$s) : void {}
 
                     $a = 1;
@@ -1930,6 +1940,7 @@ final class AnnotationTest extends TestCase
                      * @param string ...&$s
                      * @psalm-suppress UnusedParam
                      */
+                    /** @psalm-mutation-free */
                     function foo(&...$s) : void {}
 
                     $b = 2;
@@ -1942,6 +1953,7 @@ final class AnnotationTest extends TestCase
                      * @param string[] &$s
                      * @psalm-suppress UnusedParam
                      */
+                    /** @psalm-mutation-free */
                     function foo(&...$s) : void {}
 
                     $c = 3;

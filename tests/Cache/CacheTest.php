@@ -142,6 +142,7 @@ final class CacheTest extends TestCase
                         'src/A.php' => <<<'PHP'
                             <?php
                             final class A {
+                                /** @psalm-mutation-free */
                                 public function do(B $b): void
                                 {
                                     $b->do();

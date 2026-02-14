@@ -190,6 +190,7 @@ final class AddTaintsInterfaceTest extends TestCase
             $file_path,
             '<?php // --taint-analysis
 
+            /** @psalm-pure */
             function genBadData() {
                 return $bad_html;
             }
@@ -214,6 +215,7 @@ final class AddTaintsInterfaceTest extends TestCase
             $file_path,
             '<?php // --taint-analysis
 
+            /** @psalm-mutation-free */
             function genBadData(bool $html) {
                 if ($html) {
                     return $bad_html;
@@ -242,6 +244,7 @@ final class AddTaintsInterfaceTest extends TestCase
             '<?php // --taint-analysis
 
             class Foo {
+                /** @psalm-mutation-free */
                 public function genBadData() {
                     return $bad_html;
                 }
@@ -268,6 +271,7 @@ final class AddTaintsInterfaceTest extends TestCase
             '<?php // --taint-analysis
 
             class Foo {
+                /** @psalm-mutation-free */
                 public static function genBadData() {
                     return $bad_html;
                 }

@@ -119,6 +119,7 @@ final class IncludeTest extends TestCase
                         }',
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
                         class A{
+                            /** @psalm-mutation-free */
                             public function fooFoo(): void {
 
                             }
@@ -141,6 +142,7 @@ final class IncludeTest extends TestCase
                         }',
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
                         class A{
+                            /** @psalm-mutation-free */
                             public function fooFoo(): void {
 
                             }
@@ -154,6 +156,7 @@ final class IncludeTest extends TestCase
                 'files' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
                         class A{
+                            /** @psalm-mutation-free */
                             public function fooFoo(): void {
 
                             }
@@ -199,6 +202,7 @@ final class IncludeTest extends TestCase
             'requireFunction' => [
                 'files' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        /** @psalm-mutation-free */
                         function fooFoo(): void {
 
                         }',
@@ -214,6 +218,7 @@ final class IncludeTest extends TestCase
             'namespacedRequireFunction' => [
                 'files' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        /** @psalm-mutation-free */
                         function fooFoo(): void {
 
                         }',
@@ -284,6 +289,7 @@ final class IncludeTest extends TestCase
                         require_once("file3.php");
 
                         class A{
+                            /** @psalm-mutation-free */
                             public function fooFoo(): void { }
                         }
 
@@ -312,11 +318,13 @@ final class IncludeTest extends TestCase
                             }
                         }
                         class C {
+                            /** @psalm-mutation-free */
                             public function barBar(): void { }
                         }',
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
                         require_once("file1.php");
                         class A{
+                            /** @psalm-mutation-free */
                             public function fooFoo(): void { }
                         }
                         class D extends C {
@@ -354,6 +362,7 @@ final class IncludeTest extends TestCase
                         require_once("file2.php");
                         variadicArgs(5, 2, "hello");',
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
+                        /** @psalm-mutation-free */
                         function variadicArgs() : void {
                             $args = func_get_args();
                         }',
@@ -386,6 +395,7 @@ final class IncludeTest extends TestCase
                         namespace Foo;
 
                         class A{
+                            /** @psalm-mutation-free */
                             function doThing() : void {}
                         }',
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
@@ -510,6 +520,7 @@ final class IncludeTest extends TestCase
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'func.php' => '<?php
                         namespace ns;
 
+                        /** @psalm-mutation-free */
                         function func(): void {}
 
                         define("ns\\cons", 0);
@@ -586,6 +597,7 @@ final class IncludeTest extends TestCase
                         bar();
                         ',
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        /** @psalm-mutation-free */
                         function bar(): void {}
                         ',
                 ],
@@ -639,6 +651,7 @@ final class IncludeTest extends TestCase
                         ',
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'include_1.php' => '<?php
                         class Class_1 {
+                            /** @psalm-mutation-free */
                             public static function foo(): void {
                                 // empty;
                             }
@@ -899,6 +912,7 @@ final class IncludeTest extends TestCase
                         bar();
                         ',
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        /** @psalm-mutation-free */
                         function bar(): void {}
                         ',
                 ],
