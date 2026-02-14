@@ -26,9 +26,6 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                         }
                     }',
                 'output' => '<?php
-                    /**
-                     * @psalm-immutable
-                     */
                     class A {
                         public int $i;
 

@@ -128,6 +128,7 @@ final class IncludeTest extends TestCase
                 'files_to_check' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
                 ],
+                'ignored_issues' => ['MissingPureAnnotation'],
             ],
             'requireSingleStringType' => [
                 'files' => [
@@ -151,6 +152,7 @@ final class IncludeTest extends TestCase
                 'files_to_check' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
                 ],
+                'ignored_issues' => ['MissingPureAnnotation'],
             ],
             'nestedRequire' => [
                 'files' => [
@@ -170,6 +172,7 @@ final class IncludeTest extends TestCase
                         require("file2.php");
 
                         class C extends B {
+                            /** @psalm-mutation-free */
                             public function doFoo(): void {
                                 $this->fooFoo();
                             }
@@ -198,6 +201,7 @@ final class IncludeTest extends TestCase
                 'files_to_check' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
                 ],
+                'ignored_issues' => ['MissingPureAnnotation'],
             ],
             'requireFunction' => [
                 'files' => [
@@ -269,6 +273,7 @@ final class IncludeTest extends TestCase
                 'files_to_check' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
                 ],
+                'ignored_issues' => ['MissingPureAnnotation'],
             ],
             'noInfiniteRequireLoop' => [
                 'files' => [
@@ -277,6 +282,7 @@ final class IncludeTest extends TestCase
                         require_once("file3.php");
 
                         class B extends A {
+                            /** @psalm-mutation-free */
                             public function doFoo(): void {
                                 $this->fooFoo();
                             }
@@ -328,6 +334,7 @@ final class IncludeTest extends TestCase
                             public function fooFoo(): void { }
                         }
                         class D extends C {
+                            /** @psalm-mutation-free */
                             public function doBar(): void {
                                 $this->barBar();
                             }
@@ -405,8 +412,7 @@ final class IncludeTest extends TestCase
 
                         use Foo\A;
 
-                        /** @return A
-                         * @psalm-pure */
+                        /** @return A */
                         function getThing() {
                             return new A;
                         }',
@@ -440,6 +446,7 @@ final class IncludeTest extends TestCase
                 'files_to_check' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
                 ],
+                'ignored_issues' => ['MissingPureAnnotation'],
             ],
             'closureInIncludedFile' => [
                 'files' => [
@@ -551,6 +558,7 @@ final class IncludeTest extends TestCase
                              */
                             public $x;
 
+                            /** @psalm-external-mutation-free */
                             public function __construct() {
                                 parent::__construct();
 
@@ -660,6 +668,7 @@ final class IncludeTest extends TestCase
                         }',
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'a' . DIRECTORY_SEPARATOR . 'include_2.php' => '<?php
                         class Class_2 {
+                            /** @psalm-mutation-free */
                             public static function bar(): void {
                                 // empty;
                             }
@@ -694,6 +703,7 @@ final class IncludeTest extends TestCase
                             }
                         }',
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        /** @psalm-suppress MissingPureAnnotation */
                         class A{
                             public function fooFoo(): void {
 
@@ -708,6 +718,7 @@ final class IncludeTest extends TestCase
             'requireFunctionWithStrictTypes' => [
                 'files' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        /** @psalm-suppress MissingPureAnnotation */
                         function fooFoo(int $bar): void {
 
                         }',
@@ -724,6 +735,7 @@ final class IncludeTest extends TestCase
             'requireFunctionWithStrictTypesInClass' => [
                 'files' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        /** @psalm-suppress MissingPureAnnotation */
                         function fooFoo(int $bar): void {
 
                         }',
@@ -744,6 +756,7 @@ final class IncludeTest extends TestCase
             'requireFunctionWithWeakTypes' => [
                 'files' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        /** @psalm-suppress MissingPureAnnotation */
                         function fooFoo(int $bar): void {
 
                         }',
@@ -760,7 +773,10 @@ final class IncludeTest extends TestCase
             'requireFunctionWithStrictTypesButDocblockType' => [
                 'files' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
-                        /** @param int $bar */
+                        /**
+                         * @param int $bar
+                         * @psalm-suppress MissingPureAnnotation
+                         */
                         function fooFoo($bar): void {
 
                         }',
@@ -777,6 +793,7 @@ final class IncludeTest extends TestCase
             'namespacedRequireFunction' => [
                 'files' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        /** @psalm-suppress MissingPureAnnotation */
                         function fooFoo(): void {
 
                         }',
@@ -820,6 +837,7 @@ final class IncludeTest extends TestCase
                             use A;
                         }',
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        /** @psalm-suppress MissingPureAnnotation */
                         trait A{
                             public function fooFoo(): string {
                                 return 5;
@@ -856,6 +874,7 @@ final class IncludeTest extends TestCase
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
                         namespace Bat;
 
+                        /** @psalm-suppress MissingPureAnnotation */
                         trait A{
                             public function fooFoo(): string {
                                 return 5;

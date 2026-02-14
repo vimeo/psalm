@@ -138,6 +138,7 @@ final class FileReferenceTest extends TestCase
             'getMethodLocation' => [
                 '<?php
                     class A {
+                        /** @psalm-pure */
                         public function foo(): void {}
                     }
 
@@ -177,6 +178,7 @@ final class FileReferenceTest extends TestCase
                             A::bat();
                         }
 
+                        /** @psalm-mutation-free */
                         public function bar() : void {
                             (new C)->foo();
                         }
@@ -192,6 +194,7 @@ final class FileReferenceTest extends TestCase
                     class D {
                         /** @var ?string */
                         public $foo;
+                        /** @psalm-pure */
                         public function __construct() {}
                     }
 
@@ -242,7 +245,9 @@ final class FileReferenceTest extends TestCase
                     namespace Foo;
 
                     class A {
+                        /** @psalm-pure */
                         public function __construct() {}
+                        /** @psalm-pure */
                         public static function bar() : void {}
                     }
 
@@ -391,10 +396,12 @@ final class FileReferenceTest extends TestCase
                     namespace Ns;
 
                     abstract class A {
+                        /** @psalm-pure */
                         public function foo() : void {}
                     }
 
                     trait T {
+                        /** @psalm-mutation-free */
                         public function bar(A $a) : void {
                             $a->foo();
                         }

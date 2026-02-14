@@ -603,7 +603,9 @@ final class PluginTest extends TestCase
                  * @method static int magicMethod(string $s)  this method return type gets overridden
                  */
                 class Foo {
+                    /** @psalm-mutation-free */
                     public function __call(string $method_name, array $args) {}
+                    /** @psalm-mutation-free */
                     public static function __callStatic(string $method_name, array $args) {}
                 }
 

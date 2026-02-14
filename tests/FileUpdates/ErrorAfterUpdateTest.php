@@ -419,6 +419,7 @@ final class ErrorAfterUpdateTest extends TestCase
                             namespace Foo;
 
                             trait T {
+                                /** @psalm-mutation-free */
                                 public function __construct() {}
                             }',
                     ],
@@ -438,6 +439,7 @@ final class ErrorAfterUpdateTest extends TestCase
                             namespace Foo;
 
                             trait T {
+                                /** @psalm-mutation-free */
                                 public function __construct() {}
                             }',
                     ],
@@ -485,6 +487,7 @@ final class ErrorAfterUpdateTest extends TestCase
                                 /** @var string */
                                 public $foo;
 
+                                /** @psalm-mutation-free */
                                 public function __construct() {}
                             }',
                     ],

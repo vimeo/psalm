@@ -81,6 +81,9 @@ final class ReportOutputTest extends TestCase
         $vulnerable_file_contents = <<<'EOF'
         <?php
 
+        /**
+         * @psalm-pure
+         */
         function addPrefixToInput(string $prefix, string $input): string {
             return $prefix . $input;
         }

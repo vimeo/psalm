@@ -63,6 +63,7 @@ final class DateTimeTest extends TestCase
             '<?php
 
                 /**
+                 * @psalm-pure
                  * @return "+1 day"|"bar"
                  */
                 function getString(): string
@@ -88,6 +89,9 @@ final class DateTimeTest extends TestCase
         return [
             'modify' => [
                 'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     */
                     function getString(): string
                     {
                         return "";
@@ -106,6 +110,7 @@ final class DateTimeTest extends TestCase
             'modifyWithValidConstant' => [
                 'code' => '<?php
                     /**
+                     * @psalm-pure
                      * @return "+1 day"|"+2 day"
                      */
                     function getString(): string
