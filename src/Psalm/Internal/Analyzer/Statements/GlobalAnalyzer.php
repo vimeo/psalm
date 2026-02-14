@@ -16,6 +16,7 @@ use Psalm\Internal\ReferenceConstraint;
 use Psalm\Issue\ImpureGlobalVariable;
 use Psalm\Issue\InvalidGlobal;
 use Psalm\IssueBuffer;
+use Psalm\Storage\Mutations;
 
 use function is_string;
 
@@ -40,6 +41,19 @@ final class GlobalAnalyzer
             );
         }
 
+        $codebase = $statements_analyzer->getCodebase();
+        $source = $statements_analyzer->getSource();
+        $function_storage = $source instanceof FunctionLikeAnalyzer
+            ? $source->getFunctionLikeStorage($statements_analyzer)
+            : null;
+
+        $statements_analyzer->signalMutation(
+            Mutations::LEVEL_EXTERNAL,
+            $context,
+            'global variable',
+            ImpureGlobalVariable::class,
+            $stmt,
+        );
         if ($context->mutation_free) {
             IssueBuffer::maybeAdd(
                 new ImpureGlobalVariable(
@@ -48,26 +62,6 @@ final class GlobalAnalyzer
                 ),
                 $statements_analyzer->getSuppressedIssues(),
             );
-        }
-
-        $codebase = $statements_analyzer->getCodebase();
-        $source = $statements_analyzer->getSource();
-        $function_storage = $source instanceof FunctionLikeAnalyzer
-            ? $source->getFunctionLikeStorage($statements_analyzer)
-            : null;
-
-        if ($context->pure) {
-            IssueBuffer::maybeAdd(
-                new ImpureVariable(
-                    'Cannot reference global variables in a pure context',
-                    new CodeLocation($statements_analyzer->getSource(), $stmt),
-                ),
-                $statements_analyzer->getSuppressedIssues(),
-            );
-        } elseif ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
-                  && $statements_analyzer->getSource()->track_mutations
-        ) {
-            $statements_analyzer->getSource()->inferred_impure = true;
         }
 
         foreach ($stmt->vars as $var) {
