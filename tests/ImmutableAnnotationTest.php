@@ -703,9 +703,18 @@ final class ImmutableAnnotationTest extends TestCase
             'mustBeImmutableInferred' => [
                 'code' => '<?php
                     interface SomethingThatCouldBeImmutable {
+                        /** @psalm-mutation-free */
                         public function someInteger() : int;
                     }',
                 'error_message' => 'MissingImmutableAnnotation',
+            ],
+            'mustBePure' => [
+                'code' => '<?php
+                    /** @psalm-immutable */
+                    interface test {
+                        public function somePure(int $a) : int;
+                    }',
+                'error_message' => 'somePure must be marked with one of @psalm-pure, @psalm-mutation-free, @psalm-external-mutation-free, @psalm-impure to aid security analysis',
             ],
             'mustBeImmutableLikeInterfaces' => [
                 'code' => '<?php

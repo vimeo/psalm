@@ -578,10 +578,16 @@ final class FunctionLikeDocblockParser
             || isset($parsed_docblock->tags['pure'])
         ) {
             $info->allowed_mutations = Mutations::LEVEL_NONE;
+            $info->has_mutations_annotation = true;
         } elseif (isset($parsed_docblock->tags['psalm-mutation-free'])) {
             $info->allowed_mutations = Mutations::LEVEL_INTERNAL_READ;
+            $info->has_mutations_annotation = true;
         } elseif (isset($parsed_docblock->tags['psalm-external-mutation-free'])) {
             $info->allowed_mutations = Mutations::LEVEL_INTERNAL_READ_WRITE;
+            $info->has_mutations_annotation = true;
+        } elseif (isset($parsed_docblock->tags['psalm-impure'])) {
+            $info->allowed_mutations = Mutations::LEVEL_ALL;
+            $info->has_mutations_annotation = true;
         }
 
         if (isset($parsed_docblock->tags['no-named-arguments'])) {

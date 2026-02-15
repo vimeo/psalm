@@ -484,6 +484,15 @@ foo(
 );
 ```
 
+### `@psalm-impure`
+
+Used to annotate a function that is not pure (nor mutation free, nor externally mutation free): this is the default, but Psalm always asks to explicitly annotate **abstract** methods with one of these four annotations:
+
+- `@psalm-pure`
+- `@psalm-mutation-free`
+- `@psalm-external-mutation-free`
+- `@psalm-impure`
+
 ### `@psalm-allow-private-mutation`
 
 Used to annotate readonly properties that can be mutated in a private context. With this, public properties can be read from another class but only be mutated within a method of its own class.

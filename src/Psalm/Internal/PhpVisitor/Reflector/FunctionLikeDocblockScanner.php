@@ -100,6 +100,7 @@ final class FunctionLikeDocblockScanner
         $config = Config::getInstance();
 
         $storage->allowed_mutations = $docblock_info->allowed_mutations;
+        $storage->has_mutations_annotation = $docblock_info->has_mutations_annotation;
         
         if ($storage instanceof MethodStorage
             && $storage->pure) {
@@ -130,6 +131,7 @@ final class FunctionLikeDocblockScanner
         }
 
         $storage->allowed_mutations = $docblock_info->allowed_mutations;
+        $storage->has_mutations_annotation = $docblock_info->has_mutations_annotation;
 
         if ($docblock_info->allowed_mutations === Mutations::LEVEL_NONE
             || $docblock_info->specialize_call

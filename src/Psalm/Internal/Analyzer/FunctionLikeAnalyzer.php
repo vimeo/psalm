@@ -507,24 +507,27 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             && !$context->collect_initializations
             && !$context->collect_mutations
         ) {
-            $yield_types = [];
+            $real_return = $storage->return_type;
+            if ($real_return === null) {
+                $yield_types = [];
 
-            $inferred_return_types = ReturnTypeCollector::getReturnTypes(
-                $codebase,
-                $type_provider,
-                $function_stmts,
-                $yield_types,
-                true,
-            );
-
-            $inferred_return_type = $inferred_return_types
-                ? Type::combineUnionTypeArray(
-                    $inferred_return_types,
+                $inferred_return_types = ReturnTypeCollector::getReturnTypes(
                     $codebase,
-                )
-                : Type::getVoid();
-            
-            if ($inferred_return_type->isVoid()
+                    $type_provider,
+                    $function_stmts,
+                    $yield_types,
+                    true,
+                );
+
+                $inferred_return_type = $inferred_return_types
+                    ? Type::combineUnionTypeArray(
+                        $inferred_return_types,
+                        $codebase,
+                    )
+                    : Type::getVoid();
+            }
+
+            if ($real_return->isVoid()
                 && !(
                     $storage->throw_locations
                     || $storage->throws
@@ -541,18 +544,29 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 );
             }
 
-            if ($this->inferred_mutations < $storage->allowed_mutations) {
+            if ($this->inferred_mutations < $storage->allowed_mutations
+                || (
+                    $this->inferred_mutations === $storage->allowed_mutations
+                    && !$storage->has_mutations_annotation
+                    && $this->function->stmts === null
+                )
+            ) {
                 $manipulator = FunctionDocblockManipulator::getForFunction(
                     $project_analyzer,
                     $this->source->getFilePath(),
                     $this->function,
                 );
                 if ($storage->location) {
+                    if ($this->function->stmts === null) {
+                        $mark = 'with one of @'.implode(', @', Mutations::TO_ATTRIBUTE_FUNCTIONLIKE);
+                    } else {
+                        $mark = '@'.Mutations::TO_ATTRIBUTE_FUNCTIONLIKE[
+                            $this->inferred_mutations
+                        ];
+                    }
                     IssueBuffer::maybeAdd(
                         new MissingPureAnnotation(
-                            $storage->cased_name . ' must be marked @'.Mutations::TO_ATTRIBUTE_FUNCTIONLIKE[
-                                $this->inferred_mutations
-                            ].' to aid security analysis, run with --alter --issues=MissingPureAnnotation to fix this',
+                            $storage->cased_name . ' must be marked '.$mark.' to aid security analysis, run with --alter --issues=MissingPureAnnotation to fix this',
                             $storage->location,
                         ),
                         $storage->suppressed_issues,

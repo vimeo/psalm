@@ -62,6 +62,6 @@ final class Mutations
         self::LEVEL_NONE => 'psalm-pure',
         self::LEVEL_INTERNAL_READ => 'psalm-mutation-free',
         self::LEVEL_INTERNAL_READ_WRITE => 'psalm-external-mutation-free',
-        //self::LEVEL_EXTERNAL => 'no annotation (impure)',
+        self::LEVEL_EXTERNAL => 'psalm-impure',
     ];
 }

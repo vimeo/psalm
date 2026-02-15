@@ -162,6 +162,8 @@ final class FunctionDocblockComment
     /** @var Mutations::LEVEL_* */
     public int $allowed_mutations = Mutations::LEVEL_ALL;
 
+    public bool $has_mutations_annotation = false;
+
     public bool $no_named_args = false;
 
     public bool $stub_override = false;

@@ -14,6 +14,7 @@ use Psalm\Issue\CodeIssue;
 use Psalm\IssueBuffer;
 use Psalm\NodeTypeProvider;
 use Psalm\StatementsSource;
+use Psalm\Storage\MethodStorage;
 use Psalm\Storage\Mutations;
 use Psalm\Type\Union;
 
@@ -232,8 +233,22 @@ abstract class SourceAnalyzer implements StatementsSource
     public function signalMutationOnlyInferred(
         int $mutation_level,
     ): void {
-        $src = $this->getSource();
+        $src = $this instanceof FunctionLikeAnalyzer
+            ? $this
+            : $this->getSource();
         if ($src instanceof FunctionLikeAnalyzer && $src->track_mutations) {
+            if ($mutation_level <= Mutations::LEVEL_INTERNAL_READ_WRITE
+                && $src->storage instanceof MethodStorage
+                && (
+                    // Allow constructors to mutate (override immutability)
+                    $src->storage->cased_name === '__construct'
+                    
+                    // ???
+                    || $src->storage->mutation_free_inferred
+                )
+            ) {
+                return;
+            }
             $src->inferred_mutations = max($src->inferred_mutations, $mutation_level);
         }
     }
@@ -254,12 +269,7 @@ abstract class SourceAnalyzer implements StatementsSource
     ): bool {
         $inferred_mutation_level ??= $mutation_level;
 
-        $src = $this instanceof FunctionLikeAnalyzer
-            ? $this
-            : $this->getSource();
-        if ($src instanceof FunctionLikeAnalyzer && $src->track_mutations) {
-            $src->inferred_mutations = max($src->inferred_mutations, $inferred_mutation_level);
-        }
+        $this->signalMutationOnlyInferred($inferred_mutation_level);
 
         if ($context->allowed_mutations < $mutation_level
 
