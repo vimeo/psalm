@@ -295,7 +295,7 @@ final class MagicMethodAnnotationTest extends TestCase
                     '$b' => 'mixed',
                     '$c' => 'bool',
                     '$d' => 'array<array-key, int|string>',
-                    '$e' => 'callable():string',
+                    '$e' => 'impure-callable():string',
                 ],
             ],
             'validSimpleAnnotationsWithStatic' => [
@@ -336,7 +336,7 @@ final class MagicMethodAnnotationTest extends TestCase
                     '$b' => 'mixed',
                     '$c' => 'bool',
                     '$d' => 'array<array-key, int|string>',
-                    '$e' => 'callable():string',
+                    '$e' => 'impure-callable():string',
                     '$f' => 'Child',
                 ],
             ],
@@ -763,7 +763,6 @@ final class MagicMethodAnnotationTest extends TestCase
                     class A {
                         /**
                          * @return static
-                         * @psalm-mutation-free
                          */
                         public static function foo()
                         {

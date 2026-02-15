@@ -387,7 +387,7 @@ final class PureAnnotationTest extends TestCase
                             return !!$this->other->other;
                         }
 
-                        /** @psalm-pure */
+                        /** @psalm-mutation-free */
                         public function foo() : void {}
 
                         /** @psalm-mutation-free */

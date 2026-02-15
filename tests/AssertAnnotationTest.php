@@ -3041,7 +3041,7 @@ final class AssertAnnotationTest extends TestCase
                 ',
                 'assertions' => [
                     '$object===' => 'stdClass',
-                    '$callable===' => 'callable',
+                    '$callable===' => 'impure-callable',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
