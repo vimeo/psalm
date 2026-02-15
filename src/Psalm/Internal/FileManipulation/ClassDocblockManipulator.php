@@ -93,7 +93,11 @@ final class ClassDocblockManipulator
 
         if ($this->immutable) {
             $modified_docblock = true;
+            unset($parsed_docblock->tags['psalm-mutable']);
             $parsed_docblock->tags['psalm-immutable'] = [''];
+        } else {
+            unset($parsed_docblock->tags['psalm-immutable']);
+            $parsed_docblock->tags['psalm-mutable'] = [''];
         }
 
         if (!$modified_docblock) {

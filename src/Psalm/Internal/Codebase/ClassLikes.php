@@ -901,6 +901,7 @@ final class ClassLikes
 
                 if (!isset($codebase->analyzer->mutable_classes[$fq_class_name_lc])
                     && !$classlike_storage->external_mutation_free
+                    && !$classlike_storage->has_mutations_annotation
                 ) {
                     $change = $codebase->alter_code
                         && isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation']);

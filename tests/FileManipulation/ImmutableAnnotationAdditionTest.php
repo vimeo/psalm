@@ -26,6 +26,9 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                         }
                     }',
                 'output' => '<?php
+                    /**
+                     * @psalm-immutable
+                     */
                     class A {
                         public int $i;
 
@@ -117,6 +120,9 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
             ],
             'addPureAnnotationWhenClassCanHoldMutableData' => [
                 'input' => '<?php
+                    /**
+                     * @psalm-mutable
+                     */
                     class B {
                         public int $i = 5;
                     }
@@ -143,6 +149,9 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
 
                     echo $a->getPlus5();',
                 'output' => '<?php
+                    /**
+                     * @psalm-mutable
+                     */
                     class B {
                         public int $i = 5;
                     }
@@ -171,6 +180,32 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                     $b->i = 6;
 
                     echo $a->getPlus5();',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingImmutableAnnotation'],
+                'safe_types' => true,
+            ],
+            'addImmutableEvenWhenInError' => [
+                'input' => '<?php
+                    class B {
+                        public int $i = 5;
+                    }
+
+                    $b = new B();
+                    $b->i = 6;
+
+                    echo $a->i;',
+                'output' => '<?php
+                    /**
+                     * @psalm-immutable
+                     */
+                    class B {
+                        public int $i = 5;
+                    }
+
+                    $b = new B();
+                    $b->i = 6;
+
+                    echo $a->i;',
                 'php_version' => '7.4',
                 'issues_to_fix' => ['MissingImmutableAnnotation'],
                 'safe_types' => true,
