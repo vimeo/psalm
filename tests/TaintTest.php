@@ -159,7 +159,6 @@ final class TaintTest extends TestCase
                             $pdo->exec("delete from users where user_id = " . $userId);
                         }
 
-                        /** @psalm-mutation-free */
                         public function getSafeId() : string {
                             return "5";
                         }
@@ -182,7 +181,6 @@ final class TaintTest extends TestCase
                             );
                         }
 
-                        /** @psalm-pure */
                         public function getAppendedUserId(string $user_id) : string {
                             return "aaa" . $user_id;
                         }
@@ -197,7 +195,6 @@ final class TaintTest extends TestCase
                 'code' => '<?php
                     /**
                      * @psalm-assert-untainted $userId
-                     * @psalm-pure
                      */
                     function validateUserId(string $userId) : void {
                         if (!is_numeric($userId)) {
@@ -276,10 +273,7 @@ final class TaintTest extends TestCase
             ],
             'taintFilterVar' => [
                 'code' => '<?php
-                    /** 
-                     * @psalm-taint-sink input_except_sleep $value
-                     * @psalm-mutation-free
-                     */
+                    /** @psalm-taint-sink input_except_sleep $value */
                     function taintSink(mixed $value): void {}
 
                     taintSink(filter_var($_GET["bad"], FILTER_VALIDATE_INT));
@@ -425,7 +419,6 @@ final class TaintTest extends TestCase
                         public string $id;
                         public $name = "Luke";
 
-                        /** @psalm-external-mutation-free */
                         public function __construct(string $userId) {
                             $this->id = $userId;
                         }
@@ -450,7 +443,6 @@ final class TaintTest extends TestCase
                     class User {
                         public string $id;
 
-                        /** @psalm-external-mutation-free */
                         public function __construct(string $userId) {
                             $this->id = $userId;
                         }
@@ -527,10 +519,7 @@ final class TaintTest extends TestCase
                 'code' => '<?php
 
                     class StringRenderer {
-                        /**
-                         * @psalm-taint-specialize  
-                         * @psalm-pure 
-                         */
+                        /** @psalm-taint-specialize */
                         public function render(string $x) {
                             return $x;
                         }
@@ -549,10 +538,7 @@ final class TaintTest extends TestCase
                         }
                     }
 
-                    /** 
-                     * @psalm-suppress InvalidReturnType 
-                     * @psalm-mutation-free
-                     */
+                    /** @psalm-suppress InvalidReturnType */
                     function stub(): StringRenderer { }
 
                     $notEchoed = stub()->render($_GET["untrusted"]);
@@ -657,7 +643,6 @@ final class TaintTest extends TestCase
                 'code' => '<?php
                     /**
                      * @psalm-taint-escape ($escape is true ? "html" : null)
-                     * @psalm-pure
                      */
                     function foo(string $string, bool $escape = true): string {
                         if ($escape) {
@@ -799,7 +784,6 @@ final class TaintTest extends TestCase
                 'code' => '<?php
                     /**
                      * @psalm-taint-escape xpath
-                     * @psalm-mutation-free
                      */
                     function my_escaping_function_for_xpath(string $input) : string {};
 
@@ -813,7 +797,6 @@ final class TaintTest extends TestCase
                 'code' => '<?php
                     /**
                      * @psalm-taint-escape sleep
-                     * @psalm-mutation-free
                      */
                     function my_escaping_function_for_seconds(mixed $input) : int {};
 
@@ -860,7 +843,6 @@ final class TaintTest extends TestCase
                 'code' => '<?php
                     /**
                      * @psalm-taint-source input
-                     * @psalm-mutation-free
                      */
                     function getName() : string {
                         return "";
@@ -1009,15 +991,11 @@ final class TaintTest extends TestCase
             'taintedInputFromParam' => [
                 'code' => '<?php
                     class A {
-                        /** @psalm-mutation-free */
                         public function getUserId() : string {
-                            /** @psalm-suppress ImpureGlobalVariable */
                             return (string) $_GET["user_id"];
                         }
 
-                        /** @psalm-pure */
                         public function getAppendedUserId() : string {
-                            /** @psalm-suppress ImpureVariable */
                             return "aaaa" . $this->getUserId();
                         }
 
@@ -1088,9 +1066,6 @@ final class TaintTest extends TestCase
                             return "aaa" . $user_id;
                         }
 
-                        /**
-                         * @psalm-pure
-                         */
                         public static function doFoo() : string {
                             return "hello";
                         }
@@ -1373,9 +1348,7 @@ final class TaintTest extends TestCase
                     class O1 {
                         public string $s;
 
-                        /** @psalm-external-mutation-free */
                         public function __construct() {
-                            /** @psalm-suppress ImpureGlobalVariable */
                             $this->s = (string) $_GET["FOO"];
                         }
                     }
@@ -1535,12 +1508,10 @@ final class TaintTest extends TestCase
                     class User {
                         public string $id;
 
-                        /** @psalm-external-mutation-free */
                         public function __construct(string $userId) {
                             $this->id = $userId;
                         }
 
-                        /** @psalm-external-mutation-free */
                         public function setId(string $userId) : void {
                             $this->id = $userId;
                         }
@@ -2168,7 +2139,6 @@ final class TaintTest extends TestCase
                  * @psalm-flow ($format, $args) -> return
                  */
                 function variadic_test(string $format, ...$args) : string {
-                    return $format;
                 }
 
                 echo variadic_test(\'\', \'\', $_GET[\'taint\'], \'\');',
@@ -2259,10 +2229,7 @@ final class TaintTest extends TestCase
             ],
             'taintSpecializedTwice' => [
                 'code' => '<?php
-                    /** 
-                     * @psalm-pure 
-                     * @psalm-taint-specialize
-                     */
+                    /** @psalm-taint-specialize */
                     function data(array $data, string $key) {
                         return $data[$key];
                     }
@@ -2306,9 +2273,7 @@ final class TaintTest extends TestCase
                           * @return string
                           * @psalm-flow ($text) -> return
                           */
-                        public function esc_like($text) {
-                            return $text;
-                        }
+                        public function esc_like($text) {}
 
                         /**
                           * @param string $query
@@ -2335,9 +2300,7 @@ final class TaintTest extends TestCase
                           * @return string
                           * @psalm-flow ($text) -> return
                           */
-                        public static function esc_like($text) {
-                            return $text;
-                        }
+                        public static function esc_like($text) {}
 
                         /**
                           * @param string $query
@@ -2375,10 +2338,7 @@ final class TaintTest extends TestCase
             ],
             'taintArrayKeyWithExplicitSink' => [
                 'code' => '<?php
-                    /** 
-                     * @psalm-taint-sink html $values
-                     * @psalm-mutation-free
-                     */
+                    /** @psalm-taint-sink html $values */
                     function doTheMagic(array $values) {}
 
                     doTheMagic([(string)$_GET["bad"] => "foo"]);',
@@ -2490,7 +2450,6 @@ final class TaintTest extends TestCase
                     class A {
                         private static string $prev = "";
 
-                        /** @psalm-external-mutation-free */
                         public static function getPrevious(string $s): string {
                             $prev = self::$prev;
                             self::$prev = $s;
