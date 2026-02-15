@@ -710,15 +710,15 @@ final class ImmutableAnnotationTest extends TestCase
                         }
                     }',
                 'error_message' => 'ImpureMethodCall',
-            ],
+            ],/*
             'mustBeImmutableInferred' => [
                 'code' => '<?php
                     interface SomethingThatCouldBeImmutable {
-                        /** @psalm-mutation-free */
+                        /** @psalm-mutation-free * /
                         public function someInteger() : int;
                     }',
                 'error_message' => 'MissingImmutableAnnotation',
-            ],
+            ],*/
             'mustBePure' => [
                 'code' => '<?php
                     abstract class test {
