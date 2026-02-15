@@ -726,6 +726,13 @@ final class ImmutableAnnotationTest extends TestCase
                     }',
                 'error_message' => 'somePure must be marked with one of @psalm-pure, @psalm-mutation-free, @psalm-external-mutation-free, @psalm-impure to aid security analysis',
             ],
+            'mustBePure2' => [
+                'code' => '<?php
+                    interface test {
+                        public function somePure(int $a) : int;
+                    }',
+                'error_message' => 'somePure must be marked with one of @psalm-pure, @psalm-mutation-free, @psalm-external-mutation-free, @psalm-impure to aid security analysis',
+            ],
             'mustBeImmutableLikeInterfaces' => [
                 'code' => '<?php
                     /** @psalm-immutable */
