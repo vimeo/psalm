@@ -561,20 +561,23 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 if ($storage->location) {
                     if ($this->function->stmts === null) {
                         $mark = 'with one of @'.implode(', @', Mutations::TO_ATTRIBUTE_FUNCTIONLIKE);
+                        $post = '';
                     } else {
                         $mark = '@'.Mutations::TO_ATTRIBUTE_FUNCTIONLIKE[
                             $this->inferred_mutations
                         ];
+                        $post = ', run with --alter --issues=MissingPureAnnotation to fix this';
                     }
                     IssueBuffer::maybeAdd(
                         new MissingPureAnnotation(
-                            $storage->cased_name . ' must be marked '.$mark.' to aid security analysis, run with --alter --issues=MissingPureAnnotation to fix this',
+                            $storage->cased_name . ' must be marked '.$mark.' to aid security analysis'.$post,
                             $storage->location,
                         ),
                         $storage->suppressed_issues,
                     );
                 }
                 if ($codebase->alter_code
+                    && $this->function->stmts !== null
                     && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
                 ) {
                     $manipulator->setAllowedMutations($this->inferred_mutations);
