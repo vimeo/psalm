@@ -441,6 +441,10 @@ $anonymous = new /** @psalm-immutable */ class extends Foo
 };
 ```
 
+### `@psalm-mutable`
+
+Used to annotate a class where at least one property is mutable: this is the default behavior, but it can be explicitly marked for clarity.
+
 ### `@psalm-pure`
 
 Used to annotate a [pure function](https://en.wikipedia.org/wiki/Pure_function) - one whose output is just a function of its input.

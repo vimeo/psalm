@@ -721,8 +721,7 @@ final class ImmutableAnnotationTest extends TestCase
             ],
             'mustBePure' => [
                 'code' => '<?php
-                    /** @psalm-immutable */
-                    class test {
+                    abstract class test {
                         abstract public function somePure(int $a) : int;
                     }',
                 'error_message' => 'somePure must be marked with one of @psalm-pure, @psalm-mutation-free, @psalm-external-mutation-free, @psalm-impure to aid security analysis',
