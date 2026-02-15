@@ -43,7 +43,6 @@ use Psalm\Issue\AssignmentToVoid;
 use Psalm\Issue\ImpureByReferenceAssignment;
 use Psalm\Issue\ImpureGlobalVariable;
 use Psalm\Issue\ImpurePropertyAssignment;
-use Psalm\Issue\ImpureVariable;
 use Psalm\Issue\InvalidArrayAccess;
 use Psalm\Issue\InvalidArrayOffset;
 use Psalm\Issue\InvalidDocblock;
@@ -99,7 +98,6 @@ use function spl_object_id;
 use function str_contains;
 use function str_starts_with;
 use function strpos;
-use function strtok;
 use function strtolower;
 
 /**

@@ -57,7 +57,7 @@ final class PureAnnotationTest extends TestCase
                         private array $defaultOptions;
 
                         /**
-                         * @psalm-external-mutation-free
+                         * @psalm-mutation-free
                          */
                         function __construct(array $options) {
                             $this->setOptions($options);
@@ -424,7 +424,7 @@ final class PureAnnotationTest extends TestCase
                     class Port {
                        private int $portNumber;
 
-                       /** @psalm-external-mutation-free */
+                       /** @psalm-mutation-free */
                        public function __construct(int $portNumber) {
                           if (!$this->isValidPort($portNumber)) {
                              throw new Exception();
@@ -519,6 +519,22 @@ final class PureAnnotationTest extends TestCase
                     {
                         return Test::foo();
                     }',
+            ],
+            'voidFunctionThatReturnsNeverIsNotImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function foo(int $a): void {
+                        die;
+                    }
+                ',
+            ],
+            'voidFunctionThatThrowsIsNotImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function foo(int $a): void {
+                        throw new \Exception("error");
+                    }
+                ',
             ],
             'pureThroughAliasedCallStaticInTrait' => [
                 'code' => '<?php
@@ -766,6 +782,14 @@ final class PureAnnotationTest extends TestCase
                     /** @psalm-pure */
                     function foo(): void {
                         print("x");
+                    }
+                ',
+                'error_message' => 'ImpureFunctionCall',
+            ],
+            'voidFunctionIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function foo(int $a): void {
                     }
                 ',
                 'error_message' => 'ImpureFunctionCall',

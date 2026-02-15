@@ -241,13 +241,13 @@ final class DocumentationTest extends TestCase
         if ($error_message === 'MissingImmutableAnnotation') {
             Config::getInstance()->setCustomErrorLevel(
                 'MissingImmutableAnnotation',
-                Config::REPORT_ERROR
+                Config::REPORT_ERROR,
             );
         }
         if ($error_message === 'MissingPureAnnotation') {
             Config::getInstance()->setCustomErrorLevel(
                 'MissingPureAnnotation',
-                Config::REPORT_ERROR
+                Config::REPORT_ERROR,
             );
         }
 

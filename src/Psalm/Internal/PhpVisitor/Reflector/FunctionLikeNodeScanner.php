@@ -707,7 +707,7 @@ final class FunctionLikeNodeScanner
                 ) {
                     $storage->allowed_mutations = min(
                         $storage->allowed_mutations,
-                        Mutations::LEVEL_INTERNAL_READ_WRITE
+                        Mutations::LEVEL_INTERNAL_READ_WRITE,
                     );
                     $storage->has_mutations_annotation = true;
                 }

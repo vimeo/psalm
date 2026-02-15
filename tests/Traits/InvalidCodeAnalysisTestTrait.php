@@ -95,11 +95,11 @@ trait InvalidCodeAnalysisTestTrait
         ) {
             Config::getInstance()->setCustomErrorLevel(
                 'MissingImmutableAnnotation',
-                Config::REPORT_ERROR
+                Config::REPORT_ERROR,
             );
             Config::getInstance()->setCustomErrorLevel(
                 'MissingPureAnnotation',
-                Config::REPORT_ERROR
+                Config::REPORT_ERROR,
             );
         }
 

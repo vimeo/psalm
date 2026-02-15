@@ -93,11 +93,11 @@ final class CacheTest extends TestCase
         );
         $config->setCustomErrorLevel(
             'MissingImmutableAnnotation',
-            Config::REPORT_SUPPRESS
+            Config::REPORT_SUPPRESS,
         );
         $config->setCustomErrorLevel(
             'MissingPureAnnotation',
-            Config::REPORT_SUPPRESS
+            Config::REPORT_SUPPRESS,
         );
         $config->setIncludeCollector(new IncludeCollector());
 

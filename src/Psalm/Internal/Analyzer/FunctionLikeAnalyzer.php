@@ -81,6 +81,7 @@ use function array_search;
 use function array_values;
 use function count;
 use function end;
+use function implode;
 use function in_array;
 use function is_string;
 use function krsort;
@@ -507,27 +508,31 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             && !$context->collect_initializations
             && !$context->collect_mutations
         ) {
-            $real_return = $storage->return_type;
-            if ($real_return === null) {
-                $yield_types = [];
-
-                $inferred_return_types = ReturnTypeCollector::getReturnTypes(
-                    $codebase,
-                    $type_provider,
-                    $function_stmts,
-                    $yield_types,
-                    true,
-                );
-
-                $real_return = $inferred_return_types
-                    ? Type::combineUnionTypeArray(
-                        $inferred_return_types,
+            $isVoid = false;
+            if ($this->function->stmts === null) {
+                $isVoid = $storage->return_type
+                    ? $storage->return_type->isVoid()
+                    : false;
+            } else {
+                    $yield_types = [];
+                    $inferred_return_types = ReturnTypeCollector::getReturnTypes(
                         $codebase,
-                    )
-                    : Type::getVoid();
-            }
+                        $type_provider,
+                        $function_stmts,
+                        $yield_types,
+                        true,
+                    );
 
-            if ($real_return->isVoid()
+                    $inferred_return = $inferred_return_types
+                        ? Type::combineUnionTypeArray(
+                            $inferred_return_types,
+                            $codebase,
+                        )
+                        : Type::getVoid();
+
+                    $isVoid = $inferred_return->isVoid();
+            }
+            if ($isVoid
                 && !(
                     $storage->throw_locations
                     || $storage->throws
@@ -536,7 +541,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $this->signalMutation(
                     Mutations::LEVEL_INTERNAL_READ,
                     $context,
-                    'pure functions cannot have void return type',
+                    'pure functions cannot have void return type (at least one non-empty return statement or @throws annotation is required)',
                     ImpureFunctionCall::class,
                     $this->function,
                     null,

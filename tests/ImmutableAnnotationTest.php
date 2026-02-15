@@ -859,7 +859,7 @@ final class ImmutableAnnotationTest extends TestCase
                          */
                         public array $values;
 
-                        /** @psalm-external-mutation-free */
+                        /** @psalm-mutation-free */
                         public function __construct(array $values)
                         {
                             $this->values = $values;
