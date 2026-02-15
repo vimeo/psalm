@@ -2139,6 +2139,7 @@ final class TaintTest extends TestCase
                  * @psalm-flow ($format, $args) -> return
                  */
                 function variadic_test(string $format, ...$args) : string {
+                    return sprintf($format, ...$args);
                 }
 
                 echo variadic_test(\'\', \'\', $_GET[\'taint\'], \'\');',
@@ -2273,7 +2274,9 @@ final class TaintTest extends TestCase
                           * @return string
                           * @psalm-flow ($text) -> return
                           */
-                        public function esc_like($text) {}
+                        public function esc_like($text) {
+                            return $text;
+                        }
 
                         /**
                           * @param string $query
@@ -2300,7 +2303,9 @@ final class TaintTest extends TestCase
                           * @return string
                           * @psalm-flow ($text) -> return
                           */
-                        public static function esc_like($text) {}
+                        public static function esc_like($text) {
+                            return $text;
+                        }
 
                         /**
                           * @param string $query
