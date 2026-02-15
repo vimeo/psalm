@@ -148,6 +148,7 @@ final class ImmutableAnnotationTest extends TestCase
                         private $line2;
                         private $city;
 
+                        /** @psalm-mutation-free */
                         public function __construct(
                             string $line1,
                             ?string $line2,
@@ -338,6 +339,7 @@ final class ImmutableAnnotationTest extends TestCase
                     class Item {
                         private int $i;
 
+                        /** @psalm-mutation-free */
                         public function __construct(int $i) {
                             $this->i = $i;
                         }
@@ -354,6 +356,7 @@ final class ImmutableAnnotationTest extends TestCase
                     class Immutable {
                         private $item;
 
+                        /** @psalm-mutation-free */
                         public function __construct(Item $item) {
                             $this->item = $item;
                         }
@@ -510,6 +513,7 @@ final class ImmutableAnnotationTest extends TestCase
                     class Immutable {
                         private $item;
 
+                        /** @psalm-mutation-free */
                         public function __construct(Item $item) {
                             $this->item = $item;
                         }
@@ -720,6 +724,7 @@ final class ImmutableAnnotationTest extends TestCase
                 'code' => '<?php
                     /** @psalm-immutable */
                     interface SomethingImmutable {
+                        /** @psalm-mutation-free */
                         public function someInteger() : int;
                     }
 
@@ -735,6 +740,7 @@ final class ImmutableAnnotationTest extends TestCase
                 'code' => '<?php
                     /** @psalm-immutable */
                     abstract class SomethingImmutable {
+                        /** @psalm-external-mutation-free */
                         abstract public function someInteger() : int;
                     }
 

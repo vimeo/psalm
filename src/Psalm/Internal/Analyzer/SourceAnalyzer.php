@@ -237,7 +237,7 @@ abstract class SourceAnalyzer implements StatementsSource
             ? $this
             : $this->getSource();
         if ($src instanceof FunctionLikeAnalyzer && $src->track_mutations) {
-            if ($mutation_level <= Mutations::LEVEL_INTERNAL_READ_WRITE
+            if ($mutation_level === Mutations::LEVEL_INTERNAL_READ_WRITE
                 && $src->storage instanceof MethodStorage
                 && (
                     // Allow constructors to mutate (override immutability)
