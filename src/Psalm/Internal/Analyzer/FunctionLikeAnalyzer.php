@@ -519,7 +519,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     true,
                 );
 
-                $inferred_return_type = $inferred_return_types
+                $real_return = $inferred_return_types
                     ? Type::combineUnionTypeArray(
                         $inferred_return_types,
                         $codebase,
