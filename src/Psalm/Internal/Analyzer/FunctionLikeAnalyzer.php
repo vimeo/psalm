@@ -551,8 +551,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
             if ($this->inferred_mutations < $storage->allowed_mutations
                 || (
-                    $this->inferred_mutations === $storage->allowed_mutations
-                    && !$storage->has_mutations_annotation
+                    !$storage->has_mutations_annotation
                     && $this->function->stmts === null
                 )
             ) {
