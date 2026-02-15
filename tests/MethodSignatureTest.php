@@ -871,8 +871,7 @@ final class MethodSignatureTest extends TestCase
                             return new static();
                         }
 
-                        /** @psalm-mutation-free 
-                         *   @return static */
+                        /** @return static */
                         final protected static function create2()
                         {
                             return new static();
