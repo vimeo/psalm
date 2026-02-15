@@ -1017,6 +1017,7 @@ final class TaintTest extends TestCase
 
                         /** @psalm-pure */
                         public function getAppendedUserId() : string {
+                            /** @psalm-suppress ImpureVariable */
                             return "aaaa" . $this->getUserId();
                         }
 

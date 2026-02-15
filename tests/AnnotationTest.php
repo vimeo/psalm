@@ -1868,7 +1868,6 @@ final class AnnotationTest extends TestCase
                 'code' => '<?php
                     /** 
                      * @param non-empty-array<string> $arr 
-                     * @psalm-mutation-free
                      */
                     function foo(array $arr) : void {
                         foreach ($arr as $a) {}
@@ -1884,7 +1883,6 @@ final class AnnotationTest extends TestCase
 
                     /** 
                      * @param non-empty-array<string> $arr
-                     * @psalm-mutation-free
                      */
                     function foo(array $arr) : void {
                         foreach ($arr as $a) {}
