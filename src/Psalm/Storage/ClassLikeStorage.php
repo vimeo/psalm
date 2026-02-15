@@ -165,6 +165,8 @@ final class ClassLikeStorage implements HasAttributesInterface
     /** @var Mutations::LEVEL_INTERNAL_READ|Mutations::LEVEL_INTERNAL_READ_WRITE|Mutations::LEVEL_ALL */
     public int $allowed_mutations = Mutations::LEVEL_ALL;
 
+    public bool $has_mutations_annotation = false;
+
     public bool $mutation_free {
         get {
             return $this->allowed_mutations <= Mutations::LEVEL_INTERNAL_READ;

@@ -901,8 +901,6 @@ final class ClassLikes
 
                 if (!isset($codebase->analyzer->mutable_classes[$fq_class_name_lc])
                     && !$classlike_storage->external_mutation_free
-                    && $classlike_storage->properties
-                    && isset($classlike_storage->methods['__construct'])
                 ) {
                     $change = $codebase->alter_code
                         && isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation']);

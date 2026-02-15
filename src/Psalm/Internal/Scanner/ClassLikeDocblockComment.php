@@ -77,6 +77,8 @@ final class ClassLikeDocblockComment
     /** @var Mutations::LEVEL_ALL|Mutations::LEVEL_INTERNAL_READ_WRITE|Mutations::LEVEL_INTERNAL_READ */
     public int $allowed_mutations = Mutations::LEVEL_ALL;
 
+    public bool $has_mutations_annotation = false;
+
     public bool $taint_specialize = false;
 
     /**

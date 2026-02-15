@@ -704,6 +704,7 @@ final class ClassLikeNodeScanner
             }
 
             $storage->allowed_mutations = $docblock_info->allowed_mutations;
+            $storage->has_mutations_annotation = $docblock_info->has_mutations_annotation;
             $storage->specialize_instance = $docblock_info->taint_specialize;
 
             $storage->override_property_visibility = $docblock_info->override_property_visibility;
@@ -793,10 +794,12 @@ final class ClassLikeNodeScanner
                     || $attribute->fq_class_name === 'JetBrains\\PhpStorm\\Immutable'
                 ) {
                     $storage->allowed_mutations = Mutations::LEVEL_INTERNAL_READ;
+                    $storage->has_mutations_annotation = true;
                 }
 
                 if ($attribute->fq_class_name === 'Psalm\\ExternalMutationFree') {
                     $storage->allowed_mutations = Mutations::LEVEL_INTERNAL_READ_WRITE;
+                    $storage->has_mutations_annotation = true;
                 }
 
                 if ($attribute->fq_class_name === 'AllowDynamicProperties' && $storage->readonly) {

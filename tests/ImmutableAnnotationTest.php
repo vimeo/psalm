@@ -17,6 +17,13 @@ final class ImmutableAnnotationTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'noMissing' => [
+                'code' => '<?php
+                    /** @psalm-immutable */
+                    abstract class test {
+                        abstract public function somePure(int $a) : int;
+                    }',
+            ],
             'immutableClassGenerating' => [
                 'code' => '<?php
                     /**
@@ -707,7 +714,6 @@ final class ImmutableAnnotationTest extends TestCase
             'mustBeImmutableInferred' => [
                 'code' => '<?php
                     interface SomethingThatCouldBeImmutable {
-                        /** @psalm-pure */
                         public function someInteger() : int;
                     }',
                 'error_message' => 'MissingImmutableAnnotation',
@@ -715,8 +721,8 @@ final class ImmutableAnnotationTest extends TestCase
             'mustBePure' => [
                 'code' => '<?php
                     /** @psalm-immutable */
-                    interface test {
-                        public function somePure(int $a) : int;
+                    class test {
+                        abstract public function somePure(int $a) : int;
                     }',
                 'error_message' => 'somePure must be marked with one of @psalm-pure, @psalm-mutation-free, @psalm-external-mutation-free, @psalm-impure to aid security analysis',
             ],
@@ -799,7 +805,7 @@ final class ImmutableAnnotationTest extends TestCase
                     class D {
                         private string $s;
 
-                        /** @psalm-external-mutation-free */
+                        /** @psalm-mutation-free */
                         public function __construct(string $s) {
                             $this->s = $s;
                         }
@@ -826,7 +832,7 @@ final class ImmutableAnnotationTest extends TestCase
                     class D {
                         private string $s;
 
-                        /** @psalm-external-mutation-free */
+                        /** @psalm-mutation-free */
                         public function __construct(string $s) {
                             $this->s = $s;
                         }

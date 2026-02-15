@@ -269,10 +269,12 @@ final class ClassLikeDocblockParser
         ) {
             $info->allowed_mutations = Mutations::LEVEL_INTERNAL_READ;
             $info->taint_specialize = true;
+            $info->has_mutations_annotation = true;
         }
 
         if (isset($parsed_docblock->tags['psalm-external-mutation-free'])) {
             $info->allowed_mutations = Mutations::LEVEL_INTERNAL_READ_WRITE;
+            $info->has_mutations_annotation = true;
         }
 
         if (isset($parsed_docblock->tags['psalm-taint-specialize'])) {
