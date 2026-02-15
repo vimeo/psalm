@@ -714,6 +714,7 @@ final class ImmutableAnnotationTest extends TestCase
             'mustBeImmutableInferred' => [
                 'code' => '<?php
                     interface SomethingThatCouldBeImmutable {
+                        /** @psalm-mutation-free */
                         public function someInteger() : int;
                     }',
                 'error_message' => 'MissingImmutableAnnotation',
