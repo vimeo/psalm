@@ -541,18 +541,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 );
             }
 
-            if (!$storage->params) {
-                $this->signalMutation(
-                    Mutations::LEVEL_INTERNAL_READ,
-                    $context,
-                    'pure functions must have parameters',
-                    ImpureFunctionCall::class,
-                    $this->function,
-                    null,
-                    true,
-                );
-            }
-
             if ($this->inferred_mutations < $storage->allowed_mutations) {
                 $manipulator = FunctionDocblockManipulator::getForFunction(
                     $project_analyzer,
