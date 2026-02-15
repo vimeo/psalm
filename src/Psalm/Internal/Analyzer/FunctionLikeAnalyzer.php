@@ -549,11 +549,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 );
             }
 
-            if ($this->inferred_mutations < $storage->allowed_mutations
-                || (
-                    !$storage->has_mutations_annotation
-                    && $this->function->stmts === null
-                )
+            if ($this->function->stmts === null
+                ? !$storage->has_mutations_annotation
+                : $this->inferred_mutations < $storage->allowed_mutations
             ) {
                 $manipulator = FunctionDocblockManipulator::getForFunction(
                     $project_analyzer,
