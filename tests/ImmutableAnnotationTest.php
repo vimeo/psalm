@@ -474,6 +474,7 @@ final class ImmutableAnnotationTest extends TestCase
                         public const TEST = "test";
                     }
 
+                    /** @psalm-mutation-free */
                     function foo(TestEnum $e): void {
                         if ($e->getValue() === TestEnum::TEST
                             && $e->getValue() === TestEnum::TEST
@@ -592,13 +593,13 @@ final class ImmutableAnnotationTest extends TestCase
                     }
 
                     /**
-                     * @psalm-mutation-free
+                     * @psalm-pure
                      * @return mixed
                      */
                     function getDataItem(string $key) {
                         return getData()[$key] ?? null;
                     }',
-                'error_message' => 'InaccessibleProperty',
+                'error_message' => 'ImpureFunctionCall',
             ],
 
             'immutablePropertyAssignmentInternally' => [
@@ -738,7 +739,6 @@ final class ImmutableAnnotationTest extends TestCase
             ],
             'couldBePure' => [
                 'code' => '<?php
-                    /** @psalm-pure */
                     function couldBePure(int $a) : int {
                         return $a * 2;
                     }',
@@ -767,6 +767,7 @@ final class ImmutableAnnotationTest extends TestCase
                     class MutableParent {
                         public int $i = 0;
 
+                        /** @psalm-external-mutation-free */
                         public function increment() : void {
                             $this->i++;
                         }
@@ -783,6 +784,7 @@ final class ImmutableAnnotationTest extends TestCase
                     class D {
                         private string $s;
 
+                        /** @psalm-external-mutation-free */
                         public function __construct(string $s) {
                             $this->s = $s;
                         }
@@ -809,6 +811,7 @@ final class ImmutableAnnotationTest extends TestCase
                     class D {
                         private string $s;
 
+                        /** @psalm-external-mutation-free */
                         public function __construct(string $s) {
                             $this->s = $s;
                         }
@@ -841,6 +844,7 @@ final class ImmutableAnnotationTest extends TestCase
                          */
                         public array $values;
 
+                        /** @psalm-external-mutation-free */
                         public function __construct(array $values)
                         {
                             $this->values = $values;
@@ -896,6 +900,8 @@ final class ImmutableAnnotationTest extends TestCase
                     }
 
                     /**
+                     * @psalm-mutation-free
+                     * 
                      * @param string $a
                      * @param array $b
                      * @return void
