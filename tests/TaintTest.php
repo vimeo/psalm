@@ -1011,6 +1011,7 @@ final class TaintTest extends TestCase
                     class A {
                         /** @psalm-mutation-free */
                         public function getUserId() : string {
+                            /** @psalm-suppress ImpureGlobalVariable */
                             return (string) $_GET["user_id"];
                         }
 
@@ -1373,6 +1374,7 @@ final class TaintTest extends TestCase
 
                         /** @psalm-external-mutation-free */
                         public function __construct() {
+                            /** @psalm-suppress ImpureGlobalVariable */
                             $this->s = (string) $_GET["FOO"];
                         }
                     }
@@ -2303,7 +2305,9 @@ final class TaintTest extends TestCase
                           * @return string
                           * @psalm-flow ($text) -> return
                           */
-                        public function esc_like($text) {}
+                        public function esc_like($text) {
+                            return $text;
+                        }
 
                         /**
                           * @param string $query
@@ -2330,7 +2334,9 @@ final class TaintTest extends TestCase
                           * @return string
                           * @psalm-flow ($text) -> return
                           */
-                        public static function esc_like($text) {}
+                        public static function esc_like($text) {
+                            return $text;
+                        }
 
                         /**
                           * @param string $query

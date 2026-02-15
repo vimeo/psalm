@@ -1329,6 +1329,8 @@ final class CallableTest extends TestCase
                         private $callable;
 
                         /**
+                         * @psalm-mutation-free
+                         * 
                          * @psalm-param callable():bool $callable
                          */
                         public function __construct(callable $callable) {
