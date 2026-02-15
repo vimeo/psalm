@@ -85,7 +85,7 @@ final class JsonOutputTest extends TestCase
                     }',
                 'error_count' => 2,
                 'message' => "The inferred type 'int' does not match the declared return type 'string' for fooFoo",
-                'line' => 3,
+                'line' => 4,
                 'error' => '$a + 1',
             ],
             'undefinedVar' => [
@@ -96,7 +96,7 @@ final class JsonOutputTest extends TestCase
                     }',
                 'error_count' => 4,
                 'message' => 'Cannot find referenced variable $b',
-                'line' => 3,
+                'line' => 4,
                 'error' => '$b',
             ],
             'unknownParamClass' => [
@@ -119,7 +119,7 @@ final class JsonOutputTest extends TestCase
                     }',
                 'error_count' => 1,
                 'message' => "Method fooFoo does not have a return type, expecting 'hello'",
-                'line' => 2,
+                'line' => 3,
                 'error' => 'fooFoo',
             ],
             'wrongMultilineReturnType' => [
@@ -133,7 +133,7 @@ final class JsonOutputTest extends TestCase
                     }',
                 'error_count' => 2,
                 'message' => "The inferred type ''hello'' does not match the declared return type 'int' for fooFoo",
-                'line' => 6,
+                'line' => 7,
                 'error' => '"hello"',
             ],
             'assertCancelsMixedAssignment' => [
@@ -160,7 +160,7 @@ final class JsonOutputTest extends TestCase
                     }',
                 'error_count' => 1,
                 'message' => 'Operand of type non-falsy-string is always truthy',
-                'line' => 5,
+                'line' => 6,
                 'error' => '$b',
             ],
         ];
