@@ -188,7 +188,10 @@ final class Populator
         if ($storage->allowed_mutations !== Mutations::LEVEL_ALL) {
             foreach ($storage->methods as $method) {
                 if (!$method->is_static && !$method->external_mutation_free) {
-                    $method->allowed_mutations = $storage->allowed_mutations;
+                    $method->allowed_mutations = min(
+                        $method->allowed_mutations,
+                        $storage->allowed_mutations
+                    );
                     $method->containing_class_allowed_mutations = $storage->allowed_mutations;
                     $method->has_mutations_annotation = $storage->has_mutations_annotation;
                 }

@@ -99,7 +99,10 @@ final class FunctionLikeDocblockScanner
 
         $config = Config::getInstance();
 
-        $storage->allowed_mutations = $docblock_info->allowed_mutations;
+        $storage->allowed_mutations = min(
+            $docblock_info->allowed_mutations,
+            $storage->allowed_mutations,
+        );
         $storage->has_mutations_annotation = $docblock_info->has_mutations_annotation;
         
         if ($storage instanceof MethodStorage
@@ -130,7 +133,10 @@ final class FunctionLikeDocblockScanner
             $storage->variadic = true;
         }
 
-        $storage->allowed_mutations = $docblock_info->allowed_mutations;
+        $storage->allowed_mutations = min(
+            $docblock_info->allowed_mutations,
+            $storage->allowed_mutations,
+        );
         $storage->has_mutations_annotation = $docblock_info->has_mutations_annotation;
 
         if ($docblock_info->allowed_mutations === Mutations::LEVEL_NONE
