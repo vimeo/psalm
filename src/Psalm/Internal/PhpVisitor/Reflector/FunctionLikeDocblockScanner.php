@@ -108,7 +108,7 @@ final class FunctionLikeDocblockScanner
         if ($storage instanceof MethodStorage
             && $docblock_info->allowed_mutations <= Mutations::LEVEL_INTERNAL_READ
         ) {
-            // We haven't inferred anything yet, so assume the worst
+            // If we explicitly marked this as mutation free, it's not inferred anymore.
             $storage->mutation_free_inferred = false;
         }
 
