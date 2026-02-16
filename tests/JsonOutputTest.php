@@ -119,7 +119,7 @@ final class JsonOutputTest extends TestCase
                     }',
                 'error_count' => 1,
                 'message' => "Method fooFoo does not have a return type, expecting 'hello'",
-                'line' => 3,
+                'line' => 5,
                 'error' => 'fooFoo',
             ],
             'wrongMultilineReturnType' => [
@@ -160,7 +160,7 @@ final class JsonOutputTest extends TestCase
                     }',
                 'error_count' => 1,
                 'message' => 'Operand of type non-falsy-string is always truthy',
-                'line' => 6,
+                'line' => 9,
                 'error' => '$b',
             ],
         ];

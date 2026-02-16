@@ -241,6 +241,7 @@ final class FunctionLikeNodeScanner
 
                 if (isset($classlike_storage->properties[$property_name])
                     && $classlike_storage->properties[$property_name]->type
+                    && !$classlike_storage->properties[$property_name]->hook_get
                 ) {
                     $storage->allowed_mutations = min(
                         Mutations::LEVEL_INTERNAL_READ,

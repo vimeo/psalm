@@ -151,7 +151,7 @@ final class PureCallableTest extends TestCase
                         private $callable;
 
                         /**
-                         * @psalm-external-mutation-free
+                         * @psalm-mutation-free
                          * 
                          * @psalm-param pure-callable():bool $callable
                          */
