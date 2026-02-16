@@ -104,7 +104,7 @@ final class MethodCallPurityAnalyzer
         if (!$context->inside_unset
             && $method_storage->mutation_free
         ) {
-            if ((!$method_storage->mutation_free_inferred
+            if ((!$method_storage->mutation_free_assumed
                     || $method_storage->final
                     || $method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE)
                 && ($method_storage->containing_class_allowed_mutations === Mutations::LEVEL_NONE
@@ -146,7 +146,7 @@ final class MethodCallPurityAnalyzer
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     );
-                } elseif (!$method_storage->mutation_free_inferred) {
+                } elseif (!$method_storage->mutation_free_assumed) {
                     $stmt->setAttribute('pure', true);
                 }
             }

@@ -244,7 +244,7 @@ abstract class SourceAnalyzer implements StatementsSource
                     $src->storage->cased_name === '__construct'
                     
                     // ???
-                    || $src->storage->mutation_free_inferred
+                    || $src->storage->mutation_free_assumed
                 )
             ) {
                 return;

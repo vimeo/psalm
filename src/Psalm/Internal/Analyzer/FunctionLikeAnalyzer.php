@@ -395,7 +395,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 str_ends_with($storage->cased_name, '__construct')
 
                 // ???
-                || $storage->mutation_free_inferred
+                || $storage->mutation_free_assumed
             ) {
                 $context->allowed_mutations = max(
                     $context->allowed_mutations,
@@ -1970,7 +1970,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
                 $props = [];
                 if ($storage->mutation_free
-                    && !$storage->mutation_free_inferred
+                    && !$storage->mutation_free_assumed
                 ) {
                     $props = ['reference_free' => true];
                     if ($this->function->name->name !== '__construct') {

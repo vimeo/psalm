@@ -354,7 +354,7 @@ final class TypeChecker extends TypeVisitor
 
                 if ($method_storage instanceof MethodStorage
                     && $method_storage->mutation_free
-                    && !$method_storage->mutation_free_inferred
+                    && !$method_storage->mutation_free_assumed
                 ) {
                     // do nothing
                 } else {

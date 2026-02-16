@@ -379,7 +379,7 @@ final class MethodComparator
 
         if ($guide_method_storage->external_mutation_free
             && !$implementer_method_storage->external_mutation_free
-            && !$guide_method_storage->mutation_free_inferred
+            && !$guide_method_storage->mutation_free_assumed
             && $prevent_method_signature_mismatch
         ) {
             IssueBuffer::maybeAdd(
