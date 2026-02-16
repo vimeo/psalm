@@ -33,6 +33,10 @@ final class MethodStorage extends FunctionLikeStorage
 
     public bool $has_docblock_return_type = false;
 
+    /**
+     * If true, we *assumed* this method is mutation free
+     * by looking at its statements, NOT by looking at its docblock/annotations. 
+     */
     public bool $mutation_free_assumed = false;
 
     public int $containing_class_allowed_mutations = Mutations::LEVEL_ALL;
