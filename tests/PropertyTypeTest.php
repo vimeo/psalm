@@ -109,10 +109,10 @@ final class PropertyTypeTest extends TestCase
                     public ?int $x = null;
                 }
 
-                function testX(X $x): void {
+                function testX(X $x, int $v): void {
                     $x->x = 5;
 
-                    if (rand(0, 1)) {
+                    if ($v) {
                         XCollector::modify();
                     }
 

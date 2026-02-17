@@ -1070,7 +1070,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     ImpureFunctionCall::class,
                     $stmt,
                 );
-                if ($mutations !== Mutations::LEVEL_NONE
+                if ($mutations > Mutations::LEVEL_INTERNAL_READ
                     && !$config->remember_property_assignments_after_call
                 ) {
                     $context->removeMutableObjectVars();
