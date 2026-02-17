@@ -593,6 +593,7 @@ final class UnusedVariableManipulationTest extends FileManipulationTestCase
                             $this->foo = $foo;
                         }
 
+                        /** @psalm-mutation-free */
                         public function getFoo() : void {
                             return "abular" . $this->foo;
                         }
@@ -619,6 +620,7 @@ final class UnusedVariableManipulationTest extends FileManipulationTestCase
                             $this->foo = $foo;
                         }
 
+                        /** @psalm-mutation-free */
                         public function getFoo() : void {
                             return "abular" . $this->foo;
                         }
