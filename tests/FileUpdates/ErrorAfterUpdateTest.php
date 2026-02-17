@@ -116,7 +116,6 @@ final class ErrorAfterUpdateTest extends TestCase
                             namespace Foo;
 
                             class A {
-                                /** @psalm-mutation-free */
                                 public function foo() : void {}
                             }',
                         (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'B.php' => '<?php
@@ -156,9 +155,6 @@ final class ErrorAfterUpdateTest extends TestCase
                     ],
                 ],
                 'error_message' => 'UndefinedMethod',
-                'ignored_issues' => [
-                    'MissingPureAnnotation' => 'suppress',
-                ],
             ],
             'invalidateAfterPropertyTypeChange' => [
                 'file_stages' => [
@@ -174,7 +170,6 @@ final class ErrorAfterUpdateTest extends TestCase
                             namespace Foo;
 
                             final class B {
-                                /** @psalm-mutation-free */
                                 public function foo() : string {
                                     return (new A)->foo;
                                 }
@@ -194,7 +189,6 @@ final class ErrorAfterUpdateTest extends TestCase
                             namespace Foo;
 
                             final class B {
-                                /** @psalm-mutation-free */
                                 public function foo() : string {
                                     return (new A)->foo;
                                 }
@@ -218,7 +212,6 @@ final class ErrorAfterUpdateTest extends TestCase
                             namespace Foo;
 
                             final class B {
-                                /** @psalm-mutation-free */
                                 public function foo() : string {
                                     return A::FOO;
                                 }
@@ -237,7 +230,6 @@ final class ErrorAfterUpdateTest extends TestCase
                             namespace Foo;
 
                             final class B {
-                                /** @psalm-mutation-free */
                                 public function foo() : string {
                                     return A::FOO;
                                 }
@@ -378,7 +370,6 @@ final class ErrorAfterUpdateTest extends TestCase
                                 /** @var string */
                                 public $foo = "bar";
 
-                                /** @psalm-mutation-free */
                                 public function __construct() {}
                             }
 
@@ -392,7 +383,6 @@ final class ErrorAfterUpdateTest extends TestCase
                                 /** @var string */
                                 public $foo;
 
-                                /** @psalm-mutation-free */
                                 public function __construct() {}
                             }
 
@@ -419,7 +409,6 @@ final class ErrorAfterUpdateTest extends TestCase
                             namespace Foo;
 
                             trait T {
-                                /** @psalm-mutation-free */
                                 public function __construct() {}
                             }',
                     ],
@@ -439,7 +428,6 @@ final class ErrorAfterUpdateTest extends TestCase
                             namespace Foo;
 
                             trait T {
-                                /** @psalm-mutation-free */
                                 public function __construct() {}
                             }',
                     ],
@@ -464,7 +452,6 @@ final class ErrorAfterUpdateTest extends TestCase
                                 /** @var string */
                                 public $foo = "bar";
 
-                                /** @psalm-mutation-free */
                                 public function __construct() {}
                             }',
                     ],
@@ -487,7 +474,6 @@ final class ErrorAfterUpdateTest extends TestCase
                                 /** @var string */
                                 public $foo;
 
-                                /** @psalm-mutation-free */
                                 public function __construct() {}
                             }',
                     ],
@@ -508,7 +494,6 @@ final class ErrorAfterUpdateTest extends TestCase
                                     $this->setFoo();
                                 }
 
-                                /** @psalm-external-mutation-free */
                                 private function setFoo() : void {
                                     $this->foo = "bar";
                                 }
@@ -524,12 +509,10 @@ final class ErrorAfterUpdateTest extends TestCase
                                 /** @var string */
                                 public $foo;
 
-                                /** @psalm-mutation-free */
                                 public function __construct() {
                                     $this->setFoo();
                                 }
 
-                                /** @psalm-mutation-free */
                                 private function setFoo() : void {
                                 }
                             }
@@ -613,7 +596,6 @@ final class ErrorAfterUpdateTest extends TestCase
                             namespace Foo;
 
                             final class B extends A {
-                                /** @psalm-mutation-free */
                                 public function __construct() {}
                             }
 
@@ -649,7 +631,6 @@ final class ErrorAfterUpdateTest extends TestCase
                             namespace Foo;
 
                             final class A {
-                                /** @psalm-mutation-free */
                                 public function foo() : void {}
                             }
 
@@ -694,7 +675,6 @@ final class ErrorAfterUpdateTest extends TestCase
                             namespace Foo;
 
                             final class A {
-                                /** @psalm-mutation-free */
                                 public function foo() : void {}
                             }
 
@@ -705,7 +685,6 @@ final class ErrorAfterUpdateTest extends TestCase
                             namespace Foo;
 
                             final class A {
-                                /** @psalm-mutation-free */
                                 public function foo() : void {}
                             }
 
@@ -722,7 +701,6 @@ final class ErrorAfterUpdateTest extends TestCase
                             namespace Foo;
 
                             final class A {
-                                /** @psalm-mutation-free */
                                 public static function foo() : void {}
                                 public static function bar() : void {}
                             }',
@@ -735,7 +713,6 @@ final class ErrorAfterUpdateTest extends TestCase
                             namespace Foo;
 
                             final class A {
-                                /** @psalm-mutation-free */
                                 public static function foo() : void {}
                                 public static function bar() : void {}
                             }',
@@ -752,7 +729,6 @@ final class ErrorAfterUpdateTest extends TestCase
                             namespace Foo;
 
                             class A {
-                                /** @psalm-mutation-free */
                                 public function foo(string $s) : void {}
                             }
 
@@ -787,7 +763,6 @@ final class ErrorAfterUpdateTest extends TestCase
                             namespace Foo;
 
                             final class A {
-                                /** @psalm-mutation-free */
                                 public function foo() : void {}
                             }
 
@@ -895,7 +870,6 @@ final class ErrorAfterUpdateTest extends TestCase
                                     $this->setFoo();
                                 }
 
-                                /** @psalm-mutation-free */
                                 abstract protected function setFoo() : void;
                             }',
                         (string) getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => '<?php
@@ -923,7 +897,6 @@ final class ErrorAfterUpdateTest extends TestCase
                                     $this->setFoo();
                                 }
 
-                                /** @psalm-mutation-free */
                                 abstract protected function setFoo() : void;
                             }',
                         (string) getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => '<?php
@@ -933,7 +906,6 @@ final class ErrorAfterUpdateTest extends TestCase
                                 /** @var string */
                                 public $foo;
 
-                                /** @psalm-mutation-free */
                                 protected function setFoo() : void {
                                     $this->reallySetFoo();
                                 }
