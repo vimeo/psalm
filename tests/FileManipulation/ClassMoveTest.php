@@ -160,7 +160,7 @@ final class ClassMoveTest extends TestCase
                     /**
                      * @param B|null $a
                      * @param string | null $b
-                     * @param callable():B $c
+                     * @param impure-callable():B $c
                      * @return B|null
                      */
                     function foo(?B $a, $b, $c) : ?B {
