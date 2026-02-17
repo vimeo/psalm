@@ -38,7 +38,8 @@ final class MethodStorage extends FunctionLikeStorage
      * by looking at its statements, NOT by looking at its docblock/annotations. 
      */
     public bool $mutation_free_assumed = false;
-
+    
+    /** @var Mutations::LEVEL_INTERNAL_READ|Mutations::LEVEL_INTERNAL_READ_WRITE|Mutations::LEVEL_ALL */
     public int $containing_class_allowed_mutations = Mutations::LEVEL_ALL;
 
     /**

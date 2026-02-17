@@ -107,7 +107,7 @@ final class MethodCallPurityAnalyzer
             if ((!$method_storage->mutation_free_assumed
                     || $method_storage->final
                     || $method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE)
-                && ($method_storage->containing_class_allowed_mutations === Mutations::LEVEL_NONE
+                && ($method_storage->containing_class_allowed_mutations === Mutations::LEVEL_INTERNAL_READ
                     || $config->remember_property_assignments_after_call
                 )
             ) {
@@ -117,7 +117,7 @@ final class MethodCallPurityAnalyzer
                 ) {
                     $stmt->setAttribute('memoizable', true);
 
-                    if ($method_storage->containing_class_allowed_mutations === Mutations::LEVEL_NONE) {
+                    if ($method_storage->containing_class_allowed_mutations === Mutations::LEVEL_INTERNAL_READ) {
                         $stmt->setAttribute('pure', true);
                     }
                 }
