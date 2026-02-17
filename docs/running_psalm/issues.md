@@ -45,6 +45,7 @@
  - [ImplicitToStringCast](issues/ImplicitToStringCast.md)
  - [ImpureByReferenceAssignment](issues/ImpureByReferenceAssignment.md)
  - [ImpureFunctionCall](issues/ImpureFunctionCall.md)
+ - [ImpureGlobalVariable](issues/ImpureGlobalVariable.md)
  - [ImpureMethodCall](issues/ImpureMethodCall.md)
  - [ImpurePropertyAssignment](issues/ImpurePropertyAssignment.md)
  - [ImpurePropertyFetch](issues/ImpurePropertyFetch.md)
