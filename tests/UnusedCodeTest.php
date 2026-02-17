@@ -1614,6 +1614,7 @@ final class UnusedCodeTest extends TestCase
             'unusedMethodCallForExternalMutationFreeClass' => [
                 'code' => '<?php
                     /**
+                     * @api
                      * @psalm-external-mutation-free
                      */
                     final class A {
@@ -1626,16 +1627,21 @@ final class UnusedCodeTest extends TestCase
                         public function setFoo(string $foo) : void {
                             $this->foo = $foo;
                         }
+
+                        public function getFoo() : string {
+                            return $this->foo;
+                        }
                     }
 
                     function foo() : void {
-                        (new A("hello"))->setFoo("goodbye");
+                        (new A("hello"))->getFoo();
                     }',
                 'error_message' => 'UnusedMethodCall',
             ],
             'unusedMethodCallForGeneratingMethod' => [
                 'code' => '<?php
                     /**
+                     * @api
                      * @psalm-external-mutation-free
                      */
                     final class A {
@@ -1645,6 +1651,7 @@ final class UnusedCodeTest extends TestCase
                             $this->foo = $foo;
                         }
 
+                        /** @psalm-mutation-free */
                         public function getFoo() : string {
                             return "abular" . $this->foo;
                         }

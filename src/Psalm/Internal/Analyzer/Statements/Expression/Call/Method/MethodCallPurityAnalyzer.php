@@ -27,6 +27,9 @@ use Psalm\Type;
  */
 final class MethodCallPurityAnalyzer
 {
+    /**
+     * @return Mutations::LEVEL_*
+     */
     public static function getMethodAllowedMutations(
         StatementsAnalyzer $statements_analyzer,
         Expr $var,
@@ -98,11 +101,10 @@ final class MethodCallPurityAnalyzer
             $method_storage->allowed_mutations,
         );
         
-        if ($method_allowed_mutations === Mutations::LEVEL_NONE
-            && !$context->inside_unset
+        if (!$context->inside_unset
+            && $method_storage->mutation_free
         ) {
-            if ($method_storage->mutation_free
-                && (!$method_storage->mutation_free_inferred
+            if ((!$method_storage->mutation_free_inferred
                     || $method_storage->final
                     || $method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE)
                 && ($method_storage->containing_class_allowed_mutations === Mutations::LEVEL_NONE
