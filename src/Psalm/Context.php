@@ -764,7 +764,7 @@ final class Context
         foreach ($this->clauses as $clause) {
             $abandon_clause = false;
 
-            foreach (array_keys($clause->possibilities) as $key) {
+            foreach ($clause->possibilities as $key => $_) {
                 if ((str_contains($key, '->') || str_contains($key, '::'))
                     && (!$methods_only || strpos($key, '()'))
                 ) {

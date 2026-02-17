@@ -71,7 +71,7 @@ final class ClosedInheritanceToUnion
         $offset = 0;
 
         foreach ($storage->template_types as $template_name => $templates) {
-            foreach (array_keys($templates) as $defining_class) {
+            foreach ($templates as $defining_class => $_) {
                 $lower_bounds[$template_name][$defining_class] = $object->type_params[$offset++];
             }
         }

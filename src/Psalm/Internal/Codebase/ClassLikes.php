@@ -2522,7 +2522,7 @@ final class ClassLikes
         }
 
         $types = [];
-        foreach (array_keys($resolved_enums) as $enum_case_name) {
+        foreach ($resolved_enums as $enum_case_name => $_) {
             $types[$enum_case_name] = new TEnumCase($class_like_storage->name, $enum_case_name);
         }
 
