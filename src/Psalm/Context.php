@@ -28,8 +28,6 @@ use function count;
 use function in_array;
 use function is_int;
 use function json_encode;
-use function max;
-use function min;
 use function preg_match;
 use function preg_quote;
 use function preg_replace;

@@ -83,6 +83,7 @@ use function array_merge;
 use function array_pop;
 use function count;
 use function in_array;
+use function min;
 use function reset;
 use function strpos;
 use function strtolower;

@@ -20,8 +20,6 @@ use Psalm\Type\Union;
 
 use function array_values;
 use function in_array;
-use function max;
-use function min;
 
 final class ClassLikeStorage implements HasAttributesInterface
 {

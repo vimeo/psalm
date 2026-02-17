@@ -16,8 +16,6 @@ use function array_fill_keys;
 use function array_map;
 use function count;
 use function implode;
-use function max;
-use function min;
 
 abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
 {
