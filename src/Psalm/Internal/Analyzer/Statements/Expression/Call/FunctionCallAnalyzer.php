@@ -1062,15 +1062,17 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     ? $function_call_info->function_storage->allowed_mutations
                     : null);
 
-            if ($mutations !== null && $statements_analyzer->signalMutation(
-                $mutations,
-                $context,
-                'function call on ' . ($function_call_info->function_id ?? 'unknown function'),
-                ImpureFunctionCall::class,
-                $stmt,
-            )) {
-                // Has mutation.
-                if (!$config->remember_property_assignments_after_call) {
+            if ($mutations !== null) {
+                $statements_analyzer->signalMutation(
+                    $mutations,
+                    $context,
+                    'function call on ' . ($function_call_info->function_id ?? 'unknown function'),
+                    ImpureFunctionCall::class,
+                    $stmt,
+                );
+                if ($mutations !== Mutations::LEVEL_NONE
+                    && !$config->remember_property_assignments_after_call
+                ) {
                     $context->removeMutableObjectVars();
                 }
             } elseif ($function_call_info->function_id
