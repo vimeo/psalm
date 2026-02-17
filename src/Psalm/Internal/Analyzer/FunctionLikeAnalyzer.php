@@ -132,6 +132,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
     public bool $track_mutations = false;
 
+    /** @var Mutations::LEVEL_* */
     public int $inferred_mutations = Mutations::LEVEL_NONE;
 
     /**
@@ -553,11 +554,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 ? !$storage->has_mutations_annotation
                 : $this->inferred_mutations < $storage->allowed_mutations
             ) {
-                $manipulator = FunctionDocblockManipulator::getForFunction(
-                    $project_analyzer,
-                    $this->source->getFilePath(),
-                    $this->function,
-                );
                 if ($storage->location) {
                     if ($this->function->stmts === null) {
                         $mark = 'with one of @'.implode(', @', Mutations::TO_ATTRIBUTE_FUNCTIONLIKE);
@@ -580,6 +576,11 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     && $this->function->stmts !== null
                     && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
                 ) {
+                    $manipulator = FunctionDocblockManipulator::getForFunction(
+                        $project_analyzer,
+                        $this->source->getFilePath(),
+                        $this->function,
+                    );
                     $manipulator->setAllowedMutations($this->inferred_mutations);
                 }
             }

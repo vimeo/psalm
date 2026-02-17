@@ -158,7 +158,7 @@ final class FunctionDocblockManipulator
 
         $this->return_typehint_area_start = $end_bracket_position + 1;
 
-        $function_code = substr($file_contents, $function_start, $function_end);
+        $function_code = substr($file_contents, $function_start, $function_end - $function_start);
 
         $function_code_after_bracket = substr($function_code, $end_bracket_position + 1 - $function_start);
 
