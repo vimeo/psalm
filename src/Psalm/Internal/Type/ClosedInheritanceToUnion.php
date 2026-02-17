@@ -9,8 +9,6 @@ use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
-use function array_keys;
-
 /**
  * @internal
  */

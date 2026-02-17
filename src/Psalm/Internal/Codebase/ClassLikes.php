@@ -50,7 +50,6 @@ use ReflectionProperty;
 use UnexpectedValueException;
 
 use function array_filter;
-use function array_keys;
 use function array_merge;
 use function array_pop;
 use function count;

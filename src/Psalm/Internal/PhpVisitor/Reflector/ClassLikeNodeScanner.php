@@ -82,6 +82,7 @@ use function assert;
 use function count;
 use function implode;
 use function ltrim;
+use function min;
 use function preg_match;
 use function preg_split;
 use function sprintf;

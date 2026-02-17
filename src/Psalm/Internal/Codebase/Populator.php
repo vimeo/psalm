@@ -36,6 +36,7 @@ use function array_splice;
 use function count;
 use function in_array;
 use function key;
+use function min;
 use function reset;
 use function strpos;
 use function strtolower;
@@ -190,7 +191,7 @@ final class Populator
                 if (!$method->is_static && !$method->external_mutation_free) {
                     $method->allowed_mutations = min(
                         $method->allowed_mutations,
-                        $storage->allowed_mutations
+                        $storage->allowed_mutations,
                     );
                     $method->containing_class_allowed_mutations = $storage->allowed_mutations;
                     $method->has_mutations_annotation = $storage->has_mutations_annotation;

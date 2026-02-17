@@ -35,7 +35,7 @@ final class MethodStorage extends FunctionLikeStorage
 
     /**
      * If true, we *assumed* this method is mutation free
-     * by looking at its statements, NOT by looking at its docblock/annotations. 
+     * by looking at its statements, NOT by looking at its docblock/annotations.
      */
     public bool $mutation_free_assumed = false;
     

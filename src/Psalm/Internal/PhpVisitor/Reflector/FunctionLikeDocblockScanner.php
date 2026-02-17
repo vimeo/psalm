@@ -57,6 +57,7 @@ use function array_values;
 use function count;
 use function explode;
 use function in_array;
+use function min;
 use function preg_last_error_msg;
 use function preg_match;
 use function preg_replace;
