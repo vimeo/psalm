@@ -400,9 +400,9 @@ final class Populator
                     $declaring_method_storage->overridden_downstream = true;
                     $declaring_method_storage->overridden_somewhere = true;
 
-                    if ($declaring_method_storage->amutation_free_assumed) {
+                    if ($declaring_method_storage->mutation_free_assumed) {
                         $declaring_method_storage->allowed_mutations = Mutations::LEVEL_ALL;
-                        $declaring_method_storage->amutation_free_assumed = false;
+                        $declaring_method_storage->mutation_free_assumed = false;
                     }
 
                     if ($declaring_method_storage->throws

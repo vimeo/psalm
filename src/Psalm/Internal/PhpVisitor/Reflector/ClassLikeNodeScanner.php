@@ -1243,7 +1243,7 @@ final class ClassLikeNodeScanner
         $storage->defining_fqcln = $class_storage->name;
 
         $storage->allowed_mutations = Mutations::LEVEL_NONE;
-        $storage->amutation_free_assumed = true;
+        $storage->mutation_free_assumed = true;
 
         $class_storage->declaring_method_ids['__construct'] = new MethodIdentifier(
             $class_storage->name,
