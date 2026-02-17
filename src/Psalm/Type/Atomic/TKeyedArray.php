@@ -358,9 +358,19 @@ final class TKeyedArray extends Atomic
 
         $params_part = $this->fallback_params !== null ? ',...' : '';
 
+        $callablePrefix = '';
+        if ($this->is_callable) {
+            $callablePrefix = match ($this->allowed_mutations) {
+                \Psalm\Storage\Mutations::LEVEL_NONE => 'pure-callable-',
+                \Psalm\Storage\Mutations::LEVEL_INTERNAL_READ => 'self-accessing-callable-',
+                \Psalm\Storage\Mutations::LEVEL_INTERNAL_READ_WRITE => 'self-mutating-callable-',
+                \Psalm\Storage\Mutations::LEVEL_EXTERNAL => 'impure-callable-',
+            };
+        }
+
         return  ($this->is_list
-            ? ($this->is_callable ? 'callable-list' : 'list')
-            : ($this->is_callable ? 'callable-array' : 'array')
+            ? ($callablePrefix . 'list')
+            : ($callablePrefix . 'array')
         ) . '{' . implode(', ', $suffixed_properties) . $params_part . '}';
     }
 

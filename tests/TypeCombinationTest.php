@@ -224,8 +224,10 @@ final class TypeCombinationTest extends TestCase
                                 'types' => [$type1_final, $type2_final],
                             ];
                         } else {
+                            $l = [$type1_final, $type2_final];
+                            sort($l);
                             yield "combine $type1_final and $type2_final" => [
-                                'expected' => "$type1_final|$type2_final",
+                                'expected' => "{$l[0]}|{$l[1]}",
                                 'types' => [$type1_final, $type2_final],
                             ];
                         }

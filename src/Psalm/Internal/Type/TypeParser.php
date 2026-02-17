@@ -1495,6 +1495,10 @@ final class TypeParser
                         || ($had_optional && !$property_maybe_undefined)
                         || $type === 'array'
                         || $type === 'callable-array'
+                        || $type === 'pure-callable-array'
+                        || $type === 'impure-callable-array'
+                        || $type === 'self-mutating-callable-array'
+                        || $type === 'self-accessing-callable-array'
                         || $previous_property_key != ($property_key - 1)
                     )
                 ) {
@@ -1539,6 +1543,21 @@ final class TypeParser
             return new TObjectWithProperties($properties, [], [], $from_docblock);
         }
 
+        $allowed_mutations = Mutations::LEVEL_ALL;
+        if (str_starts_with($type, 'self-mutating-')) {
+            $allowed_mutations = Mutations::LEVEL_INTERNAL_READ_WRITE;
+            $type = substr($type, strlen('self-mutating-'));
+        } elseif (str_starts_with($type, 'self-accessing-')) {
+            $allowed_mutations = Mutations::LEVEL_INTERNAL_READ;
+            $type = substr($type, strlen('self-accessing-'));
+        } elseif (str_starts_with($type, 'impure-')) {
+            $allowed_mutations = Mutations::LEVEL_EXTERNAL;
+            $type = substr($type, strlen('impure-'));
+        } elseif (str_starts_with($type, 'pure-')) {
+            $allowed_mutations = Mutations::LEVEL_NONE;
+            $type = substr($type, strlen('pure-'));
+        }
+
         $callable = str_starts_with($type, 'callable-');
         if ($callable) {
             $type = substr($type, 9);
@@ -1549,7 +1568,7 @@ final class TypeParser
         }
 
         if ($type !== 'array' && $type !== 'list') {
-            throw new TypeParseTreeException('Unexpected brace character');
+            throw new TypeParseTreeException('Unexpected brace character in type '.$type);
         }
 
         if ($type === 'list' && !$is_list) {
@@ -1590,6 +1609,7 @@ final class TypeParser
                 $class_strings,
                 $is_list,
                 $from_docblock,
+                $allowed_mutations,
             ) : TKeyedArray::make(
                 $properties,
                 $class_strings,

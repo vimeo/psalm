@@ -316,12 +316,16 @@ final class MissingPropertyTypeTest extends FileManipulationTestCase
                     <?php
                     class A {
                         /**
-                         * @var impure-callable|null
+                         * @var callable|null
+                         *
+                         * @psalm-var impure-callable|null
                          */
                         public $u;
 
                         /**
-                         * @var impure-callable
+                         * @var callable
+                         *
+                         * @psalm-var impure-callable
                          */
                         public $v;
 
