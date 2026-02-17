@@ -54,7 +54,7 @@ final class UnsetAnalyzer
             );
 
             if ($var_id) {
-                if ($context->mutation_free
+                if ($context->isMutationFree()
                     && (VariableFetchAnalyzer::isSuperGlobal((string) strtok($var_id, '['))
                         || isset($context->references_to_external_scope[$var_id])
                         || isset($context->referenced_globals[$var_id])

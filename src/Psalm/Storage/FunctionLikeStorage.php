@@ -146,63 +146,6 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
 
     public bool $has_mutations_annotation = false;
 
-    public bool $mutation_free {
-        get {
-            return $this->allowed_mutations <= Mutations::LEVEL_INTERNAL_READ;
-        }
-        set(bool $value) {
-    if ($value) {
-        $this->allowed_mutations = min(
-            $this->allowed_mutations,
-            Mutations::LEVEL_INTERNAL_READ,
-        );
-    } else {
-        $this->allowed_mutations = max(
-            $this->allowed_mutations,
-            Mutations::LEVEL_INTERNAL_READ + 1,
-        );
-    }
-        }
-    }
-
-    public bool $external_mutation_free {
-        get {
-            return $this->allowed_mutations <= Mutations::LEVEL_INTERNAL_READ_WRITE;
-        }
-        set(bool $value) {
-    if ($value) {
-        $this->allowed_mutations = min(
-            $this->allowed_mutations,
-            Mutations::LEVEL_INTERNAL_READ_WRITE,
-        );
-    } else {
-        $this->allowed_mutations = max(
-            $this->allowed_mutations,
-            Mutations::LEVEL_INTERNAL_READ_WRITE + 1,
-        );
-    }
-        }
-    }
-
-    public bool $pure {
-        get {
-            return $this->allowed_mutations <= Mutations::LEVEL_NONE;
-        }
-        set(bool $value) {
-    if ($value) {
-        $this->allowed_mutations = min(
-            $this->allowed_mutations,
-            Mutations::LEVEL_NONE,
-        );
-    } else {
-        $this->allowed_mutations = max(
-            $this->allowed_mutations,
-            Mutations::LEVEL_NONE + 1,
-        );
-    }
-        }
-    }
-
     /**
      * Whether or not the function output is dependent solely on input - a function can be
      * impure but still have this property (e.g. var_export). Useful for taint analysis.
@@ -240,6 +183,21 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
     public ?string $description = null;
 
     public bool $public_api = false;
+
+    public function isMutationFree(): bool
+    {
+        return $this->allowed_mutations <= Mutations::LEVEL_INTERNAL_READ;
+    }
+
+    public function isExternalMutationFree(): bool
+    {
+        return $this->allowed_mutations <= Mutations::LEVEL_INTERNAL_READ_WRITE;
+    }
+
+    public function isPure(): bool
+    {
+        return $this->allowed_mutations <= Mutations::LEVEL_NONE;
+    }
 
     /**
      * Used in the Language Server

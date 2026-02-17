@@ -4260,7 +4260,7 @@ final class AssertionFinder
                 }
 
                 $magic_getter = $class_definition->methods['__get'] ?? null;
-                if ($magic_getter === null || !$magic_getter->mutation_free) {
+                if ($magic_getter === null || !$magic_getter->isMutationFree()) {
                     return "{$class_definition->name}::__get is not mutation-free, so the assertion cannot be applied";
                 }
             }

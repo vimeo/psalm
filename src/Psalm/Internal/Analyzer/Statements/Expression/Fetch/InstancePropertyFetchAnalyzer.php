@@ -462,7 +462,7 @@ final class InstancePropertyFetchAnalyzer
                         );
                     }
 
-                    if (!($class_storage->external_mutation_free
+                    if (!($class_storage->isExternalMutationFree()
                         && $stmt_type->allow_mutations)
                     ) {
                         $statements_analyzer->signalMutation(

@@ -899,7 +899,7 @@ final class ClassLikes
                 $this->findPossibleMethodParamTypes($classlike_storage);
 
                 if (!isset($codebase->analyzer->mutable_classes[$fq_class_name_lc])
-                    && !$classlike_storage->external_mutation_free
+                    && !$classlike_storage->isExternalMutationFree()
                     && !$classlike_storage->has_mutations_annotation
                 ) {
                     $change = $codebase->alter_code

@@ -309,63 +309,6 @@ final class Context
     /** @var Mutations::LEVEL_* */
     public int $allowed_mutations = Mutations::LEVEL_ALL;
 
-    public bool $mutation_free {
-        get {
-            return $this->allowed_mutations <= Mutations::LEVEL_INTERNAL_READ;
-        }
-        set(bool $value) {
-    if ($value) {
-        $this->allowed_mutations = min(
-            $this->allowed_mutations,
-            Mutations::LEVEL_INTERNAL_READ,
-        );
-    } else {
-        $this->allowed_mutations = max(
-            $this->allowed_mutations,
-            Mutations::LEVEL_INTERNAL_READ + 1,
-        );
-    }
-        }
-    }
-
-    public bool $external_mutation_free {
-        get {
-            return $this->allowed_mutations <= Mutations::LEVEL_INTERNAL_READ_WRITE;
-        }
-        set(bool $value) {
-    if ($value) {
-        $this->allowed_mutations = min(
-            $this->allowed_mutations,
-            Mutations::LEVEL_INTERNAL_READ_WRITE,
-        );
-    } else {
-        $this->allowed_mutations = max(
-            $this->allowed_mutations,
-            Mutations::LEVEL_INTERNAL_READ_WRITE + 1,
-        );
-    }
-        }
-    }
-
-    public bool $pure {
-        get {
-            return $this->allowed_mutations <= Mutations::LEVEL_NONE;
-        }
-        set(bool $value) {
-    if ($value) {
-        $this->allowed_mutations = min(
-            $this->allowed_mutations,
-            Mutations::LEVEL_NONE,
-        );
-    } else {
-        $this->allowed_mutations = max(
-            $this->allowed_mutations,
-            Mutations::LEVEL_NONE + 1,
-        );
-    }
-        }
-    }
-
     public bool $error_suppressing = false;
 
     public bool $has_returned = false;
@@ -388,6 +331,21 @@ final class Context
     public function __destruct()
     {
         $this->case_scope = null;
+    }
+
+    public function isMutationFree(): bool
+    {
+        return $this->allowed_mutations <= Mutations::LEVEL_INTERNAL_READ;
+    }
+
+    public function isExternalMutationFree(): bool
+    {
+        return $this->allowed_mutations <= Mutations::LEVEL_INTERNAL_READ_WRITE;
+    }
+
+    public function isPure(): bool
+    {
+        return $this->allowed_mutations <= Mutations::LEVEL_NONE;
     }
 
     /**

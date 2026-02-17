@@ -54,7 +54,7 @@ final class GlobalAnalyzer
             ImpureGlobalVariable::class,
             $stmt,
         );
-        if ($context->mutation_free) {
+        if ($context->isMutationFree()) {
             IssueBuffer::maybeAdd(
                 new ImpureGlobalVariable(
                     'Cannot use a global variable in a mutation-free context',

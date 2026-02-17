@@ -797,12 +797,18 @@ final class ClassLikeNodeScanner
                 if ($attribute->fq_class_name === 'Psalm\\Immutable'
                     || $attribute->fq_class_name === 'JetBrains\\PhpStorm\\Immutable'
                 ) {
-                    $storage->mutation_free = true;
+                    $storage->allowed_mutations = min(
+                        Mutations::LEVEL_INTERNAL_READ,
+                        $storage->allowed_mutations,
+                    );
                     $storage->has_mutations_annotation = true;
                 }
 
                 if ($attribute->fq_class_name === 'Psalm\\ExternalMutationFree') {
-                    $storage->external_mutation_free = true;
+                    $storage->allowed_mutations = min(
+                        Mutations::LEVEL_INTERNAL_READ_WRITE,
+                        $storage->allowed_mutations,
+                    );
                     $storage->has_mutations_annotation = true;
                 }
 
@@ -1237,7 +1243,7 @@ final class ClassLikeNodeScanner
         $storage->defining_fqcln = $class_storage->name;
 
         $storage->allowed_mutations = Mutations::LEVEL_NONE;
-        $storage->mutation_free_assumed = true;
+        $storage->amutation_free_assumed = true;
 
         $class_storage->declaring_method_ids['__construct'] = new MethodIdentifier(
             $class_storage->name,

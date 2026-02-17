@@ -167,44 +167,6 @@ final class ClassLikeStorage implements HasAttributesInterface
 
     public bool $has_mutations_annotation = false;
 
-    public bool $mutation_free {
-        get {
-            return $this->allowed_mutations <= Mutations::LEVEL_INTERNAL_READ;
-        }
-        set(bool $value) {
-    if ($value) {
-        $this->allowed_mutations = min(
-            $this->allowed_mutations,
-            Mutations::LEVEL_INTERNAL_READ,
-        );
-    } else {
-        $this->allowed_mutations = max(
-            $this->allowed_mutations,
-            Mutations::LEVEL_INTERNAL_READ + 1,
-        );
-    }
-        }
-    }
-
-    public bool $external_mutation_free {
-        get {
-            return $this->allowed_mutations <= Mutations::LEVEL_INTERNAL_READ_WRITE;
-        }
-        set(bool $value) {
-    if ($value) {
-        $this->allowed_mutations = min(
-            $this->allowed_mutations,
-            Mutations::LEVEL_INTERNAL_READ_WRITE,
-        );
-    } else {
-        $this->allowed_mutations = max(
-            $this->allowed_mutations,
-            Mutations::LEVEL_INTERNAL_READ_WRITE + 1,
-        );
-    }
-        }
-    }
-
     public bool $specialize_instance = false;
 
     /**
@@ -430,6 +392,16 @@ final class ClassLikeStorage implements HasAttributesInterface
 
     public function __construct(public string $name)
     {
+    }
+
+    public function isMutationFree(): bool
+    {
+        return $this->allowed_mutations <= Mutations::LEVEL_INTERNAL_READ;
+    }
+
+    public function isExternalMutationFree(): bool
+    {
+        return $this->allowed_mutations <= Mutations::LEVEL_INTERNAL_READ_WRITE;
     }
 
     /**

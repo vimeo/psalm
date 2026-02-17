@@ -188,7 +188,7 @@ final class Populator
 
         if ($storage->allowed_mutations !== Mutations::LEVEL_ALL) {
             foreach ($storage->methods as $method) {
-                if (!$method->is_static && !$method->external_mutation_free) {
+                if (!$method->is_static && !$method->isExternalMutationFree()) {
                     $method->allowed_mutations = min(
                         $method->allowed_mutations,
                         $storage->allowed_mutations,
@@ -198,7 +198,7 @@ final class Populator
                 }
             }
 
-            if ($storage->mutation_free) {
+            if ($storage->isMutationFree()) {
                 foreach ($storage->properties as $property) {
                     if (!$property->is_static) {
                         $property->readonly = true;
@@ -400,9 +400,9 @@ final class Populator
                     $declaring_method_storage->overridden_downstream = true;
                     $declaring_method_storage->overridden_somewhere = true;
 
-                    if ($declaring_method_storage->mutation_free_assumed) {
+                    if ($declaring_method_storage->amutation_free_assumed) {
                         $declaring_method_storage->allowed_mutations = Mutations::LEVEL_ALL;
-                        $declaring_method_storage->mutation_free_assumed = false;
+                        $declaring_method_storage->amutation_free_assumed = false;
                     }
 
                     if ($declaring_method_storage->throws

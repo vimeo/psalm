@@ -110,7 +110,7 @@ final class FunctionLikeDocblockScanner
             && $docblock_info->allowed_mutations <= Mutations::LEVEL_INTERNAL_READ
         ) {
             // If we explicitly marked this as mutation free, it's not inferred anymore.
-            $storage->mutation_free_assumed = false;
+            $storage->amutation_free_assumed = false;
         }
 
         if ($docblock_info->deprecated) {

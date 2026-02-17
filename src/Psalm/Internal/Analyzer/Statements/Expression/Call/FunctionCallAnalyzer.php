@@ -1040,7 +1040,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         if (!$context->collect_initializations
             && !$context->collect_mutations
-            && ($context->external_mutation_free
+            && ($context->isExternalMutationFree()
                 || $codebase->find_unused_variables
                 || !$config->remember_property_assignments_after_call
                 || ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer

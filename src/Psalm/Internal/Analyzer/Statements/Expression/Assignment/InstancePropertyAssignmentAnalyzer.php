@@ -401,7 +401,7 @@ final class InstancePropertyAssignmentAnalyzer
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     );
-                } elseif (!$declaring_class_storage->mutation_free
+                } elseif (!$declaring_class_storage->isMutationFree()
                     && isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation'])
                     && $statements_analyzer->getSource()
                         instanceof FunctionLikeAnalyzer
@@ -1311,7 +1311,10 @@ final class InstancePropertyAssignmentAnalyzer
             ) {
                 $prev = $context->allowed_mutations;
                 if (!$context->vars_in_scope[$lhs_var_id]->allow_mutations) {
-                    $context->mutation_free = true;
+                    $context->allowed_mutations = min(
+                        Mutations::LEVEL_INTERNAL_READ,
+                        $context->allowed_mutations,
+                    );
                 }
                 $statements_analyzer->signalMutation(
                     $lhs_var_id === '$this' ? Mutations::LEVEL_INTERNAL_READ_WRITE : Mutations::LEVEL_EXTERNAL,

@@ -495,7 +495,7 @@ final class AtomicPropertyFetchAnalyzer
             $lhs_type_part,
         );
 
-        if (!($class_storage->external_mutation_free
+        if (!($class_storage->isExternalMutationFree()
             && $class_property_type->allow_mutations)
         ) {
             $statements_analyzer->signalMutation(
@@ -517,7 +517,7 @@ final class AtomicPropertyFetchAnalyzer
             $context,
         );
 
-        if ($class_storage->mutation_free) {
+        if ($class_storage->isMutationFree()) {
             $class_property_type = $class_property_type->setProperties([
                 'has_mutations' => false,
             ]);
