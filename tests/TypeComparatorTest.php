@@ -72,6 +72,7 @@ final class TypeComparatorTest extends TestCase
             'int-mask-of' => true,
             'int-mask' => true,
             'pure-Closure' => true,
+            'recursive-properties-of' => true,
         ];
         foreach (TPropertiesOf::tokenNames() as $token_name) {
             $basic_generic_types[$token_name] = true;

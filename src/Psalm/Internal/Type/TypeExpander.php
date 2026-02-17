@@ -32,10 +32,12 @@ use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TPropertiesOf;
+use Psalm\Type\Atomic\TRecursivePropertiesOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Atomic\TVoid;
+use Psalm\Type\RecursivePropertiesOfExpander;
 use Psalm\Type\Union;
 use ReflectionProperty;
 
@@ -269,6 +271,22 @@ final class TypeExpander
                 $return_type,
                 $self_class,
                 $static_class_type,
+            );
+        }
+
+        if ($return_type instanceof TRecursivePropertiesOf) {
+            return self::expandRecursivePropertiesOf(
+                $codebase,
+                $return_type,
+                $self_class,
+                $static_class_type,
+                $parent_class,
+                $evaluate_class_constants,
+                $evaluate_conditional_types,
+                $final,
+                $expand_generic,
+                $expand_templates,
+                $throw_on_unresolvable_constant,
             );
         }
 
@@ -993,6 +1011,48 @@ final class TypeExpander
             null,
             $all_sealed ? null : [Type::getString(), Type::getMixed()],
         )];
+    }
+
+    /**
+     * @return non-empty-list<Atomic>
+     */
+    private static function expandRecursivePropertiesOf(
+        Codebase $codebase,
+        TRecursivePropertiesOf &$return_type,
+        ?string $self_class,
+        string|TNamedObject|TTemplateParam|null $static_class_type,
+        ?string $parent_class,
+        bool $evaluate_class_constants = true,
+        bool $evaluate_conditional_types = false,
+        bool $final = false,
+        bool $expand_generic = false,
+        bool $expand_templates = false,
+        bool $throw_on_unresolvable_constant = false,
+    ): array {
+        if ($self_class) {
+            $return_type = $return_type->replaceClassLike(
+                'self',
+                $self_class,
+            );
+            $return_type = $return_type->replaceClassLike(
+                'static',
+                is_string($static_class_type) ? $static_class_type : $self_class,
+            );
+        }
+
+        return array_values(RecursivePropertiesOfExpander::expandUnion(
+            $codebase,
+            $return_type->types,
+            $self_class,
+            $static_class_type,
+            $parent_class,
+            $evaluate_class_constants,
+            $evaluate_conditional_types,
+            $final,
+            $expand_generic,
+            $expand_templates,
+            $throw_on_unresolvable_constant,
+        )->getAtomicTypes());
     }
 
     /**
