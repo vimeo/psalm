@@ -217,9 +217,26 @@ final class TypeCombinationTest extends TestCase
                             Mutations::LEVEL_INTERNAL_READ_WRITE => 'self-mutating-',
                             Mutations::LEVEL_EXTERNAL => 'impure-',
                         };
-                        if ($type1 === 'callable' || $type2 === 'callable') {
+                        if ($type1 === $type2) {
+                            yield "combine $type1_final and $type2_final" => [
+                                'expected' => "$level3_final$type1",
+                                'types' => [$type1_final, $type2_final],
+                            ];
+                        } else if ($type1 === 'callable' || $type2 === 'callable') {
                             $type3 = 'callable';
                             yield "combine $type1_final and $type2_final" => [
+                                'expected' => "$level3_final$type3",
+                                'types' => [$type1_final, $type2_final],
+                            ];
+                        } else if ((
+                            $type1 === 'callable-array{class-string, non-empty-string}' 
+                            && $type2 === 'callable-list{class-string, non-empty-string}'
+                        ) || (
+                            $type2 === 'callable-array{class-string, non-empty-string}' 
+                            && $type1 === 'callable-list{class-string, non-empty-string}'
+                        )) {
+                            $type3 = 'callable-array{class-string, non-empty-string}';
+                            yield "special combine $type1_final and $type2_final" => [
                                 'expected' => "$level3_final$type3",
                                 'types' => [$type1_final, $type2_final],
                             ];
