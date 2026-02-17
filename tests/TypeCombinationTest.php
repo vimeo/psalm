@@ -187,10 +187,13 @@ final class TypeCombinationTest extends TestCase
     private function callableCombinationsProvider(): iterable
     {
         $levels = [
-            'pure' => Mutations::LEVEL_NONE,
-            'self-accessing' => Mutations::LEVEL_INTERNAL_READ,
-            'self-mutating' => Mutations::LEVEL_INTERNAL_READ_WRITE,
-            'impure' => Mutations::LEVEL_EXTERNAL,
+            'pure-' => Mutations::LEVEL_NONE,
+            'self-accessing-' => Mutations::LEVEL_INTERNAL_READ,
+            'self-mutating-' => Mutations::LEVEL_INTERNAL_READ_WRITE,
+            'impure-' => Mutations::LEVEL_EXTERNAL,
+
+            // Explicitly empty, valid case
+            '' => Mutations::LEVEL_EXTERNAL,
         ];
         $types = [
             'callable',
@@ -205,19 +208,19 @@ final class TypeCombinationTest extends TestCase
             foreach ($types as $type2) {
                 foreach ($levels as $level1 => $level1_value) {
                     foreach ($levels as $level2 => $level2_value) {
-                        $type1_final = "$level1-$type1";
-                        $type2_final = "$level2-$type2";
+                        $type1_final = "$level1$type1";
+                        $type2_final = "$level2$type2";
 
                         $level3_final = match (max($level1_value, $level2_value)) {
-                            Mutations::LEVEL_NONE => 'pure',
-                            Mutations::LEVEL_INTERNAL_READ => 'self-accessing',
-                            Mutations::LEVEL_INTERNAL_READ_WRITE => 'self-mutating',
-                            Mutations::LEVEL_EXTERNAL => 'impure',
+                            Mutations::LEVEL_NONE => 'pure-',
+                            Mutations::LEVEL_INTERNAL_READ => 'self-accessing-',
+                            Mutations::LEVEL_INTERNAL_READ_WRITE => 'self-mutating-',
+                            Mutations::LEVEL_EXTERNAL => 'impure-',
                         };
                         if ($type1 === 'callable' || $type2 === 'callable') {
                             $type3 = 'callable';
                             yield "combine $type1_final and $type2_final" => [
-                                'expected' => "$level3_final-$type3",
+                                'expected' => "$level3_final$type3",
                                 'types' => [$type1_final, $type2_final],
                             ];
                         } else {
