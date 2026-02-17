@@ -29,7 +29,7 @@ final class AnnotationTest extends TestCase
     public function testLessSpecificImplementedReturnTypeWithDocblockOnMultipleLines(): void
     {
         $this->expectException(CodeException::class);
-        $this->expectExceptionMessage('LessSpecificImplementedReturnType - somefile.php:16:');
+        $this->expectExceptionMessage('LessSpecificImplementedReturnType - somefile.php:17:');
 
         $this->addFile(
             'somefile.php',
@@ -60,7 +60,7 @@ final class AnnotationTest extends TestCase
     public function testLessSpecificImplementedReturnTypeWithDocblockOnMultipleLinesWithMultipleClasses(): void
     {
         $this->expectException(CodeException::class);
-        $this->expectExceptionMessage('LessSpecificImplementedReturnType - somefile.php:15:');
+        $this->expectExceptionMessage('LessSpecificImplementedReturnType - somefile.php:16:');
 
         $this->addFile(
             'somefile.php',
@@ -92,7 +92,7 @@ final class AnnotationTest extends TestCase
     public function testLessSpecificImplementedReturnTypeWithDescription(): void
     {
         $this->expectException(CodeException::class);
-        $this->expectExceptionMessage('LessSpecificImplementedReturnType - somefile.php:19:');
+        $this->expectExceptionMessage('LessSpecificImplementedReturnType - somefile.php:20:');
 
         $this->addFile(
             'somefile.php',

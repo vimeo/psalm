@@ -236,7 +236,14 @@ final class CallableTypeComparator
             }
         }
 
-        $input_callable = self::getCallableFromAtomic($codebase, $input_type_part, $container_type_part, null, null, true);
+        $input_callable = self::getCallableFromAtomic(
+            $codebase,
+            $input_type_part,
+            $container_type_part,
+            null,
+            null,
+            true,
+        );
 
         if ($input_callable) {
             if (self::isContainedBy(

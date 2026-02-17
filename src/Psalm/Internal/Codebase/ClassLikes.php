@@ -968,7 +968,8 @@ final class ClassLikes
 
         IssueBuffer::maybeAdd(
             new MissingImmutableAnnotation(
-                $storage->name . ' must be marked @psalm-immutable to aid security analysis, run with --alter to fix this',
+                $storage->name . ' must be marked @psalm-immutable to aid security analysis,'
+                    .' run with --alter to fix this',
                 $storage->location,
             ),
             $storage->suppressed_issues,

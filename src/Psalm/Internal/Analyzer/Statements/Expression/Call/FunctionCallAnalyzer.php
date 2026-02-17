@@ -1075,7 +1075,8 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 ) {
                     $context->removeMutableObjectVars();
                 }
-            } elseif ($function_call_info->function_id
+            }
+            if ($function_call_info->function_id
                 && $must_use
                 && $mutations === Mutations::LEVEL_NONE
                 && !$function_call_info->function_storage?->assertions

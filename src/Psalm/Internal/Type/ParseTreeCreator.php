@@ -896,8 +896,9 @@ final class ParseTreeCreator
                     );
                 } else {
                     throw new TypeParseTreeException(
-                        'Parenthesis must be preceded by “Closure”, "pure-Closure", "impure-Closure", "self-mutating-Closure", "callable”, "pure-callable", "self-mutating-callable", "impure-callable" or a valid @method'
-                        . ' name',
+                        'Parenthesis must be preceded by “Closure”, "pure-Closure", "impure-Closure",'
+                        . ' "self-mutating-Closure", "callable”, "pure-callable", "self-mutating-callable",'
+                        . ' "impure-callable" or a valid @method name',
                     );
                 }
 
