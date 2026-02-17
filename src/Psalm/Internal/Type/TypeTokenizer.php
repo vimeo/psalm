@@ -54,10 +54,31 @@ final class TypeTokenizer
         'interface-string' => true,
         'enum-string' => true,
         'trait-string' => true,
+        
         'callable-string' => true,
+        'impure-callable-string' => true,
+        'self-accessing-callable-string' => true,
+        'self-mutating-callable-string' => true,
+        'pure-callable-string' => true,
+
         'callable-array' => true,
+        'self-accessing-callable-array' => true,
+        'self-mutating-callable-array' => true,
+        'impure-callable-array' => true,
+        'pure-callable-array' => true,
+        
         'callable-list' => true,
+        'self-accessing-callable-list' => true,
+        'self-mutating-callable-list' => true,
+        'impure-callable-list' => true,
+        'pure-callable-list' => true,
+
         'callable-object' => true,
+        'impure-callable-object' => true,
+        'self-accessing-callable-object' => true,
+        'self-mutating-callable-object' => true,
+        'pure-callable-object' => true,
+        
         'stringable-object' => true,
         'pure-callable' => true,
         'pure-Closure' => true,

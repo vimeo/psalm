@@ -257,6 +257,52 @@ abstract class Atomic implements TypeNode, Stringable
                     new Union([new TMixed(false, $from_docblock)]),
                 ]);
 
+            case 'pure-callable-array':
+                $classString = new TClassString(
+                    'object',
+                    null,
+                    false,
+                    false,
+                    false,
+                    true,
+                );
+                $object = new TObject(true);
+                $string = new TNonEmptyString(true);
+                return TKeyedArray::makeCallable([
+                    new Union([$classString, $object]),
+                    new Union([$string]),
+                ], allowed_mutations: Mutations::LEVEL_NONE);
+            case 'self-accessing-callable-array':
+                $classString = new TClassString(
+                    'object',
+                    null,
+                    false,
+                    false,
+                    false,
+                    true,
+                );
+                $object = new TObject(true);
+                $string = new TNonEmptyString(true);
+                return TKeyedArray::makeCallable([
+                    new Union([$classString, $object]),
+                    new Union([$string]),
+                ], allowed_mutations: Mutations::LEVEL_INTERNAL_READ);
+            case 'self-mutating-callable-array':
+                $classString = new TClassString(
+                    'object',
+                    null,
+                    false,
+                    false,
+                    false,
+                    true,
+                );
+                $object = new TObject(true);
+                $string = new TNonEmptyString(true);
+                return TKeyedArray::makeCallable([
+                    new Union([$classString, $object]),
+                    new Union([$string]),
+                ], allowed_mutations: Mutations::LEVEL_INTERNAL_READ_WRITE);
+            case 'impure-callable-array':
             case 'callable-array':
                 $classString = new TClassString(
                     'object',
@@ -273,6 +319,52 @@ abstract class Atomic implements TypeNode, Stringable
                     new Union([$string]),
                 ]);
 
+            case 'pure-callable-list':
+                $classString = new TClassString(
+                    'object',
+                    null,
+                    false,
+                    false,
+                    false,
+                    true,
+                );
+                $object = new TObject(true);
+                $string = new TNonEmptyString(true);
+                return TKeyedArray::makeCallable([
+                    new Union([$classString, $object]),
+                    new Union([$string]),
+                ], null, true, allowed_mutations: Mutations::LEVEL_NONE);
+            case 'self-accessing-callable-list':
+                $classString = new TClassString(
+                    'object',
+                    null,
+                    false,
+                    false,
+                    false,
+                    true,
+                );
+                $object = new TObject(true);
+                $string = new TNonEmptyString(true);
+                return TKeyedArray::makeCallable([
+                    new Union([$classString, $object]),
+                    new Union([$string]),
+                ], null, true, allowed_mutations: Mutations::LEVEL_INTERNAL_READ);
+            case 'self-mutating-callable-list':
+                $classString = new TClassString(
+                    'object',
+                    null,
+                    false,
+                    false,
+                    false,
+                    true,
+                );
+                $object = new TObject(true);
+                $string = new TNonEmptyString(true);
+                return TKeyedArray::makeCallable([
+                    new Union([$classString, $object]),
+                    new Union([$string]),
+                ], null, true, allowed_mutations: Mutations::LEVEL_INTERNAL_READ_WRITE);
+            case 'impure-callable-list':
             case 'callable-list':
                 $classString = new TClassString(
                     'object',
@@ -392,6 +484,13 @@ abstract class Atomic implements TypeNode, Stringable
             case 'trait-string':
                 return new TTraitString();
 
+            case 'pure-callable-string':
+                return new TCallableString(allowed_mutations: Mutations::LEVEL_NONE);
+            case 'self-accessing-callable-string':
+                return new TCallableString(allowed_mutations: Mutations::LEVEL_INTERNAL_READ);
+            case 'self-mutating-callable-string':
+                return new TCallableString(allowed_mutations: Mutations::LEVEL_INTERNAL_READ_WRITE);
+            case 'impure-callable-string':
             case 'callable-string':
                 return new TCallableString();
 

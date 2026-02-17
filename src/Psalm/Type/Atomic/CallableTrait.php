@@ -186,7 +186,7 @@ trait CallableTrait
             Mutations::LEVEL_NONE => 'pure-',
             Mutations::LEVEL_INTERNAL_READ => 'self-accessing-',
             Mutations::LEVEL_INTERNAL_READ_WRITE => 'self-mutating-',
-            Mutations::LEVEL_EXTERNAL => '',
+            Mutations::LEVEL_EXTERNAL => 'impure-',
         };
         return $prefix . 'callable' . $param_string . $return_type_string;
     }

@@ -28,6 +28,17 @@ final class TCallableObject extends TObject
         parent::__construct($from_docblock);
     }
 
+    public function setAllowedMutations(int $allowed_mutations): self
+    {
+        $current = $this->callable?->allowed_mutations ?? Mutations::LEVEL_EXTERNAL;
+        if ($current === $allowed_mutations) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->callable = $cloned->callable?->setAllowedMutations($allowed_mutations) ?? new TCallable(allowed_mutations: $allowed_mutations);
+        return $cloned;
+    }
+
     #[Override]
     public function getKey(bool $include_extra = true): string
     {
