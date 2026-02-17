@@ -9,7 +9,7 @@ final class Bar
     /** @var string */
     public $x;
 
-    /** @psalm-external-mutation-free */
+    /** @psalm-mutation-free */
     public function __construct()
     {
         $this->x = 'hello';
