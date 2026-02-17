@@ -6,6 +6,7 @@ namespace Psalm\Tests;
 
 use Override;
 use Psalm\Internal\Type\TypeCombiner;
+use Psalm\Storage\Mutations;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -183,12 +184,60 @@ final class TypeCombinationTest extends TestCase
         ];
     }
 
+    private function callableCombinationsProvider(): iterable
+    {
+        $levels = [
+            'pure' => Mutations::LEVEL_NONE,
+            'self-accessing' => Mutations::LEVEL_INTERNAL_READ,
+            'self-mutating' => Mutations::LEVEL_INTERNAL_READ_WRITE,
+            'impure' => Mutations::LEVEL_EXTERNAL,
+        ];
+        $types = [
+            'callable',
+            'callable-string',
+            'callable-object',
+            'Closure',
+            'callable-list{class-string, non-empty-string}',
+            'callable-array{class-string, non-empty-string}'
+        ];
+
+        foreach ($types as $type1) {
+            foreach ($types as $type2) {
+                foreach ($levels as $level1 => $level1_value) {
+                    foreach ($levels as $level2 => $level2_value) {
+                        $type1_final = "$level1-$type1";
+                        $type2_final = "$level2-$type2";
+
+                        $level3_final = match (max($level1_value, $level2_value)) {
+                            Mutations::LEVEL_NONE => 'pure',
+                            Mutations::LEVEL_INTERNAL_READ => 'self-accessing',
+                            Mutations::LEVEL_INTERNAL_READ_WRITE => 'self-mutating',
+                            Mutations::LEVEL_EXTERNAL => 'impure',
+                        };
+                        if ($type1 === 'callable' || $type2 === 'callable') {
+                            $type3 = 'callable';
+                            yield "combine $type1_final and $type2_final" => [
+                                'expected' => "$level3_final-$type3",
+                                'types' => [$type1_final, $type2_final],
+                            ];
+                        } else {
+                            yield "combine $type1_final and $type2_final" => [
+                                'expected' => "$type1_final|$type2_final",
+                                'types' => [$type1_final, $type2_final],
+                            ];
+                        }
+                    }
+                }
+            }
+        }
+    }
     /**
      * @return array<string,array{string,non-empty-list<string>}>
      */
-    public function providerTestValidTypeCombination(): array
+    public function providerTestValidTypeCombination(): iterable
     {
-        return [
+        yield from $this->callableCombinationsProvider();
+        yield from [
             'complexArrayFallback1' => [
                 'array{other_references: list<Psalm\Internal\Analyzer\DataFlowNodeData>|null, taint_trace: list<array<array-key, mixed>>|null, ...<string, mixed>}',
                 [
@@ -599,7 +648,7 @@ final class TypeCombinationTest extends TestCase
                 ],
             ],
             'combineClosures' => [
-                'Closure(A):void|Closure(B):void',
+                'impure-Closure(A):void|impure-Closure(B):void',
                 [
                     'Closure(A):void',
                     'Closure(B):void',
@@ -669,56 +718,56 @@ final class TypeCombinationTest extends TestCase
                 ],
             ],
             'combineCallableAndCallableString' => [
-                'callable',
+                'impure-callable',
                 [
                     'callable',
                     'callable-string',
                 ],
             ],
             'combineCallableStringAndCallable' => [
-                'callable',
+                'impure-callable',
                 [
                     'callable-string',
                     'callable',
                 ],
             ],
             'combineCallableAndCallableObject' => [
-                'callable',
+                'impure-callable',
                 [
                     'callable',
                     'callable-object',
                 ],
             ],
             'combineCallableObjectAndCallable' => [
-                'callable',
+                'impure-callable',
                 [
                     'callable-object',
                     'callable',
                 ],
             ],
             'combineCallableAndCallableArray' => [
-                'callable',
+                'impure-callable',
                 [
                     'callable',
                     'callable-array',
                 ],
             ],
             'combineCallableArrayAndCallable' => [
-                'callable',
+                'impure-callable',
                 [
                     'callable-array',
                     'callable',
                 ],
             ],
             'combineCallableAndCallableList' => [
-                'callable',
+                'impure-callable',
                 [
                     'callable',
                     'callable-list',
                 ],
             ],
             'combineCallableListAndCallable' => [
-                'callable',
+                'impure-callable',
                 [
                     'callable-list',
                     'callable',
