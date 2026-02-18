@@ -80,6 +80,7 @@ interface StatementsSource extends FileSource
      * @param Mutations::LEVEL_* $mutation_level
      * @param non-empty-string $msg
      * @param class-string<CodeIssue> $class
+     * @param ?Mutations::LEVEL_* $inferred_mutation_level
      */
     public function signalMutation(
         int $mutation_level,

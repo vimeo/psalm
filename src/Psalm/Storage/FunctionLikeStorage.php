@@ -199,6 +199,7 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
     }
 
     /**
+     * @psalm-api
      * @psalm-mutation-free
      */
     public function isPure(): bool
