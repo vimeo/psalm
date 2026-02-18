@@ -29,6 +29,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\DeprecatedProperty;
+use Psalm\Issue\ImpurePropertyAssignment;
 use Psalm\Issue\ImpurePropertyFetch;
 use Psalm\Issue\InternalClass;
 use Psalm\Issue\InternalProperty;
@@ -498,13 +499,25 @@ final class AtomicPropertyFetchAnalyzer
         if (!($class_storage->isExternalMutationFree()
             && $class_property_type->allow_mutations)
         ) {
-            $statements_analyzer->signalMutation(
-                Mutations::LEVEL_INTERNAL_READ, // Matches previous logic
-                $context,
-                'accessing a property on a mutable object',
-                ImpurePropertyFetch::class,
-                $stmt,
-            );
+            if ($context->inside_unset) {
+                $statements_analyzer->signalMutation(
+                    $stmt_var_id === '$this'
+                        ? Mutations::LEVEL_INTERNAL_READ_WRITE
+                        : Mutations::LEVEL_EXTERNAL,
+                    $context,
+                    'accessing a property on a mutable object',
+                    ImpurePropertyAssignment::class,
+                    $stmt,
+                );
+            } else {
+                $statements_analyzer->signalMutation(
+                    Mutations::LEVEL_INTERNAL_READ,
+                    $context,
+                    'accessing a property on a mutable object',
+                    ImpurePropertyFetch::class,
+                    $stmt,
+                );
+            }
         }
 
         self::processTaints(

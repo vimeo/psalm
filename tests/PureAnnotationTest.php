@@ -561,6 +561,23 @@ final class PureAnnotationTest extends TestCase
                         return Test::foo();
                     }',
             ],
+            'unsetIsMutationFree' => [
+                'code' => '<?php
+                    class A {
+                        public string $key;
+
+                        /** @psalm-mutation-free */
+                        public function __construct(string $key) {
+                            $this->key = $key;
+                        }
+
+                        /** @psalm-mutation-free */
+                        public function unsetSomething(array $v) : array {
+                            unset($v[$this->key]);
+                            return $v;
+                        }
+                    }',
+            ],
             'dontCrashWhileCheckingPurityOnCallStaticInATrait' => [
                 'code' => '<?php
                     /**
@@ -916,6 +933,45 @@ final class PureAnnotationTest extends TestCase
                         }
                     }',
                 'error_message' => 'ImpurePropertyFetch',
+            ],
+            'propertyUnsetIsNotMutationFree' => [
+                'code' => '<?php
+                    class A {
+                        /** @var array<string, string> */
+                        public array $foo = [];
+
+                        /** @psalm-mutation-free */
+                        public function unsetSomething(string $key) : void {
+                            unset($this->foo[$key]);
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyAssignment',
+            ],
+            'propertyUnsetOnOtherIsNotExternalMutationFree' => [
+                'code' => '<?php
+                    class A {
+                        /** @var array<string, string> */
+                        public array $foo = [];
+
+                        /** @psalm-external-mutation-free */
+                        public static function unsetSomething(A $a, string $key) : void {
+                            unset($a->foo[$key]);
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyAssignment',
+            ],
+            'propertyWriteIsNotMutationFree' => [
+                'code' => '<?php
+                    class A {
+                        /** @var array<string, string> */
+                        public array $foo = [];
+
+                        /** @psalm-mutation-free */
+                        public function writeSomething(string $key, string $value) : void {
+                            $this->foo[$key] = $value;
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyAssignment',
             ],
             'preventPropertyAccessOnMutableClass' => [
                 'code' => '<?php

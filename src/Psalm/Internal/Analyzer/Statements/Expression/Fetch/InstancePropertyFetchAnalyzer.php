@@ -14,6 +14,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Issue\ImpurePropertyAssignment;
 use Psalm\Issue\ImpurePropertyFetch;
 use Psalm\Issue\InvalidPropertyFetch;
 use Psalm\Issue\MixedPropertyFetch;
@@ -465,13 +466,25 @@ final class InstancePropertyFetchAnalyzer
                     if (!($class_storage->isExternalMutationFree()
                         && $stmt_type->allow_mutations)
                     ) {
-                        $statements_analyzer->signalMutation(
-                            Mutations::LEVEL_INTERNAL_READ,
-                            $context,
-                            'accessing a property on a mutable object',
-                            ImpurePropertyFetch::class,
-                            $stmt,
-                        );
+                        if ($context->inside_unset) {
+                            $statements_analyzer->signalMutation(
+                                $stmt_var_id === '$this'
+                                    ? Mutations::LEVEL_INTERNAL_READ_WRITE
+                                    : Mutations::LEVEL_EXTERNAL,
+                                $context,
+                                'accessing a property on a mutable object',
+                                ImpurePropertyAssignment::class,
+                                $stmt,
+                            );
+                        } else {
+                            $statements_analyzer->signalMutation(
+                                Mutations::LEVEL_INTERNAL_READ,
+                                $context,
+                                'accessing a property on a mutable object',
+                                ImpurePropertyFetch::class,
+                                $stmt,
+                            );
+                        }
                     }
                 }
             }
