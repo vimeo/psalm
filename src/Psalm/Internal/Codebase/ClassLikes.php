@@ -42,6 +42,7 @@ use Psalm\Progress\VoidProgress;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassConstantStorage;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Union;
@@ -959,7 +960,7 @@ final class ClassLikes
 
                 $this->findPossibleMethodParamTypes($classlike_storage);
 
-                if (!isset($codebase->analyzer->mutable_classes[$fq_class_name_lc])
+                if (($codebase->analyzer->mutable_classes[$fq_class_name_lc] ?? Mutations::LEVEL_NONE) <= Mutations::LEVEL_INTERNAL_READ
                     && !$classlike_storage->isExternalMutationFree()
                     && !$classlike_storage->has_mutations_annotation
                 ) {

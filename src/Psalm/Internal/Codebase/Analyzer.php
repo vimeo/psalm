@@ -95,7 +95,7 @@ use const PHP_INT_MAX;
  *      unused_suppressions: array<string, array<int, int>>,
  *      used_suppressions: array<string, array<int, bool>>,
  *      function_docblock_manipulators: array<string, array<int, FunctionDocblockManipulator>>,
- *      mutable_classes: array<string, bool>,
+ *      mutable_classes: array<string, Mutations::LEVEL_*>,
  *      issue_handlers: array{type: string, index: int, count: int}[],
  * }
  */
@@ -183,7 +183,7 @@ final class Analyzer
     public array $possible_method_param_types = [];
 
     /**
-     * @var array<string, bool>
+     * @var array<string, Mutations::LEVEL_*>
      */
     public array $mutable_classes = [];
 
@@ -404,7 +404,9 @@ final class Analyzer
                     $pool_data['class_property_locations'],
                 );
 
-                $this->mutable_classes = array_merge($this->mutable_classes, $pool_data['mutable_classes']);
+                foreach ($pool_data['mutable_classes'] as $class => $level) {
+                    $this->mutable_classes[$class] = max($this->mutable_classes[$class] ?? 0, $level);
+                }
 
                 FunctionDocblockManipulator::addManipulators($pool_data['function_docblock_manipulators']);
 
@@ -1498,9 +1500,10 @@ final class Analyzer
     /**
      * @psalm-external-mutation-free
      */
-    public function addMutableClass(string $fqcln): void
+    public function addMutableClass(string $fqcln, int $allowed_mutations): void
     {
-        $this->mutable_classes[strtolower($fqcln)] = true;
+        $fqcln = strtolower($fqcln);
+        $this->mutable_classes[$fqcln] = max($this->mutable_classes[$fqcln] ?? 0, $allowed_mutations);
     }
 
     /**

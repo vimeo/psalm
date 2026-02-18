@@ -382,7 +382,7 @@ final class InstancePropertyAssignmentAnalyzer
 
         $project_analyzer = $statements_analyzer->getProjectAnalyzer();
 
-        if ($appearing_property_class && ($force || $property_storage->readonly || $codebase->alter_code)) {
+        if ($appearing_property_class) {
             $can_set_readonly_property = $context->self
                 && $context->calling_method_id
                 && ($appearing_property_class === $context->self
@@ -403,13 +403,8 @@ final class InstancePropertyAssignmentAnalyzer
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     );
-                } elseif (!$declaring_class_storage->isMutationFree()
-                    && isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation'])
-                    && $statements_analyzer->getSource()
-                        instanceof FunctionLikeAnalyzer
-                ) {
-                    $codebase->analyzer->addMutableClass($declaring_class_storage->name);
                 }
+                $codebase->analyzer->addMutableClass($declaring_class_storage->name, Mutations::LEVEL_INTERNAL_READ_WRITE);
                 return false;
             }
         }

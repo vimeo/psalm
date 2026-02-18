@@ -1484,6 +1484,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
                 );
             }
+            $codebase->analyzer->addMutableClass($storage->name, $trait_storage->allowed_mutations);
 
             $trait_file_analyzer = $project_analyzer->getFileAnalyzerForClassLike($fq_trait_name_resolved);
             $trait_node = $codebase->classlikes->getTraitNode($fq_trait_name_resolved);
@@ -2462,6 +2463,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
                 );
             }
+            $codebase->analyzer->addMutableClass($storage->name, $parent_class_storage->allowed_mutations);
 
             if ($codebase->store_node_types) {
                 $codebase->analyzer->addNodeReference(
