@@ -505,7 +505,7 @@ final class AtomicPropertyFetchAnalyzer
                         ? Mutations::LEVEL_INTERNAL_READ_WRITE
                         : Mutations::LEVEL_EXTERNAL,
                     $context,
-                    'accessing a property on a mutable object',
+                    'unsetting a property on a mutable object',
                     ImpurePropertyAssignment::class,
                     $stmt,
                 );

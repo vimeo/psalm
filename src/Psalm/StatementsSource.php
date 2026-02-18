@@ -6,6 +6,7 @@ namespace Psalm;
 
 use PhpParser\Node;
 use Psalm\Issue\CodeIssue;
+use Psalm\Storage\Mutations;
 use Psalm\Type\Union;
 
 interface StatementsSource extends FileSource
