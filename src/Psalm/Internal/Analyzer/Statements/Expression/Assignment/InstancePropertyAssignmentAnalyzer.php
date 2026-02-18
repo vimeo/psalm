@@ -365,7 +365,7 @@ final class InstancePropertyAssignmentAnalyzer
         PropertyStorage $property_storage,
         ClassLikeStorage $declaring_class_storage,
         Context $context,
-    ): void {
+    ): bool {
         $codebase = $statements_analyzer->getCodebase();
 
         $stmt_var_type = $statements_analyzer->node_data->getType($stmt->var);
@@ -402,6 +402,7 @@ final class InstancePropertyAssignmentAnalyzer
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     );
+                    return false;
                 } elseif (!$declaring_class_storage->isMutationFree()
                     && isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation'])
                     && $statements_analyzer->getSource()
@@ -411,6 +412,7 @@ final class InstancePropertyAssignmentAnalyzer
                 }
             }
         }
+        return true;
     }
 
     public static function analyzeStatement(
@@ -1297,7 +1299,7 @@ final class InstancePropertyAssignmentAnalyzer
                 );
             }
 
-            self::trackPropertyImpurity(
+            $canAssign = self::trackPropertyImpurity(
                 $statements_analyzer,
                 $stmt,
                 $property_id,
@@ -1306,7 +1308,7 @@ final class InstancePropertyAssignmentAnalyzer
                 $context,
             );
 
-            if (!$property_storage->readonly
+            if ($canAssign
                 && $lhs_var_id !== null
                 && isset($context->vars_in_scope[$lhs_var_id])
             ) {
