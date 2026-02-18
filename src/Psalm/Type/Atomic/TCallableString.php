@@ -14,26 +14,9 @@ use Psalm\Storage\Mutations;
  */
 final class TCallableString extends TNonFalsyString
 {
-    public int $allowed_mutations = Mutations::LEVEL_ALL;
-
-    public function __construct(bool $from_docblock = false, int $allowed_mutations = Mutations::LEVEL_ALL)
+    public function __construct(bool $from_docblock = false)
     {
-        $this->allowed_mutations = $allowed_mutations;
         parent::__construct($from_docblock);
-    }
-
-    /**
-     * @param Mutations::LEVEL_* $allowed_mutations
-     * @return static
-     */
-    public function setAllowedMutations(int $allowed_mutations): self
-    {
-        if ($this->allowed_mutations === $allowed_mutations) {
-            return $this;
-        }
-        $cloned = clone $this;
-        $cloned->allowed_mutations = $allowed_mutations;
-        return $cloned;
     }
 
     #[Override]
@@ -45,14 +28,7 @@ final class TCallableString extends TNonFalsyString
     #[Override]
     public function getKey(bool $include_extra = true): string
     {
-        $prefix = match ($this->allowed_mutations) {
-            Mutations::LEVEL_NONE => 'pure-',
-            Mutations::LEVEL_INTERNAL_READ => 'self-accessing-',
-            Mutations::LEVEL_INTERNAL_READ_WRITE => 'self-mutating-',
-            Mutations::LEVEL_EXTERNAL => 'impure-',
-        };
-
-        return $prefix . 'callable-string';
+        return 'callable-string';
     }
 
     #[Override]

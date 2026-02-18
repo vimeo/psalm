@@ -60,7 +60,6 @@ final class TKeyedArray extends Atomic
          */
         public bool $is_list = false,
         public bool $is_callable = false,
-        public int $allowed_mutations = \Psalm\Storage\Mutations::LEVEL_EXTERNAL,
         bool $from_docblock = false,
     ) {
         parent::__construct($from_docblock);
@@ -113,7 +112,7 @@ final class TKeyedArray extends Atomic
             }
         }
 
-        return new self($properties, $class_strings, $fallback_params, $is_list, false, \Psalm\Storage\Mutations::LEVEL_EXTERNAL, $from_docblock);
+        return new self($properties, $class_strings, $fallback_params, $is_list, false, $from_docblock);
     }
 
     /**
@@ -126,9 +125,8 @@ final class TKeyedArray extends Atomic
         ?array $class_strings = null,
         bool $is_list = false,
         bool $from_docblock = false,
-        int $allowed_mutations = \Psalm\Storage\Mutations::LEVEL_EXTERNAL,
     ): self {
-        return new self($properties, $class_strings, null, $is_list, true, $allowed_mutations, $from_docblock);
+        return new self($properties, $class_strings, null, $is_list, true, $from_docblock);
     }
 
     public function setIsCallable(bool $is_callable): self
@@ -138,22 +136,6 @@ final class TKeyedArray extends Atomic
         }
         $cloned = clone $this;
         $cloned->is_callable = $is_callable;
-        if ($is_callable) {
-            $cloned->allowed_mutations = \Psalm\Storage\Mutations::LEVEL_EXTERNAL;
-        }
-        return $cloned;
-    }
-
-    /**
-     * @param \Psalm\Storage\Mutations::LEVEL_* $allowed_mutations
-     */
-    public function setAllowedMutations(int $allowed_mutations): self
-    {
-        if ($this->allowed_mutations === $allowed_mutations) {
-            return $this;
-        }
-        $cloned = clone $this;
-        $cloned->allowed_mutations = $allowed_mutations;
         return $cloned;
     }
 
@@ -268,16 +250,6 @@ final class TKeyedArray extends Atomic
             sort($property_strings);
         }
 
-        if ($this->is_callable) {
-            $prefix = match ($this->allowed_mutations) {
-                \Psalm\Storage\Mutations::LEVEL_NONE => 'pure-',
-                \Psalm\Storage\Mutations::LEVEL_INTERNAL_READ => 'self-accessing-',
-                \Psalm\Storage\Mutations::LEVEL_INTERNAL_READ_WRITE => 'self-mutating-',
-                \Psalm\Storage\Mutations::LEVEL_EXTERNAL => 'impure-',
-            };
-            $key = $prefix . $key;
-        }
-
         $params_part = $this->fallback_params !== null
             ? ', ...<' . ($this->is_list
                 ? $this->fallback_params[1]->getId($exact)
@@ -360,15 +332,10 @@ final class TKeyedArray extends Atomic
 
         $callablePrefix = '';
         if ($this->is_callable) {
-            $callablePrefix = match ($this->allowed_mutations) {
-                \Psalm\Storage\Mutations::LEVEL_NONE => 'pure-callable-',
-                \Psalm\Storage\Mutations::LEVEL_INTERNAL_READ => 'self-accessing-callable-',
-                \Psalm\Storage\Mutations::LEVEL_INTERNAL_READ_WRITE => 'self-mutating-callable-',
-                \Psalm\Storage\Mutations::LEVEL_EXTERNAL => 'impure-callable-',
-            };
+            $callablePrefix = 'callable-';
         }
 
-        return  ($this->is_list
+        return ($this->is_list
             ? ($callablePrefix . 'list')
             : ($callablePrefix . 'array')
         ) . '{' . implode(', ', $suffixed_properties) . $params_part . '}';

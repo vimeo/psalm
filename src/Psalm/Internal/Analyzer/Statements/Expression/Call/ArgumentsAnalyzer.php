@@ -413,7 +413,6 @@ final class ArgumentsAnalyzer
 
             $replaced_type = new Union([
                 new TCallable(
-                    'callable',
                     array_reverse($function_like_params),
                 ),
             ]);

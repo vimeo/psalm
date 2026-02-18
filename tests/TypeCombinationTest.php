@@ -192,8 +192,6 @@ final class TypeCombinationTest extends TestCase
             'self-mutating-' => Mutations::LEVEL_INTERNAL_READ_WRITE,
             'impure-' => Mutations::LEVEL_EXTERNAL,
 
-            // Explicitly empty, valid case
-            '' => Mutations::LEVEL_EXTERNAL,
         ];
         $types = [
             'callable',
@@ -213,8 +211,6 @@ final class TypeCombinationTest extends TestCase
 
                         if ($type1_final === 'impure-callable' 
                             || $type2_final === 'impure-callable'
-                            || $type1_final === 'callable'
-                            || $type2_final === 'callable'
                         ) {
                             yield "combine $type1_final and $type2_final" => [
                                 'expected' => "impure-callable",
