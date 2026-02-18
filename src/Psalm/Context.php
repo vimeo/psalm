@@ -355,6 +355,7 @@ final class Context
 
     /**
      * @psalm-mutation-free
+     * @api
      */
     public function isPure(): bool
     {

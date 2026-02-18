@@ -394,7 +394,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         if ($storage instanceof MethodStorage) {
             if (
                 // Allow constructors to mutate (override immutability)
-                str_ends_with($storage->cased_name, '__construct')
+                str_ends_with((string) $storage->cased_name, '__construct')
 
                 // ???
                 || $storage->mutation_free_assumed
@@ -2190,7 +2190,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $closure_return_type,
                 $storage instanceof FunctionStorage
                     ? $storage->allowed_mutations
-                    : null,
+                    : Mutations::LEVEL_ALL,
                 $storage instanceof FunctionStorage ? $storage->byref_uses : [],
             );
 

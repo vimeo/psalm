@@ -264,6 +264,7 @@ abstract class SourceAnalyzer implements StatementsSource
 
     /**
      * @param Mutations::LEVEL_* $mutation_level
+     * @param ?Mutations::LEVEL_* $inferred_mutation_level
      * @param non-empty-string $msg
      * @param class-string<CodeIssue> $class
      */
@@ -291,6 +292,7 @@ abstract class SourceAnalyzer implements StatementsSource
                 $mutation_level,
             );
             IssueBuffer::maybeAdd(
+                /** @psalm-suppress UnsafeInstantiation */
                 new $class(
                     $msg,
                     new CodeLocation($this, $node),
