@@ -108,6 +108,7 @@ final class TypeCombiner
         foreach ($types as $type) {
             $from_docblock = $from_docblock || $type->from_docblock;
 
+            /** @psalm-suppress ImpureMethodCall */
             $result = self::scrapeTypeProperties(
                 $type,
                 $combination,
@@ -208,6 +209,7 @@ final class TypeCombiner
         $new_types = [];
 
         if ($combination->objectlike_entries) {
+            /** @psalm-suppress ImpureMethodCall */
             $new_types = self::handleKeyedArrayEntries(
                 $combination,
                 $overwrite_empty_array,
@@ -219,7 +221,7 @@ final class TypeCombiner
             if (count($combination->array_type_params) !== 2) {
                 throw new UnexpectedValueException('Unexpected number of parameters');
             }
-
+            /** @psalm-suppress ImpureMethodCall */
             $new_types[] = self::getArrayTypeFromGenericParams(
                 $codebase,
                 $combination,

@@ -198,6 +198,7 @@ final class TemplateInferredTypeReplacer
             } elseif ($atomic_type instanceof TConditional
                 && $codebase
             ) {
+                /** @psalm-suppress ImpureMethodCall */
                 $class_template_type = self::replaceConditional(
                     $template_result,
                     $codebase,
