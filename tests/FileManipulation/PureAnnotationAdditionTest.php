@@ -63,7 +63,7 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                 'output' => '<?php
                     class A {
                         /**
-                         * @psalm-pure
+                         * @psalm-mutation-free
                          */
                         public function foo(string $s, int $v): string {
                             if ($v > 5) {
