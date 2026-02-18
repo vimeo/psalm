@@ -30,6 +30,7 @@ trait CallableTrait
 
     public ?Union $return_type = null;
 
+    /** @var Mutations::LEVEL_* */
     public int $allowed_mutations = Mutations::LEVEL_ALL;
 
 
