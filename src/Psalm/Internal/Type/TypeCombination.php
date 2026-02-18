@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Type;
 
-use Psalm\Storage\Mutations;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TInt;

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Psalm\Type\Atomic;
 
 use Override;
-use Psalm\Storage\Mutations;
 
 /**
  * Denotes the `callable-string` type, used to represent an unknown string that is also `callable`.

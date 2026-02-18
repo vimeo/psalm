@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Psalm\Type\Atomic;
 
 use Override;
-use Psalm\Storage\Mutations;
 
 /**
  * Denotes an object that is also `callable` (i.e. it has `__invoke` defined).

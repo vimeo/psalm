@@ -6,7 +6,6 @@ namespace Psalm\Tests;
 
 use Override;
 use Psalm\Internal\Type\TypeCombiner;
-use Psalm\Storage\Mutations;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 use Psalm\Type;
 use Psalm\Type\Atomic;
