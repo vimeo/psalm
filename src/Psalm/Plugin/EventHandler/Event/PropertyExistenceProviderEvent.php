@@ -16,7 +16,6 @@ final class PropertyExistenceProviderEvent
      * continue to determine if the property actually exists.
      *
      * @internal
-     *
      * @psalm-mutation-free
      */
     public function __construct(

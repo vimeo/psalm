@@ -89,7 +89,6 @@ final class FileStorageProvider
 
     /**
      * @return array<lowercase-string, FileStorage>
-     *
      * @psalm-external-mutation-free
      */
     public static function getAll(): array
@@ -99,7 +98,6 @@ final class FileStorageProvider
 
     /**
      * @return array<string, FileStorage>
-     *
      * @psalm-external-mutation-free
      */
     public function getNew(): array
@@ -109,7 +107,6 @@ final class FileStorageProvider
 
     /**
      * @param array<lowercase-string, FileStorage> $more
-     *
      * @psalm-external-mutation-free
      */
     public function addMore(array $more): void

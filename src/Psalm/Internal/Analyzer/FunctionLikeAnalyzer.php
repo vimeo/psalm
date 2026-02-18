@@ -512,29 +512,28 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             && !$context->collect_initializations
             && !$context->collect_mutations
         ) {
-            $isVoid = false;
             if ($this->function->stmts === null) {
                 $isVoid = $storage->return_type
                     ? $storage->return_type->isVoid()
                     : false;
             } else {
-                    $yield_types = [];
-                    $inferred_return_types = ReturnTypeCollector::getReturnTypes(
+                $yield_types = [];
+                $inferred_return_types = ReturnTypeCollector::getReturnTypes(
+                    $codebase,
+                    $type_provider,
+                    $function_stmts,
+                    $yield_types,
+                    true,
+                );
+
+                $inferred_return = $inferred_return_types
+                    ? Type::combineUnionTypeArray(
+                        $inferred_return_types,
                         $codebase,
-                        $type_provider,
-                        $function_stmts,
-                        $yield_types,
-                        true,
-                    );
-
-                    $inferred_return = $inferred_return_types
-                        ? Type::combineUnionTypeArray(
-                            $inferred_return_types,
-                            $codebase,
-                        )
-                        : Type::getVoid();
-
-                    $isVoid = $inferred_return->isVoid();
+                    )
+                    : Type::getVoid();
+                
+                $isVoid = $inferred_return->isVoid();
             }
             if ($isVoid
                 && !(

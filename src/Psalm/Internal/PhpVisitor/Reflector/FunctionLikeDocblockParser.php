@@ -696,7 +696,6 @@ final class FunctionLikeDocblockParser
 
     /**
      * @throws DocblockParseException if a duplicate is found
-     *
      * @psalm-mutation-free
      */
     private static function checkDuplicatedTags(ParsedDocblock $parsed_docblock): void
@@ -715,9 +714,7 @@ final class FunctionLikeDocblockParser
 
     /**
      * @param array<int, string> $param
-     *
      * @throws DocblockParseException  if a duplicate is found
-     *
      * @psalm-pure
      */
     private static function checkDuplicatedParams(array $param): void
@@ -784,9 +781,7 @@ final class FunctionLikeDocblockParser
 
     /**
      * @param list<int> $offsets
-     *
      * @return list<int>
-     *
      * @psalm-mutation-free
      */
     private static function tagOffsetsToLines(array $offsets, PhpParser\Comment\Doc $comment): array

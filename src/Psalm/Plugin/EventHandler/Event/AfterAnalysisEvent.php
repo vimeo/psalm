@@ -14,9 +14,7 @@ final class AfterAnalysisEvent
      * Called after analysis is complete
      *
      * @param array<string, list<IssueData>> $issues where string key is a filepath
-     *
      * @internal
-     *
      * @psalm-mutation-free
      */
     public function __construct(

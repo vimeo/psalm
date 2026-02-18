@@ -16,9 +16,7 @@ final class BeforeExpressionAnalysisEvent
      * Called before an expression is checked
      *
      * @param list<FileManipulation> $file_replacements
-     *
      * @internal
-     *
      * @psalm-mutation-free
      */
     public function __construct(
@@ -60,7 +58,6 @@ final class BeforeExpressionAnalysisEvent
 
     /**
      * @param list<FileManipulation> $file_replacements
-     *
      * @psalm-external-mutation-free
      */
     public function setFileReplacements(array $file_replacements): void

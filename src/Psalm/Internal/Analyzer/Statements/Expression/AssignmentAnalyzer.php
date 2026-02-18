@@ -181,7 +181,6 @@ final class AssignmentAnalyzer
             $root_expr = $root_expr->var;
         }
 
-        $root_var_name = null;
         $root_is_superglobal = false;
         // if we don't know where this data is going, treat as a dead-end usage
         if ($root_expr instanceof PhpParser\Node\Expr\Variable

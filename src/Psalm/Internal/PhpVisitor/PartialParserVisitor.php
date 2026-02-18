@@ -41,8 +41,7 @@ final class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
     private readonly int $a_file_contents_length;
 
     /**
-     * @param array<int, array{0: int, 1: int, 2: int, 3: int, 4: int, 5: string}> $offset_map 
-     *
+     * @param array<int, array{0: int, 1: int, 2: int, 3: int, 4: int, 5: string}> $offset_map
      * @psalm-mutation-free
      */
     public function __construct(

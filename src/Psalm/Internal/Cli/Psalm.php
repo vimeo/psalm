@@ -1076,7 +1076,6 @@ final class Psalm
         if (isset($options['review'])) {
             require_once __DIR__ . '/Review.php';
             array_shift($argv);
-            /** @psalm-suppress PossiblyNullArgument */
             Review::run(array_values($argv));
             exit;
         }
@@ -1391,7 +1390,6 @@ final class Psalm
         sort($formats);
         $outputFormats = wordwrap(implode(', ', $formats), 75, "\n            ");
 
-        /** @psalm-suppress ImpureMethodCall */
         $reports = array_keys(Report::getMapping());
         sort($reports);
         $reportFormats = wordwrap('"' . implode('", "', $reports) . '"', 75, "\n        ");

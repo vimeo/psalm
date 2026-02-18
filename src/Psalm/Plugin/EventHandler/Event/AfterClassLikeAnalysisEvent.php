@@ -16,9 +16,7 @@ final class AfterClassLikeAnalysisEvent
      * Called after a statement has been checked
      *
      * @param FileManipulation[]   $file_replacements
-     *
      * @internal
-     *
      * @psalm-mutation-free
      */
     public function __construct(
@@ -60,7 +58,6 @@ final class AfterClassLikeAnalysisEvent
 
     /**
      * @param FileManipulation[] $file_replacements
-     *
      * @psalm-external-mutation-free
      */
     public function setFileReplacements(array $file_replacements): void

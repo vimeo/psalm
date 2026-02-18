@@ -13,9 +13,7 @@ final class MethodParamsProviderEvent
 {
     /**
      * @param list<PhpParser\Node\Arg>    $call_args
-     *
      * @internal
-     *
      * @psalm-mutation-free
      */
     public function __construct(

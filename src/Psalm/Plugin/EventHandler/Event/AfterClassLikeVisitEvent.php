@@ -14,9 +14,7 @@ final class AfterClassLikeVisitEvent
 {
     /**
      * @param FileManipulation[] $file_replacements
-     *
      * @internal
-     *
      * @psalm-mutation-free
      */
     public function __construct(
@@ -58,7 +56,6 @@ final class AfterClassLikeVisitEvent
 
     /**
      * @param FileManipulation[] $file_replacements
-     *
      * @psalm-external-mutation-free
      */
     public function setFileReplacements(array $file_replacements): void

@@ -50,7 +50,6 @@ final class FunctionExistenceProvider
     /**
      * @param lowercase-string $function_id
      * @param Closure(FunctionExistenceProviderEvent): ?bool $c
-     *
      * @psalm-external-mutation-free
      */
     public function registerClosure(string $function_id, Closure $c): void

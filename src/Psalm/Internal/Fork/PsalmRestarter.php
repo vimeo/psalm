@@ -68,8 +68,7 @@ final class PsalmRestarter extends XdebugHandler
     }
 
     /**
-     * @param list<non-empty-string> $disable_extensions 
-     *
+     * @param list<non-empty-string> $disable_extensions
      * @psalm-external-mutation-free
      */
     public function disableExtensions(array $disable_extensions): void
@@ -203,7 +202,6 @@ final class PsalmRestarter extends XdebugHandler
 
     /**
      * @return positive-int
-     *
      * @psalm-pure
      */
     private static function getRequiredMemoryConsumption(): int

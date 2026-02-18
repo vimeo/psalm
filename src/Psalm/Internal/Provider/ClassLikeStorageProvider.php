@@ -85,7 +85,6 @@ final class ClassLikeStorageProvider
 
     /**
      * @return array<string, ClassLikeStorage>
-     *
      * @psalm-external-mutation-free
      */
     public static function getAll(): array
@@ -95,7 +94,6 @@ final class ClassLikeStorageProvider
 
     /**
      * @return array<string, ClassLikeStorage>
-     *
      * @psalm-external-mutation-free
      */
     public function getNew(): array

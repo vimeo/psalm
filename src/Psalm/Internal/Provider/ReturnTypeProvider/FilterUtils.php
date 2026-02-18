@@ -370,8 +370,7 @@ final class FilterUtils
     }
 
     /**
-     * @return array{Union, Union, Union} 
-     *
+     * @return array{Union, Union, Union}
      * @psalm-pure
      */
     public static function getFailsNotSetType(int $flags_int_used): array

@@ -61,7 +61,6 @@ final class MethodReturnTypeProvider
 
     /**
      * @param Closure(MethodReturnTypeProviderEvent): ?Union $c
-     *
      * @psalm-external-mutation-free
      */
     public function registerClosure(string $fq_classlike_name, Closure $c): void

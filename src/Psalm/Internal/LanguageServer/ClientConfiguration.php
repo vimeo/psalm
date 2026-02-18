@@ -36,7 +36,6 @@ final class ClientConfiguration
      * Undocumented function
      *
      * @param 'always'|'auto'|null $findUnusedCode
-     *
      * @psalm-mutation-free
      */
     public function __construct(

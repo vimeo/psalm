@@ -54,7 +54,6 @@ final class FunctionParamsProvider
 
     /**
      * @param Closure(FunctionParamsProviderEvent): ?array<int, FunctionLikeParameter> $c
-     *
      * @psalm-external-mutation-free
      */
     public function registerClosure(string $fq_classlike_name, Closure $c): void

@@ -22,7 +22,6 @@ final class ContainsClassLikeVisitor extends TypeVisitor
 
     /**
      * @param lowercase-string $fq_classlike_name
-     *
      * @psalm-mutation-free
      */
     public function __construct(

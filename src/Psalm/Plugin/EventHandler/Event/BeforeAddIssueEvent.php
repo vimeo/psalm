@@ -11,7 +11,6 @@ final class BeforeAddIssueEvent
 {
     /**
      * @internal
-     *
      * @psalm-mutation-free
      */
     public function __construct(

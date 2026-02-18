@@ -47,7 +47,6 @@ final class MethodExistenceProvider
 
     /**
      * @param Closure(MethodExistenceProviderEvent): ?bool $c
-     *
      * @psalm-external-mutation-free
      */
     public function registerClosure(string $fq_classlike_name, Closure $c): void

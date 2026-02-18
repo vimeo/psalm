@@ -46,7 +46,6 @@ final class DynamicFunctionStorageProvider
 
     /**
      * @param Closure(DynamicFunctionStorageProviderEvent): ?DynamicFunctionStorage $c
-     *
      * @psalm-external-mutation-free
      */
     public function registerClosure(string $fq_function_name, Closure $c): void

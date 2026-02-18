@@ -16,7 +16,6 @@ final class DynamicFunctionStorageProviderEvent
 {
     /**
      * @internal
-     *
      * @psalm-mutation-free
      */
     public function __construct(
@@ -57,7 +56,6 @@ final class DynamicFunctionStorageProviderEvent
 
     /**
      * @return list<PhpParser\Node\Arg>
-     *
      * @psalm-mutation-free
      */
     public function getArgs(): array

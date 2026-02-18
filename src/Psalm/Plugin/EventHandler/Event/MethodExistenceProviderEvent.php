@@ -15,7 +15,6 @@ final class MethodExistenceProviderEvent
      * continue to determine if the method actually exists.
      *
      * @internal
-     *
      * @psalm-mutation-free
      */
     public function __construct(

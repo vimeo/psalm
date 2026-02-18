@@ -13,7 +13,6 @@ final class AfterEveryFunctionCallAnalysisEvent
 {
     /**
      * @internal
-     *
      * @psalm-mutation-free
      */
     public function __construct(

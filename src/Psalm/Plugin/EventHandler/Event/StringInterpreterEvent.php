@@ -12,7 +12,6 @@ final class StringInterpreterEvent
      * Called after a statement has been checked
      *
      * @internal
-     *
      * @psalm-mutation-free
      */
     public function __construct(

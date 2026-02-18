@@ -191,7 +191,6 @@ final class FileReferenceProvider
 
     /**
      * @param lowercase-string $fq_class_name_lc
-     *
      * @psalm-external-mutation-free
      */
     public function addNonMethodReferenceToClass(string $source_file, string $fq_class_name_lc): void
@@ -201,7 +200,6 @@ final class FileReferenceProvider
 
     /**
      * @return array<string, array<string,bool>>
-     *
      * @psalm-external-mutation-free
      */
     public function getAllNonMethodReferencesToClasses(): array
@@ -211,7 +209,6 @@ final class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      * @psalm-external-mutation-free
      */
     public function addNonMethodReferencesToClasses(array $references): void
@@ -230,7 +227,6 @@ final class FileReferenceProvider
 
     /**
      * @param array<string, string> $map
-     *
      * @psalm-external-mutation-free
      */
     public function addClassLikeFiles(array $map): void
@@ -271,7 +267,6 @@ final class FileReferenceProvider
 
     /**
      * @return array<string, array<string,bool>>
-     *
      * @psalm-external-mutation-free
      */
     public function getAllFileReferencesToClassMembers(): array
@@ -281,7 +276,6 @@ final class FileReferenceProvider
 
     /**
      * @return array<string, array<string,bool>>
-     *
      * @psalm-external-mutation-free
      */
     public function getAllFileReferencesToClassProperties(): array
@@ -291,7 +285,6 @@ final class FileReferenceProvider
 
     /**
      * @return array<string, array<string,bool>>
-     *
      * @psalm-external-mutation-free
      */
     public function getAllFileReferencesToMethodReturns(): array
@@ -301,7 +294,6 @@ final class FileReferenceProvider
 
     /**
      * @return array<string, array<string,bool>>
-     *
      * @psalm-external-mutation-free
      */
     public function getAllFileReferencesToMissingClassMembers(): array
@@ -311,7 +303,6 @@ final class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      * @psalm-external-mutation-free
      */
     public function addFileReferencesToClassMembers(array $references): void
@@ -330,7 +321,6 @@ final class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      * @psalm-external-mutation-free
      */
     public function addFileReferencesToClassProperties(array $references): void
@@ -349,7 +339,6 @@ final class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      * @psalm-external-mutation-free
      */
     public function addFileReferencesToMethodReturns(array $references): void
@@ -368,7 +357,6 @@ final class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      * @psalm-external-mutation-free
      */
     public function addFileReferencesToMissingClassMembers(array $references): void
@@ -403,7 +391,6 @@ final class FileReferenceProvider
 
     /**
      * @return array<int, string>
-     *
      * @psalm-external-mutation-free
      */
     private function calculateFilesReferencingFile(Codebase $codebase, string $file): array
@@ -441,7 +428,6 @@ final class FileReferenceProvider
 
     /**
      * @return array<int, string>
-     *
      * @psalm-external-mutation-free
      */
     private function calculateFilesInheritingFile(Codebase $codebase, string $file): array
@@ -479,7 +465,6 @@ final class FileReferenceProvider
 
     /**
      * @return array<int, string>
-     *
      * @psalm-external-mutation-free
      */
     public function getFilesReferencingFile(string $file): array
@@ -489,7 +474,6 @@ final class FileReferenceProvider
 
     /**
      * @return array<int, string>
-     *
      * @psalm-external-mutation-free
      */
     public function getFilesInheritingFromFile(string $file): array
@@ -499,7 +483,6 @@ final class FileReferenceProvider
 
     /**
      * @return array<string, array<string, bool>>
-     *
      * @psalm-external-mutation-free
      */
     public function getAllMethodReferencesToClassMembers(): array
@@ -509,7 +492,6 @@ final class FileReferenceProvider
 
     /**
      * @return array<string, array<string, bool>>
-     *
      * @psalm-external-mutation-free
      */
     public function getAllMethodDependencies(): array
@@ -519,7 +501,6 @@ final class FileReferenceProvider
 
     /**
      * @return array<string, array<string, bool>>
-     *
      * @psalm-external-mutation-free
      */
     public function getAllMethodReferencesToClassProperties(): array
@@ -529,7 +510,6 @@ final class FileReferenceProvider
 
     /**
      * @return array<string, array<string, bool>>
-     *
      * @psalm-external-mutation-free
      */
     public function getAllMethodReferencesToMethodReturns(): array
@@ -539,7 +519,6 @@ final class FileReferenceProvider
 
     /**
      * @return array<string, array<string, bool>>
-     *
      * @psalm-external-mutation-free
      */
     public function getAllMethodReferencesToClasses(): array
@@ -549,7 +528,6 @@ final class FileReferenceProvider
 
     /**
      * @return array<string, array<string, bool>>
-     *
      * @psalm-external-mutation-free
      */
     public function getAllMethodReferencesToMissingClassMembers(): array
@@ -559,7 +537,6 @@ final class FileReferenceProvider
 
     /**
      * @return array<string, array<string,bool>>
-     *
      * @psalm-external-mutation-free
      */
     public function getAllReferencesToMixedMemberNames(): array
@@ -569,7 +546,6 @@ final class FileReferenceProvider
 
     /**
      * @return array<string, array<int, array<string, bool>>>
-     *
      * @psalm-external-mutation-free
      */
     public function getAllMethodParamUses(): array
@@ -788,7 +764,6 @@ final class FileReferenceProvider
 
     /**
      * @param lowercase-string $fq_class_name_lc
-     *
      * @psalm-external-mutation-free
      */
     public function addMethodReferenceToClass(string $calling_function_id, string $fq_class_name_lc): void
@@ -947,7 +922,6 @@ final class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      * @psalm-external-mutation-free
      */
     public function setNonMethodReferencesToClasses(array $references): void
@@ -957,7 +931,6 @@ final class FileReferenceProvider
 
     /**
      * @return array<string, array<int, CodeLocation>>
-     *
      * @psalm-external-mutation-free
      */
     public function getAllClassMethodLocations(): array
@@ -967,7 +940,6 @@ final class FileReferenceProvider
 
     /**
      * @return array<string, array<int, CodeLocation>>
-     *
      * @psalm-external-mutation-free
      */
     public function getAllClassPropertyLocations(): array
@@ -977,7 +949,6 @@ final class FileReferenceProvider
 
     /**
      * @return array<string, array<int, CodeLocation>>
-     *
      * @psalm-external-mutation-free
      */
     public function getAllClassLocations(): array
@@ -987,7 +958,6 @@ final class FileReferenceProvider
 
     /**
      * @return array<int, CodeLocation>
-     *
      * @psalm-external-mutation-free
      */
     public function getClassMethodLocations(string $method_id): array
@@ -997,7 +967,6 @@ final class FileReferenceProvider
 
     /**
      * @return array<int, CodeLocation>
-     *
      * @psalm-external-mutation-free
      */
     public function getClassPropertyLocations(string $property_id): array
@@ -1007,7 +976,6 @@ final class FileReferenceProvider
 
     /**
      * @return array<int, CodeLocation>
-     *
      * @psalm-external-mutation-free
      */
     public function getClassLocations(string $fq_class_name_lc): array
@@ -1017,7 +985,6 @@ final class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      * @psalm-external-mutation-free
      */
     public function addMethodReferencesToClassMembers(array $references): void
@@ -1036,7 +1003,6 @@ final class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      * @psalm-external-mutation-free
      */
     public function addMethodDependencies(array $references): void
@@ -1055,7 +1021,6 @@ final class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      * @psalm-external-mutation-free
      */
     public function addMethodReferencesToClassProperties(array $references): void
@@ -1074,7 +1039,6 @@ final class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      * @psalm-external-mutation-free
      */
     public function addMethodReferencesToMethodReturns(array $references): void
@@ -1093,7 +1057,6 @@ final class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      * @psalm-external-mutation-free
      */
     public function addMethodReferencesToClasses(array $references): void
@@ -1112,7 +1075,6 @@ final class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      * @psalm-external-mutation-free
      */
     public function addMethodReferencesToMissingClassMembers(array $references): void
@@ -1131,7 +1093,6 @@ final class FileReferenceProvider
 
     /**
      * @param array<string, array<int, array<string, bool>>> $references
-     *
      * @psalm-external-mutation-free
      */
     public function addMethodParamUses(array $references): void
@@ -1156,7 +1117,6 @@ final class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      * @psalm-external-mutation-free
      */
     public function setCallingMethodReferencesToClasses(array $references): void
@@ -1166,7 +1126,6 @@ final class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      * @psalm-external-mutation-free
      */
     public function setCallingMethodReferencesToClassMembers(array $references): void
@@ -1176,7 +1135,6 @@ final class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      * @psalm-external-mutation-free
      */
     public function setMethodDependencies(array $references): void
@@ -1186,7 +1144,6 @@ final class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      * @psalm-external-mutation-free
      */
     public function setCallingMethodReferencesToClassProperties(array $references): void
@@ -1196,7 +1153,6 @@ final class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      * @psalm-external-mutation-free
      */
     public function setCallingMethodReferencesToMethodReturns(array $references): void
@@ -1206,7 +1162,6 @@ final class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      * @psalm-external-mutation-free
      */
     public function setCallingMethodReferencesToMissingClassMembers(array $references): void
@@ -1216,7 +1171,6 @@ final class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      * @psalm-external-mutation-free
      */
     public function setFileReferencesToClassMembers(array $references): void
@@ -1226,7 +1180,6 @@ final class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      * @psalm-external-mutation-free
      */
     public function setFileReferencesToClassProperties(array $references): void
@@ -1236,7 +1189,6 @@ final class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      * @psalm-external-mutation-free
      */
     public function setFileReferencesToMethodReturns(array $references): void
@@ -1246,7 +1198,6 @@ final class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      * @psalm-external-mutation-free
      */
     public function setFileReferencesToMissingClassMembers(array $references): void
@@ -1256,7 +1207,6 @@ final class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      * @psalm-external-mutation-free
      */
     public function setReferencesToMixedMemberNames(array $references): void
@@ -1266,7 +1216,6 @@ final class FileReferenceProvider
 
     /**
      * @param array<string, array<int, array<string, bool>>> $references
-     *
      * @psalm-external-mutation-free
      */
     public function setMethodParamUses(array $references): void
@@ -1276,7 +1225,6 @@ final class FileReferenceProvider
 
     /**
      * @param array<string, array<int, CodeLocation>> $references
-     *
      * @psalm-external-mutation-free
      */
     public function addClassMethodLocations(array $references): void
@@ -1295,7 +1243,6 @@ final class FileReferenceProvider
 
     /**
      * @param array<string, array<int, CodeLocation>> $references
-     *
      * @psalm-external-mutation-free
      */
     public function addClassPropertyLocations(array $references): void
@@ -1314,7 +1261,6 @@ final class FileReferenceProvider
 
     /**
      * @param array<string, array<int, CodeLocation>> $references
-     *
      * @psalm-external-mutation-free
      */
     public function addClassLocations(array $references): void
@@ -1333,7 +1279,6 @@ final class FileReferenceProvider
 
     /**
      * @return array<string, array<int, IssueData>>
-     *
      * @psalm-external-mutation-free
      */
     public function getExistingIssues(): array
@@ -1376,7 +1321,6 @@ final class FileReferenceProvider
 
     /**
      * @param array<string, array<string, int>> $analyzed_methods
-     *
      * @psalm-external-mutation-free
      */
     public function setAnalyzedMethods(array $analyzed_methods): void
@@ -1386,7 +1330,6 @@ final class FileReferenceProvider
 
     /**
      * @param array<string, FileMapType> $file_maps
-     *
      * @psalm-external-mutation-free
      */
     public function setFileMaps(array $file_maps): void
@@ -1396,7 +1339,6 @@ final class FileReferenceProvider
 
     /**
      * @return array<string, array{int, int}>
-     *
      * @psalm-external-mutation-free
      */
     public function getTypeCoverage(): array
@@ -1406,7 +1348,6 @@ final class FileReferenceProvider
 
     /**
      * @param array<string, array{int, int}> $mixed_counts
-     *
      * @psalm-external-mutation-free
      */
     public function setTypeCoverage(array $mixed_counts): void
@@ -1416,7 +1357,6 @@ final class FileReferenceProvider
 
     /**
      * @return array<string, array<string, int>>
-     *
      * @psalm-external-mutation-free
      */
     public function getAnalyzedMethods(): array
@@ -1426,7 +1366,6 @@ final class FileReferenceProvider
 
     /**
      * @return array<string, FileMapType>
-     *
      * @psalm-external-mutation-free
      */
     public function getFileMaps(): array

@@ -66,8 +66,7 @@ final class PathMapper
     }
 
     /**
-     * @return ($path is null ? null : string) 
-     *
+     * @return ($path is null ? null : string)
      * @psalm-pure
      */
     private function sanitizeFolderPath(?string $path): ?string

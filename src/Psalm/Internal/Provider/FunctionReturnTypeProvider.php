@@ -130,7 +130,6 @@ final class FunctionReturnTypeProvider
     /**
      * @param lowercase-string $function_id
      * @param Closure(FunctionReturnTypeProviderEvent): ?Union $c
-     *
      * @psalm-external-mutation-free
      */
     public function registerClosure(string $function_id, Closure $c): void

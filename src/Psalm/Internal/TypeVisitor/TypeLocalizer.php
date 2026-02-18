@@ -24,7 +24,6 @@ final class TypeLocalizer extends MutableTypeVisitor
 {
     /**
      * @param array<string, array<string, Union>> $extends
-     *
      * @psalm-mutation-free
      */
     public function __construct(

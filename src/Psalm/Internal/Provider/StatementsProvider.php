@@ -254,7 +254,6 @@ final class StatementsProvider
 
     /**
      * @param array<string, array<string, bool>> $more_changed_members
-     *
      * @psalm-external-mutation-free
      */
     public function addChangedMembers(array $more_changed_members): void
@@ -272,7 +271,6 @@ final class StatementsProvider
 
     /**
      * @param array<string, array<string, bool>> $more_unchanged_members
-     *
      * @psalm-external-mutation-free
      */
     public function addUnchangedSignatureMembers(array $more_unchanged_members): void
@@ -290,7 +288,6 @@ final class StatementsProvider
 
     /**
      * @param array<string, bool> $errors
-     *
      * @psalm-external-mutation-free
      */
     public function addErrors(array $errors): void
@@ -330,7 +327,6 @@ final class StatementsProvider
 
     /**
      * @param array<string, array<int, array{int, int, int, int}>> $diff_map
-     *
      * @psalm-external-mutation-free
      */
     public function addDiffMap(array $diff_map): void
@@ -340,7 +336,6 @@ final class StatementsProvider
 
     /**
      * @param array<string, array<int, array{int, int}>> $deletion_ranges
-     *
      * @psalm-external-mutation-free
      */
     public function addDeletionRanges(array $deletion_ranges): void

@@ -52,7 +52,6 @@ final class MethodVisibilityProvider
 
     /**
      * @param Closure(MethodVisibilityProviderEvent): ?bool $c
-     *
      * @psalm-external-mutation-free
      */
     public function registerClosure(string $fq_classlike_name, Closure $c): void

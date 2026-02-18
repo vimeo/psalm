@@ -12,7 +12,6 @@ final class PropertyVisibilityProviderEvent
 {
     /**
      * @internal
-     *
      * @psalm-mutation-free
      */
     public function __construct(

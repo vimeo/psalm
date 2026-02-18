@@ -12,7 +12,6 @@ final class DynamicTemplateProvider
 {
     /**
      * @internal
-     *
      * @psalm-mutation-free
      */
     public function __construct(

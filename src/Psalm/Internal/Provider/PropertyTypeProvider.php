@@ -51,7 +51,6 @@ final class PropertyTypeProvider
 
     /**
      * @param Closure(PropertyTypeProviderEvent): ?Union $c
-     *
      * @psalm-external-mutation-free
      */
     public function registerClosure(string $fq_classlike_name, Closure $c): void

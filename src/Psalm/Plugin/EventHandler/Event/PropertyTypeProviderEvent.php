@@ -11,7 +11,6 @@ final class PropertyTypeProviderEvent
 {
     /**
      * @internal
-     *
      * @psalm-mutation-free
      */
     public function __construct(

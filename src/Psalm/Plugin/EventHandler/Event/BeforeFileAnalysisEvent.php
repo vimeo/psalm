@@ -16,9 +16,7 @@ final class BeforeFileAnalysisEvent
      * Called before a file has been checked
      *
      * @param list<Stmt> $stmts
-     *
      * @internal
-     *
      * @psalm-mutation-free
      */
     public function __construct(

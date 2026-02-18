@@ -1025,8 +1025,7 @@ final class LanguageServer extends Dispatcher
     }
 
     /**
-     * @return static 
-     *
+     * @return static
      * @psalm-mutation-free
      */
     public function __get(string $_prop_name): self

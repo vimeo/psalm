@@ -22,7 +22,6 @@ final class TypeScanner extends TypeVisitor
 {
     /**
      * @param array<string, mixed> $phantom_classes
-     *
      * @psalm-mutation-free
      */
     public function __construct(

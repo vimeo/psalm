@@ -13,7 +13,6 @@ final class FinallyScope
 {
     /**
      * @param array<string, Union> $vars_in_scope
-     *
      * @psalm-mutation-free
      */
     public function __construct(public array $vars_in_scope)

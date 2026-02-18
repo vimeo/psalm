@@ -26,8 +26,7 @@ final class VersionUtils
     private static ?array $versions = null;
 
     /**
-     * @psalm-suppress UnusedConstructor it's here to prevent instantiations 
-     *
+     * @psalm-suppress UnusedConstructor it's here to prevent instantiations
      * @psalm-mutation-free
      */
     private function __construct()
