@@ -543,6 +543,9 @@ final class Codebase
         }
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function getFileContents(string $file_path): string
     {
         return $this->file_provider->getContents($file_path);
@@ -2231,7 +2234,7 @@ final class Codebase
     }
 
     /**
-     * @psalm-mutation-free
+     * @psalm-external-mutation-free
      */
     public function removeTemporaryFileChanges(string $file_path): void
     {

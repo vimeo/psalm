@@ -40,6 +40,9 @@ class FileProvider
      */
     protected array $open_files_paths = [];
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function getContents(string $file_path, bool $go_to_source = false): string
     {
         if (!$go_to_source && isset($this->temp_files[$file_path])) {
@@ -81,6 +84,9 @@ class FileProvider
         file_put_contents($file_path, $file_contents);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function setOpenContents(string $file_path, ?string $file_contents = null): void
     {
         if (isset(self::$open_files[$file_path])) {
@@ -128,6 +134,9 @@ class FileProvider
         return $this->open_files_paths;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function openFile(string $file_path): void
     {
         self::$open_files[$file_path] = $this->getContents($file_path, true);

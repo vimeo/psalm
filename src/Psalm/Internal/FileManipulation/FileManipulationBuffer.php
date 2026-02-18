@@ -88,6 +88,9 @@ final class FileManipulationBuffer
         return [$start_offset, $middle_offset];
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public static function addForCodeLocation(
         CodeLocation $code_location,
         string $replacement_text,
@@ -121,6 +124,9 @@ final class FileManipulationBuffer
         );
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public static function addVarAnnotationToRemove(DocblockTypeLocation $code_location): void
     {
         $bounds = $code_location->getSelectionBounds();
@@ -189,6 +195,8 @@ final class FileManipulationBuffer
 
     /**
      * @return array<string, FileManipulation[]>
+     *
+     * @psalm-external-mutation-free
      */
     public static function getMigrationManipulations(FileProvider $file_provider): array
     {

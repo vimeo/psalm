@@ -233,6 +233,7 @@ abstract class SourceAnalyzer implements StatementsSource
         return $this->source->getNodeTypeProvider();
     }
 
+    #[Override]
     public function signalMutationOnlyInferred(
         int $mutation_level,
     ): void {
@@ -261,6 +262,7 @@ abstract class SourceAnalyzer implements StatementsSource
      * @param non-empty-string $msg
      * @param class-string<CodeIssue> $class
      */
+    #[Override]
     public function signalMutation(
         int $mutation_level,
         Context $context,

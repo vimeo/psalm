@@ -120,6 +120,9 @@ final class UnusedAssignmentRemover
         }
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     private static function getPartialRemovalBounds(
         Codebase $codebase,
         CodeLocation $var_loc,
