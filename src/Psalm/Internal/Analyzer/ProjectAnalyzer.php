@@ -1014,9 +1014,7 @@ final class ProjectAnalyzer
 
     /**
      * @param array<string>  $diff_files
-     *
      * @return array<string, string>
-     *
      * @psalm-external-mutation-free
      */
     public function getReferencedFilesFromDiff(array $diff_files, bool $include_referencing_files = true): array
@@ -1112,9 +1110,7 @@ final class ProjectAnalyzer
 
     /**
      * @param array<string, bool> $issues
-     *
      * @throws UnsupportedIssueToFixException
-     *
      * @psalm-external-mutation-free
      */
     public function setIssuesToFix(array $issues): void

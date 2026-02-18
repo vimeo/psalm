@@ -1350,7 +1350,6 @@ final class TypeCombiner
 
     /**
      * @return array<string, bool>
-     *
      * @psalm-mutation-free
      */
     private static function getSharedTypes(TypeCombination $combination, Codebase $codebase): array
@@ -1389,7 +1388,6 @@ final class TypeCombiner
 
     /**
      * @return array<string, true>
-     *
      * @psalm-mutation-free
      */
     private static function getClassLikes(Codebase $codebase, string $fq_classlike_name): array

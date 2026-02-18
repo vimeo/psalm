@@ -107,7 +107,6 @@ final class CommentAnalyzerTest extends BaseTestCase
 
     /**
      * @return iterable<array-key, array{doc_line: string, expected: string[]}>
-     *
      * @psalm-pure
      */
     public function providerSplitDocLine(): iterable

@@ -32,7 +32,6 @@ final class ArrayType
      *         )
      *     )
      * )
-     *
      * @psalm-mutation-free
      */
     public static function infer(Atomic $type): ?self

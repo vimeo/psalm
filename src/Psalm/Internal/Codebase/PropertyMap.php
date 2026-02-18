@@ -21,7 +21,6 @@ final class PropertyMap
      * Gets the method/function call map
      *
      * @return array<lowercase-string, array<string, string>>
-     *
      * @psalm-external-mutation-free
      */
     public static function getPropertyMap(): array

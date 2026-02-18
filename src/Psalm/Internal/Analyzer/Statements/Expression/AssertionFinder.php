@@ -1378,7 +1378,6 @@ final class AssertionFinder
 
     /**
      * @param Identical|Equal|NotIdentical|NotEqual $conditional
-     *
      * @psalm-mutation-free
      */
     private static function hasEmptyArrayVariable(

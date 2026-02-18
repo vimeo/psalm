@@ -409,8 +409,7 @@ final class DocumentationTest extends TestCase
     }
 
     /**
-     * @return iterable<string, array{string}> 
-     *
+     * @return iterable<string, array{string}>
      * @psalm-mutation-free
      */
     public function knownAnnotations(): iterable

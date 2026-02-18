@@ -431,7 +431,6 @@ final class ScopeAnalyzer
 
     /**
      * @param array<PhpParser\Node> $stmts
-     *
      * @psalm-mutation-free
      */
     public static function onlyThrows(array $stmts): bool

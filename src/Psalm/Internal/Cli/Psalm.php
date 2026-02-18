@@ -481,7 +481,6 @@ final class Psalm
 
     /**
      * @return Report::TYPE_*
-     *
      * @psalm-pure
      */
     private static function findDefaultOutputFormat(): string
@@ -1248,8 +1247,7 @@ final class Psalm
     }
 
     /**
-     * @return false|'always'|'auto' 
-     *
+     * @return false|'always'|'auto'
      * @psalm-mutation-free
      */
     private static function shouldFindUnusedCode(array $options, Config $config): bool|string

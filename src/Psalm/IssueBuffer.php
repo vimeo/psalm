@@ -403,7 +403,6 @@ final class IssueBuffer
 
     /**
      * @return array<string, list<IssueData>>
-     *
      * @psalm-external-mutation-free
      */
     public static function getIssuesData(): array
@@ -413,7 +412,6 @@ final class IssueBuffer
 
     /**
      * @return list<IssueData>
-     *
      * @psalm-external-mutation-free
      */
     public static function getIssuesDataForFile(string $file_path): array
@@ -423,7 +421,6 @@ final class IssueBuffer
 
     /**
      * @return array<string, int>
-     *
      * @psalm-external-mutation-free
      */
     public static function getFixableIssues(): array
@@ -433,7 +430,6 @@ final class IssueBuffer
 
     /**
      * @param array<string, int> $fixable_issue_counts
-     *
      * @psalm-external-mutation-free
      */
     public static function addFixableIssues(array $fixable_issue_counts): void
@@ -449,7 +445,6 @@ final class IssueBuffer
 
     /**
      * @return array<string, array<int, int>>
-     *
      * @psalm-external-mutation-free
      */
     public static function getUnusedSuppressions(): array
@@ -459,7 +454,6 @@ final class IssueBuffer
 
     /**
      * @return array<string, array<int, bool>>
-     *
      * @psalm-external-mutation-free
      */
     public static function getUsedSuppressions(): array
@@ -469,7 +463,6 @@ final class IssueBuffer
 
     /**
      * @param array<string, array<int, int>> $unused_suppressions
-     *
      * @psalm-external-mutation-free
      */
     public static function addUnusedSuppressions(array $unused_suppressions): void
@@ -479,7 +472,6 @@ final class IssueBuffer
 
     /**
      * @param array<string, array<int, bool>> $used_suppressions
-     *
      * @psalm-external-mutation-free
      */
     public static function addUsedSuppressions(array $used_suppressions): void
@@ -539,7 +531,6 @@ final class IssueBuffer
 
     /**
      * @param array<string, list<IssueData>> $issues_data
-     *
      * @psalm-external-mutation-free
      */
     public static function addIssues(array $issues_data): void
@@ -1063,7 +1054,6 @@ final class IssueBuffer
 
     /**
      * @return array<string, list<IssueData>>
-     *
      * @psalm-external-mutation-free
      */
     public static function clear(): array
@@ -1100,7 +1090,6 @@ final class IssueBuffer
      * Decrease the recording level after leaving a loop
      *
      * @see startRecording
-     *
      * @psalm-external-mutation-free
      */
     public static function stopRecording(): void
@@ -1116,7 +1105,6 @@ final class IssueBuffer
      * This will return the recorded issues for the current recording level
      *
      * @return array<int, CodeIssue>
-     *
      * @psalm-external-mutation-free
      */
     public static function clearRecordingLevel(): array
@@ -1148,9 +1136,7 @@ final class IssueBuffer
 
     /**
      * @internal
-     *
      * @param array<array-key,mixed> $server
-     *
      * @psalm-external-mutation-free
      */
     final public static function captureServer(array $server): void
@@ -1159,9 +1145,7 @@ final class IssueBuffer
     }
     /**
      * @internal
-     *
      * @return array<array-key,mixed>
-     *
      * @psalm-external-mutation-free
      */
     final public static function getServer(): array

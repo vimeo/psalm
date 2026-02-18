@@ -51,8 +51,7 @@ final class IncludeCollector
     }
 
     /**
-     * @return list<string> 
-     *
+     * @return list<string>
      * @psalm-mutation-free
      */
     public function getFilteredIncludedFiles(): array

@@ -150,9 +150,7 @@ final class JunitReport extends Report
 
     /**
      * @param list<IssueData> $failures
-     *
      * @return array<string, non-empty-list<IssueData>>
-     *
      * @psalm-mutation-free
      */
     private function groupByType(array $failures): array

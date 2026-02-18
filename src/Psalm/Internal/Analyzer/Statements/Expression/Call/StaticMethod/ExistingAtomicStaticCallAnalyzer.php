@@ -597,7 +597,6 @@ final class ExistingAtomicStaticCallAnalyzer
 
     /**
      * @return non-empty-array<string,non-empty-list<TemplateBound>>
-     *
      * @psalm-mutation-free
      */
     private static function resolveTemplateResultLowerBound(

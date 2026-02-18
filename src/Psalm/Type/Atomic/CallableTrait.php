@@ -332,7 +332,6 @@ trait CallableTrait
 
     /**
      * @return list<string>
-     *
      * @psalm-pure
      */
     protected function getCallableChildNodeKeys(): array

@@ -1186,7 +1186,6 @@ final class TemplateStandinTypeReplacer
      * bound types.
      *
      * @param non-empty-list<TemplateBound>  $lower_bounds
-     *
      * @psalm-external-mutation-free
      */
     public static function getMostSpecificTypeFromBounds(array $lower_bounds, ?Codebase $codebase): Union

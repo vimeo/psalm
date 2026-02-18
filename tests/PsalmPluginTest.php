@@ -283,8 +283,7 @@ final class PsalmPluginTest extends TestCase
     }
 
     /**
-     * @return string[][] 
-     *
+     * @return string[][]
      * @psalm-pure
      */
     public function commands(): array

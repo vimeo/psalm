@@ -722,8 +722,7 @@ abstract class Atomic implements TypeNode, Stringable
     }
 
     /**
-     * @return list<string> 
-     *
+     * @return list<string>
      * @psalm-pure
      */
     protected function getChildNodeKeys(): array

@@ -124,7 +124,6 @@ final class TypeTokenizer
      * contains the string token and the second element contains its offset,
      *
      * @return list<array{0: string, 1: int}>
-     *
      * @psalm-external-mutation-free
      */
     public static function tokenize(string $string_type, bool $ignore_space = true): array
@@ -347,9 +346,7 @@ final class TypeTokenizer
     /**
      * @param array<string, mixed>|null       $template_type_map
      * @param array<string, TypeAlias>|null   $type_aliases
-     *
      * @return list<array{0: string, 1: int, 2?: string}>
-     *
      * @psalm-external-mutation-free
      */
     public static function getFullyQualifiedTokens(

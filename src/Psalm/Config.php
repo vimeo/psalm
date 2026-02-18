@@ -615,7 +615,6 @@ final class Config
 
     /**
      * @internal
-     *
      * @psalm-mutation-free
      */
     protected function __construct()
@@ -809,11 +808,8 @@ final class Config
 
     /**
      * @param positive-int $line_number 1-based line number
-     *
      * @return int 0-based byte offset
-     *
      * @throws OutOfBoundsException
-     *
      * @psalm-pure
      */
     private static function lineNumberToByteOffset(string $string, int $line_number): int
@@ -1490,8 +1486,7 @@ final class Config
     }
 
     /**
-     * @param list<ClassLoader> $autoloaders 
-     *
+     * @param list<ClassLoader> $autoloaders
      * @psalm-external-mutation-free
      */
     public function setComposerClassLoader(array $autoloaders): void
@@ -2071,8 +2066,7 @@ final class Config
     }
 
     /**
-     * @return array{type: string, index: int, count: int}[] 
-     *
+     * @return array{type: string, index: int, count: int}[]
      * @psalm-mutation-free
      */
     public function getIssueHandlerSuppressions(): array
@@ -2200,7 +2194,6 @@ final class Config
 
     /**
      * @return array<string>
-     *
      * @psalm-mutation-free
      */
     public function getProjectDirectories(): array
@@ -2214,7 +2207,6 @@ final class Config
 
     /**
      * @return array<string>
-     *
      * @psalm-mutation-free
      */
     public function getProjectFiles(): array
@@ -2228,7 +2220,6 @@ final class Config
 
     /**
      * @return array<string>
-     *
      * @psalm-mutation-free
      */
     public function getExtraDirectories(): array
@@ -2879,7 +2870,6 @@ final class Config
 
     /**
      * @internal
-     *
      * @psalm-mutation-free
      */
     public function requireAutoloader(): void

@@ -112,7 +112,6 @@ HEADING;
      * Copied from ConsoleReport unchanged. We could consider moving to another class to reduce duplication.
      *
      * @param non-empty-list<DataFlowNodeData|array{label: string, entry_path_type: string}> $taint_trace
-     *
      * @psalm-external-mutation-free
      */
     private function getTaintSnippets(array $taint_trace): string

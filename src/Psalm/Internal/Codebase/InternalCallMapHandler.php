@@ -330,12 +330,9 @@ final class InternalCallMapHandler
      * Gets the method/function call map
      *
      * @return non-empty-array<string, array<int|string, string>>
-     *
      * @psalm-assert !null self::$taint_sink_map
      * @psalm-assert !null self::$call_map
-     *
      * @psalm-suppress UnresolvableInclude
-     *
      * @psalm-external-mutation-free
      */
     public static function getCallMap(): array

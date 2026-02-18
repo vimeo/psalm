@@ -547,7 +547,6 @@ final class Reflection
 
     /**
      * @return array<string, FunctionStorage>
-     *
      * @psalm-external-mutation-free
      */
     public function getFunctions(): array

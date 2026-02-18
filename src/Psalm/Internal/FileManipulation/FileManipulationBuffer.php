@@ -31,7 +31,6 @@ final class FileManipulationBuffer
 
     /**
      * @param FileManipulation[] $file_manipulations
-     *
      * @psalm-external-mutation-free
      */
     public static function add(string $file_path, array $file_manipulations): void
@@ -46,8 +45,7 @@ final class FileManipulationBuffer
     }
 
     /**
-     * @param CodeMigration[] $code_migrations 
-     *
+     * @param CodeMigration[] $code_migrations
      * @psalm-external-mutation-free
      */
     public static function addCodeMigrations(array $code_migrations): void
@@ -57,7 +55,6 @@ final class FileManipulationBuffer
 
     /**
      * @return array{int, int}
-     *
      * @psalm-external-mutation-free
      */
     private static function getCodeOffsets(
@@ -185,7 +182,6 @@ final class FileManipulationBuffer
 
     /**
      * @return FileManipulation[]
-     *
      * @psalm-external-mutation-free
      */
     public static function getManipulationsForFile(string $file_path): array
@@ -195,7 +191,6 @@ final class FileManipulationBuffer
 
     /**
      * @return array<string, FileManipulation[]>
-     *
      * @psalm-external-mutation-free
      */
     public static function getMigrationManipulations(FileProvider $file_provider): array
@@ -250,7 +245,6 @@ final class FileManipulationBuffer
 
     /**
      * @return array<string, FileManipulation[]>
-     *
      * @psalm-external-mutation-free
      */
     public static function getAll(): array

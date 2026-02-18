@@ -23,7 +23,6 @@ final class StorageByPatternResolver
 
     /**
      * @return array<string,ClassConstantStorage>
-     *
      * @psalm-mutation-free
      */
     public function resolveConstants(
@@ -58,7 +57,6 @@ final class StorageByPatternResolver
 
     /**
      * @return array<string,EnumCaseStorage>
-     *
      * @psalm-mutation-free
      */
     public function resolveEnums(

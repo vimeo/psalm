@@ -70,7 +70,6 @@ final class Functions
 
     /**
      * @param non-empty-lowercase-string $function_id
-     *
      * @psalm-external-mutation-free
      */
     public function getStorage(
@@ -162,7 +161,6 @@ final class Functions
 
     /**
      * @param array<lowercase-string, FunctionStorage> $stubs
-     *
      * @psalm-external-mutation-free
      */
     public function addGlobalFunctions(array $stubs): void
@@ -180,7 +178,6 @@ final class Functions
 
     /**
      * @return array<lowercase-string, FunctionStorage>
-     *
      * @psalm-external-mutation-free
      */
     public function getAllStubbedFunctions(): array

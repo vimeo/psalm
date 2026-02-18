@@ -40,7 +40,6 @@ final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
 
     /**
      * @param string $name parameter name, without the "$" prefix
-     *
      * @psalm-mutation-free
      */
     public function __construct(

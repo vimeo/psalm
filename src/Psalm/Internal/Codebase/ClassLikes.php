@@ -272,7 +272,6 @@ final class ClassLikes
 
     /**
      * @return list<string>
-     *
      * @psalm-mutation-free
      */
     public function getMatchingClassLikeNames(string $stub): array
@@ -748,7 +747,6 @@ final class ClassLikes
 
     /**
      * @return array<lowercase-string, string>   all interfaces extended by $interface_name
-     *
      * @psalm-mutation-free
      */
     public function getParentInterfaces(string $fq_interface_name): array
@@ -1691,9 +1689,7 @@ final class ClassLikes
     /**
      * @param ReflectionProperty::IS_PUBLIC|ReflectionProperty::IS_PROTECTED|ReflectionProperty::IS_PRIVATE
      *  $visibility
-     *
      * @return array<string, ClassConstantStorage>
-     *
      * @psalm-mutation-free
      */
     public function getConstantsForClass(string $class_name, int $visibility): array
@@ -2371,7 +2367,6 @@ final class ClassLikes
 
     /**
      * @param lowercase-string $fq_classlike_name_lc
-     *
      * @psalm-external-mutation-free
      */
     public function registerMissingClassLike(string $fq_classlike_name_lc): void
@@ -2381,7 +2376,6 @@ final class ClassLikes
 
     /**
      * @param lowercase-string $fq_classlike_name_lc
-     *
      * @psalm-mutation-free
      */
     public function isMissingClassLike(string $fq_classlike_name_lc): bool
@@ -2392,7 +2386,6 @@ final class ClassLikes
 
     /**
      * @param lowercase-string $fq_classlike_name_lc
-     *
      * @psalm-mutation-free
      */
     public function doesClassLikeExist(string $fq_classlike_name_lc): bool
@@ -2444,7 +2437,6 @@ final class ClassLikes
      *     array<string, bool>,
      *     array<string, bool>,
      * }
-     *
      * @psalm-mutation-free
      */
     public function getThreadData(): array
@@ -2474,7 +2466,6 @@ final class ClassLikes
      *     7: array<string, bool>,
      *     8: array<string, bool>,
      * } $thread_data
-     *
      * @psalm-external-mutation-free
      */
     public function addThreadData(array $thread_data): void
@@ -2504,12 +2495,9 @@ final class ClassLikes
 
     /**
      * @template T as string|lowercase-string
-     *
      * @param array<T, bool> $old
      * @param array<T, bool> $new
-     *
      * @return array<T, bool>
-     *
      * @psalm-pure
      */
     private static function mergeThreadData(array $old, array $new): array

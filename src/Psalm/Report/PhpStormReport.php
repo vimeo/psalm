@@ -69,7 +69,6 @@ final class PhpStormReport extends Report
 
     /**
      * @param non-empty-list<DataFlowNodeData|array{label: string, entry_path_type: string}> $taint_trace
-     *
      * @psalm-mutation-free
      */
     private function getTaintSnippets(array $taint_trace): string

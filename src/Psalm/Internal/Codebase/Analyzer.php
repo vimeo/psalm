@@ -200,7 +200,6 @@ final class Analyzer
 
     /**
      * @param array<string, string> $files_to_analyze
-     *
      * @psalm-external-mutation-free
      */
     public function addFilesToAnalyze(array $files_to_analyze): void
@@ -211,7 +210,6 @@ final class Analyzer
 
     /**
      * @param array<string, string> $files_to_analyze
-     *
      * @psalm-external-mutation-free
      */
     public function addFilesToShowResults(array $files_to_analyze): void
@@ -221,7 +219,6 @@ final class Analyzer
 
     /**
      * @param array<string> $files_to_update
-     *
      * @psalm-external-mutation-free
      */
     public function setFilesToUpdate(array $files_to_update): void
@@ -1010,7 +1007,6 @@ final class Analyzer
 
     /**
      * @param array<string, array<string, bool>> $names
-     *
      * @psalm-external-mutation-free
      */
     public function addMixedMemberNames(array $names): void
@@ -1029,7 +1025,6 @@ final class Analyzer
 
     /**
      * @return list{int, int}
-     *
      * @psalm-external-mutation-free
      */
     public function getMixedCountsForFile(string $file_path): array
@@ -1043,7 +1038,6 @@ final class Analyzer
 
     /**
      * @param list{int, int} $mixed_counts
-     *
      * @psalm-external-mutation-free
      */
     public function setMixedCountsForFile(string $file_path, array $mixed_counts): void
@@ -1105,7 +1099,6 @@ final class Analyzer
 
     /**
      * @return array<string, array{0: int, 1: int}>
-     *
      * @psalm-mutation-free
      */
     public function getMixedCounts(): array
@@ -1381,7 +1374,6 @@ final class Analyzer
 
     /**
      * @return list<IssueData>
-     *
      * @psalm-mutation-free
      */
     public function getExistingIssuesForFile(string $file_path, int $start, int $end, ?string $issue_type = null): array
@@ -1453,7 +1445,6 @@ final class Analyzer
 
     /**
      * @return array<string, FileMapType>
-     *
      * @psalm-mutation-free
      */
     public function getFileMaps(): array
@@ -1485,7 +1476,6 @@ final class Analyzer
 
     /**
      * @return FileMapType
-     *
      * @psalm-mutation-free
      */
     public function getMapsForFile(string $file_path): array

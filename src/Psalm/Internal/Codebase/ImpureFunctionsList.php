@@ -14,8 +14,7 @@ final class ImpureFunctionsList
     private static ?array $impure_functions_list = null;
 
     /**
-     * @psalm-assert !null self::$impure_functions_list 
-     *
+     * @psalm-assert !null self::$impure_functions_list
      * @psalm-external-mutation-free
      */
     private static function load(): void

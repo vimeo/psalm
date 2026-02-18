@@ -383,7 +383,6 @@ final class Codebase
      * Register an alias taint name based on one or more pre-existing taints.
      *
      * @throws AssertionError if the passed taint is already registered or if the alias uses some unregistered taints.
-     *
      * @psalm-external-mutation-free
      */
     public function registerTaintAlias(string $taint_type, int $alias): int
@@ -522,7 +521,6 @@ final class Codebase
 
     /**
      * @param array<string, string> $files_to_analyze
-     *
      * @psalm-external-mutation-free
      */
     public function addFilesToAnalyze(array $files_to_analyze): void
@@ -620,7 +618,6 @@ final class Codebase
 
     /**
      * @return array<int, CodeLocation>
-     *
      * @psalm-external-mutation-free
      */
     public function findReferencesToSymbol(string $symbol): array
@@ -642,7 +639,6 @@ final class Codebase
 
     /**
      * @return array<int, CodeLocation>
-     *
      * @psalm-external-mutation-free
      */
     public function findReferencesToMethod(string $method_id): array
@@ -652,7 +648,6 @@ final class Codebase
 
     /**
      * @return array<int, CodeLocation>
-     *
      * @psalm-external-mutation-free
      */
     public function findReferencesToProperty(string $property_id): array
@@ -667,7 +662,6 @@ final class Codebase
 
     /**
      * @return CodeLocation[]
-     *
      * @psalm-return array<int, CodeLocation>
      * @psalm-external-mutation-free
      */
@@ -718,7 +712,6 @@ final class Codebase
 
     /**
      * @param array<string, Union> $stubs
-     *
      * @psalm-external-mutation-free
      */
     public function addGlobalConstantTypes(array $stubs): void
@@ -728,7 +721,6 @@ final class Codebase
 
     /**
      * @return array<string, Union>
-     *
      * @psalm-external-mutation-free
      */
     public function getAllStubbedConstants(): array
@@ -764,7 +756,6 @@ final class Codebase
      * Check whether a class/interface exists
      *
      * @psalm-assert-if-true class-string|interface-string|enum-string $fq_class_name
-     *
      * @psalm-external-mutation-free
      */
     public function classOrInterfaceOrEnumExists(
@@ -812,7 +803,6 @@ final class Codebase
      *
      * @throws UnpopulatedClasslikeException when called on unpopulated class
      * @throws InvalidArgumentException when class does not exist
-     *
      * @psalm-mutation-free
      */
     public function classExtends(string $fq_class_name, string $possible_parent): bool
@@ -857,7 +847,6 @@ final class Codebase
 
     /**
      * @return array<string, string> all interfaces extended by $interface_name
-     *
      * @psalm-mutation-free
      */
     public function getParentInterfaces(string $fq_interface_name): array
@@ -1018,7 +1007,6 @@ final class Codebase
 
     /**
      * @return array<string, MethodIdentifier>
-     *
      * @psalm-mutation-free
      */
     public function getOverriddenMethodIds(string|MethodIdentifier $method_id): array
@@ -1930,13 +1918,9 @@ final class Codebase
 
     /**
      * @param list<CompletionItem> $items
-     *
      * @return list<CompletionItem>
-     *
      * @deprecated to be removed in Psalm 6
-     *
      * @api fix deprecation problem "PossiblyUnusedMethod: Cannot find any calls to method"
-     *
      * @psalm-mutation-free
      */
     public function filterCompletionItemsByBeginLiteralPart(array $items, string $literal_part): array

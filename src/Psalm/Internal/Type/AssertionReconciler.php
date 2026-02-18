@@ -1436,7 +1436,6 @@ final class AssertionReconciler extends Reconciler
 
     /**
      * @param array<string, Atomic> $existing_var_atomic_types
-     *
      * @psalm-pure
      */
     private static function getCompatibleIntType(
@@ -1466,7 +1465,6 @@ final class AssertionReconciler extends Reconciler
 
     /**
      * @param array<string, Atomic> $existing_var_atomic_types
-     *
      * @psalm-pure
      */
     private static function getCompatibleStringType(
@@ -1495,7 +1493,6 @@ final class AssertionReconciler extends Reconciler
 
     /**
      * @param array<string, Atomic> $existing_var_atomic_types
-     *
      * @psalm-pure
      */
     private static function getCompatibleFloatType(

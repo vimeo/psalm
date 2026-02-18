@@ -25,7 +25,6 @@ final class Composer
      * Retrieve the path to composer.json file.
      *
      * @see https://github.com/composer/composer/blob/5df1797d20c6ab1eb606dc0f0d76a16ba57ddb7f/src/Composer/Factory.php#L233
-     *
      * @psalm-pure
      */
     public static function getJsonFilePath(string $root): string
@@ -40,7 +39,6 @@ final class Composer
      * Retrieve the path to composer.lock file.
      *
      * @see https://github.com/composer/composer/blob/5df1797d20c6ab1eb606dc0f0d76a16ba57ddb7f/src/Composer/Factory.php#L238
-     *
      * @psalm-pure
      */
     public static function getLockFilePath(string $root): string

@@ -48,9 +48,7 @@ final class FunctionAnalyzer extends FunctionLikeAnalyzer
 
     /**
      * @return non-empty-lowercase-string
-     *
      * @throws UnexpectedValueException if function is closure or arrow function.
-     *
      * @psalm-mutation-free
      */
     public function getFunctionId(): string

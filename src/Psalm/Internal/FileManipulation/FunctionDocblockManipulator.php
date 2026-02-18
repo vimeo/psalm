@@ -565,7 +565,6 @@ final class FunctionDocblockManipulator
 
     /**
      * @param Mutations::LEVEL_* $allowed_mutations
-     *
      * @psalm-external-mutation-free
      */
     public function setAllowedMutations(int $allowed_mutations): void
@@ -575,7 +574,6 @@ final class FunctionDocblockManipulator
 
     /**
      * @param list<string> $exceptions
-     *
      * @psalm-external-mutation-free
      */
     public function addThrowsDocblock(array $exceptions): void
@@ -593,7 +591,6 @@ final class FunctionDocblockManipulator
 
     /**
      * @param array<string, array<int, FunctionDocblockManipulator>> $manipulators
-     *
      * @psalm-external-mutation-free
      */
     public static function addManipulators(array $manipulators): void
@@ -603,7 +600,6 @@ final class FunctionDocblockManipulator
 
     /**
      * @return array<string, array<int, FunctionDocblockManipulator>>
-     *
      * @psalm-external-mutation-free
      */
     public static function getManipulators(): array

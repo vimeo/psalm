@@ -71,9 +71,7 @@ final class BuildInfoCollector
      * "TRAVIS", "TRAVIS_JOB_ID" must be set.
      *
      * @return $this
-     *
      * @psalm-suppress PossiblyUndefinedStringArrayOffset
-     *
      * @psalm-external-mutation-free
      */
     private function fillTravisCi(): self
@@ -118,7 +116,6 @@ final class BuildInfoCollector
      * "CIRCLECI", "CIRCLE_BUILD_NUM" must be set.
      *
      * @return $this
-     *
      * @psalm-external-mutation-free
      */
     private function fillCircleCi(): self
@@ -152,9 +149,7 @@ final class BuildInfoCollector
      * "APPVEYOR", "APPVEYOR_BUILD_NUMBER" must be set.
      *
      * @psalm-suppress PossiblyUndefinedStringArrayOffset
-     *
      * @return $this
-     *
      * @psalm-external-mutation-free
      */
     private function fillAppVeyor(): self
@@ -203,7 +198,6 @@ final class BuildInfoCollector
      * "JENKINS_URL", "BUILD_NUMBER" must be set.
      *
      * @return $this
-     *
      * @psalm-external-mutation-free
      */
     private function fillJenkins(): self
@@ -228,9 +222,7 @@ final class BuildInfoCollector
      * "JENKINS_URL", "BUILD_NUMBER" must be set.
      *
      * @psalm-suppress PossiblyUndefinedStringArrayOffset
-     *
      * @return $this
-     *
      * @psalm-external-mutation-free
      */
     private function fillScrutinizer(): self

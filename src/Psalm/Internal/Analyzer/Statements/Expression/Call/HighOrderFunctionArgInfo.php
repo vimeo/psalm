@@ -24,7 +24,6 @@ final class HighOrderFunctionArgInfo
 
     /**
      * @psalm-param HighOrderFunctionArgInfo::TYPE_* $type
-     *
      * @psalm-mutation-free
      */
     public function __construct(

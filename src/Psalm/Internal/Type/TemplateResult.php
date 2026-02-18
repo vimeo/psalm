@@ -50,7 +50,6 @@ final class TemplateResult
     /**
      * @param array<string, array<string, Union>> $template_types
      * @param array<string, array<string, Union>> $lower_bounds
-     *
      * @psalm-mutation-free
      */
     public function __construct(public array $template_types, array $lower_bounds)

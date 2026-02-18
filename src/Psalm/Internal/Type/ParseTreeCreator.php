@@ -50,7 +50,6 @@ final class ParseTreeCreator
 
     /**
      * @param list<array{0: string, 1: int, 2?: string}> $type_tokens
-     *
      * @psalm-mutation-free
      */
     public function __construct(private array $type_tokens)

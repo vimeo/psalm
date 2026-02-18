@@ -60,7 +60,6 @@ final class TypeComparatorTest extends TestCase
 
     /**
      * @return array<array{string}>
-     *
      * @psalm-pure
      */
     public function getAllBasicTypes(): array
@@ -162,8 +161,7 @@ final class TypeComparatorTest extends TestCase
     }
 
     /**
-     * @return iterable<string, list{string, string}> 
-     *
+     * @return iterable<string, list{string, string}>
      * @psalm-mutation-free
      */
     public function getCoercibleComparisons(): iterable
@@ -180,7 +178,6 @@ final class TypeComparatorTest extends TestCase
 
     /**
      * @return array<array{string, string}>
-     *
      * @psalm-pure
      */
     public function getSuccessfulComparisons(): array
@@ -230,8 +227,7 @@ final class TypeComparatorTest extends TestCase
     }
 
     /**
-     * @return iterable<string, list{string,string}> 
-     *
+     * @return iterable<string, list{string,string}>
      * @psalm-mutation-free
      */
     public function getUnsuccessfulComparisons(): iterable

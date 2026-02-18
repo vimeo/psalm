@@ -28,7 +28,6 @@ final class AssertionsFromInheritanceResolver
 
     /**
      * @return array<int,Possibilities>
-     *
      * @psalm-external-mutation-free
      */
     public function resolve(

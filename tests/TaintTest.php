@@ -107,7 +107,6 @@ final class TaintTest extends TestCase
 
     /**
      * @return array<string, array{code:string}>
-     *
      * @psalm-pure
      */
     public function providerValidCodeParse(): array
@@ -810,7 +809,6 @@ final class TaintTest extends TestCase
 
     /**
      * @return array<string, array{code: string, error_message: string, php_version?: string}>
-     *
      * @psalm-pure
      */
     public function providerInvalidCodeParse(): array
@@ -2755,7 +2753,6 @@ final class TaintTest extends TestCase
 
     /**
      * @return array<string, array{code: string, expectedIssueTypes: list<string>}>
-     *
      * @psalm-pure
      */
     public function multipleTaintIssuesAreDetectedDataProvider(): array

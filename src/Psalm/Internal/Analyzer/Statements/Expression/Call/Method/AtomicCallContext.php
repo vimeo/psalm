@@ -13,8 +13,7 @@ use Psalm\Internal\MethodIdentifier;
 final class AtomicCallContext
 {
     /**
-     * @param list<PhpParser\Node\Arg> $args 
-     *
+     * @param list<PhpParser\Node\Arg> $args
      * @psalm-mutation-free
      */
     public function __construct(public MethodIdentifier $method_id, public array $args)

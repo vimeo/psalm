@@ -15,7 +15,6 @@ abstract class TaintedInput extends CodeIssue
 
     /**
      * @param list<array{location: ?CodeLocation, label: string, entry_path_type: string}> $journey
-     *
      * @psalm-mutation-free
      */
     public function __construct(
@@ -29,7 +28,6 @@ abstract class TaintedInput extends CodeIssue
 
     /**
      * @return list<DataFlowNodeData|array{label: string, entry_path_type: string}>
-     *
      * @psalm-mutation-free
      */
     public function getTaintTrace(): array

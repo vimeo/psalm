@@ -55,9 +55,7 @@ final class CacheTest extends TestCase
 
     /**
      * @param array<string, list<IssueData>> $issue_data
-     *
      * @return array<string, list<string>>
-     *
      * @psalm-mutation-free
      */
     private static function normalizeIssueData(array $issue_data): array
@@ -143,7 +141,6 @@ final class CacheTest extends TestCase
      *         issues?: array<string, list<string>>,
      *     }>,
      * }>
-     *
      * @psalm-mutation-free
      */
     public static function provideCacheInteractions(): iterable

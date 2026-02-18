@@ -42,7 +42,6 @@ final class ClassLikeDocblockParserTest extends TestCase
 
     /**
      * @return iterable<array-key, array{annotation: string, expected: array}>
-     *
      * @psalm-pure
      */
     public function providerMethodAnnotation(): iterable

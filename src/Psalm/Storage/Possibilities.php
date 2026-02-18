@@ -18,7 +18,6 @@ final class Possibilities
 
     /**
      * @param list<Assertion> $rule
-     *
      * @psalm-mutation-free
      */
     public function __construct(

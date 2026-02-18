@@ -13,7 +13,6 @@ final class ReferenceMapGenerator
 {
     /**
      * @return array<string, string>
-     *
      * @psalm-external-mutation-free
      */
     public static function getReferenceMap(

@@ -108,7 +108,6 @@ abstract class DataFlowGraph
 
     /**
      * @return array{int, int, int, float}
-     *
      * @psalm-mutation-free
      */
     public function getEdgeStats(): array

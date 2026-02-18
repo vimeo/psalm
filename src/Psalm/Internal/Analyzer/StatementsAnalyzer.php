@@ -1069,7 +1069,6 @@ final class StatementsAnalyzer extends SourceAnalyzer
 
     /**
      * @return array<string, DataFlowNode>
-     *
      * @psalm-mutation-free
      */
     public function getParentNodesForPossiblyUndefinedVariable(string $undefined_var_id): array
@@ -1138,7 +1137,6 @@ final class StatementsAnalyzer extends SourceAnalyzer
 
     /**
      * @param array<string, true> $byref_uses
-     *
      * @psalm-external-mutation-free
      */
     public function setByRefUses(array $byref_uses): void
@@ -1148,7 +1146,6 @@ final class StatementsAnalyzer extends SourceAnalyzer
 
     /**
      * @return array<string, array<array-key, CodeLocation>>
-     *
      * @psalm-mutation-free
      */
     public function getUncaughtThrows(Context $context): array

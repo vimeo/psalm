@@ -132,7 +132,6 @@ final class NamespaceAnalyzer extends SourceAnalyzer
 
     /**
      * @return array<string, Union>
-     *
      * @psalm-external-mutation-free
      */
     public static function getConstantsForNamespace(string $namespace_name, int $visibility): array

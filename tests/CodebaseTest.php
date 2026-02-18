@@ -58,8 +58,7 @@ final class CodebaseTest extends TestCase
     }
 
     /**
-     * @return iterable<int,array{string,string,bool}> 
-     *
+     * @return iterable<int,array{string,string,bool}>
      * @psalm-mutation-free
      */
     public function typeContainments(): iterable
@@ -91,8 +90,7 @@ final class CodebaseTest extends TestCase
     }
 
     /**
-     * @return iterable<int,array{string,string,bool}> 
-     *
+     * @return iterable<int,array{string,string,bool}>
      * @psalm-mutation-free
      */
     public function typeIntersections(): iterable
@@ -132,8 +130,7 @@ final class CodebaseTest extends TestCase
     }
 
     /**
-     * @return iterable<int,array{string,array{string,string}}> 
-     *
+     * @return iterable<int,array{string,array{string,string}}>
      * @psalm-mutation-free
      */
     public function iterableParams(): iterable

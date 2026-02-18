@@ -449,7 +449,6 @@ final class ClassLikeStorage implements HasAttributesInterface
      * Get the template constraint types for the class.
      *
      * @return list<Union>
-     *
      * @psalm-mutation-free
      */
     public function getClassTemplateTypes(): array
@@ -495,7 +494,6 @@ final class ClassLikeStorage implements HasAttributesInterface
 
     /**
      * @return array<int, string>
-     *
      * @psalm-mutation-free
      */
     public function getSuppressedIssuesForTemplateExtendParams(): array

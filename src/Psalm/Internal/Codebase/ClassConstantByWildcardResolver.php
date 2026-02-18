@@ -28,7 +28,6 @@ final class ClassConstantByWildcardResolver
 
     /**
      * @return non-empty-array<array-key,Atomic>|null
-     *
      * @psalm-mutation-free
      */
     public function resolve(string $class_name, string $constant_pattern): ?array

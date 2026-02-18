@@ -318,7 +318,6 @@ final class Context
 
     /**
      * @internal
-     *
      * @psalm-mutation-free
      */
     public function __construct(
@@ -444,9 +443,7 @@ final class Context
 
     /**
      * @param array<string, Union> $new_vars_in_scope
-     *
      * @return array<string, Union>
-     *
      * @psalm-mutation-free
      */
     public function getRedefinedVars(array $new_vars_in_scope, bool $include_new_vars = false): array
@@ -478,7 +475,6 @@ final class Context
 
     /**
      * @return list<string>
-     *
      * @psalm-mutation-free
      */
     public static function getNewOrUpdatedVarIds(Context $original_context, Context $new_context): array

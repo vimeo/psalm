@@ -26,7 +26,6 @@ final class PluginRegistrationSocket implements RegistrationInterface
 {
     /**
      * @internal
-     *
      * @psalm-mutation-free
      */
     public function __construct(

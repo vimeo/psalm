@@ -203,7 +203,6 @@ final class EventDispatcher
 
     /**
      * @param class-string $class
-     *
      * @psalm-external-mutation-free
      */
     public function registerClass(string $class): void

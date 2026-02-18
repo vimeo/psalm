@@ -78,7 +78,6 @@ final class MethodGetCompletionItemsForClassishThingTest extends TestCase
 
     /**
      * @return iterable<array-key, array{0: string}>
-     *
      * @psalm-pure
      */
     public function providerGaps(): iterable

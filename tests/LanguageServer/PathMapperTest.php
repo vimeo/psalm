@@ -66,8 +66,7 @@ final class PathMapperTest extends TestCase
     }
 
     /**
-     * @return iterable<int, array{string, string|null, string, string, string}> 
-     *
+     * @return iterable<int, array{string, string|null, string, string, string}>
      * @psalm-mutation-free
      */
     public static function mappingProvider(): iterable

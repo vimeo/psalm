@@ -155,7 +155,6 @@ final class Scanner
 
     /**
      * @param array<string, string> $files_to_scan
-     *
      * @psalm-external-mutation-free
      */
     public function addFilesToShallowScan(array $files_to_scan): void
@@ -165,7 +164,6 @@ final class Scanner
 
     /**
      * @param array<string, string> $files_to_scan
-     *
      * @psalm-external-mutation-free
      */
     public function addFilesToDeepScan(array $files_to_scan): void
@@ -677,7 +675,6 @@ final class Scanner
 
     /**
      * @return ThreadData
-     *
      * @psalm-mutation-free
      */
     public function getThreadData(): array
@@ -697,7 +694,6 @@ final class Scanner
 
     /**
      * @param ThreadData $thread_data
-     *
      * @psalm-external-mutation-free
      */
     public function addThreadData(array $thread_data): void

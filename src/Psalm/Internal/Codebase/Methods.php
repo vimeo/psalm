@@ -1053,7 +1053,6 @@ final class Methods
 
     /**
      * @return array<string, MethodIdentifier>
-     *
      * @psalm-mutation-free
      */
     public function getOverriddenMethodIds(MethodIdentifier $method_id): array

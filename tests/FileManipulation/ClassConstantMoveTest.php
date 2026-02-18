@@ -78,7 +78,6 @@ final class ClassConstantMoveTest extends TestCase
 
     /**
      * @return array<string,array{input:string,output:string,migrations:array<string, string>}>
-     *
      * @psalm-pure
      */
     public function providerValidCodeParse(): array
