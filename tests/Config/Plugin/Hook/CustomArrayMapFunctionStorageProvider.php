@@ -115,7 +115,6 @@ final class CustomArrayMapFunctionStorageProvider implements DynamicFunctionStor
         int $return_template_offset = 0,
     ): TCallable {
         return new TCallable(
-            'callable',
             [new FunctionLikeParameter('a', false, $input_type, $input_type)],
             new Union([
                 $template_provider->createTemplate('T' . $return_template_offset),

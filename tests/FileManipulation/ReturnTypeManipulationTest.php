@@ -265,7 +265,7 @@ final class ReturnTypeManipulationTest extends FileManipulationTestCase
                     }
 
                     /**
-                     * @psalm-return Closure(string):string
+                     * @psalm-return impure-Closure(string):string
                      */
                     function bar() : Closure {
                         return function(string $name) {

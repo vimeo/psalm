@@ -119,16 +119,16 @@ trait CallableTrait
         ?string $this_class,
         bool $use_phpdoc_format,
     ): string {
+        if ($use_phpdoc_format) {
+            return $this->value;
+        }
+
         $prefix = match ($this->allowed_mutations) {
             Mutations::LEVEL_NONE => 'pure-',
             Mutations::LEVEL_INTERNAL_READ => 'self-accessing-',
             Mutations::LEVEL_INTERNAL_READ_WRITE => 'self-mutating-',
             Mutations::LEVEL_EXTERNAL => 'impure-',
         };
-
-        if ($use_phpdoc_format) {
-            return $prefix.$this->value;
-        }
 
         $param_string = '';
         $return_type_string = '';
