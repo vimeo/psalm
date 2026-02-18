@@ -73,6 +73,8 @@ final class JsonOutputTest extends TestCase
 
     /**
      * @return array<string,array{code:string,error_count:int,message:string,line:int,error:string}>
+     *
+     * @psalm-pure
      */
     public function providerTestJsonOutputErrors(): array
     {

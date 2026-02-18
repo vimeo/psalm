@@ -10,7 +10,11 @@ use Psalm\StatementsSource;
 
 final class PropertyVisibilityProviderEvent
 {
-    /** @internal */
+    /**
+     * @internal
+     *
+     * @psalm-mutation-free
+     */
     public function __construct(
         private readonly StatementsSource $source,
         private readonly string $fq_classlike_name,

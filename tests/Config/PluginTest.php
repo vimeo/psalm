@@ -888,6 +888,9 @@ final class PluginTest extends TestCase
         $plugin = new class($mock) implements AfterEveryFunctionCallAnalysisInterface {
             private static MockObject $m;
 
+            /**
+             * @psalm-mutation-free
+             */
             public function __construct(MockObject $m)
             {
                 self::$m = $m;

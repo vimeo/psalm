@@ -24,6 +24,9 @@ final class PluginList
     /** @var ?array<string,?string> [pluginClass => ?packageName] */
     private ?array $enabled_plugins = null;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         private readonly ?ConfigFile $config_file,
         private readonly ComposerLock $composer_lock,

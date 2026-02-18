@@ -16,6 +16,8 @@ final class AddRemoveTaintsEvent
      * Called after an expression has been checked
      *
      * @internal
+     *
+     * @psalm-mutation-free
      */
     public function __construct(
         private readonly ArrayItem|Expr $expr,

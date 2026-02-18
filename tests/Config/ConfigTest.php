@@ -1673,6 +1673,8 @@ final class ConfigTest extends TestCase
 
     /**
      * @return array<string, array{0: int, 1: int|null}>
+     *
+     * @psalm-pure
      */
     public function pluginRegistersScannerAndAnalyzerDataProvider(): array
     {

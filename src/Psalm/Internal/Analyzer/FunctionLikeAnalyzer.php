@@ -40,6 +40,7 @@ use Psalm\Issue\InvalidParamDefault;
 use Psalm\Issue\InvalidThrow;
 use Psalm\Issue\MethodSignatureMismatch;
 use Psalm\Issue\MismatchingDocblockParamType;
+use Psalm\Issue\MissingAbstractPureAnnotation;
 use Psalm\Issue\MissingClosureParamType;
 use Psalm\Issue\MissingOverrideAttribute;
 use Psalm\Issue\MissingParamType;
@@ -144,6 +145,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
     /**
      * @param TFunction $function
+     *
+     * @psalm-mutation-free
      */
     public function __construct(
         protected Closure|Function_|ClassMethod|ArrowFunction $function,
@@ -557,21 +560,26 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             ) {
                 if ($storage->location) {
                     if ($this->function->stmts === null) {
-                        $mark = 'with one of @'.implode(', @', Mutations::TO_ATTRIBUTE_FUNCTIONLIKE);
-                        $post = '';
+                        IssueBuffer::maybeAdd(
+                            new MissingAbstractPureAnnotation(
+                                $storage->cased_name . ' must be marked with one of @'
+                                .implode(', @', Mutations::TO_ATTRIBUTE_FUNCTIONLIKE)
+                                .' to aid security analysis',
+                                $storage->location,
+                            ),
+                            $storage->suppressed_issues,
+                        );
                     } else {
-                        $mark = '@'.Mutations::TO_ATTRIBUTE_FUNCTIONLIKE[
-                            $this->inferred_mutations
-                        ];
-                        $post = ', run with --alter --issues=MissingPureAnnotation to fix this';
+                        IssueBuffer::maybeAdd(
+                            new MissingPureAnnotation(
+                                $storage->cased_name . ' must be marked @'.Mutations::TO_ATTRIBUTE_FUNCTIONLIKE[
+                                $this->inferred_mutations
+                            ].' to aid security analysis, run with --alter --issues=MissingPureAnnotation to fix this',
+                                $storage->location,
+                            ),
+                            $storage->suppressed_issues,
+                        );
                     }
-                    IssueBuffer::maybeAdd(
-                        new MissingPureAnnotation(
-                            $storage->cased_name . ' must be marked '.$mark.' to aid security analysis'.$post,
-                            $storage->location,
-                        ),
-                        $storage->suppressed_issues,
-                    );
                 }
                 if ($codebase->alter_code
                     && $this->function->stmts !== null
@@ -1617,6 +1625,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
     /**
      * Adds return types for the given function
+     *
+     * @psalm-external-mutation-free
      */
     public function addReturnTypes(Context $context): void
     {
@@ -1680,6 +1690,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         }
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getMethodName(): ?string
     {
         if ($this->function instanceof ClassMethod) {
@@ -1861,12 +1874,17 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
     /**
      * Adds a suppressed issue, useful when creating a method checker from scratch
+     *
+     * @psalm-external-mutation-free
      */
     public function addSuppressedIssue(string $issue_name): void
     {
         $this->suppressed_issues[] = $issue_name;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public static function clearCache(): void
     {
         self::$no_effects_hashes = [];
@@ -2287,6 +2305,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         return $unused_params;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     private function detectPreviousUnusedArgumentPosition(FunctionLikeStorage $function, int $position): int
     {
         $params = $function->params;
@@ -2307,6 +2328,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         return 0;
     }
 
+    /**
+     * @psalm-pure
+     */
     private function isIgnoredForUnusedParam(string $var_name): bool
     {
         return str_starts_with($var_name, '$_') || (str_starts_with($var_name, '$unused') && $var_name !== '$unused');

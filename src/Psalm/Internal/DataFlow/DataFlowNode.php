@@ -16,6 +16,9 @@ use function strtolower;
  */
 final class DataFlowNode implements Stringable
 {
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         public readonly string $id,
         public readonly ?string $unspecialized_id,
@@ -33,10 +36,16 @@ final class DataFlowNode implements Stringable
     ) {
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     private function __clone()
     {
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function make(
         string $id,
         string $label,
@@ -60,6 +69,9 @@ final class DataFlowNode implements Stringable
         );
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getForMethodArgument(
         string $method_id,
         string $cased_method_id,
@@ -87,6 +99,9 @@ final class DataFlowNode implements Stringable
         );
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getForAssignment(
         string $var_id,
         CodeLocation $assignment_location,
@@ -100,6 +115,9 @@ final class DataFlowNode implements Stringable
         return self::make($var_id, $label, $assignment_location, $specialization_key);
     }
     
+    /**
+     * @psalm-pure
+     */
     public static function getForMethodReturn(
         string $method_id,
         string $cased_method_id,
@@ -124,6 +142,9 @@ final class DataFlowNode implements Stringable
 
 
     private static self $forVariableUse;
+    /**
+     * @psalm-external-mutation-free
+     */
     public static function getForVariableUse(): self
     {
         return self::$forVariableUse ??= new self('variable-use', null, null, 'variable use');
@@ -131,17 +152,26 @@ final class DataFlowNode implements Stringable
 
 
     private static self $forUnknownOrigin;
+    /**
+     * @psalm-external-mutation-free
+     */
     public static function getForUnknownOrigin(): self
     {
         return self::$forUnknownOrigin ??= new self('unknown-origin', null, null, 'unknown origin');
     }
 
     private static self $forClosureUse;
+    /**
+     * @psalm-external-mutation-free
+     */
     public static function getForClosureUse(): self
     {
         return self::$forClosureUse ??= new self('closure-use', null, null, 'closure use');
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function setTaints(int $taints): self
     {
         if ($this->taints === $taints) {

@@ -16,7 +16,10 @@ final class AfterFileAnalysisEvent
      * Called after a file has been checked
      *
      * @param array<Stmt> $stmts
+     *
      * @internal
+     *
+     * @psalm-mutation-free
      */
     public function __construct(
         private readonly StatementsSource $statements_source,

@@ -9,6 +9,9 @@ namespace Psalm\Internal\Analyzer;
  */
 final class ClassLikeNameOptions
 {
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         public bool $inferred = false,
         public bool $allow_trait = false,

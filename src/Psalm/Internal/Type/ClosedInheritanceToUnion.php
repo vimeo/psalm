@@ -14,6 +14,9 @@ use Psalm\Type\Union;
  */
 final class ClosedInheritanceToUnion
 {
+    /**
+     * @psalm-external-mutation-free
+     */
     public static function map(Union $input, Codebase $codebase): Union
     {
         $new_types = [];
@@ -53,6 +56,9 @@ final class ClosedInheritanceToUnion
         return $new_types ? $input->setTypes($new_types) : $input;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     private static function getTemplateResult(TNamedObject $object, Codebase $codebase): TemplateResult
     {
         if (!$object instanceof TGenericObject) {

@@ -11,6 +11,9 @@ use LanguageServerProtocol\Range;
  */
 final class Reference
 {
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(public string $file_path, public string $symbol, public Range $range)
     {
     }

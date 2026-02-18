@@ -316,7 +316,11 @@ final class Context
      */
     public array $parent_remove_vars = [];
 
-    /** @internal */
+    /**
+     * @internal
+     *
+     * @psalm-mutation-free
+     */
     public function __construct(
         /**
          * @var string|null
@@ -326,21 +330,33 @@ final class Context
     ) {
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function __destruct()
     {
         $this->case_scope = null;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isMutationFree(): bool
     {
         return $this->allowed_mutations <= Mutations::LEVEL_INTERNAL_READ;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isExternalMutationFree(): bool
     {
         return $this->allowed_mutations <= Mutations::LEVEL_INTERNAL_READ_WRITE;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isPure(): bool
     {
         return $this->allowed_mutations <= Mutations::LEVEL_NONE;
@@ -405,6 +421,8 @@ final class Context
     /**
      * Updates the list of possible references from a confusing scope,
      * such as a reference created in an if that might later be reused.
+     *
+     * @psalm-external-mutation-free
      */
     public function updateReferencesPossiblyFromConfusingScope(
         Context $confusing_scope_context,
@@ -425,8 +443,11 @@ final class Context
     }
 
     /**
-     * @param  array<string, Union> $new_vars_in_scope
+     * @param array<string, Union> $new_vars_in_scope
+     *
      * @return array<string, Union>
+     *
+     * @psalm-mutation-free
      */
     public function getRedefinedVars(array $new_vars_in_scope, bool $include_new_vars = false): array
     {
@@ -457,6 +478,8 @@ final class Context
 
     /**
      * @return list<string>
+     *
+     * @psalm-mutation-free
      */
     public static function getNewOrUpdatedVarIds(Context $original_context, Context $new_context): array
     {
@@ -492,6 +515,8 @@ final class Context
     /**
      * Remove a variable from the context which might be a reference to another variable, or
      * referenced by another variable. Leaves the variable as possibly-in-scope, unlike remove().
+     *
+     * @psalm-external-mutation-free
      */
     public function removePossibleReference(string $remove_var_id): void
     {
@@ -531,6 +556,8 @@ final class Context
      * Decrement the reference count of the variable that $ref_id is referring to. This needs to
      * be done before $ref_id is changed to no longer reference its currently referenced variable,
      * for example by unsetting, reassigning to another reference, or being shadowed by a global.
+     *
+     * @psalm-external-mutation-free
      */
     public function decrementReferenceCount(string $ref_id): void
     {
@@ -737,6 +764,9 @@ final class Context
         $this->clauses = $clauses_to_keep;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function updateChecks(Context $op_context): void
     {
         $this->check_classes = $this->check_classes && $op_context->check_classes;
@@ -746,11 +776,17 @@ final class Context
         $this->check_consts = $this->check_consts && $op_context->check_consts;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isPhantomClass(string $class_name): bool
     {
         return isset($this->phantom_classes[strtolower($class_name)]);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function hasVariable(string $var_name): bool
     {
         if (!$var_name) {
@@ -766,6 +802,9 @@ final class Context
         return isset($this->vars_in_scope[$var_name]);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getScopeSummary(): string
     {
         $summary = [];
@@ -809,6 +848,9 @@ final class Context
         }
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function mergeExceptions(Context $other_context): void
     {
         foreach ($other_context->possibly_thrown_exceptions as $possibly_thrown_exception => $codelocations) {
@@ -818,6 +860,9 @@ final class Context
         }
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function isSuppressingExceptions(StatementsAnalyzer $statements_analyzer): bool
     {
         if (!$this->collect_exceptions) {
@@ -840,6 +885,9 @@ final class Context
         return false;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function mergeFunctionExceptions(
         FunctionLikeStorage $function_storage,
         CodeLocation $codelocation,
@@ -850,6 +898,9 @@ final class Context
         }
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getImpureMessage(string $expression, int $levelB): string
     {
         if ($this->allowed_mutations === $levelB) {
@@ -871,6 +922,9 @@ final class Context
         return "The context $a but $expression $b";
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function insideUse(): bool
     {
         return $this->inside_assignment

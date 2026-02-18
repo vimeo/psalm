@@ -328,6 +328,9 @@ final class InternalCallMapHandlerTest extends TestCase
         }
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     private function isIgnored(string $functionName): bool
     {
         if (in_array($functionName, self::$ignoredFunctions)) {
@@ -343,6 +346,9 @@ final class InternalCallMapHandlerTest extends TestCase
         return false;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     private function isReturnTypeOnlyIgnored(string $functionName): bool
     {
         if (in_array($functionName, static::$ignoredReturnTypeOnlyFunctions, true)) {
@@ -358,6 +364,9 @@ final class InternalCallMapHandlerTest extends TestCase
         return false;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     private function isUnreflectableIgnored(string $functionName): bool
     {
         if (in_array($functionName, static::$ignoredUnreflectableFunctions, true)) {

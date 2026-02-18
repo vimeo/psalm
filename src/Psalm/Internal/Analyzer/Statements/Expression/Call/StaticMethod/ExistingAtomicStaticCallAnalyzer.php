@@ -585,6 +585,8 @@ final class ExistingAtomicStaticCallAnalyzer
 
     /**
      * Dumb way to determine whether a type contains "static" somewhere inside.
+     *
+     * @psalm-external-mutation-free
      */
     private static function hasStaticInType(Type\TypeNode $type): bool
     {
@@ -595,6 +597,8 @@ final class ExistingAtomicStaticCallAnalyzer
 
     /**
      * @return non-empty-array<string,non-empty-list<TemplateBound>>
+     *
+     * @psalm-mutation-free
      */
     private static function resolveTemplateResultLowerBound(
         Codebase $codebase,

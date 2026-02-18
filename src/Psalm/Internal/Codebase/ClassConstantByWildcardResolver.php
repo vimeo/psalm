@@ -17,6 +17,9 @@ final class ClassConstantByWildcardResolver
 {
     private readonly StorageByPatternResolver $resolver;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         private readonly Codebase $codebase,
     ) {
@@ -25,6 +28,8 @@ final class ClassConstantByWildcardResolver
 
     /**
      * @return non-empty-array<array-key,Atomic>|null
+     *
+     * @psalm-mutation-free
      */
     public function resolve(string $class_name, string $constant_pattern): ?array
     {

@@ -736,6 +736,9 @@ final class FunctionCallReturnTypeFetcher
         }
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public static function taintUsingStorage(
         FunctionLikeStorage $function_storage,
         TaintFlowGraph $graph,

@@ -11,6 +11,9 @@ use Psalm\Type\Union;
  */
 final class AssignedProperty
 {
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(public Union $property_type, public string $id, public Union $assignment_type)
     {
     }

@@ -100,6 +100,9 @@ final class TIntRange extends TInt
         return $this->min_bound !== null && $this->min_bound > $i;
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getNewLowestBound(?int $bound1, ?int $bound2): ?int
     {
         if ($bound1 === null || $bound2 === null) {
@@ -108,6 +111,9 @@ final class TIntRange extends TInt
         return min($bound1, $bound2);
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getNewHighestBound(?int $bound1, ?int $bound2): ?int
     {
         if ($bound1 === null || $bound2 === null) {
@@ -118,6 +124,8 @@ final class TIntRange extends TInt
 
     /**
      * convert any int to its equivalent in int range
+     *
+     * @psalm-pure
      */
     public static function convertToIntRange(TInt $int_atomic): TIntRange
     {
@@ -132,6 +140,9 @@ final class TIntRange extends TInt
         return new TIntRange(null, null);
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function intersectIntRanges(TIntRange $int_range1, TIntRange $int_range2): ?TIntRange
     {
         if ($int_range1->min_bound === null || $int_range2->min_bound === null) {

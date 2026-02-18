@@ -104,6 +104,9 @@ use const FILTER_VALIDATE_URL;
  */
 final class FilterUtils
 {
+    /**
+     * @psalm-mutation-free
+     */
     public static function missingFirstArg(Codebase $codebase): Union
     {
         if ($codebase->analysis_php_version_id >= 8_00_00) {
@@ -366,7 +369,11 @@ final class FilterUtils
         return Type::getNull();
     }
 
-    /** @return array{Union, Union, Union} */
+    /**
+     * @return array{Union, Union, Union} 
+     *
+     * @psalm-pure
+     */
     public static function getFailsNotSetType(int $flags_int_used): array
     {
         $fails_type   = Type::getFalse();
@@ -384,6 +391,9 @@ final class FilterUtils
         );
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function hasFlag(int $flags, int $flag): bool
     {
         if ($flags === 0) {

@@ -34,6 +34,8 @@ final class PluginFileExtensionsSocket implements FileExtensionsInterface
 
     /**
      * @internal
+     *
+     * @psalm-mutation-free
      */
     public function __construct(
         private readonly Config $config,
@@ -124,6 +126,8 @@ final class PluginFileExtensionsSocket implements FileExtensionsInterface
 
     /**
      * @param string $fileExtension e.g. `'html'`
+     *
+     * @psalm-external-mutation-free
      */
     private function addFileExtension(string $fileExtension): void
     {

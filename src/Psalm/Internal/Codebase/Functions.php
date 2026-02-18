@@ -70,6 +70,8 @@ final class Functions
 
     /**
      * @param non-empty-lowercase-string $function_id
+     *
+     * @psalm-external-mutation-free
      */
     public function getStorage(
         ?StatementsAnalyzer $statements_analyzer,
@@ -150,6 +152,9 @@ final class Functions
         return $declaring_file_storage->functions[$function_id];
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addGlobalFunction(string $function_id, FunctionStorage $storage): void
     {
         self::$stubbed_functions[strtolower($function_id)] = $storage;
@@ -157,12 +162,17 @@ final class Functions
 
     /**
      * @param array<lowercase-string, FunctionStorage> $stubs
+     *
+     * @psalm-external-mutation-free
      */
     public function addGlobalFunctions(array $stubs): void
     {
         self::$stubbed_functions += $stubs;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function hasStubbedFunction(string $function_id): bool
     {
         return isset(self::$stubbed_functions[strtolower($function_id)]);
@@ -170,6 +180,8 @@ final class Functions
 
     /**
      * @return array<lowercase-string, FunctionStorage>
+     *
+     * @psalm-external-mutation-free
      */
     public function getAllStubbedFunctions(): array
     {
@@ -375,6 +387,9 @@ final class Functions
         return $matching_functions;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public static function isVariadic(Codebase $codebase, string $function_id, string $file_path): bool
     {
         $file_storage = $codebase->file_storage_provider->get($file_path);
@@ -524,6 +539,9 @@ final class Functions
         return $mutations;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public static function clearCache(): void
     {
         self::$stubbed_functions = [];

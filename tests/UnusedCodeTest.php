@@ -176,6 +176,8 @@ final class UnusedCodeTest extends TestCase
 
     /**
      * @return array<string, array{code:string}>
+     *
+     * @psalm-pure
      */
     public function providerValidCodeParse(): array
     {
@@ -1397,6 +1399,8 @@ final class UnusedCodeTest extends TestCase
 
     /**
      * @return array<string,array{code:string,error_message:string,ignored_issues?:list<string>}>
+     *
+     * @psalm-pure
      */
     public function providerInvalidCodeParse(): array
     {

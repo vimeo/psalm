@@ -11,6 +11,9 @@ use Psalm\Internal\Type\ParseTree;
  */
 final class IndexedAccessTree extends ParseTree
 {
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(public string $value, ?ParseTree $parent = null)
     {
         $this->parent = $parent;

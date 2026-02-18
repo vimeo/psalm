@@ -128,6 +128,9 @@ final class ArrayFillReturnTypeProvider implements FunctionReturnTypeProviderInt
         ]);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     private static function isPositiveNumericType(Union $arg): bool
     {
         if ($arg->isSingle()) {

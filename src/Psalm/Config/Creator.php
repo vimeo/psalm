@@ -111,7 +111,9 @@ final class Creator
     }
 
     /**
-     * @param  array<IssueData>  $issues
+     * @param array<IssueData>  $issues
+     *
+     * @psalm-mutation-free
      */
     public static function getLevel(array $issues, int $counted_types): int
     {

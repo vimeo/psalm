@@ -484,7 +484,11 @@ final class CallableTypeComparator
         return null;
     }
 
-    /** @return null|'not-callable'|MethodIdentifier */
+    /**
+     * @return null|'not-callable'|MethodIdentifier 
+     *
+     * @psalm-external-mutation-free
+     */
     public static function getCallableMethodIdFromTKeyedArray(
         TKeyedArray $input_type_part,
         ?Codebase $codebase = null,

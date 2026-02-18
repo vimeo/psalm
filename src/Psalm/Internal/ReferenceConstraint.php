@@ -16,6 +16,9 @@ final class ReferenceConstraint
 {
     public ?Union $type = null;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(?Union $type = null)
     {
         if ($type) {

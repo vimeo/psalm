@@ -253,6 +253,8 @@ class TNamedObject extends Atomic
 
     /**
      * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties> $extra_types
+     *
+     * @psalm-pure
      */
     public static function createFromName(
         string $value,

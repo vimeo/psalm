@@ -12,6 +12,8 @@ final class DynamicTemplateProvider
 {
     /**
      * @internal
+     *
+     * @psalm-mutation-free
      */
     public function __construct(
         private readonly string $defining_class,
@@ -20,6 +22,8 @@ final class DynamicTemplateProvider
 
     /**
      * If {@see DynamicFunctionStorage} requires template params this method can create it.
+     *
+     * @psalm-mutation-free
      */
     public function createTemplate(string $param_name, ?Union $as = null): TTemplateParam
     {

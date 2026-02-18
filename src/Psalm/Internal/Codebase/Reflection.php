@@ -48,6 +48,9 @@ final class Reflection
      */
     private static array $builtin_functions = [];
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         private readonly ClassLikeStorageProvider $storage_provider,
         private readonly Codebase $codebase,
@@ -522,11 +525,17 @@ final class Reflection
         }
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function hasFunction(string $function_id): bool
     {
         return isset(self::$builtin_functions[$function_id]);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function getFunctionStorage(string $function_id): FunctionStorage
     {
         if (isset(self::$builtin_functions[$function_id])) {
@@ -538,12 +547,17 @@ final class Reflection
 
     /**
      * @return array<string, FunctionStorage>
+     *
+     * @psalm-external-mutation-free
      */
     public function getFunctions(): array
     {
         return self::$builtin_functions;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public static function clearCache(): void
     {
         self::$builtin_functions = [];

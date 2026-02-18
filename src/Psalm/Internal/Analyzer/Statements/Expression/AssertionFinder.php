@@ -1378,6 +1378,8 @@ final class AssertionFinder
 
     /**
      * @param Identical|Equal|NotIdentical|NotEqual $conditional
+     *
+     * @psalm-mutation-free
      */
     private static function hasEmptyArrayVariable(
         PhpParser\Node\Expr\BinaryOp $conditional,
@@ -1884,6 +1886,9 @@ final class AssertionFinder
         return false;
     }
 
+    /**
+     * @psalm-pure
+     */
     private static function getIsAssertion(string $function_name): ?Assertion
     {
         return match ($function_name) {

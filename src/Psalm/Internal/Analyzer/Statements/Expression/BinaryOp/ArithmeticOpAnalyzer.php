@@ -279,6 +279,9 @@ final class ArithmeticOpAnalyzer
         }
     }
 
+    /**
+     * @psalm-pure
+     */
     private static function getNumericalType(int|float $result): Union
     {
         if (is_int($result)) {
@@ -949,6 +952,9 @@ final class ArithmeticOpAnalyzer
         return null;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public static function arithmeticOperation(
         PhpParser\Node $operation,
         float|int $operand1,

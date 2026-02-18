@@ -16,6 +16,8 @@ final class IfConditionalScope
      * @param array<string, bool>   $cond_referenced_var_ids
      * @param array<string, int>   $assigned_in_conditional_var_ids
      * @param list<Clause> $entry_clauses
+     *
+     * @psalm-mutation-free
      */
     public function __construct(
         public Context $if_context,

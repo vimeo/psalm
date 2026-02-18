@@ -203,6 +203,8 @@ final class EventDispatcher
 
     /**
      * @param class-string $class
+     *
+     * @psalm-external-mutation-free
      */
     public function registerClass(string $class): void
     {
@@ -287,6 +289,9 @@ final class EventDispatcher
         }
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function hasAfterMethodCallAnalysisHandlers(): bool
     {
         return count($this->after_method_checks) > 0;
@@ -385,6 +390,9 @@ final class EventDispatcher
         return null;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function hasAfterClassLikeVisitHandlers(): bool
     {
         return count($this->after_visit_classlikes) > 0;

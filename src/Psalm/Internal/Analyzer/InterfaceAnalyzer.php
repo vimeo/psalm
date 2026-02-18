@@ -30,6 +30,9 @@ use function strtolower;
  */
 final class InterfaceAnalyzer extends ClassLikeAnalyzer
 {
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         PhpParser\Node\Stmt\Interface_ $interface,
         SourceAnalyzer $source,

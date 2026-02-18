@@ -97,6 +97,9 @@ class FileProvider
         return (int) filemtime($file_path);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addTemporaryFileChanges(string $file_path, string $new_content, ?int $version = null): void
     {
         if (isset($this->temp_files[$file_path]) &&
@@ -112,6 +115,9 @@ class FileProvider
         ];
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function removeTemporaryFileChanges(string $file_path): void
     {
         unset($this->temp_files[$file_path]);
@@ -128,11 +134,17 @@ class FileProvider
         $this->open_files_paths[$file_path] = $file_path;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function isOpen(string $file_path): bool
     {
         return isset($this->temp_files[$file_path]) || isset(self::$open_files[$file_path]);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function closeFile(string $file_path): void
     {
         unset(

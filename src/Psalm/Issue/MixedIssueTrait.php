@@ -14,6 +14,9 @@ trait MixedIssueTrait
      */
     public ?CodeLocation $origin_location = null;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         string $message,
         CodeLocation $code_location,

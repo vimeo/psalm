@@ -427,15 +427,18 @@ class Reconciler
      * generates the assertions
      *
      * [
-     *     '$a' => '=int-or-string-array-access',
-     *     '$a[0]' => '=isset',
-     *     '$a[0]->foo' => '=isset',
-     *     '$a[0]->foo->bar' => 'isset' // original assertion
+     * '$a' => '=int-or-string-array-access',
+     * '$a[0]' => '=isset',
+     * '$a[0]->foo' => '=isset',
+     * '$a[0]->foo->bar' => 'isset' // original assertion
      * ]
      *
      * @param array<string, array<array<int, Assertion>>> $new_types
      * @param array<string, Union> $existing_types
+     *
      * @return array<string, array<array<int, Assertion>>>
+     *
+     * @psalm-external-mutation-free
      */
     private static function addNestedAssertions(array $new_types, array $existing_types): array
     {
@@ -549,6 +552,8 @@ class Reconciler
 
     /**
      * @return non-empty-list<string>
+     *
+     * @psalm-external-mutation-free
      */
     public static function breakUpPathIntoParts(string $path): array
     {

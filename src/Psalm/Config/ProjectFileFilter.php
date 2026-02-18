@@ -58,6 +58,9 @@ final class ProjectFileFilter extends FileFilter
         return false;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function reportTypeStats(string $file_name, bool $case_sensitive = false): bool
     {
         foreach ($this->ignore_type_stats as $exclude_dir => $_) {
@@ -75,6 +78,9 @@ final class ProjectFileFilter extends FileFilter
         return true;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function useStrictTypes(string $file_name, bool $case_sensitive = false): bool
     {
         foreach ($this->declare_strict_types as $exclude_dir => $_) {

@@ -123,6 +123,8 @@ final class FileReferenceTest extends TestCase
 
     /**
      * @return array<string,array{string,string,array<int,string>}>
+     *
+     * @psalm-pure
      */
     public function providerReferenceLocations(): array
     {
@@ -157,6 +159,8 @@ final class FileReferenceTest extends TestCase
      *              3: array<string,array<string,bool>>,
      *              4: array<string,array<string,bool>>
      * }>
+     *
+     * @psalm-pure
      */
     public function providerReferencedMethods(): array
     {

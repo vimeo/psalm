@@ -200,6 +200,8 @@ final class FileDiffTest extends TestCase
 
     /**
      * @return array<string,array{string,string,string[],string[],string[],array<array-key,array{int,int}>,list<array{int,int}>}>
+     *
+     * @psalm-pure
      */
     public function getChanges(): array
     {

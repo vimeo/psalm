@@ -768,6 +768,9 @@ final class TKeyedArray extends Atomic
         return $this->is_list ? 'list' : 'array';
     }
 
+    /**
+     * @psalm-pure
+     */
     private function escapeAndQuote(string|int $name): string|int
     {
         if (is_string($name)) {

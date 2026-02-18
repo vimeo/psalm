@@ -24,6 +24,8 @@ final class HighOrderFunctionArgInfo
 
     /**
      * @psalm-param HighOrderFunctionArgInfo::TYPE_* $type
+     *
+     * @psalm-mutation-free
      */
     public function __construct(
         private readonly string $type,
@@ -32,6 +34,9 @@ final class HighOrderFunctionArgInfo
     ) {
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getTemplates(): TemplateResult
     {
         $templates = $this->class_storage
@@ -46,6 +51,9 @@ final class HighOrderFunctionArgInfo
         return $this->type;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getFunctionType(): Union
     {
         return match ($this->type) {

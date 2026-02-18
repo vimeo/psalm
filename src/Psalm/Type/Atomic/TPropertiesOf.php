@@ -27,6 +27,8 @@ final class TPropertiesOf extends Atomic
 
     /**
      * @return list<TokenName>
+     *
+     * @psalm-pure
      */
     public static function tokenNames(): array
     {
@@ -51,6 +53,8 @@ final class TPropertiesOf extends Atomic
 
     /**
      * @return self::VISIBILITY_*|null
+     *
+     * @psalm-pure
      */
     public static function filterForTokenName(string $token_name): ?int
     {

@@ -596,6 +596,9 @@ final class ClassLikeDocblockParser
         }
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     private static function getMethodOffset(Doc $comment, string $method_entry): int
     {
         $lines = explode("\n", $comment->getText());

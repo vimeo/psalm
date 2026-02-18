@@ -1845,6 +1845,9 @@ final class AssignmentAnalyzer
         }
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     private static function analyzeVariableUse(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $assign_var,

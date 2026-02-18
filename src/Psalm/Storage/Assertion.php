@@ -23,16 +23,25 @@ abstract class Assertion implements Stringable
     #[Override]
     abstract public function __toString(): string;
 
+    /**
+     * @psalm-pure
+     */
     public function isNegation(): bool
     {
         return false;
     }
 
+    /**
+     * @psalm-pure
+     */
     public function hasEquality(): bool
     {
         return false;
     }
 
+    /**
+     * @psalm-pure
+     */
     public function getAtomicType(): ?Atomic
     {
         return null;

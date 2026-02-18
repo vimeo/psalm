@@ -44,6 +44,8 @@ final class Message implements Stringable
 
     /**
      * @param string[] $headers
+     *
+     * @psalm-mutation-free
      */
     public function __construct(public ?MessageBody $body = null, array $headers = [])
     {

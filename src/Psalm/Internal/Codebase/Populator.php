@@ -53,6 +53,9 @@ final class Populator
      */
     private array $invalid_class_storages = [];
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         private readonly ClassLikeStorageProvider $classlike_storage_provider,
         private readonly FileStorageProvider $file_storage_provider,
@@ -449,6 +452,9 @@ final class Populator
         $storage->declaring_pseudo_method_ids += $trait_storage->declaring_pseudo_method_ids;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     private static function extendType(
         Union $type,
         ClassLikeStorage $storage,

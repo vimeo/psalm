@@ -219,6 +219,9 @@ final class Properties
         return null;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getStorage(string $property_id): PropertyStorage
     {
         // remove leading backslash if it exists
@@ -240,6 +243,9 @@ final class Properties
         throw new UnexpectedValueException('Property ' . $property_id . ' should exist');
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function hasStorage(string $property_id): bool
     {
         // remove leading backslash if it exists

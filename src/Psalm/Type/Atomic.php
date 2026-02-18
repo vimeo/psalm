@@ -494,6 +494,9 @@ abstract class Atomic implements TypeNode, Stringable
             );
     }
 
+    /**
+     * @psalm-pure
+     */
     public function isCallableType(): bool
     {
         return false;
@@ -718,7 +721,11 @@ abstract class Atomic implements TypeNode, Stringable
         return true;
     }
 
-    /** @return list<string> */
+    /**
+     * @return list<string> 
+     *
+     * @psalm-pure
+     */
     protected function getChildNodeKeys(): array
     {
         return [];
@@ -806,6 +813,9 @@ abstract class Atomic implements TypeNode, Stringable
         return $this;
     }
 
+    /**
+     * @psalm-pure
+     */
     public function equals(Atomic $other_type, bool $ensure_source_equality): bool
     {
         return $other_type::class === static::class;

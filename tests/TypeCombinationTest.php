@@ -185,6 +185,8 @@ final class TypeCombinationTest extends TestCase
 
     /**
      * @return array<string,array{string,non-empty-list<string>}>
+     *
+     * @psalm-pure
      */
     public function providerTestValidTypeCombination(): iterable
     {

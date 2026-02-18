@@ -469,6 +469,9 @@ final class Psalm
         return $threads;
     }
 
+    /**
+     * @psalm-pure
+     */
     private static function initOutputFormat(array $options): string
     {
         return isset($options['output-format']) && is_string($options['output-format'])
@@ -478,6 +481,8 @@ final class Psalm
 
     /**
      * @return Report::TYPE_*
+     *
+     * @psalm-pure
      */
     private static function findDefaultOutputFormat(): string
     {
@@ -493,6 +498,9 @@ final class Psalm
         return Report::TYPE_CONSOLE;
     }
 
+    /**
+     * @psalm-pure
+     */
     private static function initShowInfo(array $options): bool
     {
         return isset($options['show-info'])
@@ -1240,7 +1248,11 @@ final class Psalm
         }
     }
 
-    /** @return false|'always'|'auto' */
+    /**
+     * @return false|'always'|'auto' 
+     *
+     * @psalm-mutation-free
+     */
     private static function shouldFindUnusedCode(array $options, Config $config): bool|string
     {
         $find_unused_code = false;
@@ -1261,6 +1273,9 @@ final class Psalm
         return $find_unused_code;
     }
 
+    /**
+     * @psalm-pure
+     */
     private static function shouldRunTaintAnalysis(array $options): bool
     {
         return (isset($options['track-tainted-input'])

@@ -59,6 +59,9 @@ final class TestConfig extends Config
         $this->collectPredefinedFunctions();
     }
 
+    /**
+     * @psalm-pure
+     */
     protected function getContents(): string
     {
         return '<?xml version="1.0"?>

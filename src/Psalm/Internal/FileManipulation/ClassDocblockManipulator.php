@@ -70,6 +70,9 @@ final class ClassDocblockManipulator
         $this->indentation = str_replace(ltrim($first_line), '', $first_line);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function makeImmutable(): void
     {
         $this->immutable = true;
@@ -131,6 +134,9 @@ final class ClassDocblockManipulator
         return $file_manipulations;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public static function clearCache(): void
     {
         self::$manipulators = [];

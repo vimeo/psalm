@@ -26,6 +26,9 @@ final class TraitFinder extends PhpParser\NodeVisitorAbstract
     /** @var list<PhpParser\Node\Stmt\Trait_> */
     private array $matching_trait_nodes = [];
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         private readonly string $fq_trait_name,
     ) {

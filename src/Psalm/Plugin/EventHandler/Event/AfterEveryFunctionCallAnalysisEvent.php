@@ -11,7 +11,11 @@ use Psalm\StatementsSource;
 
 final class AfterEveryFunctionCallAnalysisEvent
 {
-    /** @internal */
+    /**
+     * @internal
+     *
+     * @psalm-mutation-free
+     */
     public function __construct(
         private readonly FuncCall $expr,
         private readonly string $function_id,

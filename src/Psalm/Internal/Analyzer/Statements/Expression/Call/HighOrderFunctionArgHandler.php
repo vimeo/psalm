@@ -281,6 +281,9 @@ final class HighOrderFunctionArgHandler
         return null;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     private static function isSupported(FunctionLikeParameter $container_param): bool
     {
         if (!$container_param->type || !$container_param->type->hasCallableType()) {
@@ -303,6 +306,9 @@ final class HighOrderFunctionArgHandler
         return true;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     private static function fromLiteralString(
         Union $constant,
         StatementsAnalyzer $statements_analyzer,

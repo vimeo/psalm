@@ -54,8 +54,10 @@ final class TypeChecker extends TypeVisitor
     private bool $has_errors = false;
 
     /**
-     * @param  array<string>    $suppressed_issues
-     * @param  array<string, bool> $phantom_classes
+     * @param array<string>    $suppressed_issues
+     * @param array<string, bool> $phantom_classes
+     *
+     * @psalm-mutation-free
      */
     public function __construct(
         private readonly StatementsSource $source,

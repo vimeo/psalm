@@ -1042,7 +1042,10 @@ final class AtomicStaticCallAnalyzer
      *
      * @param ClassLikeStorage $static_class_storage The called class
      * @param lowercase-string $method_name_lc
+     *
      * @return array{MethodStorage, ClassLikeStorage}|null
+     *
+     * @psalm-mutation-free
      */
     private static function findPseudoMethodAndClassStorages(
         Codebase $codebase,

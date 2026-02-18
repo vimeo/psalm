@@ -60,6 +60,8 @@ final class TaintActiveRecords implements AddTaintsInterface
 
     /**
      * @return bool `true` if union contains a type of model
+     *
+     * @psalm-mutation-free
      */
     private static function containsActiveRecord(Union $union_type): bool
     {
@@ -74,6 +76,8 @@ final class TaintActiveRecords implements AddTaintsInterface
 
     /**
      * @return bool `true` if namespace of type is in namespace `app\models`
+     *
+     * @psalm-pure
      */
     private static function isActiveRecord(Atomic $type): bool
     {
@@ -87,6 +91,8 @@ final class TaintActiveRecords implements AddTaintsInterface
 
     /**
      * Return next node that should be followed for active record search
+     *
+     * @psalm-mutation-free
      */
     private static function getParentNode(ArrayItem|Expr $expr): ?Expr
     {

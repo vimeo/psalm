@@ -12,6 +12,9 @@ abstract class VariableIssue extends CodeIssue
 {
     public string $var_name;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         string $message,
         CodeLocation $code_location,

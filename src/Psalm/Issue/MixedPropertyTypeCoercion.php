@@ -13,6 +13,9 @@ final class MixedPropertyTypeCoercion extends PropertyIssue implements MixedIssu
 
     use MixedIssueTrait;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         string $message,
         CodeLocation $code_location,

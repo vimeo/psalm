@@ -1054,7 +1054,11 @@ final class StubTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /** @return iterable<string, array{string,string}> */
+    /**
+     * @return iterable<string, array{string,string}> 
+     *
+     * @psalm-mutation-free
+     */
     public function versionDependentStubsProvider(): iterable
     {
         yield '7.0' => [

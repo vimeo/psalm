@@ -18,6 +18,9 @@ final class Progress extends Base
 
     private ?LanguageServer $server = null;
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function setServer(LanguageServer $server): void
     {
         $this->server = $server;

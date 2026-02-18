@@ -39,8 +39,9 @@ final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
     public ?string $description = null;
 
     /**
-     * @psalm-external-mutation-free
      * @param string $name parameter name, without the "$" prefix
+     *
+     * @psalm-mutation-free
      */
     public function __construct(
         public string $name,

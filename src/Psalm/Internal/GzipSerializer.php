@@ -15,6 +15,9 @@ use function gzinflate;
 /** @internal */
 final class GzipSerializer implements Serializer
 {
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(private readonly Serializer $serializer)
     {
     }

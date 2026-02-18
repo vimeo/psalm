@@ -1862,6 +1862,9 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         return $method_analyzer;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     private static function getThisObjectType(
         ClassLikeStorage $class_storage,
         string $original_fq_classlike_name,

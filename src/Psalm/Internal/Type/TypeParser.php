@@ -536,8 +536,11 @@ final class TypeParser
     }
 
     /**
-     * @param  non-empty-list<int>  $potential_ints
-     * @return  non-empty-list<TLiteralInt>
+     * @param non-empty-list<int>  $potential_ints
+     *
+     * @return non-empty-list<TLiteralInt>
+     *
+     * @psalm-pure
      */
     public static function getComputedIntsFromMask(array $potential_ints, bool $from_docblock = false): array
     {
@@ -1347,8 +1350,11 @@ final class TypeParser
     }
 
     /**
-     * @param  array<string, array<string, Union>> $template_type_map
+     * @param array<string, array<string, Union>> $template_type_map
+     *
      * @throws TypeParseTreeException
+     *
+     * @psalm-mutation-free
      */
     private static function getTypeFromIndexAccessTree(
         IndexedAccessTree $parse_tree,
@@ -1605,6 +1611,8 @@ final class TypeParser
 
     /**
      * @param TNamedObject|TObjectWithProperties|TCallableObject|TIterable|TTemplateParam|TKeyedArray $intersection_type
+     *
+     * @psalm-mutation-free
      */
     private static function extractIntersectionKey(Atomic $intersection_type): string
     {

@@ -16,6 +16,8 @@ final class DynamicFunctionStorageProviderEvent
 {
     /**
      * @internal
+     *
+     * @psalm-mutation-free
      */
     public function __construct(
         private readonly ArgTypeInferer $arg_type_inferer,
@@ -55,6 +57,8 @@ final class DynamicFunctionStorageProviderEvent
 
     /**
      * @return list<PhpParser\Node\Arg>
+     *
+     * @psalm-mutation-free
      */
     public function getArgs(): array
     {

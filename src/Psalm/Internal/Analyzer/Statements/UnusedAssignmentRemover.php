@@ -353,6 +353,9 @@ final class UnusedAssignmentRemover
         return [null, $search_level];
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function checkIfVarRemoved(string $var_id, CodeLocation $var_loc): bool
     {
         return array_key_exists($var_id, $this->removed_unref_vars)

@@ -18,7 +18,10 @@ final class FunctionReturnTypeProviderEvent
      * if something should be returned, but can't be more specific.
      *
      * @param non-empty-string $function_id
+     *
      * @internal
+     *
+     * @psalm-mutation-free
      */
     public function __construct(
         private readonly StatementsSource $statements_source,
@@ -44,6 +47,8 @@ final class FunctionReturnTypeProviderEvent
 
     /**
      * @return list<PhpParser\Node\Arg>
+     *
+     * @psalm-mutation-free
      */
     public function getCallArgs(): array
     {

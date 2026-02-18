@@ -82,6 +82,8 @@ final class FunctionLikeNodeScanner
     /**
      * @param array<string, non-empty-array<string, Union>> $existing_function_template_types
      * @param array<string, TypeAlias> $type_aliases
+     *
+     * @psalm-mutation-free
      */
     public function __construct(
         private readonly Codebase $codebase,

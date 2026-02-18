@@ -16,10 +16,16 @@ class ParseTree
 
     public bool $possibly_undefined = false;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(public ?ParseTree $parent = null)
     {
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function __destruct()
     {
         $this->parent = null;

@@ -15,6 +15,9 @@ use function lz4_uncompress;
 /** @internal */
 final class Lz4Serializer implements Serializer
 {
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(private readonly Serializer $serializer)
     {
     }

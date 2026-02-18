@@ -64,6 +64,9 @@ final class IssueHandler
         }
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function setErrorLevel(string $error_level): void
     {
         if (!in_array($error_level, Config::$ERROR_LEVELS, true)) {
@@ -109,6 +112,9 @@ final class IssueHandler
         return null;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getReportingLevelForFunction(string $function_id): ?string
     {
         foreach ($this->custom_levels as $custom_level) {

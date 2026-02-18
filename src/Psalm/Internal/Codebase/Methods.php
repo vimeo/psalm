@@ -535,6 +535,9 @@ final class Methods
         return $extra_added_types;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isVariadic(MethodIdentifier $method_id): bool
     {
         $declaring_method_id = $this->getDeclaringMethodId($method_id);
@@ -913,6 +916,9 @@ final class Methods
         return $candidate_type;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function getMethodReturnsByRef(MethodIdentifier $method_id): bool
     {
         $method_id = $this->getDeclaringMethodId($method_id);
@@ -1030,6 +1036,8 @@ final class Methods
 
     /**
      * Get the class this method appears in (vs is declared in, which could give a trait
+     *
+     * @psalm-mutation-free
      */
     public function getAppearingMethodId(
         MethodIdentifier $method_id,
@@ -1045,6 +1053,8 @@ final class Methods
 
     /**
      * @return array<string, MethodIdentifier>
+     *
+     * @psalm-mutation-free
      */
     public function getOverriddenMethodIds(MethodIdentifier $method_id): array
     {
@@ -1054,6 +1064,9 @@ final class Methods
         return $class_storage->overridden_method_ids[$method_name] ?? [];
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getCasedMethodId(MethodIdentifier $original_method_id): string
     {
         $method_id = $this->getDeclaringMethodId($original_method_id);
@@ -1079,6 +1092,9 @@ final class Methods
         return $fq_class_name . '::' . $storage->cased_name;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function getUserMethodStorage(MethodIdentifier $method_id): ?MethodStorage
     {
         $declaring_method_id = $this->getDeclaringMethodId($method_id, true);

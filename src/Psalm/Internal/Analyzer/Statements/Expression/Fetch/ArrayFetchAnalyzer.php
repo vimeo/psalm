@@ -1012,6 +1012,9 @@ final class ArrayFetchAnalyzer
         }
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public static function replaceOffsetTypeWithInts(Union $offset_type): Union
     {
         $offset_type = $offset_type->getBuilder();
