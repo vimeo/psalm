@@ -365,6 +365,7 @@ final class InstancePropertyAssignmentAnalyzer
         PropertyStorage $property_storage,
         ClassLikeStorage $declaring_class_storage,
         Context $context,
+        bool $force = false,
     ): bool {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -381,7 +382,7 @@ final class InstancePropertyAssignmentAnalyzer
 
         $project_analyzer = $statements_analyzer->getProjectAnalyzer();
 
-        if ($appearing_property_class && ($property_storage->readonly || $codebase->alter_code)) {
+        if ($appearing_property_class && ($force || $property_storage->readonly || $codebase->alter_code)) {
             $can_set_readonly_property = $context->self
                 && $context->calling_method_id
                 && ($appearing_property_class === $context->self
@@ -402,7 +403,6 @@ final class InstancePropertyAssignmentAnalyzer
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     );
-                    return false;
                 } elseif (!$declaring_class_storage->isMutationFree()
                     && isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation'])
                     && $statements_analyzer->getSource()
@@ -410,6 +410,7 @@ final class InstancePropertyAssignmentAnalyzer
                 ) {
                     $codebase->analyzer->addMutableClass($declaring_class_storage->name);
                 }
+                return false;
             }
         }
         return true;
@@ -1306,27 +1307,23 @@ final class InstancePropertyAssignmentAnalyzer
                 $property_storage,
                 $declaring_class_storage,
                 $context,
+                true,
             );
 
-            if ($canAssign
-                && $lhs_var_id !== null
+            if ($lhs_var_id !== null
                 && isset($context->vars_in_scope[$lhs_var_id])
             ) {
-                $prev = $context->allowed_mutations;
-                if (!$context->vars_in_scope[$lhs_var_id]->allow_mutations) {
-                    $context->allowed_mutations = min(
-                        Mutations::LEVEL_INTERNAL_READ,
-                        $context->allowed_mutations,
-                    );
-                }
                 $statements_analyzer->signalMutation(
-                    $lhs_var_id === '$this' ? Mutations::LEVEL_INTERNAL_READ_WRITE : Mutations::LEVEL_EXTERNAL,
+                    $canAssign ? Mutations::LEVEL_NONE : (
+                        $lhs_var_id === '$this' 
+                            ? Mutations::LEVEL_INTERNAL_READ_WRITE
+                            : Mutations::LEVEL_EXTERNAL
+                    ),
                     $context,
                     'property assignment to ' . $property_id,
                     ImpurePropertyAssignment::class,
                     $stmt,
                 );
-                $context->allowed_mutations = $prev;
             }
 
             if ($property_storage->getter_method) {
