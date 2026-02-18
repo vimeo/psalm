@@ -1108,7 +1108,6 @@ final class ForeachAnalyzer
      * @param array<string, array<string, Union>>  $template_extended_params
      * @param array<string, array<string, Union>>  $class_template_types
      * @param array<int, Union> $calling_type_params
-     *
      * @psalm-external-mutation-free
      */
     private static function getExtendedType(

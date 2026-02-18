@@ -40,7 +40,6 @@ final class WhileAnalyzer
 
     /**
      * @return list<PhpParser\Node\Expr>
-     *
      * @psalm-mutation-free
      */
     public static function getAndExpressions(

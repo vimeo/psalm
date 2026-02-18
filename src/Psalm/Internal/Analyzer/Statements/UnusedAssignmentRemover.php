@@ -178,7 +178,6 @@ final class UnusedAssignmentRemover
     /**
      * @param PhpParser\Node\Expr\Assign|PhpParser\Node\Expr\AssignOp|PhpParser\Node\Expr\AssignRef $cur_assign
      * @param array<string, CodeLocation>    $var_loc_map
-     *
      * @psalm-external-mutation-free
      */
     private function markRemovedChainAssignVar(PhpParser\Node\Expr $cur_assign, array $var_loc_map): void

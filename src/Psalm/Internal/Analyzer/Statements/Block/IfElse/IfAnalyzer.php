@@ -388,7 +388,6 @@ final class IfAnalyzer
      * Returns all expressions inside an ored expression
      *
      * @return non-empty-list<PhpParser\Node\Expr>
-     *
      * @psalm-mutation-free
      */
     private static function getDefinitelyEvaluatedOredExpressions(PhpParser\Node\Expr $stmt): array

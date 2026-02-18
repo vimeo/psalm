@@ -507,9 +507,7 @@ final class Methods
 
     /**
      * @param array<string, array<string, Union>> $extends
-     *
      * @return list<Atomic>
-     *
      * @psalm-mutation-free
      */
     public static function getExtendedTemplatedTypes(

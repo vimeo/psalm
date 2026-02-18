@@ -572,7 +572,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                             new MissingPureAnnotation(
                                 $storage->cased_name . ' must be marked @'.Mutations::TO_ATTRIBUTE_FUNCTIONLIKE[
                                 $this->inferred_mutations
-                                ].' to aid security analysis, run with --alter --issues=MissingPureAnnotation to fix this',
+                                ].' to aid security analysis'
+                                .', run with --alter --issues=MissingPureAnnotation to fix this',
                                 $storage->location,
                             ),
                             $storage->suppressed_issues,

@@ -245,7 +245,6 @@ final class TemplateInferredTypeReplacer
 
     /**
      * @param array<string, array<string, non-empty-list<TemplateBound>>> $inferred_lower_bounds
-     *
      * @psalm-external-mutation-free
      */
     private static function replaceTemplateParam(
