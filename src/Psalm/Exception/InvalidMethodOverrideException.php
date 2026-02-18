@@ -6,6 +6,9 @@ namespace Psalm\Exception;
 
 use Exception;
 
+/**
+ * @psalm-immutable
+ */
 final class InvalidMethodOverrideException extends Exception
 {
 }

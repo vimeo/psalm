@@ -7,6 +7,9 @@ namespace Psalm\Node\Expr\AssignOp;
 use PhpParser\Node\Expr\AssignOp\BitwiseAnd;
 use Psalm\Node\VirtualNode;
 
+/**
+ * @psalm-immutable
+ */
 final class VirtualBitwiseAnd extends BitwiseAnd implements VirtualNode
 {
 

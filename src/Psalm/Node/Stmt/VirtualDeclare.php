@@ -7,6 +7,9 @@ namespace Psalm\Node\Stmt;
 use PhpParser\Node\Stmt\Declare_;
 use Psalm\Node\VirtualNode;
 
+/**
+ * @psalm-immutable
+ */
 final class VirtualDeclare extends Declare_ implements VirtualNode
 {
 

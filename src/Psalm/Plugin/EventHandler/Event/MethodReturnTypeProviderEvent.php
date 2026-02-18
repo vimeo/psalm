@@ -10,6 +10,9 @@ use Psalm\Context;
 use Psalm\StatementsSource;
 use Psalm\Type\Union;
 
+/**
+ * @psalm-immutable
+ */
 final class MethodReturnTypeProviderEvent
 {
     /**

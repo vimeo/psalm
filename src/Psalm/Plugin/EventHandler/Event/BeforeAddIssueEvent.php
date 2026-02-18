@@ -7,6 +7,9 @@ namespace Psalm\Plugin\EventHandler\Event;
 use Psalm\Codebase;
 use Psalm\Issue\CodeIssue;
 
+/**
+ * @psalm-immutable
+ */
 final class BeforeAddIssueEvent
 {
     /**

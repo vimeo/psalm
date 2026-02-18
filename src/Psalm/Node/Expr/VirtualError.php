@@ -12,6 +12,8 @@ use Psalm\Node\VirtualNode;
  *
  * An error node may be placed at a position where an expression is required, but an error occurred.
  * Error nodes will not be present if the parser is run in throwOnError mode (the default).
+ *
+ * @psalm-immutable
  */
 final class VirtualError extends Error implements VirtualNode
 {

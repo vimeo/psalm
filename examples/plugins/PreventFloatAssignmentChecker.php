@@ -41,6 +41,9 @@ final class PreventFloatAssignmentChecker implements AfterExpressionAnalysisInte
     }
 }
 
+/**
+ * @psalm-immutable
+ */
 final class NoFloatAssignment extends PluginIssue
 {
 }

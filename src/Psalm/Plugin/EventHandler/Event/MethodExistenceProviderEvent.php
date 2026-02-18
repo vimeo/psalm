@@ -7,6 +7,9 @@ namespace Psalm\Plugin\EventHandler\Event;
 use Psalm\CodeLocation;
 use Psalm\StatementsSource;
 
+/**
+ * @psalm-immutable
+ */
 final class MethodExistenceProviderEvent
 {
     /**

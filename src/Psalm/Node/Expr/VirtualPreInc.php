@@ -7,6 +7,9 @@ namespace Psalm\Node\Expr;
 use PhpParser\Node\Expr\PreInc;
 use Psalm\Node\VirtualNode;
 
+/**
+ * @psalm-immutable
+ */
 final class VirtualPreInc extends PreInc implements VirtualNode
 {
 

@@ -6,6 +6,9 @@ namespace Psalm\Plugin\EventHandler\Event;
 
 use Psalm\StatementsSource;
 
+/**
+ * @psalm-immutable
+ */
 final class FunctionExistenceProviderEvent
 {
     /**

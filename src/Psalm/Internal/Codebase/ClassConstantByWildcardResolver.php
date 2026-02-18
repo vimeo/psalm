@@ -12,6 +12,7 @@ use function array_merge;
 
 /**
  * @internal
+ * @psalm-immutable
  */
 final class ClassConstantByWildcardResolver
 {

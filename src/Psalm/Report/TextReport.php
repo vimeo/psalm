@@ -10,6 +10,9 @@ use Psalm\Report;
 
 use function sprintf;
 
+/**
+ * @psalm-immutable
+ */
 final class TextReport extends Report
 {
     #[Override]

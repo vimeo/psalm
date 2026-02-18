@@ -8,6 +8,9 @@ use Psalm\CodeLocation;
 
 use function strtolower;
 
+/**
+ * @psalm-immutable
+ */
 abstract class FunctionIssue extends CodeIssue
 {
     public string $function_id;

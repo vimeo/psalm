@@ -9,6 +9,8 @@ namespace Psalm\Type;
  *
  * Not using an enum since real code usages will use only the integer value,
  * and extracting it with ->value every time is a pain.
+ *
+ * @psalm-immutable
  */
 final class TaintKind
 {

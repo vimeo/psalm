@@ -7,6 +7,9 @@ namespace Psalm\Node\Stmt;
 use PhpParser\Node\Stmt\Goto_;
 use Psalm\Node\VirtualNode;
 
+/**
+ * @psalm-immutable
+ */
 final class VirtualGoto extends Goto_ implements VirtualNode
 {
 

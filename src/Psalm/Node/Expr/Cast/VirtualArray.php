@@ -7,6 +7,9 @@ namespace Psalm\Node\Expr\Cast;
 use PhpParser\Node\Expr\Cast\Array_;
 use Psalm\Node\VirtualNode;
 
+/**
+ * @psalm-immutable
+ */
 final class VirtualArray extends Array_ implements VirtualNode
 {
 

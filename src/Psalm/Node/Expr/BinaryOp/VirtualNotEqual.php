@@ -7,6 +7,9 @@ namespace Psalm\Node\Expr\BinaryOp;
 use PhpParser\Node\Expr\BinaryOp\NotEqual;
 use Psalm\Node\VirtualNode;
 
+/**
+ * @psalm-immutable
+ */
 final class VirtualNotEqual extends NotEqual implements VirtualNode
 {
 

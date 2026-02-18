@@ -8,6 +8,7 @@ use Psalm\Internal\Type\ParseTree;
 
 /**
  * @internal
+ * @psalm-immutable
  */
 final class ConditionalTree extends ParseTree
 {

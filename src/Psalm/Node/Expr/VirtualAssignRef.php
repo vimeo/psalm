@@ -7,6 +7,9 @@ namespace Psalm\Node\Expr;
 use PhpParser\Node\Expr\AssignRef;
 use Psalm\Node\VirtualNode;
 
+/**
+ * @psalm-immutable
+ */
 final class VirtualAssignRef extends AssignRef implements VirtualNode
 {
 

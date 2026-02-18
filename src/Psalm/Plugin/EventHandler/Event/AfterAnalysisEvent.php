@@ -8,6 +8,9 @@ use Psalm\Codebase;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\SourceControl\SourceControlInfo;
 
+/**
+ * @psalm-immutable
+ */
 final class AfterAnalysisEvent
 {
     /**

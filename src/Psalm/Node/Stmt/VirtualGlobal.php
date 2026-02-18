@@ -7,6 +7,9 @@ namespace Psalm\Node\Stmt;
 use PhpParser\Node\Stmt\Global_;
 use Psalm\Node\VirtualNode;
 
+/**
+ * @psalm-immutable
+ */
 final class VirtualGlobal extends Global_ implements VirtualNode
 {
 

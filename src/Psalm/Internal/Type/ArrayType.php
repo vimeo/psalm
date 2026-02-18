@@ -14,6 +14,7 @@ use function count;
 
 /**
  * @internal
+ * @psalm-immutable
  */
 final class ArrayType
 {

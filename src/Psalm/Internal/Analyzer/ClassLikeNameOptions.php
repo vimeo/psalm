@@ -6,6 +6,7 @@ namespace Psalm\Internal\Analyzer;
 
 /**
  * @internal
+ * @psalm-immutable
  */
 final class ClassLikeNameOptions
 {

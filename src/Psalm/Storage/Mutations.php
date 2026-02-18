@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Psalm\Storage;
 
+/**
+ * @psalm-immutable
+ */
 final class Mutations
 {
     /**

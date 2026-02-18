@@ -9,6 +9,7 @@ use Psalm\Internal\MethodIdentifier;
 
 /**
  * @internal
+ * @psalm-immutable
  */
 final class AtomicCallContext
 {

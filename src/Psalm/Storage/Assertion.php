@@ -16,10 +16,13 @@ abstract class Assertion implements Stringable
     use ImmutableNonCloneableTrait;
     use UnserializeMemoryUsageSuppressionTrait;
 
+    /** @psalm-mutation-free */
     abstract public function getNegation(): Assertion;
 
+    /** @psalm-mutation-free */
     abstract public function isNegationOf(self $assertion): bool;
 
+    /** @psalm-mutation-free */
     #[Override]
     abstract public function __toString(): string;
 

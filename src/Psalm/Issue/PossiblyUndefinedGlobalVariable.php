@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Psalm\Issue;
 
+/**
+ * @psalm-immutable
+ */
 final class PossiblyUndefinedGlobalVariable extends VariableIssue
 {
     public const ERROR_LEVEL = 3;

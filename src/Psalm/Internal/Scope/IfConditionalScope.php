@@ -9,6 +9,7 @@ use Psalm\Internal\Clause;
 
 /**
  * @internal
+ * @psalm-immutable
  */
 final class IfConditionalScope
 {

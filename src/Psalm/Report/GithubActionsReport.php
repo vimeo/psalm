@@ -11,6 +11,9 @@ use Psalm\Report;
 use function sprintf;
 use function strtr;
 
+/**
+ * @psalm-immutable
+ */
 final class GithubActionsReport extends Report
 {
     #[Override]

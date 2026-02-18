@@ -15,6 +15,7 @@ use function str_replace;
 
 /**
  * @internal
+ * @psalm-immutable
  */
 final class StorageByPatternResolver
 {

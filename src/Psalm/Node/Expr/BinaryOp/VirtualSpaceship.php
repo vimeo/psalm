@@ -7,6 +7,9 @@ namespace Psalm\Node\Expr\BinaryOp;
 use PhpParser\Node\Expr\BinaryOp\Spaceship;
 use Psalm\Node\VirtualNode;
 
+/**
+ * @psalm-immutable
+ */
 final class VirtualSpaceship extends Spaceship implements VirtualNode
 {
 

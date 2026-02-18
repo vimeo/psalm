@@ -9,6 +9,7 @@ use Psalm\Type\Atomic;
 
 /**
  * @internal
+ * @psalm-immutable
  */
 final class ClassTypeAlias implements TypeAlias
 {

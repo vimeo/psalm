@@ -8,6 +8,7 @@ use Psalm\Type\Union;
 
 /**
  * @internal
+ * @psalm-immutable
  */
 final class AssignedProperty
 {

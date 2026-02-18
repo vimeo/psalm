@@ -7,6 +7,9 @@ namespace Psalm\Node\Scalar\MagicConst;
 use PhpParser\Node\Scalar\MagicConst\Method;
 use Psalm\Node\VirtualNode;
 
+/**
+ * @psalm-immutable
+ */
 final class VirtualMethod extends Method implements VirtualNode
 {
 

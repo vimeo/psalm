@@ -6,6 +6,9 @@ namespace Psalm\Plugin\EventHandler\Event;
 
 use Psalm\Codebase;
 
+/**
+ * @psalm-immutable
+ */
 final class StringInterpreterEvent
 {
     /**

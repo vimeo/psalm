@@ -10,6 +10,9 @@ use Psalm\Context;
 use Psalm\StatementsSource;
 use Psalm\Storage\FileStorage;
 
+/**
+ * @psalm-immutable
+ */
 final class AfterFileAnalysisEvent
 {
     /**

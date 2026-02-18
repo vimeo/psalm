@@ -8,6 +8,9 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
+/**
+ * @psalm-immutable
+ */
 final class DynamicTemplateProvider
 {
     /**

@@ -8,6 +8,8 @@ use PhpParser\Node\Identifier;
 
 /**
  * Represents a non-namespaced name. Namespaced names are represented using Name nodes.
+ *
+ * @psalm-immutable
  */
 final class VirtualIdentifier extends Identifier implements VirtualNode
 {

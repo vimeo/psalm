@@ -26,7 +26,7 @@ use Psalm\Issue\MethodSignatureMismatch;
 use Psalm\Issue\MethodSignatureMustProvideReturnType;
 use Psalm\Issue\MismatchingDocblockParamType;
 use Psalm\Issue\MismatchingDocblockReturnType;
-use Psalm\Issue\MissingImmutableAnnotation;
+use Psalm\Issue\MissingAbstractPureAnnotation;
 use Psalm\Issue\MoreSpecificImplementedParamType;
 use Psalm\Issue\OverriddenMethodAccess;
 use Psalm\Issue\ParamNameMismatch;
@@ -90,6 +90,7 @@ final class MethodComparator
         );
 
         self::checkForObviousMethodMismatches(
+            $codebase,
             $guide_classlike_storage,
             $implementer_classlike_storage,
             $guide_method_storage,
@@ -294,6 +295,7 @@ final class MethodComparator
      * @param  string[]         $suppressed_issues
      */
     private static function checkForObviousMethodMismatches(
+        Codebase $codebase,
         ClassLikeStorage $guide_classlike_storage,
         ClassLikeStorage $implementer_classlike_storage,
         MethodStorage $guide_method_storage,
@@ -383,11 +385,11 @@ final class MethodComparator
             && $prevent_method_signature_mismatch
         ) {
             IssueBuffer::maybeAdd(
-                new MissingImmutableAnnotation(
+                new MissingAbstractPureAnnotation(
                     $cased_guide_method_id . ' is marked at least @psalm-external-mutation-free, but '
                         . $implementer_classlike_storage->name . '::'
                         . ($guide_method_storage->cased_name ?: '')
-                        . ' is not marked @psalm-external-mutation-free, run with --alter to fix this',
+                        . ' is not marked @psalm-external-mutation-free',
                     $code_location,
                 ),
                 $suppressed_issues + $implementer_classlike_storage->suppressed_issues,

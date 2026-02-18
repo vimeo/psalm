@@ -14,6 +14,7 @@ use Psalm\Type\TaintKind;
  * Add input taints to all variables named 'bad_data'
  *
  * @psalm-suppress UnusedClass
+ * @psalm-immutable
  */
 final class TaintBadDataPlugin implements AddTaintsInterface
 {

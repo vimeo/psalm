@@ -63,7 +63,6 @@
         <Trace errorLevel="error"/>
         <PossiblyNullOperand errorLevel="suppress"/>
         <MissingAbstractPureAnnotation errorLevel="suppress"/>
-        <MissingImmutableAnnotation errorLevel="suppress"/>
 
         <DeprecatedMethod>
             <errorLevel type="suppress">

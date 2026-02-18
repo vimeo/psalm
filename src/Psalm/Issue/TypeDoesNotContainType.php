@@ -6,6 +6,9 @@ namespace Psalm\Issue;
 
 use Psalm\CodeLocation;
 
+/**
+ * @psalm-immutable
+ */
 final class TypeDoesNotContainType extends CodeIssue
 {
     public const ERROR_LEVEL = 4;

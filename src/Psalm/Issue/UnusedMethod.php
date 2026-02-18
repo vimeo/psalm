@@ -8,6 +8,9 @@ use Psalm\CodeLocation;
 
 use function strtolower;
 
+/**
+ * @psalm-immutable
+ */
 final class UnusedMethod extends MethodIssue
 {
     public const ERROR_LEVEL = -2;

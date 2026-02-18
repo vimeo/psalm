@@ -7,6 +7,9 @@ namespace Psalm\Issue;
 use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\DataFlowNodeData;
 
+/**
+ * @psalm-immutable
+ */
 abstract class TaintedInput extends CodeIssue
 {
     public const ERROR_LEVEL = -2;

@@ -6,6 +6,9 @@ namespace Psalm\Issue;
 
 use Psalm\CodeLocation;
 
+/**
+ * @psalm-immutable
+ */
 final class UnusedProperty extends PropertyIssue
 {
     public const ERROR_LEVEL = -2;

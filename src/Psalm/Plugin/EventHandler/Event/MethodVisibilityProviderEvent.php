@@ -8,6 +8,9 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\StatementsSource;
 
+/**
+ * @psalm-immutable
+ */
 final class MethodVisibilityProviderEvent
 {
     /**

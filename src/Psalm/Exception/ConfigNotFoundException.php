@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Psalm\Exception;
 
+/**
+ * @psalm-immutable
+ */
 final class ConfigNotFoundException extends ConfigException
 {
 }

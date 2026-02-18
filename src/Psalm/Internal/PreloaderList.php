@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace Psalm\Internal;
 
-/** @internal */
+/**
+ * @internal
+ *
+ * @psalm-immutable
+ */
 final class PreloaderList {
     public const CLASSES = [
         \AdvancedJsonRpc\Dispatcher::class,

@@ -7,7 +7,11 @@ namespace Psalm\Node\Stmt;
 use PhpParser\Node\Stmt\Nop;
 use Psalm\Node\VirtualNode;
 
-/** Nop/empty statement (;). */
+/**
+ * Nop/empty statement (;).
+ *
+ * @psalm-immutable
+ */
 final class VirtualNop extends Nop implements VirtualNode
 {
 

@@ -8,6 +8,7 @@ use LanguageServerProtocol\Range;
 
 /**
  * @internal
+ * @psalm-immutable
  */
 final class Reference
 {
