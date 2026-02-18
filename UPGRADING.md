@@ -2,6 +2,51 @@
 
 ## Changed
 
+- [BC] Property Psalm\Type\Atomic\TCallable#$is_pure was removed and replaced with an `$allowed_mutations` property
+- [BC] Method Psalm\Type\Atomic\CallableTrait#setIsPure() was removed and replaced with a `setAllowedMutations` method 
+- [BC] Property Psalm\Type\Atomic\TCallable#$value changed default value from NULL to 'callable'
+- [BC] Default parameter value for parameter $value of Psalm\Type\Atomic\TCallable#__construct() changed from 'callable' to NULL
+- [BC] Default parameter value for parameter $return_type of Psalm\Type\Atomic\TCallable#__construct() changed from NULL to 3
+- [BC] Default parameter value for parameter $is_pure of Psalm\Type\Atomic\TCallable#__construct() changed from NULL to false
+- [BC] The parameter $value of Psalm\Type\Atomic\TCallable#__construct() changed from string to a non-contravariant array|null
+- [BC] The parameter $params of Psalm\Type\Atomic\TCallable#__construct() changed from array|null to a non-contravariant Psalm\Type\Union|null
+- [BC] The parameter $return_type of Psalm\Type\Atomic\TCallable#__construct() changed from Psalm\Type\Union|null to a non-contravariant int
+- [BC] The parameter $is_pure of Psalm\Type\Atomic\TCallable#__construct() changed from bool|null to a non-contravariant bool
+- [BC] Property Psalm\Type\Atomic\TClosure#$is_pure was removed
+- [BC] Method Psalm\Type\Atomic\CallableTrait#setIsPure() was removed
+- [BC] Default parameter value for parameter $value of Psalm\Type\Atomic\TClosure#__construct() changed from 'callable' to NULL
+- [BC] Default parameter value for parameter $return_type of Psalm\Type\Atomic\TClosure#__construct() changed from NULL to 3
+- [BC] Default parameter value for parameter $is_pure of Psalm\Type\Atomic\TClosure#__construct() changed from NULL to array (
+)
+- [BC] Default parameter value for parameter $extra_types of Psalm\Type\Atomic\TClosure#__construct() changed from array (
+) to false
+- [BC] The parameter $value of Psalm\Type\Atomic\TClosure#__construct() changed from string to a non-contravariant array|null
+- [BC] The parameter $params of Psalm\Type\Atomic\TClosure#__construct() changed from array|null to a non-contravariant Psalm\Type\Union|null
+- [BC] The parameter $return_type of Psalm\Type\Atomic\TClosure#__construct() changed from Psalm\Type\Union|null to a non-contravariant int
+- [BC] The parameter $is_pure of Psalm\Type\Atomic\TClosure#__construct() changed from bool|null to a non-contravariant array
+- [BC] The parameter $extra_types of Psalm\Type\Atomic\TClosure#__construct() changed from array to a non-contravariant bool
+- [BC] Property Psalm\Type\Atomic\CallableTrait#$is_pure was removed
+- [BC] Method Psalm\Type\Atomic\CallableTrait#__construct() was removed
+- [BC] Method Psalm\Type\Atomic\CallableTrait#setIsPure() was removed
+- [BC] Property Psalm\Context#$pure was removed
+- [BC] Property Psalm\Context#$mutation_free was removed
+- [BC] Property Psalm\Context#$external_mutation_free was removed
+- [BC] Method signalMutationOnlyInferred() was added to interface Psalm\StatementsSource
+- [BC] Method signalMutation() was added to interface Psalm\StatementsSource
+- [BC] Property Psalm\Plugin\DynamicFunctionStorage#$pure was removed
+- [BC] Value of constant Psalm\DocComment::PSALM_ANNOTATIONS changed from array (
+- [BC] Property Psalm\Storage\FunctionLikeStorage#$mutation_free was removed
+- [BC] Property Psalm\Storage\FunctionLikeStorage#$pure was removed
+- [BC] Property Psalm\Storage\ClassLikeStorage#$external_mutation_free was removed
+- [BC] Property Psalm\Storage\ClassLikeStorage#$mutation_free was removed
+- [BC] Property Psalm\Storage\FunctionLikeStorage#$mutation_free was removed
+- [BC] Property Psalm\Storage\FunctionLikeStorage#$pure was removed
+- [BC] Property Psalm\Storage\FunctionLikeStorage#$mutation_free was removed
+- [BC] Property Psalm\Storage\FunctionLikeStorage#$pure was removed
+- [BC] Property Psalm\Storage\MethodStorage#$external_mutation_free was removed
+- [BC] Property Psalm\Storage\MethodStorage#$immutable was removed
+- [BC] Property Psalm\Storage\MethodStorage#$mutation_free_inferred was removed
+
 - [BC] Taints are now *internally* represented by a bitmap (an integer), instead of an array of strings. Users can still use the usual string taint identifiers (including custom ones, which will be automatically registered by Psalm), but internally, the type of `Psalm\Type\TaintKind` taint types is now an integer.
 
 - [BC] The maximum number of usable taint *types* (including both native taints and custom taints) is now equal to 32 on 32-bit systems and 64 on 64-bit systems: this should be enough for the vast majority of usecases, if more taint types are needed, consider merging some taint types or using some native taint types.  
