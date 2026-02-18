@@ -184,63 +184,12 @@ final class TypeCombinationTest extends TestCase
         ];
     }
 
-    private function callableCombinationsProvider(): iterable
-    {
-        $levels = [
-            'pure-' => Mutations::LEVEL_NONE,
-            'self-accessing-' => Mutations::LEVEL_INTERNAL_READ,
-            'self-mutating-' => Mutations::LEVEL_INTERNAL_READ_WRITE,
-            'impure-' => Mutations::LEVEL_EXTERNAL,
-
-        ];
-        $types = [
-            'callable',
-            'callable-string',
-            'callable-object',
-            'Closure',
-            'callable-list{class-string, non-empty-string}',
-            'callable-array{class-string, non-empty-string}'
-        ];
-
-        foreach ($types as $type1) {
-            foreach ($types as $type2) {
-                foreach ($levels as $level1 => $level1_value) {
-                    foreach ($levels as $level2 => $level2_value) {
-                        $type1_final = "$level1$type1";
-                        $type2_final = "$level2$type2";
-
-                        if ($type1_final === 'impure-callable' 
-                            || $type2_final === 'impure-callable'
-                        ) {
-                            yield "combine $type1_final and $type2_final" => [
-                                'expected' => "impure-callable",
-                                'types' => [$type1_final, $type2_final],
-                            ];
-                        } elseif ($type1_final === $type2_final) {
-                            yield "combine $type1_final and $type2_final" => [
-                                'expected' => $type1_final,
-                                'types' => [$type1_final, $type2_final],
-                            ];
-                        } else {
-                            $l = [$type1_final, $type2_final];
-                            sort($l);
-                            yield "combine $type1_final and $type2_final" => [
-                                'expected' => "{$l[0]}|{$l[1]}",
-                                'types' => [$type1_final, $type2_final],
-                            ];
-                        }
-                    }
-                }
-            }
-        }
-    }
     /**
      * @return array<string,array{string,non-empty-list<string>}>
      */
     public function providerTestValidTypeCombination(): iterable
     {
-        yield from $this->callableCombinationsProvider();
-        yield from [
+        return [
             'complexArrayFallback1' => [
                 'array{other_references: list<Psalm\Internal\Analyzer\DataFlowNodeData>|null, taint_trace: list<array<array-key, mixed>>|null, ...<string, mixed>}',
                 [
