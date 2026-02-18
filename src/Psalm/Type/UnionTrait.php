@@ -1599,6 +1599,7 @@ trait UnionTrait
     }
 
     /**
+     * @psalm-api
      * @psalm-mutation-free
      */
     public function isEmptyArray(): bool
