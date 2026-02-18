@@ -227,6 +227,7 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                         }
                     }
 
+                    /** @psalm-mutable */
                     class A extends AParent {
                         public function getPlus5() {
                             return $this->i + 5;
@@ -245,6 +246,7 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                         }
                     }
 
+                    /** @psalm-mutable */
                     class A extends AParent {
                         public function getPlus5() {
                             return $this->i + 5;
