@@ -2410,7 +2410,7 @@ final class ClassLikes
     }
 
     /**
-     * @psalm-mutation-free
+     * @psalm-external-mutation-free
      */
     public function removeClassLike(string $fq_class_name): void
     {

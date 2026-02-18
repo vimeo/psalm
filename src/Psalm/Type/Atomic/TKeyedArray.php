@@ -387,7 +387,7 @@ final class TKeyedArray extends Atomic
 
         $key_type = TypeCombiner::combine($key_types);
 
-        /** @psalm-suppress InaccessibleProperty We just created this type */
+        /** @psalm-suppress InaccessibleProperty, ImpurePropertyAssignment We just created this type */
         $key_type->possibly_undefined = $possibly_undefined;
 
         if ($this->fallback_params === null) {

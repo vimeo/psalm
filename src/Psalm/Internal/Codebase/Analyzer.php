@@ -1404,7 +1404,7 @@ final class Analyzer
     }
 
     /**
-     * @psalm-mutation-free
+     * @psalm-external-mutation-free
      */
     public function removeExistingDataForFile(string $file_path, int $start, int $end, ?string $issue_type = null): void
     {

@@ -79,7 +79,7 @@ final class FakeFileProvider extends FileProvider
     }
 
     /**
-     * @psalm-mutation-free
+     * @psalm-external-mutation-free
      */
     public function deleteFile(string $file_path): void
     {

@@ -192,7 +192,7 @@ final class Scanner
     }
 
     /**
-     * @psalm-mutation-free
+     * @psalm-external-mutation-free
      */
     public function removeFile(string $file_path): void
     {
@@ -200,7 +200,7 @@ final class Scanner
     }
 
     /**
-     * @psalm-mutation-free
+     * @psalm-external-mutation-free
      */
     public function removeClassLike(string $fq_classlike_name_lc): void
     {

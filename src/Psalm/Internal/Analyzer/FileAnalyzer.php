@@ -710,7 +710,7 @@ class FileAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * @psalm-mutation-free
+     * @psalm-external-mutation-free
      */
     public function clearSourceBeforeDestruction(): void
     {

@@ -116,7 +116,7 @@ class FileProvider
     }
 
     /**
-     * @psalm-mutation-free
+     * @psalm-external-mutation-free
      */
     public function removeTemporaryFileChanges(string $file_path): void
     {

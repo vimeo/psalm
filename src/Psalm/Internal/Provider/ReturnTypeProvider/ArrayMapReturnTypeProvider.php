@@ -528,7 +528,7 @@ final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInte
     }
 
     /**
-     * @psalm-mutation-free
+     * @psalm-external-mutation-free
      */
     public static function cleanContext(Context $context, int $fake_var_discriminator): void
     {

@@ -67,7 +67,7 @@ final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
             . ($this->is_optional ? '=' : '');
     }
 
-    /** @psalm-mutation-free */
+    /** @psalm-external-mutation-free */
     public function setType(Union $type): self
     {
         if ($this->type === $type) {

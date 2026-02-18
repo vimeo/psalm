@@ -57,7 +57,7 @@ final class LoopScope
     }
 
     /**
-     * @psalm-mutation-free
+     * @psalm-external-mutation-free
      */
     public function __destruct()
     {

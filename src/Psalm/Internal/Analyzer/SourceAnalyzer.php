@@ -28,7 +28,7 @@ abstract class SourceAnalyzer implements StatementsSource
     protected SourceAnalyzer $source;
 
     /**
-     * @psalm-mutation-free
+     * @psalm-external-mutation-free
      */
     public function __destruct()
     {
