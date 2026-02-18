@@ -51,6 +51,10 @@ final class TestConfig extends Config
             'MissingPureAnnotation',
             Config::REPORT_SUPPRESS,
         );
+        $this->setCustomErrorLevel(
+            'MissingAbstractPureAnnotation',
+            Config::REPORT_SUPPRESS,
+        );
 
         $this->project_files = self::$cached_project_files;
         $this->setIncludeCollector(new IncludeCollector());

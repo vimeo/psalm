@@ -93,6 +93,10 @@ trait ValidCodeAnalysisTestTrait
                 'MissingPureAnnotation',
                 Config::REPORT_ERROR,
             );
+            Config::getInstance()->setCustomErrorLevel(
+                'MissingAbstractPureAnnotation',
+                Config::REPORT_ERROR,
+            );
         }
 
         if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {

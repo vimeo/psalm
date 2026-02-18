@@ -45,6 +45,10 @@ final class UnusedCodeTest extends TestCase
             'MissingPureAnnotation',
             Config::REPORT_SUPPRESS,
         );
+        $this->project_analyzer->getCodebase()->config->setCustomErrorLevel(
+            'MissingAbstractPureAnnotation',
+            Config::REPORT_SUPPRESS,
+        );
         $this->project_analyzer->setPhpVersion('7.3', 'tests');
     }
 

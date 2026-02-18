@@ -72,6 +72,7 @@ final class ErrorFixTest extends TestCase
         }
         $config->setCustomErrorLevel('MissingImmutableAnnotation', Config::REPORT_SUPPRESS);
         $config->setCustomErrorLevel('MissingPureAnnotation', Config::REPORT_SUPPRESS);
+        $config->setCustomErrorLevel('MissingAbstractPureAnnotation', Config::REPORT_SUPPRESS);
 
         $analyzed_files = [];
 

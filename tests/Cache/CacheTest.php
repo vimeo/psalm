@@ -100,6 +100,10 @@ final class CacheTest extends TestCase
             'MissingPureAnnotation',
             Config::REPORT_SUPPRESS,
         );
+        $config->setCustomErrorLevel(
+            'MissingAbstractPureAnnotation',
+            Config::REPORT_SUPPRESS,
+        );
         $config->setIncludeCollector(new IncludeCollector());
 
         $file_provider = new FakeFileProvider();

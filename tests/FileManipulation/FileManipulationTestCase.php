@@ -54,6 +54,10 @@ abstract class FileManipulationTestCase extends TestCase
             'MissingPureAnnotation',
             TestConfig::REPORT_ERROR,
         );
+        $config->setCustomErrorLevel(
+            'MissingAbstractPureAnnotation',
+            TestConfig::REPORT_ERROR,
+        );
 
         $this->project_analyzer = new ProjectAnalyzer(
             $config,

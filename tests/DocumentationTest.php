@@ -250,6 +250,12 @@ final class DocumentationTest extends TestCase
                 Config::REPORT_ERROR,
             );
         }
+        if ($error_message === 'MissingAbstractPureAnnotation') {
+            Config::getInstance()->setCustomErrorLevel(
+                'MissingAbstractPureAnnotation',
+                Config::REPORT_ERROR,
+            );
+        }
 
         $this->expectException(CodeException::class);
         $this->expectExceptionMessageMatches('/\b' . preg_quote($error_message, '/') . '\b/');

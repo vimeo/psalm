@@ -53,14 +53,17 @@ class FileProvider
             return self::$open_files[$file_path];
         }
 
+        /** @psalm-suppress ImpureFunctionCall */
         if (!file_exists($file_path)) {
             throw new UnexpectedValueException('File ' . $file_path . ' should exist to get contents');
         }
 
+        /** @psalm-suppress ImpureFunctionCall */
         if (is_dir($file_path)) {
             throw new UnexpectedValueException('File ' . $file_path . ' is a directory');
         }
 
+        /** @psalm-suppress ImpureFunctionCall */
         $file_contents = (string) file_get_contents($file_path);
 
         self::$open_files[$file_path] = $file_contents;

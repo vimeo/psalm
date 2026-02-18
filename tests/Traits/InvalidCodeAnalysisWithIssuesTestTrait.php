@@ -115,6 +115,10 @@ trait InvalidCodeAnalysisWithIssuesTestTrait
                 'MissingPureAnnotation',
                 Config::REPORT_ERROR,
             );
+            Config::getInstance()->setCustomErrorLevel(
+                'MissingAbstractPureAnnotation',
+                Config::REPORT_ERROR,
+            );
         }
 
         $this->project_analyzer->setPhpVersion($php_version, 'tests');
