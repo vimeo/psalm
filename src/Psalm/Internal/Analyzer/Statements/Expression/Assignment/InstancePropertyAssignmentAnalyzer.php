@@ -1313,16 +1313,16 @@ final class InstancePropertyAssignmentAnalyzer
             if ($lhs_var_id !== null
                 && isset($context->vars_in_scope[$lhs_var_id])
             ) {
+                $lev = $lhs_var_id === '$this' 
+                    ? Mutations::LEVEL_INTERNAL_READ_WRITE
+                    : Mutations::LEVEL_EXTERNAL;
                 $statements_analyzer->signalMutation(
-                    $canAssign ? Mutations::LEVEL_NONE : (
-                        $lhs_var_id === '$this' 
-                            ? Mutations::LEVEL_INTERNAL_READ_WRITE
-                            : Mutations::LEVEL_EXTERNAL
-                    ),
+                    $canAssign ? Mutations::LEVEL_NONE : $lev,
                     $context,
                     'property assignment to ' . $property_id,
                     ImpurePropertyAssignment::class,
                     $stmt,
+                    $lev,
                 );
             }
 
