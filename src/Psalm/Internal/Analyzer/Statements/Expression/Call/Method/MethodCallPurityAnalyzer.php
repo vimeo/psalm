@@ -137,6 +137,8 @@ final class MethodCallPurityAnalyzer
                     && !$method_storage->if_true_assertions
                     && !$method_storage->if_false_assertions
                     && !$method_storage->throws
+                    && !$method_storage->return_type?->isNever()
+                    && !$method_storage->signature_return_type?->isNever()
                 ) {
                     IssueBuffer::maybeAdd(
                         new UnusedMethodCall(

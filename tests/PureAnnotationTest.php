@@ -934,6 +934,24 @@ final class PureAnnotationTest extends TestCase
                     }',
                 'error_message' => 'ImpurePropertyFetch',
             ],
+            'propertySetIsNotMutationFree' => [
+                'code' => '<?php
+                    class A {
+                        public array $params = [];
+                        public array $param_lookup = [];
+
+                        /**
+                         * @internal
+                         * @psalm-mutation-free
+                         */
+                        public function addParam(int $param, ?bool $lookup_value = null): void
+                        {
+                            $this->params[] = $param;
+                            $this->param_lookup[$param->name] = $lookup_value ?? true;
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyAssignment',
+            ],
             'propertyUnsetIsNotMutationFree' => [
                 'code' => '<?php
                     class A {
