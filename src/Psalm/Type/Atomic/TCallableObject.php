@@ -28,31 +28,14 @@ final class TCallableObject extends TObject
         parent::__construct($from_docblock);
     }
 
-    public function setAllowedMutations(int $allowed_mutations): self
-    {
-        $current = $this->callable?->allowed_mutations ?? Mutations::LEVEL_EXTERNAL;
-        if ($current === $allowed_mutations) {
-            return $this;
-        }
-        $cloned = clone $this;
-        $cloned->callable = $cloned->callable?->setAllowedMutations($allowed_mutations) ?? new TCallable(allowed_mutations: $allowed_mutations);
-        return $cloned;
-    }
-
     #[Override]
     public function getKey(bool $include_extra = true): string
     {
         $key = 'callable-object';
-        $prefix = match ($this->callable?->allowed_mutations ?? Mutations::LEVEL_EXTERNAL) {
-            Mutations::LEVEL_NONE => 'pure-',
-            Mutations::LEVEL_INTERNAL_READ => 'self-accessing-',
-            Mutations::LEVEL_INTERNAL_READ_WRITE => 'self-mutating-',
-            Mutations::LEVEL_EXTERNAL => 'impure-',
-        };
         if ($this->callable !== null) {
             $key .= $this->callable->getParamString() . $this->callable->getReturnTypeString();
         }
-        return $prefix . $key;
+        return $key;
     }
 
     /**
