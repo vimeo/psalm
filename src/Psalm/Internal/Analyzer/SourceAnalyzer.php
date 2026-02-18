@@ -14,6 +14,7 @@ use Psalm\Issue\CodeIssue;
 use Psalm\IssueBuffer;
 use Psalm\NodeTypeProvider;
 use Psalm\StatementsSource;
+use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\Mutations;
 use Psalm\Type\Union;
@@ -236,11 +237,15 @@ abstract class SourceAnalyzer implements StatementsSource
     #[Override]
     public function signalMutationOnlyInferred(
         int $mutation_level,
+        ?FunctionLikeStorage $storage = null,
     ): void {
         $src = $this instanceof FunctionLikeAnalyzer
             ? $this
             : $this->getSource();
         if ($src instanceof FunctionLikeAnalyzer && $src->track_mutations) {
+            if ($src->storage === $storage) {
+                return;
+            }
             if ($mutation_level === Mutations::LEVEL_INTERNAL_READ_WRITE
                 && $src->storage instanceof MethodStorage
                 && (
@@ -271,10 +276,9 @@ abstract class SourceAnalyzer implements StatementsSource
         Node $node,
         ?int $inferred_mutation_level = null,
         bool $overrideMsg = false,
+        ?FunctionLikeStorage $storage = null,
     ): bool {
-        $inferred_mutation_level ??= $mutation_level;
-
-        $this->signalMutationOnlyInferred($inferred_mutation_level);
+        $this->signalMutationOnlyInferred($inferred_mutation_level ?? $mutation_level, $storage);
 
         if ($context->allowed_mutations < $mutation_level
 

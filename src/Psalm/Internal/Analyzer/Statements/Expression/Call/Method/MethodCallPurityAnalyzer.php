@@ -99,6 +99,8 @@ final class MethodCallPurityAnalyzer
             ImpureMethodCall::class,
             $stmt,
             $method_storage->allowed_mutations,
+            false,
+            $method_storage,
         );
         
         if (!$context->inside_unset

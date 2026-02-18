@@ -489,6 +489,9 @@ final class BinaryOpAnalyzer
                                     . $atomic_type->value . '::__toString',
                         ImpureMethodCall::class,
                         $stmt,
+                        null,
+                        false,
+                        $storage,
                     );
                 }
             }
@@ -513,6 +516,9 @@ final class BinaryOpAnalyzer
                                     . $atomic_type->value . '::__toString',
                         ImpureMethodCall::class,
                         $stmt,
+                        null,
+                        false,
+                        $storage,
                     );
                 }
             }

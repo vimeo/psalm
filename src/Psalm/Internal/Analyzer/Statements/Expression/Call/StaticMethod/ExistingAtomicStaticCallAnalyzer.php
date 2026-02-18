@@ -293,6 +293,9 @@ final class ExistingAtomicStaticCallAnalyzer
                     'method',
                     ImpureMethodCall::class,
                     $stmt,
+                    null,
+                    false,
+                    $method_storage,
                 );
             }
 

@@ -485,6 +485,7 @@ final class Functions
 
                         $statements_analyzer->signalMutationOnlyInferred(
                             $storage->allowed_mutations,
+                            $storage,
                         );
                     }
                 }

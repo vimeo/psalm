@@ -449,6 +449,9 @@ final class ConcatAnalyzer
                                         . $atomic_type->value . '::__toString',
                             ImpureMethodCall::class,
                             $operand,
+                            null,
+                            false,
+                            $storage,
                         );
                     }
                 }

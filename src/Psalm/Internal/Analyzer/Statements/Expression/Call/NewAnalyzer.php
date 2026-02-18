@@ -464,6 +464,9 @@ final class NewAnalyzer extends CallAnalyzer
                         'constructor ' . $codebase->methods->getCasedMethodId($declaring_method_id),
                         ImpureMethodCall::class,
                         $stmt,
+                        null,
+                        false,
+                        $method_storage,
                     );
                 }
 

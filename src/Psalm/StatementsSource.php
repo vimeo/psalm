@@ -6,6 +6,7 @@ namespace Psalm;
 
 use PhpParser\Node;
 use Psalm\Issue\CodeIssue;
+use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\Mutations;
 use Psalm\Type\Union;
 
@@ -72,6 +73,7 @@ interface StatementsSource extends FileSource
      */
     public function signalMutationOnlyInferred(
         int $mutation_level,
+        ?FunctionLikeStorage $storage = null,
     ): void;
 
     /**
@@ -85,5 +87,8 @@ interface StatementsSource extends FileSource
         string $msg,
         string $class,
         Node $node,
+        ?int $inferred_mutation_level = null,
+        bool $overrideMsg = false,
+        ?FunctionLikeStorage $storage = null,
     ): bool;
 }

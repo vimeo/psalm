@@ -28,6 +28,102 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingPureAnnotation'],
                 'safe_types' => true,
             ],
+            'selfCall' => [
+                'input' => '<?php
+                    function foo(string $s, int $v): string {
+                        if ($v > 5) {
+                            return foo($s, $v - 1);
+                        }
+                        return $s;
+                    }',
+                'output' => '<?php
+                    /**
+                     * @psalm-pure
+                     */
+                    function foo(string $s, int $v): string {
+                        if ($v > 5) {
+                            return foo($s, $v - 1);
+                        }
+                        return $s;
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
+            'selfMethodCall' => [
+                'input' => '<?php
+                    class A {
+                        public function foo(string $s, int $v): string {
+                            if ($v > 5) {
+                                return $this->foo($s, $v - 1);
+                            }
+                            return $s;
+                        }
+                    }',
+                'output' => '<?php
+                    class A {
+                        /**
+                         * @psalm-pure
+                         */
+                        public function foo(string $s, int $v): string {
+                            if ($v > 5) {
+                                return $this->foo($s, $v - 1);
+                            }
+                            return $s;
+                        }
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
+            'selfStaticMethodCall' => [
+                'input' => '<?php
+                    class A {
+                        public static function foo(string $s, int $v): string {
+                            if ($v > 5) {
+                                return self::foo($s, $v - 1);
+                            }
+                            return $s;
+                        }
+                    }',
+                'output' => '<?php
+                    class A {
+                        /**
+                         * @psalm-pure
+                         */
+                        public static function foo(string $s, int $v): string {
+                            if ($v > 5) {
+                                return self::foo($s, $v - 1);
+                            }
+                            return $s;
+                        }
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
+            'selfClosureCall' => [
+                'input' => '<?php
+                    $f = function(string $s, int $v) use (&$f): string {
+                        if ($v > 5) {
+                            return $f($s, $v - 1);
+                        }
+                        return $s;
+                    }',
+                'output' => '<?php
+                    /**
+                     * @psalm-pure
+                     */
+                    $f = function(string $s, int $v) use (&$f): string {
+                        if ($v > 5) {
+                            return $f($s, $v - 1);
+                        }
+                        return $s;
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
             'propertySetIsNotMutationFree' => [
                 'input' => '<?php
                     class A {

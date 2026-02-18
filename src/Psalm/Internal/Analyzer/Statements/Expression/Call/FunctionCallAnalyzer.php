@@ -1068,6 +1068,9 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     'function call on ' . ($function_call_info->function_id ?? 'unknown function'),
                     ImpureFunctionCall::class,
                     $stmt,
+                    null,
+                    false,
+                    $function_call_info->function_storage,
                 );
                 if ($mutations > Mutations::LEVEL_INTERNAL_READ
                     && !$config->remember_property_assignments_after_call
