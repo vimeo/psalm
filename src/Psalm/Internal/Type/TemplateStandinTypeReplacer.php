@@ -1136,7 +1136,9 @@ final class TemplateStandinTypeReplacer
     }
 
     /**
-     * @param  array<string, array<string, non-empty-list<TemplateBound>>>  $template_types
+     * @param array<string, array<string, non-empty-list<TemplateBound>>>  $template_types
+     *
+     * @psalm-external-mutation-free
      */
     public static function getRootTemplateType(
         array $template_types,

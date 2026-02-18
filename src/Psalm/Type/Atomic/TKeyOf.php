@@ -70,6 +70,9 @@ final class TKeyOf extends TArrayKey
         return true;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public static function getArrayKeyType(
         Union $type,
         bool $keep_template_params = false,

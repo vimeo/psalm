@@ -128,6 +128,9 @@ final class TaintFlowGraph extends DataFlowGraph
         }
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getPredecessorPath(DataFlowNode $source): string
     {
         $location_summary = '';
@@ -159,6 +162,9 @@ final class TaintFlowGraph extends DataFlowGraph
         return $source_descriptor;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getSuccessorPath(DataFlowNode $sink): string
     {
         $location_summary = '';

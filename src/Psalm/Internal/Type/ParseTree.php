@@ -31,6 +31,9 @@ class ParseTree
         $this->parent = null;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function cleanParents(): void
     {
         foreach ($this->children as $child) {
