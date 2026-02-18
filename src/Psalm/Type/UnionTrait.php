@@ -682,7 +682,10 @@ trait UnionTrait
             || isset($this->types['class-string'])
             || isset($this->types['trait-string'])
             || isset($this->types['numeric-string'])
-            || isset($this->types['callable-string'])
+            || isset($this->types['impure-callable-string'])
+            || isset($this->types['pure-callable-string'])
+            || isset($this->types['self-mutating-callable-string'])
+            || isset($this->types['self-accessing-callable-string'])
             || isset($this->types['array-key'])
             || $this->literal_string_types
             || $this->typed_class_strings;

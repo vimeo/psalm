@@ -1340,10 +1340,10 @@ final class TypeParser
         }
 
         if (in_array(strtolower($n), ['closure', '\closure'], true)) {
-            return new TClosure('Closure', $params, null, $allowed_mutations, [], [], $from_docblock);
+            return new TClosure($params, null, $allowed_mutations, [], [], $from_docblock);
         }
 
-        return new TCallable('callable', $params, null, $allowed_mutations, $from_docblock);
+        return new TCallable($params, null, $allowed_mutations, $from_docblock);
     }
 
     /**

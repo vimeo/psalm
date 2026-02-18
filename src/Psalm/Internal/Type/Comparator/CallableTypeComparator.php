@@ -329,7 +329,6 @@ final class CallableTypeComparator
                 }
 
                 return new TCallable(
-                    'callable',
                     $params,
                     $return_type,
                     $function_storage->allowed_mutations,
@@ -397,7 +396,6 @@ final class CallableTypeComparator
                     }
 
                     return new TCallable(
-                        'callable',
                         $method_storage->params,
                         $converted_return_type,
                         $method_storage->allowed_mutations,
@@ -465,7 +463,6 @@ final class CallableTypeComparator
                     }
 
                     $callable = new TCallable(
-                        'callable',
                         $method_storage->params,
                         $converted_return_type,
                         $method_storage->allowed_mutations,

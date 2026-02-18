@@ -24,7 +24,7 @@ final class TCallable extends Atomic
     use UnserializeMemoryUsageSuppressionTrait;
     use CallableTrait;
 
-    public string $value;
+    public string $value = 'callable';
 
     /**
      * Constructs a new instance of a generic type
@@ -33,13 +33,11 @@ final class TCallable extends Atomic
      * @param Mutations::LEVEL_* $allowed_mutations
      */
     public function __construct(
-        string $value = 'callable',
         ?array $params = null,
         ?Union $return_type = null,
         int $allowed_mutations = Mutations::LEVEL_EXTERNAL,
         bool $from_docblock = false,
     ) {
-        $this->value = $value;
         $this->params = $params;
         $this->return_type = $return_type;
         $this->allowed_mutations = $allowed_mutations;
@@ -76,7 +74,6 @@ final class TCallable extends Atomic
             return $this;
         }
         return new static(
-            $this->value,
             $replaced[0],
             $replaced[1],
             $this->allowed_mutations,
@@ -114,7 +111,6 @@ final class TCallable extends Atomic
             return $this;
         }
         return new static(
-            $this->value,
             $replaced[0],
             $replaced[1],
             $this->allowed_mutations,

@@ -51,7 +51,6 @@ final class HighOrderFunctionArgInfo
         return match ($this->type) {
             self::TYPE_FIRST_CLASS_CALLABLE => new Union([
                 new TClosure(
-                    'Closure',
                     $this->function_storage->params,
                     $this->function_storage->return_type,
                     $this->function_storage->allowed_mutations,
@@ -59,7 +58,6 @@ final class HighOrderFunctionArgInfo
             ]),
             self::TYPE_STRING_CALLABLE, self::TYPE_CLASS_CALLABLE => new Union([
                 new TCallable(
-                    'callable',
                     $this->function_storage->params,
                     $this->function_storage->return_type,
                     $this->function_storage->allowed_mutations,

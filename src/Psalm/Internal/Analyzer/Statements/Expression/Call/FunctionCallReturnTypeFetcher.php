@@ -87,7 +87,6 @@ final class FunctionCallReturnTypeFetcher
 
             if ($candidate_callable) {
                 $stmt_type = new Union([new TClosure(
-                    'Closure',
                     $candidate_callable->params,
                     $candidate_callable->return_type,
                     $candidate_callable->allowed_mutations,

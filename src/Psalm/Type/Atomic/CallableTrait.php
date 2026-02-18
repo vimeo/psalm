@@ -32,26 +32,6 @@ trait CallableTrait
 
     public int $allowed_mutations = Mutations::LEVEL_ALL;
 
-    /**
-     * Constructs a new instance of a generic type
-     *
-     * @param list<FunctionLikeParameter> $params
-     * @param Mutations::LEVEL_* $allowed_mutations
-     * @deprecated
-     */
-    public function __construct(
-        string $value = 'callable',
-        ?array $params = null,
-        ?Union $return_type = null,
-        int $allowed_mutations = Mutations::LEVEL_ALL,
-        bool $from_docblock = false,
-    ) {
-        $this->value = $value;
-        $this->params = $params;
-        $this->return_type = $return_type;
-        $this->allowed_mutations = $allowed_mutations;
-        $this->from_docblock = $from_docblock;
-    }
 
     /**
      * @param list<FunctionLikeParameter>|null $params
@@ -139,12 +119,15 @@ trait CallableTrait
         ?string $this_class,
         bool $use_phpdoc_format,
     ): string {
-        if ($use_phpdoc_format) {
-            if ($this instanceof TNamedObject) {
-                return parent::toNamespacedString($namespace, $aliased_classes, $this_class, true);
-            }
+        $prefix = match ($this->allowed_mutations) {
+            Mutations::LEVEL_NONE => 'pure-',
+            Mutations::LEVEL_INTERNAL_READ => 'self-accessing-',
+            Mutations::LEVEL_INTERNAL_READ_WRITE => 'self-mutating-',
+            Mutations::LEVEL_EXTERNAL => 'impure-',
+        };
 
-            return $this->value;
+        if ($use_phpdoc_format) {
+            return $prefix.$this->value;
         }
 
         $param_string = '';
@@ -177,18 +160,7 @@ trait CallableTrait
             ) . ($return_type_multiple ? ')' : '');
         }
 
-        if ($this instanceof TNamedObject) {
-            return parent::toNamespacedString($namespace, $aliased_classes, $this_class, true)
-                . $param_string . $return_type_string;
-        }
-
-        $prefix = match ($this->allowed_mutations) {
-            Mutations::LEVEL_NONE => 'pure-',
-            Mutations::LEVEL_INTERNAL_READ => 'self-accessing-',
-            Mutations::LEVEL_INTERNAL_READ_WRITE => 'self-mutating-',
-            Mutations::LEVEL_EXTERNAL => 'impure-',
-        };
-        return $prefix . 'callable' . $param_string . $return_type_string;
+        return $prefix . $this->value . $param_string . $return_type_string;
     }
 
     /**

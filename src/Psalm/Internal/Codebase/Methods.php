@@ -663,7 +663,6 @@ final class Methods
                         $callable_type = $atomic_type;
 
                         return new Union([new TClosure(
-                            'Closure',
                             $callable_type->params,
                             $callable_type->return_type,
                         )]);
@@ -679,7 +678,6 @@ final class Methods
                         );
 
                         return new Union([new TClosure(
-                            'Closure',
                             $invokable_storage->params,
                             $invokable_storage->return_type,
                         )]);

@@ -35,7 +35,6 @@ final class TClosure extends TNamedObject
      * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject> $extra_types
      */
     public function __construct(
-        string $value = 'callable',
         ?array $params = null,
         ?Union $return_type = null,
         int $allowed_mutations = Mutations::LEVEL_ALL,
@@ -47,7 +46,7 @@ final class TClosure extends TNamedObject
         $this->return_type = $return_type;
         $this->allowed_mutations = $allowed_mutations;
         parent::__construct(
-            $value,
+            'Closure',
             false,
             false,
             $extra_types,
@@ -78,7 +77,6 @@ final class TClosure extends TNamedObject
             return $this;
         }
         return new static(
-            $this->value,
             $replaced[0] ?? $this->params,
             $replaced[1] ?? $this->return_type,
             $this->allowed_mutations,
@@ -131,7 +129,6 @@ final class TClosure extends TNamedObject
             return $this;
         }
         return new static(
-            $this->value,
             $replaced[0] ?? $this->params,
             $replaced[1] ?? $this->return_type,
             $this->allowed_mutations,

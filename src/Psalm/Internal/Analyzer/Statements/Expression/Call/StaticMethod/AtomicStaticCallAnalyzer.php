@@ -252,7 +252,6 @@ final class AtomicStaticCallAnalyzer
                             $method_storage = $codebase->methods->getStorage($method_identifier);
 
                             $return_type_candidate = new Union([new TClosure(
-                                'Closure',
                                 $method_storage->params,
                                 $method_storage->return_type,
                                 $method_storage->allowed_mutations,
@@ -494,7 +493,6 @@ final class AtomicStaticCallAnalyzer
                 [ $method_storage ] = $found_method_and_class_storage;
 
                 $return_type_candidate = new Union([new TClosure(
-                    'Closure',
                     $method_storage->params,
                     $method_storage->return_type,
                     $method_storage->allowed_mutations,
@@ -509,7 +507,6 @@ final class AtomicStaticCallAnalyzer
                     $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id;
 
                     $return_type_candidate = new Union([new TClosure(
-                        'Closure',
                         array_values($codebase->getMethodParams($method_id)),
                         $codebase->getMethodReturnType($method_id, $fq_class_name),
                         $codebase->methods->getStorage($declaring_method_id)->allowed_mutations,
@@ -522,7 +519,6 @@ final class AtomicStaticCallAnalyzer
                     false,
                 )) {
                     $return_type_candidate = new Union([new TClosure(
-                        'Closure',
                         null,
                         $codebase->getMethodReturnType($call_static_method_id, $fq_class_name),
                         $codebase->methods->getStorage($call_static_method_id)->allowed_mutations,

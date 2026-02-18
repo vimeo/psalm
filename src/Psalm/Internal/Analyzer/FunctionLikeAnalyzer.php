@@ -709,7 +709,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     $this->function,
                     new Union([
                         new TClosure(
-                            $closure_atomic->value,
                             $closure_atomic->params,
                             $new_closure_return_type,
                             $this->inferred_mutations,
@@ -2171,7 +2170,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
 
             $closure_type = new TClosure(
-                'Closure',
                 $storage->params,
                 $closure_return_type,
                 $storage instanceof FunctionStorage

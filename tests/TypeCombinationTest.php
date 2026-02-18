@@ -211,33 +211,18 @@ final class TypeCombinationTest extends TestCase
                         $type1_final = "$level1$type1";
                         $type2_final = "$level2$type2";
 
-                        $level3_final = match (max($level1_value, $level2_value)) {
-                            Mutations::LEVEL_NONE => 'pure-',
-                            Mutations::LEVEL_INTERNAL_READ => 'self-accessing-',
-                            Mutations::LEVEL_INTERNAL_READ_WRITE => 'self-mutating-',
-                            Mutations::LEVEL_EXTERNAL => 'impure-',
-                        };
-                        if ($type1 === $type2) {
+                        if ($type1_final === 'impure-callable' 
+                            || $type2_final === 'impure-callable'
+                            || $type1_final === 'callable'
+                            || $type2_final === 'callable'
+                        ) {
                             yield "combine $type1_final and $type2_final" => [
-                                'expected' => "$level3_final$type1",
+                                'expected' => "impure-callable",
                                 'types' => [$type1_final, $type2_final],
                             ];
-                        } else if ($type1 === 'callable' || $type2 === 'callable') {
-                            $type3 = 'callable';
+                        } elseif ($type1_final === $type2_final) {
                             yield "combine $type1_final and $type2_final" => [
-                                'expected' => "$level3_final$type3",
-                                'types' => [$type1_final, $type2_final],
-                            ];
-                        } else if ((
-                            $type1 === 'callable-array{class-string, non-empty-string}' 
-                            && $type2 === 'callable-list{class-string, non-empty-string}'
-                        ) || (
-                            $type2 === 'callable-array{class-string, non-empty-string}' 
-                            && $type1 === 'callable-list{class-string, non-empty-string}'
-                        )) {
-                            $type3 = 'callable-array{class-string, non-empty-string}';
-                            yield "special combine $type1_final and $type2_final" => [
-                                'expected' => "$level3_final$type3",
+                                'expected' => $type1_final,
                                 'types' => [$type1_final, $type2_final],
                             ];
                         } else {

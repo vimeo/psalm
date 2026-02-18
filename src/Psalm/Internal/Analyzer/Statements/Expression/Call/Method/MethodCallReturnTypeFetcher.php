@@ -72,7 +72,6 @@ final class MethodCallReturnTypeFetcher
         if ($stmt->isFirstClassCallable()) {
             if ($method_storage) {
                 return new Union([new TClosure(
-                    'Closure',
                     $method_storage->params,
                     $method_storage->return_type,
                     $method_storage->allowed_mutations,

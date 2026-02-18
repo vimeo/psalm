@@ -262,7 +262,7 @@ class TNamedObject extends Atomic
         bool $from_docblock = false,
     ): TNamedObject {
         if ($value === 'Closure') {
-            return new TClosure($value, null, null, Mutations::LEVEL_ALL, [], $extra_types, $from_docblock);
+            return new TClosure(null, null, Mutations::LEVEL_ALL, [], $extra_types, $from_docblock);
         }
 
         return new TNamedObject($value, $is_static, $definite_class, $extra_types, $from_docblock);

@@ -808,7 +808,6 @@ final class ArrayFunctionArgumentsAnalyzer
                         }
 
                         $closure_types[] = new TClosure(
-                            'Closure',
                             $method_storage->params,
                             $method_storage->return_type ?: Type::getMixed(),
                         );
@@ -861,7 +860,6 @@ final class ArrayFunctionArgumentsAnalyzer
                         }
                     } else {
                         $closure_types[] = new TClosure(
-                            'Closure',
                             $function_storage->params,
                             $function_storage->return_type ?: Type::getMixed(),
                         );

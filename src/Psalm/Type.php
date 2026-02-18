@@ -416,7 +416,7 @@ abstract class Type
      */
     public static function getClosure(): Union
     {
-        $type = new TClosure('Closure');
+        $type = new TClosure();
 
         return new Union([$type]);
     }

@@ -318,7 +318,7 @@ final class InternalCallMapHandler
                 $arg_offset++;
             }
 
-            $possible_callables[] = new TCallable('callable', $function_params, $return_type);
+            $possible_callables[] = new TCallable($function_params, $return_type);
         }
 
         self::$call_map_callables[$call_map_key] = $possible_callables;
