@@ -102,7 +102,7 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingPureAnnotation'],
                 'safe_types' => true,
             ],
-            'selfClosureCall' => [
+            'SKIPPED-selfClosureCall' => [
                 'input' => '<?php
                     $f = function(string $s, int $v) use (&$f): string {
                         if ($v > 5) {

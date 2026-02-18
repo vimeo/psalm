@@ -671,6 +671,9 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                         'function call on ' . $var_type_part->getId(),
                         ImpureFunctionCall::class,
                         $stmt,
+                        null,
+                        false,
+                        $function_call_info->function_storage,
                     )) {
                         if (!$function_call_info->function_storage) {
                             $function_call_info->function_storage = new FunctionStorage();
