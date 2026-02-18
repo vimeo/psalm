@@ -279,8 +279,7 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
 
     /**
      * @internal
-     *
-     * @psalm-mutation-free
+     * @psalm-external-mutation-free
      */
     public function addParam(FunctionLikeParameter $param, ?bool $lookup_value = null): void
     {

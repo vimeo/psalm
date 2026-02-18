@@ -28,6 +28,59 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingPureAnnotation'],
                 'safe_types' => true,
             ],
+            'propertySetIsNotMutationFree' => [
+                'input' => '<?php
+                    class A {
+                        /**
+                         * @psalm-readonly-allow-private-mutation
+                         * @var list<FunctionLikeParameter>
+                         */
+                        public array $params = [];
+
+                        /**
+                         * @psalm-readonly-allow-private-mutation
+                         * @var array<string, bool>
+                         */
+                        public array $param_lookup = [];
+
+                        /**
+                         * @internal
+                         */
+                        public function addParam(FunctionLikeParameter $param, ?bool $lookup_value = null): void
+                        {
+                            $this->params[] = $param;
+                            $this->param_lookup[$param->name] = $lookup_value ?? true;
+                        }
+                    }',
+                'output' => '<?php
+                    class A {
+                        /**
+                         * @psalm-readonly-allow-private-mutation
+                         * @var list<FunctionLikeParameter>
+                         */
+                        public array $params = [];
+
+                        /**
+                         * @psalm-readonly-allow-private-mutation
+                         * @var array<string, bool>
+                         */
+                        public array $param_lookup = [];
+
+                        /**
+                         * @internal
+                         *
+                         * @psalm-external-mutation-free
+                         */
+                        public function addParam(FunctionLikeParameter $param, ?bool $lookup_value = null): void
+                        {
+                            $this->params[] = $param;
+                            $this->param_lookup[$param->name] = $lookup_value ?? true;
+                        }
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
             'addPureAnnotationToFunctionWithExistingDocblock' => [
                 'input' => '<?php
                     /**
