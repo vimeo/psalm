@@ -144,6 +144,27 @@ final class ImmutableAnnotationTest extends TestCase
                         }
                     }',
             ],
+            'allowPropertySetOnClonedInstance' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     */
+                    class Foo {
+                        protected string $bar;
+
+                        public function __construct(string $bar) {
+                            $this->bar = $bar;
+                        }
+
+                        /** @psalm-pure */
+                        public function withBar(Foo $f, string $bar): self {
+                            $new = clone $f;
+                            $new->bar = $bar;
+
+                            return $new;
+                        }
+                    }',
+            ],
             'allowArrayMapCallable' => [
                 'code' => '<?php
                     /**
