@@ -133,6 +133,7 @@ use const PSALM_VERSION;
 use const SCANDIR_SORT_NONE;
 
 /**
+ * @api
  * @psalm-suppress PropertyNotSetInConstructor
  * @psalm-consistent-constructor
  */
@@ -399,7 +400,7 @@ final class Config
 
     public bool $find_unused_issue_handler_suppression = true;
 
-    public bool $run_taint_analysis = false;
+    public bool $run_taint_analysis = true;
 
     public bool $use_phpstorm_meta_path = true;
 
@@ -445,7 +446,8 @@ final class Config
     /** @var array<callable-string, bool> */
     private array $predefined_functions = [];
 
-    private ?ClassLoader $composer_class_loader = null;
+    /** @var list<ClassLoader> $autoloaders */
+    private array $autoloaders = [];
 
     public string $hash = '';
 
@@ -612,7 +614,10 @@ final class Config
     /** @var list<string> */
     public array $config_warnings = [];
 
-    /** @internal */
+    /**
+     * @internal
+     * @psalm-mutation-free
+     */
     protected function __construct()
     {
         self::$instance = $this;
@@ -701,6 +706,8 @@ final class Config
 
     /**
      * Computes the hash to use for a cache folder from CLI flags and from the config file's xml contents
+     *
+     * @psalm-mutation-free
      */
     public function computeHash(): string
     {
@@ -804,6 +811,7 @@ final class Config
      * @param positive-int $line_number 1-based line number
      * @return int 0-based byte offset
      * @throws OutOfBoundsException
+     * @psalm-pure
      */
     private static function lineNumberToByteOffset(string $string, int $line_number): int
     {
@@ -1466,6 +1474,9 @@ final class Config
         return $config;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public static function getInstance(): Config
     {
         if (self::$instance) {
@@ -1475,9 +1486,13 @@ final class Config
         throw new UnexpectedValueException('No config initialized');
     }
 
-    public function setComposerClassLoader(?ClassLoader $loader = null): void
+    /**
+     * @param list<ClassLoader> $autoloaders
+     * @psalm-external-mutation-free
+     */
+    public function setComposerClassLoader(array $autoloaders): void
     {
-        $this->composer_class_loader = $loader;
+        $this->autoloaders = $autoloaders;
     }
 
     /** @return array<string, IssueHandler> */
@@ -1505,12 +1520,18 @@ final class Config
         }
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function setCustomErrorLevel(string $issue_key, string $error_level): void
     {
         $this->issue_handlers[$issue_key] = new IssueHandler();
         $this->issue_handlers[$issue_key]->setErrorLevel($error_level);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function safeSetCustomErrorLevel(string $issue_key, string $error_level): void
     {
         if (!isset($this->issue_handlers[$issue_key])) {
@@ -1558,6 +1579,9 @@ final class Config
         $this->plugin_paths[] = $path;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addPluginClass(string $class_name, ?SimpleXMLElement $plugin_config = null): void
     {
         $this->plugin_classes[] = ['class' => $class_name, 'config' => $plugin_config];
@@ -1685,9 +1709,7 @@ final class Config
             // plugins from Psalm directory or phar file. If that fails as well, it
             // will fall back to project autoloader. It may seem that the last step
             // will always fail, but it's only true if project uses Composer autoloader
-            if ($this->composer_class_loader
-                && ($pluginclas_class_path = $this->composer_class_loader->findFile($pluginClassName))
-            ) {
+            if (false !== $pluginclas_class_path = $this->getComposerFilePathForClassLike($pluginClassName)) {
                 $projectAnalyzer->progress->debug(
                     'Loading plugin ' . $pluginClassName . ' via require' . PHP_EOL,
                 );
@@ -1709,6 +1731,9 @@ final class Config
         }
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     private static function requirePath(string $path): void
     {
         /** @psalm-suppress UnresolvableInclude */
@@ -1872,6 +1897,9 @@ final class Config
         return $this->project_files && $this->project_files->forbids($file_path);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function trackTaintsInPath(string $file_path): bool
     {
         return !$this->taint_analysis_ignored_files
@@ -2038,7 +2066,10 @@ final class Config
         return null;
     }
 
-    /** @return array{type: string, index: int, count: int}[] */
+    /**
+     * @return array{type: string, index: int, count: int}[]
+     * @psalm-mutation-free
+     */
     public function getIssueHandlerSuppressions(): array
     {
         $suppressions = [];
@@ -2103,6 +2134,9 @@ final class Config
         return null;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getReportingLevelForFunction(string $issue_type, string $function_id): ?string
     {
         $level = null;
@@ -2161,6 +2195,7 @@ final class Config
 
     /**
      * @return array<string>
+     * @psalm-mutation-free
      */
     public function getProjectDirectories(): array
     {
@@ -2173,6 +2208,7 @@ final class Config
 
     /**
      * @return array<string>
+     * @psalm-mutation-free
      */
     public function getProjectFiles(): array
     {
@@ -2185,6 +2221,7 @@ final class Config
 
     /**
      * @return array<string>
+     * @psalm-mutation-free
      */
     public function getExtraDirectories(): array
     {
@@ -2202,6 +2239,9 @@ final class Config
             && $this->project_files->reportTypeStats($file_path);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function useStrictTypesForFile(string $file_path): bool
     {
         return $this->project_files && $this->project_files->useStrictTypes($file_path);
@@ -2498,6 +2538,9 @@ final class Config
         }
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function setIncludeCollector(IncludeCollector $include_collector): void
     {
         $this->include_collector = $include_collector;
@@ -2565,20 +2608,22 @@ final class Config
     /** @return string|false */
     public function getComposerFilePathForClassLike(string $fq_classlike_name): string|bool
     {
-        if (!$this->composer_class_loader) {
-            return false;
+        foreach ($this->autoloaders as $autoloader) {
+            $f = $autoloader->findFile($fq_classlike_name);
+            if ($f !== false) {
+                return $f;
+            }
         }
-
-        return $this->composer_class_loader->findFile($fq_classlike_name);
+        return false;
     }
 
     public function getPotentialComposerFilePathForClassLike(string $class): ?string
     {
-        if (!$this->composer_class_loader) {
+        if (!$this->autoloaders) {
             return null;
         }
 
-        $psr4_prefixes = $this->composer_class_loader->getPrefixesPsr4();
+        $psr4_prefixes = reset($this->autoloaders)->getPrefixesPsr4();
 
         // PSR-4 lookup
         $logicalPathPsr4 = str_replace('\\', DIRECTORY_SEPARATOR, $class) . '.php';
@@ -2683,6 +2728,9 @@ final class Config
         }
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function setServerMode(): void
     {
         if ($this->cache_directory !== null) {
@@ -2690,11 +2738,17 @@ final class Config
         }
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addStubFile(string $stub_file): void
     {
         $this->stub_files[$stub_file] = $stub_file;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function hasStubFile(string $stub_file): bool
     {
         return isset($this->stub_files[$stub_file]);
@@ -2708,6 +2762,9 @@ final class Config
         return $this->stub_files;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addPreloadedStubFile(string $stub_file): void
     {
         $this->preloaded_stub_files[$stub_file] = $stub_file;
@@ -2723,6 +2780,9 @@ final class Config
         return $this->configured_php_version;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     private function setBooleanAttribute(string $name, bool $value): void
     {
         $this->$name = $value;
@@ -2809,7 +2869,10 @@ final class Config
         };
     }
 
-    /** @internal */
+    /**
+     * @internal
+     * @psalm-mutation-free
+     */
     public function requireAutoloader(): void
     {
         /** @psalm-suppress UnresolvableInclude */

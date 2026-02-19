@@ -13,9 +13,10 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\ReferenceConstraint;
-use Psalm\Issue\ImpureVariable;
+use Psalm\Issue\ImpureGlobalVariable;
 use Psalm\Issue\InvalidGlobal;
 use Psalm\IssueBuffer;
+use Psalm\Storage\Mutations;
 
 use function is_string;
 
@@ -46,18 +47,21 @@ final class GlobalAnalyzer
             ? $source->getFunctionLikeStorage($statements_analyzer)
             : null;
 
-        if ($context->pure) {
+        $statements_analyzer->signalMutation(
+            Mutations::LEVEL_EXTERNAL,
+            $context,
+            'global variable',
+            ImpureGlobalVariable::class,
+            $stmt,
+        );
+        if ($context->isMutationFree()) {
             IssueBuffer::maybeAdd(
-                new ImpureVariable(
-                    'Cannot reference global variables in a pure context',
-                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                new ImpureGlobalVariable(
+                    'Cannot use a global variable in a mutation-free context',
+                    new CodeLocation($statements_analyzer, $stmt),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
             );
-        } elseif ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
-                  && $statements_analyzer->getSource()->track_mutations
-        ) {
-            $statements_analyzer->getSource()->inferred_impure = true;
         }
 
         foreach ($stmt->vars as $var) {

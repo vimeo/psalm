@@ -54,7 +54,7 @@ final class UnsetAnalyzer
             );
 
             if ($var_id) {
-                if ($context->mutation_free
+                if ($context->isMutationFree()
                     && (VariableFetchAnalyzer::isSuperGlobal((string) strtok($var_id, '['))
                         || isset($context->references_to_external_scope[$var_id])
                         || isset($context->referenced_globals[$var_id])
@@ -140,7 +140,7 @@ final class UnsetAnalyzer
                                         ;
                                     }
                                 } else {
-                                    $root_types []= new TKeyedArray(
+                                    $root_types []= TKeyedArray::make(
                                         $properties,
                                         null,
                                         $atomic_root_type->fallback_params ? [
@@ -155,7 +155,7 @@ final class UnsetAnalyzer
                                 foreach ($atomic_root_type->properties as $key => $type) {
                                     $properties[$key] = $type->setPossiblyUndefined(true);
                                 }
-                                $root_types []= new TKeyedArray(
+                                $root_types []= TKeyedArray::make(
                                     $properties,
                                     null,
                                     $atomic_root_type->fallback_params,

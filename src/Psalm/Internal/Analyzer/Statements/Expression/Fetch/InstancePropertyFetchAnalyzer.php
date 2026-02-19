@@ -14,6 +14,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Issue\ImpurePropertyAssignment;
 use Psalm\Issue\ImpurePropertyFetch;
 use Psalm\Issue\InvalidPropertyFetch;
 use Psalm\Issue\MixedPropertyFetch;
@@ -22,6 +23,7 @@ use Psalm\Issue\PossiblyInvalidPropertyFetch;
 use Psalm\Issue\PossiblyNullPropertyFetch;
 use Psalm\Issue\UninitializedProperty;
 use Psalm\IssueBuffer;
+use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
@@ -461,24 +463,27 @@ final class InstancePropertyFetchAnalyzer
                         );
                     }
 
-                    if (!$context->collect_mutations
-                        && !$context->collect_initializations
-                        && !($class_storage->external_mutation_free
-                            && $stmt_type->allow_mutations)
+                    if (!($class_storage->isExternalMutationFree()
+                        && $stmt_type->allow_mutations)
                     ) {
-                        if ($context->pure) {
-                            IssueBuffer::maybeAdd(
-                                new ImpurePropertyFetch(
-                                    'Cannot access a property on a mutable object from a pure context',
-                                    new CodeLocation($statements_analyzer, $stmt),
-                                ),
-                                $statements_analyzer->getSuppressedIssues(),
+                        if ($context->inside_unset) {
+                            $statements_analyzer->signalMutation(
+                                $stmt_var_id === '$this'
+                                    ? Mutations::LEVEL_INTERNAL_READ_WRITE
+                                    : Mutations::LEVEL_EXTERNAL,
+                                $context,
+                                'unsetting a property on a mutable object',
+                                ImpurePropertyAssignment::class,
+                                $stmt,
                             );
-                        } elseif ($statements_analyzer->getSource()
-                            instanceof FunctionLikeAnalyzer
-                            && $statements_analyzer->getSource()->track_mutations
-                        ) {
-                            $statements_analyzer->getSource()->inferred_impure = true;
+                        } else {
+                            $statements_analyzer->signalMutation(
+                                Mutations::LEVEL_INTERNAL_READ,
+                                $context,
+                                'accessing a property on a mutable object',
+                                ImpurePropertyFetch::class,
+                                $stmt,
+                            );
                         }
                     }
                 }

@@ -1320,6 +1320,7 @@ final class MagicPropertyTest extends TestCase
             '<?php
               /** @psalm-no-seal-properties */
               class A {
+                /** @psalm-mutation-free */
                 public function __get(string $name) {}
               }
 

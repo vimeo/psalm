@@ -78,6 +78,7 @@ final class ClassMoveTest extends TestCase
 
     /**
      * @return array<string,array{input:string,output:string,migrations:array<string, string>}>
+     * @psalm-pure
      */
     public function providerValidCodeParse(): array
     {
@@ -160,7 +161,7 @@ final class ClassMoveTest extends TestCase
                     /**
                      * @param B|null $a
                      * @param string | null $b
-                     * @param callable():B $c
+                     * @param impure-callable():B $c
                      * @return B|null
                      */
                     function foo(?B $a, $b, $c) : ?B {

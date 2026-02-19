@@ -238,6 +238,9 @@ final class AssertionReconciler extends Reconciler
         );
     }
 
+    /**
+     * @psalm-pure
+     */
     private static function getMissingType(
         Assertion $assertion,
         bool $inside_loop,
@@ -639,7 +642,7 @@ final class AssertionReconciler extends Reconciler
                     return null;
                 }
 
-                return new TKeyedArray(
+                return TKeyedArray::make(
                     $type_2_atomic->properties,
                     null,
                     [Type::getInt(), $type_2_value],
@@ -665,7 +668,7 @@ final class AssertionReconciler extends Reconciler
                     return null;
                 }
 
-                return new TKeyedArray(
+                return TKeyedArray::make(
                     $type_1_atomic->properties,
                     null,
                     [Type::getInt(), $type_1_value],
@@ -784,7 +787,7 @@ final class AssertionReconciler extends Reconciler
                 $fallback_types = [$type_1_atomic->fallback_params[0], $type_2_param];
             }
 
-            $matching_atomic_type = new TKeyedArray(
+            $matching_atomic_type = TKeyedArray::make(
                 $type_1_properties,
                 $type_1_atomic->class_strings,
                 $fallback_types,
@@ -1433,6 +1436,7 @@ final class AssertionReconciler extends Reconciler
 
     /**
      * @param array<string, Atomic> $existing_var_atomic_types
+     * @psalm-pure
      */
     private static function getCompatibleIntType(
         Union $existing_var_type,
@@ -1461,6 +1465,7 @@ final class AssertionReconciler extends Reconciler
 
     /**
      * @param array<string, Atomic> $existing_var_atomic_types
+     * @psalm-pure
      */
     private static function getCompatibleStringType(
         Union $existing_var_type,
@@ -1488,6 +1493,7 @@ final class AssertionReconciler extends Reconciler
 
     /**
      * @param array<string, Atomic> $existing_var_atomic_types
+     * @psalm-pure
      */
     private static function getCompatibleFloatType(
         Union $existing_var_type,

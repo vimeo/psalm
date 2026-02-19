@@ -28,6 +28,7 @@ final class PureCallableTest extends TestCase
                         };
 
                     /**
+                     * @psalm-pure
                      * @param pure-callable(int): int $c
                      */
                     function bar(callable $c) : int {
@@ -39,6 +40,8 @@ final class PureCallableTest extends TestCase
             'callableToClosure' => [
                 'code' => '<?php
                     /**
+                     * @psalm-pure
+                     * 
                      * @return pure-callable
                      */
                     function foo() {
@@ -55,6 +58,7 @@ final class PureCallableTest extends TestCase
                 'code' => '<?php
                     /**
                      * @return pure-callable
+                     * @psalm-pure
                      */
                     function foo() {
                         return
@@ -69,13 +73,13 @@ final class PureCallableTest extends TestCase
             ],
             'callableWithNonInvokable' => [
                 'code' => '<?php
-                    /**
-                     * @psalm-pure
-                     */
+                    /** @psalm-mutation-free */
                     function asd(): void {}
                     class B {}
 
                     /**
+                     * @psalm-mutation-free
+                     * 
                      * @param pure-callable|B $p
                      */
                     function passes($p): void {}
@@ -84,13 +88,18 @@ final class PureCallableTest extends TestCase
             ],
             'callableWithInvokableUnion' => [
                 'code' => '<?php
-                    /**
-                     * @psalm-pure
-                     */
+                    /** @psalm-mutation-free */
                     function asd(): void {}
-                    class A {public function __invoke(): void {} }
+                    class A {
+                        /**
+                         * @psalm-mutation-free
+                         */
+                        public function __invoke(): void {}
+                    }
 
                     /**
+                     * @psalm-mutation-free
+                     * 
                      * @param pure-callable|A $p
                      */
                     function fails($p): void {}
@@ -99,21 +108,23 @@ final class PureCallableTest extends TestCase
             ],
             'callableWithInvokable' => [
                 'code' => '<?php
-                    /**
-                     * @psalm-pure
-                     */
-                    function asd(): void {}
+                    /** @psalm-pure */
+                    function asd(int $a): int { return $a; }
                     class A {
                         /**
                          * @psalm-pure
                          */
-                        public function __invoke(): void {}
+                        public function __invoke(int $a): int { return $a; }
                     }
 
                     /**
+                     * @psalm-mutation-free
+                     * 
                      * @param pure-callable $p
                      */
-                    function fails($p): void {}
+                    function fails($p): void {
+                        $p();
+                    }
 
                     fails(new A());
                     fails("asd");',
@@ -121,6 +132,8 @@ final class PureCallableTest extends TestCase
             'allowVoidCallable' => [
                 'code' => '<?php
                     /**
+                     * @psalm-mutation-free
+                     * 
                      * @param pure-callable():void $p
                      */
                     function doSomething($p): void {}
@@ -138,16 +151,20 @@ final class PureCallableTest extends TestCase
                         private $callable;
 
                         /**
+                         * @psalm-mutation-free
+                         * 
                          * @psalm-param pure-callable():bool $callable
                          */
                         public function __construct(callable $callable) {
                             $this->callable = $callable;
                         }
 
+                        /** @psalm-mutation-free */
                         public function callTheCallableDirectly(): bool {
                             return ($this->callable)();
                         }
 
+                        /** @psalm-mutation-free */
                         public function callTheCallableIndirectly(): bool {
                             $r = $this->callable;
                             return $r();
@@ -157,12 +174,20 @@ final class PureCallableTest extends TestCase
             'nullableReturnTypeShorthand' => [
                 'code' => '<?php
                     class A {}
-                    /** @param pure-callable(mixed):?A $a */
+                    /**
+                     * @psalm-mutation-free
+                     * 
+                     * @param pure-callable(mixed):?A $a
+                     */
                     function foo(callable $a): void {}',
             ],
             'callablesCanBeObjects' => [
                 'code' => '<?php
                     /**
+                     * Not pure because callable return type is not used.
+                     * 
+                     * @psalm-mutation-free
+                     * 
                      * @param pure-callable $c
                      */
                     function foo(callable $c) : void {
@@ -174,6 +199,8 @@ final class PureCallableTest extends TestCase
             'goodCallableArgs' => [
                 'code' => '<?php
                     /**
+                     * @psalm-mutation-free
+                     * 
                      * @param pure-callable(string,string):int $_p
                      */
                     function f(callable $_p): void {}
@@ -192,6 +219,7 @@ final class PureCallableTest extends TestCase
             'callableWithSpaces' => [
                 'code' => '<?php
                     /**
+                     * @psalm-mutation-free
                      * @param pure-callable(string, string) : int $p
                      */
                     function f(callable $p): void {}',
@@ -201,6 +229,8 @@ final class PureCallableTest extends TestCase
                     namespace Foo;
 
                     /**
+                     * @psalm-pure
+                     * 
                      * @param pure-callable $c
                      */
                     function bar(callable $c) : callable {
@@ -234,6 +264,19 @@ final class PureCallableTest extends TestCase
                     });
 
                     echo $c;',
+            ],
+            'impureCallableReturnOk' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @return impure-callable(int):int
+                     */
+                    function foo(): callable {
+                        /** @psalm-suppress ImpureFunctionCall */
+                        return function(int $a): int {
+                            return $a + mt_rand(0, $a);
+                        };
+                    }',
             ],
         ];
     }
@@ -269,7 +312,7 @@ final class PureCallableTest extends TestCase
                     });
 
                     echo $c;',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'ArgumentTypeCoercion',
             ],
             'impureCallableReturn' => [
                 'code' => '<?php
@@ -278,12 +321,13 @@ final class PureCallableTest extends TestCase
                      * @return pure-callable():int
                      */
                     function foo(): callable {
+                        /** @psalm-suppress ImpureFunctionCall */
                         return function() {
                             echo "bar";
                             return 1;
                         };
                     }',
-                'error_message' => 'InvalidReturnStatement',
+                'error_message' => 'LessSpecificReturnStatement',
             ],
         ];
     }

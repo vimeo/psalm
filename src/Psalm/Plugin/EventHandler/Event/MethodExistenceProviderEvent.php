@@ -7,6 +7,9 @@ namespace Psalm\Plugin\EventHandler\Event;
 use Psalm\CodeLocation;
 use Psalm\StatementsSource;
 
+/**
+ * @psalm-immutable
+ */
 final class MethodExistenceProviderEvent
 {
     /**
@@ -15,6 +18,7 @@ final class MethodExistenceProviderEvent
      * continue to determine if the method actually exists.
      *
      * @internal
+     * @psalm-mutation-free
      */
     public function __construct(
         private readonly string $fq_classlike_name,

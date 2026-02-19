@@ -74,6 +74,9 @@ final class ByIssueLevelAndTypeReportTest extends TestCase
         EXPECTED, $report->create());
     }
 
+    /**
+     * @psalm-pure
+     */
     private function issueData(int $errorLevel, string $type): IssueData
     {
         return new IssueData(

@@ -11,6 +11,9 @@ use Psalm\Internal\Type\ParseTree;
  */
 final class TemplateIsTree extends ParseTree
 {
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(public string $param_name, ?ParseTree $parent = null)
     {
         $this->parent = $parent;

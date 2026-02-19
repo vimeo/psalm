@@ -5,11 +5,21 @@ declare(strict_types=1);
 namespace Psalm\Internal\Analyzer;
 
 use Override;
+use PhpParser\Node;
 use Psalm\Aliases;
+use Psalm\CodeLocation;
 use Psalm\Codebase;
+use Psalm\Context;
+use Psalm\Issue\CodeIssue;
+use Psalm\IssueBuffer;
 use Psalm\NodeTypeProvider;
 use Psalm\StatementsSource;
+use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Storage\MethodStorage;
+use Psalm\Storage\Mutations;
 use Psalm\Type\Union;
+
+use function max;
 
 /**
  * @internal
@@ -18,6 +28,9 @@ abstract class SourceAnalyzer implements StatementsSource
 {
     protected SourceAnalyzer $source;
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function __destruct()
     {
         unset($this->source);
@@ -219,5 +232,77 @@ abstract class SourceAnalyzer implements StatementsSource
     public function getNodeTypeProvider(): NodeTypeProvider
     {
         return $this->source->getNodeTypeProvider();
+    }
+
+    #[Override]
+    public function signalMutationOnlyInferred(
+        int $mutation_level,
+        ?FunctionLikeStorage $storage = null,
+    ): void {
+        $src = $this instanceof FunctionLikeAnalyzer
+            ? $this
+            : $this->getSource();
+        if ($src instanceof FunctionLikeAnalyzer && $src->track_mutations) {
+            if ($src->storage === $storage) {
+                return;
+            }
+            if ($mutation_level === Mutations::LEVEL_INTERNAL_READ_WRITE
+                && $src->storage instanceof MethodStorage
+                && (
+                    // Allow constructors to mutate (override immutability)
+                    $src->storage->cased_name === '__construct'
+                    
+                    // ???
+                    || $src->storage->mutation_free_assumed
+                )
+            ) {
+                return;
+            }
+            $src->inferred_mutations = max($src->inferred_mutations, $mutation_level);
+        }
+    }
+
+    /**
+     * @param Mutations::LEVEL_* $mutation_level
+     * @param ?Mutations::LEVEL_* $inferred_mutation_level
+     * @param non-empty-string $msg
+     * @param class-string<CodeIssue> $class
+     */
+    #[Override]
+    public function signalMutation(
+        int $mutation_level,
+        Context $context,
+        string $msg,
+        string $class,
+        Node $node,
+        ?int $inferred_mutation_level = null,
+        bool $overrideMsg = false,
+        ?FunctionLikeStorage $storage = null,
+    ): bool {
+        $this->signalMutationOnlyInferred($inferred_mutation_level ?? $mutation_level, $storage);
+
+        if ($context->allowed_mutations < $mutation_level
+
+            // These are secondary scan modes that shouldn't report this issue
+            && !$context->collect_mutations
+            && !$context->collect_initializations
+        ) {
+            $msg = $overrideMsg ? $msg : $context->getImpureMessage(
+                $msg,
+                $mutation_level,
+            );
+            IssueBuffer::maybeAdd(
+                /** @psalm-suppress UnsafeInstantiation */
+                new $class(
+                    $msg,
+                    new CodeLocation($this, $node),
+                ),
+                $this->getSuppressedIssues(),
+            );
+
+            return true;
+        }
+
+        return false;
     }
 }

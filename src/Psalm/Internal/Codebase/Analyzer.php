@@ -26,7 +26,9 @@ use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Provider\StatementsProvider;
 use Psalm\IssueBuffer;
+use Psalm\Progress\Phase;
 use Psalm\Progress\Progress;
+use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\Union;
 use SebastianBergmann\Diff\Differ;
@@ -42,6 +44,7 @@ use function count;
 use function explode;
 use function implode;
 use function ksort;
+use function max;
 use function number_format;
 use function pathinfo;
 use function preg_replace;
@@ -94,7 +97,7 @@ use const PHP_INT_MAX;
  *      unused_suppressions: array<string, array<int, int>>,
  *      used_suppressions: array<string, array<int, bool>>,
  *      function_docblock_manipulators: array<string, array<int, FunctionDocblockManipulator>>,
- *      mutable_classes: array<string, bool>,
+ *      mutable_classes: array<string, Mutations::LEVEL_*>,
  *      issue_handlers: array{type: string, index: int, count: int}[],
  * }
  */
@@ -182,10 +185,13 @@ final class Analyzer
     public array $possible_method_param_types = [];
 
     /**
-     * @var array<string, bool>
+     * @var array<string, Mutations::LEVEL_*>
      */
     public array $mutable_classes = [];
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         private readonly Config $config,
         private readonly FileProvider $file_provider,
@@ -196,6 +202,7 @@ final class Analyzer
 
     /**
      * @param array<string, string> $files_to_analyze
+     * @psalm-external-mutation-free
      */
     public function addFilesToAnalyze(array $files_to_analyze): void
     {
@@ -205,6 +212,7 @@ final class Analyzer
 
     /**
      * @param array<string, string> $files_to_analyze
+     * @psalm-external-mutation-free
      */
     public function addFilesToShowResults(array $files_to_analyze): void
     {
@@ -213,12 +221,16 @@ final class Analyzer
 
     /**
      * @param array<string> $files_to_update
+     * @psalm-external-mutation-free
      */
     public function setFilesToUpdate(array $files_to_update): void
     {
         $this->files_to_update = $files_to_update;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function canReportIssues(string $file_path): bool
     {
         return isset($this->files_with_analysis_results[$file_path]);
@@ -248,7 +260,7 @@ final class Analyzer
         $scanned_files = $codebase->scanner->getScannedFiles();
 
         if ($codebase->taint_flow_graph) {
-            $codebase->taint_flow_graph->connectSinksAndSources();
+            $codebase->taint_flow_graph->connectSinksAndSources($codebase->progress);
         }
 
         $this->progress->finish();
@@ -281,7 +293,7 @@ final class Analyzer
         }
 
         if ($alter_code) {
-            $this->progress->startAlteringFiles();
+            $this->progress->startPhase(Phase::ALTERING);
 
             $project_analyzer->prepareMigration();
 
@@ -297,7 +309,7 @@ final class Analyzer
 
     private function doAnalysis(ProjectAnalyzer $project_analyzer, int $pool_size): void
     {
-        $this->progress->start(count($this->files_to_analyze));
+        $this->progress->expand(count($this->files_to_analyze));
 
         ksort($this->files_to_analyze);
 
@@ -322,6 +334,8 @@ final class Analyzer
             $forked_pool_data = $pool->runAll(new ShutdownAnalyzerTask);
 
             $this->progress->debug('Collecting forked analysis results' . "\n");
+            $this->progress->startPhase(Phase::MERGING_THREAD_RESULTS);
+            $this->progress->expand(count($forked_pool_data));
 
             foreach (Future::iterate($forked_pool_data) as $pool_data) {
                 $pool_data = $pool_data->await();
@@ -392,7 +406,9 @@ final class Analyzer
                     $pool_data['class_property_locations'],
                 );
 
-                $this->mutable_classes = array_merge($this->mutable_classes, $pool_data['mutable_classes']);
+                foreach ($pool_data['mutable_classes'] as $class => $level) {
+                    $this->mutable_classes[$class] = max($this->mutable_classes[$class] ?? 0, $level);
+                }
 
                 FunctionDocblockManipulator::addManipulators($pool_data['function_docblock_manipulators']);
 
@@ -432,6 +448,8 @@ final class Analyzer
                     $this->type_map[$file_path] = $type_map;
                     $this->argument_map[$file_path] = $argument_map;
                 }
+
+                $this->progress->taskDone(0);
             }
         } else {
             foreach ($this->files_to_analyze as $file_path => $_) {
@@ -975,11 +993,17 @@ final class Analyzer
         return $this->mixed_member_names;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addMixedMemberName(string $member_id, string $reference): void
     {
         $this->mixed_member_names[$member_id][$reference] = true;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function hasMixedMemberName(string $member_id): bool
     {
         return isset($this->mixed_member_names[$member_id]);
@@ -987,6 +1011,7 @@ final class Analyzer
 
     /**
      * @param array<string, array<string, bool>> $names
+     * @psalm-external-mutation-free
      */
     public function addMixedMemberNames(array $names): void
     {
@@ -1004,6 +1029,7 @@ final class Analyzer
 
     /**
      * @return list{int, int}
+     * @psalm-external-mutation-free
      */
     public function getMixedCountsForFile(string $file_path): array
     {
@@ -1015,13 +1041,17 @@ final class Analyzer
     }
 
     /**
-     * @param  list{int, int} $mixed_counts
+     * @param list{int, int} $mixed_counts
+     * @psalm-external-mutation-free
      */
     public function setMixedCountsForFile(string $file_path, array $mixed_counts): void
     {
         $this->mixed_counts[$file_path] = $mixed_counts;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function incrementMixedCount(string $file_path): void
     {
         if (!$this->count_mixed) {
@@ -1035,6 +1065,9 @@ final class Analyzer
         ++$this->mixed_counts[$file_path][0];
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function decrementMixedCount(string $file_path): void
     {
         if (!$this->count_mixed) {
@@ -1052,6 +1085,9 @@ final class Analyzer
         --$this->mixed_counts[$file_path][0];
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function incrementNonMixedCount(string $file_path): void
     {
         if (!$this->count_mixed) {
@@ -1067,6 +1103,7 @@ final class Analyzer
 
     /**
      * @return array<string, array{0: int, 1: int}>
+     * @psalm-mutation-free
      */
     public function getMixedCounts(): array
     {
@@ -1087,6 +1124,9 @@ final class Analyzer
         return $this->function_timings;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addFunctionTiming(string $function_id, float $time_per_node): void
     {
         $this->function_timings[$function_id] = $time_per_node;
@@ -1108,6 +1148,9 @@ final class Analyzer
         ];
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addNodeArgument(
         string $file_path,
         int $start_position,
@@ -1142,6 +1185,9 @@ final class Analyzer
         ];
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addOffsetReference(string $file_path, int $start, int $end, string $reference): void
     {
         if (!$reference) {
@@ -1246,11 +1292,17 @@ final class Analyzer
         return $stats;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function disableMixedCounts(): void
     {
         $this->count_mixed = false;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function enableMixedCounts(): void
     {
         $this->count_mixed = true;
@@ -1326,6 +1378,7 @@ final class Analyzer
 
     /**
      * @return list<IssueData>
+     * @psalm-mutation-free
      */
     public function getExistingIssuesForFile(string $file_path, int $start, int $end, ?string $issue_type = null): array
     {
@@ -1346,6 +1399,9 @@ final class Analyzer
         return $applicable_issues;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function removeExistingDataForFile(string $file_path, int $start, int $end, ?string $issue_type = null): void
     {
         if (isset($this->existing_issues[$file_path])) {
@@ -1393,6 +1449,7 @@ final class Analyzer
 
     /**
      * @return array<string, FileMapType>
+     * @psalm-mutation-free
      */
     public function getFileMaps(): array
     {
@@ -1423,6 +1480,7 @@ final class Analyzer
 
     /**
      * @return FileMapType
+     * @psalm-mutation-free
      */
     public function getMapsForFile(string $file_path): array
     {
@@ -1441,16 +1499,27 @@ final class Analyzer
         return $this->possible_method_param_types;
     }
 
-    public function addMutableClass(string $fqcln): void
+    /**
+     * @param Mutations::LEVEL_* $allowed_mutations
+     * @psalm-external-mutation-free
+     */
+    public function addMutableClass(string $fqcln, int $allowed_mutations): void
     {
-        $this->mutable_classes[strtolower($fqcln)] = true;
+        $fqcln = strtolower($fqcln);
+        $this->mutable_classes[$fqcln] = max($this->mutable_classes[$fqcln] ?? 0, $allowed_mutations);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function setAnalyzedMethod(string $file_path, string $method_id, bool $is_constructor = false): void
     {
         $this->analyzed_methods[$file_path][$method_id] = $is_constructor ? 2 : 1;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isMethodAlreadyAnalyzed(string $file_path, string $method_id, bool $is_constructor = false): bool
     {
         if ($is_constructor) {

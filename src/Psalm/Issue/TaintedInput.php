@@ -15,6 +15,7 @@ abstract class TaintedInput extends CodeIssue
 
     /**
      * @param list<array{location: ?CodeLocation, label: string, entry_path_type: string}> $journey
+     * @psalm-mutation-free
      */
     public function __construct(
         string $message,
@@ -27,6 +28,7 @@ abstract class TaintedInput extends CodeIssue
 
     /**
      * @return list<DataFlowNodeData|array{label: string, entry_path_type: string}>
+     * @psalm-mutation-free
      */
     public function getTaintTrace(): array
     {
@@ -43,6 +45,9 @@ abstract class TaintedInput extends CodeIssue
         return $nodes;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public static function nodeToDataFlowNodeData(
         CodeLocation $location,
         string $label,
@@ -65,6 +70,9 @@ abstract class TaintedInput extends CodeIssue
         );
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getJourneyMessage(): string
     {
         return $this->message . ' in path: ' . $this->journey_text;

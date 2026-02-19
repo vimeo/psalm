@@ -28,12 +28,12 @@ use Psalm\Internal\Type\ParseTree\TemplateAsTree;
 use Psalm\Internal\Type\ParseTree\UnionTree;
 use Psalm\Internal\Type\ParseTree\Value;
 use Psalm\Storage\FunctionLikeParameter;
+use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TCallable;
-use Psalm\Type\Atomic\TCallableKeyedArray;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
@@ -536,8 +536,9 @@ final class TypeParser
     }
 
     /**
-     * @param  non-empty-list<int>  $potential_ints
-     * @return  non-empty-list<TLiteralInt>
+     * @param non-empty-list<int>  $potential_ints
+     * @return non-empty-list<TLiteralInt>
+     * @psalm-pure
      */
     public static function getComputedIntsFromMask(array $potential_ints, bool $from_docblock = false): array
     {
@@ -1322,18 +1323,34 @@ final class TypeParser
             $params[] = $param;
         }
 
-        $pure = str_starts_with($parse_tree->value, 'pure-') ? true : null;
+        $allowed_mutations = Mutations::LEVEL_EXTERNAL;
 
-        if (in_array(strtolower($parse_tree->value), ['closure', '\closure', 'pure-closure'], true)) {
-            return new TClosure('Closure', $params, null, $pure, [], [], $from_docblock);
+        $n = $parse_tree->value;
+        if (str_starts_with($n, 'impure-')) {
+            $allowed_mutations = Mutations::LEVEL_EXTERNAL;
+            $n = substr($n, strlen('impure-'));
+        } elseif (str_starts_with($n, 'self-accessing-')) {
+            $allowed_mutations = Mutations::LEVEL_INTERNAL_READ;
+            $n = substr($n, strlen('self-accessing-'));
+        } elseif (str_starts_with($n, 'self-mutating-')) {
+            $allowed_mutations = Mutations::LEVEL_INTERNAL_READ_WRITE;
+            $n = substr($n, strlen('self-mutating-'));
+        } elseif (str_starts_with($n, 'pure-')) {
+            $allowed_mutations = Mutations::LEVEL_NONE;
+            $n = substr($n, strlen('pure-'));
         }
 
-        return new TCallable('callable', $params, null, $pure, $from_docblock);
+        if (in_array(strtolower($n), ['closure', '\closure'], true)) {
+            return new TClosure($params, null, $allowed_mutations, [], [], $from_docblock);
+        }
+
+        return new TCallable($params, null, $allowed_mutations, $from_docblock);
     }
 
     /**
-     * @param  array<string, array<string, Union>> $template_type_map
+     * @param array<string, array<string, Union>> $template_type_map
      * @throws TypeParseTreeException
+     * @psalm-mutation-free
      */
     private static function getTypeFromIndexAccessTree(
         IndexedAccessTree $parse_tree,
@@ -1397,7 +1414,7 @@ final class TypeParser
         array $template_type_map,
         array $type_aliases,
         bool $from_docblock,
-    ): TCallableKeyedArray|TKeyedArray|TObjectWithProperties|TArray {
+    ): TKeyedArray|TObjectWithProperties|TArray {
         $properties = [];
         $class_strings = [];
 
@@ -1525,9 +1542,7 @@ final class TypeParser
         }
 
         $callable = str_starts_with($type, 'callable-');
-        $class = TKeyedArray::class;
         if ($callable) {
-            $class = TCallableKeyedArray::class;
             $type = substr($type, 9);
         }
 
@@ -1536,7 +1551,7 @@ final class TypeParser
         }
 
         if ($type !== 'array' && $type !== 'list') {
-            throw new TypeParseTreeException('Unexpected brace character');
+            throw new TypeParseTreeException('Unexpected brace character in type '.$type);
         }
 
         if ($type === 'list' && !$is_list) {
@@ -1571,20 +1586,28 @@ final class TypeParser
             }
             $extra_params = $final_extra_params;
         }
-        return new $class(
-            $properties,
-            $class_strings,
-            $extra_params ?? ($sealed
-                ? null
-                : [$is_list ? Type::getListKey() : Type::getArrayKey(), Type::getMixed()]
-            ),
-            $is_list,
-            $from_docblock,
-        );
+        return $callable
+            ? TKeyedArray::makeCallable(
+                $properties,
+                $class_strings,
+                $is_list,
+                $from_docblock,
+            ) : TKeyedArray::make(
+                $properties,
+                $class_strings,
+                $extra_params ?? ($sealed
+                    ? null
+                    : [$is_list ? Type::getListKey() : Type::getArrayKey(), Type::getMixed()]
+                ),
+                $is_list,
+                $from_docblock,
+            )
+        ;
     }
 
     /**
      * @param TNamedObject|TObjectWithProperties|TCallableObject|TIterable|TTemplateParam|TKeyedArray $intersection_type
+     * @psalm-mutation-free
      */
     private static function extractIntersectionKey(Atomic $intersection_type): string
     {
@@ -1612,7 +1635,7 @@ final class TypeParser
 
         foreach ($normalized_intersection_types as $intersection_type) {
             if ($intersection_type instanceof TKeyedArray
-                && !$intersection_type instanceof TCallableKeyedArray
+                && !$intersection_type->is_callable
             ) {
                 $any_array_found = true;
 
@@ -1787,7 +1810,7 @@ final class TypeParser
             $fallback_params = [Type::getArrayKey(), Type::getMixed()];
         }
 
-        return new TKeyedArray(
+        return TKeyedArray::make(
             $properties,
             null,
             $fallback_params,

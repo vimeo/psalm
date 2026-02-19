@@ -81,7 +81,7 @@
         <xs:attribute name="skipChecksOnUnresolvableIncludes" type="xs:boolean" default="false" />
         <xs:attribute name="sealAllMethods" type="xs:boolean" default="true" />
         <xs:attribute name="sealAllProperties" type="xs:boolean" default="true" />
-        <xs:attribute name="runTaintAnalysis" type="xs:boolean" default="false" />
+        <xs:attribute name="runTaintAnalysis" type="xs:boolean" default="true" />
         <xs:attribute name="usePhpStormMetaPath" type="xs:boolean" default="true" />
         <xs:attribute name="allowInternalNamedArgumentCalls" type="xs:boolean" default="true" />
         <xs:attribute name="allowNamedArgumentCalls" type="xs:boolean" default="true" />
@@ -264,6 +264,7 @@
             <xs:element name="ImplicitToStringCast" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ImpureByReferenceAssignment" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ImpureFunctionCall" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="ImpureGlobalVariable" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ImpureMethodCall" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ImpurePropertyAssignment" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ImpurePropertyFetch" type="IssueHandlerType" minOccurs="0" />
@@ -346,6 +347,8 @@
             <xs:element name="MissingOverrideAttribute" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingParamType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingPropertyType" type="PropertyIssueHandlerType" minOccurs="0" />
+            <xs:element name="MissingAbstractPureAnnotation" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="MissingPureAnnotation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingTemplateParam" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingThrowsDocblock" type="ClassIssueHandlerType" minOccurs="0" />

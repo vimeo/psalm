@@ -25,6 +25,9 @@ final class FileBasedPluginAdapter implements PluginEntryPointInterface
 {
     private readonly string $path;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         string $path,
         private readonly Config $config,

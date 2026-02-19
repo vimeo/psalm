@@ -56,6 +56,8 @@ HEADING;
 
     /**
      * Copied from ConsoleReport with only very minor changes.
+     *
+     * @psalm-external-mutation-free
      */
     private function format(IssueData $issue_data): string
     {
@@ -110,6 +112,7 @@ HEADING;
      * Copied from ConsoleReport unchanged. We could consider moving to another class to reduce duplication.
      *
      * @param non-empty-list<DataFlowNodeData|array{label: string, entry_path_type: string}> $taint_trace
+     * @psalm-external-mutation-free
      */
     private function getTaintSnippets(array $taint_trace): string
     {
@@ -144,6 +147,8 @@ HEADING;
 
     /**
      * Copied from ConsoleReport unchanged. We could consider moving to another class to reduce duplication.
+     *
+     * @psalm-external-mutation-free
      */
     private function getFileReference(IssueData|DataFlowNodeData $data): string
     {
@@ -180,6 +185,9 @@ HEADING;
         return "\033]8;;" . $link . "\033\\" . $reference . "\033]8;;\033\\";
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     private function sortIssuesByLevelAndType(): void
     {
         usort(

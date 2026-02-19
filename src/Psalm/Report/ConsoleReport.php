@@ -32,6 +32,9 @@ final class ConsoleReport extends Report
         return $output;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     private function format(IssueData $issue_data): string
     {
         $issue_string = '';
@@ -81,6 +84,7 @@ final class ConsoleReport extends Report
 
     /**
      * @param non-empty-list<DataFlowNodeData|array{label: string, entry_path_type: string}> $taint_trace
+     * @psalm-external-mutation-free
      */
     private function getTaintSnippets(array $taint_trace): string
     {
@@ -113,6 +117,9 @@ final class ConsoleReport extends Report
         return $snippets;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     private function getFileReference(IssueData|DataFlowNodeData $data): string
     {
         $reference = $data->file_name . ':' . $data->line_from . ':' . $data->column_from;

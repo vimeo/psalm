@@ -53,6 +53,7 @@ class TLiteralString extends TString
      * For all other purposes use {@see Type::getAtomicStringFromLiteral}
      *
      * @psalm-api
+     * @psalm-pure
      */
     public static function make(string $value, bool $from_docblock = false): self
     {

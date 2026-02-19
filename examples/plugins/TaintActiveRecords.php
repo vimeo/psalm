@@ -12,7 +12,7 @@ use Psalm\Plugin\EventHandler\AddTaintsInterface;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TNamedObject;
-use Psalm\Type\TaintKindGroup;
+use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 
 use function strpos;
@@ -27,16 +27,16 @@ final class TaintActiveRecords implements AddTaintsInterface
     /**
      * Called to see what taints should be added
      *
-     * @return list<string>
+     * @return int
      */
     #[Override]
-    public static function addTaints(AddRemoveTaintsEvent $event): array
+    public static function addTaints(AddRemoveTaintsEvent $event): int
     {
         $expr = $event->getExpr();
 
         // Model properties are accessed by property fetch, so abort here
         if ($expr instanceof ArrayItem) {
-            return [];
+            return 0;
         }
 
         $statements_source = $event->getStatementsSource();
@@ -51,15 +51,17 @@ final class TaintActiveRecords implements AddTaintsInterface
             }
 
             if (self::containsActiveRecord($expr_type)) {
-                return TaintKindGroup::ALL_INPUT;
+                return TaintKind::ALL_INPUT;
             }
         } while ($expr = self::getParentNode($expr));
 
-        return [];
+        return 0;
     }
 
     /**
      * @return bool `true` if union contains a type of model
+     *
+     * @psalm-mutation-free
      */
     private static function containsActiveRecord(Union $union_type): bool
     {
@@ -74,6 +76,8 @@ final class TaintActiveRecords implements AddTaintsInterface
 
     /**
      * @return bool `true` if namespace of type is in namespace `app\models`
+     *
+     * @psalm-pure
      */
     private static function isActiveRecord(Atomic $type): bool
     {
@@ -87,6 +91,8 @@ final class TaintActiveRecords implements AddTaintsInterface
 
     /**
      * Return next node that should be followed for active record search
+     *
+     * @psalm-mutation-free
      */
     private static function getParentNode(ArrayItem|Expr $expr): ?Expr
     {

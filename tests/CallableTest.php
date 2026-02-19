@@ -1329,6 +1329,8 @@ final class CallableTest extends TestCase
                         private $callable;
 
                         /**
+                         * @psalm-mutation-free
+                         * 
                          * @psalm-param callable():bool $callable
                          */
                         public function __construct(callable $callable) {
@@ -2318,7 +2320,7 @@ final class CallableTest extends TestCase
             ],
             'callableArrayTypes' => [
                 'code' => '<?php
-                    /** @var callable-array $c */
+                    /** @var callable-list $c */
                     $c;
                     [$a, $b] = $c;
                     ',

@@ -26,7 +26,7 @@ use Psalm\Issue\MethodSignatureMismatch;
 use Psalm\Issue\MethodSignatureMustProvideReturnType;
 use Psalm\Issue\MismatchingDocblockParamType;
 use Psalm\Issue\MismatchingDocblockReturnType;
-use Psalm\Issue\MissingImmutableAnnotation;
+use Psalm\Issue\MissingAbstractPureAnnotation;
 use Psalm\Issue\MoreSpecificImplementedParamType;
 use Psalm\Issue\OverriddenMethodAccess;
 use Psalm\Issue\ParamNameMismatch;
@@ -90,6 +90,7 @@ final class MethodComparator
         );
 
         self::checkForObviousMethodMismatches(
+            $codebase,
             $guide_classlike_storage,
             $implementer_classlike_storage,
             $guide_method_storage,
@@ -294,6 +295,7 @@ final class MethodComparator
      * @param  string[]         $suppressed_issues
      */
     private static function checkForObviousMethodMismatches(
+        Codebase $codebase,
         ClassLikeStorage $guide_classlike_storage,
         ClassLikeStorage $implementer_classlike_storage,
         MethodStorage $guide_method_storage,
@@ -377,14 +379,14 @@ final class MethodComparator
             );
         }
 
-        if ($guide_method_storage->external_mutation_free
-            && !$implementer_method_storage->external_mutation_free
-            && !$guide_method_storage->mutation_free_inferred
+        if ($guide_method_storage->isExternalMutationFree()
+            && !$implementer_method_storage->isExternalMutationFree()
+            && !$guide_method_storage->mutation_free_assumed
             && $prevent_method_signature_mismatch
         ) {
             IssueBuffer::maybeAdd(
-                new MissingImmutableAnnotation(
-                    $cased_guide_method_id . ' is marked @psalm-external-mutation-free, but '
+                new MissingAbstractPureAnnotation(
+                    $cased_guide_method_id . ' is marked at least @psalm-external-mutation-free, but '
                         . $implementer_classlike_storage->name . '::'
                         . ($guide_method_storage->cased_name ?: '')
                         . ' is not marked @psalm-external-mutation-free',

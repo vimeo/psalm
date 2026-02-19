@@ -1,3 +1,78 @@
+# Upgrading from Psalm 6 to Psalm 7
+
+## Changed
+
+- [BC] Property Psalm\Type\Atomic\TCallable#$is_pure was removed and replaced with an `$allowed_mutations` property
+- [BC] Property Psalm\Type\Atomic\TClosure#$is_pure was removed and replaced with an `$allowed_mutations` property
+- [BC] Property Psalm\Type\Atomic\CallableTrait#$is_pure was removed and replaced with an `$allowed_mutations` property
+- [BC] Method Psalm\Type\Atomic\TCallable#setIsPure() was removed and replaced with a `setAllowedMutations` method 
+- [BC] Method Psalm\Type\Atomic\TClosure#setIsPure() was removed and replaced with a `setAllowedMutations` method 
+- [BC] Method Psalm\Type\Atomic\CallableTrait#setIsPure() was removed and replaced with a `setAllowedMutations` method 
+- [BC] Property Psalm\Type\Atomic\TCallable#$value changed default value from NULL to 'callable'
+- [BC] The $value parameter of Psalm\Type\Atomic\TCallable#__construct() was removed
+- [BC] The $value parameter of Psalm\Type\Atomic\TClosure#__construct() was removed
+- [BC] Property $pure of `Psalm\Context`, `Psalm\Storage\FunctionLikeStorage` was removed and replaced with an `isPure()` method, reading from the new `$allowed_mutations` property.
+- [BC] Property $mutation_free of `Psalm\Context`, `Psalm\Storage\FunctionLikeStorage`, `Psalm\Storage\ClassLikeStorage` was removed and replaced with an `isMutationFree()` method, reading from the new `$allowed_mutations` property.
+- [BC] Property $external_mutation_free of of `Psalm\Context`, `Psalm\Storage\FunctionLikeStorage`, `Psalm\Storage\ClassLikeStorage` was removed and replaced with an `isExternalMutationFree()` method, reading from the new `$allowed_mutations` property.
+- [BC] Method signalMutationOnlyInferred() was added to interface Psalm\StatementsSource
+- [BC] Method signalMutation() was added to interface Psalm\StatementsSource
+
+- [BC] Taints are now *internally* represented by a bitmap (an integer), instead of an array of strings. Users can still use the usual string taint identifiers (including custom ones, which will be automatically registered by Psalm), but internally, the type of `Psalm\Type\TaintKind` taint types is now an integer.
+
+- [BC] The maximum number of usable taint *types* (including both native taints and custom taints) is now equal to 32 on 32-bit systems and 64 on 64-bit systems: this should be enough for the vast majority of usecases, if more taint types are needed, consider merging some taint types or using some native taint types.  
+
+- [BC] `Psalm\Plugin\EventHandler\AddTaintsInterface::addTaints` and `Psalm\Plugin\EventHandler\RemoveTaintsInterface::removeTaints` now must return an integer taint instead of an array of strings (see the new [taint documentation](https://psalm.dev/docs/security_analysis/custom_taint_sources/) for more info).  
+
+- [BC] The type of the `$taints` parameter of `Psalm\Codebase::addTaintSource` and  `Psalm\Codebase::addTaintSink` was changed to an integer
+
+- [BC] Type of property `Psalm\Storage\FunctionLikeParameter::$sinks` changed from `array|null` to `int`
+
+- [BC] Type of property `Psalm\Storage\FunctionLikeStorage::$taint_source_types` changed from `array` to `int`
+
+- [BC] Type of property `Psalm\Storage\FunctionLikeStorage::$added_taints` changed from `array` to `int`
+
+- [BC] Type of property `Psalm\Storage\FunctionLikeStorage::$removed_taints` changed from `array` to `int`
+
+- [BC] The `startScanningFiles`, `startAnalyzingFiles`, `startAlteringFiles` of `Psalm\Progress\Progress` and subclasses were removed and replaced with a new `startPhase` method, taking a `Psalm\Progress\Phase` enum case.
+
+- [BC] The `start` method was removed, use `expand`, instead; the progress is reset to 0 when changing the current phase.  
+
+- [BC] Method `doesTerminalSupportUtf8` of class `Psalm\Progress\Progress` became final
+
+- [BC] Method debug() of class Psalm\Progress\Progress changed from concrete to abstract
+
+- [BC] Method alterFileDone() of class Psalm\Progress\Progress changed from concrete to abstract
+
+- [BC] Method expand() of class Psalm\Progress\Progress changed from concrete to abstract
+
+- [BC] Method taskDone() of class Psalm\Progress\Progress changed from concrete to abstract
+
+- [BC] Method finish() of class Psalm\Progress\Progress changed from concrete to abstract
+
+- [BC] The return type of Psalm\Type::getListAtomic() changed from Psalm\Type\Atomic\TKeyedArray to the non-covariant Psalm\Type\Atomic\TKeyedArray|Psalm\Type\Atomic\TArray
+
+- [BC] The return type of Psalm\Type::getListAtomic() changed from Psalm\Type\Atomic\TKeyedArray to Psalm\Type\Atomic\TKeyedArray|Psalm\Type\Atomic\TArray
+
+- [BC] The return type of Psalm\Type::getNonEmptyListAtomic() changed from Psalm\Type\Atomic\TKeyedArray to the non-covariant Psalm\Type\Atomic\TKeyedArray|Psalm\Type\Atomic\TArray
+
+- [BC] The return type of Psalm\Type::getNonEmptyListAtomic() changed from Psalm\Type\Atomic\TKeyedArray to Psalm\Type\Atomic\TKeyedArray|Psalm\Type\Atomic\TArray
+
+- [BC] Class Psalm\Type\Atomic\TKeyedArray became final
+
+- [BC] Class Psalm\Type\Atomic\TKeyedArray can only be created using the new `make` or `makeCallable` factory methods, the constructor was rendered private.  
+
+- [BC] Class Psalm\Type\Atomic\TCallableKeyedArray has been deleted, and replaced with a new `is_callable` flag in Psalm\Type\Atomic\TKeyedArray
+
+- [BC] Class Psalm\Type\Atomic\TCallableInterface has been deleted, use `\Psalm\Type\Atomic::isCallableType()` instead
+
+## Removed
+
+- [BC] Constant Psalm\Type\Atomic\TKeyedArray::NAME_ARRAY was removed
+
+- [BC] Constant Psalm\Type\Atomic\TKeyedArray::NAME_LIST was removed
+
+- [BC] Psalm\Type\Atomic\TKeyedArray#__construct() was made private
+
 # Upgrading from Psalm 5 to Psalm 6
 ## Changed
 

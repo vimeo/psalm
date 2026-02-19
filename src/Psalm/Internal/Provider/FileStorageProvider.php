@@ -30,10 +30,16 @@ final class FileStorageProvider
      */
     private static array $new_storage = [];
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(public ?FileStorageCacheProvider $cache = null)
     {
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function get(string $file_path): FileStorage
     {
         $file_path = strtolower($file_path);
@@ -45,6 +51,9 @@ final class FileStorageProvider
         return self::$storage[$file_path];
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function remove(string $file_path): void
     {
         unset(self::$storage[strtolower($file_path)]);
@@ -80,6 +89,7 @@ final class FileStorageProvider
 
     /**
      * @return array<lowercase-string, FileStorage>
+     * @psalm-external-mutation-free
      */
     public static function getAll(): array
     {
@@ -88,6 +98,7 @@ final class FileStorageProvider
 
     /**
      * @return array<string, FileStorage>
+     * @psalm-external-mutation-free
      */
     public function getNew(): array
     {
@@ -96,6 +107,7 @@ final class FileStorageProvider
 
     /**
      * @param array<lowercase-string, FileStorage> $more
+     * @psalm-external-mutation-free
      */
     public function addMore(array $more): void
     {
@@ -103,6 +115,9 @@ final class FileStorageProvider
         self::$storage = [...self::$storage, ...$more];
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function create(string $file_path): FileStorage
     {
         $file_path_lc = strtolower($file_path);
@@ -114,11 +129,17 @@ final class FileStorageProvider
         return $storage;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public static function deleteAll(): void
     {
         self::$storage = [];
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public static function populated(): void
     {
         self::$new_storage = [];

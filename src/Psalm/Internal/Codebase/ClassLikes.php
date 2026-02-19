@@ -24,6 +24,7 @@ use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\ClassMustBeFinal;
+use Psalm\Issue\MissingImmutableAnnotation;
 use Psalm\Issue\PossiblyUnusedMethod;
 use Psalm\Issue\PossiblyUnusedParam;
 use Psalm\Issue\PossiblyUnusedProperty;
@@ -41,6 +42,7 @@ use Psalm\Progress\VoidProgress;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassConstantStorage;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Union;
@@ -49,7 +51,6 @@ use ReflectionProperty;
 use UnexpectedValueException;
 
 use function array_filter;
-use function array_keys;
 use function array_merge;
 use function array_pop;
 use function count;
@@ -184,6 +185,9 @@ final class ClassLikes
         }
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addFullyQualifiedClassName(string $fq_class_name, ?string $file_path = null): void
     {
         $fq_class_name_lc = strtolower($fq_class_name);
@@ -200,6 +204,9 @@ final class ClassLikes
         }
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addFullyQualifiedInterfaceName(string $fq_class_name, ?string $file_path = null): void
     {
         $fq_class_name_lc = strtolower($fq_class_name);
@@ -216,6 +223,9 @@ final class ClassLikes
         }
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addFullyQualifiedTraitName(string $fq_class_name, ?string $file_path = null): void
     {
         $fq_class_name_lc = strtolower($fq_class_name);
@@ -232,6 +242,9 @@ final class ClassLikes
         }
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addFullyQualifiedEnumName(string $fq_class_name, ?string $file_path = null): void
     {
         $fq_class_name_lc = strtolower($fq_class_name);
@@ -248,6 +261,9 @@ final class ClassLikes
         }
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addFullyQualifiedClassLikeName(string $fq_class_name_lc, ?string $file_path = null): void
     {
         if ($file_path) {
@@ -257,6 +273,7 @@ final class ClassLikes
 
     /**
      * @return list<string>
+     * @psalm-mutation-free
      */
     public function getMatchingClassLikeNames(string $stub): array
     {
@@ -307,6 +324,9 @@ final class ClassLikes
         return $matching_classes;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function hasFullyQualifiedClassName(
         string $fq_class_name,
         ?CodeLocation $code_location = null,
@@ -375,6 +395,9 @@ final class ClassLikes
         return true;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function hasFullyQualifiedInterfaceName(
         string $fq_class_name,
         ?CodeLocation $code_location = null,
@@ -443,6 +466,9 @@ final class ClassLikes
         return true;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function hasFullyQualifiedEnumName(
         string $fq_class_name,
         ?CodeLocation $code_location = null,
@@ -511,6 +537,9 @@ final class ClassLikes
         return true;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function hasFullyQualifiedTraitName(string $fq_class_name, ?CodeLocation $code_location = null): bool
     {
         $fq_class_name_lc = strtolower($this->getUnAliasedName($fq_class_name));
@@ -533,6 +562,8 @@ final class ClassLikes
 
     /**
      * Check whether a class/interface exists
+     *
+     * @psalm-external-mutation-free
      */
     public function classOrInterfaceExists(
         string $fq_class_name,
@@ -546,6 +577,8 @@ final class ClassLikes
 
     /**
      * Check whether a class/interface exists
+     *
+     * @psalm-external-mutation-free
      */
     public function classOrInterfaceOrEnumExists(
         string $fq_class_name,
@@ -560,6 +593,8 @@ final class ClassLikes
 
     /**
      * Determine whether or not a given class exists
+     *
+     * @psalm-external-mutation-free
      */
     public function classExists(
         string $fq_class_name,
@@ -661,6 +696,9 @@ final class ClassLikes
         return false;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function interfaceExists(
         string $fq_interface_name,
         ?CodeLocation $code_location = null,
@@ -679,6 +717,9 @@ final class ClassLikes
         );
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function enumExists(
         string $fq_enum_name,
         ?CodeLocation $code_location = null,
@@ -697,6 +738,9 @@ final class ClassLikes
         );
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function interfaceExtends(string $interface_name, string $possible_parent): bool
     {
         return isset($this->getParentInterfaces($interface_name)[strtolower($possible_parent)]);
@@ -704,6 +748,7 @@ final class ClassLikes
 
     /**
      * @return array<lowercase-string, string>   all interfaces extended by $interface_name
+     * @psalm-mutation-free
      */
     public function getParentInterfaces(string $fq_interface_name): array
     {
@@ -712,6 +757,9 @@ final class ClassLikes
         return $this->classlike_storage_provider->get($fq_interface_name)->parent_interfaces;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function traitExists(string $fq_trait_name, ?CodeLocation $code_location = null): bool
     {
         return $this->hasFullyQualifiedTraitName($fq_trait_name, $code_location);
@@ -719,6 +767,8 @@ final class ClassLikes
 
     /**
      * Determine whether or not a class has the correct casing
+     *
+     * @psalm-mutation-free
      */
     public function classHasCorrectCasing(string $fq_class_name): bool
     {
@@ -733,6 +783,9 @@ final class ClassLikes
         return isset($this->existing_classes[$fq_class_name]);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function interfaceHasCorrectCasing(string $fq_interface_name): bool
     {
         if (isset($this->existing_classlike_aliases[$fq_interface_name])) {
@@ -742,6 +795,9 @@ final class ClassLikes
         return isset($this->existing_interfaces[$fq_interface_name]);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function enumHasCorrectCasing(string $fq_enum_name): bool
     {
         if (isset($this->existing_classlike_aliases[$fq_enum_name])) {
@@ -751,6 +807,9 @@ final class ClassLikes
         return isset($this->existing_enums[$fq_enum_name]);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function traitHasCorrectCasing(string $fq_trait_name): bool
     {
         if (isset($this->existing_classlike_aliases[$fq_trait_name])) {
@@ -799,6 +858,9 @@ final class ClassLikes
         throw new UnexpectedValueException("Could not locate trait statement for $fq_trait_name");
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addClassAlias(string $fq_class_name, string $alias_name): void
     {
         $this->classlike_aliases_map[strtolower($alias_name)] = $fq_class_name;
@@ -898,13 +960,14 @@ final class ClassLikes
 
                 $this->findPossibleMethodParamTypes($classlike_storage);
 
-                if ($codebase->alter_code
-                    && isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation'])
-                    && !isset($codebase->analyzer->mutable_classes[$fq_class_name_lc])
-                    && !$classlike_storage->external_mutation_free
-                    && $classlike_storage->properties
-                    && isset($classlike_storage->methods['__construct'])
+                $mut = $codebase->analyzer->mutable_classes[$fq_class_name_lc] ?? Mutations::LEVEL_NONE;
+                if ($mut <= Mutations::LEVEL_INTERNAL_READ
+                    && !$classlike_storage->isExternalMutationFree()
+                    && !$classlike_storage->has_mutations_annotation
                 ) {
+                    $change = $codebase->alter_code
+                        && isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation']);
+
                     $stmts = $codebase->getStatementsForFile(
                         $classlike_storage->location->file_path,
                     );
@@ -917,6 +980,8 @@ final class ClassLikes
                                         === $fq_class_name_lc
                                 ) {
                                     self::makeImmutable(
+                                        $change,
+                                        $classlike_storage,
                                         $namespace_stmt,
                                         $project_analyzer,
                                         $classlike_storage->location->file_path,
@@ -927,6 +992,8 @@ final class ClassLikes
                             && strtolower((string) $stmt->name) === $fq_class_name_lc
                         ) {
                             self::makeImmutable(
+                                $change,
+                                $classlike_storage,
                                 $stmt,
                                 $project_analyzer,
                                 $classlike_storage->location->file_path,
@@ -939,17 +1006,37 @@ final class ClassLikes
     }
 
     public static function makeImmutable(
+        bool $change,
+        ClassLikeStorage $storage,
         PhpParser\Node\Stmt\Class_ $class_stmt,
         ProjectAnalyzer $project_analyzer,
         string $file_path,
     ): void {
-        $manipulator = ClassDocblockManipulator::getForClass(
-            $project_analyzer,
-            $file_path,
-            $class_stmt,
-        );
+        if ($class_stmt instanceof VirtualNode) {
+            return;
+        }
+        if ($change) {
+            $manipulator = ClassDocblockManipulator::getForClass(
+                $project_analyzer,
+                $file_path,
+                $class_stmt,
+            );
 
-        $manipulator->makeImmutable();
+            $manipulator->makeImmutable();
+        }
+        
+        if (!$storage->location) {
+            return;
+        }
+
+        IssueBuffer::maybeAdd(
+            new MissingImmutableAnnotation(
+                $storage->name . ' must be marked  to aid security analysis,'
+                    .' run with --alter to fix this',
+                $storage->location,
+            ),
+            $storage->suppressed_issues,
+        );
     }
 
     public function moveMethods(Methods $methods, ?Progress $progress = null): void
@@ -1522,6 +1609,9 @@ final class ClassLikes
         }
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function airliftClassLikeReference(
         string $fq_class_name,
         string $destination_fq_class_name,
@@ -1560,6 +1650,9 @@ final class ClassLikes
         );
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function airliftClassDefinedDocblockType(
         Union $type,
         string $destination_fq_class_name,
@@ -1599,6 +1692,7 @@ final class ClassLikes
      * @param ReflectionProperty::IS_PUBLIC|ReflectionProperty::IS_PROTECTED|ReflectionProperty::IS_PRIVATE
      *  $visibility
      * @return array<string, ClassConstantStorage>
+     * @psalm-mutation-free
      */
     public function getConstantsForClass(string $class_name, int $visibility): array
     {
@@ -2274,7 +2368,8 @@ final class ClassLikes
     }
 
     /**
-     * @param  lowercase-string $fq_classlike_name_lc
+     * @param lowercase-string $fq_classlike_name_lc
+     * @psalm-external-mutation-free
      */
     public function registerMissingClassLike(string $fq_classlike_name_lc): void
     {
@@ -2282,7 +2377,8 @@ final class ClassLikes
     }
 
     /**
-     * @param  lowercase-string $fq_classlike_name_lc
+     * @param lowercase-string $fq_classlike_name_lc
+     * @psalm-mutation-free
      */
     public function isMissingClassLike(string $fq_classlike_name_lc): bool
     {
@@ -2291,7 +2387,8 @@ final class ClassLikes
     }
 
     /**
-     * @param  lowercase-string $fq_classlike_name_lc
+     * @param lowercase-string $fq_classlike_name_lc
+     * @psalm-mutation-free
      */
     public function doesClassLikeExist(string $fq_classlike_name_lc): bool
     {
@@ -2299,11 +2396,17 @@ final class ClassLikes
             && $this->existing_classlikes_lc[$fq_classlike_name_lc];
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function forgetMissingClassLikes(): void
     {
         $this->existing_classlikes_lc = array_filter($this->existing_classlikes_lc);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function removeClassLike(string $fq_class_name): void
     {
         $fq_class_name_lc = strtolower($fq_class_name);
@@ -2336,6 +2439,7 @@ final class ClassLikes
      *     array<string, bool>,
      *     array<string, bool>,
      * }
+     * @psalm-mutation-free
      */
     public function getThreadData(): array
     {
@@ -2364,6 +2468,7 @@ final class ClassLikes
      *     7: array<string, bool>,
      *     8: array<string, bool>,
      * } $thread_data
+     * @psalm-external-mutation-free
      */
     public function addThreadData(array $thread_data): void
     {
@@ -2395,6 +2500,7 @@ final class ClassLikes
      * @param array<T, bool> $old
      * @param array<T, bool> $new
      * @return array<T, bool>
+     * @psalm-pure
      */
     private static function mergeThreadData(array $old, array $new): array
     {
@@ -2406,6 +2512,9 @@ final class ClassLikes
         return $old;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getStorageFor(string $fq_class_name): ?ClassLikeStorage
     {
         $fq_class_name = $this->getUnAliasedName($fq_class_name);
@@ -2483,6 +2592,9 @@ final class ClassLikes
         return new Union(array_merge([], ...$new_atomic_types));
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     private function getEnumType(
         ClassLikeStorage $class_like_storage,
         string $constant_name,
@@ -2498,13 +2610,16 @@ final class ClassLikes
         }
 
         $types = [];
-        foreach (array_keys($resolved_enums) as $enum_case_name) {
+        foreach ($resolved_enums as $enum_case_name => $_) {
             $types[$enum_case_name] = new TEnumCase($class_like_storage->name, $enum_case_name);
         }
 
         return new Union($types);
     }
 
+    /**
+     * @psalm-pure
+     */
     private function filterConstantNameByVisibility(
         ClassConstantStorage $constant_storage,
         int $visibility,

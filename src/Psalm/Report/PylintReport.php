@@ -24,6 +24,9 @@ final class PylintReport extends Report
         return $output;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     private function format(IssueData $issue_data): string
     {
         $message = sprintf(

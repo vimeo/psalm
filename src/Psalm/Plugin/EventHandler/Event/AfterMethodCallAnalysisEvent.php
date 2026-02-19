@@ -16,8 +16,9 @@ use Psalm\Type\Union;
 final class AfterMethodCallAnalysisEvent
 {
     /**
-     * @param  FileManipulation[] $file_replacements
+     * @param FileManipulation[] $file_replacements
      * @internal
+     * @psalm-mutation-free
      */
     public function __construct(
         private readonly MethodCall|StaticCall $expr,
@@ -85,12 +86,16 @@ final class AfterMethodCallAnalysisEvent
 
     /**
      * @param FileManipulation[] $file_replacements
+     * @psalm-external-mutation-free
      */
     public function setFileReplacements(array $file_replacements): void
     {
         $this->file_replacements = $file_replacements;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function setReturnTypeCandidate(?Union $return_type_candidate): void
     {
         $this->return_type_candidate = $return_type_candidate;

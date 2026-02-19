@@ -11,24 +11,25 @@ use Psalm\SourceControl\SourceControlInfo;
  * Data represents "git" of Coveralls API.
  *
  * "git": {
- *   "head": {
- *     "id": "b31f08d07ae564b08237e5a336e478b24ccc4a65",
- *     "author_name": "Nick Merwin",
- *     "author_email": "...",
- *     "committer_name": "Nick Merwin",
- *     "committer_email": "...",
- *     "message": "version bump"
- *   },
- *   "branch": "master",
- *   "remotes": [
- *     {
- *       "name": "origin",
- *       "url": "git@github.com:lemurheavy/coveralls-ruby.git"
- *     }
- *   ]
+ * "head": {
+ * "id": "b31f08d07ae564b08237e5a336e478b24ccc4a65",
+ * "author_name": "Nick Merwin",
+ * "author_email": "...",
+ * "committer_name": "Nick Merwin",
+ * "committer_email": "...",
+ * "message": "version bump"
+ * },
+ * "branch": "master",
+ * "remotes": [
+ * {
+ * "name": "origin",
+ * "url": "git@github.com:lemurheavy/coveralls-ruby.git"
+ * }
+ * ]
  * }
  *
  * @author Kitamura Satoshi <with.no.parachute@gmail.com>
+ * @psalm-immutable
  */
 final class GitInfo extends SourceControlInfo
 {
@@ -38,6 +39,7 @@ final class GitInfo extends SourceControlInfo
      * @param string $branch  branch name
      * @param CommitInfo $head    HEAD commit
      * @param RemoteInfo[]  $remotes remote repositories
+     * @psalm-mutation-free
      */
     public function __construct(
         protected string $branch,

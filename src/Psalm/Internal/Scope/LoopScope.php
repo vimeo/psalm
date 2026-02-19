@@ -49,10 +49,16 @@ final class LoopScope
      */
     public array $final_actions = [];
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(public Context $loop_context, public Context $loop_parent_context)
     {
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function __destruct()
     {
         unset($this->loop_context);

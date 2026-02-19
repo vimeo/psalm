@@ -14,13 +14,13 @@ use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeAlias\LinkableTypeAlias;
 use Psalm\Internal\TypeVisitor\ClasslikeReplacer;
+use Psalm\Storage\Mutations;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
-use Psalm\Type\Atomic\TCallableKeyedArray;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassString;
@@ -86,6 +86,9 @@ abstract class Atomic implements TypeNode, Stringable
 {
     use UnserializeMemoryUsageSuppressionTrait;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         /**
          * Whether or not the type comes from a docblock
@@ -93,6 +96,9 @@ abstract class Atomic implements TypeNode, Stringable
         public bool $from_docblock = false,
     ) {
     }
+    /**
+     * @psalm-mutation-free
+     */
     protected function __clone()
     {
     }
@@ -228,13 +234,21 @@ abstract class Atomic implements TypeNode, Stringable
 
                 break;
 
+            case 'pure-callable':
+                return new TCallable(
+                    allowed_mutations: Mutations::LEVEL_NONE,
+                );
+            case 'self-mutating-callable':
+                return new TCallable(
+                    allowed_mutations: Mutations::LEVEL_INTERNAL_READ_WRITE,
+                );
+            case 'self-accessing-callable':
+                return new TCallable(
+                    allowed_mutations: Mutations::LEVEL_INTERNAL_READ,
+                );
+            case 'impure-callable':
             case 'callable':
                 return new TCallable();
-            case 'pure-callable':
-                $type = new TCallable();
-                $type->is_pure = true;
-
-                return $type;
 
             case 'array':
             case 'associative-array':
@@ -260,10 +274,26 @@ abstract class Atomic implements TypeNode, Stringable
                 );
                 $object = new TObject(true);
                 $string = new TNonEmptyString(true);
-                return new TCallableKeyedArray([
+                return TKeyedArray::makeCallable([
                     new Union([$classString, $object]),
                     new Union([$string]),
                 ]);
+
+            case 'callable-list':
+                $classString = new TClassString(
+                    'object',
+                    null,
+                    false,
+                    false,
+                    false,
+                    true,
+                );
+                $object = new TObject(true);
+                $string = new TNonEmptyString(true);
+                return TKeyedArray::makeCallable([
+                    new Union([$classString, $object]),
+                    new Union([$string]),
+                ], null, true);
 
             case 'list':
                 return Type::getListAtomic(Type::getMixed(false, $from_docblock));
@@ -386,8 +416,21 @@ abstract class Atomic implements TypeNode, Stringable
             case 'non-empty-mixed':
                 return new TNonEmptyMixed();
 
+            case 'pure-Closure':
+                return new TClosure(
+                    allowed_mutations: Mutations::LEVEL_NONE,
+                );
+            case 'self-mutating-Closure':
+                return new TClosure(
+                    allowed_mutations: Mutations::LEVEL_INTERNAL_READ_WRITE,
+                );
+            case 'self-accessing-Closure':
+                return new TClosure(
+                    allowed_mutations: Mutations::LEVEL_INTERNAL_READ,
+                );
+            case 'impure-Closure':
             case 'Closure':
-                return new TClosure('Closure');
+                return new TClosure();
         }
 
         if (strpos($value, '-') && !str_starts_with($value, 'OCI-')) {
@@ -424,9 +467,14 @@ abstract class Atomic implements TypeNode, Stringable
     /**
      * This is the string that will be used to represent the type in Union::$types. This means that two types sharing
      * the same getKey value will override themselves in a Union
+     *
+     * @psalm-mutation-free
      */
     abstract public function getKey(bool $include_extra = true): string;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isNumericType(): bool
     {
         return $this instanceof TInt
@@ -436,6 +484,9 @@ abstract class Atomic implements TypeNode, Stringable
             || ($this instanceof TLiteralString && is_numeric($this->value));
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isObjectType(): bool
     {
         return $this instanceof TObject
@@ -457,13 +508,12 @@ abstract class Atomic implements TypeNode, Stringable
             );
     }
 
+    /**
+     * @psalm-pure
+     */
     public function isCallableType(): bool
     {
-        return $this instanceof TCallable
-            || $this instanceof TCallableObject
-            || $this instanceof TCallableString
-            || $this instanceof TCallableKeyedArray
-            || $this instanceof TClosure;
+        return false;
     }
 
     public function isIterable(Codebase $codebase): bool
@@ -685,7 +735,10 @@ abstract class Atomic implements TypeNode, Stringable
         return true;
     }
 
-    /** @return list<string> */
+    /**
+     * @return list<string>
+     * @psalm-pure
+     */
     protected function getChildNodeKeys(): array
     {
         return [];
@@ -699,6 +752,8 @@ abstract class Atomic implements TypeNode, Stringable
 
     /**
      * This is the true identifier for the type. It defaults to self::getKey() but can be overridden to be more precise
+     *
+     * @psalm-mutation-free
      */
     public function getId(bool $exact = true, bool $nested = false): string
     {
@@ -707,6 +762,8 @@ abstract class Atomic implements TypeNode, Stringable
     /**
      * This string is used in order to transform a type into an string assertion for the assertion module
      * Default to self::getId()
+     *
+     * @psalm-mutation-free
      */
     public function getAssertionString(): string
     {
@@ -718,6 +775,7 @@ abstract class Atomic implements TypeNode, Stringable
      * Default to self::getKey()
      *
      * @param array<lowercase-string, string> $aliased_classes
+     * @psalm-mutation-free
      */
     public function toNamespacedString(
         ?string $namespace,
@@ -732,6 +790,7 @@ abstract class Atomic implements TypeNode, Stringable
      * Returns a string representation of the type compatible with php signature or null if the type can't be expressed
      *  with the given php version
      *
+     * @psalm-mutation-free
      * @param  array<lowercase-string, string> $aliased_classes
      */
     abstract public function toPhpString(
@@ -741,10 +800,12 @@ abstract class Atomic implements TypeNode, Stringable
         int $analysis_php_version_id,
     ): ?string;
 
+    /** @psalm-mutation-free */
     abstract public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool;
 
     /**
      * @return static
+     * @psalm-mutation-free
      */
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
@@ -764,6 +825,7 @@ abstract class Atomic implements TypeNode, Stringable
 
     /**
      * @return static
+     * @psalm-mutation-free
      */
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
@@ -773,11 +835,17 @@ abstract class Atomic implements TypeNode, Stringable
         return $this;
     }
 
+    /**
+     * @psalm-pure
+     */
     public function equals(Atomic $other_type, bool $ensure_source_equality): bool
     {
         return $other_type::class === static::class;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isTruthy(): bool
     {
         if ($this instanceof TTrue) {
@@ -860,6 +928,9 @@ abstract class Atomic implements TypeNode, Stringable
         return false;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isFalsy(): bool
     {
         if ($this instanceof TFalse) {

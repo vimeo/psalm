@@ -11,6 +11,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Storage\FunctionLikeParameter;
+use Psalm\Storage\Mutations;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
@@ -29,27 +30,9 @@ trait CallableTrait
 
     public ?Union $return_type = null;
 
-    public ?bool $is_pure = null;
+    /** @var Mutations::LEVEL_* */
+    public int $allowed_mutations = Mutations::LEVEL_ALL;
 
-    /**
-     * Constructs a new instance of a generic type
-     *
-     * @param list<FunctionLikeParameter> $params
-     * @deprecated
-     */
-    public function __construct(
-        string $value = 'callable',
-        ?array $params = null,
-        ?Union $return_type = null,
-        ?bool $is_pure = null,
-        bool $from_docblock = false,
-    ) {
-        $this->value = $value;
-        $this->params = $params;
-        $this->return_type = $return_type;
-        $this->is_pure = $is_pure;
-        $this->from_docblock = $from_docblock;
-    }
 
     /**
      * @param list<FunctionLikeParameter>|null $params
@@ -65,14 +48,17 @@ trait CallableTrait
         $cloned->return_type = $return_type;
         return $cloned;
     }
-    /** @return static */
-    public function setIsPure(bool $is_pure): self
+    /**
+     * @param Mutations::LEVEL_* $allowed_mutations
+     * @return static
+     */
+    public function setAllowedMutations(int $allowed_mutations): self
     {
-        if ($this->is_pure === $is_pure) {
+        if ($this->allowed_mutations === $allowed_mutations) {
             return $this;
         }
         $cloned = clone $this;
-        $cloned->is_pure = $is_pure;
+        $cloned->allowed_mutations = $allowed_mutations;
         return $cloned;
     }
 
@@ -114,8 +100,14 @@ trait CallableTrait
         $param_string = $this->getParamString();
         $return_type_string = $this->getReturnTypeString();
 
-        return ($this->is_pure ? 'pure-' : ($this->is_pure === null ? '' : 'impure-'))
-            . $this->value . $param_string . $return_type_string;
+        $prefix = match ($this->allowed_mutations) {
+            Mutations::LEVEL_NONE => 'pure-',
+            Mutations::LEVEL_INTERNAL_READ => 'self-accessing-',
+            Mutations::LEVEL_INTERNAL_READ_WRITE => 'self-mutating-',
+            Mutations::LEVEL_EXTERNAL => 'impure-',
+        };
+
+        return $prefix . $this->value . $param_string . $return_type_string;
     }
 
     /**
@@ -129,12 +121,15 @@ trait CallableTrait
         bool $use_phpdoc_format,
     ): string {
         if ($use_phpdoc_format) {
-            if ($this instanceof TNamedObject) {
-                return parent::toNamespacedString($namespace, $aliased_classes, $this_class, true);
-            }
-
             return $this->value;
         }
+
+        $prefix = match ($this->allowed_mutations) {
+            Mutations::LEVEL_NONE => 'pure-',
+            Mutations::LEVEL_INTERNAL_READ => 'self-accessing-',
+            Mutations::LEVEL_INTERNAL_READ_WRITE => 'self-mutating-',
+            Mutations::LEVEL_EXTERNAL => 'impure-',
+        };
 
         $param_string = '';
         $return_type_string = '';
@@ -166,12 +161,7 @@ trait CallableTrait
             ) . ($return_type_multiple ? ')' : '');
         }
 
-        if ($this instanceof TNamedObject) {
-            return parent::toNamespacedString($namespace, $aliased_classes, $this_class, true)
-                . $param_string . $return_type_string;
-        }
-
-        return ($this->is_pure ? 'pure-' : '') . 'callable' . $param_string . $return_type_string;
+        return $prefix . $this->value . $param_string . $return_type_string;
     }
 
     /**
@@ -216,7 +206,13 @@ trait CallableTrait
                 . $this->return_type->getId($exact) . ($return_type_multiple ? ')' : '');
         }
 
-        return ($this->is_pure ? 'pure-' : ($this->is_pure === null ? '' : 'impure-'))
+        $prefix = match ($this->allowed_mutations) {
+            Mutations::LEVEL_NONE => 'pure-',
+            Mutations::LEVEL_INTERNAL_READ => 'self-accessing-',
+            Mutations::LEVEL_INTERNAL_READ_WRITE => 'self-mutating-',
+            Mutations::LEVEL_EXTERNAL => 'impure-',
+        };
+        return $prefix
             . $this->value . $param_string . $return_type_string;
     }
 
@@ -337,6 +333,7 @@ trait CallableTrait
 
     /**
      * @return list<string>
+     * @psalm-pure
      */
     protected function getCallableChildNodeKeys(): array
     {

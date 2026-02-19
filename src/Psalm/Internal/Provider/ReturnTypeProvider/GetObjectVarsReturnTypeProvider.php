@@ -60,7 +60,7 @@ final class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProvide
                 $codebase = $statements_source->getCodebase();
                 $enum_classlike_storage = $codebase->classlike_storage_provider->get($object_type->value);
                 if ($enum_classlike_storage->enum_type === null) {
-                    return new TKeyedArray($properties);
+                    return TKeyedArray::make($properties);
                 }
                 $enum_case_storage = $enum_classlike_storage->enum_cases[$object_type->case_name];
                 $case_value = $enum_case_storage->getValue($statements_source->getCodebase()->classlikes);
@@ -69,14 +69,14 @@ final class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProvide
                     $properties['value'] = new Union([$case_value]);
                 }
 
-                return new TKeyedArray($properties);
+                return TKeyedArray::make($properties);
             }
 
             if ($object_type instanceof TObjectWithProperties) {
                 if ([] === $object_type->properties) {
                     return self::$fallback;
                 }
-                return new TKeyedArray($object_type->properties);
+                return TKeyedArray::make($object_type->properties);
             }
 
             if ($object_type instanceof TNamedObject) {
@@ -140,7 +140,7 @@ final class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProvide
                     return self::$fallback;
                 }
 
-                return new TKeyedArray(
+                return TKeyedArray::make(
                     $properties,
                     null,
                     $class_storage->final

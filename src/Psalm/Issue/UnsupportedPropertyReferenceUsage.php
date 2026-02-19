@@ -11,6 +11,9 @@ final class UnsupportedPropertyReferenceUsage extends CodeIssue
     public const ERROR_LEVEL = -1;
     public const SHORTCODE = 321;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(CodeLocation $code_location)
     {
         parent::__construct(

@@ -203,6 +203,7 @@ final class AttributesAnalyzer
         $statements_analyzer = new StatementsAnalyzer(
             $source,
             new NodeDataProvider(),
+            false,
         );
         $statements_analyzer->addSuppressedIssues(array_values($suppressed_issues));
 

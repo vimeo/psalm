@@ -6,6 +6,9 @@ namespace Psalm\Tests\FileManipulation;
 
 use Override;
 
+/**
+ * @psalm-immutable
+ */
 final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
 {
     #[Override]
@@ -120,6 +123,9 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
             ],
             'addPureAnnotationWhenClassCanHoldMutableData' => [
                 'input' => '<?php
+                    /**
+                     * @psalm-mutable
+                     */
                     class B {
                         public int $i = 5;
                     }
@@ -146,6 +152,9 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
 
                     echo $a->getPlus5();',
                 'output' => '<?php
+                    /**
+                     * @psalm-mutable
+                     */
                     class B {
                         public int $i = 5;
                     }
@@ -178,8 +187,34 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingImmutableAnnotation'],
                 'safe_types' => true,
             ],
+            'doNotAddImmutableWhenInError' => [
+                'input' => '<?php
+                    class B {
+                        public int $i = 5;
+                    }
+
+                    $b = new B();
+                    $b->i = 6;
+
+                    echo $a->i;',
+                'output' => '<?php
+                    class B {
+                        public int $i = 5;
+                    }
+
+                    $b = new B();
+                    $b->i = 6;
+
+                    echo $a->i;',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingImmutableAnnotation'],
+                'safe_types' => true,
+            ],
             'addPureAnnotationToClassThatExtends' => [
                 'input' => '<?php
+                    /**
+                     * @psalm-immutable
+                     */
                     class AParent {
                         public int $i;
 
@@ -198,6 +233,9 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                         }
                     }',
                 'output' => '<?php
+                    /**
+                     * @psalm-immutable
+                     */
                     class AParent {
                         public int $i;
 
@@ -210,6 +248,53 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                         }
                     }
 
+                    /**
+                     * @psalm-immutable
+                     */
+                    class A extends AParent {
+                        public function getPlus5() {
+                            return $this->i + 5;
+                        }
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingImmutableAnnotation'],
+                'safe_types' => true,
+            ],
+            'dontAddPureAnnotationToClassThatExtends' => [
+
+                'input' => '<?php
+                    class AParent {
+                        public int $i;
+
+                        public function __construct(int $i) {
+                            $this->i = $i;
+                        }
+
+                        public function mutate() : void {
+                            echo "hello";
+                        }
+                    }
+
+                    /** @psalm-mutable */
+                    class A extends AParent {
+                        public function getPlus5() {
+                            return $this->i + 5;
+                        }
+                    }',
+                'output' => '<?php
+                    class AParent {
+                        public int $i;
+
+                        public function __construct(int $i) {
+                            $this->i = $i;
+                        }
+
+                        public function mutate() : void {
+                            echo "hello";
+                        }
+                    }
+
+                    /** @psalm-mutable */
                     class A extends AParent {
                         public function getPlus5() {
                             return $this->i + 5;

@@ -26,15 +26,14 @@ abstract class DataFlowGraph
     abstract public function addNode(DataFlowNode $node): void;
 
     /**
-     * @param array<string> $added_taints
-     * @param array<string> $removed_taints
+     * @psalm-external-mutation-free
      */
     public function addPath(
         DataFlowNode $from,
         DataFlowNode $to,
         string $path_type,
-        ?array $added_taints = null,
-        ?array $removed_taints = null,
+        int $added_taints = 0,
+        int $removed_taints = 0,
     ): void {
         $from_id = $from->id;
         $to_id = $to->id;
@@ -109,6 +108,7 @@ abstract class DataFlowGraph
 
     /**
      * @return array{int, int, int, float}
+     * @psalm-mutation-free
      */
     public function getEdgeStats(): array
     {
@@ -148,6 +148,7 @@ abstract class DataFlowGraph
 
     /**
      * @psalm-return list<list<string>>
+     * @psalm-mutation-free
      */
     public function summarizeEdges(): array
     {

@@ -17,6 +17,9 @@ final class CanContainObjectTypeVisitor extends TypeVisitor
 {
     private bool $contains_object_type = false;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         private readonly Codebase $codebase,
     ) {

@@ -7,6 +7,7 @@ namespace Psalm\Internal\Provider\ReturnTypeProvider;
 use PhpParser\Node\Arg;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
+use Psalm\Context;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
@@ -19,6 +20,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
@@ -102,6 +104,9 @@ use const FILTER_VALIDATE_URL;
  */
 final class FilterUtils
 {
+    /**
+     * @psalm-mutation-free
+     */
     public static function missingFirstArg(Codebase $codebase): Union
     {
         if ($codebase->analysis_php_version_id >= 8_00_00) {
@@ -154,6 +159,7 @@ final class FilterUtils
     public static function getOptionsArgValueOrError(
         Arg $options_arg,
         StatementsAnalyzer $statements_analyzer,
+        Context $context,
         Codebase $codebase,
         CodeLocation $code_location,
         string $function_id,
@@ -191,7 +197,7 @@ final class FilterUtils
                     if ($filter_int_used === FILTER_CALLBACK) {
                         $only_callables = true;
                         foreach ($atomic_type->properties['options']->getAtomicTypes() as $option_atomic) {
-                            if ($option_atomic->isCallableType()) {
+                            if ($option_atomic->isCallableType() && !$option_atomic instanceof TClosure) {
                                 continue;
                             }
 
@@ -200,6 +206,7 @@ final class FilterUtils
                                 $option_atomic,
                                 null,
                                 $statements_analyzer,
+                                $context,
                             )) {
                                 continue;
                             }
@@ -362,7 +369,10 @@ final class FilterUtils
         return Type::getNull();
     }
 
-    /** @return array{Union, Union, Union} */
+    /**
+     * @return array{Union, Union, Union}
+     * @psalm-pure
+     */
     public static function getFailsNotSetType(int $flags_int_used): array
     {
         $fails_type   = Type::getFalse();
@@ -380,6 +390,9 @@ final class FilterUtils
         );
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function hasFlag(int $flags, int $flag): bool
     {
         if ($flags === 0) {
@@ -726,7 +739,7 @@ final class FilterUtils
                         $fallback_params = [$keys_union, $values_union];
                     }
 
-                    $from_array[] = new TKeyedArray(
+                    $from_array[] = TKeyedArray::make(
                         $new,
                         $atomic_type->class_strings,
                         $fallback_params,
@@ -1430,7 +1443,7 @@ final class FilterUtils
         if (!$in_array_recursion
             && !self::hasFlag($flags_int_used, FILTER_REQUIRE_ARRAY)
             && self::hasFlag($flags_int_used, FILTER_FORCE_ARRAY)) {
-            $return_type = new Union([new TKeyedArray(
+            $return_type = new Union([TKeyedArray::make(
                 [$return_type],
                 null,
                 null,
@@ -1480,9 +1493,7 @@ final class FilterUtils
         Union $return_type,
         string $function_id,
     ): Union {
-        if ($statements_analyzer->data_flow_graph
-            && !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
-        ) {
+        if ($statements_analyzer->data_flow_graph) {
             $function_return_sink = DataFlowNode::getForMethodReturn(
                 $function_id,
                 $function_id,

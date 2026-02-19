@@ -15,6 +15,7 @@ use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Scanner\ParsedDocblock;
+use Psalm\Storage\Mutations;
 
 use function array_key_exists;
 use function array_reduce;
@@ -83,7 +84,8 @@ final class FunctionDocblockManipulator
     /** @var array<string, array{int, int}> */
     private array $param_typehint_offsets = [];
 
-    private bool $is_pure = false;
+    /** @var ?Mutations::LEVEL_* */
+    private ?int $allowed_mutations = null;
 
     /** @var list<string> */
     private array $throwsExceptions = [];
@@ -156,7 +158,7 @@ final class FunctionDocblockManipulator
 
         $this->return_typehint_area_start = $end_bracket_position + 1;
 
-        $function_code = substr($file_contents, $function_start, $function_end);
+        $function_code = substr($file_contents, $function_start, $function_end - $function_start);
 
         $function_code_after_bracket = substr($function_code, $end_bracket_position + 1 - $function_start);
 
@@ -264,6 +266,8 @@ final class FunctionDocblockManipulator
 
     /**
      * Sets the new return type
+     *
+     * @psalm-external-mutation-free
      */
     public function setReturnType(
         ?string $php_type,
@@ -283,6 +287,8 @@ final class FunctionDocblockManipulator
 
     /**
      * Sets a new param type
+     *
+     * @psalm-external-mutation-free
      */
     public function setParamType(
         string $param_name,
@@ -404,9 +410,15 @@ final class FunctionDocblockManipulator
             $old_phpdoc_return_type = reset($parsed_docblock->tags['return']);
         }
 
-        if ($this->is_pure) {
+        if ($this->allowed_mutations !== null) {
             $modified_docblock = true;
-            $parsed_docblock->tags['psalm-pure'] = [''];
+            unset($parsed_docblock->tags['psalm-pure']);
+            unset($parsed_docblock->tags['psalm-mutation-free']);
+            unset($parsed_docblock->tags['psalm-external-mutation-free']);
+            unset($parsed_docblock->tags['psalm-impure']);
+            $parsed_docblock->tags[
+                Mutations::TO_ATTRIBUTE_FUNCTIONLIKE[$this->allowed_mutations]
+            ] = [''];
         }
         if (count($this->throwsExceptions) > 0) {
             $modified_docblock = true;
@@ -504,7 +516,7 @@ final class FunctionDocblockManipulator
             if (!$manipulator->new_php_return_type
                 || !$manipulator->return_type_is_php_compatible
                 || $manipulator->docblock_start !== $manipulator->docblock_end
-                || $manipulator->is_pure
+                || $manipulator->allowed_mutations !== null
             ) {
                 $file_manipulations[$manipulator->docblock_start] = new FileManipulation(
                     $manipulator->docblock_start,
@@ -551,19 +563,27 @@ final class FunctionDocblockManipulator
         return $file_manipulations;
     }
 
-    public function makePure(): void
+    /**
+     * @param Mutations::LEVEL_* $allowed_mutations
+     * @psalm-external-mutation-free
+     */
+    public function setAllowedMutations(int $allowed_mutations): void
     {
-        $this->is_pure = true;
+        $this->allowed_mutations = $allowed_mutations;
     }
 
     /**
      * @param list<string> $exceptions
+     * @psalm-external-mutation-free
      */
     public function addThrowsDocblock(array $exceptions): void
     {
         $this->throwsExceptions = $exceptions;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public static function clearCache(): void
     {
         self::$manipulators = [];
@@ -571,6 +591,7 @@ final class FunctionDocblockManipulator
 
     /**
      * @param array<string, array<int, FunctionDocblockManipulator>> $manipulators
+     * @psalm-external-mutation-free
      */
     public static function addManipulators(array $manipulators): void
     {
@@ -579,6 +600,7 @@ final class FunctionDocblockManipulator
 
     /**
      * @return array<string, array<int, FunctionDocblockManipulator>>
+     * @psalm-external-mutation-free
      */
     public static function getManipulators(): array
     {

@@ -139,6 +139,9 @@ final class Scanner
 
     private bool $is_forked = false;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         private readonly Codebase $codebase,
         private readonly Config $config,
@@ -152,6 +155,7 @@ final class Scanner
 
     /**
      * @param array<string, string> $files_to_scan
+     * @psalm-external-mutation-free
      */
     public function addFilesToShallowScan(array $files_to_scan): void
     {
@@ -160,6 +164,7 @@ final class Scanner
 
     /**
      * @param array<string, string> $files_to_scan
+     * @psalm-external-mutation-free
      */
     public function addFilesToDeepScan(array $files_to_scan): void
     {
@@ -167,22 +172,34 @@ final class Scanner
         $this->files_to_deep_scan += $files_to_scan;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addFileToShallowScan(string $file_path): void
     {
         $this->files_to_scan[$file_path] = $file_path;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addFileToDeepScan(string $file_path): void
     {
         $this->files_to_scan[$file_path] = $file_path;
         $this->files_to_deep_scan[$file_path] = $file_path;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function removeFile(string $file_path): void
     {
         unset($this->scanned_files[$file_path]);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function removeClassLike(string $fq_classlike_name_lc): void
     {
         unset(
@@ -191,11 +208,17 @@ final class Scanner
         );
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function setClassLikeFilePath(string $fq_classlike_name_lc, string $file_path): void
     {
         $this->classlike_files[$fq_classlike_name_lc] = $file_path;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getClassLikeFilePath(string $fq_classlike_name_lc): string
     {
         if (!isset($this->classlike_files[$fq_classlike_name_lc])) {
@@ -652,6 +675,7 @@ final class Scanner
 
     /**
      * @return ThreadData
+     * @psalm-mutation-free
      */
     public function getThreadData(): array
     {
@@ -670,6 +694,7 @@ final class Scanner
 
     /**
      * @param ThreadData $thread_data
+     * @psalm-external-mutation-free
      */
     public function addThreadData(array $thread_data): void
     {
@@ -699,6 +724,9 @@ final class Scanner
         $this->reflected_classlikes_lc = array_merge($reflected_classlikes_lc, $this->reflected_classlikes_lc);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function isForked(): void
     {
         $this->is_forked = true;

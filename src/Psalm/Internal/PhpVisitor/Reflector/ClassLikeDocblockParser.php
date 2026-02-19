@@ -25,6 +25,7 @@ use Psalm\Internal\Type\ParseTree\MethodWithReturnTypeTree;
 use Psalm\Internal\Type\ParseTreeCreator;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
+use Psalm\Storage\Mutations;
 
 use function array_key_first;
 use function array_shift;
@@ -261,16 +262,20 @@ final class ClassLikeDocblockParser
             }
         }
 
+        $info->allowed_mutations = Mutations::LEVEL_ALL;
+
         if (isset($parsed_docblock->tags['psalm-immutable'])
             || isset($parsed_docblock->tags['psalm-mutation-free'])
         ) {
-            $info->mutation_free = true;
-            $info->external_mutation_free = true;
+            $info->allowed_mutations = Mutations::LEVEL_INTERNAL_READ;
             $info->taint_specialize = true;
-        }
-
-        if (isset($parsed_docblock->tags['psalm-external-mutation-free'])) {
-            $info->external_mutation_free = true;
+            $info->has_mutations_annotation = true;
+        } elseif (isset($parsed_docblock->tags['psalm-external-mutation-free'])) {
+            $info->allowed_mutations = Mutations::LEVEL_INTERNAL_READ_WRITE;
+            $info->has_mutations_annotation = true;
+        } elseif (isset($parsed_docblock->tags['psalm-mutable'])) {
+            $info->allowed_mutations = Mutations::LEVEL_ALL;
+            $info->has_mutations_annotation = true;
         }
 
         if (isset($parsed_docblock->tags['psalm-taint-specialize'])) {
@@ -591,6 +596,9 @@ final class ClassLikeDocblockParser
         }
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     private static function getMethodOffset(Doc $comment, string $method_entry): int
     {
         $lines = explode("\n", $comment->getText());

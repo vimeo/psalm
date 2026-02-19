@@ -8,6 +8,9 @@ use Override;
 use Psalm\Plugin\EventHandler\AfterAnalysisInterface;
 use Psalm\Plugin\EventHandler\Event\AfterAnalysisEvent;
 
+/**
+ * @psalm-immutable
+ */
 final class AfterAnalysis implements AfterAnalysisInterface
 {
     /**

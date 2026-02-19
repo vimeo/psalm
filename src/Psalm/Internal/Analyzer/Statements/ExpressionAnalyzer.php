@@ -482,6 +482,9 @@ final class ExpressionAnalyzer
         return false;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public static function isMock(string $fq_class_name): bool
     {
         return in_array(strtolower($fq_class_name), Config::getInstance()->getMockClasses(), true);

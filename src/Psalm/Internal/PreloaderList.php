@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace Psalm\Internal;
 
-/** @internal */
+/**
+ * @internal
+ *
+ * @psalm-immutable
+ */
 final class PreloaderList {
     public const CLASSES = [
         \AdvancedJsonRpc\Dispatcher::class,
@@ -747,6 +751,7 @@ final class PreloaderList {
         \Psalm\Internal\Codebase\AssertionsFromInheritanceResolver::class,
         \Psalm\Internal\Codebase\ClassConstantByWildcardResolver::class,
         \Psalm\Internal\Codebase\ClassLikes::class,
+        \Psalm\Internal\Codebase\CombinedFlowGraph::class,
         \Psalm\Internal\Codebase\ConstantTypeResolver::class,
         \Psalm\Internal\Codebase\DataFlowGraph::class,
         \Psalm\Internal\Codebase\Functions::class,
@@ -765,8 +770,6 @@ final class PreloaderList {
         \Psalm\Internal\Composer::class,
         \Psalm\Internal\DataFlow\DataFlowNode::class,
         \Psalm\Internal\DataFlow\Path::class,
-        \Psalm\Internal\DataFlow\TaintSink::class,
-        \Psalm\Internal\DataFlow\TaintSource::class,
         \Psalm\Internal\Diff\AstDiffer::class,
         \Psalm\Internal\Diff\ClassStatementsDiffer::class,
         \Psalm\Internal\Diff\DiffElem::class,
@@ -1166,6 +1169,7 @@ final class PreloaderList {
         \Psalm\Issue\MissingOverrideAttribute::class,
         \Psalm\Issue\MissingParamType::class,
         \Psalm\Issue\MissingPropertyType::class,
+        \Psalm\Issue\MissingPureAnnotation::class,
         \Psalm\Issue\MissingReturnType::class,
         \Psalm\Issue\MissingTemplateParam::class,
         \Psalm\Issue\MissingThrowsDocblock::class,
@@ -1594,6 +1598,7 @@ final class PreloaderList {
         \Psalm\Progress\DebugProgress::class,
         \Psalm\Progress\DefaultProgress::class,
         \Psalm\Progress\LongProgress::class,
+        \Psalm\Progress\Phase::class,
         \Psalm\Progress\Progress::class,
         \Psalm\Progress\VoidProgress::class,
         \Psalm\Report::class,
@@ -1690,8 +1695,6 @@ final class PreloaderList {
         \Psalm\Type\Atomic\TArrayKey::class,
         \Psalm\Type\Atomic\TBool::class,
         \Psalm\Type\Atomic\TCallable::class,
-        \Psalm\Type\Atomic\TCallableInterface::class,
-        \Psalm\Type\Atomic\TCallableKeyedArray::class,
         \Psalm\Type\Atomic\TCallableObject::class,
         \Psalm\Type\Atomic\TCallableString::class,
         \Psalm\Type\Atomic\TClassConstant::class,
@@ -1760,7 +1763,6 @@ final class PreloaderList {
         \Psalm\Type\MutableUnion::class,
         \Psalm\Type\Reconciler::class,
         \Psalm\Type\TaintKind::class,
-        \Psalm\Type\TaintKindGroup::class,
         \Psalm\Type\TypeNode::class,
         \Psalm\Type\TypeVisitor::class,
         \Psalm\Type\Union::class,

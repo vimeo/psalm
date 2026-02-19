@@ -284,6 +284,7 @@ final class DocblockParser
     /**
      * @return list<non-empty-string>
      * @throws DocblockParseException when a @psalm-internal tag doesn't include a namespace
+     * @psalm-mutation-free
      */
     public static function handlePsalmInternal(ParsedDocblock $parsed_docblock): array
     {
@@ -302,7 +303,10 @@ final class DocblockParser
         return [];
     }
 
-    /** @psalm-assert-if-true array<array-key, non-empty-string> $arr */
+    /**
+     * @psalm-assert-if-true array<array-key, non-empty-string> $arr
+     * @psalm-pure
+     */
     private static function assertArrayOfNonEmptyString(array $arr): bool
     {
         foreach ($arr as $val) {

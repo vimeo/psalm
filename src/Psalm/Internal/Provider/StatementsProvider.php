@@ -72,6 +72,9 @@ final class StatementsProvider
 
     private static ?Parser $parser = null;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         private readonly FileProvider $file_provider,
         public ?ParserCacheProvider $parser_cache_provider = null,
@@ -251,6 +254,7 @@ final class StatementsProvider
 
     /**
      * @param array<string, array<string, bool>> $more_changed_members
+     * @psalm-external-mutation-free
      */
     public function addChangedMembers(array $more_changed_members): void
     {
@@ -267,6 +271,7 @@ final class StatementsProvider
 
     /**
      * @param array<string, array<string, bool>> $more_unchanged_members
+     * @psalm-external-mutation-free
      */
     public function addUnchangedSignatureMembers(array $more_unchanged_members): void
     {
@@ -283,12 +288,16 @@ final class StatementsProvider
 
     /**
      * @param array<string, bool> $errors
+     * @psalm-external-mutation-free
      */
     public function addErrors(array $errors): void
     {
         $this->errors += $errors;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function setUnchangedFile(string $file_path): void
     {
         if (!isset($this->diff_map[$file_path])) {
@@ -318,6 +327,7 @@ final class StatementsProvider
 
     /**
      * @param array<string, array<int, array{int, int, int, int}>> $diff_map
+     * @psalm-external-mutation-free
      */
     public function addDiffMap(array $diff_map): void
     {
@@ -326,12 +336,16 @@ final class StatementsProvider
 
     /**
      * @param array<string, array<int, array{int, int}>> $deletion_ranges
+     * @psalm-external-mutation-free
      */
     public function addDeletionRanges(array $deletion_ranges): void
     {
         $this->deletion_ranges = [...$deletion_ranges, ...$this->deletion_ranges];
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function resetDiffs(): void
     {
         $this->changed_members = [];
@@ -436,6 +450,9 @@ final class StatementsProvider
         return $stmts;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public static function clearParser(): void
     {
         self::$parser = null;

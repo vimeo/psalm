@@ -38,6 +38,9 @@ final class NamespaceAnalyzer extends SourceAnalyzer
      */
     private static array $public_namespace_constants = [];
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         private readonly Namespace_ $namespace,
         /**
@@ -77,7 +80,7 @@ final class NamespaceAnalyzer extends SourceAnalyzer
         }
 
         if ($leftover_stmts) {
-            $statements_analyzer = new StatementsAnalyzer($this, new NodeDataProvider());
+            $statements_analyzer = new StatementsAnalyzer($this, new NodeDataProvider(), true);
             $file_context = $this->source->context;
 
             if ($file_context !== null) {
@@ -88,7 +91,7 @@ final class NamespaceAnalyzer extends SourceAnalyzer
                 $context->defineGlobals();
                 $context->collect_exceptions = $codebase->config->check_for_throws_in_global_scope;
             }
-            $statements_analyzer->analyze($leftover_stmts, $context, null, true);
+            $statements_analyzer->analyze($leftover_stmts, $context);
         }
     }
 
@@ -119,6 +122,9 @@ final class NamespaceAnalyzer extends SourceAnalyzer
         return $this->namespace_name;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function setConstType(string $const_name, Union $const_type): void
     {
         self::$public_namespace_constants[$this->namespace_name][$const_name] = $const_type;
@@ -126,6 +132,7 @@ final class NamespaceAnalyzer extends SourceAnalyzer
 
     /**
      * @return array<string, Union>
+     * @psalm-external-mutation-free
      */
     public static function getConstantsForNamespace(string $namespace_name, int $visibility): array
     {

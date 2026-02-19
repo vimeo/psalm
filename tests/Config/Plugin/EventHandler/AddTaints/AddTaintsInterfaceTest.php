@@ -72,6 +72,12 @@ final class AddTaintsInterfaceTest extends TestCase
                     <plugins>
                         <plugin filename="tests/Config/Plugin/EventHandler/AddTaints/TaintBadDataPlugin.php" />
                     </plugins>
+                    <issueHandlers>
+                        <UndefinedGlobalVariable errorLevel="suppress"/>
+                        <UndefinedVariable errorLevel="suppress"/>
+                        <MissingPureAnnotation errorLevel="suppress"/>
+                        <ImpureFunctionCall errorLevel="suppress"/>
+                    </issueHandlers>
                 </psalm>',
             ),
         );
@@ -94,6 +100,10 @@ final class AddTaintsInterfaceTest extends TestCase
                     <plugins>
                         <plugin filename="examples/plugins/TaintActiveRecords.php" />
                     </plugins>
+                    <issueHandlers>
+                        <MissingPureAnnotation errorLevel="suppress"/>
+                        <ImpureFunctionCall errorLevel="suppress"/>
+                    </issueHandlers>
                 </psalm>',
             ),
         );
@@ -186,6 +196,7 @@ final class AddTaintsInterfaceTest extends TestCase
             $file_path,
             '<?php // --taint-analysis
 
+            /** @psalm-pure */
             function genBadData() {
                 return $bad_html;
             }
@@ -210,6 +221,7 @@ final class AddTaintsInterfaceTest extends TestCase
             $file_path,
             '<?php // --taint-analysis
 
+            /** @psalm-mutation-free */
             function genBadData(bool $html) {
                 if ($html) {
                     return $bad_html;
@@ -238,6 +250,7 @@ final class AddTaintsInterfaceTest extends TestCase
             '<?php // --taint-analysis
 
             class Foo {
+                /** @psalm-mutation-free */
                 public function genBadData() {
                     return $bad_html;
                 }
@@ -264,6 +277,7 @@ final class AddTaintsInterfaceTest extends TestCase
             '<?php // --taint-analysis
 
             class Foo {
+                /** @psalm-mutation-free */
                 public static function genBadData() {
                     return $bad_html;
                 }

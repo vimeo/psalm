@@ -37,6 +37,7 @@ final class ClosureFromCallableReturnTypeProvider implements MethodReturnTypePro
 
         $type_provider = $source->getNodeTypeProvider();
         $codebase = $source->getCodebase();
+        $context = $event->getContext();
 
         if ($method_name_lowercase === 'fromcallable') {
             $closure_types = [];
@@ -50,15 +51,15 @@ final class ClosureFromCallableReturnTypeProvider implements MethodReturnTypePro
                         $atomic_type,
                         null,
                         $source,
+                        $context,
                         true,
                     );
 
                     if ($candidate_callable) {
                         $closure_types[] = new TClosure(
-                            'Closure',
                             $candidate_callable->params,
                             $candidate_callable->return_type,
-                            $candidate_callable->is_pure,
+                            $candidate_callable->allowed_mutations,
                         );
                     } else {
                         return Type::getClosure();

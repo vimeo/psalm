@@ -50,7 +50,10 @@ final class IncludeCollector
         return $this->included_files;
     }
 
-    /** @return list<string> */
+    /**
+     * @return list<string>
+     * @psalm-mutation-free
+     */
     public function getFilteredIncludedFiles(): array
     {
         return array_values(preg_grep('@^phar://@', $this->getIncludedFiles(), PREG_GREP_INVERT));

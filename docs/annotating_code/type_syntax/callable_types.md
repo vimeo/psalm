@@ -28,9 +28,22 @@ echo $adder(true);
 
 ## Pure callables
 
-For situations where the `callable` needs to be pure or immutable, the subtypes `pure-callable` and `pure-Closure` are also available.
+For situations where the `callable` needs to be pure, mutation-free or externally mutation-free, the following subtypes are available:
 
-This can be useful when the `callable` is used in a function marked with `@psalm-pure` or `@psalm-mutation-free`, for example:
+* Pure (no mutations or even read property accesses allowed), equivalent to marking functions or methods with `@psalm-pure` 
+  * `pure-callable`
+  * `pure-Closure`
+* Mutation-free (only internal property reads on `$this` are allowed for methods), equivalent to marking functions or methods with `@psalm-mutation-free`
+  * `self-accessing-callable`
+  * `self-accessing-Closure`
+* Externally mutation-free (internal property reads and writes on `$this` and `self` are allowed for methods), equivalent to marking functions or methods with `@psalm-external-mutation-free`
+  * `self-mutating-callable`
+  * `self-mutating-Closure`
+* Impure (the default behavior, all mutations allowed); functions or methods can also be explicitly marked as impure with `@psalm-impure`
+  * `impure-callable` (an alias to `callable`)
+  * `impure-Closure` (an alias to `Closure`)
+
+This can be useful when the `callable` is used in a function marked with `@psalm-pure` or `@psalm-mutation-free` or `@psalm-external-mutation-free`, for example:
 
 ```php
 <?php

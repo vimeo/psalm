@@ -70,7 +70,7 @@ final class ArrayFillReturnTypeProvider implements FunctionReturnTypeProviderInt
             if (!$result) {
                 return Type::getEmptyArray();
             }
-            return new Union([new TKeyedArray(
+            return new Union([TKeyedArray::make(
                 $result,
                 null,
                 null,
@@ -128,6 +128,9 @@ final class ArrayFillReturnTypeProvider implements FunctionReturnTypeProviderInt
         ]);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     private static function isPositiveNumericType(Union $arg): bool
     {
         if ($arg->isSingle()) {

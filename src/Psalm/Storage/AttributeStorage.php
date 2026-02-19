@@ -17,6 +17,7 @@ final class AttributeStorage
 
     /**
      * @param list<AttributeArg> $args
+     * @psalm-mutation-free
      */
     public function __construct(
         public readonly string $fq_class_name,

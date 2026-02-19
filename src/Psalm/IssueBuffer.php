@@ -159,6 +159,8 @@ final class IssueBuffer
 
     /**
      * This is part of the findUnusedPsalmSuppress feature
+     *
+     * @psalm-external-mutation-free
      */
     public static function addUnusedSuppression(string $file_path, int $offset, string $issue_type): void
     {
@@ -263,7 +265,6 @@ final class IssueBuffer
     {
         $config = Config::getInstance();
         $project_analyzer = ProjectAnalyzer::getInstance();
-        $codebase = $project_analyzer->getCodebase();
 
         $fqcn_parts = explode('\\', $e::class);
         $issue_type = array_pop($fqcn_parts);
@@ -273,10 +274,6 @@ final class IssueBuffer
         }
 
         $is_tainted = str_starts_with($issue_type, 'Tainted');
-
-        if ($codebase->taint_flow_graph && !$is_tainted) {
-            return false;
-        }
 
         $reporting_level = $config->getReportingLevelForIssue($e);
 
@@ -343,6 +340,9 @@ final class IssueBuffer
         return true;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     private static function removeRecordedIssue(string $issue_type, int $file_offset): void
     {
         $recorded_issues = self::$recorded_issues[self::$recording_level];
@@ -361,6 +361,8 @@ final class IssueBuffer
 
     /**
      * This will try to remove an issue that has been added for emission
+     *
+     * @psalm-external-mutation-free
      */
     public static function remove(string $file_path, string $issue_type, int $file_offset): void
     {
@@ -387,6 +389,9 @@ final class IssueBuffer
         }
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public static function addFixableIssue(string $issue_type): void
     {
         if (isset(self::$fixable_issue_counts[$issue_type])) {
@@ -398,6 +403,7 @@ final class IssueBuffer
 
     /**
      * @return array<string, list<IssueData>>
+     * @psalm-external-mutation-free
      */
     public static function getIssuesData(): array
     {
@@ -406,6 +412,7 @@ final class IssueBuffer
 
     /**
      * @return list<IssueData>
+     * @psalm-external-mutation-free
      */
     public static function getIssuesDataForFile(string $file_path): array
     {
@@ -414,6 +421,7 @@ final class IssueBuffer
 
     /**
      * @return array<string, int>
+     * @psalm-external-mutation-free
      */
     public static function getFixableIssues(): array
     {
@@ -422,6 +430,7 @@ final class IssueBuffer
 
     /**
      * @param array<string, int> $fixable_issue_counts
+     * @psalm-external-mutation-free
      */
     public static function addFixableIssues(array $fixable_issue_counts): void
     {
@@ -436,6 +445,7 @@ final class IssueBuffer
 
     /**
      * @return array<string, array<int, int>>
+     * @psalm-external-mutation-free
      */
     public static function getUnusedSuppressions(): array
     {
@@ -444,6 +454,7 @@ final class IssueBuffer
 
     /**
      * @return array<string, array<int, bool>>
+     * @psalm-external-mutation-free
      */
     public static function getUsedSuppressions(): array
     {
@@ -452,6 +463,7 @@ final class IssueBuffer
 
     /**
      * @param array<string, array<int, int>> $unused_suppressions
+     * @psalm-external-mutation-free
      */
     public static function addUnusedSuppressions(array $unused_suppressions): void
     {
@@ -460,6 +472,7 @@ final class IssueBuffer
 
     /**
      * @param array<string, array<int, bool>> $used_suppressions
+     * @psalm-external-mutation-free
      */
     public static function addUsedSuppressions(array $used_suppressions): void
     {
@@ -508,6 +521,9 @@ final class IssueBuffer
         }
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public static function getErrorCount(): int
     {
         return self::$error_count;
@@ -515,6 +531,7 @@ final class IssueBuffer
 
     /**
      * @param array<string, list<IssueData>> $issues_data
+     * @psalm-external-mutation-free
      */
     public static function addIssues(array $issues_data): void
     {
@@ -1004,6 +1021,9 @@ final class IssueBuffer
         return $output->create();
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public static function alreadyEmitted(string $message): bool
     {
         $sham = sha1($message);
@@ -1017,6 +1037,9 @@ final class IssueBuffer
         return false;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public static function clearCache(): void
     {
         self::$issues_data = [];
@@ -1031,6 +1054,7 @@ final class IssueBuffer
 
     /**
      * @return array<string, list<IssueData>>
+     * @psalm-external-mutation-free
      */
     public static function clear(): array
     {
@@ -1043,6 +1067,8 @@ final class IssueBuffer
 
     /**
      * Return whether or not we're in a recording state regarding startRecording/stopRecording status
+     *
+     * @psalm-external-mutation-free
      */
     public static function isRecording(): bool
     {
@@ -1051,6 +1077,8 @@ final class IssueBuffer
 
     /**
      * Increase the recording level in order to start recording issues instead of adding them while in a loop
+     *
+     * @psalm-external-mutation-free
      */
     public static function startRecording(): void
     {
@@ -1062,6 +1090,7 @@ final class IssueBuffer
      * Decrease the recording level after leaving a loop
      *
      * @see startRecording
+     * @psalm-external-mutation-free
      */
     public static function stopRecording(): void
     {
@@ -1076,6 +1105,7 @@ final class IssueBuffer
      * This will return the recorded issues for the current recording level
      *
      * @return array<int, CodeIssue>
+     * @psalm-external-mutation-free
      */
     public static function clearRecordingLevel(): array
     {
@@ -1107,6 +1137,7 @@ final class IssueBuffer
     /**
      * @internal
      * @param array<array-key,mixed> $server
+     * @psalm-external-mutation-free
      */
     final public static function captureServer(array $server): void
     {
@@ -1115,6 +1146,7 @@ final class IssueBuffer
     /**
      * @internal
      * @return array<array-key,mixed>
+     * @psalm-external-mutation-free
      */
     final public static function getServer(): array
     {

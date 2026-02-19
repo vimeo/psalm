@@ -46,6 +46,9 @@ final class CommitInfo
      */
     private ?int $date = null;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function toArray(): array
     {
         return [
@@ -63,6 +66,8 @@ final class CommitInfo
 
     /**
      * Set commit ID.
+     *
+     * @psalm-external-mutation-free
      */
     public function setId(string $id): self
     {
@@ -81,6 +86,8 @@ final class CommitInfo
 
     /**
      * Set author name.
+     *
+     * @psalm-external-mutation-free
      */
     public function setAuthorName(string $author_name): self
     {
@@ -99,6 +106,8 @@ final class CommitInfo
 
     /**
      * Set author email.
+     *
+     * @psalm-external-mutation-free
      */
     public function setAuthorEmail(string $author_email): self
     {
@@ -117,6 +126,8 @@ final class CommitInfo
 
     /**
      * Set committer name.
+     *
+     * @psalm-external-mutation-free
      */
     public function setCommitterName(string $committer_name): self
     {
@@ -135,6 +146,8 @@ final class CommitInfo
 
     /**
      * Set committer email.
+     *
+     * @psalm-external-mutation-free
      */
     public function setCommitterEmail(string $committer_email): self
     {
@@ -153,6 +166,8 @@ final class CommitInfo
 
     /**
      * Set commit message.
+     *
+     * @psalm-external-mutation-free
      */
     public function setMessage(string $message): self
     {
@@ -171,6 +186,8 @@ final class CommitInfo
 
     /**
      * Set commit date
+     *
+     * @psalm-external-mutation-free
      */
     public function setDate(int $date): self
     {

@@ -14,6 +14,7 @@ use Psalm\Type\Union;
 
 /**
  * @internal
+ * @psalm-immutable
  */
 final class HighOrderFunctionArgInfo
 {
@@ -24,6 +25,7 @@ final class HighOrderFunctionArgInfo
 
     /**
      * @psalm-param HighOrderFunctionArgInfo::TYPE_* $type
+     * @psalm-mutation-free
      */
     public function __construct(
         private readonly string $type,
@@ -32,6 +34,9 @@ final class HighOrderFunctionArgInfo
     ) {
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getTemplates(): TemplateResult
     {
         $templates = $this->class_storage
@@ -46,23 +51,24 @@ final class HighOrderFunctionArgInfo
         return $this->type;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getFunctionType(): Union
     {
         return match ($this->type) {
             self::TYPE_FIRST_CLASS_CALLABLE => new Union([
                 new TClosure(
-                    'Closure',
                     $this->function_storage->params,
                     $this->function_storage->return_type,
-                    $this->function_storage->pure,
+                    $this->function_storage->allowed_mutations,
                 ),
             ]),
             self::TYPE_STRING_CALLABLE, self::TYPE_CLASS_CALLABLE => new Union([
                 new TCallable(
-                    'callable',
                     $this->function_storage->params,
                     $this->function_storage->return_type,
-                    $this->function_storage->pure,
+                    $this->function_storage->allowed_mutations,
                 ),
             ]),
             default => $this->function_storage->return_type ?? Type::getMixed(),

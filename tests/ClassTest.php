@@ -244,6 +244,7 @@ final class ClassTest extends TestCase
                             return "baz";
                         }
 
+                        /** @psalm-mutation-free */
                         public static function bat(): string {
                             return "baz";
                         }
@@ -272,6 +273,7 @@ final class ClassTest extends TestCase
                             return "baz";
                         }
 
+                        /** @psalm-mutation-free */
                         public static function bat(): string {
                             return "baz";
                         }

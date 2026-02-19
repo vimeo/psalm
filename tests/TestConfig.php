@@ -43,6 +43,19 @@ final class TestConfig extends Config
             );
         }
 
+        $this->setCustomErrorLevel(
+            'MissingImmutableAnnotation',
+            Config::REPORT_SUPPRESS,
+        );
+        $this->setCustomErrorLevel(
+            'MissingPureAnnotation',
+            Config::REPORT_SUPPRESS,
+        );
+        $this->setCustomErrorLevel(
+            'MissingAbstractPureAnnotation',
+            Config::REPORT_SUPPRESS,
+        );
+
         $this->project_files = self::$cached_project_files;
         $this->setIncludeCollector(new IncludeCollector());
 
@@ -50,6 +63,9 @@ final class TestConfig extends Config
         $this->collectPredefinedFunctions();
     }
 
+    /**
+     * @psalm-pure
+     */
     protected function getContents(): string
     {
         return '<?xml version="1.0"?>

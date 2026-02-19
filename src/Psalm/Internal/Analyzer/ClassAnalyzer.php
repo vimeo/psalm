@@ -76,6 +76,7 @@ use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -562,8 +563,8 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             }
         }
 
-        $statements_analyzer = new StatementsAnalyzer($this, new NodeDataProvider());
-        $statements_analyzer->analyze($member_stmts, $class_context, $global_context, true);
+        $statements_analyzer = new StatementsAnalyzer($this, new NodeDataProvider(), true);
+        $statements_analyzer->analyze($member_stmts, $class_context, $global_context);
 
         ClassConstAnalyzer::analyze($storage, $this->getCodebase());
 
@@ -1128,7 +1129,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             $uninitialized_variables[] = '$this->' . $property_name;
             $uninitialized_properties[$property_class_name . '::$' . $property_name] = $property;
 
-            if ($property->type) {
+            if ($property->type && !$property->hook_get) {
                 // Complain about all natively typed properties and all non-mixed docblock typed properties
                 if (!$property->type->from_docblock || !$property->type->isMixed()) {
                     $uninitialized_typed_properties[$property_class_name . '::$' . $property_name] = $property;
@@ -1472,15 +1473,18 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 }
             }
 
-            if ($storage->mutation_free && !$trait_storage->mutation_free) {
+            if ($storage->allowed_mutations < $trait_storage->allowed_mutations) {
                 IssueBuffer::maybeAdd(
                     new MutableDependency(
-                        $storage->name . ' is marked @psalm-immutable but ' . $fq_trait_name . ' is not',
+                        $storage->name . ' is marked '.Mutations::TO_ATTRIBUTE_CLASS[
+                            $storage->allowed_mutations
+                        ].' but ' . $fq_trait_name . ' is not',
                         new CodeLocation($previous_trait_analyzer ?? $this, $trait_name),
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
                 );
             }
+            $codebase->analyzer->addMutableClass($storage->name, $trait_storage->allowed_mutations);
 
             $trait_file_analyzer = $project_analyzer->getFileAnalyzerForClassLike($fq_trait_name_resolved);
             $trait_node = $codebase->classlikes->getTraitNode($fq_trait_name_resolved);
@@ -1859,6 +1863,9 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         return $method_analyzer;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     private static function getThisObjectType(
         ClassLikeStorage $class_storage,
         string $original_fq_classlike_name,
@@ -2186,13 +2193,15 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 );
             }
 
-            if ($interface_storage->external_mutation_free
-                && !$storage->external_mutation_free
+            if ($interface_storage->allowed_mutations
+                < $storage->allowed_mutations
             ) {
                 IssueBuffer::maybeAdd(
                     new MissingImmutableAnnotation(
-                        $fq_interface_name . ' is marked @psalm-immutable, but '
-                        . $fq_class_name . ' is not marked @psalm-immutable',
+                        $fq_interface_name . ' is marked with @'.Mutations::TO_ATTRIBUTE_CLASS[
+                            $interface_storage->allowed_mutations
+                        ].', but '
+                        . $fq_class_name . ' is not, run with --alter to fix this',
                         $code_location,
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
@@ -2427,30 +2436,34 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 );
             }
 
-            if ($parent_class_storage->external_mutation_free
-                && !$storage->external_mutation_free
+            if ($parent_class_storage->allowed_mutations
+                < $storage->allowed_mutations
             ) {
                 IssueBuffer::maybeAdd(
                     new MissingImmutableAnnotation(
-                        $parent_fq_class_name . ' is marked @psalm-immutable, but '
-                        . $fq_class_name . ' is not marked @psalm-immutable',
+                        $parent_fq_class_name . ' is marked with @'.Mutations::TO_ATTRIBUTE_CLASS[
+                            $parent_class_storage->allowed_mutations
+                        ].', but '
+                        . $fq_class_name . ' is not, run with --alter to fix this',
                         $code_location,
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
                 );
-            }
-
-            if ($storage->mutation_free
-                && !$parent_class_storage->mutation_free
+            } elseif ($parent_class_storage->allowed_mutations
+                > $storage->allowed_mutations
             ) {
                 IssueBuffer::maybeAdd(
                     new MutableDependency(
-                        $fq_class_name . ' is marked @psalm-immutable but ' . $parent_fq_class_name . ' is not',
+                        $fq_class_name . ' is marked with @'.Mutations::TO_ATTRIBUTE_CLASS[
+                            $storage->allowed_mutations
+                        ].', but parent class '
+                        . $parent_fq_class_name . ' is not',
                         $code_location,
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
                 );
             }
+            $codebase->analyzer->addMutableClass($storage->name, $parent_class_storage->allowed_mutations);
 
             if ($codebase->store_node_types) {
                 $codebase->analyzer->addNodeReference(

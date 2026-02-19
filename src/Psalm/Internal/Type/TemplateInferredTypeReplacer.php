@@ -198,6 +198,7 @@ final class TemplateInferredTypeReplacer
             } elseif ($atomic_type instanceof TConditional
                 && $codebase
             ) {
+                /** @psalm-suppress ImpureMethodCall */
                 $class_template_type = self::replaceConditional(
                     $template_result,
                     $codebase,
@@ -244,6 +245,7 @@ final class TemplateInferredTypeReplacer
 
     /**
      * @param array<string, array<string, non-empty-list<TemplateBound>>> $inferred_lower_bounds
+     * @psalm-external-mutation-free
      */
     private static function replaceTemplateParam(
         ?Codebase $codebase,
@@ -335,6 +337,7 @@ final class TemplateInferredTypeReplacer
     /**
      * @param TTemplateKeyOf|TTemplateValueOf $atomic_type
      * @param array<string, array<string, non-empty-list<TemplateBound>>> $inferred_lower_bounds
+     * @psalm-external-mutation-free
      */
     private static function replaceTemplateKeyOfValueOf(
         ?Codebase $codebase,
@@ -367,6 +370,7 @@ final class TemplateInferredTypeReplacer
 
     /**
      * @param array<string, array<string, non-empty-list<TemplateBound>>> $inferred_lower_bounds
+     * @psalm-external-mutation-free
      */
     private static function replaceTemplatePropertiesOf(
         ?Codebase $codebase,

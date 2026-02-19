@@ -15,6 +15,8 @@ final class IdGenerator
 
     /**
      * Returns a unique ID
+     *
+     * @psalm-external-mutation-free
      */
     public function generate(): int
     {

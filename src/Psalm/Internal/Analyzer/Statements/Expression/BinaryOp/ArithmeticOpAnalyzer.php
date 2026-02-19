@@ -279,6 +279,9 @@ final class ArithmeticOpAnalyzer
         }
     }
 
+    /**
+     * @psalm-pure
+     */
     private static function getNumericalType(int|float $result): Union
     {
         if (is_int($result)) {
@@ -593,7 +596,7 @@ final class ArithmeticOpAnalyzer
                         $fallback_params = $left_type_part->fallback_params ?: $right_type_part->fallback_params;
                     }
 
-                    $new_keyed_array = new TKeyedArray(
+                    $new_keyed_array = TKeyedArray::make(
                         $properties,
                         null,
                         $fallback_params,
@@ -949,6 +952,9 @@ final class ArithmeticOpAnalyzer
         return null;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public static function arithmeticOperation(
         PhpParser\Node $operation,
         float|int $operand1,

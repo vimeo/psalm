@@ -59,12 +59,18 @@ final class PsalmRestarter extends XdebugHandler
      */
     private array $disabled_extensions = [];
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function disableExtension(string $disabled_extension): void
     {
         $this->disabled_extensions[] = $disabled_extension;
     }
 
-    /** @param list<non-empty-string> $disable_extensions */
+    /**
+     * @param list<non-empty-string> $disable_extensions
+     * @psalm-external-mutation-free
+     */
     public function disableExtensions(array $disable_extensions): void
     {
         $this->disabled_extensions = array_merge($this->disabled_extensions, $disable_extensions);
@@ -114,6 +120,9 @@ final class PsalmRestarter extends XdebugHandler
         return $default || $this->required;
     }
 
+    /**
+     * @psalm-pure
+     */
     private static function toBytes(string $value): int
     {
         if (strlen($value) === 0) {
@@ -193,6 +202,7 @@ final class PsalmRestarter extends XdebugHandler
 
     /**
      * @return positive-int
+     * @psalm-pure
      */
     private static function getRequiredMemoryConsumption(): int
     {

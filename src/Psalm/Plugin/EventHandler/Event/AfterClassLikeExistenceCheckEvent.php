@@ -14,6 +14,7 @@ final class AfterClassLikeExistenceCheckEvent
     /**
      * @param FileManipulation[] $file_replacements
      * @internal
+     * @psalm-mutation-free
      */
     public function __construct(
         private readonly string $fq_class_name,
@@ -54,6 +55,7 @@ final class AfterClassLikeExistenceCheckEvent
 
     /**
      * @param FileManipulation[] $file_replacements
+     * @psalm-external-mutation-free
      */
     public function setFileReplacements(array $file_replacements): void
     {
