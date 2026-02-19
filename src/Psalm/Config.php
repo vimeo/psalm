@@ -133,6 +133,7 @@ use const PSALM_VERSION;
 use const SCANDIR_SORT_NONE;
 
 /**
+ * @api
  * @psalm-suppress PropertyNotSetInConstructor
  * @psalm-consistent-constructor
  */

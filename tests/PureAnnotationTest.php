@@ -30,6 +30,23 @@ final class PureAnnotationTest extends TestCase
                         return null;
                     }',
             ],
+            'propertyMutationIsExternalMutationFree' => [
+                'code' => '<?php
+                    class A {
+                        /** @var list<int> */
+                        public array $params = [];
+
+                        /**
+                         * @psalm-external-mutation-free
+                         */
+                        public function addParam(): void
+                        {
+                            usort($this->params, static function (int $a, int $b): int {
+                                return $a <=> $b;
+                            });
+                        }
+                    }',
+            ],
             'pureFunctionCallingBuiltinFunctions' => [
                 'code' => '<?php
                     namespace Bar;

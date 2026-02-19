@@ -400,7 +400,7 @@ class CodeLocation
 
     /**
      * @return array{0: int, 1: int}
-     * @psalm-external-mutation-free
+     * @psalm-mutation-free
      */
     public function getSelectionBounds(): array
     {
@@ -411,7 +411,7 @@ class CodeLocation
 
     /**
      * @return array{0: int, 1: int}
-     * @psalm-external-mutation-free
+     * @psalm-mutation-free
      */
     public function getSnippetBounds(): array
     {

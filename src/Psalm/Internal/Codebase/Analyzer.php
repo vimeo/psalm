@@ -28,6 +28,7 @@ use Psalm\Internal\Provider\StatementsProvider;
 use Psalm\IssueBuffer;
 use Psalm\Progress\Phase;
 use Psalm\Progress\Progress;
+use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\Union;
 use SebastianBergmann\Diff\Differ;
@@ -1499,6 +1500,7 @@ final class Analyzer
     }
 
     /**
+     * @param Mutations::LEVEL_* $allowed_mutations
      * @psalm-external-mutation-free
      */
     public function addMutableClass(string $fqcln, int $allowed_mutations): void
