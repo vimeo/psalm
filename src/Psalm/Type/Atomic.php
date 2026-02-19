@@ -461,7 +461,7 @@ abstract class Atomic implements TypeNode, Stringable
     /**
      * This is the string that will be used to represent the type in Union::$types. This means that two types sharing
      * the same getKey value will override themselves in a Union
-     * 
+     *
      * @psalm-mutation-free
      */
     abstract public function getKey(bool $include_extra = true): string;
@@ -772,9 +772,8 @@ abstract class Atomic implements TypeNode, Stringable
     /**
      * Returns a string representation of the type compatible with php signature or null if the type can't be expressed
      *  with the given php version
-     * 
-     * @psalm-mutation-free
      *
+     * @psalm-mutation-free
      * @param  array<lowercase-string, string> $aliased_classes
      */
     abstract public function toPhpString(

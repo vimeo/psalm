@@ -84,7 +84,7 @@ use function array_pop;
 use function count;
 use function in_array;
 use function reset;
-use function strpos;
+use function str_ends_with;
 use function strtolower;
 
 /**
@@ -420,8 +420,7 @@ final class InstancePropertyAssignmentAnalyzer
                 'property assignment to ' . $property_id,
                 ImpurePropertyAssignment::class,
                 $stmt,
-
-                // We must not emit errors if the property is readonly 
+                // We must not emit errors if the property is readonly
                 // but we're in a constructor/unserialize, etc,
                 // but we still must make sure the method mutatibility inference logic knows
                 // that the property is being mutated.

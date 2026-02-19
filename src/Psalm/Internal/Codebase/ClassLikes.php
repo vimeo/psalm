@@ -960,7 +960,8 @@ final class ClassLikes
 
                 $this->findPossibleMethodParamTypes($classlike_storage);
 
-                if (($codebase->analyzer->mutable_classes[$fq_class_name_lc] ?? Mutations::LEVEL_NONE) <= Mutations::LEVEL_INTERNAL_READ
+                $mut = $codebase->analyzer->mutable_classes[$fq_class_name_lc] ?? Mutations::LEVEL_NONE;
+                if ($mut <= Mutations::LEVEL_INTERNAL_READ
                     && !$classlike_storage->isExternalMutationFree()
                     && !$classlike_storage->has_mutations_annotation
                 ) {

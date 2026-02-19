@@ -43,6 +43,7 @@ use function count;
 use function explode;
 use function implode;
 use function ksort;
+use function max;
 use function number_format;
 use function pathinfo;
 use function preg_replace;
