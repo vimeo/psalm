@@ -59,6 +59,9 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                         public function getPlus5() {
                             return $this->i + 5;
                         }
+                    }
+                    class B {
+                        use A;
                     }',
                 'output' => '<?php
                     /**
@@ -74,6 +77,81 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                         public function getPlus5() {
                             return $this->i + 5;
                         }
+                    }
+                    class B {
+                        use A;
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingImmutableAnnotation'],
+                'safe_types' => true,
+            ],
+            'noAddImmutableAnnotationTraitUnused' => [
+                'input' => '<?php
+                    trait A {
+                        public int $i;
+
+                        public function __construct(int $i) {
+                            $this->i = $i;
+                        }
+
+                        public function getPlus5() {
+                            return $this->i + 5;
+                        }
+                    }',
+                'output' => '<?php
+                    trait A {
+                        public int $i;
+
+                        public function __construct(int $i) {
+                            $this->i = $i;
+                        }
+
+                        public function getPlus5() {
+                            return $this->i + 5;
+                        }
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingImmutableAnnotation'],
+                'safe_types' => true,
+            ],
+            'noAddImmutableAnnotationTraitMutable' => [
+                'input' => '<?php
+                    trait A {
+                        public int $i;
+
+                        public function __construct(int $i) {
+                            $this->i = $i;
+                        }
+
+                        public function setI(int $i) : void {
+                            $this->i = $i;
+                        }
+
+                        public function getPlus5() {
+                            return $this->i + 5;
+                        }
+                    }
+                    final class B {
+                        use A;
+                    }',
+                'output' => '<?php
+                    trait A {
+                        public int $i;
+
+                        public function __construct(int $i) {
+                            $this->i = $i;
+                        }
+
+                        public function setI(int $i) : void {
+                            $this->i = $i;
+                        }
+
+                        public function getPlus5() {
+                            return $this->i + 5;
+                        }
+                    }
+                    final class B {
+                        use A;
                     }',
                 'php_version' => '7.4',
                 'issues_to_fix' => ['MissingImmutableAnnotation'],

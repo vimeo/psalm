@@ -129,6 +129,8 @@ final class ClassLikeStorage implements HasAttributesInterface
 
     public bool $final_from_docblock = false;
 
+    public bool $trait_used = false;
+
     /**
      * @var array<lowercase-string, string>
      */

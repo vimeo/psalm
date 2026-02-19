@@ -1429,6 +1429,8 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             $fq_trait_name_resolved = $codebase->classlikes->getUnAliasedName($fq_trait_name);
             $trait_storage = $codebase->classlike_storage_provider->get($fq_trait_name_resolved);
 
+            $trait_storage->trait_used = true;
+
             if ($trait_storage->deprecated) {
                 IssueBuffer::maybeAdd(
                     new DeprecatedTrait(

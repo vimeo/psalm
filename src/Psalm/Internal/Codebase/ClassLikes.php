@@ -960,6 +960,8 @@ final class ClassLikes
                     }
 
                     $this->findPossibleMethodParamTypes($classlike_storage);
+                } else if (!$classlike_storage->trait_used) {
+                    continue;
                 }
 
                 $mut = $codebase->analyzer->mutable_classes[$fq_class_name_lc] ?? Mutations::LEVEL_NONE;
