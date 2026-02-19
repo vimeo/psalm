@@ -3135,6 +3135,66 @@
       <code><![CDATA[strpos(static::class, 'Unused')]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
+  <file src="tests/FileManipulation/ImmutableAnnotationAdditionTest.php">
+    <MutableDependency>
+      <code><![CDATA[FileManipulationTestCase]]></code>
+    </MutableDependency>
+  </file>
+  <file src="tests/FileManipulation/MissingPropertyTypeTest.php">
+    <MutableDependency>
+      <code><![CDATA[FileManipulationTestCase]]></code>
+    </MutableDependency>
+  </file>
+  <file src="tests/FileManipulation/MissingReturnTypeTest.php">
+    <MutableDependency>
+      <code><![CDATA[FileManipulationTestCase]]></code>
+    </MutableDependency>
+  </file>
+  <file src="tests/FileManipulation/ParamNameMismatchTest.php">
+    <MutableDependency>
+      <code><![CDATA[FileManipulationTestCase]]></code>
+    </MutableDependency>
+  </file>
+  <file src="tests/FileManipulation/ParamTypeManipulationTest.php">
+    <MutableDependency>
+      <code><![CDATA[FileManipulationTestCase]]></code>
+    </MutableDependency>
+  </file>
+  <file src="tests/FileManipulation/RedundantCastManipulationTest.php">
+    <MutableDependency>
+      <code><![CDATA[FileManipulationTestCase]]></code>
+    </MutableDependency>
+  </file>
+  <file src="tests/FileManipulation/ReturnTypeManipulationTest.php">
+    <MutableDependency>
+      <code><![CDATA[FileManipulationTestCase]]></code>
+    </MutableDependency>
+  </file>
+  <file src="tests/FileManipulation/ThrowsBlockAdditionTest.php">
+    <MutableDependency>
+      <code><![CDATA[FileManipulationTestCase]]></code>
+    </MutableDependency>
+  </file>
+  <file src="tests/FileManipulation/UndefinedVariableManipulationTest.php">
+    <MutableDependency>
+      <code><![CDATA[FileManipulationTestCase]]></code>
+    </MutableDependency>
+  </file>
+  <file src="tests/FileManipulation/UnnecessaryVarAnnotationManipulationTest.php">
+    <MutableDependency>
+      <code><![CDATA[FileManipulationTestCase]]></code>
+    </MutableDependency>
+  </file>
+  <file src="tests/FileManipulation/UnusedCodeManipulationTest.php">
+    <MutableDependency>
+      <code><![CDATA[FileManipulationTestCase]]></code>
+    </MutableDependency>
+  </file>
+  <file src="tests/FileManipulation/UnusedVariableManipulationTest.php">
+    <MutableDependency>
+      <code><![CDATA[FileManipulationTestCase]]></code>
+    </MutableDependency>
+  </file>
   <file src="tests/Internal/Codebase/InternalCallMapHandlerTest.php">
     <MixedReturnStatement>
       <code><![CDATA[ReflectionMethod::createFromMethodName($functionName)]]></code>
@@ -3154,6 +3214,9 @@
       <code><![CDATA[public function __construct()]]></code>
       <code><![CDATA[public function __construct()]]></code>
     </MethodSignatureMismatch>
+    <MutableDependency>
+      <code><![CDATA[ParserCacheProvider]]></code>
+    </MutableDependency>
   </file>
   <file src="tests/ReportOutputTest.php">
     <MixedAssignment>
