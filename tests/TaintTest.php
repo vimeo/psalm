@@ -35,7 +35,7 @@ final class TaintTest extends TestCase
         'InvalidReturnStatement', 'ArgumentTypeCoercion', 'UnresolvableInclude', 'UndefinedClass', 'RedundantCast',
         'MixedArrayAssignment', 'InvalidReturnStatement', 'InvalidArrayOffset', 'UndefinedFunction', 'ImplicitToStringCast',
         'InvalidArgument', 'UndefinedVariable', 'MissingPureAnnotation', 'MissingImmutableAnnotation',
-        'MissingAbstractPureAnnotation',
+        'MissingAbstractPureAnnotation', 'MissingInterfaceImmutableAnnotation',
     ];
     public function testTaintKindNoHoles(): void
     {

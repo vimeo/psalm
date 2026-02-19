@@ -98,6 +98,10 @@ trait InvalidCodeAnalysisTestTrait
                 Config::REPORT_ERROR,
             );
             Config::getInstance()->setCustomErrorLevel(
+                'MissingInterfaceImmutableAnnotation',
+                Config::REPORT_ERROR,
+            );
+            Config::getInstance()->setCustomErrorLevel(
                 'MissingPureAnnotation',
                 Config::REPORT_ERROR,
             );

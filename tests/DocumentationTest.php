@@ -256,6 +256,12 @@ final class DocumentationTest extends TestCase
                 Config::REPORT_ERROR,
             );
         }
+        if ($error_message === 'MissingInterfaceImmutableAnnotation') {
+            Config::getInstance()->setCustomErrorLevel(
+                'MissingInterfaceImmutableAnnotation',
+                Config::REPORT_ERROR,
+            );
+        }
 
         $this->expectException(CodeException::class);
         $this->expectExceptionMessageMatches('/\b' . preg_quote($error_message, '/') . '\b/');
@@ -361,6 +367,7 @@ final class DocumentationTest extends TestCase
                 $issue_name,
                 $ignored_issues,
                 $issue_name === 'ClassMustBeFinal'
+                    || $issue_name === 'MissingInterfaceImmutableAnnotation'
                     || strpos($issue_name, 'Unused') !== false
                     || strpos($issue_name, 'Unevaluated') !== false
                     || strpos($issue_name, 'Unnecessary') !== false,

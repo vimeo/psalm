@@ -51,6 +51,10 @@ abstract class FileManipulationTestCase extends TestCase
             TestConfig::REPORT_ERROR,
         );
         $config->setCustomErrorLevel(
+            'MissingInterfaceImmutableAnnotation',
+            TestConfig::REPORT_ERROR,
+        );
+        $config->setCustomErrorLevel(
             'MissingPureAnnotation',
             TestConfig::REPORT_ERROR,
         );

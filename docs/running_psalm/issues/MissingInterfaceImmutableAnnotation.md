@@ -7,8 +7,14 @@ This issue is emitted to aid [security analysis](https://psalm.dev/docs/security
 ```php
 <?php
 
+/** @api */
 interface SomethingPotentiallyImmutable {
     public function someInteger() : int;
 }
 
+final class A implements SomethingPotentiallyImmutable {
+    public function someInteger() : int {
+        return 0;
+    }
+}
 ```

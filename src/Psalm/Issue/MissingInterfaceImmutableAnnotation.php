@@ -6,5 +6,5 @@ namespace Psalm\Issue;
 
 final class MissingInterfaceImmutableAnnotation extends CodeIssue
 {
-    public const SHORTCODE = 364;
+    public const SHORTCODE = 365;
 }

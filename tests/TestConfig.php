@@ -55,6 +55,10 @@ final class TestConfig extends Config
             'MissingAbstractPureAnnotation',
             Config::REPORT_SUPPRESS,
         );
+        $this->setCustomErrorLevel(
+            'MissingInterfaceImmutableAnnotation',
+            Config::REPORT_SUPPRESS,
+        );
 
         $this->project_files = self::$cached_project_files;
         $this->setIncludeCollector(new IncludeCollector());

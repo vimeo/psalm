@@ -97,6 +97,10 @@ final class CacheTest extends TestCase
             Config::REPORT_SUPPRESS,
         );
         $config->setCustomErrorLevel(
+            'MissingInterfaceImmutableAnnotation',
+            Config::REPORT_SUPPRESS,
+        );
+        $config->setCustomErrorLevel(
             'MissingPureAnnotation',
             Config::REPORT_SUPPRESS,
         );

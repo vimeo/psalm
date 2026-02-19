@@ -211,6 +211,7 @@ final class ValueOfTest extends TestCase
             'valueOfTemplatedEnum' => [
                 'code' => '<?php
                     /**
+                     * @psalm-immutable
                      * @template TValue of string|int
                      * @psalm-require-implements BackedEnum
                      */

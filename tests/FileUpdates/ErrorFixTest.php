@@ -71,6 +71,7 @@ final class ErrorFixTest extends TestCase
             $config->setCustomErrorLevel($error_type, $error_level);
         }
         $config->setCustomErrorLevel('MissingImmutableAnnotation', Config::REPORT_SUPPRESS);
+        $config->setCustomErrorLevel('MissingInterfaceImmutableAnnotation', Config::REPORT_SUPPRESS);
         $config->setCustomErrorLevel('MissingPureAnnotation', Config::REPORT_SUPPRESS);
         $config->setCustomErrorLevel('MissingAbstractPureAnnotation', Config::REPORT_SUPPRESS);
 
