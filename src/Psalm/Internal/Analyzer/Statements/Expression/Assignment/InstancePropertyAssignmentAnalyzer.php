@@ -417,10 +417,12 @@ final class InstancePropertyAssignmentAnalyzer
                 ImpurePropertyAssignment::class,
                 $stmt,
             );
-            $codebase->analyzer->addMutableClass(
-                $declaring_class_storage->name,
-                Mutations::LEVEL_INTERNAL_READ_WRITE,
-            );
+            if (!$can_set_readonly_property) {
+                $codebase->analyzer->addMutableClass(
+                    $declaring_class_storage->name,
+                    Mutations::LEVEL_INTERNAL_READ_WRITE,
+                );
+            }
         }
     }
 
