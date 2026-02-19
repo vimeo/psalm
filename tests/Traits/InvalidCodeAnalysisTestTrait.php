@@ -34,6 +34,7 @@ use const PHP_VERSION_ID;
  *     error_levels?: list<string>,
  *     php_version?: string
  * }
+ * @psalm-mutable
  */
 trait InvalidCodeAnalysisTestTrait
 {

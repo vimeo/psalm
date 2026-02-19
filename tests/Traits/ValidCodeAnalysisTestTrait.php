@@ -20,6 +20,7 @@ use function substr;
 use const PHP_OS;
 use const PHP_VERSION_ID;
 
+/** @psalm-mutable */
 trait ValidCodeAnalysisTestTrait
 {
     /**

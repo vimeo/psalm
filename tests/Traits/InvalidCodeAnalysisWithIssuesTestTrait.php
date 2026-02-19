@@ -55,6 +55,7 @@ use const PHP_VERSION;
  *     error_levels?: list<string>,
  *     php_version?: string
  * }
+ * @psalm-mutable
  */
 trait InvalidCodeAnalysisWithIssuesTestTrait
 {
