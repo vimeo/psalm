@@ -343,6 +343,7 @@
             <xs:element name="MissingDependency" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingDocblockType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingFile" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="MissingInterfaceImmutableAnnotation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingImmutableAnnotation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingOverrideAttribute" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingParamType" type="IssueHandlerType" minOccurs="0" />
