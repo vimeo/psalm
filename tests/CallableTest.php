@@ -743,7 +743,7 @@ final class CallableTest extends TestCase
                     }
                     /**
                      * @template A
-                     * 
+                     * @psalm-immutable
                      */
                     final class Container
                     {

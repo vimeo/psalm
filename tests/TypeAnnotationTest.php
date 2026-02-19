@@ -608,7 +608,7 @@ final class TypeAnnotationTest extends TestCase
                     class A {}
 
                     /**
-                     * 
+                     * @psalm-immutable
                      * @psalm-import-type Foo from A as FooAlias
                      */
                     class B {

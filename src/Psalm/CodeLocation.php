@@ -181,7 +181,7 @@ class CodeLocation
     }
 
     /**
-     * @psalm-mutation-free
+     * @psalm-external-mutation-free
      * @psalm-suppress InaccessibleProperty Mainly used for caching
      */
     private function calculateRealLocation(): void

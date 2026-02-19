@@ -138,7 +138,8 @@ final class PureAnnotationTest extends TestCase
             ],
             'canCreateImmutableObject' => [
                 'code' => '<?php
-                                        class A {
+                    /** @psalm-immutable */
+                    class A {
                         private string $s;
 
                         public function __construct(string $s) {
@@ -417,7 +418,8 @@ final class PureAnnotationTest extends TestCase
                 'code' => '<?php
                     namespace Bar;
 
-                                        class A {
+                    /** @psalm-immutable */
+                    class A {
                         public int $a;
 
                         public function __construct(int $a) {
@@ -464,7 +466,7 @@ final class PureAnnotationTest extends TestCase
                      * @method static static BAR()
                      * @method static static BAZ()
                      *
-                     * 
+                     * @psalm-immutable
                      */
                     class MyEnum
                     {
@@ -1186,7 +1188,7 @@ final class PureAnnotationTest extends TestCase
                 'code' => '<?php
 
                     /**
-                     * 
+                     * @psalm-immutable
                      */
                     class Either
                     {

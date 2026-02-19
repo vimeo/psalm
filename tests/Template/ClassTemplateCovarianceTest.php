@@ -282,22 +282,22 @@ final class ClassTemplateCovarianceTest extends TestCase
             'allowImmutableCovariance' => [
                 'code' => '<?php
                     /**
-                     * 
+                     * @psalm-immutable
                      */
                     class Animal {}
 
                     /**
-                     * 
+                     * @psalm-immutable
                      */
                     class Dog extends Animal{}
 
                     /**
-                     * 
+                     * @psalm-immutable
                      */
                     class Cat extends Animal{}
 
                     /**
-                      * 
+                      * @psalm-immutable
                       * @template-covariant T
                       */
                     class Collection {

@@ -416,7 +416,8 @@ final class TaintTest extends TestCase
             ],
             'taintPropertyPassingObjectWithDifferentValue' => [
                 'code' => '<?phps
-                                        class User {
+                    /** @psalm-immutable */
+                    class User {
                         public string $id;
                         public $name = "Luke";
 
@@ -604,7 +605,7 @@ final class TaintTest extends TestCase
             'immutableClassTrackInputThroughMethod' => [
                 'code' => '<?php
                     /**
-                     * 
+                     * @psalm-immutable
                      */
                     class A {
                         private string $taint = "";
@@ -1481,7 +1482,8 @@ final class TaintTest extends TestCase
             ],
             'taintPropertyPassingObject' => [
                 'code' => '<?php
-                                        class User {
+                    /** @psalm-immutable */
+                    class User {
                         public string $id;
 
                         public function __construct(string $userId) {
@@ -2169,7 +2171,7 @@ final class TaintTest extends TestCase
             'immutableClassTrackInputThroughMethod' => [
                 'code' => '<?php
                     /**
-                     * 
+                     * @psalm-immutable
                      */
                     class A {
                         private string $taint = "";

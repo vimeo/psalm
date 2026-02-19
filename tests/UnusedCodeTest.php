@@ -1279,7 +1279,8 @@ final class UnusedCodeTest extends TestCase
                 'code' => '<?php
                     declare(strict_types=1);
 
-                                        final class UserList
+                    /** @psalm-immutable */
+                    final class UserList
                     {
                         /**
                          * @throws InvalidArgumentException
@@ -1929,7 +1930,8 @@ final class UnusedCodeTest extends TestCase
             ],
             'noCrashOnReadonlyStaticProp' => [
                 'code' => '<?php
-                                        final class C { public int $val = 2; }
+                    /** @psalm-immutable */
+                    final class C { public int $val = 2; }
 
                     final class A {
                         private static C $prop;

@@ -6,6 +6,9 @@ namespace Psalm\Tests\FileManipulation;
 
 use Override;
 
+/**
+ * @psalm-immutable
+ */
 final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
 {
     #[Override]
@@ -27,7 +30,7 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                     }',
                 'output' => '<?php
                     /**
-                     * 
+                     * @psalm-immutable
                      */
                     class A {
                         public int $i;
@@ -70,7 +73,7 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                      *
                      * @Foo\Bar
                      *
-                     * 
+                     * @psalm-immutable
                      */
                     class A {
                         public int $i;
@@ -157,7 +160,7 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                     }
 
                     /**
-                     * 
+                     * @psalm-immutable
                      */
                     class A {
                         public B $b;
@@ -184,7 +187,7 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingImmutableAnnotation'],
                 'safe_types' => true,
             ],
-            'dontAddImmutableWhenInError' => [
+            'addImmutableEvenWhenInError' => [
                 'input' => '<?php
                     class B {
                         public int $i = 5;
@@ -195,6 +198,9 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
 
                     echo $a->i;',
                 'output' => '<?php
+                    /**
+                     * @psalm-immutable
+                     */
                     class B {
                         public int $i = 5;
                     }
@@ -240,7 +246,7 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                     }
 
                     /**
-                     * 
+                     *
                      */
                     class A extends AParent {
                         public function getPlus5() {
@@ -252,6 +258,7 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                 'safe_types' => true,
             ],
             'dontAddPureAnnotationToClassThatExtends' => [
+
                 'input' => '<?php
                     class AParent {
                         public int $i;
@@ -265,6 +272,7 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                         }
                     }
 
+                    /** @psalm-mutable */
                     class A extends AParent {
                         public function getPlus5() {
                             return $this->i + 5;
@@ -283,6 +291,7 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                         }
                     }
 
+                    /** @psalm-mutable */
                     class A extends AParent {
                         public function getPlus5() {
                             return $this->i + 5;

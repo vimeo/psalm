@@ -3337,7 +3337,7 @@ final class ClassTemplateExtendsTest extends TestCase
             'acceptTemplatedObjectAsStaticParam' => [
                 'code' => '<?php
                     /**
-                     * 
+                     * @psalm-immutable
                      */
                     abstract class Id
                     {
@@ -4186,7 +4186,7 @@ final class ClassTemplateExtendsTest extends TestCase
                     }
 
                     /**
-                     * 
+                     * @psalm-immutable
                      * @template D of array<string, scalar|null>
                      * @implements WriteModelInterface<D>
                      */
@@ -4207,7 +4207,7 @@ final class ClassTemplateExtendsTest extends TestCase
                     }
 
                     /**
-                     * 
+                     * @psalm-immutable
                      * @extends WriteModel<array{
                      *    ulid: string,
                      *    senderPersonId: int

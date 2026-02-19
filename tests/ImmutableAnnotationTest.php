@@ -19,14 +19,15 @@ final class ImmutableAnnotationTest extends TestCase
         return [
             'noMissing' => [
                 'code' => '<?php
-                                        abstract class test {
+                    /** @psalm-immutable */
+                    abstract class test {
                         abstract public function somePure(int $a) : int;
                     }',
             ],
             'immutableClassGenerating' => [
                 'code' => '<?php
                     /**
-                     * 
+                     * @psalm-immutable
                      */
                     class A {
                         /** @var int */
@@ -48,7 +49,7 @@ final class ImmutableAnnotationTest extends TestCase
             'callInternalClassMethod' => [
                 'code' => '<?php
                     /**
-                     * 
+                     * @psalm-immutable
                      */
                     class A {
                         /** @var string */
@@ -69,7 +70,8 @@ final class ImmutableAnnotationTest extends TestCase
             ],
             'addToCart' => [
                 'code' => '<?php
-                                        class Cart {
+                    /** @psalm-immutable */
+                    class Cart {
                         /** @var CartItem[] */
                         public array $items;
 
@@ -85,7 +87,8 @@ final class ImmutableAnnotationTest extends TestCase
                         }
                     }
 
-                                        class CartItem {
+                    /** @psalm-immutable */
+                    class CartItem {
                         public string $name;
                         public float $price;
 
@@ -103,7 +106,7 @@ final class ImmutableAnnotationTest extends TestCase
             'allowImpureStaticMethod' => [
                 'code' => '<?php
                     /**
-                     * 
+                     * @psalm-immutable
                      */
                     final class ClientId
                     {
@@ -123,7 +126,7 @@ final class ImmutableAnnotationTest extends TestCase
             'allowPropertySetOnNewInstance' => [
                 'code' => '<?php
                     /**
-                     * 
+                     * @psalm-immutable
                      */
                     class Foo {
                         protected string $bar;
@@ -144,7 +147,7 @@ final class ImmutableAnnotationTest extends TestCase
             'allowPropertySetOnClonedInstance' => [
                 'code' => '<?php
                     /**
-                     * 
+                     * @psalm-immutable
                      */
                     class Foo {
                         protected string $bar;
@@ -165,7 +168,7 @@ final class ImmutableAnnotationTest extends TestCase
             'allowArrayMapCallable' => [
                 'code' => '<?php
                     /**
-                     * 
+                     * @psalm-immutable
                      */
                     class Address
                     {
@@ -204,7 +207,7 @@ final class ImmutableAnnotationTest extends TestCase
             'allowPropertyAssignmentInUnserialize' => [
                 'code' => '<?php
                     /**
-                     * 
+                     * @psalm-immutable
                      */
                     class Foo implements \Serializable {
                         /** @var string */
@@ -230,7 +233,7 @@ final class ImmutableAnnotationTest extends TestCase
             'allowPropertyAssignmentInMagicUnserialize' => [
                 'code' => '<?php
                     /**
-                     * 
+                     * @psalm-immutable
                      */
                     class Foo {
                         /** @var string */
@@ -275,7 +278,7 @@ final class ImmutableAnnotationTest extends TestCase
             'immutableClassWithCloneAndPropertyChange' => [
                 'code' => '<?php
                     /**
-                     * 
+                     * @psalm-immutable
                      */
                     class Foo {
                         protected string $bar;
@@ -294,7 +297,7 @@ final class ImmutableAnnotationTest extends TestCase
             'immutableClassWithCloneAndPropertyAppend' => [
                 'code' => '<?php
                     /**
-                     * 
+                     * @psalm-immutable
                      */
                     class Foo {
                         protected string $bar;
@@ -316,7 +319,7 @@ final class ImmutableAnnotationTest extends TestCase
                     function takesString(string $s) : void {}
 
                     /**
-                     * 
+                     * @psalm-immutable
                      */
                     class DTO {
                         /** @var string|null */
@@ -340,7 +343,7 @@ final class ImmutableAnnotationTest extends TestCase
             'allowConstructorPrivateUnusedMethods' => [
                 'code' => '<?php
                     /**
-                     * 
+                     * @psalm-immutable
                      */
                     class PaymentShared
                     {
@@ -359,7 +362,7 @@ final class ImmutableAnnotationTest extends TestCase
             'canPassImmutableIntoImmutable' => [
                 'code' => '<?php
                     /**
-                     * 
+                     * @psalm-immutable
                      */
                     class Item {
                         private int $i;
@@ -376,7 +379,7 @@ final class ImmutableAnnotationTest extends TestCase
                     }
 
                     /**
-                     * 
+                     * @psalm-immutable
                      */
                     class Immutable {
                         private $item;
@@ -397,7 +400,7 @@ final class ImmutableAnnotationTest extends TestCase
             'preventNonImmutableTraitInImmutableClass' => [
                 'code' => '<?php
                     /**
-                     * 
+                     * @psalm-immutable
                      */
                     trait ImmutableTrait {
                         public int $i = 0;
@@ -408,7 +411,7 @@ final class ImmutableAnnotationTest extends TestCase
                     }
 
                     /**
-                     * 
+                     * @psalm-immutable
                      */
                     final class NotReallyImmutableClass {
                         use ImmutableTrait;
@@ -417,7 +420,7 @@ final class ImmutableAnnotationTest extends TestCase
             'preventImmutableClassInheritingMutableParent' => [
                 'code' => '<?php
                     /**
-                     * 
+                     * @psalm-immutable
                      */
                     class ImmutableParent {
                         public int $i = 0;
@@ -428,7 +431,7 @@ final class ImmutableAnnotationTest extends TestCase
                     }
 
                     /**
-                     * 
+                     * @psalm-immutable
                      */
                     final class ImmutableClass extends ImmutableParent {}',
             ],
@@ -453,7 +456,7 @@ final class ImmutableAnnotationTest extends TestCase
                     }
 
                     /**
-                     * 
+                     * @psalm-immutable
                      */
                     class Immutable {
                         private Item $item;
@@ -474,7 +477,7 @@ final class ImmutableAnnotationTest extends TestCase
                 'code' => '<?php
                     /**
                      * @psalm-template T
-                     * 
+                     * @psalm-immutable
                      */
                     abstract class Enum {
                         /** @var T */
@@ -496,7 +499,7 @@ final class ImmutableAnnotationTest extends TestCase
 
                     /**
                      * @extends Enum<string>
-                     * 
+                     * @psalm-immutable
                      */
                     class TestEnum extends Enum {
                         public const TEST = "test";
@@ -516,7 +519,7 @@ final class ImmutableAnnotationTest extends TestCase
                     }
 
                     /**
-                     * 
+                     * @psalm-immutable
                      */
                     class A {
                         public int $i;
@@ -533,7 +536,7 @@ final class ImmutableAnnotationTest extends TestCase
             'allowPassingMutableIntoImmutable' => [
                 'code' => '<?php
                     /**
-                     * 
+                     * @psalm-immutable
                      */
                     class Immutable {
                         private $item;
@@ -572,7 +575,7 @@ final class ImmutableAnnotationTest extends TestCase
             'impureGlobalImmutable' => [
                 'code' => '<?php
                     /**
-                     * 
+                     * @psalm-immutable
                      */
                     class A {
                         /**
@@ -634,7 +637,7 @@ final class ImmutableAnnotationTest extends TestCase
             'immutablePropertyAssignmentInternally' => [
                 'code' => '<?php
                     /**
-                     * 
+                     * @psalm-immutable
                      */
                     class A {
                         /** @var int */
@@ -657,7 +660,7 @@ final class ImmutableAnnotationTest extends TestCase
             'immutablePropertyAssignmentExternally' => [
                 'code' => '<?php
                     /**
-                     * 
+                     * @psalm-immutable
                      */
                     class A {
                         /** @var int */
@@ -680,7 +683,7 @@ final class ImmutableAnnotationTest extends TestCase
             'callImpureFunction' => [
                 'code' => '<?php
                     /**
-                     * 
+                     * @psalm-immutable
                      */
                     class A {
                         /** @var int */
@@ -703,7 +706,7 @@ final class ImmutableAnnotationTest extends TestCase
             'callExternalClassMethod' => [
                 'code' => '<?php
                     /**
-                     * 
+                     * @psalm-immutable
                      */
                     class A {
                         /** @var string */
@@ -753,7 +756,8 @@ final class ImmutableAnnotationTest extends TestCase
             ],
             'mustBeImmutableLikeInterfaces' => [
                 'code' => '<?php
-                                        interface SomethingImmutable {
+                    /** @psalm-immutable */
+                    interface SomethingImmutable {
                         /** @psalm-mutation-free */
                         public function someInteger() : int;
                     }
@@ -768,7 +772,8 @@ final class ImmutableAnnotationTest extends TestCase
             ],
             'inheritImmutabilityFromParent' => [
                 'code' => '<?php
-                                        abstract class SomethingImmutable {
+                    /** @psalm-immutable */
+                    abstract class SomethingImmutable {
                         /** @psalm-external-mutation-free */
                         abstract public function someInteger() : int;
                     }
@@ -799,7 +804,7 @@ final class ImmutableAnnotationTest extends TestCase
                     }
 
                     /**
-                     * 
+                     * @psalm-immutable
                      */
                     final class NotReallyImmutableClass {
                         use MutableTrait;
@@ -818,7 +823,7 @@ final class ImmutableAnnotationTest extends TestCase
                     }
 
                     /**
-                     * 
+                     * @psalm-immutable
                      */
                     final class NotReallyImmutableClass extends MutableParent {}',
                 'error_message' => 'MutableDependency',
@@ -959,7 +964,7 @@ final class ImmutableAnnotationTest extends TestCase
             'preventUnset' => [
                 'code' => '<?php
                     /**
-                     * 
+                     * @psalm-immutable
                      */
                     class A {
                         /** @var string */

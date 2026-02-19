@@ -6,6 +6,9 @@ namespace Psalm\Tests\FileManipulation;
 
 use Override;
 
+/**
+ * @psalm-immutable
+ */
 final class UnusedVariableManipulationTest extends FileManipulationTestCase
 {
     #[Override]
