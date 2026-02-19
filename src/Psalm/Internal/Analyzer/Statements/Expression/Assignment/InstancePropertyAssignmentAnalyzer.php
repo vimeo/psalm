@@ -409,7 +409,11 @@ final class InstancePropertyAssignmentAnalyzer
             $real = $lhs_var_id === '$this'
                 ? Mutations::LEVEL_INTERNAL_READ_WRITE
                 : Mutations::LEVEL_EXTERNAL;
-            $mut = $can_set_readonly_property ? Mutations::LEVEL_INTERNAL_READ : $real;
+            $mut = $can_set_readonly_property ?
+                ($property_var_pure_compatible
+                    ? Mutations::LEVEL_NONE
+                    : Mutations::LEVEL_INTERNAL_READ
+                ) : $real;
             $statements_analyzer->signalMutation(
                 $mut,
                 $context,
