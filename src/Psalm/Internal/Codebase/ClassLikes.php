@@ -963,6 +963,9 @@ final class ClassLikes
                 } else if (!$classlike_storage->trait_used) {
                     continue;
                 }
+                if ($classlike_storage->is_interface) {
+                    continue;
+                }
 
                 $mut = $codebase->analyzer->mutable_classes[$fq_class_name_lc] ?? Mutations::LEVEL_NONE;
                 if ($mut <= Mutations::LEVEL_INTERNAL_READ
