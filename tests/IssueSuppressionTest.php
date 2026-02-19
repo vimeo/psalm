@@ -52,6 +52,7 @@ final class IssueSuppressionTest extends TestCase
                      * @psalm-suppress MixedMethodCall
                      * @psalm-suppress MissingReturnType
                      * @psalm-suppress UnusedVariable
+                     * @psalm-mutation-free
                      */
                     public function b() {
                         B::fooFoo()->barBar()->bat()->baz()->bam()->bas()->bee()->bet()->bes()->bis();
@@ -86,7 +87,10 @@ final class IssueSuppressionTest extends TestCase
         $this->addFile(
             (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php',
             '<?php
-                /** @psalm-suppress all */
+                /** 
+                 * @psalm-suppress all
+                 * @psalm-mutation-free
+                 */
                 function foo(): string {
                     return "foo";
                 }',
@@ -123,6 +127,7 @@ final class IssueSuppressionTest extends TestCase
 
                 /** @psalm-suppress MissingThrowsDocblock */
                 if (rand(0, 1)) {
+                    /** @psalm-mutation-free */
                     function example2 (): void {
                         throw new Exception();
                     }
@@ -145,6 +150,7 @@ final class IssueSuppressionTest extends TestCase
             '<?php
                 /** @psalm-suppress MissingThrowsDocblock */
                 if (rand(0, 1)) {
+                    /** @psalm-mutation-free */
                     function example (): void {}
                 }',
         );
@@ -163,7 +169,10 @@ final class IssueSuppressionTest extends TestCase
         $this->addFile(
             (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php',
             '<?php
-                /** @psalm-suppress MissingThrowsDocblock */
+                /**
+                 * @psalm-mutation-free 
+                 * @psalm-suppress MissingThrowsDocblock 
+                 */
                 function example1 (): void {
                     /** @psalm-suppress MissingThrowsDocblock */
                     throw new Exception();

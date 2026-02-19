@@ -7,7 +7,6 @@ namespace Psalm\Internal\Analyzer\Statements\Expression;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -16,6 +15,7 @@ use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\ImpureFunctionCall;
 use Psalm\IssueBuffer;
 use Psalm\Storage\FunctionLikeParameter;
+use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\TaintKind;
 
@@ -86,22 +86,13 @@ final class PrintAnalyzer
             );
         }
 
-        if (!$context->collect_initializations && !$context->collect_mutations) {
-            if ($context->mutation_free || $context->external_mutation_free) {
-                IssueBuffer::maybeAdd(
-                    new ImpureFunctionCall(
-                        'Cannot call print from a mutation-free context',
-                        new CodeLocation($statements_analyzer, $stmt),
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
-            } elseif ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
-                && $statements_analyzer->getSource()->track_mutations
-            ) {
-                $statements_analyzer->getSource()->inferred_has_mutation = true;
-                $statements_analyzer->getSource()->inferred_impure = true;
-            }
-        }
+        $statements_analyzer->signalMutation(
+            Mutations::LEVEL_EXTERNAL,
+            $context,
+            'print',
+            ImpureFunctionCall::class,
+            $stmt,
+        );
 
         $statements_analyzer->node_data->setType($stmt, Type::getInt(false, 1));
 

@@ -102,6 +102,7 @@ final class FilterInputReturnTypeProvider implements FunctionReturnTypeProviderI
             $helper = FilterUtils::getOptionsArgValueOrError(
                 $call_args[3],
                 $statements_analyzer,
+                $event->getContext(),
                 $codebase,
                 $code_location,
                 $function_id,

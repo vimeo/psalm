@@ -13,6 +13,9 @@ use Psalm\Internal\Provider\NodeDataProvider;
  */
 final class NodeCleanerVisitor extends PhpParser\NodeVisitorAbstract
 {
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         private readonly NodeDataProvider $type_provider,
     ) {

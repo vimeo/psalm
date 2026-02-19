@@ -249,6 +249,7 @@ final class StubTest extends TestCase
 
                 class Foo extends \SystemClass
                 {
+                    /** @psalm-pure */
                     public function foo(string $a, string $b): string
                     {
                         return $a . $b;
@@ -327,18 +328,22 @@ final class StubTest extends TestCase
 
                         /**
                          * @return mixed
+                         * 
+                         * @psalm-mutation-free
                          * @psalm-suppress InvalidReturnType
                          */
                         public function create(string $s) {}
 
                         /**
                          * @return mixed
+                         * @psalm-mutation-free
                          * @psalm-suppress InvalidReturnType
                          */
                         public function create2(string $s) {}
 
                         /**
                          * @return mixed
+                         * @psalm-mutation-free
                          * @psalm-suppress InvalidReturnType
                          */
                         public function create3(string $s) {}
@@ -346,12 +351,14 @@ final class StubTest extends TestCase
                         /**
                          * @param mixed $s
                          * @return mixed
+                         * @psalm-mutation-free
                          * @psalm-suppress InvalidReturnType
                          */
                         public function foo($s) {}
 
                         /**
                          * @return mixed
+                         * @psalm-mutation-free
                          * @psalm-suppress InvalidReturnType
                          */
                         public function bar(array $a) {}
@@ -359,18 +366,21 @@ final class StubTest extends TestCase
                 }
                 namespace {
                     /**
+                     * @psalm-mutation-free
                      * @return mixed
                      * @psalm-suppress InvalidReturnType
                      */
                     function create(string $s) {}
 
                     /**
+                     * @psalm-mutation-free
                      * @return mixed
                      * @psalm-suppress InvalidReturnType
                      */
-                    function create2(string $s) {}
+                     function create2(string $s) {}
 
                     /**
+                     * @psalm-mutation-free
                      * @param mixed $s
                      * @return mixed
                      * @psalm-suppress InvalidReturnType
@@ -378,6 +388,7 @@ final class StubTest extends TestCase
                     function foo($s) {}
 
                     /**
+                     * @psalm-mutation-free
                      * @return mixed
                      * @psalm-suppress InvalidReturnType
                      */
@@ -625,6 +636,7 @@ final class StubTest extends TestCase
             '<?php
                 /**
                  * @param string ...$bar
+                 * @psalm-mutation-free 
                  */
                 function variadic() : void {}
                 variadic("hello");',
@@ -766,11 +778,13 @@ final class StubTest extends TestCase
             '<?php
                 namespace ClassAliasStubTest;
 
+                /** @psalm-mutation-free */
                 function foo(A $a) : void {}
 
                 foo(new B());
                 foo(new C());
 
+                /** @psalm-mutation-free */
                 function bar(B $b) : void {}
 
                 bar(new A());
@@ -781,10 +795,12 @@ final class StubTest extends TestCase
 
                 echo $a->bar("hello");
 
+                /** @psalm-mutation-free */
                 function f(): A {
                     return new A;
                 }
 
+                /** @psalm-mutation-free */
                 function getAliased(): B {
                     return f();
                 }
@@ -983,18 +999,22 @@ final class StubTest extends TestCase
             '<?php
                 class C implements I1, I2, I3, I4 {}
 
+                /** @psalm-mutation-free */
                 function foo(I5 $d) : void {
                     $d->getMessage();
                 }
 
+                /** @psalm-mutation-free */
                 function bar(I6 $d) : void {
                     $d->getMessage();
                 }
 
+                /** @psalm-mutation-free */
                 function bat(I7 $d) : void {
                     $d->getMessage();
                 }
 
+                /** @psalm-mutation-free */
                 function baz(I8 $d) : void {
                     $d->getMessage();
                 }',
@@ -1034,7 +1054,10 @@ final class StubTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /** @return iterable<string, array{string,string}> */
+    /**
+     * @return iterable<string, array{string,string}>
+     * @psalm-mutation-free
+     */
     public function versionDependentStubsProvider(): iterable
     {
         yield '7.0' => [
@@ -1109,6 +1132,7 @@ final class StubTest extends TestCase
 
                 class PartiallyStubbedClass  {
                     /**
+                     * @psalm-pure
                      * @param string $a
                      * @return object
                      */
@@ -1116,6 +1140,7 @@ final class StubTest extends TestCase
                         return new self;
                     }
 
+                    /** @psalm-mutation-free */
                     public function bar(int $i) : void {}
                 }
 
@@ -1225,6 +1250,7 @@ final class StubTest extends TestCase
             '<?php
                 class A {
                     /**
+                     * @psalm-pure
                      * @param int $id
                      * @param ?int $lockMode
                      * @param ?int $lockVersion

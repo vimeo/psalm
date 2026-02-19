@@ -238,6 +238,9 @@ final class AssertionReconciler extends Reconciler
         );
     }
 
+    /**
+     * @psalm-pure
+     */
     private static function getMissingType(
         Assertion $assertion,
         bool $inside_loop,
@@ -1433,6 +1436,7 @@ final class AssertionReconciler extends Reconciler
 
     /**
      * @param array<string, Atomic> $existing_var_atomic_types
+     * @psalm-pure
      */
     private static function getCompatibleIntType(
         Union $existing_var_type,
@@ -1461,6 +1465,7 @@ final class AssertionReconciler extends Reconciler
 
     /**
      * @param array<string, Atomic> $existing_var_atomic_types
+     * @psalm-pure
      */
     private static function getCompatibleStringType(
         Union $existing_var_type,
@@ -1488,6 +1493,7 @@ final class AssertionReconciler extends Reconciler
 
     /**
      * @param array<string, Atomic> $existing_var_atomic_types
+     * @psalm-pure
      */
     private static function getCompatibleFloatType(
         Union $existing_var_type,

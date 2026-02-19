@@ -100,6 +100,9 @@ class FileAnalyzer extends SourceAnalyzer
 
     private ?Union $return_type = null;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         public ProjectAnalyzer $project_analyzer,
         protected string $file_path,
@@ -346,11 +349,17 @@ class FileAnalyzer extends SourceAnalyzer
         }
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addNamespacedClassAnalyzer(string $fq_class_name, ClassAnalyzer $class_analyzer): void
     {
         $this->class_analyzers_to_analyze[strtolower($fq_class_name)] = $class_analyzer;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addNamespacedInterfaceAnalyzer(string $fq_class_name, InterfaceAnalyzer $interface_analyzer): void
     {
         $this->interface_analyzers_to_analyze[strtolower($fq_class_name)] = $interface_analyzer;
@@ -417,6 +426,9 @@ class FileAnalyzer extends SourceAnalyzer
         }
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getFunctionLikeAnalyzer(MethodIdentifier $method_id): ?MethodAnalyzer
     {
         $fq_class_name = $method_id->fq_class_name;
@@ -468,6 +480,9 @@ class FileAnalyzer extends SourceAnalyzer
         return $this->aliased_classes_flipped_replaceable;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public static function clearCache(): void
     {
         TypeTokenizer::clearCache();
@@ -517,11 +532,17 @@ class FileAnalyzer extends SourceAnalyzer
         $this->root_file_path = $file_path;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addRequiredFilePath(string $file_path): void
     {
         $this->required_file_paths[$file_path] = true;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addParentFilePath(string $file_path): void
     {
         $this->parent_file_paths[$file_path] = true;
@@ -688,6 +709,9 @@ class FileAnalyzer extends SourceAnalyzer
         return $this->return_type;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function clearSourceBeforeDestruction(): void
     {
         unset($this->source);

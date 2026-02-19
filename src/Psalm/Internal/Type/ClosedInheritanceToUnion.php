@@ -9,13 +9,14 @@ use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
-use function array_keys;
-
 /**
  * @internal
  */
 final class ClosedInheritanceToUnion
 {
+    /**
+     * @psalm-external-mutation-free
+     */
     public static function map(Union $input, Codebase $codebase): Union
     {
         $new_types = [];
@@ -55,6 +56,9 @@ final class ClosedInheritanceToUnion
         return $new_types ? $input->setTypes($new_types) : $input;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     private static function getTemplateResult(TNamedObject $object, Codebase $codebase): TemplateResult
     {
         if (!$object instanceof TGenericObject) {
@@ -71,7 +75,7 @@ final class ClosedInheritanceToUnion
         $offset = 0;
 
         foreach ($storage->template_types as $template_name => $templates) {
-            foreach (array_keys($templates) as $defining_class) {
+            foreach ($templates as $defining_class => $_) {
                 $lower_bounds[$template_name][$defining_class] = $object->type_params[$offset++];
             }
         }

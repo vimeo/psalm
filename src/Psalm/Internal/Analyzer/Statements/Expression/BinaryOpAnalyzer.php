@@ -7,7 +7,6 @@ namespace Psalm\Internal\Analyzer\Statements\Expression;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\AndAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\CoalesceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\ConcatAnalyzer;
@@ -26,6 +25,7 @@ use Psalm\Issue\RedundantConditionGivenDocblockType;
 use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -341,9 +341,12 @@ final class BinaryOpAnalyzer
             if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
                 && $stmt_left_type
                 && $stmt_right_type
-                && ($context->mutation_free || $codebase->alter_code)
+                && ($context->allowed_mutations !== Mutations::LEVEL_ALL
+                    || $codebase->alter_code
+                )
             ) {
                 self::checkForImpureEqualityComparison(
+                    $context,
                     $statements_analyzer,
                     $stmt,
                     $stmt_left_type,
@@ -457,6 +460,7 @@ final class BinaryOpAnalyzer
     }
 
     private static function checkForImpureEqualityComparison(
+        Context $context,
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\BinaryOp\Equal $stmt,
         Union $stmt_left_type,
@@ -478,24 +482,17 @@ final class BinaryOpAnalyzer
                         continue;
                     }
 
-                    if (!$storage->mutation_free) {
-                        if ($statements_analyzer->getSource()
-                                instanceof FunctionLikeAnalyzer
-                            && $statements_analyzer->getSource()->track_mutations
-                        ) {
-                            $statements_analyzer->getSource()->inferred_has_mutation = true;
-                            $statements_analyzer->getSource()->inferred_impure = true;
-                        } else {
-                            IssueBuffer::maybeAdd(
-                                new ImpureMethodCall(
-                                    'Cannot call a possibly-mutating method '
-                                        . $atomic_type->value . '::__toString from a pure context',
-                                    new CodeLocation($statements_analyzer, $stmt),
-                                ),
-                                $statements_analyzer->getSuppressedIssues(),
-                            );
-                        }
-                    }
+                    $statements_analyzer->signalMutation(
+                        $storage->allowed_mutations,
+                        $context,
+                        'possibly-mutating method '
+                                    . $atomic_type->value . '::__toString',
+                        ImpureMethodCall::class,
+                        $stmt,
+                        null,
+                        false,
+                        $storage,
+                    );
                 }
             }
         } elseif ($stmt_right_type->hasString() && $stmt_left_type->hasObjectType()) {
@@ -512,23 +509,17 @@ final class BinaryOpAnalyzer
                         continue;
                     }
 
-                    if (!$storage->mutation_free) {
-                        if ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
-                            && $statements_analyzer->getSource()->track_mutations
-                        ) {
-                            $statements_analyzer->getSource()->inferred_has_mutation = true;
-                            $statements_analyzer->getSource()->inferred_impure = true;
-                        } else {
-                            IssueBuffer::maybeAdd(
-                                new ImpureMethodCall(
-                                    'Cannot call a possibly-mutating method '
-                                        . $atomic_type->value . '::__toString from a pure context',
-                                    new CodeLocation($statements_analyzer, $stmt),
-                                ),
-                                $statements_analyzer->getSuppressedIssues(),
-                            );
-                        }
-                    }
+                    $statements_analyzer->signalMutation(
+                        $storage->allowed_mutations,
+                        $context,
+                        'possibly-mutating method '
+                                    . $atomic_type->value . '::__toString',
+                        ImpureMethodCall::class,
+                        $stmt,
+                        null,
+                        false,
+                        $storage,
+                    );
                 }
             }
         }

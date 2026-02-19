@@ -11,6 +11,7 @@ use Psalm\Context;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\PhpVisitor\ShortClosureVisitor;
 use Psalm\Issue\DuplicateParam;
+use Psalm\Issue\ImpureFunctionCall;
 use Psalm\Issue\PossiblyUndefinedVariable;
 use Psalm\Issue\UndefinedVariable;
 use Psalm\IssueBuffer;
@@ -209,18 +210,14 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
         foreach ($byref_vars as $key => $value) {
             $context->vars_in_scope[$key] = $value;
         }
-
-        if ($closure_analyzer->inferred_impure
-            && $statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
-        ) {
-            $statements_analyzer->getSource()->inferred_impure = true;
-        }
-
-        if ($closure_analyzer->inferred_has_mutation
-            && $statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
-        ) {
-            $statements_analyzer->getSource()->inferred_has_mutation = true;
-        }
+        
+        $statements_analyzer->signalMutation(
+            $closure_analyzer->inferred_mutations,
+            $context,
+            'closure',
+            ImpureFunctionCall::class,
+            $stmt,
+        );
 
         if (!$statements_analyzer->node_data->getType($stmt)) {
             $statements_analyzer->node_data->setType($stmt, Type::getClosure());

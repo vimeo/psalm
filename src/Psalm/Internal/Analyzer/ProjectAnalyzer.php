@@ -338,6 +338,9 @@ final class ProjectAnalyzer
         return isset($this->project_files[$file_path]);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     private function generatePHPVersionMessage(): string
     {
         $codebase = $this->codebase;
@@ -1010,8 +1013,9 @@ final class ProjectAnalyzer
     }
 
     /**
-     * @param  array<string>  $diff_files
+     * @param array<string>  $diff_files
      * @return array<string, string>
+     * @psalm-external-mutation-free
      */
     public function getReferencedFilesFromDiff(array $diff_files, bool $include_referencing_files = true): array
     {
@@ -1107,6 +1111,7 @@ final class ProjectAnalyzer
     /**
      * @param array<string, bool> $issues
      * @throws UnsupportedIssueToFixException
+     * @psalm-external-mutation-free
      */
     public function setIssuesToFix(array $issues): void
     {
@@ -1128,6 +1133,9 @@ final class ProjectAnalyzer
         $this->issues_to_fix = $issues;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function setAllIssuesToFix(): void
     {
         $keyed_issues = array_fill_keys(static::getSupportedIssuesToFix(), true);

@@ -35,6 +35,7 @@ final class AssertAnnotationTest extends TestCase
 
                 /**
                  * @psalm-assert-if-true !null $foo->bar
+                 * @psalm-mutation-free
                  */
                 function assertBarNotNull(Foo $foo): bool
                 {
@@ -101,7 +102,8 @@ final class AssertAnnotationTest extends TestCase
 
             class ImportedAssert
             {
-                /** @psalm-assert non-empty-string $b */
+                /** @psalm-assert non-empty-string $b
+                 * @psalm-pure */
                 public static function notEmptyStrOnly(string $b): void
                 {
                     if ("" === $b) throw new \Exception("");
@@ -1866,6 +1868,7 @@ final class AssertAnnotationTest extends TestCase
 
                     /**
                      * @psalm-assert-if-true !null $foo->bar
+                     * @psalm-mutation-free
                      */
                     function assertBarNotNull(Foo $foo): bool
                     {
@@ -3038,7 +3041,7 @@ final class AssertAnnotationTest extends TestCase
                 ',
                 'assertions' => [
                     '$object===' => 'stdClass',
-                    '$callable===' => 'callable',
+                    '$callable===' => 'impure-callable',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',

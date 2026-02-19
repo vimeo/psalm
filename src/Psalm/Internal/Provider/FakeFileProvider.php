@@ -78,6 +78,9 @@ final class FakeFileProvider extends FileProvider
         $this->fake_file_times[$file_path] = (int)microtime(true);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function deleteFile(string $file_path): void
     {
         unset($this->fake_files[$file_path]);

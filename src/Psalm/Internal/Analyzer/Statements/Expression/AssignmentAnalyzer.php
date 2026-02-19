@@ -41,6 +41,7 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\AssignmentToVoid;
 use Psalm\Issue\ImpureByReferenceAssignment;
+use Psalm\Issue\ImpureGlobalVariable;
 use Psalm\Issue\ImpurePropertyAssignment;
 use Psalm\Issue\InvalidArrayAccess;
 use Psalm\Issue\InvalidArrayOffset;
@@ -77,6 +78,7 @@ use Psalm\Node\Expr\BinaryOp\VirtualShiftRight;
 use Psalm\Node\Expr\VirtualAssign;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\Assertion\Falsy;
+use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TFalse;
@@ -90,7 +92,6 @@ use UnexpectedValueException;
 
 use function assert;
 use function count;
-use function in_array;
 use function is_string;
 use function reset;
 use function spl_object_id;
@@ -175,6 +176,45 @@ final class AssignmentAnalyzer
             $context->possibly_assigned_var_ids[$extended_var_id] = true;
         }
 
+        $root_expr = $assign_var;
+        while ($root_expr instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+            $root_expr = $root_expr->var;
+        }
+
+        $root_is_superglobal = false;
+        // if we don't know where this data is going, treat as a dead-end usage
+        if ($root_expr instanceof PhpParser\Node\Expr\Variable
+            && is_string($root_expr->name)
+        ) {
+            $root_var_name = '$' . $root_expr->name;
+            if (VariableFetchAnalyzer::isSuperGlobal($root_var_name)) {
+                $root_is_superglobal = true;
+                $statements_analyzer->signalMutation(
+                    Mutations::LEVEL_EXTERNAL,
+                    $context,
+                    'superglobal ' . $root_var_name,
+                    ImpureGlobalVariable::class,
+                    $root_expr,
+                );
+            } elseif (isset($context->references_to_external_scope[$root_var_name])) {
+                $statements_analyzer->signalMutation(
+                    Mutations::LEVEL_EXTERNAL,
+                    $context,
+                    'variable ' . $root_var_name . ' from outer scope',
+                    ImpureByReferenceAssignment::class,
+                    $root_expr,
+                );
+            } elseif (isset($context->referenced_globals[$root_var_name])) {
+                $statements_analyzer->signalMutation(
+                    Mutations::LEVEL_EXTERNAL,
+                    $context,
+                    'global variable ' . $root_var_name,
+                    ImpureGlobalVariable::class,
+                    $root_expr,
+                );
+            }
+        }
+
         if ($assign_value) {
             if ($var_id && $assign_value instanceof PhpParser\Node\Expr\Closure) {
                 foreach ($assign_value->uses as $closure_use) {
@@ -190,17 +230,10 @@ final class AssignmentAnalyzer
 
             $was_inside_general_use = $context->inside_general_use;
 
-            $root_expr = $assign_var;
-
-            while ($root_expr instanceof PhpParser\Node\Expr\ArrayDimFetch) {
-                $root_expr = $root_expr->var;
-            }
-
             // if we don't know where this data is going, treat as a dead-end usage
-            if (!$root_expr instanceof PhpParser\Node\Expr\Variable
-                || (is_string($root_expr->name)
-                    && in_array('$' . $root_expr->name, VariableFetchAnalyzer::SUPER_GLOBALS, true))
-            ) {
+            if (!$root_expr instanceof PhpParser\Node\Expr\Variable) {
+                $context->inside_general_use = true;
+            } elseif ($root_is_superglobal) {
                 $context->inside_general_use = true;
             }
 
@@ -287,19 +320,13 @@ final class AssignmentAnalyzer
 
         if ($extended_var_id && isset($context->vars_in_scope[$extended_var_id])) {
             if ($context->vars_in_scope[$extended_var_id]->by_ref) {
-                if ($context->mutation_free) {
-                    IssueBuffer::maybeAdd(
-                        new ImpureByReferenceAssignment(
-                            'Variable ' . $extended_var_id . ' cannot be assigned to as it is passed by reference',
-                            new CodeLocation($statements_analyzer->getSource(), $assign_var),
-                        ),
-                    );
-                } elseif ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
-                    && $statements_analyzer->getSource()->track_mutations
-                ) {
-                    $statements_analyzer->getSource()->inferred_impure = true;
-                    $statements_analyzer->getSource()->inferred_has_mutation = true;
-                }
+                $statements_analyzer->signalMutation(
+                    Mutations::LEVEL_INTERNAL_READ_WRITE,
+                    $context,
+                    'variable ' . $extended_var_id . ' passed by reference',
+                    ImpureByReferenceAssignment::class,
+                    $assign_var,
+                );
 
                 $assign_value_type = $assign_value_type->setByRef(true);
             }
@@ -1650,33 +1677,22 @@ final class AssignmentAnalyzer
             $context->vars_possibly_in_scope[$var_id] = true;
         }
 
-        $property_var_pure_compatible = $statements_analyzer->node_data->isPureCompatible($assign_var->var);
+        $pureCompat = $statements_analyzer->node_data->isPureCompatible($assign_var->var);
+
+        $isThis = $assign_var->var instanceof PhpParser\Node\Expr\Variable
+            && $assign_var->var->name === 'this';
+        
+        $mutations = $isThis ? Mutations::LEVEL_INTERNAL_READ_WRITE : Mutations::LEVEL_EXTERNAL;
 
         // prevents writing to any properties in a mutation-free context
-        if (!$property_var_pure_compatible
-            && !$context->collect_mutations
-            && !$context->collect_initializations
-        ) {
-            if ($context->mutation_free || $context->external_mutation_free) {
-                IssueBuffer::maybeAdd(
-                    new ImpurePropertyAssignment(
-                        'Cannot assign to a property from a mutation-free context',
-                        new CodeLocation($statements_analyzer, $assign_var),
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
-            } elseif ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
-                && $statements_analyzer->getSource()->track_mutations
-            ) {
-                if (!$assign_var->var instanceof PhpParser\Node\Expr\Variable
-                    || $assign_var->var->name !== 'this'
-                ) {
-                    $statements_analyzer->getSource()->inferred_has_mutation = true;
-                }
-
-                $statements_analyzer->getSource()->inferred_impure = true;
-            }
-        }
+        $statements_analyzer->signalMutation(
+            $pureCompat ? Mutations::LEVEL_NONE : $mutations,
+            $context,
+            'property assignment',
+            ImpurePropertyAssignment::class,
+            $assign_var,
+            $mutations,
+        );
     }
 
     private static function analyzeAssignmentToVariable(
@@ -1828,6 +1844,9 @@ final class AssignmentAnalyzer
         }
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     private static function analyzeVariableUse(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $assign_var,

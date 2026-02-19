@@ -65,9 +65,9 @@ trait UnionTrait
     /**
      * Constructs a Union instance
      *
-     * @psalm-external-mutation-free
      * @param non-empty-array<Atomic>     $types
      * @param TProperties $properties
+     * @psalm-mutation-free
      */
     public function __construct(array $types, array $properties = [])
     {
@@ -1599,6 +1599,7 @@ trait UnionTrait
     }
 
     /**
+     * @psalm-api
      * @psalm-mutation-free
      */
     public function isEmptyArray(): bool

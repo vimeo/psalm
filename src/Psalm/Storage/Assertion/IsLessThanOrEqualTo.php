@@ -41,6 +41,9 @@ final class IsLessThanOrEqualTo extends Assertion
         return $assertion instanceof IsGreaterThan && $this->value === $assertion->value;
     }
 
+    /**
+     * @psalm-pure
+     */
     public function doesFilterNullOrFalse(): bool
     {
         return false;

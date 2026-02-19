@@ -21,6 +21,7 @@ final class PropertyMap
      * Gets the method/function call map
      *
      * @return array<lowercase-string, array<string, string>>
+     * @psalm-external-mutation-free
      */
     public static function getPropertyMap(): array
     {
@@ -36,6 +37,9 @@ final class PropertyMap
         return self::$property_map;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public static function inPropertyMap(string $class_name): bool
     {
         return isset(self::getPropertyMap()[strtolower($class_name)]);

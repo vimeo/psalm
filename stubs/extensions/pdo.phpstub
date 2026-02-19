@@ -95,6 +95,7 @@ class PDO
 
     /**
      * @psalm-taint-sink sql $statement
+     * @psalm-external-mutation-free
      *
      * @return int|false
      */

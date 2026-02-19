@@ -39,8 +39,8 @@ final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
     public ?string $description = null;
 
     /**
-     * @psalm-external-mutation-free
      * @param string $name parameter name, without the "$" prefix
+     * @psalm-mutation-free
      */
     public function __construct(
         public string $name,
@@ -79,7 +79,7 @@ final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
 
     /**
      * @internal Should only be used by the MutableTypeVisitor.
-     * @psalm-mutation-free
+     * @psalm-external-mutation-free
      */
     #[Override]
     public function visit(TypeVisitor $visitor): bool

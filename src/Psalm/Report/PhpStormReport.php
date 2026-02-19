@@ -25,6 +25,9 @@ final class PhpStormReport extends Report
         return $output;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     private function format(IssueData $issue_data): string
     {
         $issue_string = '';
@@ -66,6 +69,7 @@ final class PhpStormReport extends Report
 
     /**
      * @param non-empty-list<DataFlowNodeData|array{label: string, entry_path_type: string}> $taint_trace
+     * @psalm-mutation-free
      */
     private function getTaintSnippets(array $taint_trace): string
     {

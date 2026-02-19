@@ -29,6 +29,9 @@ class LongProgress extends Progress
     protected ?Phase $prevPhase = null;
     protected float $started = 0.0;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         protected bool $print_errors = true,
         protected bool $print_infos = true,
@@ -149,6 +152,9 @@ class LongProgress extends Progress
         $this->reportPhaseDuration(null);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     protected function getOverview(): string
     {
         if ($this->number_of_tasks === null) {

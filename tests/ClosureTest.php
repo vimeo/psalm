@@ -966,7 +966,7 @@ final class ClosureTest extends TestCase
                     $handlers = $test->handlers;
                 ',
                 'assertions' => [
-                    '$handlers' => 'list<Closure():void>',
+                    '$handlers' => 'list<impure-Closure():void>',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
@@ -981,7 +981,7 @@ final class ClosureTest extends TestCase
                     }
                 ',
                 'assertions' => [
-                    '$r===' => 'Closure|false',
+                    '$r===' => 'false|impure-Closure',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',

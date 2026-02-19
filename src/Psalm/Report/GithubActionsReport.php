@@ -47,6 +47,9 @@ final class GithubActionsReport extends Report
         return $output;
     }
 
+    /**
+     * @psalm-pure
+     */
     private function escapeData(string $data): string
     {
         return strtr(
@@ -59,6 +62,9 @@ final class GithubActionsReport extends Report
         );
     }
 
+    /**
+     * @psalm-pure
+     */
     private function escapeProperty(mixed $value): string
     {
         return strtr(

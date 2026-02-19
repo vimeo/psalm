@@ -330,9 +330,14 @@ final class TKeyedArray extends Atomic
 
         $params_part = $this->fallback_params !== null ? ',...' : '';
 
-        return  ($this->is_list
-            ? ($this->is_callable ? 'callable-list' : 'list')
-            : ($this->is_callable ? 'callable-array' : 'array')
+        $callablePrefix = '';
+        if ($this->is_callable) {
+            $callablePrefix = 'callable-';
+        }
+
+        return ($this->is_list
+            ? ($callablePrefix . 'list')
+            : ($callablePrefix . 'array')
         ) . '{' . implode(', ', $suffixed_properties) . $params_part . '}';
     }
 
@@ -382,7 +387,7 @@ final class TKeyedArray extends Atomic
 
         $key_type = TypeCombiner::combine($key_types);
 
-        /** @psalm-suppress InaccessibleProperty We just created this type */
+        /** @psalm-suppress InaccessibleProperty, ImpurePropertyAssignment We just created this type */
         $key_type->possibly_undefined = $possibly_undefined;
 
         if ($this->fallback_params === null) {
@@ -763,6 +768,9 @@ final class TKeyedArray extends Atomic
         return $this->is_list ? 'list' : 'array';
     }
 
+    /**
+     * @psalm-pure
+     */
     private function escapeAndQuote(string|int $name): string|int
     {
         if (is_string($name)) {

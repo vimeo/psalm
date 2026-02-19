@@ -155,6 +155,9 @@ final class StatementsAnalyzer extends SourceAnalyzer
 
     private int $depth = 0;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         protected SourceAnalyzer $source,
         public NodeDataProvider $node_data,
@@ -177,6 +180,9 @@ final class StatementsAnalyzer extends SourceAnalyzer
         }
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getDataFlowGraphWithSuppressed(): TaintFlowGraph|CombinedFlowGraph|VariableUseGraph|null
     {
         if ($this->taint_flow_graph && in_array('TaintedInput', $this->getSuppressedIssues())) {
@@ -184,6 +190,9 @@ final class StatementsAnalyzer extends SourceAnalyzer
         }
         return $this->data_flow_graph;
     }
+    /**
+     * @psalm-mutation-free
+     */
     public function getTaintFlowGraphWithSuppressed(): ?TaintFlowGraph
     {
         if ($this->taint_flow_graph && in_array('TaintedInput', $this->getSuppressedIssues())) {
@@ -993,11 +1002,17 @@ final class StatementsAnalyzer extends SourceAnalyzer
         }
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function hasVariable(string $var_name): bool
     {
         return isset($this->all_vars[$var_name]);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function registerVariable(string $var_id, CodeLocation $location, ?int $branch_point): void
     {
         $this->all_vars[$var_id] = $location;
@@ -1009,6 +1024,9 @@ final class StatementsAnalyzer extends SourceAnalyzer
         $this->registerVariableAssignment($var_id, $location);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function registerVariableAssignment(string $var_id, CodeLocation $location): void
     {
         $this->unused_var_locations[$location->getHash()] = [$var_id, $location];
@@ -1051,6 +1069,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
 
     /**
      * @return array<string, DataFlowNode>
+     * @psalm-mutation-free
      */
     public function getParentNodesForPossiblyUndefinedVariable(string $undefined_var_id): array
     {
@@ -1072,17 +1091,25 @@ final class StatementsAnalyzer extends SourceAnalyzer
 
     /**
      * The first appearance of the variable in this set of statements being evaluated
+     *
+     * @psalm-mutation-free
      */
     public function getFirstAppearance(string $var_id): ?CodeLocation
     {
         return $this->all_vars[$var_id] ?? null;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getBranchPoint(string $var_id): ?int
     {
         return $this->var_branch_points[$var_id] ?? null;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addVariableInitialization(string $var_id, int $branch_point): void
     {
         $this->vars_to_initialize[$var_id] = $branch_point;
@@ -1110,6 +1137,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
 
     /**
      * @param array<string, true> $byref_uses
+     * @psalm-external-mutation-free
      */
     public function setByRefUses(array $byref_uses): void
     {
@@ -1118,6 +1146,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
 
     /**
      * @return array<string, array<array-key, CodeLocation>>
+     * @psalm-mutation-free
      */
     public function getUncaughtThrows(Context $context): array
     {
@@ -1169,6 +1198,9 @@ final class StatementsAnalyzer extends SourceAnalyzer
         return $uncaught_throws;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getFunctionAnalyzer(string $function_id): ?FunctionAnalyzer
     {
         return $this->function_analyzers[$function_id] ?? null;
@@ -1190,6 +1222,9 @@ final class StatementsAnalyzer extends SourceAnalyzer
         return parent::getFQCLN();
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function setFQCLN(string $fake_this_class): void
     {
         $this->fake_this_class = $fake_this_class;

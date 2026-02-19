@@ -25,6 +25,9 @@ use Psalm\IssueBuffer;
  */
 abstract class RuntimeCaches
 {
+    /**
+     * @psalm-external-mutation-free
+     */
     public static function clearAll(): void
     {
         IssueBuffer::clearCache();

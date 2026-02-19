@@ -684,7 +684,10 @@ final class InterfaceTest extends TestCase
             'correctClassCasing' => [
                 'code' => '<?php
                     interface F {
-                        /** @return static */
+                        /**
+                         * @return static
+                         * @psalm-mutation-free
+                         */
                         public function m(): self;
                     }
 
@@ -740,6 +743,69 @@ final class InterfaceTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'interfacePropertyWithGetHook' => [
+                'code' => '<?php
+                    interface I {
+                        public string $value { get; }
+                    }
+
+                    class A implements I {
+                        public string $value {
+                            get => "hello";
+                        }
+                    }
+
+                    function test(I $r): string {
+                        return $r->value;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'interfacePropertyWithSetHook' => [
+                'code' => '<?php
+                    interface I {
+                        public string $value { set; }
+                    }
+
+                    class A implements I {
+                        private string $_value = "hello";
+
+                        public string $value = "default" {
+                            set => $this->_value = $value;
+                        }
+                    }
+
+                    function test(I $w): void {
+                        $w->value = "test";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'interfacePropertyWithBothHooks' => [
+                'code' => '<?php
+                    interface I {
+                        public string $name { get; set; }
+                    }
+
+                    class A implements I {
+                        private string $_name = "hello";
+
+                        public string $name {
+                            get => $this->_name;
+                            set => $this->_name = $value;
+                        }
+                    }
+
+                    function test(I $rw): void {
+                        $rw->name = "test";
+                        echo $rw->name;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
         ];
     }
 
@@ -771,6 +837,60 @@ final class InterfaceTest extends TestCase
                         $a->bar = 5;
                     }',
                 'error_message' => 'NoInterfaceProperties',
+            ],
+            'interfacePropertyWithHooksBeforePhp84' => [
+                'code' => '<?php
+                    interface A {
+                        public string $value { get; }
+                    }',
+                'error_message' => 'ParseError',
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'interfacePropertyWithoutHooks' => [
+                'code' => '<?php
+                    interface A {
+                        public string $value;
+                    }',
+                'error_message' => 'ParseError',
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'privateInterfacePropertyWithHooks' => [
+                'code' => '<?php
+                    interface A {
+                        private string $value { get; }
+                    }',
+                'error_message' => 'ParseError',
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'protectedInterfacePropertyWithHooks' => [
+                'code' => '<?php
+                    interface A {
+                        protected string $value { get; }
+                    }',
+                'error_message' => 'ParseError',
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'staticInterfacePropertyWithHooks' => [
+                'code' => '<?php
+                    interface A {
+                        public static string $value { get; }
+                    }',
+                'error_message' => 'ParseError',
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'noVisibilityInterfacePropertyWithHooks' => [
+                'code' => '<?php
+                    interface SomeInterface {
+                        string $value { get; }
+                    }',
+                'error_message' => 'ParseError',
+                'ignored_issues' => [],
+                'php_version' => '8.4',
             ],
             'unimplementedInterfaceMethod' => [
                 'code' => '<?php

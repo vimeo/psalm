@@ -13,8 +13,10 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\ReferenceConstraint;
+use Psalm\Issue\ImpureGlobalVariable;
 use Psalm\Issue\InvalidGlobal;
 use Psalm\IssueBuffer;
+use Psalm\Storage\Mutations;
 
 use function is_string;
 
@@ -44,6 +46,23 @@ final class GlobalAnalyzer
         $function_storage = $source instanceof FunctionLikeAnalyzer
             ? $source->getFunctionLikeStorage($statements_analyzer)
             : null;
+
+        $statements_analyzer->signalMutation(
+            Mutations::LEVEL_EXTERNAL,
+            $context,
+            'global variable',
+            ImpureGlobalVariable::class,
+            $stmt,
+        );
+        if ($context->isMutationFree()) {
+            IssueBuffer::maybeAdd(
+                new ImpureGlobalVariable(
+                    'Cannot use a global variable in a mutation-free context',
+                    new CodeLocation($statements_analyzer, $stmt),
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
 
         foreach ($stmt->vars as $var) {
             if (!$var instanceof PhpParser\Node\Expr\Variable) {

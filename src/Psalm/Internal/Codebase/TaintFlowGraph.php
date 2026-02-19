@@ -83,11 +83,17 @@ final class TaintFlowGraph extends DataFlowGraph
         }
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addSource(DataFlowNode $node): void
     {
         $this->sources[$node->id] = $node;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addSink(DataFlowNode $node): void
     {
         $this->sinks[$node->id] = $node;
@@ -95,6 +101,9 @@ final class TaintFlowGraph extends DataFlowGraph
         $this->nodes[$node->id] = $node;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addGraph(self $other): void
     {
         $this->sources += $other->sources;
@@ -119,6 +128,9 @@ final class TaintFlowGraph extends DataFlowGraph
         }
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getPredecessorPath(DataFlowNode $source): string
     {
         $location_summary = '';
@@ -150,6 +162,9 @@ final class TaintFlowGraph extends DataFlowGraph
         return $source_descriptor;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getSuccessorPath(DataFlowNode $sink): string
     {
         $location_summary = '';
@@ -183,6 +198,7 @@ final class TaintFlowGraph extends DataFlowGraph
 
     /**
      * @return list<array{location: ?CodeLocation, label: string, entry_path_type: string}>
+     * @psalm-mutation-free
      */
     public function getIssueTrace(DataFlowNode $source): array
     {

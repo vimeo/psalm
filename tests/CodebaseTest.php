@@ -57,7 +57,10 @@ final class CodebaseTest extends TestCase
         );
     }
 
-    /** @return iterable<int,array{string,string,bool}> */
+    /**
+     * @return iterable<int,array{string,string,bool}>
+     * @psalm-mutation-free
+     */
     public function typeContainments(): iterable
     {
         yield ['int', 'int|string', true];
@@ -86,7 +89,10 @@ final class CodebaseTest extends TestCase
         );
     }
 
-    /** @return iterable<int,array{string,string,bool}> */
+    /**
+     * @return iterable<int,array{string,string,bool}>
+     * @psalm-mutation-free
+     */
     public function typeIntersections(): iterable
     {
         yield ['int', 'int|string', true];
@@ -123,7 +129,10 @@ final class CodebaseTest extends TestCase
         );
     }
 
-    /** @return iterable<int,array{string,array{string,string}}> */
+    /**
+     * @return iterable<int,array{string,array{string,string}}>
+     * @psalm-mutation-free
+     */
     public function iterableParams(): iterable
     {
         yield ['iterable<int,string>', ['int', 'string']];
@@ -146,7 +155,11 @@ final class CodebaseTest extends TestCase
                     /** @var string */
                     private $prop = "";
 
-                    /** @return void */
+                    /**
+                     * @psalm-mutation-free
+                     *  
+                     * @return void
+                     */
                     public function m(int $_i = 1) {}
                 }
             ',
@@ -224,6 +237,7 @@ final class CodebaseTest extends TestCase
             'somefile.php',
             '<?php
                 namespace Psalm\CurrentTest;
+                /** @psalm-pure */
                 function invalidReturnType(int $value): string
                 {
                     return $value;
@@ -269,7 +283,10 @@ final class CodebaseTest extends TestCase
             '<?php
                 namespace Psalm\CurrentTest;
 
-                /** @psalm-suppress InvalidReturnType */
+                /**
+                 * @psalm-suppress InvalidReturnType
+                 * @psalm-pure
+                 */
                 function invalidReturnType(int $value): string
                 {
                     /** @psalm-suppress InvalidReturnStatement */

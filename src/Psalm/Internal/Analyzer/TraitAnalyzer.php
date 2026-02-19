@@ -18,6 +18,9 @@ use function assert;
  */
 final class TraitAnalyzer extends ClassLikeAnalyzer
 {
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         Trait_ $class,
         SourceAnalyzer $source,

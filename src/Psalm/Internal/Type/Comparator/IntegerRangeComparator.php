@@ -21,6 +21,8 @@ final class IntegerRangeComparator
 {
     /**
      * This method is used to check if an integer range can be contained in another
+     *
+     * @psalm-pure
      */
     public static function isContainedBy(
         TIntRange $input_type_part,

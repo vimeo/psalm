@@ -1085,7 +1085,7 @@ final class MethodCallTest extends TestCase
 
                     if ($main->getProperty() !== null && $main->getProperty()->test()) {}',
             ],
-            'getterTypeInferring' => [
+            'getterTypeInferring1' => [
                 'code' => '<?php
                     class A {
                         /** @var int|string|null */

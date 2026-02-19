@@ -84,6 +84,9 @@ final class FileStorage
     /** @var Aliases[] */
     public array $namespace_aliases = [];
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(public string $file_path)
     {
     }

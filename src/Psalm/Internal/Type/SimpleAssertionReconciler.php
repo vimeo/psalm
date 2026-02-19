@@ -2981,6 +2981,7 @@ final class SimpleAssertionReconciler extends Reconciler
 
     /**
      * @psalm-assert-if-true TCallableObject|TObjectWithProperties|TNamedObject $type
+     * @psalm-mutation-free
      */
     private static function areIntersectionTypesAllowed(Codebase $codebase, Atomic $type): bool
     {

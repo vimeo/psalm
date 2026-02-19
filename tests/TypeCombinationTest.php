@@ -185,8 +185,9 @@ final class TypeCombinationTest extends TestCase
 
     /**
      * @return array<string,array{string,non-empty-list<string>}>
+     * @psalm-pure
      */
-    public function providerTestValidTypeCombination(): array
+    public function providerTestValidTypeCombination(): iterable
     {
         return [
             'complexArrayFallback1' => [
@@ -599,7 +600,7 @@ final class TypeCombinationTest extends TestCase
                 ],
             ],
             'combineClosures' => [
-                'Closure(A):void|Closure(B):void',
+                'impure-Closure(A):void|impure-Closure(B):void',
                 [
                     'Closure(A):void',
                     'Closure(B):void',
@@ -669,56 +670,56 @@ final class TypeCombinationTest extends TestCase
                 ],
             ],
             'combineCallableAndCallableString' => [
-                'callable',
+                'impure-callable',
                 [
                     'callable',
                     'callable-string',
                 ],
             ],
             'combineCallableStringAndCallable' => [
-                'callable',
+                'impure-callable',
                 [
                     'callable-string',
                     'callable',
                 ],
             ],
             'combineCallableAndCallableObject' => [
-                'callable',
+                'impure-callable',
                 [
                     'callable',
                     'callable-object',
                 ],
             ],
             'combineCallableObjectAndCallable' => [
-                'callable',
+                'impure-callable',
                 [
                     'callable-object',
                     'callable',
                 ],
             ],
             'combineCallableAndCallableArray' => [
-                'callable',
+                'impure-callable',
                 [
                     'callable',
                     'callable-array',
                 ],
             ],
             'combineCallableArrayAndCallable' => [
-                'callable',
+                'impure-callable',
                 [
                     'callable-array',
                     'callable',
                 ],
             ],
             'combineCallableAndCallableList' => [
-                'callable',
+                'impure-callable',
                 [
                     'callable',
                     'callable-list',
                 ],
             ],
             'combineCallableListAndCallable' => [
-                'callable',
+                'impure-callable',
                 [
                     'callable-list',
                     'callable',

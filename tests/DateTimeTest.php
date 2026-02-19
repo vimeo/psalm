@@ -29,6 +29,7 @@ final class DateTimeTest extends TestCase
             '<?php
 
                 /**
+                 * @psalm-mutation-free
                  * @return "foo"|"bar"
                  */
                 function getString(): string
@@ -62,6 +63,7 @@ final class DateTimeTest extends TestCase
             '<?php
 
                 /**
+                 * @psalm-mutation-free
                  * @return "+1 day"|"bar"
                  */
                 function getString(): string
@@ -87,6 +89,9 @@ final class DateTimeTest extends TestCase
         return [
             'modify' => [
                 'code' => '<?php
+                    /**
+                     * @psalm-mutation-free
+                     */
                     function getString(): string
                     {
                         return "";
@@ -105,6 +110,7 @@ final class DateTimeTest extends TestCase
             'modifyWithValidConstant' => [
                 'code' => '<?php
                     /**
+                     * @psalm-mutation-free
                      * @return "+1 day"|"+2 day"
                      */
                     function getString(): string

@@ -433,6 +433,9 @@ final class MethodCallAnalyzer extends CallAnalyzer
         return true;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public static function hasNullsafe(PhpParser\Node\Expr $expr): bool
     {
         if ($expr instanceof PhpParser\Node\Expr\MethodCall

@@ -128,8 +128,6 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
 
     public bool $has_yield = false;
 
-    public bool $mutation_free = false;
-
     public ?string $return_type_description = null;
 
     /**
@@ -141,7 +139,10 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
 
     public bool $is_static = false;
 
-    public bool $pure = false;
+    /** @var Mutations::LEVEL_* */
+    public int $allowed_mutations = Mutations::LEVEL_ALL;
+
+    public bool $has_mutations_annotation = false;
 
     /**
      * Whether or not the function output is dependent solely on input - a function can be
@@ -182,7 +183,34 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
     public bool $public_api = false;
 
     /**
+     * @psalm-mutation-free
+     */
+    public function isMutationFree(): bool
+    {
+        return $this->allowed_mutations <= Mutations::LEVEL_INTERNAL_READ;
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function isExternalMutationFree(): bool
+    {
+        return $this->allowed_mutations <= Mutations::LEVEL_INTERNAL_READ_WRITE;
+    }
+
+    /**
+     * @psalm-api
+     * @psalm-mutation-free
+     */
+    public function isPure(): bool
+    {
+        return $this->allowed_mutations <= Mutations::LEVEL_NONE;
+    }
+
+    /**
      * Used in the Language Server
+     *
+     * @psalm-mutation-free
      */
     public function getHoverMarkdown(): string
     {
@@ -212,6 +240,9 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
         return $visibility_text . ' ' . $symbol_text;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getCompletionSignature(): string
     {
         $symbol_text = 'function ' . $this->cased_name . '('   . implode(
@@ -238,6 +269,7 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
     /**
      * @internal
      * @param list<FunctionLikeParameter> $params
+     * @psalm-external-mutation-free
      */
     public function setParams(array $params): void
     {
@@ -248,6 +280,7 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
 
     /**
      * @internal
+     * @psalm-external-mutation-free
      */
     public function addParam(FunctionLikeParameter $param, ?bool $lookup_value = null): void
     {

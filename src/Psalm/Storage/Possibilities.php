@@ -18,6 +18,7 @@ final class Possibilities
 
     /**
      * @param list<Assertion> $rule
+     * @psalm-mutation-free
      */
     public function __construct(
         /**
@@ -29,6 +30,9 @@ final class Possibilities
     ) {
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function getUntemplatedCopy(
         TemplateResult $template_result,
         ?string $this_var_id,

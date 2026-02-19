@@ -13,6 +13,9 @@ final class MethodParamTree extends ParseTree
 {
     public string $default = '';
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         public string $name,
         public bool $byref,

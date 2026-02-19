@@ -75,6 +75,7 @@ final class ConstantTest extends TestCase
 
                 require("tests/file1.php");
 
+                /** @psalm-pure */
                 function bar(): Bar
                 {
                     return bar;

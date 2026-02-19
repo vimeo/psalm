@@ -11,6 +11,7 @@ use Psalm\Type\TaintKind;
 
 /**
  * @psalm-suppress UnusedClass
+ * @psalm-immutable
  */
 final class RemoveAllTaintsPlugin implements RemoveTaintsInterface
 {

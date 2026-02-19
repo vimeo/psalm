@@ -6,13 +6,16 @@ namespace Psalm\Plugin\EventHandler\Event;
 
 use Psalm\Codebase;
 
+/**
+ * @psalm-immutable
+ */
 final class StringInterpreterEvent
 {
     /**
      * Called after a statement has been checked
      *
-     * @psalm-external-mutation-free
      * @internal
+     * @psalm-mutation-free
      */
     public function __construct(
         private readonly string $value,

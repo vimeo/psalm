@@ -81,15 +81,15 @@ final class FunctionCallReturnTypeFetcher
                 Type::getAtomicStringFromLiteral($function_id),
                 null,
                 $statements_analyzer,
+                $context,
                 true,
             );
 
             if ($candidate_callable) {
                 $stmt_type = new Union([new TClosure(
-                    'Closure',
                     $candidate_callable->params,
                     $candidate_callable->return_type,
-                    $candidate_callable->is_pure,
+                    $candidate_callable->allowed_mutations,
                 )]);
             } else {
                 $stmt_type = Type::getClosure();
@@ -736,6 +736,9 @@ final class FunctionCallReturnTypeFetcher
         }
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public static function taintUsingStorage(
         FunctionLikeStorage $function_storage,
         TaintFlowGraph $graph,

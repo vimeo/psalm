@@ -345,6 +345,9 @@ final class KeyedArrayComparator
         return $all_types_contain;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public static function coerceToObjectWithProperties(
         Codebase $codebase,
         TNamedObject $input_type_part,

@@ -23,6 +23,9 @@ final class YieldTypeCollector extends NodeVisitorAbstract
     /** @var list<Union> */
     private array $yield_types = [];
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         private readonly NodeDataProvider $nodes,
     ) {

@@ -413,7 +413,6 @@ final class ArgumentsAnalyzer
 
             $replaced_type = new Union([
                 new TCallable(
-                    'callable',
                     array_reverse($function_like_params),
                 ),
             ]);
@@ -1279,6 +1278,7 @@ final class ArgumentsAnalyzer
         PhpParser\Node\Expr\PropertyFetch $stmt,
         string $fq_class_name,
         string $prop_name,
+        ?string $lhs_var_id,
     ): void {
         $property_id = $fq_class_name . '::$' . $prop_name;
 
@@ -1305,6 +1305,7 @@ final class ArgumentsAnalyzer
                 $property_storage,
                 $declaring_class_storage,
                 $context,
+                $lhs_var_id,
             );
         }
     }
@@ -1333,6 +1334,15 @@ final class ArgumentsAnalyzer
         if ($arg->value instanceof PhpParser\Node\Expr\PropertyFetch
             && $arg->value->name instanceof PhpParser\Node\Identifier) {
             $prop_name = $arg->value->name->name;
+
+            // @todo atm only works for simple fetch, $a->foo, not $a->foo->bar
+            // I guess there's a function to do this, but I couldn't locate it
+            $var_id = ExpressionIdentifier::getVarId(
+                $arg->value->var,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
+            );
+
             if (!empty($statements_analyzer->getFQCLN())) {
                 $fq_class_name = $statements_analyzer->getFQCLN();
 
@@ -1342,29 +1352,21 @@ final class ArgumentsAnalyzer
                     $arg->value,
                     $fq_class_name,
                     $prop_name,
+                    $var_id,
                 );
-            } else {
-                // @todo atm only works for simple fetch, $a->foo, not $a->foo->bar
-                // I guess there's a function to do this, but I couldn't locate it
-                $var_id = ExpressionIdentifier::getVarId(
-                    $arg->value->var,
-                    $statements_analyzer->getFQCLN(),
-                    $statements_analyzer,
-                );
+            } elseif ($var_id && isset($context->vars_in_scope[$var_id])) {
+                foreach ($context->vars_in_scope[$var_id]->getAtomicTypes() as $atomic_type) {
+                    if ($atomic_type instanceof TNamedObject) {
+                        $fq_class_name = $atomic_type->value;
 
-                if ($var_id && isset($context->vars_in_scope[$var_id])) {
-                    foreach ($context->vars_in_scope[$var_id]->getAtomicTypes() as $atomic_type) {
-                        if ($atomic_type instanceof TNamedObject) {
-                            $fq_class_name = $atomic_type->value;
-
-                            self::handleByRefReadonlyArg(
-                                $statements_analyzer,
-                                $context,
-                                $arg->value,
-                                $fq_class_name,
-                                $prop_name,
-                            );
-                        }
+                        self::handleByRefReadonlyArg(
+                            $statements_analyzer,
+                            $context,
+                            $arg->value,
+                            $fq_class_name,
+                            $prop_name,
+                            $var_id,
+                        );
                     }
                 }
             }

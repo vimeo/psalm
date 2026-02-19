@@ -13,6 +13,9 @@ use Psalm\Internal\DataFlow\DataFlowNode;
  */
 final class CombinedFlowGraph extends DataFlowGraph
 {
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         public readonly VariableUseGraph $variable_use_graph,
         public readonly TaintFlowGraph $taint_flow_graph,
@@ -36,11 +39,17 @@ final class CombinedFlowGraph extends DataFlowGraph
         $this->taint_flow_graph->addPath($from, $to, $path_type, $added_taints, $removed_taints);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addSource(DataFlowNode $node): void
     {
         $this->taint_flow_graph->addSource($node);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addSink(DataFlowNode $node): void
     {
         $this->taint_flow_graph->addSink($node);

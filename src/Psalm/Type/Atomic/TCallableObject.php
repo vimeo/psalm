@@ -34,7 +34,6 @@ final class TCallableObject extends TObject
         if ($this->callable !== null) {
             $key .= $this->callable->getParamString() . $this->callable->getReturnTypeString();
         }
-
         return $key;
     }
 

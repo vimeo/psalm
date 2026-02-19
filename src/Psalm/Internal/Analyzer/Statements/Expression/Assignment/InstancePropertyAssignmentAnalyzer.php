@@ -66,6 +66,7 @@ use Psalm\Node\VirtualArg;
 use Psalm\Node\VirtualIdentifier;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\Mutations;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -83,7 +84,7 @@ use function array_pop;
 use function count;
 use function in_array;
 use function reset;
-use function strpos;
+use function str_ends_with;
 use function strtolower;
 
 /**
@@ -363,6 +364,7 @@ final class InstancePropertyAssignmentAnalyzer
         PropertyStorage $property_storage,
         ClassLikeStorage $declaring_class_storage,
         Context $context,
+        ?string $lhs_var_id,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -377,37 +379,57 @@ final class InstancePropertyAssignmentAnalyzer
             true,
         );
 
-        $project_analyzer = $statements_analyzer->getProjectAnalyzer();
-
-        if ($appearing_property_class && ($property_storage->readonly || $codebase->alter_code)) {
+        $can_set_readonly_property = true;
+        if ($appearing_property_class) {
             $can_set_readonly_property = $context->self
                 && $context->calling_method_id
                 && ($appearing_property_class === $context->self
                     || $codebase->classExtends($context->self, $appearing_property_class))
-                && (strpos($context->calling_method_id, '::__construct')
-                    || strpos($context->calling_method_id, '::unserialize')
-                    || strpos($context->calling_method_id, '::__unserialize')
-                    || strpos($context->calling_method_id, '::__clone')
+                && (str_ends_with($context->calling_method_id, '::__construct')
+                    || str_ends_with($context->calling_method_id, '::unserialize')
+                    || str_ends_with($context->calling_method_id, '::__unserialize')
+                    || str_ends_with($context->calling_method_id, '::__clone')
                     || $property_storage->allow_private_mutation
                     || $property_var_pure_compatible);
 
-            if (!$can_set_readonly_property) {
-                if ($property_storage->readonly) {
-                    IssueBuffer::maybeAdd(
-                        new InaccessibleProperty(
-                            $property_id . ' is marked readonly',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                } elseif (!$declaring_class_storage->mutation_free
-                    && isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation'])
-                    && $statements_analyzer->getSource()
-                        instanceof FunctionLikeAnalyzer
-                ) {
-                    $codebase->analyzer->addMutableClass($declaring_class_storage->name);
-                }
+            if (!$can_set_readonly_property && $property_storage->readonly) {
+                IssueBuffer::maybeAdd(
+                    new InaccessibleProperty(
+                        $property_id . ' is marked readonly',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
             }
+        }
+        
+        if ($lhs_var_id !== null
+            && isset($context->vars_in_scope[$lhs_var_id])
+        ) {
+            $real = $lhs_var_id === '$this'
+                ? Mutations::LEVEL_INTERNAL_READ_WRITE
+                : Mutations::LEVEL_EXTERNAL;
+            $mut = $can_set_readonly_property ?
+                ($property_var_pure_compatible
+                    ? Mutations::LEVEL_NONE
+                    : Mutations::LEVEL_INTERNAL_READ
+                ) : $real;
+            $statements_analyzer->signalMutation(
+                $mut,
+                $context,
+                'property assignment to ' . $property_id,
+                ImpurePropertyAssignment::class,
+                $stmt,
+                // We must not emit errors if the property is readonly
+                // but we're in a constructor/unserialize, etc,
+                // but we still must make sure the method mutatibility inference logic knows
+                // that the property is being mutated.
+                $real,
+            );
+            $codebase->analyzer->addMutableClass(
+                $declaring_class_storage->name,
+                $mut,
+            );
         }
     }
 
@@ -974,7 +996,14 @@ final class InstancePropertyAssignmentAnalyzer
                     }
                 }
 
-                if (!$class_exists) {
+                // Test if the property has a 'set' hook
+                $interface_property = $stmt->name instanceof PhpParser\Node\Identifier
+                    ? $interface_storage->properties[$stmt->name->name] ?? null
+                    : null;
+                $has_set_hook = $codebase->analysis_php_version_id >= 8_04_00
+                    && $interface_property?->hook_set !== null;
+
+                if (!$class_exists && !$has_set_hook) {
                     if (IssueBuffer::accepts(
                         new NoInterfaceProperties(
                             'Interfaces cannot have properties',
@@ -1295,30 +1324,8 @@ final class InstancePropertyAssignmentAnalyzer
                 $property_storage,
                 $declaring_class_storage,
                 $context,
+                $lhs_var_id,
             );
-
-            if (!$property_storage->readonly
-                && !$context->collect_mutations
-                && !$context->collect_initializations
-                && $lhs_var_id !== null
-                && isset($context->vars_in_scope[$lhs_var_id])
-                && !$context->vars_in_scope[$lhs_var_id]->allow_mutations
-            ) {
-                if ($context->mutation_free) {
-                    IssueBuffer::maybeAdd(
-                        new ImpurePropertyAssignment(
-                            'Cannot assign to a property from a mutation-free context',
-                            new CodeLocation($statements_analyzer, $stmt),
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                } elseif ($statements_analyzer->getSource()
-                    instanceof FunctionLikeAnalyzer
-                    && $statements_analyzer->getSource()->track_mutations
-                ) {
-                    $statements_analyzer->getSource()->inferred_impure = true;
-                }
-            }
 
             if ($property_storage->getter_method) {
                 $getter_id = $lhs_var_id . '->' . $property_storage->getter_method . '()';

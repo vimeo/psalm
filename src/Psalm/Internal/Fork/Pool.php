@@ -42,6 +42,9 @@ use const PHP_EOL;
 final class Pool
 {
     private readonly WorkerPool $pool;
+    /**
+     * @psalm-pure
+     */
     public function __serialize(): array
     {
         return [];
@@ -58,6 +61,9 @@ final class Pool
             $threads,
             new ContextWorkerFactory(
                 contextFactory: new class() implements ContextFactory {
+                    /**
+                     * @psalm-mutation-free
+                     */
                     public function __construct(
                         private readonly int $childConnectTimeout = 5,
                         private readonly IpcHub $ipcHub = new LocalIpcHub(),

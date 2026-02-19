@@ -62,6 +62,8 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\EnumCaseStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\Mutations;
+use Psalm\Storage\PropertyHookStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
@@ -80,6 +82,7 @@ use function assert;
 use function count;
 use function implode;
 use function ltrim;
+use function min;
 use function preg_match;
 use function preg_split;
 use function sprintf;
@@ -116,6 +119,9 @@ final class ClassLikeNodeScanner
      */
     public array $type_aliases = [];
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         private readonly Codebase $codebase,
         private readonly FileStorage $file_storage,
@@ -701,8 +707,11 @@ final class ClassLikeNodeScanner
                 }
             }
 
-            $storage->mutation_free = $docblock_info->mutation_free;
-            $storage->external_mutation_free = $docblock_info->external_mutation_free;
+            $storage->allowed_mutations = min(
+                $docblock_info->allowed_mutations,
+                $storage->allowed_mutations,
+            );
+            $storage->has_mutations_annotation = $docblock_info->has_mutations_annotation;
             $storage->specialize_instance = $docblock_info->taint_specialize;
 
             $storage->override_property_visibility = $docblock_info->override_property_visibility;
@@ -791,12 +800,19 @@ final class ClassLikeNodeScanner
                 if ($attribute->fq_class_name === 'Psalm\\Immutable'
                     || $attribute->fq_class_name === 'JetBrains\\PhpStorm\\Immutable'
                 ) {
-                    $storage->mutation_free = true;
-                    $storage->external_mutation_free = true;
+                    $storage->allowed_mutations = min(
+                        Mutations::LEVEL_INTERNAL_READ,
+                        $storage->allowed_mutations,
+                    );
+                    $storage->has_mutations_annotation = true;
                 }
 
                 if ($attribute->fq_class_name === 'Psalm\\ExternalMutationFree') {
-                    $storage->external_mutation_free = true;
+                    $storage->allowed_mutations = min(
+                        Mutations::LEVEL_INTERNAL_READ_WRITE,
+                        $storage->allowed_mutations,
+                    );
+                    $storage->has_mutations_annotation = true;
                 }
 
                 if ($attribute->fq_class_name === 'AllowDynamicProperties' && $storage->readonly) {
@@ -1229,8 +1245,8 @@ final class ClassLikeNodeScanner
         $storage->cased_name = '__construct';
         $storage->defining_fqcln = $class_storage->name;
 
-        $storage->mutation_free = $storage->external_mutation_free = true;
-        $storage->mutation_free_inferred = true;
+        $storage->allowed_mutations = Mutations::LEVEL_NONE;
+        $storage->mutation_free_assumed = true;
 
         $class_storage->declaring_method_ids['__construct'] = new MethodIdentifier(
             $class_storage->name,
@@ -1807,6 +1823,61 @@ final class ClassLikeNodeScanner
 
                 $property_storage->attributes[] = $attribute;
             }
+
+            // Process property hooks
+            foreach ($stmt->hooks as $hook) {
+                $hook_name = strtolower($hook->name->toString());
+                if ($hook_name === 'get'
+                    || $hook_name === 'set'
+                ) {
+                    $hook_storage = new PropertyHookStorage(
+                        $hook_name === 'get',
+                        $hook->isFinal(),
+                        $hook->byRef,
+                        new CodeLocation(
+                            $this->file_scanner,
+                            $hook,
+                            null,
+                            true,
+                        ),
+                    );
+                    if ($hook_storage->is_get) {
+                        $property_storage->hook_get = $hook_storage;
+                    } else {
+                        $property_storage->hook_set = $hook_storage;
+                    }
+                } else {
+                    $storage->docblock_issues[] = new ParseError(
+                        'Property hooks must be either "get" or "set"',
+                        new CodeLocation($this->file_scanner, $stmt, null, true),
+                    );
+                }
+            }
+
+            // Validate interface properties
+            if ($storage->is_interface && $this->codebase->analysis_php_version_id >= 8_04_00) {
+                if (!$property_storage->hook_get && !$property_storage->hook_set) {
+                    $storage->docblock_issues[] = new ParseError(
+                        'Interface properties must have at least one hook',
+                        new CodeLocation($this->file_scanner, $stmt, null, true),
+                    );
+                }
+
+                if ($stmt->isStatic()) {
+                    $storage->docblock_issues[] = new ParseError(
+                        'Interface properties cannot be static',
+                        new CodeLocation($this->file_scanner, $stmt, null, true),
+                    );
+                }
+
+                // Interface properties must be explicitly declared as public
+                if (!$stmt->isPublic() || ($stmt->flags & PhpParser\Modifiers::VISIBILITY_MASK) === 0) {
+                    $storage->docblock_issues[] = new ParseError(
+                        'Interface properties must be public',
+                        new CodeLocation($this->file_scanner, $stmt, null, true),
+                    );
+                }
+            }
         }
     }
 
@@ -1926,10 +1997,11 @@ final class ClassLikeNodeScanner
     }
 
     /**
-     * @param  array<string>    $type_alias_comment_lines
-     * @param  array<string, TypeAlias> $type_aliases
+     * @param array<string>    $type_alias_comment_lines
+     * @param array<string, TypeAlias> $type_aliases
      * @return array<string, InlineTypeAlias>
      * @throws DocblockParseException if there was a problem parsing the docblock
+     * @psalm-external-mutation-free
      */
     private static function getTypeAliasesFromCommentLines(
         array $type_alias_comment_lines,

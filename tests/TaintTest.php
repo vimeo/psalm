@@ -34,7 +34,8 @@ final class TaintTest extends TestCase
         'MissingPropertyType', 'UndefinedMagicPropertyAssignment', 'InvalidStringClass', 'PossiblyInvalidIterator',
         'InvalidReturnStatement', 'ArgumentTypeCoercion', 'UnresolvableInclude', 'UndefinedClass', 'RedundantCast',
         'MixedArrayAssignment', 'InvalidReturnStatement', 'InvalidArrayOffset', 'UndefinedFunction', 'ImplicitToStringCast',
-        'InvalidArgument', 'UndefinedVariable',
+        'InvalidArgument', 'UndefinedVariable', 'MissingPureAnnotation', 'MissingImmutableAnnotation',
+        'MissingAbstractPureAnnotation',
     ];
     public function testTaintKindNoHoles(): void
     {
@@ -107,6 +108,7 @@ final class TaintTest extends TestCase
 
     /**
      * @return array<string, array{code:string}>
+     * @psalm-pure
      */
     public function providerValidCodeParse(): array
     {
@@ -808,6 +810,7 @@ final class TaintTest extends TestCase
 
     /**
      * @return array<string, array{code: string, error_message: string, php_version?: string}>
+     * @psalm-pure
      */
     public function providerInvalidCodeParse(): array
     {
@@ -2139,6 +2142,7 @@ final class TaintTest extends TestCase
                  * @psalm-flow ($format, $args) -> return
                  */
                 function variadic_test(string $format, ...$args) : string {
+                    return sprintf($format, ...$args);
                 }
 
                 echo variadic_test(\'\', \'\', $_GET[\'taint\'], \'\');',
@@ -2273,7 +2277,9 @@ final class TaintTest extends TestCase
                           * @return string
                           * @psalm-flow ($text) -> return
                           */
-                        public function esc_like($text) {}
+                        public function esc_like($text) {
+                            return $text;
+                        }
 
                         /**
                           * @param string $query
@@ -2300,7 +2306,9 @@ final class TaintTest extends TestCase
                           * @return string
                           * @psalm-flow ($text) -> return
                           */
-                        public static function esc_like($text) {}
+                        public static function esc_like($text) {
+                            return $text;
+                        }
 
                         /**
                           * @param string $query
@@ -2746,6 +2754,7 @@ final class TaintTest extends TestCase
 
     /**
      * @return array<string, array{code: string, expectedIssueTypes: list<string>}>
+     * @psalm-pure
      */
     public function multipleTaintIssuesAreDetectedDataProvider(): array
     {

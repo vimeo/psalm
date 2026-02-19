@@ -29,7 +29,7 @@ final class AnnotationTest extends TestCase
     public function testLessSpecificImplementedReturnTypeWithDocblockOnMultipleLines(): void
     {
         $this->expectException(CodeException::class);
-        $this->expectExceptionMessage('LessSpecificImplementedReturnType - somefile.php:16:');
+        $this->expectExceptionMessage('LessSpecificImplementedReturnType - somefile.php:17:');
 
         $this->addFile(
             'somefile.php',
@@ -39,6 +39,7 @@ final class AnnotationTest extends TestCase
                 {
                     /**
                      * @return $this
+                     * @psalm-mutation-free
                      */
                     public function execute()
                     {
@@ -59,7 +60,7 @@ final class AnnotationTest extends TestCase
     public function testLessSpecificImplementedReturnTypeWithDocblockOnMultipleLinesWithMultipleClasses(): void
     {
         $this->expectException(CodeException::class);
-        $this->expectExceptionMessage('LessSpecificImplementedReturnType - somefile.php:15:');
+        $this->expectExceptionMessage('LessSpecificImplementedReturnType - somefile.php:16:');
 
         $this->addFile(
             'somefile.php',
@@ -69,6 +70,7 @@ final class AnnotationTest extends TestCase
                 {
                     /**
                      * @return $this
+                     * @psalm-mutation-free
                      */
                     public function execute()
                     {
@@ -90,7 +92,7 @@ final class AnnotationTest extends TestCase
     public function testLessSpecificImplementedReturnTypeWithDescription(): void
     {
         $this->expectException(CodeException::class);
-        $this->expectExceptionMessage('LessSpecificImplementedReturnType - somefile.php:19:');
+        $this->expectExceptionMessage('LessSpecificImplementedReturnType - somefile.php:20:');
 
         $this->addFile(
             'somefile.php',
@@ -99,6 +101,7 @@ final class AnnotationTest extends TestCase
                 class ParentClass
                 {
                     /**
+                     * @psalm-mutation-free
                      * @return $this
                      */
                     public function execute()
@@ -146,6 +149,7 @@ final class AnnotationTest extends TestCase
             'somefile.php',
             '<?php
                 /**
+                 * @psalm-mutation-free
                  * @param array $_arr
                  * @return void
                  */
@@ -1828,7 +1832,10 @@ final class AnnotationTest extends TestCase
             ],
             'objectWithPropertiesAnnotationNoMatchingProperty' => [
                 'code' => '<?php
-                    /** @param object{foo:string} $o */
+                    /** 
+                     * @param object{foo:string} $o
+                     * @psalm-mutation-free
+                      */
                     function foo(object $o) : string {
                         return $o->foo;
                     }
@@ -1859,7 +1866,9 @@ final class AnnotationTest extends TestCase
             ],
             'nonEmptyArrayCalledWithEmpty' => [
                 'code' => '<?php
-                    /** @param non-empty-array<string> $arr */
+                    /** 
+                     * @param non-empty-array<string> $arr 
+                     */
                     function foo(array $arr) : void {
                         foreach ($arr as $a) {}
                         echo $a;
@@ -1872,7 +1881,9 @@ final class AnnotationTest extends TestCase
                 'code' => '<?php
                     namespace ns;
 
-                    /** @param non-empty-array<string> $arr */
+                    /** 
+                     * @param non-empty-array<string> $arr
+                     */
                     function foo(array $arr) : void {
                         foreach ($arr as $a) {}
                         echo $a;
@@ -1914,6 +1925,7 @@ final class AnnotationTest extends TestCase
                     /**
                      * @param string &...$s
                      * @psalm-suppress UnusedParam
+                     * @psalm-mutation-free
                      */
                     function foo(&...$s) : void {}
 
@@ -1926,6 +1938,7 @@ final class AnnotationTest extends TestCase
                     /**
                      * @param string ...&$s
                      * @psalm-suppress UnusedParam
+                     * @psalm-mutation-free
                      */
                     function foo(&...$s) : void {}
 
@@ -1938,6 +1951,7 @@ final class AnnotationTest extends TestCase
                     /**
                      * @param string[] &$s
                      * @psalm-suppress UnusedParam
+                     * @psalm-mutation-free
                      */
                     function foo(&...$s) : void {}
 

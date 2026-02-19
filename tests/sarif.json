@@ -112,8 +112,8 @@
                                     "uri": "taintflow-test\/vulnerable.php"
                                 },
                                 "region": {
-                                    "startLine": 7,
-                                    "endLine": 7,
+                                    "startLine": 10,
+                                    "endLine": 10,
                                     "startColumn": 56,
                                     "endColumn": 75
                                 }
@@ -135,8 +135,8 @@
                                     "uri": "taintflow-test\/vulnerable.php"
                                 },
                                 "region": {
-                                    "startLine": 9,
-                                    "endLine": 9,
+                                    "startLine": 12,
+                                    "endLine": 12,
                                     "startColumn": 1,
                                     "endColumn": 26
                                 }
@@ -158,8 +158,8 @@
                                     "uri": "taintflow-test\/vulnerable.php"
                                 },
                                 "region": {
-                                    "startLine": 9,
-                                    "endLine": 9,
+                                    "startLine": 12,
+                                    "endLine": 12,
                                     "startColumn": 12,
                                     "endColumn": 25
                                 }
@@ -181,8 +181,8 @@
                                                         "uri": "taintflow-test\/vulnerable.php"
                                                     },
                                                     "region": {
-                                                        "startLine": 7,
-                                                        "endLine": 7,
+                                                        "startLine": 10,
+                                                        "endLine": 10,
                                                         "startColumn": 56,
                                                         "endColumn": 62
                                                     }
@@ -196,8 +196,8 @@
                                                         "uri": "taintflow-test\/vulnerable.php"
                                                     },
                                                     "region": {
-                                                        "startLine": 7,
-                                                        "endLine": 7,
+                                                        "startLine": 10,
+                                                        "endLine": 10,
                                                         "startColumn": 56,
                                                         "endColumn": 75
                                                     }
@@ -211,8 +211,8 @@
                                                         "uri": "taintflow-test\/vulnerable.php"
                                                     },
                                                     "region": {
-                                                        "startLine": 7,
-                                                        "endLine": 7,
+                                                        "startLine": 10,
+                                                        "endLine": 10,
                                                         "startColumn": 46,
                                                         "endColumn": 76
                                                     }
@@ -226,8 +226,8 @@
                                                         "uri": "taintflow-test\/vulnerable.php"
                                                     },
                                                     "region": {
-                                                        "startLine": 3,
-                                                        "endLine": 3,
+                                                        "startLine": 6,
+                                                        "endLine": 6,
                                                         "startColumn": 50,
                                                         "endColumn": 56
                                                     }
@@ -241,40 +241,10 @@
                                                         "uri": "taintflow-test\/vulnerable.php"
                                                     },
                                                     "region": {
-                                                        "startLine": 3,
-                                                        "endLine": 3,
+                                                        "startLine": 6,
+                                                        "endLine": 6,
                                                         "startColumn": 50,
                                                         "endColumn": 56
-                                                    }
-                                                }
-                                            }
-                                        },
-                                        {
-                                            "location": {
-                                                "physicalLocation": {
-                                                    "artifactLocation": {
-                                                        "uri": "taintflow-test\/vulnerable.php"
-                                                    },
-                                                    "region": {
-                                                        "startLine": 4,
-                                                        "endLine": 4,
-                                                        "startColumn": 12,
-                                                        "endColumn": 28
-                                                    }
-                                                }
-                                            }
-                                        },
-                                        {
-                                            "location": {
-                                                "physicalLocation": {
-                                                    "artifactLocation": {
-                                                        "uri": "taintflow-test\/vulnerable.php"
-                                                    },
-                                                    "region": {
-                                                        "startLine": 3,
-                                                        "endLine": 3,
-                                                        "startColumn": 59,
-                                                        "endColumn": 65
                                                     }
                                                 }
                                             }
@@ -288,6 +258,36 @@
                                                     "region": {
                                                         "startLine": 7,
                                                         "endLine": 7,
+                                                        "startColumn": 12,
+                                                        "endColumn": 28
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "location": {
+                                                "physicalLocation": {
+                                                    "artifactLocation": {
+                                                        "uri": "taintflow-test\/vulnerable.php"
+                                                    },
+                                                    "region": {
+                                                        "startLine": 6,
+                                                        "endLine": 6,
+                                                        "startColumn": 59,
+                                                        "endColumn": 65
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "location": {
+                                                "physicalLocation": {
+                                                    "artifactLocation": {
+                                                        "uri": "taintflow-test\/vulnerable.php"
+                                                    },
+                                                    "region": {
+                                                        "startLine": 10,
+                                                        "endLine": 10,
                                                         "startColumn": 1,
                                                         "endColumn": 14
                                                     }
@@ -301,8 +301,8 @@
                                                         "uri": "taintflow-test\/vulnerable.php"
                                                     },
                                                     "region": {
-                                                        "startLine": 9,
-                                                        "endLine": 9,
+                                                        "startLine": 12,
+                                                        "endLine": 12,
                                                         "startColumn": 12,
                                                         "endColumn": 25
                                                     }
@@ -329,8 +329,8 @@
                                     "uri": "taintflow-test\/vulnerable.php"
                                 },
                                 "region": {
-                                    "startLine": 11,
-                                    "endLine": 11,
+                                    "startLine": 14,
+                                    "endLine": 14,
                                     "startColumn": 6,
                                     "endColumn": 59
                                 }
@@ -352,8 +352,8 @@
                                                         "uri": "taintflow-test\/vulnerable.php"
                                                     },
                                                     "region": {
-                                                        "startLine": 7,
-                                                        "endLine": 7,
+                                                        "startLine": 10,
+                                                        "endLine": 10,
                                                         "startColumn": 56,
                                                         "endColumn": 62
                                                     }
@@ -367,8 +367,8 @@
                                                         "uri": "taintflow-test\/vulnerable.php"
                                                     },
                                                     "region": {
-                                                        "startLine": 7,
-                                                        "endLine": 7,
+                                                        "startLine": 10,
+                                                        "endLine": 10,
                                                         "startColumn": 56,
                                                         "endColumn": 75
                                                     }
@@ -382,8 +382,8 @@
                                                         "uri": "taintflow-test\/vulnerable.php"
                                                     },
                                                     "region": {
-                                                        "startLine": 7,
-                                                        "endLine": 7,
+                                                        "startLine": 10,
+                                                        "endLine": 10,
                                                         "startColumn": 46,
                                                         "endColumn": 76
                                                     }
@@ -397,8 +397,8 @@
                                                         "uri": "taintflow-test\/vulnerable.php"
                                                     },
                                                     "region": {
-                                                        "startLine": 3,
-                                                        "endLine": 3,
+                                                        "startLine": 6,
+                                                        "endLine": 6,
                                                         "startColumn": 50,
                                                         "endColumn": 56
                                                     }
@@ -412,40 +412,10 @@
                                                         "uri": "taintflow-test\/vulnerable.php"
                                                     },
                                                     "region": {
-                                                        "startLine": 3,
-                                                        "endLine": 3,
+                                                        "startLine": 6,
+                                                        "endLine": 6,
                                                         "startColumn": 50,
                                                         "endColumn": 56
-                                                    }
-                                                }
-                                            }
-                                        },
-                                        {
-                                            "location": {
-                                                "physicalLocation": {
-                                                    "artifactLocation": {
-                                                        "uri": "taintflow-test\/vulnerable.php"
-                                                    },
-                                                    "region": {
-                                                        "startLine": 4,
-                                                        "endLine": 4,
-                                                        "startColumn": 12,
-                                                        "endColumn": 28
-                                                    }
-                                                }
-                                            }
-                                        },
-                                        {
-                                            "location": {
-                                                "physicalLocation": {
-                                                    "artifactLocation": {
-                                                        "uri": "taintflow-test\/vulnerable.php"
-                                                    },
-                                                    "region": {
-                                                        "startLine": 3,
-                                                        "endLine": 3,
-                                                        "startColumn": 59,
-                                                        "endColumn": 65
                                                     }
                                                 }
                                             }
@@ -459,6 +429,36 @@
                                                     "region": {
                                                         "startLine": 7,
                                                         "endLine": 7,
+                                                        "startColumn": 12,
+                                                        "endColumn": 28
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "location": {
+                                                "physicalLocation": {
+                                                    "artifactLocation": {
+                                                        "uri": "taintflow-test\/vulnerable.php"
+                                                    },
+                                                    "region": {
+                                                        "startLine": 6,
+                                                        "endLine": 6,
+                                                        "startColumn": 59,
+                                                        "endColumn": 65
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "location": {
+                                                "physicalLocation": {
+                                                    "artifactLocation": {
+                                                        "uri": "taintflow-test\/vulnerable.php"
+                                                    },
+                                                    "region": {
+                                                        "startLine": 10,
+                                                        "endLine": 10,
                                                         "startColumn": 1,
                                                         "endColumn": 14
                                                     }
@@ -472,8 +472,8 @@
                                                         "uri": "taintflow-test\/vulnerable.php"
                                                     },
                                                     "region": {
-                                                        "startLine": 11,
-                                                        "endLine": 11,
+                                                        "startLine": 14,
+                                                        "endLine": 14,
                                                         "startColumn": 6,
                                                         "endColumn": 59
                                                     }
@@ -487,8 +487,8 @@
                                                         "uri": "taintflow-test\/vulnerable.php"
                                                     },
                                                     "region": {
-                                                        "startLine": 11,
-                                                        "endLine": 11,
+                                                        "startLine": 14,
+                                                        "endLine": 14,
                                                         "startColumn": 6,
                                                         "endColumn": 59
                                                     }
@@ -515,8 +515,8 @@
                                     "uri": "taintflow-test\/vulnerable.php"
                                 },
                                 "region": {
-                                    "startLine": 11,
-                                    "endLine": 11,
+                                    "startLine": 14,
+                                    "endLine": 14,
                                     "startColumn": 6,
                                     "endColumn": 59
                                 }
@@ -538,8 +538,8 @@
                                                         "uri": "taintflow-test\/vulnerable.php"
                                                     },
                                                     "region": {
-                                                        "startLine": 7,
-                                                        "endLine": 7,
+                                                        "startLine": 10,
+                                                        "endLine": 10,
                                                         "startColumn": 56,
                                                         "endColumn": 62
                                                     }
@@ -553,8 +553,8 @@
                                                         "uri": "taintflow-test\/vulnerable.php"
                                                     },
                                                     "region": {
-                                                        "startLine": 7,
-                                                        "endLine": 7,
+                                                        "startLine": 10,
+                                                        "endLine": 10,
                                                         "startColumn": 56,
                                                         "endColumn": 75
                                                     }
@@ -568,8 +568,8 @@
                                                         "uri": "taintflow-test\/vulnerable.php"
                                                     },
                                                     "region": {
-                                                        "startLine": 7,
-                                                        "endLine": 7,
+                                                        "startLine": 10,
+                                                        "endLine": 10,
                                                         "startColumn": 46,
                                                         "endColumn": 76
                                                     }
@@ -583,8 +583,8 @@
                                                         "uri": "taintflow-test\/vulnerable.php"
                                                     },
                                                     "region": {
-                                                        "startLine": 3,
-                                                        "endLine": 3,
+                                                        "startLine": 6,
+                                                        "endLine": 6,
                                                         "startColumn": 50,
                                                         "endColumn": 56
                                                     }
@@ -598,40 +598,10 @@
                                                         "uri": "taintflow-test\/vulnerable.php"
                                                     },
                                                     "region": {
-                                                        "startLine": 3,
-                                                        "endLine": 3,
+                                                        "startLine": 6,
+                                                        "endLine": 6,
                                                         "startColumn": 50,
                                                         "endColumn": 56
-                                                    }
-                                                }
-                                            }
-                                        },
-                                        {
-                                            "location": {
-                                                "physicalLocation": {
-                                                    "artifactLocation": {
-                                                        "uri": "taintflow-test\/vulnerable.php"
-                                                    },
-                                                    "region": {
-                                                        "startLine": 4,
-                                                        "endLine": 4,
-                                                        "startColumn": 12,
-                                                        "endColumn": 28
-                                                    }
-                                                }
-                                            }
-                                        },
-                                        {
-                                            "location": {
-                                                "physicalLocation": {
-                                                    "artifactLocation": {
-                                                        "uri": "taintflow-test\/vulnerable.php"
-                                                    },
-                                                    "region": {
-                                                        "startLine": 3,
-                                                        "endLine": 3,
-                                                        "startColumn": 59,
-                                                        "endColumn": 65
                                                     }
                                                 }
                                             }
@@ -645,6 +615,36 @@
                                                     "region": {
                                                         "startLine": 7,
                                                         "endLine": 7,
+                                                        "startColumn": 12,
+                                                        "endColumn": 28
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "location": {
+                                                "physicalLocation": {
+                                                    "artifactLocation": {
+                                                        "uri": "taintflow-test\/vulnerable.php"
+                                                    },
+                                                    "region": {
+                                                        "startLine": 6,
+                                                        "endLine": 6,
+                                                        "startColumn": 59,
+                                                        "endColumn": 65
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "location": {
+                                                "physicalLocation": {
+                                                    "artifactLocation": {
+                                                        "uri": "taintflow-test\/vulnerable.php"
+                                                    },
+                                                    "region": {
+                                                        "startLine": 10,
+                                                        "endLine": 10,
                                                         "startColumn": 1,
                                                         "endColumn": 14
                                                     }
@@ -658,8 +658,8 @@
                                                         "uri": "taintflow-test\/vulnerable.php"
                                                     },
                                                     "region": {
-                                                        "startLine": 11,
-                                                        "endLine": 11,
+                                                        "startLine": 14,
+                                                        "endLine": 14,
                                                         "startColumn": 6,
                                                         "endColumn": 59
                                                     }
@@ -673,8 +673,8 @@
                                                         "uri": "taintflow-test\/vulnerable.php"
                                                     },
                                                     "region": {
-                                                        "startLine": 11,
-                                                        "endLine": 11,
+                                                        "startLine": 14,
+                                                        "endLine": 14,
                                                         "startColumn": 6,
                                                         "endColumn": 59
                                                     }

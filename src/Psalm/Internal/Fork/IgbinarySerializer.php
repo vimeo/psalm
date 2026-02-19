@@ -15,6 +15,7 @@ use function sprintf;
 
 /**
  * @internal
+ * @psalm-immutable
  */
 final class IgbinarySerializer implements Serializer
 {

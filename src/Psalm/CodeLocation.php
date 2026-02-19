@@ -156,6 +156,7 @@ class CodeLocation
      * Suppresses memory usage when unserializing objects.
      *
      * @see \Psalm\Storage\UnserializeMemoryUsageSuppressionTrait
+     * @psalm-external-mutation-free
      */
     public function __unserialize(array $properties): void
     {
@@ -198,7 +199,6 @@ class CodeLocation
 
         $codebase = $project_analyzer->getCodebase();
 
-        /** @psalm-suppress ImpureMethodCall */
         $file_contents = $codebase->getFileContents($this->file_path);
 
         $file_length = strlen($file_contents);
@@ -340,11 +340,17 @@ class CodeLocation
         $this->end_line_number = $this->getLineNumber() + $newlines;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getLineNumber(): int
     {
         return $this->docblock_line_number ?: $this->raw_line_number;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getEndLineNumber(): int
     {
         $this->calculateRealLocation();
@@ -352,6 +358,9 @@ class CodeLocation
         return $this->end_line_number;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getSnippet(): string
     {
         $this->calculateRealLocation();
@@ -359,6 +368,9 @@ class CodeLocation
         return $this->snippet;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getSelectedText(): string
     {
         $this->calculateRealLocation();
@@ -366,6 +378,9 @@ class CodeLocation
         return (string)$this->text;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getColumn(): int
     {
         $this->calculateRealLocation();
@@ -373,6 +388,9 @@ class CodeLocation
         return $this->column_from;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getEndColumn(): int
     {
         $this->calculateRealLocation();
@@ -382,6 +400,7 @@ class CodeLocation
 
     /**
      * @return array{0: int, 1: int}
+     * @psalm-mutation-free
      */
     public function getSelectionBounds(): array
     {
@@ -392,6 +411,7 @@ class CodeLocation
 
     /**
      * @return array{0: int, 1: int}
+     * @psalm-mutation-free
      */
     public function getSnippetBounds(): array
     {
@@ -400,11 +420,17 @@ class CodeLocation
         return [$this->preview_start, $this->preview_end];
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getHash(): string
     {
         return $this->file_name . ' ' . $this->raw_file_start . $this->raw_file_end;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getShortSummary(): string
     {
         return $this->file_name . ':' . $this->getLineNumber() . ':' . $this->getColumn();

@@ -53,6 +53,9 @@ final class TKeyOf extends TArrayKey
         return 'mixed';
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public static function isViableTemplateType(Union $template_type): bool
     {
         foreach ($template_type->getAtomicTypes() as $type) {
@@ -67,6 +70,9 @@ final class TKeyOf extends TArrayKey
         return true;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public static function getArrayKeyType(
         Union $type,
         bool $keep_template_params = false,

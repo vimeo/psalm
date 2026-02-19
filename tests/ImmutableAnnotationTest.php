@@ -17,6 +17,13 @@ final class ImmutableAnnotationTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'noMissing' => [
+                'code' => '<?php
+                    /** @psalm-immutable */
+                    abstract class test {
+                        abstract public function somePure(int $a) : int;
+                    }',
+            ],
             'immutableClassGenerating' => [
                 'code' => '<?php
                     /**
@@ -128,8 +135,30 @@ final class ImmutableAnnotationTest extends TestCase
                             $this->bar = $bar;
                         }
 
+                        /** @psalm-pure */
                         public function withBar(string $bar): self {
                             $new = new Foo("hello");
+                            $new->bar = $bar;
+
+                            return $new;
+                        }
+                    }',
+            ],
+            'allowPropertySetOnClonedInstance' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     */
+                    class Foo {
+                        protected string $bar;
+
+                        public function __construct(string $bar) {
+                            $this->bar = $bar;
+                        }
+
+                        /** @psalm-pure */
+                        public function withBar(Foo $f, string $bar): self {
+                            $new = clone $f;
                             $new->bar = $bar;
 
                             return $new;
@@ -147,6 +176,7 @@ final class ImmutableAnnotationTest extends TestCase
                         private $line2;
                         private $city;
 
+                        /** @psalm-mutation-free */
                         public function __construct(
                             string $line1,
                             ?string $line2,
@@ -232,6 +262,7 @@ final class ImmutableAnnotationTest extends TestCase
                     class A {
                         private string $a;
 
+                        /** @psalm-mutation-free */
                         public function __construct(string $a) {
                             $this->a = $a;
                         }
@@ -284,6 +315,7 @@ final class ImmutableAnnotationTest extends TestCase
             ],
             'memoizeImmutableCalls' => [
                 'code' => '<?php
+                    /** @psalm-mutation-free */
                     function takesString(string $s) : void {}
 
                     /**
@@ -335,6 +367,7 @@ final class ImmutableAnnotationTest extends TestCase
                     class Item {
                         private int $i;
 
+                        /** @psalm-mutation-free */
                         public function __construct(int $i) {
                             $this->i = $i;
                         }
@@ -351,6 +384,7 @@ final class ImmutableAnnotationTest extends TestCase
                     class Immutable {
                         private $item;
 
+                        /** @psalm-mutation-free */
                         public function __construct(Item $item) {
                             $this->item = $item;
                         }
@@ -410,6 +444,7 @@ final class ImmutableAnnotationTest extends TestCase
                     class Item {
                         private int $i = 0;
 
+                        /** @psalm-external-mutation-free */
                         public function mutate(): void {
                             $this->i++;
                         }
@@ -470,6 +505,7 @@ final class ImmutableAnnotationTest extends TestCase
                         public const TEST = "test";
                     }
 
+                    /** @psalm-mutation-free */
                     function foo(TestEnum $e): void {
                         if ($e->getValue() === TestEnum::TEST
                             && $e->getValue() === TestEnum::TEST
@@ -505,6 +541,7 @@ final class ImmutableAnnotationTest extends TestCase
                     class Immutable {
                         private $item;
 
+                        /** @psalm-mutation-free */
                         public function __construct(Item $item) {
                             $this->item = $item;
                         }
@@ -517,6 +554,7 @@ final class ImmutableAnnotationTest extends TestCase
                     class Item {
                         private int $i = 0;
 
+                        /** @psalm-external-mutation-free */
                         public function mutate(): void {
                             $this->i++;
                         }
@@ -526,6 +564,29 @@ final class ImmutableAnnotationTest extends TestCase
                             return $this->i;
                         }
                     }',
+            ],
+        ];
+    }
+
+    #[Override]
+    public function providerInvalidCodeParse(): iterable
+    {
+        return [
+            'impureGlobalImmutable' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     */
+                    class A {
+                        /**
+                         * @global string $bar
+                         */
+                        public function foo() : string {
+                            global $bar;
+                            return $bar;
+                        }
+                    }',
+                'error_message' => 'ImpureGlobalVariable',
             ],
             'allowMutationFreeCallInMutationFreeContext' => [
                 'code' => '<?php
@@ -547,14 +608,32 @@ final class ImmutableAnnotationTest extends TestCase
                     function getDataItem(string $key) {
                         return getData()[$key] ?? null;
                     }',
+                'error_message' => 'ImpureGlobalVariable',
             ],
-        ];
-    }
+            'disallowOnlyMutationFreeInPureContext' => [
+                'code' => '<?php
 
-    #[Override]
-    public function providerInvalidCodeParse(): iterable
-    {
-        return [
+                    /**
+                     * @psalm-mutation-free
+                     */
+                    function getData(): array {
+                        /** @psalm-suppress ImpureGlobalVariable */
+                        /** @var mixed $arr */
+                        $arr = $GLOBALS["cachedData"] ?? [];
+
+                        return is_array($arr) ? $arr : [];
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @return mixed
+                     */
+                    function getDataItem(string $key) {
+                        return getData()[$key] ?? null;
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+            ],
+
             'immutablePropertyAssignmentInternally' => [
                 'code' => '<?php
                     /**
@@ -652,11 +731,34 @@ final class ImmutableAnnotationTest extends TestCase
                         }
                     }',
                 'error_message' => 'ImpureMethodCall',
+            ],/*
+            'mustBeImmutableInferred' => [
+                'code' => '<?php
+                    interface SomethingThatCouldBeImmutable {
+                        /** @psalm-mutation-free * /
+                        public function someInteger() : int;
+                    }',
+                'error_message' => 'MissingImmutableAnnotation',
+            ],*/
+            'mustBePure' => [
+                'code' => '<?php
+                    abstract class test {
+                        abstract public function somePure(int $a) : int;
+                    }',
+                'error_message' => 'somePure must be marked with one of @psalm-pure, @psalm-mutation-free, @psalm-external-mutation-free, @psalm-impure to aid security analysis',
+            ],
+            'mustBePure2' => [
+                'code' => '<?php
+                    interface test {
+                        public function somePure(int $a) : int;
+                    }',
+                'error_message' => 'somePure must be marked with one of @psalm-pure, @psalm-mutation-free, @psalm-external-mutation-free, @psalm-impure to aid security analysis',
             ],
             'mustBeImmutableLikeInterfaces' => [
                 'code' => '<?php
                     /** @psalm-immutable */
                     interface SomethingImmutable {
+                        /** @psalm-mutation-free */
                         public function someInteger() : int;
                     }
 
@@ -672,6 +774,7 @@ final class ImmutableAnnotationTest extends TestCase
                 'code' => '<?php
                     /** @psalm-immutable */
                     abstract class SomethingImmutable {
+                        /** @psalm-external-mutation-free */
                         abstract public function someInteger() : int;
                     }
 
@@ -682,6 +785,13 @@ final class ImmutableAnnotationTest extends TestCase
                         }
                     }',
                 'error_message' => 'MissingImmutableAnnotation',
+            ],
+            'couldBePure' => [
+                'code' => '<?php
+                    function couldBePure(int $a) : int {
+                        return $a * 2;
+                    }',
+                'error_message' => 'MissingPureAnnotation',
             ],
             'preventNonImmutableTraitInImmutableClass' => [
                 'code' => '<?php
@@ -706,6 +816,7 @@ final class ImmutableAnnotationTest extends TestCase
                     class MutableParent {
                         public int $i = 0;
 
+                        /** @psalm-external-mutation-free */
                         public function increment() : void {
                             $this->i++;
                         }
@@ -722,6 +833,7 @@ final class ImmutableAnnotationTest extends TestCase
                     class D {
                         private string $s;
 
+                        /** @psalm-mutation-free */
                         public function __construct(string $s) {
                             $this->s = $s;
                         }
@@ -748,6 +860,7 @@ final class ImmutableAnnotationTest extends TestCase
                     class D {
                         private string $s;
 
+                        /** @psalm-mutation-free */
                         public function __construct(string $s) {
                             $this->s = $s;
                         }
@@ -780,6 +893,7 @@ final class ImmutableAnnotationTest extends TestCase
                          */
                         public array $values;
 
+                        /** @psalm-mutation-free */
                         public function __construct(array $values)
                         {
                             $this->values = $values;
@@ -787,6 +901,7 @@ final class ImmutableAnnotationTest extends TestCase
 
                         /**
                          * @return mixed
+                         * @psalm-mutation-free
                          */
                         public function bar()
                         {
@@ -834,6 +949,8 @@ final class ImmutableAnnotationTest extends TestCase
                     }
 
                     /**
+                     * @psalm-mutation-free
+                     * 
                      * @param string $a
                      * @param array $b
                      * @return void
@@ -861,6 +978,88 @@ final class ImmutableAnnotationTest extends TestCase
                     $a = new A("hello");
                     unset($a->b);',
                 'error_message' => 'InaccessibleProperty',
+            ],
+            'disallowGlobalMutationInMutationFreeContext' => [
+                'code' => '<?php
+
+                    /**
+                     * @psalm-mutation-free
+                     */
+                    function getData(): string {
+                        $GLOBALS["cachedData"] = "asd";
+
+                        return "asd";
+                    }',
+                'error_message' => 'ImpureGlobalVariable',
+            ],
+            'disallowGlobalMutationInMutationFreeContext2' => [
+                'code' => '<?php
+
+                    /**
+                     * @psalm-mutation-free
+                     */
+                    function getData(): string {
+                        if (isset($GLOBALS["cachedData"])) {
+                            $GLOBALS["cachedData"] = "asd";
+                        }
+
+                        return "asd";
+                    }',
+                'error_message' => 'ImpureGlobalVariable',
+            ],
+            'disallowGlobalMutationUnsetInMutationFreeContext' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutation-free
+                     */
+                    function getData(): string {
+                        unset($GLOBALS["cachedData"]);
+
+                        return "asd";
+                    }',
+                'error_message' => 'ImpureGlobalVariable',
+            ],
+            'disallowGlobalMutationUnsetInMutationFreeContext2' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutation-free
+                     */
+                    function getData(): string {
+                        global $asd;
+                        unset($asd);
+
+                        return "asd";
+                    }',
+                'error_message' => 'ImpureGlobalVariable',
+            ],
+            'disallowGlobalMutationInMutationFreeContext3' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutation-free
+                     */
+                    function getData(): string {
+                        global $asd;
+
+                        $asd = "asd";
+
+                        return "asd";
+                    }',
+                'error_message' => 'ImpureGlobalVariable',
+            ],
+            'disallowGlobalMutationInMutationFreeContext4' => [
+                'code' => '<?php
+                    /**
+                     * @global string $asd
+                     * @psalm-mutation-free
+                     */
+                    function getData(): string {
+                        global $asd;
+
+                        $asd = "asd";
+
+                        return "asd";
+                    }',
+                'error_message' => 'ImpureGlobalVariable',
             ],
         ];
     }

@@ -7,9 +7,14 @@ namespace Psalm\CodeLocation;
 use Psalm\CodeLocation;
 use Psalm\FileSource;
 
-/** @psalm-immutable */
+/**
+ * @psalm-immutable
+ */
 final class DocblockTypeLocation extends CodeLocation
 {
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         FileSource $file_source,
         int $file_start,

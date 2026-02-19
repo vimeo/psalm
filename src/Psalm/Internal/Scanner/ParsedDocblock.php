@@ -17,11 +17,17 @@ final class ParsedDocblock
 
     private static bool $shouldAddNewLineBetweenAnnotations = true;
 
-    /** @param array<string, array<int, string>> $tags */
+    /**
+     * @param array<string, array<int, string>> $tags
+     * @psalm-mutation-free
+     */
     public function __construct(public string $description, public array $tags, public string $first_line_padding = '')
     {
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function render(string $left_padding): string
     {
         $doc_comment_text = '/**' . "\n";
@@ -64,6 +70,9 @@ final class ParsedDocblock
         return $doc_comment_text;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     private static function shouldAddNewLineBetweenAnnotations(): bool
     {
         return self::$shouldAddNewLineBetweenAnnotations;
@@ -71,12 +80,17 @@ final class ParsedDocblock
 
     /**
      * Sets whether a new line should be added between the annotations or not.
+     *
+     * @psalm-external-mutation-free
      */
     public static function addNewLineBetweenAnnotations(bool $should = true): void
     {
         self::$shouldAddNewLineBetweenAnnotations = $should;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public static function resetNewlineBetweenAnnotations(): void
     {
         self::$shouldAddNewLineBetweenAnnotations = true;

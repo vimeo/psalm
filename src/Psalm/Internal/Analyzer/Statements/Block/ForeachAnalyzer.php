@@ -13,7 +13,6 @@ use Psalm\Exception\DocblockParseException;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
-use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
@@ -40,6 +39,7 @@ use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualMethodCall;
 use Psalm\Node\VirtualIdentifier;
 use Psalm\Storage\Assertion;
+use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
@@ -530,23 +530,13 @@ final class ForeachAnalyzer
                     $key_type,
                 );
 
-                if (!$context->pure) {
-                    if ($statements_analyzer->getSource()
-                            instanceof FunctionLikeAnalyzer
-                        && $statements_analyzer->getSource()->track_mutations
-                    ) {
-                        $statements_analyzer->getSource()->inferred_has_mutation = true;
-                        $statements_analyzer->getSource()->inferred_impure = true;
-                    }
-                } else {
-                    IssueBuffer::maybeAdd(
-                        new ImpureMethodCall(
-                            'Cannot call a possibly-mutating iterator from a pure context',
-                            new CodeLocation($statements_analyzer, $stmt),
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                }
+                $statements_analyzer->signalMutation(
+                    Mutations::LEVEL_ALL,
+                    $context,
+                    'possibly-mutating iterator',
+                    ImpureMethodCall::class,
+                    $stmt,
+                );
             } elseif ($iterator_atomic_type instanceof TIterable) {
                 if ($iterator_atomic_type->extra_types) {
                     $iterator_atomic_types = [
@@ -605,23 +595,13 @@ final class ForeachAnalyzer
 
                 $has_valid_iterator = true;
 
-                if (!$context->pure) {
-                    if ($statements_analyzer->getSource()
-                            instanceof FunctionLikeAnalyzer
-                        && $statements_analyzer->getSource()->track_mutations
-                    ) {
-                        $statements_analyzer->getSource()->inferred_has_mutation = true;
-                        $statements_analyzer->getSource()->inferred_impure = true;
-                    }
-                } else {
-                    IssueBuffer::maybeAdd(
-                        new ImpureMethodCall(
-                            'Cannot call a possibly-mutating Traversable::getIterator from a pure context',
-                            new CodeLocation($statements_analyzer, $stmt),
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                }
+                $statements_analyzer->signalMutation(
+                    Mutations::LEVEL_ALL,
+                    $context,
+                    'possibly-mutating Traversable::getIterator',
+                    ImpureMethodCall::class,
+                    $stmt,
+                );
             } elseif ($iterator_atomic_type instanceof TNamedObject) {
                 if ($iterator_atomic_type->value !== 'Traversable' &&
                     $iterator_atomic_type->value !== $statements_analyzer->getClassName()
@@ -659,23 +639,13 @@ final class ForeachAnalyzer
                     $raw_object_types[] = $iterator_atomic_type->value;
                 }
 
-                if (!$context->pure) {
-                    if ($statements_analyzer->getSource()
-                            instanceof FunctionLikeAnalyzer
-                        && $statements_analyzer->getSource()->track_mutations
-                    ) {
-                        $statements_analyzer->getSource()->inferred_has_mutation = true;
-                        $statements_analyzer->getSource()->inferred_impure = true;
-                    }
-                } else {
-                    IssueBuffer::maybeAdd(
-                        new ImpureMethodCall(
-                            'Cannot call a possibly-mutating iterator from a pure context',
-                            new CodeLocation($statements_analyzer, $stmt),
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                }
+                $statements_analyzer->signalMutation(
+                    Mutations::LEVEL_ALL,
+                    $context,
+                    'possibly-mutating iterator',
+                    ImpureMethodCall::class,
+                    $stmt,
+                );
             }
         }
 
@@ -1135,9 +1105,10 @@ final class ForeachAnalyzer
     }
 
     /**
-     * @param  array<string, array<string, Union>>  $template_extended_params
-     * @param  array<string, array<string, Union>>  $class_template_types
-     * @param  array<int, Union> $calling_type_params
+     * @param array<string, array<string, Union>>  $template_extended_params
+     * @param array<string, array<string, Union>>  $class_template_types
+     * @param array<int, Union> $calling_type_params
+     * @psalm-external-mutation-free
      */
     private static function getExtendedType(
         string $template_name,

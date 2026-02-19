@@ -7,6 +7,9 @@ namespace Psalm\Tests\Internal\Provider;
 use Override;
 use Psalm\Internal\Provider\ParserCacheProvider;
 
+/**
+ * @psalm-immutable
+ */
 final class FakeParserCacheProvider extends ParserCacheProvider
 {
     public function __construct()

@@ -455,22 +455,19 @@ final class NewAnalyzer extends CallAnalyzer
                     );
                 }
 
-                if (!$method_storage->external_mutation_free && !$context->inside_throw) {
-                    if ($context->pure) {
-                        IssueBuffer::maybeAdd(
-                            new ImpureMethodCall(
-                                'Cannot call an impure constructor from a pure context',
-                                new CodeLocation($statements_analyzer, $stmt),
-                            ),
-                            $statements_analyzer->getSuppressedIssues(),
-                        );
-                    } elseif ($statements_analyzer->getSource()
-                        instanceof FunctionLikeAnalyzer
-                        && $statements_analyzer->getSource()->track_mutations
-                    ) {
-                        $statements_analyzer->getSource()->inferred_has_mutation = true;
-                        $statements_analyzer->getSource()->inferred_impure = true;
-                    }
+                if (!$context->inside_throw &&
+                    !$method_storage->isExternalMutationFree()
+                ) {
+                    $statements_analyzer->signalMutation(
+                        $method_storage->allowed_mutations,
+                        $context,
+                        'constructor ' . $codebase->methods->getCasedMethodId($declaring_method_id),
+                        ImpureMethodCall::class,
+                        $stmt,
+                        null,
+                        false,
+                        $method_storage,
+                    );
                 }
 
                 if ($method_storage->assertions && $stmt->class instanceof PhpParser\Node\Name) {
@@ -630,7 +627,7 @@ final class NewAnalyzer extends CallAnalyzer
             );
         }
 
-        if ($storage->external_mutation_free) {
+        if ($storage->isExternalMutationFree()) {
             $stmt->setAttribute('external_mutation_free', true);
             $stmt_type = $statements_analyzer->node_data->getType($stmt);
 
@@ -656,7 +653,7 @@ final class NewAnalyzer extends CallAnalyzer
                 $method_storage = $codebase->methods->getStorage($declaring_method_id);
             }
 
-            if ($storage->external_mutation_free
+            if ($storage->isExternalMutationFree()
                 || ($method_storage && $method_storage->specialize_call)
             ) {
                 $method_source = DataFlowNode::getForMethodReturn(

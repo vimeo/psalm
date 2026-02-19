@@ -6,6 +6,9 @@ namespace Psalm\Tests\FileManipulation;
 
 use Override;
 
+/**
+ * @psalm-immutable
+ */
 final class MissingPropertyTypeTest extends FileManipulationTestCase
 {
     #[Override]
@@ -317,11 +320,15 @@ final class MissingPropertyTypeTest extends FileManipulationTestCase
                     class A {
                         /**
                          * @var callable|null
+                         *
+                         * @psalm-var impure-callable|null
                          */
                         public $u;
 
                         /**
                          * @var callable
+                         *
+                         * @psalm-var impure-callable
                          */
                         public $v;
 

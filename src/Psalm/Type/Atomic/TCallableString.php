@@ -13,6 +13,11 @@ use Override;
  */
 final class TCallableString extends TNonFalsyString
 {
+    public function __construct(bool $from_docblock = false)
+    {
+        parent::__construct($from_docblock);
+    }
+
     #[Override]
     public function isCallableType(): bool
     {

@@ -93,6 +93,9 @@ final class TValueOf extends Atomic
         return 'mixed';
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public static function isViableTemplateType(Union $template_type): bool
     {
         foreach ($template_type->getAtomicTypes() as $type) {

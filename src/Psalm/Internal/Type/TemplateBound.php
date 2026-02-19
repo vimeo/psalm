@@ -11,6 +11,9 @@ use Psalm\Type\Union;
  */
 final class TemplateBound
 {
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         public Union $type,
         /**

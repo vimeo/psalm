@@ -30,6 +30,23 @@ final class PureAnnotationTest extends TestCase
                         return null;
                     }',
             ],
+            'propertyMutationIsExternalMutationFree' => [
+                'code' => '<?php
+                    class A {
+                        /** @var list<int> */
+                        public array $params = [];
+
+                        /**
+                         * @psalm-external-mutation-free
+                         */
+                        public function addParam(): void
+                        {
+                            usort($this->params, static function (int $a, int $b): int {
+                                return $a <=> $b;
+                            });
+                        }
+                    }',
+            ],
             'pureFunctionCallingBuiltinFunctions' => [
                 'code' => '<?php
                     namespace Bar;
@@ -56,30 +73,43 @@ final class PureAnnotationTest extends TestCase
                         private array $options;
                         private array $defaultOptions;
 
+                        /**
+                         * @psalm-mutation-free
+                         */
                         function __construct(array $options) {
                             $this->setOptions($options);
                             $this->setDefaultOptions($this->getOptions());
                         }
 
+                        /**
+                         * @psalm-mutation-free
+                         */
                         function getOptions(): array {
                             return $this->options;
                         }
 
+                        /**
+                         * @psalm-external-mutation-free
+                         */
                         public final function setOptions(array $options): void {
                             $this->options = $options;
                         }
 
+                        /**
+                         * @psalm-external-mutation-free
+                         */
                         public final function setDefaultOptions(array $defaultOptions): void {
                             $this->defaultOptions = $defaultOptions;
                         }
                     }',
             ],
-            'canCreateObjectWithNoExternalMutations' => [
+            'canCreateObjectWithNoExternalMutationsOk' => [
                 'code' => '<?php
                     /** @psalm-external-mutation-free */
                     class Counter {
                         private int $count = 0;
 
+                        /** @psalm-mutation-free */
                         public function __construct(int $count) {
                             $this->count = $count;
                         }
@@ -313,6 +343,7 @@ final class PureAnnotationTest extends TestCase
             'callingMethodInThrowStillPure' => [
                 'code' => '<?php
                     final class MyException extends \Exception {
+                        /** @psalm-pure */
                         public static function hello(): self
                         {
                             return new self();
@@ -354,6 +385,9 @@ final class PureAnnotationTest extends TestCase
                     class A {
                         private ?A $other = null;
 
+                        /**
+                         * @psalm-external-mutation-free
+                         */
                         public function setVar(A $other): void {
                             $this->other = $other;
                         }
@@ -370,8 +404,10 @@ final class PureAnnotationTest extends TestCase
                             return !!$this->other->other;
                         }
 
+                        /** @psalm-mutation-free */
                         public function foo() : void {}
 
+                        /** @psalm-mutation-free */
                         public function doSomething(): void {
                             $this->checkNotNullNested();
                             $this->other->foo();
@@ -405,6 +441,7 @@ final class PureAnnotationTest extends TestCase
                     class Port {
                        private int $portNumber;
 
+                       /** @psalm-mutation-free */
                        public function __construct(int $portNumber) {
                           if (!$this->isValidPort($portNumber)) {
                              throw new Exception();
@@ -500,6 +537,22 @@ final class PureAnnotationTest extends TestCase
                         return Test::foo();
                     }',
             ],
+            'voidFunctionThatReturnsNeverIsNotImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function foo(int $a): void {
+                        die;
+                    }
+                ',
+            ],
+            'voidFunctionThatThrowsIsNotImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function foo(int $a): void {
+                        throw new \Exception("error");
+                    }
+                ',
+            ],
             'pureThroughAliasedCallStaticInTrait' => [
                 'code' => '<?php
                     /**
@@ -525,6 +578,23 @@ final class PureAnnotationTest extends TestCase
                         return Test::foo();
                     }',
             ],
+            'unsetIsMutationFree' => [
+                'code' => '<?php
+                    class A {
+                        public string $key;
+
+                        /** @psalm-mutation-free */
+                        public function __construct(string $key) {
+                            $this->key = $key;
+                        }
+
+                        /** @psalm-mutation-free */
+                        public function unsetSomething(array $v) : array {
+                            unset($v[$this->key]);
+                            return $v;
+                        }
+                    }',
+            ],
             'dontCrashWhileCheckingPurityOnCallStaticInATrait' => [
                 'code' => '<?php
                     /**
@@ -532,6 +602,7 @@ final class PureAnnotationTest extends TestCase
                      */
                     trait Date {
                         public static function __callStatic(string $_method, array $_parameters){
+                            echo "called";
                         }
                     }
 
@@ -597,6 +668,7 @@ final class PureAnnotationTest extends TestCase
                 'code' => '<?php
                     namespace Bar;
 
+                    /** @psalm-external-mutation-free */
                     function impure() : ?string {
                         /** @var int */
                         static $i = 0;
@@ -638,11 +710,12 @@ final class PureAnnotationTest extends TestCase
                     }',
                 'error_message' => 'ImpureMethodCall',
             ],
-            'canCreateObjectWithNoExternalMutations' => [
+            'canCreateObjectWithNoExternalMutationsFail' => [
                 'code' => '<?php
                     class Counter {
                         private int $count = 0;
 
+                        /** @psalm-mutation-free */
                         public function __construct(int $count) {
                             $this->count = $count;
                         }
@@ -670,6 +743,44 @@ final class PureAnnotationTest extends TestCase
                         return $left;
                     }',
                 'error_message' => 'ImpureStaticVariable',
+            ],
+            'useOfGlobalMakesFunctionImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function addCumulative(int $left) : int {
+                        /** @var int */
+                        global $i;
+                        $i ??= 0;
+                        $i += $left;
+                        return $left;
+                    }',
+                'error_message' => 'ImpureGlobalVariable',
+            ],
+            'useOfGlobalsMakesFunctionImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function addCumulativeGlobals(int $left) : int {
+                        $GLOBALS["i"] ??= 0;
+                        $GLOBALS["i"] += $left;
+                        return $left;
+                    }',
+                'error_message' => 'ImpureGlobalVariable',
+            ],
+            'useOfSuperGlobalsMakesFunctionImpureReadOnly' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function getFromSuperglobal() : int {
+                        return (int) $_GET["v"];
+                    }',
+                'error_message' => 'ImpureGlobalVariable',
+            ],
+            'useOfSuperGlobalsMakesFunctionImpureWriteOnly' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function writeToSuperGlobal(int $v) : void {
+                        $_GET["v"] = $v;
+                    }',
+                'error_message' => 'ImpureGlobalVariable',
             ],
             'preventImpureArrayMapClosure' => [
                 'code' => '<?php
@@ -705,6 +816,14 @@ final class PureAnnotationTest extends TestCase
                     /** @psalm-pure */
                     function foo(): void {
                         print("x");
+                    }
+                ',
+                'error_message' => 'ImpureFunctionCall',
+            ],
+            'voidFunctionIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function foo(int $a): void {
                     }
                 ',
                 'error_message' => 'ImpureFunctionCall',
@@ -832,6 +951,63 @@ final class PureAnnotationTest extends TestCase
                     }',
                 'error_message' => 'ImpurePropertyFetch',
             ],
+            'propertySetIsNotMutationFree' => [
+                'code' => '<?php
+                    class A {
+                        public array $params = [];
+                        public array $param_lookup = [];
+
+                        /**
+                         * @internal
+                         * @psalm-mutation-free
+                         */
+                        public function addParam(int $param, ?bool $lookup_value = null): void
+                        {
+                            $this->params[] = $param;
+                            $this->param_lookup[$param->name] = $lookup_value ?? true;
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyAssignment',
+            ],
+            'propertyUnsetIsNotMutationFree' => [
+                'code' => '<?php
+                    class A {
+                        /** @var array<string, string> */
+                        public array $foo = [];
+
+                        /** @psalm-mutation-free */
+                        public function unsetSomething(string $key) : void {
+                            unset($this->foo[$key]);
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyAssignment',
+            ],
+            'propertyUnsetOnOtherIsNotExternalMutationFree' => [
+                'code' => '<?php
+                    class A {
+                        /** @var array<string, string> */
+                        public array $foo = [];
+
+                        /** @psalm-external-mutation-free */
+                        public static function unsetSomething(A $a, string $key) : void {
+                            unset($a->foo[$key]);
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyAssignment',
+            ],
+            'propertyWriteIsNotMutationFree' => [
+                'code' => '<?php
+                    class A {
+                        /** @var array<string, string> */
+                        public array $foo = [];
+
+                        /** @psalm-mutation-free */
+                        public function writeSomething(string $key, string $value) : void {
+                            $this->foo[$key] = $value;
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyAssignment',
+            ],
             'preventPropertyAccessOnMutableClass' => [
                 'code' => '<?php
                     namespace Bar;
@@ -839,6 +1015,7 @@ final class PureAnnotationTest extends TestCase
                     class A {
                         public int $a;
 
+                        /** @psalm-mutation-free */
                         public function __construct(int $a) {
                             $this->a = $a;
                         }
@@ -861,6 +1038,7 @@ final class PureAnnotationTest extends TestCase
                     class A {
                         public ?int $a;
 
+                        /** @psalm-mutation-free */
                         public function __construct(?int $a) {
                             $this->a = $a;
                         }
@@ -883,6 +1061,7 @@ final class PureAnnotationTest extends TestCase
                     class A {
                         public ?int $a;
 
+                        /** @psalm-mutation-free */
                         public function __construct(?int $a) {
                             $this->a = $a;
                         }
@@ -911,6 +1090,58 @@ final class PureAnnotationTest extends TestCase
                         }
                     }',
                 'error_message' => 'ImpureVariable',
+            ],
+            'impureGlobal' => [
+                'code' => '<?php
+                    /**
+                     * @global string $bar
+                     *
+                     * @psalm-pure
+                     */
+                    function foo() : string {
+                        global $bar;
+                        return $bar;
+                    }',
+                'error_message' => 'ImpureGlobalVariable',
+            ],
+            'impureGlobal2' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     */
+                    function foo() : string {
+                        global $bar;
+                        if (is_string($bar)) {
+                            return $bar;
+                        }
+
+                        return "";
+                    }',
+                'error_message' => 'ImpureGlobalVariable',
+            ],
+            'impureSuperglobal' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     */
+                    function foo() : string {
+                        return $_SERVER["foo"] ?? "";
+                    }',
+                'error_message' => 'ImpureGlobalVariable',
+            ],
+            'impureSuperglobal2' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     */
+                    function foo() : string {
+                        if (isset($_SERVER["foo"])) {
+                            return $_SERVER["foo"];
+                        };
+
+                        return "";
+                    }',
+                'error_message' => 'ImpureGlobalVariable',
             ],
             'iterableIsNotPure' => [
                 'code' => '<?php

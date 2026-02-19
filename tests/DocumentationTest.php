@@ -238,6 +238,24 @@ final class DocumentationTest extends TestCase
         foreach ($ignored_issues as $error_level) {
             $this->project_analyzer->getCodebase()->config->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
         }
+        if ($error_message === 'MissingImmutableAnnotation') {
+            Config::getInstance()->setCustomErrorLevel(
+                'MissingImmutableAnnotation',
+                Config::REPORT_ERROR,
+            );
+        }
+        if ($error_message === 'MissingPureAnnotation') {
+            Config::getInstance()->setCustomErrorLevel(
+                'MissingPureAnnotation',
+                Config::REPORT_ERROR,
+            );
+        }
+        if ($error_message === 'MissingAbstractPureAnnotation') {
+            Config::getInstance()->setCustomErrorLevel(
+                'MissingAbstractPureAnnotation',
+                Config::REPORT_ERROR,
+            );
+        }
 
         $this->expectException(CodeException::class);
         $this->expectExceptionMessageMatches('/\b' . preg_quote($error_message, '/') . '\b/');
@@ -396,7 +414,10 @@ final class DocumentationTest extends TestCase
         );
     }
 
-    /** @return iterable<string, array{string}> */
+    /**
+     * @return iterable<string, array{string}>
+     * @psalm-mutation-free
+     */
     public function knownAnnotations(): iterable
     {
         foreach (DocComment::PSALM_ANNOTATIONS as $annotation) {
@@ -414,6 +435,8 @@ final class DocumentationTest extends TestCase
 
     /**
      * Creates a constraint wrapper that displays the expected value in a concise form
+     *
+     * @psalm-pure
      */
     public function conciseExpected(Constraint $inner): Constraint
     {
@@ -421,6 +444,9 @@ final class DocumentationTest extends TestCase
         {
             private Constraint $inner;
 
+            /**
+             * @psalm-mutation-free
+             */
             public function __construct(Constraint $inner)
             {
                 $this->inner = $inner;

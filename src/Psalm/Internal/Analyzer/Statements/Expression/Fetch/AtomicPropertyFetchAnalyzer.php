@@ -14,7 +14,6 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
-use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
@@ -30,6 +29,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\DeprecatedProperty;
+use Psalm\Issue\ImpurePropertyAssignment;
 use Psalm\Issue\ImpurePropertyFetch;
 use Psalm\Issue\InternalClass;
 use Psalm\Issue\InternalProperty;
@@ -47,6 +47,7 @@ use Psalm\Node\VirtualArg;
 use Psalm\Node\VirtualIdentifier;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TEnumCase;
@@ -477,6 +478,7 @@ final class AtomicPropertyFetchAnalyzer
                     $property_storage,
                     $declaring_class_storage,
                     $context,
+                    $stmt_var_id,
                 );
             }
         }
@@ -495,23 +497,27 @@ final class AtomicPropertyFetchAnalyzer
             $lhs_type_part,
         );
 
-        if (!$context->collect_mutations
-            && !$context->collect_initializations
-            && !($class_storage->external_mutation_free
-                && $class_property_type->allow_mutations)
+        if (!($class_storage->isExternalMutationFree()
+            && $class_property_type->allow_mutations)
         ) {
-            if ($context->pure) {
-                IssueBuffer::maybeAdd(
-                    new ImpurePropertyFetch(
-                        'Cannot access a property on a mutable object from a pure context',
-                        new CodeLocation($statements_analyzer, $stmt),
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
+            if ($context->inside_unset) {
+                $statements_analyzer->signalMutation(
+                    $stmt_var_id === '$this'
+                        ? Mutations::LEVEL_INTERNAL_READ_WRITE
+                        : Mutations::LEVEL_EXTERNAL,
+                    $context,
+                    'unsetting a property on a mutable object',
+                    ImpurePropertyAssignment::class,
+                    $stmt,
                 );
-            } elseif ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
-                && $statements_analyzer->getSource()->track_mutations
-            ) {
-                $statements_analyzer->getSource()->inferred_impure = true;
+            } else {
+                $statements_analyzer->signalMutation(
+                    Mutations::LEVEL_INTERNAL_READ,
+                    $context,
+                    'accessing a property on a mutable object',
+                    ImpurePropertyFetch::class,
+                    $stmt,
+                );
             }
         }
 
@@ -525,7 +531,7 @@ final class AtomicPropertyFetchAnalyzer
             $context,
         );
 
-        if ($class_storage->mutation_free) {
+        if ($class_storage->isMutationFree()) {
             $class_property_type = $class_property_type->setProperties([
                 'has_mutations' => false,
             ]);
@@ -1063,21 +1069,13 @@ final class AtomicPropertyFetchAnalyzer
         ?string $var_id,
     ): void {
         if ($context->inside_isset || $context->collect_initializations) {
-            if ($context->pure) {
-                IssueBuffer::maybeAdd(
-                    new ImpurePropertyFetch(
-                        'Cannot access a property on a mutable object from a pure context',
-                        new CodeLocation($statements_analyzer, $stmt),
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
-            } elseif ($context->inside_isset
-                && $statements_analyzer->getSource()
-                instanceof FunctionLikeAnalyzer
-                && $statements_analyzer->getSource()->track_mutations
-            ) {
-                $statements_analyzer->getSource()->inferred_impure = true;
-            }
+            $statements_analyzer->signalMutation(
+                Mutations::LEVEL_INTERNAL_READ, // Strange but matches previous code
+                $context,
+                'accessing a property on a mutable object',
+                ImpurePropertyFetch::class,
+                $stmt,
+            );
 
             return;
         }
@@ -1160,12 +1158,19 @@ final class AtomicPropertyFetchAnalyzer
                 }
             }
 
-            if (!$class_exists &&
-                //interfaces can't have properties. Except when they do... In PHP Core, they can
-                !in_array($fq_class_name, ['UnitEnum', 'BackedEnum'], true) &&
-                !in_array('UnitEnum', $codebase->getParentInterfaces($fq_class_name)) &&
-                !$intersects_with_enum
-            ) {
+            // In PHP Core enum interfaces have properties
+            $is_enum_interface = in_array($fq_class_name, ['UnitEnum', 'BackedEnum'], true)
+                || in_array('UnitEnum', $codebase->getParentInterfaces($fq_class_name))
+                || $intersects_with_enum;
+
+            // Since PHP 8.4 interfaces can have hook properties
+            $interface_property = $stmt->name instanceof PhpParser\Node\Identifier
+                ? $interface_storage->properties[$stmt->name->name] ?? null
+                : null;
+            $has_get_hook = $codebase->analysis_php_version_id >= 8_04_00 &&
+                $interface_property?->hook_get !== null;
+
+            if (!$class_exists && !$is_enum_interface && !$has_get_hook) {
                 if (IssueBuffer::accepts(
                     new NoInterfaceProperties(
                         'Interfaces cannot have properties',

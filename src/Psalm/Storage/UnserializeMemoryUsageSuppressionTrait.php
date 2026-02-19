@@ -16,6 +16,9 @@ namespace Psalm\Storage;
  */
 trait UnserializeMemoryUsageSuppressionTrait
 {
+    /**
+     * @psalm-external-mutation-free
+     */
     public function __unserialize(array $properties): void
     {
         /** @psalm-suppress MixedAssignment */

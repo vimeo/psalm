@@ -2,6 +2,21 @@
 
 ## Changed
 
+- [BC] Property Psalm\Type\Atomic\TCallable#$is_pure was removed and replaced with an `$allowed_mutations` property
+- [BC] Property Psalm\Type\Atomic\TClosure#$is_pure was removed and replaced with an `$allowed_mutations` property
+- [BC] Property Psalm\Type\Atomic\CallableTrait#$is_pure was removed and replaced with an `$allowed_mutations` property
+- [BC] Method Psalm\Type\Atomic\TCallable#setIsPure() was removed and replaced with a `setAllowedMutations` method 
+- [BC] Method Psalm\Type\Atomic\TClosure#setIsPure() was removed and replaced with a `setAllowedMutations` method 
+- [BC] Method Psalm\Type\Atomic\CallableTrait#setIsPure() was removed and replaced with a `setAllowedMutations` method 
+- [BC] Property Psalm\Type\Atomic\TCallable#$value changed default value from NULL to 'callable'
+- [BC] The $value parameter of Psalm\Type\Atomic\TCallable#__construct() was removed
+- [BC] The $value parameter of Psalm\Type\Atomic\TClosure#__construct() was removed
+- [BC] Property $pure of `Psalm\Context`, `Psalm\Storage\FunctionLikeStorage` was removed and replaced with an `isPure()` method, reading from the new `$allowed_mutations` property.
+- [BC] Property $mutation_free of `Psalm\Context`, `Psalm\Storage\FunctionLikeStorage`, `Psalm\Storage\ClassLikeStorage` was removed and replaced with an `isMutationFree()` method, reading from the new `$allowed_mutations` property.
+- [BC] Property $external_mutation_free of of `Psalm\Context`, `Psalm\Storage\FunctionLikeStorage`, `Psalm\Storage\ClassLikeStorage` was removed and replaced with an `isExternalMutationFree()` method, reading from the new `$allowed_mutations` property.
+- [BC] Method signalMutationOnlyInferred() was added to interface Psalm\StatementsSource
+- [BC] Method signalMutation() was added to interface Psalm\StatementsSource
+
 - [BC] Taints are now *internally* represented by a bitmap (an integer), instead of an array of strings. Users can still use the usual string taint identifiers (including custom ones, which will be automatically registered by Psalm), but internally, the type of `Psalm\Type\TaintKind` taint types is now an integer.
 
 - [BC] The maximum number of usable taint *types* (including both native taints and custom taints) is now equal to 32 on 32-bit systems and 64 on 64-bit systems: this should be enough for the vast majority of usecases, if more taint types are needed, consider merging some taint types or using some native taint types.  

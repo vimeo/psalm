@@ -46,12 +46,16 @@ final class DynamicFunctionStorageProvider
 
     /**
      * @param Closure(DynamicFunctionStorageProviderEvent): ?DynamicFunctionStorage $c
+     * @psalm-external-mutation-free
      */
     public function registerClosure(string $fq_function_name, Closure $c): void
     {
         self::$handlers[strtolower($fq_function_name)][] = $c;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function has(string $fq_function_name): bool
     {
         return isset(self::$handlers[strtolower($fq_function_name)]);

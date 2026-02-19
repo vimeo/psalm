@@ -1482,7 +1482,10 @@ final class ConfigTest extends TestCase
             $file_path,
             '<?php
                 class Exc1 extends Exception {}
-                /** @throws Exc1 */
+                /** 
+                 * @throws Exc1
+                 *  @psalm-mutation-free 
+                 */
                 function throwsExc1(): void {}
 
                 class Exc2 extends Exception {}
@@ -1670,6 +1673,7 @@ final class ConfigTest extends TestCase
 
     /**
      * @return array<string, array{0: int, 1: int|null}>
+     * @psalm-pure
      */
     public function pluginRegistersScannerAndAnalyzerDataProvider(): array
     {

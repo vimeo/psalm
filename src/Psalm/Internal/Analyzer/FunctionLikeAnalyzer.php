@@ -33,15 +33,18 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Issue\ImpureFunctionCall;
 use Psalm\Issue\InvalidDocblockParamName;
 use Psalm\Issue\InvalidOverride;
 use Psalm\Issue\InvalidParamDefault;
 use Psalm\Issue\InvalidThrow;
 use Psalm\Issue\MethodSignatureMismatch;
 use Psalm\Issue\MismatchingDocblockParamType;
+use Psalm\Issue\MissingAbstractPureAnnotation;
 use Psalm\Issue\MissingClosureParamType;
 use Psalm\Issue\MissingOverrideAttribute;
 use Psalm\Issue\MissingParamType;
+use Psalm\Issue\MissingPureAnnotation;
 use Psalm\Issue\MissingThrowsDocblock;
 use Psalm\Issue\ReferenceConstraintViolation;
 use Psalm\Issue\ReservedWord;
@@ -59,6 +62,7 @@ use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClosure;
@@ -78,13 +82,16 @@ use function array_search;
 use function array_values;
 use function count;
 use function end;
+use function implode;
 use function in_array;
 use function is_string;
 use function krsort;
+use function max;
 use function mb_strpos;
 use function md5;
 use function microtime;
 use function reset;
+use function str_ends_with;
 use function str_starts_with;
 use function strpos;
 use function strtolower;
@@ -126,9 +133,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
     public bool $track_mutations = false;
 
-    public bool $inferred_impure = false;
-
-    public bool $inferred_has_mutation = false;
+    /** @var Mutations::LEVEL_* */
+    public int $inferred_mutations = Mutations::LEVEL_NONE;
 
     /**
      * Holds param nodes for functions with func_get_args calls
@@ -139,6 +145,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
     /**
      * @param TFunction $function
+     * @psalm-mutation-free
      */
     public function __construct(
         protected Closure|Function_|ClassMethod|ArrowFunction $function,
@@ -383,24 +390,22 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
         }
 
-        if ($storage->pure) {
-            $context->pure = true;
+        $context->allowed_mutations = $storage->allowed_mutations;
+        if ($storage instanceof MethodStorage) {
+            if (
+                // Allow constructors to mutate (override immutability)
+                str_ends_with((string) $storage->cased_name, '__construct')
+
+                // ???
+                || $storage->mutation_free_assumed
+            ) {
+                $context->allowed_mutations = max(
+                    $context->allowed_mutations,
+                    Mutations::LEVEL_INTERNAL_READ_WRITE,
+                );
+            }
         }
 
-        if ($storage->mutation_free
-            && $cased_method_id
-            && !strpos($cased_method_id, '__construct')
-            && !($storage instanceof MethodStorage && $storage->mutation_free_inferred)
-        ) {
-            $context->mutation_free = true;
-        }
-
-        if ($storage instanceof MethodStorage
-            && $storage->external_mutation_free
-            && !$storage->mutation_free_inferred
-        ) {
-            $context->external_mutation_free = true;
-        }
 
         foreach ($storage->unused_docblock_parameters as $param_name => $param_location) {
             if ($storage->has_undertyped_native_parameters) {
@@ -488,16 +493,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         $project_analyzer = $statements_analyzer->getProjectAnalyzer();
 
-        if ($codebase->alter_code
-            && (isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
-                || isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation']))
-        ) {
-            $this->track_mutations = true;
-        } elseif ($this->function instanceof Closure
-            || $this->function instanceof ArrowFunction
-        ) {
-            $this->track_mutations = true;
-        }
+        $this->track_mutations = true;
 
         if ($this->function instanceof ArrowFunction && (!$storage->return_type || $storage->return_type->isNever())) {
             // ArrowFunction perform a return implicitly so if the return type is never, we have to suppress the error
@@ -507,52 +503,99 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         $statements_analyzer->analyze($function_stmts, $context, $global_context);
 
-        if ($codebase->alter_code
-            && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
-            && !$this->inferred_impure
+        if (!$this->function instanceof VirtualNode
             && ($this->function instanceof Function_
-                || $this->function instanceof ClassMethod)
-            && $storage->params
+                || $this->function instanceof ClassMethod
+            )
             && !$overridden_method_ids
-            && !$this->function instanceof VirtualNode
+            && !$context->collect_initializations
+            && !$context->collect_mutations
         ) {
-            $manipulator = FunctionDocblockManipulator::getForFunction(
-                $project_analyzer,
-                $this->source->getFilePath(),
-                $this->function,
-            );
-
-            $yield_types = [];
-
-            $inferred_return_types = ReturnTypeCollector::getReturnTypes(
-                $codebase,
-                $type_provider,
-                $function_stmts,
-                $yield_types,
-                true,
-            );
-
-            $inferred_return_type = $inferred_return_types
-                ? Type::combineUnionTypeArray(
-                    $inferred_return_types,
+            if ($this->function->stmts === null) {
+                $isVoid = $storage->return_type
+                    ? $storage->return_type->isVoid()
+                    : false;
+            } else {
+                $yield_types = [];
+                $inferred_return_types = ReturnTypeCollector::getReturnTypes(
                     $codebase,
-                )
-                : Type::getVoid();
+                    $type_provider,
+                    $function_stmts,
+                    $yield_types,
+                    true,
+                );
 
-            if (!$inferred_return_type->isVoid()
-                && !$inferred_return_type->isFalse()
-                && !$inferred_return_type->isNull()
-                && !$inferred_return_type->isSingleIntLiteral()
-                && !$inferred_return_type->isSingleStringLiteral()
-                && !$inferred_return_type->isTrue()
-                && !$inferred_return_type->isEmptyArray()
+                $inferred_return = $inferred_return_types
+                    ? Type::combineUnionTypeArray(
+                        $inferred_return_types,
+                        $codebase,
+                    )
+                    : Type::getVoid();
+                
+                $isVoid = $inferred_return->isVoid();
+            }
+            if ($isVoid
+                && !(
+                    $storage->throw_locations
+                    || $storage->throws
+                )
             ) {
-                $manipulator->makePure();
+                $this->signalMutation(
+                    Mutations::LEVEL_INTERNAL_READ,
+                    $context,
+                    'pure functions cannot have void return type'
+                    .' (at least one non-empty return statement or @throws annotation is required)',
+                    ImpureFunctionCall::class,
+                    $this->function,
+                    null,
+                    true,
+                );
+            }
+
+            if ($this->function->stmts === null
+                ? !$storage->has_mutations_annotation
+                : $this->inferred_mutations < $storage->allowed_mutations
+            ) {
+                if ($storage->location) {
+                    if ($this->function->stmts === null) {
+                        IssueBuffer::maybeAdd(
+                            new MissingAbstractPureAnnotation(
+                                $storage->cased_name . ' must be marked with one of @'
+                                .implode(', @', Mutations::TO_ATTRIBUTE_FUNCTIONLIKE)
+                                .' to aid security analysis',
+                                $storage->location,
+                            ),
+                            $storage->suppressed_issues,
+                        );
+                    } else {
+                        IssueBuffer::maybeAdd(
+                            new MissingPureAnnotation(
+                                $storage->cased_name . ' must be marked @'.Mutations::TO_ATTRIBUTE_FUNCTIONLIKE[
+                                $this->inferred_mutations
+                                ].' to aid security analysis'
+                                .', run with --alter --issues=MissingPureAnnotation to fix this',
+                                $storage->location,
+                            ),
+                            $storage->suppressed_issues,
+                        );
+                    }
+                }
+                if ($codebase->alter_code
+                    && $this->function->stmts !== null
+                    && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
+                ) {
+                    $manipulator = FunctionDocblockManipulator::getForFunction(
+                        $project_analyzer,
+                        $this->source->getFilePath(),
+                        $this->function,
+                    );
+                    $manipulator->setAllowedMutations($this->inferred_mutations);
+                }
             }
         }
 
-        if ($this->inferred_has_mutation && $context->self) {
-            $this->codebase->analyzer->addMutableClass($context->self);
+        if ($context->self !== null) {
+            $this->codebase->analyzer->addMutableClass($context->self, $this->inferred_mutations);
         }
 
         if (!$context->collect_initializations
@@ -669,16 +712,13 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     $new_closure_return_type = $closure_return_type;
                 }
 
-                $new_closure_is_pure = !$this->inferred_impure;
-
                 $statements_analyzer->node_data->setType(
                     $this->function,
                     new Union([
                         new TClosure(
-                            $closure_atomic->value,
                             $closure_atomic->params,
                             $new_closure_return_type,
-                            $new_closure_is_pure,
+                            $this->inferred_mutations,
                             $closure_atomic->byref_uses,
                             $closure_atomic->extra_types,
                             $closure_atomic->from_docblock,
@@ -1584,6 +1624,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
     /**
      * Adds return types for the given function
+     *
+     * @psalm-external-mutation-free
      */
     public function addReturnTypes(Context $context): void
     {
@@ -1647,6 +1689,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         }
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getMethodName(): ?string
     {
         if ($this->function instanceof ClassMethod) {
@@ -1828,12 +1873,17 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
     /**
      * Adds a suppressed issue, useful when creating a method checker from scratch
+     *
+     * @psalm-external-mutation-free
      */
     public function addSuppressedIssue(string $issue_name): void
     {
         $this->suppressed_issues[] = $issue_name;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public static function clearCache(): void
     {
         self::$no_effects_hashes = [];
@@ -1936,8 +1986,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 }
 
                 $props = [];
-                if ($storage->external_mutation_free
-                    && !$storage->mutation_free_inferred
+                if ($storage->isMutationFree()
+                    && !$storage->mutation_free_assumed
                 ) {
                     $props = ['reference_free' => true];
                     if ($this->function->name->name !== '__construct') {
@@ -2137,10 +2187,11 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
 
             $closure_type = new TClosure(
-                'Closure',
                 $storage->params,
                 $closure_return_type,
-                $storage instanceof FunctionStorage ? $storage->pure : null,
+                $storage instanceof FunctionStorage
+                    ? $storage->allowed_mutations
+                    : Mutations::LEVEL_ALL,
                 $storage instanceof FunctionStorage ? $storage->byref_uses : [],
             );
 
@@ -2253,6 +2304,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         return $unused_params;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     private function detectPreviousUnusedArgumentPosition(FunctionLikeStorage $function, int $position): int
     {
         $params = $function->params;
@@ -2273,6 +2327,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         return 0;
     }
 
+    /**
+     * @psalm-pure
+     */
     private function isIgnoredForUnusedParam(string $var_name): bool
     {
         return str_starts_with($var_name, '$_') || (str_starts_with($var_name, '$unused') && $var_name !== '$unused');

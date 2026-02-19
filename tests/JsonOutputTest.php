@@ -73,28 +73,31 @@ final class JsonOutputTest extends TestCase
 
     /**
      * @return array<string,array{code:string,error_count:int,message:string,line:int,error:string}>
+     * @psalm-pure
      */
     public function providerTestJsonOutputErrors(): array
     {
         return [
             'returnTypeError' => [
                 'code' => '<?php
+                    /** @psalm-pure */
                     function fooFoo(int $a): string {
                         return $a + 1;
                     }',
                 'error_count' => 2,
                 'message' => "The inferred type 'int' does not match the declared return type 'string' for fooFoo",
-                'line' => 3,
+                'line' => 4,
                 'error' => '$a + 1',
             ],
             'undefinedVar' => [
                 'code' => '<?php
+                    /** @psalm-pure */
                     function fooFoo(int $a): int {
                         return $b + 1;
                     }',
                 'error_count' => 4,
                 'message' => 'Cannot find referenced variable $b',
-                'line' => 3,
+                'line' => 4,
                 'error' => '$b',
             ],
             'unknownParamClass' => [
@@ -109,17 +112,21 @@ final class JsonOutputTest extends TestCase
             ],
             'missingReturnType' => [
                 'code' => '<?php
+                    /**
+                     * @psalm-mutation-free
+                     */
                     function fooFoo() {
                         return "hello";
                     }',
                 'error_count' => 1,
                 'message' => "Method fooFoo does not have a return type, expecting 'hello'",
-                'line' => 2,
+                'line' => 5,
                 'error' => 'fooFoo',
             ],
             'wrongMultilineReturnType' => [
                 'code' => '<?php
                     /**
+                     * @psalm-mutation-free
                      * @return int
                      */
                     function fooFoo() {
@@ -127,7 +134,7 @@ final class JsonOutputTest extends TestCase
                     }',
                 'error_count' => 2,
                 'message' => "The inferred type ''hello'' does not match the declared return type 'int' for fooFoo",
-                'line' => 6,
+                'line' => 7,
                 'error' => '"hello"',
             ],
             'assertCancelsMixedAssignment' => [
@@ -142,7 +149,11 @@ final class JsonOutputTest extends TestCase
             ],
             'singleIssueForTypeDifference' => [
                 'code' => '<?php
-                    /** @psalm-suppress RiskyTruthyFalsyComparison */
+                    /** 
+                     * @psalm-mutation-free
+                     * 
+                     * @psalm-suppress RiskyTruthyFalsyComparison
+                     */
                     function fooFoo(?string $a, ?string $b): void {
                         if ($a || $b) {
                             if ($a || $b) {}
@@ -150,7 +161,7 @@ final class JsonOutputTest extends TestCase
                     }',
                 'error_count' => 1,
                 'message' => 'Operand of type non-falsy-string is always truthy',
-                'line' => 5,
+                'line' => 9,
                 'error' => '$b',
             ],
         ];

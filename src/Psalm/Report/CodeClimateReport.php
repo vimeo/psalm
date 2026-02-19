@@ -40,6 +40,8 @@ final class CodeClimateReport extends Report
     /**
      * convert our own severity to CodeClimate format
      * Values can be : info, minor, major, critical, or blocker
+     *
+     * @psalm-pure
      */
     private function convertSeverity(string $input): string
     {
@@ -59,6 +61,8 @@ final class CodeClimateReport extends Report
 
     /**
      * calculate a unique fingerprint for a given issue
+     *
+     * @psalm-mutation-free
      */
     private function calculateFingerprint(IssueData $issue): string
     {
@@ -79,6 +83,8 @@ final class CodeClimateReport extends Report
      * - location.lines.begin*
      *
      * Fields with * are the one used by Gitlab for Code Quality
+     *
+     * @psalm-mutation-free
      */
     private function mapToNewStructure(IssueData $issue): array
     {

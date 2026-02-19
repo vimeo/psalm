@@ -383,6 +383,7 @@ final class Codebase
      * Register an alias taint name based on one or more pre-existing taints.
      *
      * @throws AssertionError if the passed taint is already registered or if the alias uses some unregistered taints.
+     * @psalm-external-mutation-free
      */
     public function registerTaintAlias(string $taint_type, int $alias): int
     {
@@ -402,6 +403,9 @@ final class Codebase
         return $alias;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     private function loadAnalyzer(): void
     {
         $this->analyzer = new Analyzer(
@@ -478,6 +482,9 @@ final class Codebase
         $this->populator->populateCodebase();
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function enterServerMode(): void
     {
         $this->server_mode = true;
@@ -503,6 +510,9 @@ final class Codebase
         $this->find_unused_variables = true;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function reportUnusedVariables(): void
     {
         $this->collect_references = true;
@@ -511,6 +521,7 @@ final class Codebase
 
     /**
      * @param array<string, string> $files_to_analyze
+     * @psalm-external-mutation-free
      */
     public function addFilesToAnalyze(array $files_to_analyze): void
     {
@@ -530,6 +541,9 @@ final class Codebase
         }
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function getFileContents(string $file_path): string
     {
         return $this->file_provider->getContents($file_path);
@@ -551,6 +565,9 @@ final class Codebase
         );
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function createClassLikeStorage(string $fq_classlike_name): ClassLikeStorage
     {
         return $this->classlike_storage_provider->create($fq_classlike_name);
@@ -591,6 +608,9 @@ final class Codebase
         return Reflection::getPsalmTypeFromReflectionType($type);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function createFileStorageForPath(string $file_path): FileStorage
     {
         return $this->file_storage_provider->create($file_path);
@@ -598,6 +618,7 @@ final class Codebase
 
     /**
      * @return array<int, CodeLocation>
+     * @psalm-external-mutation-free
      */
     public function findReferencesToSymbol(string $symbol): array
     {
@@ -618,6 +639,7 @@ final class Codebase
 
     /**
      * @return array<int, CodeLocation>
+     * @psalm-external-mutation-free
      */
     public function findReferencesToMethod(string $method_id): array
     {
@@ -626,6 +648,7 @@ final class Codebase
 
     /**
      * @return array<int, CodeLocation>
+     * @psalm-external-mutation-free
      */
     public function findReferencesToProperty(string $property_id): array
     {
@@ -640,6 +663,7 @@ final class Codebase
     /**
      * @return CodeLocation[]
      * @psalm-return array<int, CodeLocation>
+     * @psalm-external-mutation-free
      */
     public function findReferencesToClassLike(string $fq_class_name): array
     {
@@ -653,6 +677,9 @@ final class Codebase
         return $locations;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function getClosureStorage(string $file_path, string $closure_id): FunctionStorage
     {
         $file_storage = $this->file_storage_provider->get($file_path);
@@ -667,11 +694,17 @@ final class Codebase
         );
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addGlobalConstantType(string $const_id, Union $type): void
     {
         self::$stubbed_constants[$const_id] = $type;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function getStubbedConstantType(string $const_id): ?Union
     {
         return self::$stubbed_constants[$const_id] ?? null;
@@ -679,6 +712,7 @@ final class Codebase
 
     /**
      * @param array<string, Union> $stubs
+     * @psalm-external-mutation-free
      */
     public function addGlobalConstantTypes(array $stubs): void
     {
@@ -687,6 +721,7 @@ final class Codebase
 
     /**
      * @return array<string, Union>
+     * @psalm-external-mutation-free
      */
     public function getAllStubbedConstants(): array
     {
@@ -700,6 +735,8 @@ final class Codebase
 
     /**
      * Check whether a class/interface exists
+     *
+     * @psalm-external-mutation-free
      */
     public function classOrInterfaceExists(
         string $fq_class_name,
@@ -719,6 +756,7 @@ final class Codebase
      * Check whether a class/interface exists
      *
      * @psalm-assert-if-true class-string|interface-string|enum-string $fq_class_name
+     * @psalm-external-mutation-free
      */
     public function classOrInterfaceOrEnumExists(
         string $fq_class_name,
@@ -743,6 +781,8 @@ final class Codebase
 
     /**
      * Determine whether or not a given class exists
+     *
+     * @psalm-external-mutation-free
      */
     public function classExists(
         string $fq_class_name,
@@ -763,6 +803,7 @@ final class Codebase
      *
      * @throws UnpopulatedClasslikeException when called on unpopulated class
      * @throws InvalidArgumentException when class does not exist
+     * @psalm-mutation-free
      */
     public function classExtends(string $fq_class_name, string $possible_parent): bool
     {
@@ -771,12 +812,17 @@ final class Codebase
 
     /**
      * Check whether a class implements an interface
+     *
+     * @psalm-mutation-free
      */
     public function classImplements(string $fq_class_name, string $interface): bool
     {
         return $this->classlikes->classImplements($fq_class_name, $interface);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function interfaceExists(
         string $fq_interface_name,
         ?CodeLocation $code_location = null,
@@ -791,6 +837,9 @@ final class Codebase
         );
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function interfaceExtends(string $interface_name, string $possible_parent): bool
     {
         return $this->classlikes->interfaceExtends($interface_name, $possible_parent);
@@ -798,6 +847,7 @@ final class Codebase
 
     /**
      * @return array<string, string> all interfaces extended by $interface_name
+     * @psalm-mutation-free
      */
     public function getParentInterfaces(string $fq_interface_name): array
     {
@@ -808,17 +858,25 @@ final class Codebase
 
     /**
      * Determine whether or not a class has the correct casing
+     *
+     * @psalm-mutation-free
      */
     public function classHasCorrectCasing(string $fq_class_name): bool
     {
         return $this->classlikes->classHasCorrectCasing($fq_class_name);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function interfaceHasCorrectCasing(string $fq_interface_name): bool
     {
         return $this->classlikes->interfaceHasCorrectCasing($fq_interface_name);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function traitHasCorrectCasing(string $fq_trait_name): bool
     {
         return $this->classlikes->traitHasCorrectCasing($fq_trait_name);
@@ -883,6 +941,9 @@ final class Codebase
         return $this->methods->getMethodParams(MethodIdentifier::wrap($method_id));
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isVariadic(string|MethodIdentifier $method_id): bool
     {
         return $this->methods->isVariadic(MethodIdentifier::wrap($method_id));
@@ -904,6 +965,9 @@ final class Codebase
         );
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function getMethodReturnsByRef(string|MethodIdentifier $method_id): bool
     {
         return $this->methods->getMethodReturnsByRef(MethodIdentifier::wrap($method_id));
@@ -919,6 +983,9 @@ final class Codebase
         );
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getDeclaringMethodId(string|MethodIdentifier $method_id): ?string
     {
         $new_method_id = $this->methods->getDeclaringMethodId(MethodIdentifier::wrap($method_id));
@@ -928,6 +995,8 @@ final class Codebase
 
     /**
      * Get the class this method appears in (vs is declared in, which could give a trait)
+     *
+     * @psalm-mutation-free
      */
     public function getAppearingMethodId(string|MethodIdentifier $method_id): ?string
     {
@@ -938,17 +1007,24 @@ final class Codebase
 
     /**
      * @return array<string, MethodIdentifier>
+     * @psalm-mutation-free
      */
     public function getOverriddenMethodIds(string|MethodIdentifier $method_id): array
     {
         return $this->methods->getOverriddenMethodIds(MethodIdentifier::wrap($method_id));
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getCasedMethodId(string|MethodIdentifier $method_id): string
     {
         return $this->methods->getCasedMethodId(MethodIdentifier::wrap($method_id));
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function invalidateInformationForFile(string $file_path): void
     {
         $this->scanner->removeFile($file_path);
@@ -967,6 +1043,9 @@ final class Codebase
         $this->file_storage_provider->remove($file_path);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function getFunctionStorageForSymbol(string $file_path, string $symbol): ?FunctionLikeStorage
     {
         if (strpos($symbol, '::')) {
@@ -1842,6 +1921,7 @@ final class Codebase
      * @return list<CompletionItem>
      * @deprecated to be removed in Psalm 6
      * @api fix deprecation problem "PossiblyUnusedMethod: Cannot find any calls to method"
+     * @psalm-mutation-free
      */
     public function filterCompletionItemsByBeginLiteralPart(array $items, string $literal_part): array
     {
@@ -2129,11 +2209,17 @@ final class Codebase
         );
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addTemporaryFileChanges(string $file_path, string $new_content, ?int $version = null): void
     {
         $this->file_provider->addTemporaryFileChanges($file_path, $new_content, $version);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function removeTemporaryFileChanges(string $file_path): void
     {
         $this->file_provider->removeTemporaryFileChanges($file_path);
@@ -2230,6 +2316,9 @@ final class Codebase
         $this->scanner->queueClassLikeForScanning($fq_classlike_name, $analyze_too, $store_failure, $phantom_classes);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addTaintSource(
         Union $expr_type,
         string $taint_id,
@@ -2253,6 +2342,9 @@ final class Codebase
         return $expr_type->addParentNodes([$source->id => $source]);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addTaintSink(
         string $taint_id,
         int $taints = TaintKind::ALL_INPUT,
@@ -2273,16 +2365,25 @@ final class Codebase
         $this->taint_flow_graph->addSink($sink);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getMinorAnalysisPhpVersion(): int
     {
         return self::transformPhpVersionId($this->analysis_php_version_id % 10_000, 100);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getMajorAnalysisPhpVersion(): int
     {
         return self::transformPhpVersionId($this->analysis_php_version_id, 10_000);
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function transformPhpVersionId(int $php_version_id, int $div): int
     {
         return intdiv($php_version_id, $div);

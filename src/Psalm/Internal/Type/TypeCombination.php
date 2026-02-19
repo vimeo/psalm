@@ -105,6 +105,7 @@ final class TypeCombination
      * @psalm-assert-if-true !null $this->objectlike_key_type
      * @psalm-assert-if-true !null $this->objectlike_value_type
      * @param array-key $k
+     * @psalm-mutation-free
      */
     public function fallbackKeyContains($k): bool
     {

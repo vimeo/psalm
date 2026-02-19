@@ -9,6 +9,7 @@ use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Storage\FunctionLikeParameter;
+use Psalm\Storage\Mutations;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
@@ -30,22 +31,22 @@ final class TClosure extends TNamedObject
     /**
      * @param list<FunctionLikeParameter> $params
      * @param array<string, bool> $byref_uses
+     * @param Mutations::LEVEL_* $allowed_mutations
      * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject> $extra_types
      */
     public function __construct(
-        string $value = 'callable',
         ?array $params = null,
         ?Union $return_type = null,
-        ?bool $is_pure = null,
+        int $allowed_mutations = Mutations::LEVEL_ALL,
         public array $byref_uses = [],
         array $extra_types = [],
         bool $from_docblock = false,
     ) {
         $this->params = $params;
         $this->return_type = $return_type;
-        $this->is_pure = $is_pure;
+        $this->allowed_mutations = $allowed_mutations;
         parent::__construct(
-            $value,
+            'Closure',
             false,
             false,
             $extra_types,
@@ -57,7 +58,9 @@ final class TClosure extends TNamedObject
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         // it can, if it's just 'Closure'
-        return $this->params === null && $this->return_type === null && $this->is_pure === null;
+        return $this->params === null
+            && $this->return_type === null
+            && $this->allowed_mutations === Mutations::LEVEL_ALL;
     }
 
     /**
@@ -74,10 +77,9 @@ final class TClosure extends TNamedObject
             return $this;
         }
         return new static(
-            $this->value,
             $replaced[0] ?? $this->params,
             $replaced[1] ?? $this->return_type,
-            $this->is_pure,
+            $this->allowed_mutations,
             $this->byref_uses,
             $intersection ?? $this->extra_types,
         );
@@ -127,10 +129,9 @@ final class TClosure extends TNamedObject
             return $this;
         }
         return new static(
-            $this->value,
             $replaced[0] ?? $this->params,
             $replaced[1] ?? $this->return_type,
-            $this->is_pure,
+            $this->allowed_mutations,
             $this->byref_uses,
             $intersection ?? $this->extra_types,
         );

@@ -11,6 +11,9 @@ final class ProjectCacheProvider extends PsalmProjectCacheProvider
 {
     private int $last_run = 0;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct()
     {
     }

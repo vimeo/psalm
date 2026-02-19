@@ -21,6 +21,9 @@ use Psalm\Storage\FileStorage;
  */
 class FileScanner implements FileSource
 {
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(public string $file_path, public string $file_name, public bool $will_analyze)
     {
     }

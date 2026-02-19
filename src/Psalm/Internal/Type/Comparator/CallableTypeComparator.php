@@ -8,6 +8,7 @@ use Exception;
 use PhpParser\Node\Arg;
 use PhpParser\Node\Expr\Variable;
 use Psalm\Codebase;
+use Psalm\Context;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
@@ -69,9 +70,9 @@ final class CallableTypeComparator
         }
         assert($input_type_part instanceof TClosure || $input_type_part instanceof TCallable);
 
-        if ($container_type_part->is_pure && !$input_type_part->is_pure) {
+        if ($container_type_part->allowed_mutations < $input_type_part->allowed_mutations) {
             if ($atomic_comparison_result) {
-                $atomic_comparison_result->type_coerced = $input_type_part->is_pure === null;
+                $atomic_comparison_result->type_coerced = true;
             }
 
             return false;
@@ -235,7 +236,14 @@ final class CallableTypeComparator
             }
         }
 
-        $input_callable = self::getCallableFromAtomic($codebase, $input_type_part, $container_type_part, null, true);
+        $input_callable = self::getCallableFromAtomic(
+            $codebase,
+            $input_type_part,
+            $container_type_part,
+            null,
+            null,
+            true,
+        );
 
         if ($input_callable) {
             if (self::isContainedBy(
@@ -260,6 +268,7 @@ final class CallableTypeComparator
         Atomic $input_type_part,
         ?TCallable $container_type_part = null,
         ?StatementsAnalyzer $statements_analyzer = null,
+        ?Context $context = null,
         bool $expand_callable = false,
     ): ?Atomic {
 
@@ -320,10 +329,9 @@ final class CallableTypeComparator
                 }
 
                 return new TCallable(
-                    'callable',
                     $params,
                     $return_type,
-                    $function_storage->pure,
+                    $function_storage->allowed_mutations,
                 );
             } catch (UnexpectedValueException) {
                 if (InternalCallMapHandler::inCallMap($input_type_part->value)) {
@@ -354,13 +362,16 @@ final class CallableTypeComparator
 
                     $must_use = false;
 
-                    $matching_callable = $matching_callable->setIsPure($codebase->functions->isCallMapFunctionPure(
-                        $codebase,
-                        $statements_analyzer->node_data ?? null,
-                        $input_type_part->value,
-                        null,
-                        $must_use,
-                    ));
+                    $matching_callable = $matching_callable->setAllowedMutations(
+                        $codebase->functions->getCallMapFunctionMutations(
+                            $statements_analyzer,
+                            $context,
+                            $codebase,
+                            $input_type_part->value,
+                            null,
+                            $must_use,
+                        ),
+                    );
 
                     return $matching_callable;
                 }
@@ -385,10 +396,9 @@ final class CallableTypeComparator
                     }
 
                     return new TCallable(
-                        'callable',
                         $method_storage->params,
                         $converted_return_type,
-                        $method_storage->pure,
+                        $method_storage->allowed_mutations,
                     );
                 } catch (UnexpectedValueException) {
                     // do nothing
@@ -453,10 +463,9 @@ final class CallableTypeComparator
                     }
 
                     $callable = new TCallable(
-                        'callable',
                         $method_storage->params,
                         $converted_return_type,
-                        $method_storage->pure,
+                        $method_storage->allowed_mutations,
                     );
 
                     if ($template_result) {
@@ -475,7 +484,10 @@ final class CallableTypeComparator
         return null;
     }
 
-    /** @return null|'not-callable'|MethodIdentifier */
+    /**
+     * @return null|'not-callable'|MethodIdentifier
+     * @psalm-external-mutation-free
+     */
     public static function getCallableMethodIdFromTKeyedArray(
         TKeyedArray $input_type_part,
         ?Codebase $codebase = null,
