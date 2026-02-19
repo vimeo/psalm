@@ -6,6 +6,8 @@ namespace Psalm\Type\Atomic;
 
 use Override;
 
+use function is_nan;
+
 /**
  * Denotes a floating point value where the exact numeric value is known.
  *
