@@ -83,7 +83,6 @@ use function array_merge;
 use function array_pop;
 use function count;
 use function in_array;
-use function min;
 use function reset;
 use function strpos;
 use function strtolower;
@@ -365,8 +364,8 @@ final class InstancePropertyAssignmentAnalyzer
         PropertyStorage $property_storage,
         ClassLikeStorage $declaring_class_storage,
         Context $context,
-        bool $force = false,
-    ): bool {
+        ?string $lhs_var_id,
+    ): void {
         $codebase = $statements_analyzer->getCodebase();
 
         $stmt_var_type = $statements_analyzer->node_data->getType($stmt->var);
@@ -380,35 +379,49 @@ final class InstancePropertyAssignmentAnalyzer
             true,
         );
 
-        $project_analyzer = $statements_analyzer->getProjectAnalyzer();
-
+        $can_set_readonly_property = true;
         if ($appearing_property_class) {
             $can_set_readonly_property = $context->self
                 && $context->calling_method_id
                 && ($appearing_property_class === $context->self
                     || $codebase->classExtends($context->self, $appearing_property_class))
-                && (strpos($context->calling_method_id, '::__construct')
-                    || strpos($context->calling_method_id, '::unserialize')
-                    || strpos($context->calling_method_id, '::__unserialize')
-                    || strpos($context->calling_method_id, '::__clone')
+                && (str_ends_with($context->calling_method_id, '::__construct')
+                    || str_ends_with($context->calling_method_id, '::unserialize')
+                    || str_ends_with($context->calling_method_id, '::__unserialize')
+                    || str_ends_with($context->calling_method_id, '::__clone')
                     || $property_storage->allow_private_mutation
                     || $property_var_pure_compatible);
 
-            if (!$can_set_readonly_property) {
-                if ($property_storage->readonly) {
-                    IssueBuffer::maybeAdd(
-                        new InaccessibleProperty(
-                            $property_id . ' is marked readonly',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                }
-                $codebase->analyzer->addMutableClass($declaring_class_storage->name, Mutations::LEVEL_INTERNAL_READ_WRITE);
-                return false;
+            if (!$can_set_readonly_property && $property_storage->readonly) {
+                IssueBuffer::maybeAdd(
+                    new InaccessibleProperty(
+                        $property_id . ' is marked readonly',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
             }
         }
-        return true;
+        
+        if ($lhs_var_id !== null
+            && isset($context->vars_in_scope[$lhs_var_id])
+        ) {
+            $mut = $lhs_var_id === '$this'
+                ? Mutations::LEVEL_INTERNAL_READ_WRITE
+                : Mutations::LEVEL_EXTERNAL;
+            $mut = $can_set_readonly_property ? Mutations::LEVEL_NONE : $mut;
+            $statements_analyzer->signalMutation(
+                $mut,
+                $context,
+                'property assignment to ' . $property_id,
+                ImpurePropertyAssignment::class,
+                $stmt,
+            );
+            $codebase->analyzer->addMutableClass(
+                $declaring_class_storage->name,
+                Mutations::LEVEL_INTERNAL_READ_WRITE,
+            );
+        }
     }
 
     public static function analyzeStatement(
@@ -1295,31 +1308,15 @@ final class InstancePropertyAssignmentAnalyzer
                 );
             }
 
-            $canAssign = self::trackPropertyImpurity(
+            self::trackPropertyImpurity(
                 $statements_analyzer,
                 $stmt,
                 $property_id,
                 $property_storage,
                 $declaring_class_storage,
                 $context,
-                true,
+                $lhs_var_id,
             );
-
-            if ($lhs_var_id !== null
-                && isset($context->vars_in_scope[$lhs_var_id])
-            ) {
-                $lev = $lhs_var_id === '$this' 
-                    ? Mutations::LEVEL_INTERNAL_READ_WRITE
-                    : Mutations::LEVEL_EXTERNAL;
-                $statements_analyzer->signalMutation(
-                    $canAssign ? Mutations::LEVEL_NONE : $lev,
-                    $context,
-                    'property assignment to ' . $property_id,
-                    ImpurePropertyAssignment::class,
-                    $stmt,
-                    $lev,
-                );
-            }
 
             if ($property_storage->getter_method) {
                 $getter_id = $lhs_var_id . '->' . $property_storage->getter_method . '()';

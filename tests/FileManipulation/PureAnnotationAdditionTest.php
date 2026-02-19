@@ -53,6 +53,37 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingPureAnnotation'],
                 'safe_types' => true,
             ],
+            'SKIPPED-selfCallIndirect' => [
+                'input' => '<?php
+                    function foo(string $s, int $v): string {
+                        if ($v > 5) {
+                            return bar($s, $v - 1);
+                        }
+                        return $s;
+                    }
+                    function bar(string $s, int $v): string {
+                        return foo($s, $v);
+                    }',
+                'output' => '<?php
+                    /**
+                     * @psalm-pure
+                     */
+                    function foo(string $s, int $v): string {
+                        if ($v > 5) {
+                            return bar($s, $v - 1);
+                        }
+                        return $s;
+                    }
+                    /**
+                     * @psalm-pure
+                     */
+                    function bar(string $s, int $v): string {
+                        return foo($s, $v);
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
             'selfMethodCall' => [
                 'input' => '<?php
                     class A {

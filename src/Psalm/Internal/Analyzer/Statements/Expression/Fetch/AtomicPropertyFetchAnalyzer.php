@@ -478,6 +478,7 @@ final class AtomicPropertyFetchAnalyzer
                     $property_storage,
                     $declaring_class_storage,
                     $context,
+                    $stmt_var_id,
                 );
             }
         }

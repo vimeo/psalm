@@ -1523,6 +1523,24 @@ final class UnusedCodeTest extends TestCase
                     takesA(new B);',
                 'error_message' => 'PossiblyUnusedMethod',
             ],
+            'SKIPPED-unusedRecursivelyUsedMethodIndirect' => [
+                'code' => '<?php
+                    final class C {
+                        public function foo(int $v) : void {
+                            if ($v) {
+                                $this->bar($v-1);
+                            }
+                        }
+                        public function bar(int $v) : void {
+                            $this->foo($v);
+                        }
+
+                        public function baz() : void {}
+                    }
+
+                    (new C)->baz();',
+                'error_message' => 'PossiblyUnusedMethod',
+            ],
             'unusedRecursivelyUsedMethod' => [
                 'code' => '<?php
                     final class C {

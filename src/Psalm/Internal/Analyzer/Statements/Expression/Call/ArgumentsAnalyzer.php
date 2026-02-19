@@ -1278,6 +1278,7 @@ final class ArgumentsAnalyzer
         PhpParser\Node\Expr\PropertyFetch $stmt,
         string $fq_class_name,
         string $prop_name,
+        ?string $lhs_var_id,
     ): void {
         $property_id = $fq_class_name . '::$' . $prop_name;
 
@@ -1304,6 +1305,7 @@ final class ArgumentsAnalyzer
                 $property_storage,
                 $declaring_class_storage,
                 $context,
+                $lhs_var_id,
             );
         }
     }
@@ -1341,6 +1343,7 @@ final class ArgumentsAnalyzer
                     $arg->value,
                     $fq_class_name,
                     $prop_name,
+                    $var_id,
                 );
             } else {
                 // @todo atm only works for simple fetch, $a->foo, not $a->foo->bar
