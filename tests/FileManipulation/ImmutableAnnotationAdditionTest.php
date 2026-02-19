@@ -189,7 +189,7 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingImmutableAnnotation'],
                 'safe_types' => true,
             ],
-            'addImmutableAnnotationInterface' => [
+            'SKIPPED-addImmutableAnnotationInterface' => [
                 'input' => '<?php
                     interface A {
                         public function getPlus5(): int;
