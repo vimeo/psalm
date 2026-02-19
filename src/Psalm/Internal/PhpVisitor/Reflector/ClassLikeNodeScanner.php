@@ -294,6 +294,7 @@ final class ClassLikeNodeScanner
             $this->codebase->classlikes->addFullyQualifiedTraitName($fq_classlike_name, $this->file_path);
         } elseif ($node instanceof PhpParser\Node\Stmt\Enum_) {
             $storage->is_enum = true;
+            $storage->allowed_mutations = Mutations::LEVEL_INTERNAL_READ;
             $storage->final = true;
 
             if ($node->scalarType) {

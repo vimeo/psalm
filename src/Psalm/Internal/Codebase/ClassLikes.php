@@ -6,6 +6,7 @@ namespace Psalm\Internal\Codebase;
 
 use InvalidArgumentException;
 use PhpParser;
+use PhpParser\Node\Stmt\ClassLike;
 use PhpParser\NodeTraverser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
@@ -903,62 +904,63 @@ final class ClassLikes
 
             if ($classlike_storage->location
                 && $this->config->isInProjectDirs($classlike_storage->location->file_path)
-                && !$classlike_storage->is_trait
             ) {
-                if ($find_unused_code) {
-                    if ($classlike_storage->public_api
-                        || $this->file_reference_provider->isClassReferenced($fq_class_name_lc)
+                if (!$classlike_storage->is_trait) {
+                    if ($find_unused_code) {
+                        if ($classlike_storage->public_api
+                            || $this->file_reference_provider->isClassReferenced($fq_class_name_lc)
+                        ) {
+                            $this->checkMethodReferences($classlike_storage, $methods);
+                            $this->checkPropertyReferences($classlike_storage);
+                        } else {
+                            IssueBuffer::maybeAdd(
+                                new UnusedClass(
+                                    'Class ' . $classlike_storage->name . ' is never used',
+                                    $classlike_storage->location,
+                                    $classlike_storage->name,
+                                ),
+                                $classlike_storage->suppressed_issues,
+                            );
+                        }
+                        $this->checkMethodParamReferences($classlike_storage);
+                    }
+                    if (!$classlike_storage->public_api
+                        && !$classlike_storage->has_children
+                        && !$classlike_storage->abstract
+                        && !$classlike_storage->final
+                        && !$classlike_storage->is_enum
+                        && !$classlike_storage->is_interface
                     ) {
-                        $this->checkMethodReferences($classlike_storage, $methods);
-                        $this->checkPropertyReferences($classlike_storage);
-                    } else {
                         IssueBuffer::maybeAdd(
-                            new UnusedClass(
-                                'Class ' . $classlike_storage->name . ' is never used',
+                            new ClassMustBeFinal(
+                                'Class ' . $classlike_storage->name
+                                    . ' is never extended and is not part of the public API, and thus must be made final.',
                                 $classlike_storage->location,
                                 $classlike_storage->name,
                             ),
                             $classlike_storage->suppressed_issues,
+                            true,
                         );
-                    }
-                    $this->checkMethodParamReferences($classlike_storage);
-                }
-                if (!$classlike_storage->public_api
-                    && !$classlike_storage->has_children
-                    && !$classlike_storage->abstract
-                    && !$classlike_storage->final
-                    && !$classlike_storage->is_enum
-                    && !$classlike_storage->is_interface
-                ) {
-                    IssueBuffer::maybeAdd(
-                        new ClassMustBeFinal(
-                            'Class ' . $classlike_storage->name
-                                . ' is never extended and is not part of the public API, and thus must be made final.',
-                            $classlike_storage->location,
-                            $classlike_storage->name,
-                        ),
-                        $classlike_storage->suppressed_issues,
-                        true,
-                    );
-                    
-                    if ($codebase->alter_code
-                        && $classlike_storage->stmt_location !== null
-                        && isset($project_analyzer->getIssuesToFix()['ClassMustBeFinal'])
-                    ) {
-                        $selection = $classlike_storage->stmt_location->getSnippet();
-                        $insert_pos = strpos($selection, "class");
-        
-                        if ($insert_pos === false) {
-                            $insert_pos = $classlike_storage->stmt_location->getSelectionBounds()[0];
+                        
+                        if ($codebase->alter_code
+                            && $classlike_storage->stmt_location !== null
+                            && isset($project_analyzer->getIssuesToFix()['ClassMustBeFinal'])
+                        ) {
+                            $selection = $classlike_storage->stmt_location->getSnippet();
+                            $insert_pos = strpos($selection, "class");
+            
+                            if ($insert_pos === false) {
+                                $insert_pos = $classlike_storage->stmt_location->getSelectionBounds()[0];
+                            }
+
+                            FileManipulationBuffer::add($classlike_storage->stmt_location->file_path, [
+                                new FileManipulation($insert_pos, $insert_pos, 'final ', true),
+                            ]);
                         }
-
-                        FileManipulationBuffer::add($classlike_storage->stmt_location->file_path, [
-                            new FileManipulation($insert_pos, $insert_pos, 'final ', true),
-                        ]);
                     }
-                }
 
-                $this->findPossibleMethodParamTypes($classlike_storage);
+                    $this->findPossibleMethodParamTypes($classlike_storage);
+                }
 
                 $mut = $codebase->analyzer->mutable_classes[$fq_class_name_lc] ?? Mutations::LEVEL_NONE;
                 if ($mut <= Mutations::LEVEL_INTERNAL_READ
@@ -975,7 +977,7 @@ final class ClassLikes
                     foreach ($stmts as $stmt) {
                         if ($stmt instanceof PhpParser\Node\Stmt\Namespace_) {
                             foreach ($stmt->stmts as $namespace_stmt) {
-                                if ($namespace_stmt instanceof PhpParser\Node\Stmt\Class_
+                                if ($namespace_stmt instanceof PhpParser\Node\Stmt\ClassLike
                                     && strtolower((string) $stmt->name . '\\' . (string) $namespace_stmt->name)
                                         === $fq_class_name_lc
                                 ) {
@@ -984,11 +986,10 @@ final class ClassLikes
                                         $classlike_storage,
                                         $namespace_stmt,
                                         $project_analyzer,
-                                        $classlike_storage->location->file_path,
                                     );
                                 }
                             }
-                        } elseif ($stmt instanceof PhpParser\Node\Stmt\Class_
+                        } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassLike
                             && strtolower((string) $stmt->name) === $fq_class_name_lc
                         ) {
                             self::makeImmutable(
@@ -996,7 +997,6 @@ final class ClassLikes
                                 $classlike_storage,
                                 $stmt,
                                 $project_analyzer,
-                                $classlike_storage->location->file_path,
                             );
                         }
                     }
@@ -1008,31 +1008,27 @@ final class ClassLikes
     public static function makeImmutable(
         bool $change,
         ClassLikeStorage $storage,
-        PhpParser\Node\Stmt\Class_ $class_stmt,
+        ClassLike $class_stmt,
         ProjectAnalyzer $project_analyzer,
-        string $file_path,
+        ?string $msg = null,
     ): void {
-        if ($class_stmt instanceof VirtualNode) {
+        if ($class_stmt instanceof VirtualNode || $storage->location === null) {
             return;
         }
         if ($change) {
             $manipulator = ClassDocblockManipulator::getForClass(
                 $project_analyzer,
-                $file_path,
+                $storage->location->file_path,
                 $class_stmt,
             );
 
             $manipulator->makeImmutable();
         }
-        
-        if (!$storage->location) {
-            return;
-        }
 
         IssueBuffer::maybeAdd(
             new MissingImmutableAnnotation(
-                $storage->name . ' must be marked @psalm-immutable to aid security analysis,'
-                    .' run with --alter to fix this',
+                $msg ?? ($storage->name . ' must be marked @psalm-immutable to aid security analysis,'
+                    .' run with --alter --issues=MissingImmutableAnnotation to fix this'),
                 $storage->location,
             ),
             $storage->suppressed_issues,

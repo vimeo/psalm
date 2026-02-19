@@ -15,7 +15,7 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
     public function providerValidCodeParse(): array
     {
         return [
-            'addPureAnnotationToFunction' => [
+            'addImmutableAnnotation' => [
                 'input' => '<?php
                     class A {
                         public int $i;
@@ -42,6 +42,101 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                         public function getPlus5() {
                             return $this->i + 5;
                         }
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingImmutableAnnotation'],
+                'safe_types' => true,
+            ],
+            'addImmutableAnnotationTrait' => [
+                'input' => '<?php
+                    trait A {
+                        public int $i;
+
+                        public function __construct(int $i) {
+                            $this->i = $i;
+                        }
+
+                        public function getPlus5() {
+                            return $this->i + 5;
+                        }
+                    }',
+                'output' => '<?php
+                    /**
+                     * @psalm-immutable
+                     */
+                    trait A {
+                        public int $i;
+
+                        public function __construct(int $i) {
+                            $this->i = $i;
+                        }
+
+                        public function getPlus5() {
+                            return $this->i + 5;
+                        }
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingImmutableAnnotation'],
+                'safe_types' => true,
+            ],
+            'addImmutableAnnotationAbstractClass' => [
+                'input' => '<?php
+                    abstract class A {
+                        public int $i;
+
+                        public function __construct(int $i) {
+                            $this->i = $i;
+                        }
+
+                        public function getPlus5() {
+                            return $this->i + 5;
+                        }
+                    }',
+                'output' => '<?php
+                    /**
+                     * @psalm-immutable
+                     */
+                    abstract class A {
+                        public int $i;
+
+                        public function __construct(int $i) {
+                            $this->i = $i;
+                        }
+
+                        public function getPlus5() {
+                            return $this->i + 5;
+                        }
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingImmutableAnnotation'],
+                'safe_types' => true,
+            ],
+            'addImmutableAnnotationInterface' => [
+                'input' => '<?php
+                    interface A {
+                        public function getPlus5(): int;
+                    }',
+                'output' => '<?php
+                    /**
+                     * @psalm-immutable
+                     */
+                    interface A {
+                        public function getPlus5(): int;
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingImmutableAnnotation'],
+                'safe_types' => true,
+            ],
+            'noAddImmutableAnnotationEnum' => [
+                'input' => '<?php
+                    enum A {
+                        case A = 1;
+                        case B = 2;
+                    }',
+                'output' => '<?php
+                    enum A {
+                        case A = 1;
+                        case B = 2;
                     }',
                 'php_version' => '7.4',
                 'issues_to_fix' => ['MissingImmutableAnnotation'],

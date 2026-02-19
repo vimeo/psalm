@@ -22,6 +22,7 @@ use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\ClassConstAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
+use Psalm\Internal\Codebase\ClassLikes;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\FileManipulation\PropertyDocblockManipulator;
 use Psalm\Internal\MethodIdentifier;
@@ -48,7 +49,6 @@ use Psalm\Issue\InvalidTraversableImplementation;
 use Psalm\Issue\MethodSignatureMismatch;
 use Psalm\Issue\MismatchingDocblockPropertyType;
 use Psalm\Issue\MissingConstructor;
-use Psalm\Issue\MissingImmutableAnnotation;
 use Psalm\Issue\MissingPropertyType;
 use Psalm\Issue\MutableDependency;
 use Psalm\Issue\NoEnumProperties;
@@ -2196,15 +2196,20 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             if ($interface_storage->allowed_mutations
                 < $storage->allowed_mutations
             ) {
-                IssueBuffer::maybeAdd(
-                    new MissingImmutableAnnotation(
-                        $fq_interface_name . ' is marked with @'.Mutations::TO_ATTRIBUTE_CLASS[
+                $project_analyzer = ProjectAnalyzer::getInstance();
+                $change = $codebase->alter_code
+                    && isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation']);
+
+                ClassLikes::makeImmutable(
+                    $change,
+                    $storage,
+                    $class,
+                    $project_analyzer,
+                    $fq_interface_name . ' is marked with @'.Mutations::TO_ATTRIBUTE_CLASS[
                             $interface_storage->allowed_mutations
                         ].', but '
-                        . $fq_class_name . ' is not, run with --alter to fix this',
-                        $code_location,
-                    ),
-                    $storage->suppressed_issues + $this->getSuppressedIssues(),
+                        . $fq_class_name . ' is not,'
+                        .' run with --alter --issues=MissingImmutableAnnotation to fix this',
                 );
             }
 
@@ -2439,15 +2444,19 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             if ($parent_class_storage->allowed_mutations
                 < $storage->allowed_mutations
             ) {
-                IssueBuffer::maybeAdd(
-                    new MissingImmutableAnnotation(
-                        $parent_fq_class_name . ' is marked with @'.Mutations::TO_ATTRIBUTE_CLASS[
-                            $parent_class_storage->allowed_mutations
-                        ].', but '
-                        . $fq_class_name . ' is not, run with --alter to fix this',
-                        $code_location,
-                    ),
-                    $storage->suppressed_issues + $this->getSuppressedIssues(),
+                $project_analyzer = ProjectAnalyzer::getInstance();
+                $change = $codebase->alter_code
+                    && isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation']);
+
+                ClassLikes::makeImmutable(
+                    $change,
+                    $storage,
+                    $class,
+                    $project_analyzer,
+                    $parent_fq_class_name . ' is marked with @'.Mutations::TO_ATTRIBUTE_CLASS[
+                        $parent_class_storage->allowed_mutations
+                    ].', but '
+                    . $fq_class_name . ' is not, run with --alter --issues=MissingImmutableAnnotation to fix this',
                 );
             } elseif ($parent_class_storage->allowed_mutations
                 > $storage->allowed_mutations
