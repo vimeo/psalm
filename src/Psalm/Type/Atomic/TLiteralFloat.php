@@ -35,6 +35,9 @@ final class TLiteralFloat extends TFloat
         if (!$exact) {
             return 'float';
         }
+        if (is_nan($this->value)) {
+            return 'float(NAN)';
+        }
 
         return 'float(' . $this->value . ')';
     }
