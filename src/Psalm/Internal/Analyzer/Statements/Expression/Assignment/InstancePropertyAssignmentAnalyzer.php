@@ -406,23 +406,27 @@ final class InstancePropertyAssignmentAnalyzer
         if ($lhs_var_id !== null
             && isset($context->vars_in_scope[$lhs_var_id])
         ) {
-            $mut = $lhs_var_id === '$this'
+            $real = $lhs_var_id === '$this'
                 ? Mutations::LEVEL_INTERNAL_READ_WRITE
                 : Mutations::LEVEL_EXTERNAL;
-            $mut = $can_set_readonly_property ? Mutations::LEVEL_NONE : $mut;
+            $mut = $can_set_readonly_property ? Mutations::LEVEL_INTERNAL_READ : $real;
             $statements_analyzer->signalMutation(
                 $mut,
                 $context,
                 'property assignment to ' . $property_id,
                 ImpurePropertyAssignment::class,
                 $stmt,
+
+                // We must not emit errors if the property is readonly 
+                // but we're in a constructor/unserialize, etc,
+                // but we still must make sure the method mutatibility inference logic knows
+                // that the property is being mutated.
+                $real,
             );
-            if (!$can_set_readonly_property) {
-                $codebase->analyzer->addMutableClass(
-                    $declaring_class_storage->name,
-                    Mutations::LEVEL_INTERNAL_READ_WRITE,
-                );
-            }
+            $codebase->analyzer->addMutableClass(
+                $declaring_class_storage->name,
+                $mut,
+            );
         }
     }
 

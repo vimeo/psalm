@@ -1365,6 +1365,7 @@ final class ArgumentsAnalyzer
                                 $arg->value,
                                 $fq_class_name,
                                 $prop_name,
+                                $var_id
                             );
                         }
                     }
