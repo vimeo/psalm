@@ -187,7 +187,7 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingImmutableAnnotation'],
                 'safe_types' => true,
             ],
-            'addImmutableEvenWhenInError' => [
+            'doNotAddImmutableWhenInError' => [
                 'input' => '<?php
                     class B {
                         public int $i = 5;
@@ -198,9 +198,6 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
 
                     echo $a->i;',
                 'output' => '<?php
-                    /**
-                     * @psalm-immutable
-                     */
                     class B {
                         public int $i = 5;
                     }
@@ -215,7 +212,10 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
             ],
             'addPureAnnotationToClassThatExtends' => [
                 'input' => '<?php
-                                        class AParent {
+                    /**
+                     * @psalm-immutable
+                     */
+                    class AParent {
                         public int $i;
 
                         public function __construct(int $i) {
@@ -233,7 +233,10 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                         }
                     }',
                 'output' => '<?php
-                                        class AParent {
+                    /**
+                     * @psalm-immutable
+                     */
+                    class AParent {
                         public int $i;
 
                         public function __construct(int $i) {
@@ -246,7 +249,7 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                     }
 
                     /**
-                     *
+                     * @psalm-immutable
                      */
                     class A extends AParent {
                         public function getPlus5() {
