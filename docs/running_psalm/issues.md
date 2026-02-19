@@ -117,6 +117,7 @@
  - [MismatchingDocblockParamType](issues/MismatchingDocblockParamType.md)
  - [MismatchingDocblockPropertyType](issues/MismatchingDocblockPropertyType.md)
  - [MismatchingDocblockReturnType](issues/MismatchingDocblockReturnType.md)
+ - [MissingAbstractPureAnnotation](issues/MissingAbstractPureAnnotation.md)
  - [MissingClassConstType](issues/MissingClassConstType.md)
  - [MissingClosureParamType](issues/MissingClosureParamType.md)
  - [MissingClosureReturnType](issues/MissingClosureReturnType.md)
