@@ -181,7 +181,7 @@ class CodeLocation
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-mutation-free
      * @psalm-suppress InaccessibleProperty Mainly used for caching
      */
     private function calculateRealLocation(): void
@@ -349,7 +349,7 @@ class CodeLocation
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-mutation-free
      */
     public function getEndLineNumber(): int
     {
@@ -359,7 +359,7 @@ class CodeLocation
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-mutation-free
      */
     public function getSnippet(): string
     {
@@ -369,7 +369,7 @@ class CodeLocation
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-mutation-free
      */
     public function getSelectedText(): string
     {
@@ -379,7 +379,7 @@ class CodeLocation
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-mutation-free
      */
     public function getColumn(): int
     {
@@ -389,7 +389,7 @@ class CodeLocation
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-mutation-free
      */
     public function getEndColumn(): int
     {
@@ -429,7 +429,7 @@ class CodeLocation
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-mutation-free
      */
     public function getShortSummary(): string
     {

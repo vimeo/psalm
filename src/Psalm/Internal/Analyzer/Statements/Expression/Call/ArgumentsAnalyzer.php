@@ -1354,21 +1354,19 @@ final class ArgumentsAnalyzer
                     $prop_name,
                     $var_id,
                 );
-            } else {
-                if ($var_id && isset($context->vars_in_scope[$var_id])) {
-                    foreach ($context->vars_in_scope[$var_id]->getAtomicTypes() as $atomic_type) {
-                        if ($atomic_type instanceof TNamedObject) {
-                            $fq_class_name = $atomic_type->value;
+            } elseif ($var_id && isset($context->vars_in_scope[$var_id])) {
+                foreach ($context->vars_in_scope[$var_id]->getAtomicTypes() as $atomic_type) {
+                    if ($atomic_type instanceof TNamedObject) {
+                        $fq_class_name = $atomic_type->value;
 
-                            self::handleByRefReadonlyArg(
-                                $statements_analyzer,
-                                $context,
-                                $arg->value,
-                                $fq_class_name,
-                                $prop_name,
-                                $var_id,
-                            );
-                        }
+                        self::handleByRefReadonlyArg(
+                            $statements_analyzer,
+                            $context,
+                            $arg->value,
+                            $fq_class_name,
+                            $prop_name,
+                            $var_id,
+                        );
                     }
                 }
             }
