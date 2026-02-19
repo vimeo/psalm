@@ -26,6 +26,7 @@ use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\ClassMustBeFinal;
 use Psalm\Issue\MissingImmutableAnnotation;
+use Psalm\Issue\MissingInterfaceImmutableAnnotation;
 use Psalm\Issue\PossiblyUnusedMethod;
 use Psalm\Issue\PossiblyUnusedParam;
 use Psalm\Issue\PossiblyUnusedProperty;
@@ -934,7 +935,8 @@ final class ClassLikes
                         IssueBuffer::maybeAdd(
                             new ClassMustBeFinal(
                                 'Class ' . $classlike_storage->name
-                                    . ' is never extended and is not part of the public API, and thus must be made final.',
+                                    . ' is never extended and is not part of the public API'
+                                    .', and thus must be made final.',
                                 $classlike_storage->location,
                                 $classlike_storage->name,
                             ),
@@ -960,10 +962,7 @@ final class ClassLikes
                     }
 
                     $this->findPossibleMethodParamTypes($classlike_storage);
-                } else if (!$classlike_storage->trait_used) {
-                    continue;
-                }
-                if ($classlike_storage->is_interface) {
+                } elseif (!$classlike_storage->trait_used) {
                     continue;
                 }
 
@@ -1020,6 +1019,22 @@ final class ClassLikes
         if ($class_stmt instanceof VirtualNode || $storage->location === null) {
             return;
         }
+        if ($storage->is_interface) {
+            if ($storage->has_mutations_annotation) {
+                return;
+            }
+            IssueBuffer::maybeAdd(
+                new MissingInterfaceImmutableAnnotation(
+                    $storage->name
+                    . ' must be marked with either @psalm-immutable or @psalm-mutable to aid security analysis',
+                    $storage->location,
+                ),
+                $storage->suppressed_issues,
+            );
+
+            return;
+        }
+
         if ($change) {
             $manipulator = ClassDocblockManipulator::getForClass(
                 $project_analyzer,

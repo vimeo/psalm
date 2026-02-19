@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="dev-master@dd9f936b97677661c50a59e8cbdc2de9729c9f97">
+<files psalm-version="dev-master@cf404b51daf81d79198a029f7b2c7f64d28ae68e">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$comment_block->tags['variablesfrom'][0]]]></code>
@@ -143,6 +143,11 @@
       <code><![CDATA[$matches[2]]]></code>
       <code><![CDATA[$matches[3]]]></code>
     </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/FileSource.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[FileSource]]></code>
+    </MissingInterfaceImmutableAnnotation>
   </file>
   <file src="src/Psalm/Internal/Algebra.php">
     <RiskyTruthyFalsyComparison>
@@ -1817,10 +1822,20 @@
       <code><![CDATA[empty($message)]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
+  <file src="src/Psalm/Internal/LanguageServer/Client/Progress/ProgressInterface.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[ProgressInterface]]></code>
+    </MissingInterfaceImmutableAnnotation>
+  </file>
   <file src="src/Psalm/Internal/LanguageServer/ClientConfiguration.php">
     <PossiblyUnusedProperty>
       <code><![CDATA[$findUnusedVariables]]></code>
     </PossiblyUnusedProperty>
+  </file>
+  <file src="src/Psalm/Internal/LanguageServer/EmitterInterface.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[EmitterInterface]]></code>
+    </MissingInterfaceImmutableAnnotation>
   </file>
   <file src="src/Psalm/Internal/LanguageServer/LanguageServer.php">
     <MixedAssignment>
@@ -1832,6 +1847,16 @@
       <code><![CDATA[$clientConfiguration->onchangeLineLimit]]></code>
       <code><![CDATA[empty($additional_info)]]></code>
     </RiskyTruthyFalsyComparison>
+  </file>
+  <file src="src/Psalm/Internal/LanguageServer/ProtocolReader.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[ProtocolReader]]></code>
+    </MissingInterfaceImmutableAnnotation>
+  </file>
+  <file src="src/Psalm/Internal/LanguageServer/ProtocolWriter.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[ProtocolWriter]]></code>
+    </MissingInterfaceImmutableAnnotation>
   </file>
   <file src="src/Psalm/Internal/Lz4Serializer.php">
     <MixedArgument>
@@ -2377,6 +2402,11 @@
       <code><![CDATA[strpos($key, '&')]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
+  <file src="src/Psalm/Internal/Type/TypeAlias.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[TypeAlias]]></code>
+    </MissingInterfaceImmutableAnnotation>
+  </file>
   <file src="src/Psalm/Internal/Type/TypeCombiner.php">
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$combination->array_type_params[1]]]></code>
@@ -2498,6 +2528,11 @@
       <code><![CDATA[$function_id]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
+  <file src="src/Psalm/Issue/MixedIssue.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[MixedIssue]]></code>
+    </MissingInterfaceImmutableAnnotation>
+  </file>
   <file src="src/Psalm/IssueBuffer.php">
     <InvalidOperand>
       <code><![CDATA[1_000 * $time]]></code>
@@ -2510,6 +2545,196 @@
       <code><![CDATA[!$report_options->output_path]]></code>
       <code><![CDATA[$parent_issue_type]]></code>
     </RiskyTruthyFalsyComparison>
+  </file>
+  <file src="src/Psalm/Node/VirtualNode.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[VirtualNode]]></code>
+    </MissingInterfaceImmutableAnnotation>
+  </file>
+  <file src="src/Psalm/NodeTypeProvider.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[NodeTypeProvider]]></code>
+    </MissingInterfaceImmutableAnnotation>
+  </file>
+  <file src="src/Psalm/Plugin/EventHandler/AddTaintsInterface.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[AddTaintsInterface]]></code>
+    </MissingInterfaceImmutableAnnotation>
+  </file>
+  <file src="src/Psalm/Plugin/EventHandler/AfterAnalysisInterface.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[AfterAnalysisInterface]]></code>
+    </MissingInterfaceImmutableAnnotation>
+  </file>
+  <file src="src/Psalm/Plugin/EventHandler/AfterClassLikeAnalysisInterface.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[AfterClassLikeAnalysisInterface]]></code>
+    </MissingInterfaceImmutableAnnotation>
+  </file>
+  <file src="src/Psalm/Plugin/EventHandler/AfterClassLikeExistenceCheckInterface.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[AfterClassLikeExistenceCheckInterface]]></code>
+    </MissingInterfaceImmutableAnnotation>
+  </file>
+  <file src="src/Psalm/Plugin/EventHandler/AfterClassLikeVisitInterface.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[AfterClassLikeVisitInterface]]></code>
+    </MissingInterfaceImmutableAnnotation>
+  </file>
+  <file src="src/Psalm/Plugin/EventHandler/AfterCodebasePopulatedInterface.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[AfterCodebasePopulatedInterface]]></code>
+    </MissingInterfaceImmutableAnnotation>
+  </file>
+  <file src="src/Psalm/Plugin/EventHandler/AfterEveryFunctionCallAnalysisInterface.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[AfterEveryFunctionCallAnalysisInterface]]></code>
+    </MissingInterfaceImmutableAnnotation>
+  </file>
+  <file src="src/Psalm/Plugin/EventHandler/AfterExpressionAnalysisInterface.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[AfterExpressionAnalysisInterface]]></code>
+    </MissingInterfaceImmutableAnnotation>
+  </file>
+  <file src="src/Psalm/Plugin/EventHandler/AfterFileAnalysisInterface.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[AfterFileAnalysisInterface]]></code>
+    </MissingInterfaceImmutableAnnotation>
+  </file>
+  <file src="src/Psalm/Plugin/EventHandler/AfterFunctionCallAnalysisInterface.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[AfterFunctionCallAnalysisInterface]]></code>
+    </MissingInterfaceImmutableAnnotation>
+  </file>
+  <file src="src/Psalm/Plugin/EventHandler/AfterFunctionLikeAnalysisInterface.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[AfterFunctionLikeAnalysisInterface]]></code>
+    </MissingInterfaceImmutableAnnotation>
+  </file>
+  <file src="src/Psalm/Plugin/EventHandler/AfterMethodCallAnalysisInterface.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[AfterMethodCallAnalysisInterface]]></code>
+    </MissingInterfaceImmutableAnnotation>
+  </file>
+  <file src="src/Psalm/Plugin/EventHandler/AfterStatementAnalysisInterface.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[AfterStatementAnalysisInterface]]></code>
+    </MissingInterfaceImmutableAnnotation>
+  </file>
+  <file src="src/Psalm/Plugin/EventHandler/BeforeAddIssueInterface.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[BeforeAddIssueInterface]]></code>
+    </MissingInterfaceImmutableAnnotation>
+  </file>
+  <file src="src/Psalm/Plugin/EventHandler/BeforeExpressionAnalysisInterface.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[BeforeExpressionAnalysisInterface]]></code>
+    </MissingInterfaceImmutableAnnotation>
+  </file>
+  <file src="src/Psalm/Plugin/EventHandler/BeforeFileAnalysisInterface.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[BeforeFileAnalysisInterface]]></code>
+    </MissingInterfaceImmutableAnnotation>
+  </file>
+  <file src="src/Psalm/Plugin/EventHandler/BeforeStatementAnalysisInterface.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[BeforeStatementAnalysisInterface]]></code>
+    </MissingInterfaceImmutableAnnotation>
+  </file>
+  <file src="src/Psalm/Plugin/EventHandler/ClassFilePathProviderInterface.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[ClassFilePathProviderInterface]]></code>
+    </MissingInterfaceImmutableAnnotation>
+  </file>
+  <file src="src/Psalm/Plugin/EventHandler/DynamicFunctionStorageProviderInterface.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[DynamicFunctionStorageProviderInterface]]></code>
+    </MissingInterfaceImmutableAnnotation>
+  </file>
+  <file src="src/Psalm/Plugin/EventHandler/FunctionExistenceProviderInterface.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[FunctionExistenceProviderInterface]]></code>
+    </MissingInterfaceImmutableAnnotation>
+  </file>
+  <file src="src/Psalm/Plugin/EventHandler/FunctionParamsProviderInterface.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[FunctionParamsProviderInterface]]></code>
+    </MissingInterfaceImmutableAnnotation>
+  </file>
+  <file src="src/Psalm/Plugin/EventHandler/FunctionReturnTypeProviderInterface.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[FunctionReturnTypeProviderInterface]]></code>
+    </MissingInterfaceImmutableAnnotation>
+  </file>
+  <file src="src/Psalm/Plugin/EventHandler/MethodExistenceProviderInterface.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[MethodExistenceProviderInterface]]></code>
+    </MissingInterfaceImmutableAnnotation>
+  </file>
+  <file src="src/Psalm/Plugin/EventHandler/MethodParamsProviderInterface.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[MethodParamsProviderInterface]]></code>
+    </MissingInterfaceImmutableAnnotation>
+  </file>
+  <file src="src/Psalm/Plugin/EventHandler/MethodReturnTypeProviderInterface.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[MethodReturnTypeProviderInterface]]></code>
+    </MissingInterfaceImmutableAnnotation>
+  </file>
+  <file src="src/Psalm/Plugin/EventHandler/MethodVisibilityProviderInterface.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[MethodVisibilityProviderInterface]]></code>
+    </MissingInterfaceImmutableAnnotation>
+  </file>
+  <file src="src/Psalm/Plugin/EventHandler/PropertyExistenceProviderInterface.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[PropertyExistenceProviderInterface]]></code>
+    </MissingInterfaceImmutableAnnotation>
+  </file>
+  <file src="src/Psalm/Plugin/EventHandler/PropertyTypeProviderInterface.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[PropertyTypeProviderInterface]]></code>
+    </MissingInterfaceImmutableAnnotation>
+  </file>
+  <file src="src/Psalm/Plugin/EventHandler/PropertyVisibilityProviderInterface.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[PropertyVisibilityProviderInterface]]></code>
+    </MissingInterfaceImmutableAnnotation>
+  </file>
+  <file src="src/Psalm/Plugin/EventHandler/RemoveTaintsInterface.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[RemoveTaintsInterface]]></code>
+    </MissingInterfaceImmutableAnnotation>
+  </file>
+  <file src="src/Psalm/Plugin/EventHandler/StringInterpreterInterface.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[StringInterpreterInterface]]></code>
+    </MissingInterfaceImmutableAnnotation>
+  </file>
+  <file src="src/Psalm/Plugin/FileExtensionsInterface.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[FileExtensionsInterface]]></code>
+    </MissingInterfaceImmutableAnnotation>
+  </file>
+  <file src="src/Psalm/Plugin/PluginEntryPointInterface.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[PluginEntryPointInterface]]></code>
+    </MissingInterfaceImmutableAnnotation>
+  </file>
+  <file src="src/Psalm/Plugin/PluginFileExtensionsInterface.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[PluginFileExtensionsInterface]]></code>
+    </MissingInterfaceImmutableAnnotation>
+  </file>
+  <file src="src/Psalm/Plugin/PluginInterface.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[PluginInterface]]></code>
+    </MissingInterfaceImmutableAnnotation>
+  </file>
+  <file src="src/Psalm/Plugin/RegistrationInterface.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[RegistrationInterface]]></code>
+    </MissingInterfaceImmutableAnnotation>
   </file>
   <file src="src/Psalm/Progress/DefaultProgress.php">
     <InvalidOperand>
@@ -2569,6 +2794,11 @@
       <code><![CDATA[$issue_data->taint_trace]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
+  <file src="src/Psalm/StatementsSource.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[StatementsSource]]></code>
+    </MissingInterfaceImmutableAnnotation>
+  </file>
   <file src="src/Psalm/Storage/Assertion/IsAClass.php">
     <ImplicitToStringCast>
       <code><![CDATA[$this->type]]></code>
@@ -2594,6 +2824,11 @@
       <code><![CDATA[$param->type ?: 'mixed']]></code>
       <code><![CDATA[$this->return_type ?: 'mixed']]></code>
     </ImplicitToStringCast>
+  </file>
+  <file src="src/Psalm/Storage/HasAttributesInterface.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[HasAttributesInterface]]></code>
+    </MissingInterfaceImmutableAnnotation>
   </file>
   <file src="src/Psalm/Storage/Possibilities.php">
     <RiskyTruthyFalsyComparison>
@@ -3037,6 +3272,9 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Type/TypeNode.php">
+    <MissingInterfaceImmutableAnnotation>
+      <code><![CDATA[TypeNode]]></code>
+    </MissingInterfaceImmutableAnnotation>
     <ReferenceConstraintViolation>
       <code><![CDATA[$node]]></code>
     </ReferenceConstraintViolation>

@@ -126,6 +126,7 @@
  - [MissingDocblockType](issues/MissingDocblockType.md)
  - [MissingFile](issues/MissingFile.md)
  - [MissingImmutableAnnotation](issues/MissingImmutableAnnotation.md)
+ - [MissingInterfaceImmutableAnnotation](issues/MissingInterfaceImmutableAnnotation.md)
  - [MissingOverrideAttribute](issues/MissingOverrideAttribute.md)
  - [MissingParamType](issues/MissingParamType.md)
  - [MissingPropertyType](issues/MissingPropertyType.md)
