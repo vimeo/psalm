@@ -10,9 +10,6 @@ use Psalm\Report;
 
 use function sprintf;
 
-/**
- * @psalm-immutable
- */
 final class EmacsReport extends Report
 {
     #[Override]

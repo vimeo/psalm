@@ -1661,7 +1661,7 @@ final class UnusedVariableTest extends TestCase
             'usedImmutableProperty' => [
                 'code' => '<?php
                     /**
-                     * @psalm-immutable
+                     * 
                      */
                     class Clause {
                         /**
@@ -2253,7 +2253,7 @@ final class UnusedVariableTest extends TestCase
             'useImmutableGetIteratorInForeach' => [
                 'code' => '<?php
                     /**
-                     * @psalm-immutable
+                     * 
                      * @psalm-suppress MissingTemplateParam
                      */
                     class A implements IteratorAggregate

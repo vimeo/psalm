@@ -17,6 +17,9 @@ final class AttributeArg
     use ImmutableNonCloneableTrait;
     use UnserializeMemoryUsageSuppressionTrait;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         public readonly ?string $name,
         public readonly Union|UnresolvedConstantComponent $type,

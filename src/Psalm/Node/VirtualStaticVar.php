@@ -7,9 +7,6 @@ namespace Psalm\Node;
 use PhpParser\Node\StaticVar;
 use Psalm\Node\VirtualNode;
 
-/**
- * @psalm-immutable
- */
 final class VirtualStaticVar extends StaticVar implements VirtualNode
 {
 

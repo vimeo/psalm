@@ -6,9 +6,6 @@ namespace Psalm\Tests\FileManipulation;
 
 use Override;
 
-/**
- * @psalm-immutable
- */
 final class PureAnnotationAdditionTest extends FileManipulationTestCase
 {
     #[Override]

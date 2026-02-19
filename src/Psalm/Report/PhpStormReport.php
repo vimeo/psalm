@@ -12,9 +12,6 @@ use Psalm\Report;
 
 use function substr;
 
-/**
- * @psalm-immutable
- */
 final class PhpStormReport extends Report
 {
     #[Override]

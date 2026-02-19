@@ -16,8 +16,6 @@ use function max;
  * generic (external) issue data via `sonar.externalIssuesReportPaths`.
  *
  * https://docs.sonarqube.org/latest/analysis/generic-issue/
- *
- * @psalm-immutable
  */
 final class SonarqubeReport extends Report
 {

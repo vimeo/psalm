@@ -7,9 +7,6 @@ namespace Psalm\Node\Stmt;
 use PhpParser\Node\Stmt\If_;
 use Psalm\Node\VirtualNode;
 
-/**
- * @psalm-immutable
- */
 final class VirtualIf extends If_ implements VirtualNode
 {
 

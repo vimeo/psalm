@@ -1,7 +1,6 @@
 <?php
 namespace Vimeo\Test\DummyProject;
 
-/** @psalm-immutable */
 final class Bar
 {
     use SomeTrait;

@@ -7,9 +7,6 @@ namespace Psalm\Node\Expr;
 use PhpParser\Node\Expr\StaticCall;
 use Psalm\Node\VirtualNode;
 
-/**
- * @psalm-immutable
- */
 final class VirtualStaticCall extends StaticCall implements VirtualNode
 {
 

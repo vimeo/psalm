@@ -12,9 +12,6 @@ use Psalm\Report;
 use function array_map;
 use function array_values;
 
-/**
- * @psalm-immutable
- */
 final class JsonReport extends Report
 {
     #[Override]

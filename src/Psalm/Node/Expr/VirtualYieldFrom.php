@@ -7,9 +7,6 @@ namespace Psalm\Node\Expr;
 use PhpParser\Node\Expr\YieldFrom;
 use Psalm\Node\VirtualNode;
 
-/**
- * @psalm-immutable
- */
 final class VirtualYieldFrom extends YieldFrom implements VirtualNode
 {
 

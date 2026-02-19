@@ -7,9 +7,6 @@ namespace Psalm\Node\Stmt;
 use PhpParser\Node\Stmt\ClassConst;
 use Psalm\Node\VirtualNode;
 
-/**
- * @psalm-immutable
- */
 final class VirtualClassConst extends ClassConst implements VirtualNode
 {
 

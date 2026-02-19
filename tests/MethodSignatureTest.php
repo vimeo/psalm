@@ -740,7 +740,7 @@ final class MethodSignatureTest extends TestCase
             'allowOverridingThrowable' => [
                 'code' => '<?php
                     /**
-                     * @psalm-immutable
+                     * 
                      */
                     interface MyException extends \Throwable
                     {

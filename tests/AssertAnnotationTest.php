@@ -1118,8 +1118,7 @@ final class AssertAnnotationTest extends TestCase
             ],
             'assertOnNestedProperty' => [
                 'code' => '<?php
-                    /** @psalm-immutable */
-                    class B {
+                                        class B {
                         public ?array $arr = null;
 
                         public function __construct(?array $arr) {
@@ -1127,8 +1126,7 @@ final class AssertAnnotationTest extends TestCase
                         }
                     }
 
-                    /** @psalm-immutable */
-                    class A {
+                                        class A {
                         public B $b;
                         public function __construct(B $b) {
                             $this->b = $b;
@@ -1148,8 +1146,7 @@ final class AssertAnnotationTest extends TestCase
             ],
             'assertOnNestedMethod' => [
                 'code' => '<?php
-                    /** @psalm-immutable */
-                    class B {
+                                        class B {
                         private ?array $arr = null;
 
                         public function __construct(?array $arr) {
@@ -1161,8 +1158,7 @@ final class AssertAnnotationTest extends TestCase
                         }
                     }
 
-                    /** @psalm-immutable */
-                    class A {
+                                        class A {
                         public B $b;
                         public function __construct(B $b) {
                             $this->b = $b;
@@ -1182,8 +1178,7 @@ final class AssertAnnotationTest extends TestCase
             ],
             'assertOnThisMethod' => [
                 'code' => '<?php
-                    /** @psalm-immutable */
-                    class A {
+                                        class A {
                         private ?array $arr = null;
 
                         public function __construct(?array $arr) {
@@ -1618,7 +1613,7 @@ final class AssertAnnotationTest extends TestCase
             'withHasTypeCall' => [
                 'code' => '<?php
                     /**
-                     * @psalm-immutable
+                     * 
                      */
                     class Param {
                         /**
@@ -1676,8 +1671,7 @@ final class AssertAnnotationTest extends TestCase
             ],
             'onPropertyOfImmutableArgument' => [
                 'code' => '<?php
-                    /** @psalm-immutable */
-                    class Aclass {
+                                        class Aclass {
                         public ?string $b;
                         public function __construct(?string $b) {
                             $this->b = $b;
@@ -1697,8 +1691,7 @@ final class AssertAnnotationTest extends TestCase
             ],
             'inTrueOnPropertyOfImmutableArgument' => [
                 'code' => '<?php
-                    /** @psalm-immutable */
-                    class A {
+                                        class A {
                         public ?int $b;
                         public function __construct(?int $b) {
                             $this->b = $b;
@@ -1720,8 +1713,7 @@ final class AssertAnnotationTest extends TestCase
             ],
             'inFalseOnPropertyOfAImmutableArgument' => [
                 'code' => '<?php
-                    /** @psalm-immutable */
-                    class A {
+                                        class A {
                         public ?int $b;
                         public function __construct(?int $b) {
                             $this->b = $b;
@@ -1750,8 +1742,7 @@ final class AssertAnnotationTest extends TestCase
                         }
                     }
 
-                    /** @psalm-immutable */
-                    class Aclass {
+                                        class Aclass {
                         public B $b;
                         public function __construct(B $b) {
                             $this->b = $b;
@@ -1777,8 +1768,7 @@ final class AssertAnnotationTest extends TestCase
                         }
                     }
 
-                    /** @psalm-immutable */
-                    class Aclass {
+                                        class Aclass {
                         public B $b;
                         public function __construct(B $b) {
                             $this->b = $b;

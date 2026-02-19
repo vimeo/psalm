@@ -7,9 +7,6 @@ namespace Psalm\Node\Name;
 use PhpParser\Node\Name\FullyQualified;
 use Psalm\Node\VirtualNode;
 
-/**
- * @psalm-immutable
- */
 final class VirtualFullyQualified extends FullyQualified implements VirtualNode
 {
 

@@ -1760,8 +1760,7 @@ final class MethodCallTest extends TestCase
                         public function getId(): int;
                     }
 
-                    /** @psalm-immutable */
-                    interface Application {
+                                        interface Application {
                         public function getLocation(): ?Location;
                     }
 

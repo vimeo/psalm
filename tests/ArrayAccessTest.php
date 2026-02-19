@@ -1198,8 +1198,7 @@ final class ArrayAccessTest extends TestCase
             ],
             'allowUnsettingNested' => [
                 'code' => '<?php
-                    /** @psalm-immutable */
-                    final class test {
+                                        final class test {
                         public function __construct(public int $value) {}
                     }
                     $test = new test(1);

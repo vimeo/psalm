@@ -7,13 +7,16 @@ namespace Psalm\Internal\DataFlow;
 use Psalm\Storage\ImmutableNonCloneableTrait;
 
 /**
- * @psalm-immutable
  * @internal
+ * @psalm-immutable
  */
 final class Path
 {
     use ImmutableNonCloneableTrait;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         public readonly string $type,
         public readonly int $length,

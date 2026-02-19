@@ -7,9 +7,6 @@ namespace Psalm\Node\Stmt;
 use PhpParser\Node\Stmt\For_;
 use Psalm\Node\VirtualNode;
 
-/**
- * @psalm-immutable
- */
 final class VirtualFor extends For_ implements VirtualNode
 {
 

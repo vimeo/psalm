@@ -7,9 +7,6 @@ namespace Psalm\Node\Expr;
 use PhpParser\Node\Expr\NullsafePropertyFetch;
 use Psalm\Node\VirtualNode;
 
-/**
- * @psalm-immutable
- */
 final class VirtualNullsafePropertyFetch extends NullsafePropertyFetch implements VirtualNode
 {
 

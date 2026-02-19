@@ -3067,7 +3067,7 @@ final class ClassTemplateTest extends TestCase
                 'code' => '<?php
 
                     /**
-                     * @psalm-immutable
+                     * 
                      * @template T of self::READ_UNCOMMITTED|self::READ_COMMITTED|self::REPEATABLE_READ|self::SERIALIZABLE
                      */
                     final class TransactionIsolationLevel
@@ -3329,7 +3329,7 @@ final class ClassTemplateTest extends TestCase
             'templateWithClassConstants' => [
                 'code' => '<?php
                     /**
-                     * @psalm-immutable
+                     * 
                      * @template T of self::A|self::B|self::C
                      */
                     final class Foo
@@ -3897,7 +3897,7 @@ final class ClassTemplateTest extends TestCase
 
                     /**
                      * @template-covariant A
-                     * @psalm-immutable
+                     * 
                      */
                     final class Maybe
                     {
@@ -3964,7 +3964,7 @@ final class ClassTemplateTest extends TestCase
 
                     /**
                      * @template-covariant A
-                     * @psalm-immutable
+                     * 
                      */
                     final class Maybe
                     {

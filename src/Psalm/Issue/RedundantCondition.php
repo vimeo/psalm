@@ -6,9 +6,6 @@ namespace Psalm\Issue;
 
 use Psalm\CodeLocation;
 
-/**
- * @psalm-immutable
- */
 final class RedundantCondition extends CodeIssue
 {
     public const ERROR_LEVEL = 4;

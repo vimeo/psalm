@@ -9,8 +9,6 @@ use Psalm\Node\VirtualNode;
 
 /**
  * Nop/empty statement (;).
- *
- * @psalm-immutable
  */
 final class VirtualNop extends Nop implements VirtualNode
 {

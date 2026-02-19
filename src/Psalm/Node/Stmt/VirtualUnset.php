@@ -7,9 +7,6 @@ namespace Psalm\Node\Stmt;
 use PhpParser\Node\Stmt\Unset_;
 use Psalm\Node\VirtualNode;
 
-/**
- * @psalm-immutable
- */
 final class VirtualUnset extends Unset_ implements VirtualNode
 {
 

@@ -20,6 +20,9 @@ final class DiffElem
     public const TYPE_REPLACE = 3;
     public const TYPE_KEEP_SIGNATURE = 4;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         /** @var int One of the TYPE_* constants */
         public readonly int $type,

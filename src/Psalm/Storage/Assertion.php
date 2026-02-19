@@ -52,6 +52,7 @@ abstract class Assertion implements Stringable
 
     /**
      * @return static
+     * @psalm-mutation-free
      */
     public function setAtomicType(Atomic $type): self
     {

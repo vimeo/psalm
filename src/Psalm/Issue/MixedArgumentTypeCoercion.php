@@ -8,9 +8,6 @@ use Psalm\CodeLocation;
 
 use function strtolower;
 
-/**
- * @psalm-immutable
- */
 final class MixedArgumentTypeCoercion extends ArgumentIssue implements MixedIssue
 {
     public const ERROR_LEVEL = 1;

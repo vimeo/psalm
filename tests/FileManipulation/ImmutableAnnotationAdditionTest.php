@@ -6,9 +6,6 @@ namespace Psalm\Tests\FileManipulation;
 
 use Override;
 
-/**
- * @psalm-immutable
- */
 final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
 {
     #[Override]
@@ -30,7 +27,7 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                     }',
                 'output' => '<?php
                     /**
-                     * @psalm-immutable
+                     * 
                      */
                     class A {
                         public int $i;
@@ -73,7 +70,7 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                      *
                      * @Foo\Bar
                      *
-                     * @psalm-immutable
+                     * 
                      */
                     class A {
                         public int $i;
@@ -160,7 +157,7 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                     }
 
                     /**
-                     * @psalm-immutable
+                     * 
                      */
                     class A {
                         public B $b;
@@ -212,8 +209,7 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
             ],
             'addPureAnnotationToClassThatExtends' => [
                 'input' => '<?php
-                    /** @psalm-immutable */
-                    class AParent {
+                                        class AParent {
                         public int $i;
 
                         public function __construct(int $i) {
@@ -231,8 +227,7 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                         }
                     }',
                 'output' => '<?php
-                    /** @psalm-immutable */
-                    class AParent {
+                                        class AParent {
                         public int $i;
 
                         public function __construct(int $i) {
@@ -245,7 +240,7 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                     }
 
                     /**
-                     * @psalm-immutable
+                     * 
                      */
                     class A extends AParent {
                         public function getPlus5() {

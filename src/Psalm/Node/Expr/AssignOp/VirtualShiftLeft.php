@@ -7,9 +7,6 @@ namespace Psalm\Node\Expr\AssignOp;
 use PhpParser\Node\Expr\AssignOp\ShiftLeft;
 use Psalm\Node\VirtualNode;
 
-/**
- * @psalm-immutable
- */
 final class VirtualShiftLeft extends ShiftLeft implements VirtualNode
 {
 

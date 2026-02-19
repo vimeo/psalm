@@ -211,8 +211,7 @@ final class PropertyTypeTest extends TestCase
                     public static function modify() : void {}
                 }
 
-                /** @psalm-immutable */
-                class X {
+                                class X {
                     public ?int $x = null;
 
                     public function __construct(?int $x) {
@@ -249,8 +248,7 @@ final class PropertyTypeTest extends TestCase
                     public static function modify() : void {}
                 }
 
-                /** @psalm-immutable */
-                class X {
+                                class X {
                     public ?int $x = null;
 
                     public function __construct(?int $x) {

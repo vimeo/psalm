@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Issue;
 
-/**
- * @psalm-immutable
- */
 final class RiskyCast extends CodeIssue
 {
     final public const ERROR_LEVEL = 3;

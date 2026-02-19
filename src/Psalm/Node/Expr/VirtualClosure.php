@@ -7,9 +7,6 @@ namespace Psalm\Node\Expr;
 use PhpParser\Node\Expr\Closure;
 use Psalm\Node\VirtualNode;
 
-/**
- * @psalm-immutable
- */
 final class VirtualClosure extends Closure implements VirtualNode
 {
 

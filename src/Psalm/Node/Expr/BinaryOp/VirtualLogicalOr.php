@@ -7,9 +7,6 @@ namespace Psalm\Node\Expr\BinaryOp;
 use PhpParser\Node\Expr\BinaryOp\LogicalOr;
 use Psalm\Node\VirtualNode;
 
-/**
- * @psalm-immutable
- */
 final class VirtualLogicalOr extends LogicalOr implements VirtualNode
 {
 

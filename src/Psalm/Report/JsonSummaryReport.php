@@ -8,9 +8,6 @@ use Override;
 use Psalm\Internal\Json\Json;
 use Psalm\Report;
 
-/**
- * @psalm-immutable
- */
 final class JsonSummaryReport extends Report
 {
     #[Override]

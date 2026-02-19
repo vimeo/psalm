@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Issue;
 
-/**
- * @psalm-immutable
- */
 final class PrivateFinalMethod extends MethodIssue
 {
     final public const ERROR_LEVEL = 2;

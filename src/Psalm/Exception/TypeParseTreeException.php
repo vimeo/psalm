@@ -6,9 +6,6 @@ namespace Psalm\Exception;
 
 use Exception;
 
-/**
- * @psalm-immutable
- */
 final class TypeParseTreeException extends Exception
 {
 }

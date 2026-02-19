@@ -102,7 +102,7 @@ final class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface,
 }
 
 /**
- * @psalm-immutable
+ * 
  */
 final class IncorrectFunctionCasing extends PluginIssue
 {

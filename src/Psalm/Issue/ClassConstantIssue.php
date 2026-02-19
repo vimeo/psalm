@@ -6,9 +6,6 @@ namespace Psalm\Issue;
 
 use Psalm\CodeLocation;
 
-/**
- * @psalm-immutable
- */
 abstract class ClassConstantIssue extends CodeIssue
 {
     /**

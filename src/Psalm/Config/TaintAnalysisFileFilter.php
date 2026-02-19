@@ -6,7 +6,6 @@ namespace Psalm\Config;
 
 /**
  * @internal
- * @psalm-immutable
  */
 final class TaintAnalysisFileFilter extends FileFilter
 {

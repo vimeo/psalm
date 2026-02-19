@@ -6,9 +6,6 @@ namespace Psalm\Exception;
 
 use LogicException;
 
-/**
- * @psalm-immutable
- */
 final class UnpopulatedClasslikeException extends LogicException
 {
     /**

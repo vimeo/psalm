@@ -6,9 +6,6 @@ namespace Psalm\Node;
 
 use PhpParser\Node\Arg;
 
-/**
- * @psalm-immutable
- */
 final class VirtualArg extends Arg implements VirtualNode
 {
 

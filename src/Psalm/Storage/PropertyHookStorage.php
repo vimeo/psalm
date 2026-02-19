@@ -8,13 +8,14 @@ use Psalm\CodeLocation;
 
 /**
  * Storage for property hooks ('get' & 'set') introduced in PHP 8.4
- *
- * @psalm-immutable
  */
 final class PropertyHookStorage
 {
     use UnserializeMemoryUsageSuppressionTrait;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         public bool $is_get,
         public bool $is_final,

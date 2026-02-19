@@ -86,6 +86,9 @@ abstract class Atomic implements TypeNode, Stringable
 {
     use UnserializeMemoryUsageSuppressionTrait;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         /**
          * Whether or not the type comes from a docblock
@@ -93,6 +96,9 @@ abstract class Atomic implements TypeNode, Stringable
         public bool $from_docblock = false,
     ) {
     }
+    /**
+     * @psalm-mutation-free
+     */
     protected function __clone()
     {
     }
@@ -466,6 +472,9 @@ abstract class Atomic implements TypeNode, Stringable
      */
     abstract public function getKey(bool $include_extra = true): string;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isNumericType(): bool
     {
         return $this instanceof TInt
@@ -475,6 +484,9 @@ abstract class Atomic implements TypeNode, Stringable
             || ($this instanceof TLiteralString && is_numeric($this->value));
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isObjectType(): bool
     {
         return $this instanceof TObject
@@ -740,6 +752,8 @@ abstract class Atomic implements TypeNode, Stringable
 
     /**
      * This is the true identifier for the type. It defaults to self::getKey() but can be overridden to be more precise
+     *
+     * @psalm-mutation-free
      */
     public function getId(bool $exact = true, bool $nested = false): string
     {
@@ -748,6 +762,8 @@ abstract class Atomic implements TypeNode, Stringable
     /**
      * This string is used in order to transform a type into an string assertion for the assertion module
      * Default to self::getId()
+     *
+     * @psalm-mutation-free
      */
     public function getAssertionString(): string
     {
@@ -759,6 +775,7 @@ abstract class Atomic implements TypeNode, Stringable
      * Default to self::getKey()
      *
      * @param array<lowercase-string, string> $aliased_classes
+     * @psalm-mutation-free
      */
     public function toNamespacedString(
         ?string $namespace,
@@ -788,6 +805,7 @@ abstract class Atomic implements TypeNode, Stringable
 
     /**
      * @return static
+     * @psalm-mutation-free
      */
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
@@ -807,6 +825,7 @@ abstract class Atomic implements TypeNode, Stringable
 
     /**
      * @return static
+     * @psalm-mutation-free
      */
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
@@ -824,6 +843,9 @@ abstract class Atomic implements TypeNode, Stringable
         return $other_type::class === static::class;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isTruthy(): bool
     {
         if ($this instanceof TTrue) {
@@ -906,6 +928,9 @@ abstract class Atomic implements TypeNode, Stringable
         return false;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isFalsy(): bool
     {
         if ($this instanceof TFalse) {
