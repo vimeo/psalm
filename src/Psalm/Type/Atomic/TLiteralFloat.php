@@ -21,6 +21,9 @@ final class TLiteralFloat extends TFloat
     #[Override]
     public function getKey(bool $include_extra = true): string
     {
+        if (is_nan($this->value)) {
+            return 'float(NAN)';
+        }
         return 'float(' . $this->value . ')';
     }
 

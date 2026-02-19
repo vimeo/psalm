@@ -6,9 +6,11 @@ set -x
 SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
 SCRIPT_DIR="$(realpath "$SCRIPT_DIR")"
 PSALM="$(readlink -f "$SCRIPT_DIR/../../psalm")"
-PSALM_PHAR="$(readlink -f "$SCRIPT_DIR/../../build/psalm.phar")"
+PSALM_PHAR="$(readlink -f "$SCRIPT_DIR/../../build/psalm.phar" || echo "")"
 
 if [ ! -f "$PSALM_PHAR" ]; then PSALM_PHAR="$PSALM"; fi
+
+which gsed > /dev/null && sed=gsed || sed=sed
 
 rm -Rf /tmp/testing-with-real-projects
 mkdir -p /tmp/testing-with-real-projects
@@ -54,7 +56,7 @@ psl)
 	composer install --ignore-platform-reqs
 	# Avoid conflicts with old psalm when running phar tests
 	rm -rf vendor/vimeo/psalm
-	sed 's/ErrorOutputBehavior::Packed, ErrorOutputBehavior::Discard/ErrorOutputBehavior::Discard/g' -i src/Psl/Shell/execute.php
+	$sed 's/ErrorOutputBehavior::Packed, ErrorOutputBehavior::Discard/ErrorOutputBehavior::Discard/g' -i src/Psl/Shell/execute.php
 	"$PSALM_PHAR" --monochrome -c config/psalm.xml --set-baseline=psalm-baseline.xml || FAIL=$?
 	"$PSALM_PHAR" --monochrome -c config/psalm-static-analysis.xml tests/static-analysis --set-baseline=psalm-baseline-static-analysis.xml || FAIL=$?
 	;;
