@@ -187,7 +187,7 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingImmutableAnnotation'],
                 'safe_types' => true,
             ],
-            'addImmutableEvenWhenInError' => [
+            'dontAddImmutableWhenInError' => [
                 'input' => '<?php
                     class B {
                         public int $i = 5;
@@ -198,9 +198,6 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
 
                     echo $a->i;',
                 'output' => '<?php
-                    /**
-                     * @psalm-immutable
-                     */
                     class B {
                         public int $i = 5;
                     }
@@ -215,6 +212,7 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
             ],
             'addPureAnnotationToClassThatExtends' => [
                 'input' => '<?php
+                    /** @psalm-immutable */
                     class AParent {
                         public int $i;
 
@@ -227,7 +225,51 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                         }
                     }
 
-                    /** @psalm-mutable */
+                    class A extends AParent {
+                        public function getPlus5() {
+                            return $this->i + 5;
+                        }
+                    }',
+                'output' => '<?php
+                    /** @psalm-immutable */
+                    class AParent {
+                        public int $i;
+
+                        public function __construct(int $i) {
+                            $this->i = $i;
+                        }
+
+                        public function mutate() : void {
+                            echo "hello";
+                        }
+                    }
+
+                    /**
+                     * @psalm-immutable
+                     */
+                    class A extends AParent {
+                        public function getPlus5() {
+                            return $this->i + 5;
+                        }
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingImmutableAnnotation'],
+                'safe_types' => true,
+            ],
+            'dontAddPureAnnotationToClassThatExtends' => [
+                'input' => '<?php
+                    class AParent {
+                        public int $i;
+
+                        public function __construct(int $i) {
+                            $this->i = $i;
+                        }
+
+                        public function mutate() : void {
+                            echo "hello";
+                        }
+                    }
+
                     class A extends AParent {
                         public function getPlus5() {
                             return $this->i + 5;
@@ -246,7 +288,6 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                         }
                     }
 
-                    /** @psalm-mutable */
                     class A extends AParent {
                         public function getPlus5() {
                             return $this->i + 5;
