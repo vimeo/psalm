@@ -21,6 +21,7 @@ use const SORT_NUMERIC;
  * Using the trait + interface allows you to add EventEmitter capabilities
  * without having to change your base-class.
  *
+ * @psalm-mutable
  * @copyright Copyright (C) fruux GmbH (https://fruux.com/)
  * @author Evert Pot (http://evertpot.com/)
  * @license http://sabre.io/license/ Modified BSD License
