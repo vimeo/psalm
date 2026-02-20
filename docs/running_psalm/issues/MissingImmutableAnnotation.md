@@ -1,8 +1,6 @@
 # MissingImmutableAnnotation
 
-Emitted when a class inheriting from an immutable interface or class does not also have a `@psalm-immutable` declaration.
-
-Also emitted when a potentially immutable interface or class does not have a `@psalm-immutable` declaration.  
+Emitted when a potentially immutable interface or class does not have a `@psalm-pure`, `@psalm-immutable` or `@psalm-external-mutation-free` declaration.  
 
 To automatically add immutable annotations where needed, run Psalm with `--alter --issues=MissingImmutableAnnotation`.  
 

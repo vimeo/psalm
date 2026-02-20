@@ -507,7 +507,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             && ($this->function instanceof Function_
                 || $this->function instanceof ClassMethod
             )
-            && !$overridden_method_ids
             && !$context->collect_initializations
             && !$context->collect_mutations
         ) {

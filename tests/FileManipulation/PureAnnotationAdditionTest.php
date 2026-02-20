@@ -12,6 +12,46 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'correctClassCasing' => [
+                'input' => '<?php
+                    interface F {
+                        /**
+                         * @return static
+                         * @psalm-mutation-free
+                         */
+                        public function m(): self;
+                    }
+
+                    abstract class G implements F {}
+
+                    class H extends G {
+                        public function m(): F {
+                            return $this;
+                        }
+                    }',
+                'output' => '<?php
+                    interface F {
+                        /**
+                         * @return static
+                         * @psalm-mutation-free
+                         */
+                        public function m(): self;
+                    }
+
+                    abstract class G implements F {}
+
+                    class H extends G {
+                        /**
+                         * @psalm-mutation-free
+                         */
+                        public function m(): F {
+                            return $this;
+                        }
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
             'addPureAnnotationToFunction' => [
                 'input' => '<?php
                     function foo(string $s): string {
@@ -333,6 +373,7 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                         public int $a = 5;
 
                         public function foo(string $s) : string {
+                            echo "test";
                             return $string . $this->a;
                         }
                     }
@@ -355,6 +396,9 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                     }
 
                     class B extends A {
+                        /**
+                         * @psalm-mutation-free
+                         */
                         public function foo(string $s) : string {
                             return $string;
                         }

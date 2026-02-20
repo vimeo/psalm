@@ -39,7 +39,7 @@ final class MethodStorage extends FunctionLikeStorage
      */
     public bool $mutation_free_assumed = false;
     
-    /** @var Mutations::LEVEL_INTERNAL_READ|Mutations::LEVEL_INTERNAL_READ_WRITE|Mutations::LEVEL_ALL */
+    /** @var Mutations::LEVEL_* */
     public int $containing_class_allowed_mutations = Mutations::LEVEL_ALL;
 
     /**

@@ -1008,6 +1008,15 @@ final class PureAnnotationTest extends TestCase
                     }',
                 'error_message' => 'ImpurePropertyAssignment',
             ],
+            'propertyWriteIsNotPure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    class A {
+                        /** @var array<string, string> */
+                        public array $foo = [];
+                    }',
+                'error_message' => 'InaccessibleProperty',
+            ],
             'preventPropertyAccessOnMutableClass' => [
                 'code' => '<?php
                     namespace Bar;

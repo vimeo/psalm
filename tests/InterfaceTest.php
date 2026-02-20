@@ -694,6 +694,10 @@ final class InterfaceTest extends TestCase
                     abstract class G implements F {}
 
                     class H extends G {
+                        /**
+                         * @return static
+                         * @psalm-mutation-free
+                         */
                         public function m(): F {
                             return $this;
                         }

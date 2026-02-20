@@ -39,6 +39,7 @@ use Psalm\Issue\DuplicateEnumCaseValue;
 use Psalm\Issue\ExtensionRequirementViolation;
 use Psalm\Issue\ImplementationRequirementViolation;
 use Psalm\Issue\InaccessibleMethod;
+use Psalm\Issue\InaccessibleProperty;
 use Psalm\Issue\InheritorViolation;
 use Psalm\Issue\InternalClass;
 use Psalm\Issue\InvalidEnumCaseValue;
@@ -685,6 +686,17 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             $property_class_storage = $codebase->classlike_storage_provider->get($property_class_name);
 
             $property_storage = $property_class_storage->properties[$property_name];
+
+            if ($property_class_storage->isPure() && $property_storage->location) {
+                IssueBuffer::maybeAdd(
+                    new InaccessibleProperty(
+                        'Property ' . $property_class_name . '::$' . $property_name
+                            . ' is declared in a pure class and cannot be accessed',
+                        $property_storage->location,
+                    ),
+                    $property_storage->suppressed_issues,
+                );
+            }
 
             if (isset($storage->overridden_property_ids[$property_name])) {
                 foreach ($storage->overridden_property_ids[$property_name] as $overridden_property_id) {
