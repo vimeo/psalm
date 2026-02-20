@@ -9,7 +9,10 @@ use function str_starts_with;
 use function strlen;
 use function substr;
 
-/** @internal */
+/**
+ * @internal
+ * @psalm-external-mutation-free
+ */
 final class PathMapper
 {
     private readonly string $server_root;

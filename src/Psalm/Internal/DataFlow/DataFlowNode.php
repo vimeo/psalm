@@ -13,6 +13,7 @@ use function strtolower;
 /**
  * @psalm-consistent-constructor
  * @internal
+ * @psalm-external-mutation-free
  */
 final class DataFlowNode implements Stringable
 {

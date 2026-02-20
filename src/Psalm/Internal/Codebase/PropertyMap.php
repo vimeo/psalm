@@ -9,6 +9,7 @@ use function strtolower;
 
 /**
  * @internal
+ * @psalm-external-mutation-free
  */
 final class PropertyMap
 {

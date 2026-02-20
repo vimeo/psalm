@@ -13,6 +13,9 @@ use function htmlspecialchars;
 use const ENT_QUOTES;
 use const ENT_XML1;
 
+/**
+ * @psalm-external-mutation-free
+ */
 abstract class Report
 {
     final public const TYPE_COMPACT = 'compact';

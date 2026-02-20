@@ -18,6 +18,9 @@ use function strtr;
 use function substr;
 use function usort;
 
+/**
+ * @psalm-external-mutation-free
+ */
 final class ByIssueLevelAndTypeReport extends Report
 {
     private ?string $link_format = null;

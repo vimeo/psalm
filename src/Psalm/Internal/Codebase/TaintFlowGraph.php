@@ -198,7 +198,7 @@ final class TaintFlowGraph extends DataFlowGraph
 
     /**
      * @return list<array{location: ?CodeLocation, label: string, entry_path_type: string}>
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     public function getIssueTrace(DataFlowNode $source): array
     {

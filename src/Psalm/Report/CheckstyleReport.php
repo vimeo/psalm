@@ -9,6 +9,9 @@ use Psalm\Report;
 
 use function sprintf;
 
+/**
+ * @psalm-external-mutation-free
+ */
 final class CheckstyleReport extends Report
 {
     #[Override]

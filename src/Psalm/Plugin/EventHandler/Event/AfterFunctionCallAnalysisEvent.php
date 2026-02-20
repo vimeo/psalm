@@ -11,6 +11,9 @@ use Psalm\FileManipulation;
 use Psalm\StatementsSource;
 use Psalm\Type\Union;
 
+/**
+ * @psalm-external-mutation-free
+ */
 final class AfterFunctionCallAnalysisEvent
 {
     /**

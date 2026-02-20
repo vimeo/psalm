@@ -8,6 +8,7 @@ use Psalm\Internal\Provider\ClassLikeStorageProvider;
 
 /**
  * @internal
+ * @psalm-external-mutation-free
  */
 final class ReferenceMapGenerator
 {

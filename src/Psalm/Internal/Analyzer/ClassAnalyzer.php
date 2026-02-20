@@ -22,7 +22,6 @@ use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\ClassConstAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
-use Psalm\Internal\Codebase\ClassLikes;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\FileManipulation\PropertyDocblockManipulator;
 use Psalm\Internal\MethodIdentifier;
@@ -2195,6 +2194,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 );
             }
 
+            /*
             if ($interface_storage->allowed_mutations
                 < $storage->allowed_mutations
             ) {
@@ -2214,7 +2214,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                         . $fq_class_name . ' is not,'
                         .' run with --alter --issues=MissingImmutableAnnotation to fix this',
                 );
-            }
+            }*/
 
             foreach ($interface_storage->methods as $interface_method_name_lc => $interface_method_storage) {
                 if ($interface_method_storage->visibility === self::VISIBILITY_PUBLIC) {
@@ -2444,7 +2444,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 );
             }
 
-            if ($parent_class_storage->allowed_mutations
+            /*if ($parent_class_storage->allowed_mutations
                 < $storage->allowed_mutations
             ) {
                 $project_analyzer = ProjectAnalyzer::getInstance();
@@ -2462,7 +2462,9 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     ].', but '
                     . $fq_class_name . ' is not, run with --alter --issues=MissingImmutableAnnotation to fix this',
                 );
-            } elseif ($parent_class_storage->allowed_mutations
+            } else
+                */
+            if ($parent_class_storage->allowed_mutations
                 > $storage->allowed_mutations
             ) {
                 IssueBuffer::maybeAdd(

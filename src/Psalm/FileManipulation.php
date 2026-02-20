@@ -10,6 +10,9 @@ use function strrpos;
 use function substr;
 use function trim;
 
+/**
+ * @psalm-external-mutation-free
+ */
 final class FileManipulation
 {
     /**

@@ -12,6 +12,9 @@ use Psalm\NodeTypeProvider;
 use Psalm\StatementsSource;
 use Psalm\Storage\FunctionLikeStorage;
 
+/**
+ * @psalm-external-mutation-free
+ */
 final class AfterFunctionLikeAnalysisEvent
 {
     /**

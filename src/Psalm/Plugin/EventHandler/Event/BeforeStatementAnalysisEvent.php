@@ -10,6 +10,9 @@ use Psalm\Context;
 use Psalm\FileManipulation;
 use Psalm\StatementsSource;
 
+/**
+ * @psalm-external-mutation-free
+ */
 final class BeforeStatementAnalysisEvent
 {
     /**

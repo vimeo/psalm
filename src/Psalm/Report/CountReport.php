@@ -10,6 +10,9 @@ use Psalm\Report;
 use function array_key_exists;
 use function uksort;
 
+/**
+ * @psalm-external-mutation-free
+ */
 final class CountReport extends Report
 {
     #[Override]

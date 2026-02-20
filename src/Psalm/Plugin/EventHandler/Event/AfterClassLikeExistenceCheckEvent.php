@@ -9,6 +9,9 @@ use Psalm\Codebase;
 use Psalm\FileManipulation;
 use Psalm\StatementsSource;
 
+/**
+ * @psalm-external-mutation-free
+ */
 final class AfterClassLikeExistenceCheckEvent
 {
     /**

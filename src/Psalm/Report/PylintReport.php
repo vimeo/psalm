@@ -11,6 +11,9 @@ use Psalm\Report;
 
 use function sprintf;
 
+/**
+ * @psalm-external-mutation-free
+ */
 final class PylintReport extends Report
 {
     #[Override]

@@ -12,6 +12,9 @@ use Psalm\Type\Union;
 use function is_string;
 use function str_replace;
 
+/**
+ * @psalm-external-mutation-free
+ */
 final class Possibilities
 {
     use UnserializeMemoryUsageSuppressionTrait;

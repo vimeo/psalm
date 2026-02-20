@@ -11,6 +11,7 @@ use Psalm\Type\Union;
 
 /**
  * @internal
+ * @psalm-external-mutation-free
  */
 final class ClosedInheritanceToUnion
 {

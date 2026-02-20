@@ -17,6 +17,9 @@ use function strlen;
 use function strtr;
 use function substr;
 
+/**
+ * @psalm-external-mutation-free
+ */
 final class ConsoleReport extends Report
 {
     private ?string $link_format = null;

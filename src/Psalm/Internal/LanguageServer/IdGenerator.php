@@ -8,6 +8,7 @@ namespace Psalm\Internal\LanguageServer;
  * Generates unique, incremental IDs for use as request IDs
  *
  * @internal
+ * @psalm-external-mutation-free
  */
 final class IdGenerator
 {

@@ -7,7 +7,10 @@ namespace Psalm\Internal\Codebase;
 use function dirname;
 use function strtolower;
 
-/** @internal */
+/**
+ * @internal
+ * @psalm-external-mutation-free
+ */
 final class ImpureFunctionsList
 {
     /** @var null|array<string, true> */

@@ -20,6 +20,7 @@ use function substr_replace;
 
 /**
  * @internal
+ * @psalm-external-mutation-free
  */
 final class FileManipulationBuffer
 {

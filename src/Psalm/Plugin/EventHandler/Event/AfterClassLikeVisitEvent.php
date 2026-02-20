@@ -10,6 +10,9 @@ use Psalm\FileManipulation;
 use Psalm\FileSource;
 use Psalm\Storage\ClassLikeStorage;
 
+/**
+ * @psalm-external-mutation-free
+ */
 final class AfterClassLikeVisitEvent
 {
     /**

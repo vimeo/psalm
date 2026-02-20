@@ -12,6 +12,7 @@ use function array_unique;
 
 /**
  * @internal
+ * @psalm-external-mutation-free
  */
 final class TypeAnalyzer
 {

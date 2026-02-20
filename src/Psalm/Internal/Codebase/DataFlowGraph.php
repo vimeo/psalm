@@ -17,6 +17,7 @@ use function substr;
 
 /**
  * @internal
+ * @psalm-external-mutation-free
  */
 abstract class DataFlowGraph
 {

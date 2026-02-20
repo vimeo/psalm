@@ -8,6 +8,7 @@ namespace Psalm\SourceControl\Git;
  * Commit info.
  *
  * @author Kitamura Satoshi <with.no.parachute@gmail.com>
+ * @psalm-external-mutation-free
  */
 final class CommitInfo
 {

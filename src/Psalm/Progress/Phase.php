@@ -7,6 +7,8 @@ namespace Psalm\Progress;
 /**
  * Note: this enum is not covered by the backwards compatibility promise,
  * when implementing progress make sure to always include a fallback based on the name of the case.
+ *
+ * @psalm-immutable
  */
 enum Phase
 {

@@ -969,7 +969,6 @@ final class ClassLikes
                 $mut = $codebase->analyzer->mutable_classes[$fq_class_name_lc]
                     ?? Mutations::LEVEL_NONE;
                 if ($mut !== Mutations::LEVEL_ALL
-                    && !$classlike_storage->isExternalMutationFree()
                     && !$classlike_storage->has_mutations_annotation
                 ) {
                     $change = $codebase->alter_code

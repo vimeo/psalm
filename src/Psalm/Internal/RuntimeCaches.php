@@ -22,6 +22,7 @@ use Psalm\IssueBuffer;
 
 /**
  * @internal
+ * @psalm-external-mutation-free
  */
 abstract class RuntimeCaches
 {
