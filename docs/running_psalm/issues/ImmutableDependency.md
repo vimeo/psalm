@@ -9,7 +9,7 @@ Emitted when an mutable class inherits from an immutable class, trait or interfa
 class ImmutableParent {
     public int $i = 0;
 
-    public function getI(): void {
+    public function getI(): int {
         return $this->i;
     }
 }

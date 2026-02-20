@@ -2463,7 +2463,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                         $parent_fq_class_name . ' is marked with @'.Mutations::TO_ATTRIBUTE_CLASS[
                             $parent_class_storage->allowed_mutations
                         ].', but '
-                        . $fq_class_name . ' is not, run with --alter --issues=MissingImmutableAnnotation to fix this',
+                        . $fq_class_name . ' is not',
                         $code_location,
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),

@@ -28,7 +28,6 @@ use Psalm\Issue\MethodSignatureMustProvideReturnType;
 use Psalm\Issue\MismatchingDocblockParamType;
 use Psalm\Issue\MismatchingDocblockReturnType;
 use Psalm\Issue\MoreSpecificImplementedParamType;
-use Psalm\Issue\MutableDependency;
 use Psalm\Issue\OverriddenMethodAccess;
 use Psalm\Issue\ParamNameMismatch;
 use Psalm\Issue\TraitMethodSignatureMismatch;

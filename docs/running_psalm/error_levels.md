@@ -109,6 +109,7 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
  - [UnusedMethodCall](issues/UnusedMethodCall.md)
 ## Errors that only appear at level 1
 
+ - [ImmutableDependency](issues/ImmutableDependency.md)
  - [InvalidClassConstantType](issues/InvalidClassConstantType.md)
  - [LessSpecificClassConstantType](issues/LessSpecificClassConstantType.md)
  - [LessSpecificReturnType](issues/LessSpecificReturnType.md)
@@ -130,7 +131,6 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
  - [MixedReturnTypeCoercion](issues/MixedReturnTypeCoercion.md)
  - [MixedStringOffsetAssignment](issues/MixedStringOffsetAssignment.md)
  - [MutableDependency](issues/MutableDependency.md)
- - [ImmutableDependency](issues/ImmutableDependency.md)
  - [PossiblyNullOperand](issues/PossiblyNullOperand.md)
  - [RedundantFlag](issues/RedundantFlag.md)
  - [RedundantIdentityWithTrue](issues/RedundantIdentityWithTrue.md)

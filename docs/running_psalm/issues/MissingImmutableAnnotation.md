@@ -9,13 +9,10 @@ This issue is emitted to aid [security analysis](https://psalm.dev/docs/security
 ```php
 <?php
 
-/** @psalm-immutable */
-interface SomethingImmutable {
-    public function someInteger() : int;
-}
-
-class MutableImplementation implements SomethingImmutable {
+final class CouldBeExternallyMutationFree {
     private int $counter = 0;
+
+    /** @psalm-external-mutation-free */
     public function someInteger() : int {
         return ++$this->counter;
     }

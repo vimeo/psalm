@@ -1651,9 +1651,9 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Codebase/TaintFlowGraph.php">
-    <MutableDependency>
+    <ImmutableDependency>
       <code><![CDATA[DataFlowGraph]]></code>
-    </MutableDependency>
+    </ImmutableDependency>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[end($path_types)]]></code>
     </RiskyTruthyFalsyComparison>
@@ -1662,9 +1662,9 @@
     </UnnecessaryVarAnnotation>
   </file>
   <file src="src/Psalm/Internal/Codebase/VariableUseGraph.php">
-    <MutableDependency>
+    <ImmutableDependency>
       <code><![CDATA[DataFlowGraph]]></code>
-    </MutableDependency>
+    </ImmutableDependency>
   </file>
   <file src="src/Psalm/Internal/Composer.php">
     <RiskyTruthyFalsyComparison>
@@ -2514,9 +2514,9 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/TypeVisitor/TypeChecker.php">
-    <MutableDependency>
+    <ImmutableDependency>
       <code><![CDATA[#[Override]]]></code>
-    </MutableDependency>
+    </ImmutableDependency>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$fq_classlike_name]]></code>
       <code><![CDATA[$class_storage->template_types]]></code>
@@ -2525,9 +2525,9 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/TypeVisitor/TypeScanner.php">
-    <MutableDependency>
+    <ImmutableDependency>
       <code><![CDATA[#[Override]]]></code>
-    </MutableDependency>
+    </ImmutableDependency>
   </file>
   <file src="src/Psalm/Issue/ArgumentIssue.php">
     <RiskyTruthyFalsyComparison>
@@ -2787,10 +2787,10 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Report/CompactReport.php">
-    <MutableDependency>
+    <ImmutableDependency>
       <code><![CDATA[#[Override]]]></code>
       <code><![CDATA[Report]]></code>
-    </MutableDependency>
+    </ImmutableDependency>
   </file>
   <file src="src/Psalm/Report/ConsoleReport.php">
     <PossiblyInvalidArgument>
@@ -2812,10 +2812,10 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Report/JunitReport.php">
-    <MutableDependency>
+    <ImmutableDependency>
       <code><![CDATA[#[Override]]]></code>
       <code><![CDATA[Report]]></code>
-    </MutableDependency>
+    </ImmutableDependency>
   </file>
   <file src="src/Psalm/Report/PhpStormReport.php">
     <RiskyTruthyFalsyComparison>
@@ -2823,16 +2823,16 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Report/SarifReport.php">
-    <MutableDependency>
+    <ImmutableDependency>
       <code><![CDATA[#[Override]]]></code>
       <code><![CDATA[Report]]></code>
-    </MutableDependency>
+    </ImmutableDependency>
   </file>
   <file src="src/Psalm/Report/XmlReport.php">
-    <MutableDependency>
+    <ImmutableDependency>
       <code><![CDATA[#[Override]]]></code>
       <code><![CDATA[Report]]></code>
-    </MutableDependency>
+    </ImmutableDependency>
   </file>
   <file src="src/Psalm/StatementsSource.php">
     <MissingInterfaceImmutableAnnotation>
@@ -3369,14 +3369,14 @@
     </ImplicitToStringCast>
   </file>
   <file src="tests/Config/ConfigFileTest.php">
-    <MutableDependency>
+    <ImmutableDependency>
       <code><![CDATA[#[Override]]]></code>
-    </MutableDependency>
+    </ImmutableDependency>
   </file>
   <file src="tests/Config/ConfigTest.php">
-    <MutableDependency>
+    <ImmutableDependency>
       <code><![CDATA[#[Override]]]></code>
-    </MutableDependency>
+    </ImmutableDependency>
   </file>
   <file src="tests/Config/Plugin/Hook/AfterAnalysis.php">
     <UnusedMethodCall>
@@ -3515,6 +3515,9 @@
     </PossiblyFalseArgument>
   </file>
   <file src="tests/TestConfig.php">
+    <ImmutableDependency>
+      <code><![CDATA[public function __construct()]]></code>
+    </ImmutableDependency>
     <InvalidExtendClass>
       <code><![CDATA[Config]]></code>
     </InvalidExtendClass>
@@ -3523,9 +3526,6 @@
       <code><![CDATA[#[Override]]]></code>
       <code><![CDATA[public function __construct()]]></code>
     </MethodSignatureMismatch>
-    <MutableDependency>
-      <code><![CDATA[public function __construct()]]></code>
-    </MutableDependency>
   </file>
   <file src="tests/TypeParseTest.php">
     <ImplicitToStringCast>
