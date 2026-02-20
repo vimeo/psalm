@@ -264,7 +264,9 @@ abstract class SourceAnalyzer implements StatementsSource
                 return;
             }
             $src->inferred_mutations = max($src->inferred_mutations, $mutation_level);
-            if ($src->storage instanceof MethodStorage) {
+            if ($src->storage instanceof MethodStorage
+                && $src->storage->defining_fqcln !== null
+            ) {
                 $src->getCodebase()->analyzer->addMutableClass(
                     $src->storage->defining_fqcln,
                     $src->inferred_mutations,
@@ -289,7 +291,11 @@ abstract class SourceAnalyzer implements StatementsSource
         ?int $inferred_mutation_level = null,
         bool $overrideMsg = false,
         ?FunctionLikeStorage $storage = null,
-    ): bool {
+    ): void {
+        if ($context->inside_attribute) {
+            return;
+        }
+
         $this->signalMutationOnlyInferred($inferred_mutation_level ?? $mutation_level, $storage);
 
         if ($context->allowed_mutations < $mutation_level
@@ -310,10 +316,6 @@ abstract class SourceAnalyzer implements StatementsSource
                 ),
                 $this->getSuppressedIssues(),
             );
-
-            return true;
         }
-
-        return false;
     }
 }

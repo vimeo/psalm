@@ -209,6 +209,8 @@ final class AttributesAnalyzer
 
         $had_returned = $context->has_returned;
         $context->has_returned = false;
+        $was_inside_attribute = $context->inside_attribute;
+        $context->inside_attribute = true;
 
         IssueBuffer::startRecording();
         $statements_analyzer->analyze(
@@ -217,6 +219,7 @@ final class AttributesAnalyzer
             strtolower($fq_attribute_name) === "attribute" ? new Context() : $context,
         );
         $context->has_returned = $had_returned;
+        $context->inside_attribute = $was_inside_attribute;
 
         $issues = IssueBuffer::clearRecordingLevel();
         IssueBuffer::stopRecording();

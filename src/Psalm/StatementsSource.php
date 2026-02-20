@@ -94,5 +94,5 @@ interface StatementsSource extends FileSource
         ?int $inferred_mutation_level = null,
         bool $overrideMsg = false,
         ?FunctionLikeStorage $storage = null,
-    ): bool;
+    ): void;
 }
