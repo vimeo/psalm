@@ -32,6 +32,9 @@ final class VariableUseGraph extends DataFlowGraph
         $this->nodes[$node->id] = $node;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function addPath(
         DataFlowNode $from,

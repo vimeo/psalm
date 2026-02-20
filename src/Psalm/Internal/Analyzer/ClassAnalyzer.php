@@ -2194,27 +2194,20 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 );
             }
 
-            /*
             if ($interface_storage->allowed_mutations
                 < $storage->allowed_mutations
             ) {
-                $project_analyzer = ProjectAnalyzer::getInstance();
-                $change = $codebase->alter_code
-                    && isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation']);
-
-                ClassLikes::makeImmutable(
-                    $interface_storage->allowed_mutations,
-                    $change,
-                    $storage,
-                    $class,
-                    $project_analyzer,
-                    $fq_interface_name . ' is marked with @'.Mutations::TO_ATTRIBUTE_CLASS[
+                IssueBuffer::maybeAdd(
+                    new MutableDependency(
+                        $fq_interface_name . ' is marked with @'.Mutations::TO_ATTRIBUTE_CLASS[
                             $interface_storage->allowed_mutations
                         ].', but '
-                        . $fq_class_name . ' is not,'
-                        .' run with --alter --issues=MissingImmutableAnnotation to fix this',
+                        . $fq_class_name . ' is not',
+                        $code_location,
+                    ),
+                    $storage->suppressed_issues + $this->getSuppressedIssues(),
                 );
-            }*/
+            }
 
             foreach ($interface_storage->methods as $interface_method_name_lc => $interface_method_storage) {
                 if ($interface_method_storage->visibility === self::VISIBILITY_PUBLIC) {
@@ -2444,27 +2437,20 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 );
             }
 
-            /*if ($parent_class_storage->allowed_mutations
+            if ($parent_class_storage->allowed_mutations
                 < $storage->allowed_mutations
             ) {
-                $project_analyzer = ProjectAnalyzer::getInstance();
-                $change = $codebase->alter_code
-                    && isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation']);
-
-                ClassLikes::makeImmutable(
-                    $parent_class_storage->allowed_mutations,
-                    $change,
-                    $storage,
-                    $class,
-                    $project_analyzer,
-                    $parent_fq_class_name . ' is marked with @'.Mutations::TO_ATTRIBUTE_CLASS[
-                        $parent_class_storage->allowed_mutations
-                    ].', but '
-                    . $fq_class_name . ' is not, run with --alter --issues=MissingImmutableAnnotation to fix this',
+                IssueBuffer::maybeAdd(
+                    new MutableDependency(
+                        $parent_fq_class_name . ' is marked with @'.Mutations::TO_ATTRIBUTE_CLASS[
+                            $parent_class_storage->allowed_mutations
+                        ].', but '
+                        . $fq_class_name . ' is not, run with --alter --issues=MissingImmutableAnnotation to fix this',
+                        $code_location,
+                    ),
+                    $storage->suppressed_issues + $this->getSuppressedIssues(),
                 );
-            } else
-                */
-            if ($parent_class_storage->allowed_mutations
+            } elseif ($parent_class_storage->allowed_mutations
                 > $storage->allowed_mutations
             ) {
                 IssueBuffer::maybeAdd(

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="dev-master@cf404b51daf81d79198a029f7b2c7f64d28ae68e">
+<files psalm-version="6.x-dev@bbd217fc98c0daa0a13aea2a7f119d03ba3fc9a0">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$comment_block->tags['variablesfrom'][0]]]></code>
@@ -131,6 +131,11 @@
       <code><![CDATA[glob($parts[0], GLOB_ONLYDIR | GLOB_NOSORT)]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
+  <file src="src/Psalm/Config/ProjectFileFilter.php">
+    <MutableDependency>
+      <code><![CDATA[#[Override]]]></code>
+    </MutableDependency>
+  </file>
   <file src="src/Psalm/Context.php">
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[strpos($key, '()')]]></code>
@@ -216,6 +221,9 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Analyzer/ClassLikeAnalyzer.php">
+    <MutableDependency>
+      <code><![CDATA[#[Override]]]></code>
+    </MutableDependency>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$property_name]]></code>
     </PossiblyUndefinedIntArrayOffset>
@@ -1550,6 +1558,12 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Codebase/CombinedFlowGraph.php">
+    <MutableDependency>
+      <code><![CDATA[#[Override]]]></code>
+      <code><![CDATA[#[Override]]]></code>
+      <code><![CDATA[#[Override]]]></code>
+      <code><![CDATA[DataFlowGraph]]></code>
+    </MutableDependency>
     <PossiblyUnusedMethod>
       <code><![CDATA[addSink]]></code>
     </PossiblyUnusedMethod>
@@ -1651,12 +1665,22 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Codebase/TaintFlowGraph.php">
+    <MutableDependency>
+      <code><![CDATA[#[Override]]]></code>
+      <code><![CDATA[DataFlowGraph]]></code>
+    </MutableDependency>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[end($path_types)]]></code>
     </RiskyTruthyFalsyComparison>
     <UnnecessaryVarAnnotation>
       <code><![CDATA[DataFlowNode]]></code>
     </UnnecessaryVarAnnotation>
+  </file>
+  <file src="src/Psalm/Internal/Codebase/VariableUseGraph.php">
+    <MutableDependency>
+      <code><![CDATA[#[Override]]]></code>
+      <code><![CDATA[DataFlowGraph]]></code>
+    </MutableDependency>
   </file>
   <file src="src/Psalm/Internal/Composer.php">
     <RiskyTruthyFalsyComparison>
@@ -2099,6 +2123,11 @@
       <code><![CDATA[new Cache($config, 'classlike_cache', $dependencies, $persistent)]]></code>
     </InvalidPropertyAssignmentValue>
   </file>
+  <file src="src/Psalm/Internal/Provider/FakeFileProvider.php">
+    <MutableDependency>
+      <code><![CDATA[#[Override]]]></code>
+    </MutableDependency>
+  </file>
   <file src="src/Psalm/Internal/Provider/FileReferenceCacheProvider.php">
     <InvalidPropertyAssignmentValue>
       <code><![CDATA[new Cache($config, 'file_reference', [$composerLock], $persistent)]]></code>
@@ -2505,13 +2534,41 @@
       <code><![CDATA[strpos($string_type_token[0], '$')]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
+  <file src="src/Psalm/Internal/TypeVisitor/CanContainObjectTypeVisitor.php">
+    <MutableDependency>
+      <code><![CDATA[#[Override]]]></code>
+    </MutableDependency>
+  </file>
+  <file src="src/Psalm/Internal/TypeVisitor/ContainsLiteralVisitor.php">
+    <MutableDependency>
+      <code><![CDATA[#[Override]]]></code>
+    </MutableDependency>
+  </file>
+  <file src="src/Psalm/Internal/TypeVisitor/ContainsStaticVisitor.php">
+    <MutableDependency>
+      <code><![CDATA[#[Override]]]></code>
+    </MutableDependency>
+  </file>
+  <file src="src/Psalm/Internal/TypeVisitor/TemplateTypeCollector.php">
+    <MutableDependency>
+      <code><![CDATA[#[Override]]]></code>
+    </MutableDependency>
+  </file>
   <file src="src/Psalm/Internal/TypeVisitor/TypeChecker.php">
+    <MutableDependency>
+      <code><![CDATA[#[Override]]]></code>
+    </MutableDependency>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$fq_classlike_name]]></code>
       <code><![CDATA[$class_storage->template_types]]></code>
       <code><![CDATA[$class_storage->template_types]]></code>
       <code><![CDATA[$this->calling_method_id]]></code>
     </RiskyTruthyFalsyComparison>
+  </file>
+  <file src="src/Psalm/Internal/TypeVisitor/TypeScanner.php">
+    <MutableDependency>
+      <code><![CDATA[#[Override]]]></code>
+    </MutableDependency>
   </file>
   <file src="src/Psalm/Issue/ArgumentIssue.php">
     <RiskyTruthyFalsyComparison>
@@ -2770,6 +2827,12 @@
       <code><![CDATA[ini_get('xdebug.file_link_format') ?: get_cfg_var('xdebug.file_link_format')]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
+  <file src="src/Psalm/Report/CompactReport.php">
+    <MutableDependency>
+      <code><![CDATA[#[Override]]]></code>
+      <code><![CDATA[Report]]></code>
+    </MutableDependency>
+  </file>
   <file src="src/Psalm/Report/ConsoleReport.php">
     <PossiblyInvalidArgument>
       <code><![CDATA[$this->link_format]]></code>
@@ -2789,10 +2852,28 @@
       <code><![CDATA[ini_get('xdebug.file_link_format') ?: get_cfg_var('xdebug.file_link_format')]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
+  <file src="src/Psalm/Report/JunitReport.php">
+    <MutableDependency>
+      <code><![CDATA[#[Override]]]></code>
+      <code><![CDATA[Report]]></code>
+    </MutableDependency>
+  </file>
   <file src="src/Psalm/Report/PhpStormReport.php">
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$issue_data->taint_trace]]></code>
     </RiskyTruthyFalsyComparison>
+  </file>
+  <file src="src/Psalm/Report/SarifReport.php">
+    <MutableDependency>
+      <code><![CDATA[#[Override]]]></code>
+      <code><![CDATA[Report]]></code>
+    </MutableDependency>
+  </file>
+  <file src="src/Psalm/Report/XmlReport.php">
+    <MutableDependency>
+      <code><![CDATA[#[Override]]]></code>
+      <code><![CDATA[Report]]></code>
+    </MutableDependency>
   </file>
   <file src="src/Psalm/StatementsSource.php">
     <MissingInterfaceImmutableAnnotation>
@@ -3473,6 +3554,10 @@
       <code><![CDATA[#[Override]]]></code>
       <code><![CDATA[public function __construct()]]></code>
     </MethodSignatureMismatch>
+    <MutableDependency>
+      <code><![CDATA[#[Override]]]></code>
+      <code><![CDATA[public function __construct()]]></code>
+    </MutableDependency>
   </file>
   <file src="tests/TypeParseTest.php">
     <ImplicitToStringCast>

@@ -27,6 +27,9 @@ final class CombinedFlowGraph extends DataFlowGraph
         $this->variable_use_graph->addNode($node);
         $this->taint_flow_graph->addNode($node);
     }
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function addPath(
         DataFlowNode $from,

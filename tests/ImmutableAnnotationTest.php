@@ -758,7 +758,6 @@ final class ImmutableAnnotationTest extends TestCase
                 'code' => '<?php
                     /** @psalm-immutable */
                     interface SomethingImmutable {
-                        /** @psalm-mutation-free */
                         public function someInteger() : int;
                     }
 

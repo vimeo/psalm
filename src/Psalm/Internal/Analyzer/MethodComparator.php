@@ -26,8 +26,8 @@ use Psalm\Issue\MethodSignatureMismatch;
 use Psalm\Issue\MethodSignatureMustProvideReturnType;
 use Psalm\Issue\MismatchingDocblockParamType;
 use Psalm\Issue\MismatchingDocblockReturnType;
-use Psalm\Issue\MissingAbstractPureAnnotation;
 use Psalm\Issue\MoreSpecificImplementedParamType;
+use Psalm\Issue\MutableDependency;
 use Psalm\Issue\OverriddenMethodAccess;
 use Psalm\Issue\ParamNameMismatch;
 use Psalm\Issue\TraitMethodSignatureMismatch;
@@ -385,7 +385,7 @@ final class MethodComparator
             && $prevent_method_signature_mismatch
         ) {
             IssueBuffer::maybeAdd(
-                new MissingAbstractPureAnnotation(
+                new MutableDependency(
                     $cased_guide_method_id . ' is marked at least @psalm-external-mutation-free, but '
                         . $implementer_classlike_storage->name . '::'
                         . ($guide_method_storage->cased_name ?: '')
