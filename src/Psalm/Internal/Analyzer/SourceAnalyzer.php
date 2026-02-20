@@ -259,6 +259,12 @@ abstract class SourceAnalyzer implements StatementsSource
                 return;
             }
             $src->inferred_mutations = max($src->inferred_mutations, $mutation_level);
+            if ($src->storage instanceof MethodStorage) {
+                $src->getCodebase()->analyzer->addMutableClass(
+                    $src->storage->defining_fqcln,
+                    $src->inferred_mutations,
+                );
+            }
         }
     }
 

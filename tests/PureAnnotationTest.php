@@ -367,9 +367,15 @@ final class PureAnnotationTest extends TestCase
             'countMethodCanBePure' => [
                 'code' => '<?php
                     class A implements Countable {
+                        private array $items = [];
+
+                        public function __construct(array $items) {
+                            $this->items = $items;
+                        }
+
                         /** @psalm-mutation-free */
                         public function count(): int {
-                            return 2;
+                            return count($this->items);
                         }
                     }
 

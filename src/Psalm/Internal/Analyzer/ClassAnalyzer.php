@@ -2221,6 +2221,11 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 );
             }
 
+            $codebase->analyzer->addMutableClass(
+                $storage->name,
+                $interface_storage->allowed_mutations,
+            );
+
             foreach ($interface_storage->methods as $interface_method_name_lc => $interface_method_storage) {
                 if ($interface_method_storage->visibility === self::VISIBILITY_PUBLIC) {
                     $implementer_declaring_method_id = $codebase->methods->getDeclaringMethodId(
