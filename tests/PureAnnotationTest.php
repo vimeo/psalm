@@ -372,6 +372,7 @@ final class PureAnnotationTest extends TestCase
                     class A implements Countable {
                         private array $items = [];
 
+                        /** @psalm-mutation-free */
                         public function __construct(array $items) {
                             $this->items = $items;
                         }

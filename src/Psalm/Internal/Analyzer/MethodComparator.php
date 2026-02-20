@@ -19,6 +19,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\ConstructorSignatureMismatch;
+use Psalm\Issue\ImmutableDependency;
 use Psalm\Issue\ImplementedParamTypeMismatch;
 use Psalm\Issue\ImplementedReturnTypeMismatch;
 use Psalm\Issue\LessSpecificImplementedReturnType;
@@ -385,7 +386,7 @@ final class MethodComparator
             && $prevent_method_signature_mismatch
         ) {
             IssueBuffer::maybeAdd(
-                new MutableDependency(
+                new ImmutableDependency(
                     $cased_guide_method_id . ' is marked at least @psalm-external-mutation-free, but '
                         . $implementer_classlike_storage->name . '::'
                         . ($guide_method_storage->cased_name ?: '')

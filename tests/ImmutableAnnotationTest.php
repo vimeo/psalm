@@ -773,7 +773,7 @@ final class ImmutableAnnotationTest extends TestCase
                             return ++$this->counter;
                         }
                     }',
-                'error_message' => 'MissingImmutableAnnotation',
+                'error_message' => 'ImmutableDependency',
             ],
             'inheritImmutabilityFromParent' => [
                 'code' => '<?php

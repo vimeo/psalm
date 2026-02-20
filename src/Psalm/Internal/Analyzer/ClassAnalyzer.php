@@ -37,6 +37,7 @@ use Psalm\Issue\DeprecatedInterface;
 use Psalm\Issue\DeprecatedTrait;
 use Psalm\Issue\DuplicateEnumCaseValue;
 use Psalm\Issue\ExtensionRequirementViolation;
+use Psalm\Issue\ImmutableDependency;
 use Psalm\Issue\ImplementationRequirementViolation;
 use Psalm\Issue\InaccessibleMethod;
 use Psalm\Issue\InaccessibleProperty;
@@ -2210,7 +2211,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 < $storage->allowed_mutations
             ) {
                 IssueBuffer::maybeAdd(
-                    new MutableDependency(
+                    new ImmutableDependency(
                         $fq_interface_name . ' is marked with @'.Mutations::TO_ATTRIBUTE_CLASS[
                             $interface_storage->allowed_mutations
                         ].', but '
@@ -2458,7 +2459,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 < $storage->allowed_mutations
             ) {
                 IssueBuffer::maybeAdd(
-                    new MutableDependency(
+                    new ImmutableDependency(
                         $parent_fq_class_name . ' is marked with @'.Mutations::TO_ATTRIBUTE_CLASS[
                             $parent_class_storage->allowed_mutations
                         ].', but '
