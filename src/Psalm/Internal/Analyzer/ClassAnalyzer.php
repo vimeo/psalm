@@ -2203,6 +2203,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     && isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation']);
 
                 ClassLikes::makeImmutable(
+                    $interface_storage->allowed_mutations,
                     $change,
                     $storage,
                     $class,
@@ -2451,6 +2452,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     && isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation']);
 
                 ClassLikes::makeImmutable(
+                    $parent_class_storage->allowed_mutations,
                     $change,
                     $storage,
                     $class,

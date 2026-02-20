@@ -9,6 +9,7 @@ use Psalm\DocComment;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Scanner\ParsedDocblock;
+use Psalm\Storage\Mutations;
 
 use function ltrim;
 use function str_replace;
@@ -30,7 +31,10 @@ final class ClassDocblockManipulator
 
     private readonly int $docblock_end;
 
-    private bool $immutable = false;
+    /**
+     * @var Mutations::LEVEL_*|null
+     */
+    private ?int $allowed_mutations = null;
 
     private readonly string $indentation;
 
@@ -71,11 +75,12 @@ final class ClassDocblockManipulator
     }
 
     /**
+     * @param Mutations::LEVEL_* $allowed_mutations
      * @psalm-external-mutation-free
      */
-    public function makeImmutable(): void
+    public function setAllowedMutations(int $allowed_mutations): void
     {
-        $this->immutable = true;
+        $this->allowed_mutations = $allowed_mutations;
     }
 
     /**
@@ -94,13 +99,22 @@ final class ClassDocblockManipulator
 
         $modified_docblock = false;
 
-        if ($this->immutable) {
+        if ($this->allowed_mutations !== null) {
             $modified_docblock = true;
-            unset($parsed_docblock->tags['psalm-mutable']);
-            $parsed_docblock->tags['psalm-immutable'] = [''];
-        } else {
+
             unset($parsed_docblock->tags['psalm-immutable']);
-            $parsed_docblock->tags['psalm-mutable'] = [''];
+            unset($parsed_docblock->tags['psalm-external-mutation-free']);
+            unset($parsed_docblock->tags['psalm-mutable']);
+
+            if ($this->allowed_mutations === Mutations::LEVEL_NONE) {
+                $parsed_docblock->tags['psalm-immutable'] = [''];
+            } elseif ($this->allowed_mutations === Mutations::LEVEL_INTERNAL_READ) {
+                $parsed_docblock->tags['psalm-immutable'] = [''];
+            } elseif ($this->allowed_mutations === Mutations::LEVEL_INTERNAL_READ_WRITE) {
+                $parsed_docblock->tags['psalm-external-mutation-free'] = [''];
+            } else {
+                $parsed_docblock->tags['psalm-mutable'] = [''];
+            }
         }
 
         if (!$modified_docblock) {
@@ -122,7 +136,7 @@ final class ClassDocblockManipulator
         $file_manipulations = [];
 
         foreach (self::$manipulators[$file_path] as $manipulator) {
-            if ($manipulator->immutable) {
+            if ($manipulator->allowed_mutations !== null) {
                 $file_manipulations[$manipulator->docblock_start] = new FileManipulation(
                     $manipulator->docblock_start,
                     $manipulator->docblock_end,
