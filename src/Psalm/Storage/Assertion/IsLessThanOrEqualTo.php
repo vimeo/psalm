@@ -24,6 +24,9 @@ final class IsLessThanOrEqualTo extends Assertion
         return new IsGreaterThan($this->value);
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function isNegation(): bool
     {

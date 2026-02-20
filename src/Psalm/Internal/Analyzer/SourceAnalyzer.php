@@ -112,6 +112,9 @@ abstract class SourceAnalyzer implements StatementsSource
         return $this->source->getRootFilePath();
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function setRootFilePath(string $file_path, string $file_name): void
     {
@@ -162,6 +165,7 @@ abstract class SourceAnalyzer implements StatementsSource
 
     /**
      * @param array<int, string> $new_issues
+     * @psalm-external-mutation-free
      */
     #[Override]
     public function addSuppressedIssues(array $new_issues): void
@@ -171,6 +175,7 @@ abstract class SourceAnalyzer implements StatementsSource
 
     /**
      * @param array<int, string> $new_issues
+     * @psalm-external-mutation-free
      */
     #[Override]
     public function removeSuppressedIssues(array $new_issues): void
@@ -259,6 +264,14 @@ abstract class SourceAnalyzer implements StatementsSource
                 return;
             }
             $src->inferred_mutations = max($src->inferred_mutations, $mutation_level);
+            if ($src->storage instanceof MethodStorage
+                && $src->storage->defining_fqcln !== null
+            ) {
+                $src->getCodebase()->analyzer->addMutableClass(
+                    $src->storage->defining_fqcln,
+                    $src->inferred_mutations,
+                );
+            }
         }
     }
 
@@ -278,7 +291,11 @@ abstract class SourceAnalyzer implements StatementsSource
         ?int $inferred_mutation_level = null,
         bool $overrideMsg = false,
         ?FunctionLikeStorage $storage = null,
-    ): bool {
+    ): void {
+        if ($context->inside_attribute) {
+            return;
+        }
+
         $this->signalMutationOnlyInferred($inferred_mutation_level ?? $mutation_level, $storage);
 
         if ($context->allowed_mutations < $mutation_level
@@ -299,10 +316,6 @@ abstract class SourceAnalyzer implements StatementsSource
                 ),
                 $this->getSuppressedIssues(),
             );
-
-            return true;
         }
-
-        return false;
     }
 }

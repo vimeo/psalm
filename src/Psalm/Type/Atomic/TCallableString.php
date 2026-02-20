@@ -18,12 +18,18 @@ final class TCallableString extends TNonFalsyString
         parent::__construct($from_docblock);
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function isCallableType(): bool
     {
         return true;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getKey(bool $include_extra = true): string
     {
@@ -36,12 +42,18 @@ final class TCallableString extends TNonFalsyString
         return $this->getKey();
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getAssertionString(): string
     {

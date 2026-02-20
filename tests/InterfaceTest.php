@@ -15,6 +15,9 @@ final class InterfaceTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerValidCodeParse(): iterable
     {
@@ -694,6 +697,10 @@ final class InterfaceTest extends TestCase
                     abstract class G implements F {}
 
                     class H extends G {
+                        /**
+                         * @return static
+                         * @psalm-mutation-free
+                         */
                         public function m(): F {
                             return $this;
                         }
@@ -809,6 +816,9 @@ final class InterfaceTest extends TestCase
         ];
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerInvalidCodeParse(): iterable
     {

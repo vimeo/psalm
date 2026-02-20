@@ -445,7 +445,9 @@ class FileAnalyzer extends SourceAnalyzer
         return $class_analyzer_to_examine->getFunctionLikeAnalyzer($method_name);
     }
 
-    /** @psalm-mutation-free */
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getNamespace(): ?string
     {
@@ -525,6 +527,9 @@ class FileAnalyzer extends SourceAnalyzer
         return $this->root_file_path ?: $this->file_path;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function setRootFilePath(string $file_path, string $file_name): void
     {
@@ -599,6 +604,7 @@ class FileAnalyzer extends SourceAnalyzer
 
     /**
      * @param array<int, string> $new_issues
+     * @psalm-external-mutation-free
      */
     #[Override]
     public function addSuppressedIssues(array $new_issues): void
@@ -612,6 +618,7 @@ class FileAnalyzer extends SourceAnalyzer
 
     /**
      * @param array<int, string> $new_issues
+     * @psalm-external-mutation-free
      */
     #[Override]
     public function removeSuppressedIssues(array $new_issues): void
@@ -623,21 +630,27 @@ class FileAnalyzer extends SourceAnalyzer
         $this->suppressed_issues = array_diff_key($this->suppressed_issues, $new_issues);
     }
 
-    /** @psalm-mutation-free */
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getFQCLN(): ?string
     {
         return null;
     }
 
-    /** @psalm-mutation-free */
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getParentFQCLN(): ?string
     {
         return null;
     }
 
-    /** @psalm-mutation-free */
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getClassName(): ?string
     {
@@ -645,8 +658,8 @@ class FileAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * @psalm-mutation-free
      * @return array<string, array<string, Union>>|null
+     * @psalm-pure
      */
     #[Override]
     public function getTemplateTypeMap(): ?array
@@ -654,7 +667,9 @@ class FileAnalyzer extends SourceAnalyzer
         return null;
     }
 
-    /** @psalm-mutation-free */
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function isStatic(): bool
     {

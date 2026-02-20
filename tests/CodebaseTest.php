@@ -248,6 +248,9 @@ final class CodebaseTest extends TestCase
 
         $eventHandler = new class implements BeforeAddIssueInterface
         {
+            /**
+             * @psalm-mutation-free
+             */
             #[Override]
             public static function beforeAddIssue(BeforeAddIssueEvent $event): ?bool
             {

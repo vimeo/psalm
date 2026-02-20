@@ -19,6 +19,9 @@ final class ShortClosureVisitor extends PhpParser\NodeVisitorAbstract
      */
     private array $used_variables = [];
 
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function enterNode(PhpParser\Node $node): ?int
     {

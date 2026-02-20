@@ -19,6 +19,9 @@ final class HasArrayKey extends Assertion
     {
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getNegation(): Assertion
     {
@@ -30,6 +33,9 @@ final class HasArrayKey extends Assertion
         return 'has-array-key-' . $this->key;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function isNegationOf(Assertion $assertion): bool
     {

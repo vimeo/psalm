@@ -17,6 +17,9 @@ use function array_values;
  */
 final class JsonReport extends Report
 {
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public function create(): string
     {

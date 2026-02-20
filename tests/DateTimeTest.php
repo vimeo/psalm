@@ -83,6 +83,9 @@ final class DateTimeTest extends TestCase
         $this->assertSame('DateTimeImmutable|false', $context->vars_in_scope['$b']->getId(false));
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerValidCodeParse(): iterable
     {

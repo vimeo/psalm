@@ -245,6 +245,9 @@ class TNamedObject extends Atomic
         }
         return $this;
     }
+    /**
+     * @psalm-pure
+     */
     #[Override]
     protected function getChildNodeKeys(): array
     {

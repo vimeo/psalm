@@ -13,6 +13,9 @@ use Psalm\Internal\Scanner\ParsedDocblock;
 
 final class DocCommentTest extends BaseTestCase
 {
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function setUp(): void
     {

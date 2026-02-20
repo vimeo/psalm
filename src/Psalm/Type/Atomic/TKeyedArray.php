@@ -342,7 +342,8 @@ final class TKeyedArray extends Atomic
     }
 
     /**
-     * @param  array<lowercase-string, string> $aliased_classes
+     * @param array<lowercase-string, string> $aliased_classes
+     * @psalm-pure
      */
     #[Override]
     public function toPhpString(
@@ -354,6 +355,9 @@ final class TKeyedArray extends Atomic
         return 'array';
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
@@ -550,6 +554,9 @@ final class TKeyedArray extends Atomic
         return true;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getKey(bool $include_extra = true): string
     {
@@ -718,6 +725,9 @@ final class TKeyedArray extends Atomic
         return $this;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     protected function getChildNodeKeys(): array
     {

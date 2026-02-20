@@ -1,8 +1,6 @@
 # MissingImmutableAnnotation
 
-Emitted when a class inheriting from an immutable interface or class does not also have a `@psalm-immutable` declaration.
-
-Also emitted when a potentially immutable interface or class does not have a `@psalm-immutable` declaration.  
+Emitted when a potentially immutable interface or class does not have a `@psalm-pure`, `@psalm-immutable` or `@psalm-external-mutation-free` declaration.  
 
 To automatically add immutable annotations where needed, run Psalm with `--alter --issues=MissingImmutableAnnotation`.  
 
@@ -11,18 +9,17 @@ This issue is emitted to aid [security analysis](https://psalm.dev/docs/security
 ```php
 <?php
 
-/** @psalm-immutable */
-interface SomethingImmutable {
-    public function someInteger() : int;
-}
-
-class MutableImplementation implements SomethingImmutable {
+/** @api */
+final class CouldBeExternallyMutationFree {
     private int $counter = 0;
+
+    /** @psalm-external-mutation-free */
     public function someInteger() : int {
         return ++$this->counter;
     }
 }
 
+/** @api */
 final class CouldBeImmutable {
 }
 

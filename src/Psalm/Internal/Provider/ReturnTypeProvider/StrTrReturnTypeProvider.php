@@ -20,6 +20,7 @@ final class StrTrReturnTypeProvider implements FunctionReturnTypeProviderInterfa
 {
     /**
      * @return array<lowercase-string>
+     * @psalm-pure
      */
     #[Override]
     public static function getFunctionIds(): array

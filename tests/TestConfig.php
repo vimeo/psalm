@@ -82,13 +82,19 @@ final class TestConfig extends Config
                 </projectFiles>';
     }
 
-    /** @return false */
+    /**
+     * @return false
+     * @psalm-pure
+     */
     #[Override]
     public function getComposerFilePathForClassLike(string $fq_classlike_name): bool
     {
         return false;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getProjectDirectories(): array
     {

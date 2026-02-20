@@ -1210,6 +1210,7 @@ final class Analyzer
 
     /**
      * @return array{int, int}
+     * @psalm-external-mutation-free
      */
     public function getTotalTypeCoverage(Codebase $codebase): array
     {
@@ -1232,6 +1233,9 @@ final class Analyzer
         return [$mixed_count, $nonmixed_count];
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function getTypeInferenceSummary(Codebase $codebase): string
     {
         $all_deep_scanned_files = [];

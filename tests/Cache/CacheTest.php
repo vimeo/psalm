@@ -45,6 +45,9 @@ final class CacheTest extends TestCase
         RuntimeCaches::clearAll();
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function tearDown(): void
     {

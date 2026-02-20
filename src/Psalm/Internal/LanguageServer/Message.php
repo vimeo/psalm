@@ -54,6 +54,9 @@ final class Message implements Stringable
         $this->headers = $headers;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function __toString(): string
     {

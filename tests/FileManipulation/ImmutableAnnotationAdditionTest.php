@@ -11,10 +11,52 @@ use Override;
  */
 final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
 {
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerValidCodeParse(): array
     {
         return [
+            'inheritImmutabilityFromParent' => [
+                'input' => '<?php
+                    /** @psalm-external-mutation-free */
+                    abstract class SomethingImmutable {
+                        abstract public function someInteger() : int;
+                    }
+
+                    /**
+                     * @psalm-suppress ImmutableDependency
+                     */
+                    class MutableImplementation extends SomethingImmutable {
+                        private int $counter = 0;
+                        /** @psalm-external-mutation-free */
+                        public function someInteger() : int {
+                            return ++$this->counter;
+                        }
+                    }',
+                'output' => '<?php
+                    /** @psalm-external-mutation-free */
+                    abstract class SomethingImmutable {
+                        abstract public function someInteger() : int;
+                    }
+
+                    /**
+                     * @psalm-suppress ImmutableDependency
+                     *
+                     * @psalm-external-mutation-free
+                     */
+                    class MutableImplementation extends SomethingImmutable {
+                        private int $counter = 0;
+                        /** @psalm-external-mutation-free */
+                        public function someInteger() : int {
+                            return ++$this->counter;
+                        }
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingImmutableAnnotation'],
+                'safe_types' => true,
+            ],
             'addImmutableAnnotation' => [
                 'input' => '<?php
                     class A {
@@ -128,6 +170,7 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                         }
 
                         public function getPlus5() {
+                            echo "Here";
                             return $this->i + 5;
                         }
                     }
@@ -147,6 +190,7 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                         }
 
                         public function getPlus5() {
+                            echo "Here";
                             return $this->i + 5;
                         }
                     }
@@ -215,6 +259,40 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                     enum A {
                         case A = 1;
                         case B = 2;
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingImmutableAnnotation'],
+                'safe_types' => true,
+            ],
+            'addImmutableAnnotationMutableUnset' => [
+                'input' => '<?php
+                    final class A {
+                        private array $data;
+                        public function __construct(array $data) {
+                            $this->data = $data;
+                        }
+                        public function getData() : array {
+                            return $this->data;
+                        }
+                        public function unsetData(string $key) : void {
+                            unset($this->data[$key]);
+                        }
+                    }',
+                'output' => '<?php
+                    /**
+                     * @psalm-external-mutation-free
+                     */
+                    final class A {
+                        private array $data;
+                        public function __construct(array $data) {
+                            $this->data = $data;
+                        }
+                        public function getData() : array {
+                            return $this->data;
+                        }
+                        public function unsetData(string $key) : void {
+                            unset($this->data[$key]);
+                        }
                     }',
                 'php_version' => '7.4',
                 'issues_to_fix' => ['MissingImmutableAnnotation'],

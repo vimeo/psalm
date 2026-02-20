@@ -449,7 +449,9 @@ Used to annotate a class where at least one property is mutable: this is the def
 
 ### `@psalm-pure`
 
-Used to annotate a [pure function](https://en.wikipedia.org/wiki/Pure_function) - one whose output is just a function of its input.
+Used to annotate a [pure function](https://en.wikipedia.org/wiki/Pure_function) - one whose output is just a function of its input.  
+
+Can also be used on classes to auotmatically annotate all of its methods as pure and ban the usage of properties.  
 
 ```php
 <?php

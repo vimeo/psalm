@@ -102,12 +102,13 @@ final class ClassDocblockManipulator
         if ($this->allowed_mutations !== null) {
             $modified_docblock = true;
 
+            unset($parsed_docblock->tags['psalm-pure']);
             unset($parsed_docblock->tags['psalm-immutable']);
             unset($parsed_docblock->tags['psalm-external-mutation-free']);
             unset($parsed_docblock->tags['psalm-mutable']);
 
             if ($this->allowed_mutations === Mutations::LEVEL_NONE) {
-                $parsed_docblock->tags['psalm-immutable'] = [''];
+                $parsed_docblock->tags['psalm-pure'] = [''];
             } elseif ($this->allowed_mutations === Mutations::LEVEL_INTERNAL_READ) {
                 $parsed_docblock->tags['psalm-immutable'] = [''];
             } elseif ($this->allowed_mutations === Mutations::LEVEL_INTERNAL_READ_WRITE) {

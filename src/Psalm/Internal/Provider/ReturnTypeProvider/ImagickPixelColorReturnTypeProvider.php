@@ -21,6 +21,9 @@ use function in_array;
  */
 final class ImagickPixelColorReturnTypeProvider implements MethodReturnTypeProviderInterface
 {
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public static function getClassLikeNames(): array
     {

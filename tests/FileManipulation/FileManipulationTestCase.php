@@ -20,6 +20,9 @@ abstract class FileManipulationTestCase extends TestCase
 {
     protected ProjectAnalyzer $project_analyzer;
 
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function setUp(): void
     {

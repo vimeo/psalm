@@ -37,8 +37,10 @@ use Psalm\Issue\DeprecatedInterface;
 use Psalm\Issue\DeprecatedTrait;
 use Psalm\Issue\DuplicateEnumCaseValue;
 use Psalm\Issue\ExtensionRequirementViolation;
+use Psalm\Issue\ImmutableDependency;
 use Psalm\Issue\ImplementationRequirementViolation;
 use Psalm\Issue\InaccessibleMethod;
+use Psalm\Issue\InaccessibleProperty;
 use Psalm\Issue\InheritorViolation;
 use Psalm\Issue\InternalClass;
 use Psalm\Issue\InvalidEnumCaseValue;
@@ -685,6 +687,17 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             $property_class_storage = $codebase->classlike_storage_provider->get($property_class_name);
 
             $property_storage = $property_class_storage->properties[$property_name];
+
+            if ($property_class_storage->isPure() && $property_storage->location) {
+                IssueBuffer::maybeAdd(
+                    new InaccessibleProperty(
+                        'Property ' . $property_class_name . '::$' . $property_name
+                            . ' is declared in a pure class and cannot be accessed',
+                        $property_storage->location,
+                    ),
+                    $property_storage->suppressed_issues,
+                );
+            }
 
             if (isset($storage->overridden_property_ids[$property_name])) {
                 foreach ($storage->overridden_property_ids[$property_name] as $overridden_property_id) {
@@ -2198,7 +2211,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 < $storage->allowed_mutations
             ) {
                 IssueBuffer::maybeAdd(
-                    new MutableDependency(
+                    new ImmutableDependency(
                         $fq_interface_name . ' is marked with @'.Mutations::TO_ATTRIBUTE_CLASS[
                             $interface_storage->allowed_mutations
                         ].', but '
@@ -2208,6 +2221,11 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
                 );
             }
+
+            $codebase->analyzer->addMutableClass(
+                $storage->name,
+                $interface_storage->allowed_mutations,
+            );
 
             foreach ($interface_storage->methods as $interface_method_name_lc => $interface_method_storage) {
                 if ($interface_method_storage->visibility === self::VISIBILITY_PUBLIC) {
@@ -2441,11 +2459,11 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 < $storage->allowed_mutations
             ) {
                 IssueBuffer::maybeAdd(
-                    new MutableDependency(
+                    new ImmutableDependency(
                         $parent_fq_class_name . ' is marked with @'.Mutations::TO_ATTRIBUTE_CLASS[
                             $parent_class_storage->allowed_mutations
                         ].', but '
-                        . $fq_class_name . ' is not, run with --alter --issues=MissingImmutableAnnotation to fix this',
+                        . $fq_class_name . ' is not',
                         $code_location,
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),

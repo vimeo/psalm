@@ -152,6 +152,9 @@ final class AssertAnnotationTest extends TestCase
     }
 
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerValidCodeParse(): iterable
     {
@@ -3065,6 +3068,9 @@ final class AssertAnnotationTest extends TestCase
         ];
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerInvalidCodeParse(): iterable
     {

@@ -25,6 +25,9 @@ final class DoesNotHaveAtLeastCount extends Assertion
         return new HasAtLeastCount($this->count);
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function isNegation(): bool
     {

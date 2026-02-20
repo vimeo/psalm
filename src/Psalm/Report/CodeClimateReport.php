@@ -25,6 +25,9 @@ use function md5;
  */
 final class CodeClimateReport extends Report
 {
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public function create(): string
     {

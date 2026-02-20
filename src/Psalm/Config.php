@@ -1882,16 +1882,25 @@ final class Config
         return true;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isInProjectDirs(string $file_path): bool
     {
         return $this->project_files && $this->project_files->allows($file_path);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isInExtraDirs(string $file_path): bool
     {
         return $this->extra_files && $this->extra_files->allows($file_path);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function mustBeIgnored(string $file_path): bool
     {
         return $this->project_files && $this->project_files->forbids($file_path);
@@ -2232,6 +2241,9 @@ final class Config
         return $this->extra_files->getDirectories();
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function reportTypeStatsForFile(string $file_path): bool
     {
         return $this->project_files

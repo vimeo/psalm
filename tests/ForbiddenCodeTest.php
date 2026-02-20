@@ -32,6 +32,9 @@ final class ForbiddenCodeTest extends TestCase
         $argv = [];
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerInvalidCodeParse(): iterable
     {
@@ -64,6 +67,9 @@ final class ForbiddenCodeTest extends TestCase
         ];
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerValidCodeParse(): iterable
     {

@@ -368,6 +368,7 @@ final class DocumentationTest extends TestCase
                 $ignored_issues,
                 $issue_name === 'ClassMustBeFinal'
                     || $issue_name === 'MissingInterfaceImmutableAnnotation'
+                    || $issue_name === 'MissingImmutableAnnotation'
                     || strpos($issue_name, 'Unused') !== false
                     || strpos($issue_name, 'Unevaluated') !== false
                     || strpos($issue_name, 'Unnecessary') !== false,

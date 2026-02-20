@@ -40,6 +40,9 @@ final class IgbinarySerializer implements Serializer
         }
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function unserialize(string $data): mixed
     {

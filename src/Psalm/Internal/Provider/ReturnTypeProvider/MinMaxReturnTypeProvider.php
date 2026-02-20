@@ -31,6 +31,7 @@ final class MinMaxReturnTypeProvider implements FunctionReturnTypeProviderInterf
 {
     /**
      * @return array<lowercase-string>
+     * @psalm-pure
      */
     #[Override]
     public static function getFunctionIds(): array

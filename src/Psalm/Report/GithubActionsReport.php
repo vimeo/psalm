@@ -16,6 +16,9 @@ use function strtr;
  */
 final class GithubActionsReport extends Report
 {
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public function create(): string
     {

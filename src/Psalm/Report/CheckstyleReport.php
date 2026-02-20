@@ -14,6 +14,9 @@ use function sprintf;
  */
 final class CheckstyleReport extends Report
 {
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public function create(): string
     {

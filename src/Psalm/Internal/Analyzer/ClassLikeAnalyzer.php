@@ -106,6 +106,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         $this->storage = $codebase->classlike_storage_provider->get($fq_class_name);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function __destruct()
     {
@@ -484,7 +487,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         return $this->parent_fq_class_name;
     }
 
-    /** @psalm-mutation-free */
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function isStatic(): bool
     {

@@ -40,6 +40,9 @@ final class TEnumCase extends TNamedObject
         return $this->value;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {

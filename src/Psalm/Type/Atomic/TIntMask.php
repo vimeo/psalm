@@ -69,6 +69,9 @@ final class TIntMask extends TInt
         return 'int-mask<' . substr($s, 0, -2) . '>';
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {

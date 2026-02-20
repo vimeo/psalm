@@ -35,6 +35,9 @@ interface StatementsSource extends FileSource
      */
     public function getTemplateTypeMap(): ?array;
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function setRootFilePath(string $file_path, string $file_name): void;
 
     public function hasParentFilePath(string $file_path): bool;
@@ -91,5 +94,5 @@ interface StatementsSource extends FileSource
         ?int $inferred_mutation_level = null,
         bool $overrideMsg = false,
         ?FunctionLikeStorage $storage = null,
-    ): bool;
+    ): void;
 }

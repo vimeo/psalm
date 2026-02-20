@@ -20,6 +20,9 @@ final class IsNotAClass extends Assertion
     {
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function isNegation(): bool
     {

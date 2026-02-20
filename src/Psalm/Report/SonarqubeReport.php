@@ -21,6 +21,9 @@ use function max;
  */
 final class SonarqubeReport extends Report
 {
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public function create(): string
     {

@@ -14,17 +14,26 @@ use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 final class NonEmpty extends Assertion
 {
     use UnserializeMemoryUsageSuppressionTrait;
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getNegation(): Assertion
     {
         return new Empty_();
     }
 
+    /**
+     * @psalm-pure
+     */
     public function __toString(): string
     {
         return 'non-empty';
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function isNegationOf(Assertion $assertion): bool
     {

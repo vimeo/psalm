@@ -11,6 +11,9 @@ use Override;
  */
 final class ReturnTypeManipulationTest extends FileManipulationTestCase
 {
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerValidCodeParse(): array
     {

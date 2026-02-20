@@ -39,6 +39,9 @@ class LongProgress extends Progress
     ) {
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public function debug(string $message): void
     {
@@ -95,6 +98,9 @@ class LongProgress extends Progress
         $this->write('Altered ' . $file_name . "\n");
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function expand(int $number_of_tasks): void
     {

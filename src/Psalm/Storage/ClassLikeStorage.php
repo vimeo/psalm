@@ -162,7 +162,7 @@ final class ClassLikeStorage implements HasAttributesInterface
 
     public bool $is_enum = false;
 
-    /** @var Mutations::LEVEL_INTERNAL_READ|Mutations::LEVEL_INTERNAL_READ_WRITE|Mutations::LEVEL_ALL */
+    /** @var Mutations::LEVEL_* */
     public int $allowed_mutations = Mutations::LEVEL_ALL;
 
     public bool $has_mutations_annotation = false;
@@ -395,6 +395,14 @@ final class ClassLikeStorage implements HasAttributesInterface
      */
     public function __construct(public string $name)
     {
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function isPure(): bool
+    {
+        return $this->allowed_mutations <= Mutations::LEVEL_NONE;
     }
 
     /**

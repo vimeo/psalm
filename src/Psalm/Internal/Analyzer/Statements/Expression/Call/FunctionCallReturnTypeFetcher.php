@@ -682,7 +682,8 @@ final class FunctionCallReturnTypeFetcher
     }
 
     /**
-     * @param  array<PhpParser\Node\Arg>   $args
+     * @param array<PhpParser\Node\Arg>   $args
+     * @psalm-external-mutation-free
      */
     public static function taintUsingFlows(
         StatementsAnalyzer $statements_analyzer,

@@ -311,6 +311,8 @@ final class Context
 
     public bool $has_returned = false;
 
+    public bool $inside_attribute = false;
+
     /**
      * @var array<string, true>
      */

@@ -21,6 +21,7 @@ final class FooPropertyProvider implements
 {
     /**
      * @return array<string>
+     * @psalm-pure
      */
     #[Override]
     public static function getClassLikeNames(): array
@@ -28,6 +29,9 @@ final class FooPropertyProvider implements
         return ['Ns\Foo'];
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public static function doesPropertyExist(PropertyExistenceProviderEvent $event): ?bool
     {
@@ -35,6 +39,9 @@ final class FooPropertyProvider implements
         return $property_name === 'magic_property';
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public static function isPropertyVisible(PropertyVisibilityProviderEvent $event): ?bool
     {

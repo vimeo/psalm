@@ -176,6 +176,9 @@ final class TObjectWithProperties extends TObject
         return $this->getKey();
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
@@ -301,6 +304,9 @@ final class TObjectWithProperties extends TObject
         );
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     protected function getChildNodeKeys(): array
     {

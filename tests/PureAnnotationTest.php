@@ -13,6 +13,9 @@ final class PureAnnotationTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerValidCodeParse(): iterable
     {
@@ -367,9 +370,16 @@ final class PureAnnotationTest extends TestCase
             'countMethodCanBePure' => [
                 'code' => '<?php
                     class A implements Countable {
+                        private array $items = [];
+
+                        /** @psalm-mutation-free */
+                        public function __construct(array $items) {
+                            $this->items = $items;
+                        }
+
                         /** @psalm-mutation-free */
                         public function count(): int {
-                            return 2;
+                            return count($this->items);
                         }
                     }
 
@@ -616,6 +626,9 @@ final class PureAnnotationTest extends TestCase
         ];
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerInvalidCodeParse(): iterable
     {
@@ -1007,6 +1020,15 @@ final class PureAnnotationTest extends TestCase
                         }
                     }',
                 'error_message' => 'ImpurePropertyAssignment',
+            ],
+            'propertyWriteIsNotPure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    class A {
+                        /** @var array<string, string> */
+                        public array $foo = [];
+                    }',
+                'error_message' => 'InaccessibleProperty',
             ],
             'preventPropertyAccessOnMutableClass' => [
                 'code' => '<?php

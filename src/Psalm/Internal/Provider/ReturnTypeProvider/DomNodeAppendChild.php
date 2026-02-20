@@ -16,6 +16,9 @@ use Psalm\Type\Union;
  */
 final class DomNodeAppendChild implements MethodReturnTypeProviderInterface
 {
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public static function getClassLikeNames(): array
     {

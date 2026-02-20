@@ -20,6 +20,8 @@ final class TaintBadDataPlugin implements AddTaintsInterface
 {
     /**
      * Called to see what taints should be added
+     *
+     * @psalm-mutation-free
      */
     #[Override]
     public static function addTaints(AddRemoveTaintsEvent $event): int

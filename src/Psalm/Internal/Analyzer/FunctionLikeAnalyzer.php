@@ -507,7 +507,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             && ($this->function instanceof Function_
                 || $this->function instanceof ClassMethod
             )
-            && !$overridden_method_ids
             && !$context->collect_initializations
             && !$context->collect_mutations
         ) {
@@ -592,10 +591,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     $manipulator->setAllowedMutations($this->inferred_mutations);
                 }
             }
-        }
-
-        if ($context->self !== null) {
-            $this->codebase->analyzer->addMutableClass($context->self, $this->inferred_mutations);
         }
 
         if (!$context->collect_initializations
@@ -1847,6 +1842,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
     /**
      * @param array<int, string> $new_issues
+     * @psalm-external-mutation-free
      */
     #[Override]
     public function addSuppressedIssues(array $new_issues): void
@@ -1860,6 +1856,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
     /**
      * @param array<int, string> $new_issues
+     * @psalm-external-mutation-free
      */
     #[Override]
     public function removeSuppressedIssues(array $new_issues): void

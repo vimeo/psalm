@@ -78,6 +78,9 @@ final class TPropertiesOf extends Atomic
         };
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     protected function getChildNodeKeys(): array
     {
@@ -103,6 +106,9 @@ final class TPropertiesOf extends Atomic
         return $this->getKey();
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {

@@ -39,6 +39,7 @@
  - [FalseOperand](issues/FalseOperand.md)
  - [ForbiddenCode](issues/ForbiddenCode.md)
  - [IfThisIsMismatch](issues/IfThisIsMismatch.md)
+ - [ImmutableDependency](issues/ImmutableDependency.md)
  - [ImplementationRequirementViolation](issues/ImplementationRequirementViolation.md)
  - [ImplementedParamTypeMismatch](issues/ImplementedParamTypeMismatch.md)
  - [ImplementedReturnTypeMismatch](issues/ImplementedReturnTypeMismatch.md)

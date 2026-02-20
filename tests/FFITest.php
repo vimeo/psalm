@@ -16,6 +16,9 @@ final class FFITest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerValidCodeParse(): iterable
     {

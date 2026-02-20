@@ -19,6 +19,9 @@ use Psalm\Type\Union;
  */
 final class ClosureFromCallableReturnTypeProvider implements MethodReturnTypeProviderInterface
 {
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public static function getClassLikeNames(): array
     {

@@ -21,6 +21,9 @@ final class TDependentGetType extends TString
         parent::__construct(false);
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {

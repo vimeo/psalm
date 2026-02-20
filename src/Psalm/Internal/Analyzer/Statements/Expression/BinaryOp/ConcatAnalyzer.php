@@ -10,6 +10,7 @@ use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\MethodIdentifier;
@@ -442,6 +443,11 @@ final class ConcatAnalyzer
                             continue;
                         }
 
+                        $var_id = ExpressionIdentifier::getExtendedVarId(
+                            $operand,
+                            $statements_analyzer->getFQCLN(),
+                            $statements_analyzer,
+                        );
                         $statements_analyzer->signalMutation(
                             $storage->allowed_mutations,
                             $context,
@@ -451,7 +457,7 @@ final class ConcatAnalyzer
                             $operand,
                             null,
                             false,
-                            $storage,
+                            $var_id === '$this' ? $storage : null,
                         );
                     }
                 }
