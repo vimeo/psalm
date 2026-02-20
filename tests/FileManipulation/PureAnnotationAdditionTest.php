@@ -8,6 +8,9 @@ use Override;
 
 final class PureAnnotationAdditionTest extends FileManipulationTestCase
 {
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerValidCodeParse(): array
     {
@@ -141,6 +144,93 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                                 return $this->foo($s, $v - 1);
                             }
                             return $s;
+                        }
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
+            'selfMethodCall2' => [
+                'input' => '<?php
+                    class A {
+                        public A $a;
+                        public function foo(int $ex): int {
+                            if ($ex === 0) {
+                                return $ex;
+                            }
+                            return $this->a->foo($ex - 1);
+                        }
+                    }
+                    class B extends A {
+                        public function foo(int $ex): int {
+                            echo "test";
+                            if ($ex === 0) {
+                                return $ex;
+                            }
+                            return $this->a->foo($ex - 1);
+                        }
+                    }',
+                'output' => '<?php
+                    class A {
+                        public A $a;
+                        public function foo(int $ex): int {
+                            if ($ex === 0) {
+                                return $ex;
+                            }
+                            return $this->a->foo($ex - 1);
+                        }
+                    }
+                    class B extends A {
+                        public function foo(int $ex): int {
+                            echo "test";
+                            if ($ex === 0) {
+                                return $ex;
+                            }
+                            return $this->a->foo($ex - 1);
+                        }
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
+            'selfMethodCall3' => [
+                'input' => '<?php
+                    class A {
+                        public function foo(int $ex): int {
+                            if ($ex === 0) {
+                                return $ex;
+                            }
+                            return $this->foo($ex - 1);
+                        }
+                    }
+                    class B extends A {
+                        public function foo(int $ex): int {
+                            echo "test";
+                            if ($ex === 0) {
+                                return $ex;
+                            }
+                            return $this->foo($ex - 1);
+                        }
+                    }',
+                'output' => '<?php
+                    class A {
+                        /**
+                         * @psalm-mutation-free
+                         */
+                        public function foo(int $ex): int {
+                            if ($ex === 0) {
+                                return $ex;
+                            }
+                            return $this->foo($ex - 1);
+                        }
+                    }
+                    class B extends A {
+                        public function foo(int $ex): int {
+                            echo "test";
+                            if ($ex === 0) {
+                                return $ex;
+                            }
+                            return $this->foo($ex - 1);
                         }
                     }',
                 'php_version' => '7.4',
@@ -387,17 +477,15 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                     class A {
                         public int $a = 5;
 
-                        /**
-                         * @psalm-mutation-free
-                         */
                         public function foo(string $s) : string {
+                            echo "test";
                             return $string . $this->a;
                         }
                     }
 
                     class B extends A {
                         /**
-                         * @psalm-mutation-free
+                         * @psalm-pure
                          */
                         public function foo(string $s) : string {
                             return $string;

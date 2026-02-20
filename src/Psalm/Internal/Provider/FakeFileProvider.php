@@ -52,12 +52,18 @@ final class FakeFileProvider extends FileProvider
         return $this->fake_files[$file_path] ?? parent::getContents($file_path);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function setContents(string $file_path, string $file_contents): void
     {
         $this->fake_files[$file_path] = $file_contents;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function setOpenContents(string $file_path, ?string $file_contents = null): void
     {

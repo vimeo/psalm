@@ -13,6 +13,9 @@ use Override;
  */
 final class TEmptyNumeric extends TNumeric
 {
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getId(bool $exact = true, bool $nested = false): string
     {

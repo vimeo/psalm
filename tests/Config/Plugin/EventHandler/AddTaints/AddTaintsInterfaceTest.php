@@ -118,6 +118,9 @@ final class AddTaintsInterfaceTest extends TestCase
         $this->expectExceptionMessage('TaintedHtml');
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function setUp(): void
     {

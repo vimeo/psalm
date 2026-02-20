@@ -13,6 +13,9 @@ use Override;
  */
 final class TNonEmptyLowercaseString extends TNonEmptyString
 {
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getId(bool $exact = true, bool $nested = false): string
     {
@@ -25,6 +28,7 @@ final class TNonEmptyLowercaseString extends TNonEmptyString
 
     /**
      * @return false
+     * @psalm-pure
      */
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool

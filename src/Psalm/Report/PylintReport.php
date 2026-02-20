@@ -16,6 +16,9 @@ use function sprintf;
  */
 final class PylintReport extends Report
 {
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public function create(): string
     {

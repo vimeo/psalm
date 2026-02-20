@@ -15,6 +15,9 @@ use function uksort;
  */
 final class CountReport extends Report
 {
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public function create(): string
     {

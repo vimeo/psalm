@@ -17,6 +17,9 @@ use function substr;
  */
 final class PhpStormReport extends Report
 {
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public function create(): string
     {

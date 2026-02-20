@@ -22,6 +22,9 @@ final class TClosure extends TNamedObject
 {
     use CallableTrait;
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function isCallableType(): bool
     {

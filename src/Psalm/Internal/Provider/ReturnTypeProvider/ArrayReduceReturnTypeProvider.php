@@ -37,6 +37,7 @@ final class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderI
 {
     /**
      * @return array<lowercase-string>
+     * @psalm-pure
      */
     #[Override]
     public static function getFunctionIds(): array

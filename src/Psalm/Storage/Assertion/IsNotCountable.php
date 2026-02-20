@@ -18,23 +18,35 @@ final class IsNotCountable extends Assertion
     {
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function isNegation(): bool
     {
         return true;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getNegation(): Assertion
     {
         return new IsCountable();
     }
 
+    /**
+     * @psalm-pure
+     */
     public function __toString(): string
     {
         return '!countable';
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function isNegationOf(Assertion $assertion): bool
     {

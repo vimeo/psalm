@@ -15,6 +15,9 @@ use function sprintf;
  */
 final class TextReport extends Report
 {
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public function create(): string
     {

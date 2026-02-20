@@ -46,6 +46,9 @@ final class StubTest extends TestCase
         self::$config = new TestConfig();
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function setUp(): void
     {

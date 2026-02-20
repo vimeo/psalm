@@ -35,6 +35,9 @@ final class ProjectFileFilter extends FileFilter
         return $filter;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public function allows(string $file_name, bool $case_sensitive = false): bool
     {
@@ -47,6 +50,9 @@ final class ProjectFileFilter extends FileFilter
         return parent::allows($file_name, $case_sensitive);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function forbids(string $file_name, bool $case_sensitive = false): bool
     {
         if ($this->inclusive && $this->file_filter) {

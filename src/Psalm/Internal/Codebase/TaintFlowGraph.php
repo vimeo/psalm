@@ -71,6 +71,9 @@ final class TaintFlowGraph extends DataFlowGraph
      */
     private array $specialized_calls = [];
 
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function addNode(DataFlowNode $node): void
     {

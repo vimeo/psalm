@@ -19,6 +19,7 @@ final class HexdecReturnTypeProvider implements FunctionReturnTypeProviderInterf
 {
     /**
      * @return array<lowercase-string>
+     * @psalm-pure
      */
     #[Override]
     public static function getFunctionIds(): array
@@ -26,6 +27,9 @@ final class HexdecReturnTypeProvider implements FunctionReturnTypeProviderInterf
         return ['hexdec'];
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Union
     {

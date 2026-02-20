@@ -26,6 +26,9 @@ final class VariableUseGraph extends DataFlowGraph
     /** @var array<string, list<CodeLocation>> */
     private array $origin_locations_by_id = [];
 
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function addNode(DataFlowNode $node): void
     {

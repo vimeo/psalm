@@ -112,6 +112,9 @@ abstract class SourceAnalyzer implements StatementsSource
         return $this->source->getRootFilePath();
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function setRootFilePath(string $file_path, string $file_name): void
     {
@@ -162,6 +165,7 @@ abstract class SourceAnalyzer implements StatementsSource
 
     /**
      * @param array<int, string> $new_issues
+     * @psalm-external-mutation-free
      */
     #[Override]
     public function addSuppressedIssues(array $new_issues): void
@@ -171,6 +175,7 @@ abstract class SourceAnalyzer implements StatementsSource
 
     /**
      * @param array<int, string> $new_issues
+     * @psalm-external-mutation-free
      */
     #[Override]
     public function removeSuppressedIssues(array $new_issues): void

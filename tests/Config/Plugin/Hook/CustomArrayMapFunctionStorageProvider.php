@@ -22,6 +22,9 @@ use function count;
 
 final class CustomArrayMapFunctionStorageProvider implements DynamicFunctionStorageProviderInterface
 {
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public static function getFunctionIds(): array
     {

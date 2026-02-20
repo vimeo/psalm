@@ -16,6 +16,9 @@ final class TypeTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerValidCodeParse(): iterable
     {
@@ -1364,6 +1367,7 @@ final class TypeTest extends TestCase
 
     /**
      * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
+     * @psalm-pure
      */
     #[Override]
     public function providerInvalidCodeParse(): iterable

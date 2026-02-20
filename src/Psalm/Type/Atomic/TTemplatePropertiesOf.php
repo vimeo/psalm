@@ -62,6 +62,9 @@ final class TTemplatePropertiesOf extends Atomic
         return $this->getKey();
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {

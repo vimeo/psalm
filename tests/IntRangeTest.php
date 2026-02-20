@@ -25,6 +25,9 @@ final class IntRangeTest extends TestCase
         $this->assertEquals(10, $range->max_bound);
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerValidCodeParse(): iterable
     {
@@ -1037,6 +1040,9 @@ final class IntRangeTest extends TestCase
         ];
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerInvalidCodeParse(): iterable
     {

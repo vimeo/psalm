@@ -23,6 +23,7 @@ final class ExpressionTest extends TestCase
      *         php_version?: string,
      *     }
      * >
+     * @psalm-mutation-free
      */
     #[Override]
     public function providerValidCodeParse(): iterable
@@ -75,6 +76,7 @@ final class ExpressionTest extends TestCase
      *         php_version?: string,
      *     }
      * >
+     * @psalm-mutation-free
      */
     #[Override]
     public function providerInvalidCodeParse(): iterable

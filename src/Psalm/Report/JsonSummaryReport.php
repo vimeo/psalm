@@ -13,6 +13,9 @@ use Psalm\Report;
  */
 final class JsonSummaryReport extends Report
 {
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public function create(): string
     {

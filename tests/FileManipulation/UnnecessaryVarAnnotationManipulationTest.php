@@ -11,6 +11,9 @@ use Override;
  */
 final class UnnecessaryVarAnnotationManipulationTest extends FileManipulationTestCase
 {
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerValidCodeParse(): array
     {

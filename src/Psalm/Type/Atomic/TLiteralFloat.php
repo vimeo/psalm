@@ -43,7 +43,8 @@ final class TLiteralFloat extends TFloat
     }
 
     /**
-     * @param  array<lowercase-string, string> $aliased_classes
+     * @param array<lowercase-string, string> $aliased_classes
+     * @psalm-pure
      */
     #[Override]
     public function toNamespacedString(

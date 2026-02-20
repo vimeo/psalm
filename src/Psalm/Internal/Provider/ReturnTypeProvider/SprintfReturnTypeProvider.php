@@ -39,6 +39,7 @@ final class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInter
 {
     /**
      * @return array<lowercase-string>
+     * @psalm-pure
      */
     #[Override]
     public static function getFunctionIds(): array

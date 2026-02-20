@@ -10,6 +10,7 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 
 /**
  * @internal
+ * @psalm-external-mutation-free
  */
 final class CombinedFlowGraph extends DataFlowGraph
 {
@@ -21,6 +22,9 @@ final class CombinedFlowGraph extends DataFlowGraph
         public readonly TaintFlowGraph $taint_flow_graph,
     ) {
     }
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function addNode(DataFlowNode $node): void
     {
@@ -58,12 +62,18 @@ final class CombinedFlowGraph extends DataFlowGraph
         $this->taint_flow_graph->addSink($node);
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function summarizeEdges(): never
     {
         throw new AssertionError("Unreachable");
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getEdgeStats(): never
     {

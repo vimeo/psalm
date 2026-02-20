@@ -22,6 +22,7 @@ final class MagicFunctionProvider implements
 {
     /**
      * @return array<lowercase-string>
+     * @psalm-pure
      */
     #[Override]
     public static function getFunctionIds(): array
@@ -29,6 +30,9 @@ final class MagicFunctionProvider implements
         return ['magicfunction'];
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public static function doesFunctionExist(FunctionExistenceProviderEvent $event): ?bool
     {

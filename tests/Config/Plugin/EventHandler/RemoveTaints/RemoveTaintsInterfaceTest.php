@@ -56,6 +56,9 @@ final class RemoveTaintsInterfaceTest extends TestCase
         );
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function setUp(): void
     {

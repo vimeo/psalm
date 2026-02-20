@@ -105,7 +105,9 @@ class FileScanner implements FileSource
         return $this->file_name;
     }
 
-    /** @psalm-mutation-free */
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getAliases(): Aliases
     {

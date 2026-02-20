@@ -14,6 +14,9 @@ final class BasenameTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
 
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public function providerValidCodeParse(): iterable
     {

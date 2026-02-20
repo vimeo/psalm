@@ -16,6 +16,9 @@ final class FakeParserCacheProvider extends ParserCacheProvider
     {
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function loadStatementsFromCache(string $file_path, ?string $file_content_hash): ?array
     {
@@ -27,6 +30,9 @@ final class FakeParserCacheProvider extends ParserCacheProvider
     {
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getHash(string $file_path): ?string
     {

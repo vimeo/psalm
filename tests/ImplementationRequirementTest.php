@@ -45,6 +45,9 @@ final class ImplementationRequirementTest extends TestCase
         );
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerValidCodeParse(): iterable
     {
@@ -63,6 +66,9 @@ final class ImplementationRequirementTest extends TestCase
         ];
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerInvalidCodeParse(): iterable
     {

@@ -18,6 +18,7 @@ final class GetClassMethodsReturnTypeProvider implements FunctionReturnTypeProvi
 {
     /**
      * @return array<lowercase-string>
+     * @psalm-pure
      */
     #[Override]
     public static function getFunctionIds(): array

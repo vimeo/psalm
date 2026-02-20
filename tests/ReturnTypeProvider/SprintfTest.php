@@ -14,6 +14,9 @@ final class SprintfTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public function providerValidCodeParse(): iterable
     {
@@ -254,6 +257,9 @@ final class SprintfTest extends TestCase
         ];
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerInvalidCodeParse(): iterable
     {

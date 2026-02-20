@@ -87,6 +87,7 @@ final class VariadicTest extends TestCase
 
     /**
      * @return iterable<string,array{code: string}>
+     * @psalm-pure
      */
     #[Override]
     public function providerValidCodeParse(): iterable

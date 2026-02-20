@@ -16,6 +16,9 @@ use Psalm\Type\Atomic;
 class TObject extends Atomic
 {
     use UnserializeMemoryUsageSuppressionTrait;
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getKey(bool $include_extra = true): string
     {
@@ -35,6 +38,9 @@ class TObject extends Atomic
         return $analysis_php_version_id >= 7_02_00 ? $this->getKey() : null;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {

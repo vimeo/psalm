@@ -297,6 +297,9 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
         return $this->attributes;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public function __toString(): string
     {

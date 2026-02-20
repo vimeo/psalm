@@ -38,6 +38,8 @@ trait EmitterTrait
 
     /**
      * Subscribe to an event.
+     *
+     * @psalm-external-mutation-free
      */
     #[Override]
     public function on(string $eventName, callable $callBack, int $priority = 100): void
@@ -120,6 +122,7 @@ trait EmitterTrait
      * their priority.
      *
      * @return callable[]
+     * @psalm-external-mutation-free
      */
     #[Override]
     public function listeners(string $eventName): array
@@ -145,6 +148,8 @@ trait EmitterTrait
      *
      * If the listener could not be found, this method will return false. If it
      * was removed it will return true.
+     *
+     * @psalm-external-mutation-free
      */
     #[Override]
     public function removeListener(string $eventName, callable $listener): bool

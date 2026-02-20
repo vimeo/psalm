@@ -87,6 +87,9 @@ final class ConstantTest extends TestCase
         $this->analyzeFile($file2, new Context());
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerValidCodeParse(): iterable
     {
@@ -2165,6 +2168,9 @@ final class ConstantTest extends TestCase
         ];
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerInvalidCodeParse(): iterable
     {

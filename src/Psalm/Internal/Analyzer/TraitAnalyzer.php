@@ -50,8 +50,8 @@ final class TraitAnalyzer extends ClassLikeAnalyzer
     }
 
     /**
-     * @psalm-mutation-free
      * @return array<lowercase-string, string>
+     * @psalm-pure
      */
     #[Override]
     public function getAliasedClassesFlipped(): array
@@ -60,8 +60,8 @@ final class TraitAnalyzer extends ClassLikeAnalyzer
     }
 
     /**
-     * @psalm-mutation-free
      * @return array<string, string>
+     * @psalm-pure
      */
     #[Override]
     public function getAliasedClassesFlippedReplaceable(): array

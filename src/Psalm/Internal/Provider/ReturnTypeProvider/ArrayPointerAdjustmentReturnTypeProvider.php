@@ -38,6 +38,7 @@ final class ArrayPointerAdjustmentReturnTypeProvider implements FunctionReturnTy
 
     /**
      * @return array<lowercase-string>
+     * @psalm-pure
      */
     #[Override]
     public static function getFunctionIds(): array

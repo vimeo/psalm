@@ -79,6 +79,9 @@ final class TGenericObject extends TNamedObject
         return $this->value . '<' . substr($s, 0, -2) . '>' . $extra_types;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
@@ -129,6 +132,9 @@ final class TGenericObject extends TNamedObject
         return $this->value;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     protected function getChildNodeKeys(): array
     {

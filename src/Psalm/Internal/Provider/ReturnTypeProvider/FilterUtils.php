@@ -1487,6 +1487,9 @@ final class FilterUtils
         return $return_type;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     private static function addReturnTaint(
         StatementsAnalyzer $statements_analyzer,
         CodeLocation $code_location,

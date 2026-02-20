@@ -25,6 +25,7 @@ final class ArrayCombineReturnTypeProvider implements FunctionReturnTypeProvider
 {
     /**
      * @return array<lowercase-string>
+     * @psalm-pure
      */
     #[Override]
     public static function getFunctionIds(): array

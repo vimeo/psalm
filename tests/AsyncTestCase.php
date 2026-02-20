@@ -85,6 +85,9 @@ abstract class AsyncTestCase extends BaseAsyncTestCase
         $this->project_analyzer->setPhpVersion('7.4', 'tests');
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function tearDown(): void
     {

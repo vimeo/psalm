@@ -18,12 +18,18 @@ final class ProjectCacheProvider extends PsalmProjectCacheProvider
     {
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function processSuccessfulRun(float $start_time, string $psalm_version): void
     {
         $this->last_run = (int) $start_time;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public function canDiffFiles(): bool
     {

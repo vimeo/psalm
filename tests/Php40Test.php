@@ -11,6 +11,9 @@ final class Php40Test extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerValidCodeParse(): iterable
     {

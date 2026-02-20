@@ -40,6 +40,9 @@ final class MagicPropertyTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerValidCodeParse(): iterable
     {
@@ -812,6 +815,9 @@ final class MagicPropertyTest extends TestCase
         ];
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerInvalidCodeParse(): iterable
     {

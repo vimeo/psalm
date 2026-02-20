@@ -42,6 +42,9 @@ final class TypeCombinationTest extends TestCase
         );
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerValidCodeParse(): iterable
     {

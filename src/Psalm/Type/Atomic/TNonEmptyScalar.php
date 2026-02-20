@@ -13,6 +13,9 @@ use Override;
  */
 final class TNonEmptyScalar extends TScalar
 {
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getId(bool $exact = true, bool $nested = false): string
     {

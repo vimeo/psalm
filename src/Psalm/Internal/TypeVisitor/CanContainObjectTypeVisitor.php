@@ -25,6 +25,9 @@ final class CanContainObjectTypeVisitor extends TypeVisitor
     ) {
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     protected function enterNode(TypeNode $type): ?int
     {

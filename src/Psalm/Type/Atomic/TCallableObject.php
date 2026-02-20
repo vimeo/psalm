@@ -15,7 +15,10 @@ final class TCallableObject extends TObject
 {
     use HasIntersectionTrait;
 
-    /** @return true */
+    /**
+     * @return true
+     * @psalm-pure
+     */
     #[Override]
     public function isCallableType(): bool
     {
@@ -38,7 +41,8 @@ final class TCallableObject extends TObject
     }
 
     /**
-     * @param  array<lowercase-string, string> $aliased_classes
+     * @param array<lowercase-string, string> $aliased_classes
+     * @psalm-pure
      */
     #[Override]
     public function toPhpString(
@@ -50,12 +54,18 @@ final class TCallableObject extends TObject
         return $analysis_php_version_id >= 7_02_00 ? 'object' : null;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getAssertionString(): string
     {

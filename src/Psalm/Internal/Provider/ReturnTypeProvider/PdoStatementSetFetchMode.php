@@ -17,6 +17,9 @@ use Psalm\Type;
  */
 final class PdoStatementSetFetchMode implements MethodParamsProviderInterface
 {
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public static function getClassLikeNames(): array
     {

@@ -54,6 +54,9 @@ final class PluginTest extends TestCase
         self::$config = new TestConfig();
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function setUp(): void
     {
@@ -505,6 +508,7 @@ final class PluginTest extends TestCase
             /**
              * @return void
              * @phpcsSuppress SlevomatCodingStandard.TypeHints.ReturnTypeHint
+             * @psalm-mutation-free
              */
             #[Override]
             public static function afterCodebasePopulated(AfterCodebasePopulatedEvent $event)
@@ -896,6 +900,9 @@ final class PluginTest extends TestCase
                 self::$m = $m;
             }
 
+            /**
+             * @psalm-external-mutation-free
+             */
             #[Override]
             public static function afterEveryFunctionCallAnalysis(AfterEveryFunctionCallAnalysisEvent $event): void
             {

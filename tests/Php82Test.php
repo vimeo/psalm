@@ -11,6 +11,9 @@ final class Php82Test extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerValidCodeParse(): iterable
     {

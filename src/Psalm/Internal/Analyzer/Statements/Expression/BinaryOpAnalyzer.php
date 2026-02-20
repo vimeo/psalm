@@ -481,6 +481,11 @@ final class BinaryOpAnalyzer
                     } catch (UnexpectedValueException) {
                         continue;
                     }
+                    $var_id = ExpressionIdentifier::getExtendedVarId(
+                        $stmt->right,
+                        $statements_analyzer->getFQCLN(),
+                        $statements_analyzer,
+                    );
 
                     $statements_analyzer->signalMutation(
                         $storage->allowed_mutations,
@@ -491,7 +496,7 @@ final class BinaryOpAnalyzer
                         $stmt,
                         null,
                         false,
-                        $storage,
+                        $var_id === '$this' ? $storage : null,
                     );
                 }
             }
@@ -509,6 +514,12 @@ final class BinaryOpAnalyzer
                         continue;
                     }
 
+                    $var_id = ExpressionIdentifier::getExtendedVarId(
+                        $stmt->left,
+                        $statements_analyzer->getFQCLN(),
+                        $statements_analyzer,
+                    );
+
                     $statements_analyzer->signalMutation(
                         $storage->allowed_mutations,
                         $context,
@@ -518,7 +529,7 @@ final class BinaryOpAnalyzer
                         $stmt,
                         null,
                         false,
-                        $storage,
+                        $var_id === '$this' ? $storage : null,
                     );
                 }
             }

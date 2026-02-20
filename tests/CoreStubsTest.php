@@ -13,6 +13,9 @@ final class CoreStubsTest extends TestCase
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
 
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public function providerValidCodeParse(): iterable
     {
@@ -444,6 +447,9 @@ final class CoreStubsTest extends TestCase
         ];
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public function providerInvalidCodeParse(): iterable
     {

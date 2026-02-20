@@ -100,7 +100,7 @@ final class MethodCallPurityAnalyzer
             $stmt,
             $method_storage->allowed_mutations,
             false,
-            $method_storage,
+            $lhs_var_id === '$this' ? $method_storage : null,
         );
         
         if (!$context->inside_unset

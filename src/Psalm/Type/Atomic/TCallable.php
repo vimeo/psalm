@@ -45,7 +45,8 @@ final class TCallable extends Atomic
     }
 
     /**
-     * @param  array<lowercase-string, string> $aliased_classes
+     * @param array<lowercase-string, string> $aliased_classes
+     * @psalm-pure
      */
     #[Override]
     public function toPhpString(
@@ -123,7 +124,10 @@ final class TCallable extends Atomic
         return $this->getCallableChildNodeKeys();
     }
 
-    /** @return true */
+    /**
+     * @return true
+     * @psalm-pure
+     */
     #[Override]
     public function isCallableType(): bool
     {

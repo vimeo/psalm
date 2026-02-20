@@ -14,6 +14,9 @@ use Psalm\Type\Atomic;
 abstract class Scalar extends Atomic
 {
     use UnserializeMemoryUsageSuppressionTrait;
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
