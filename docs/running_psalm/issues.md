@@ -154,6 +154,7 @@
  - [MoreSpecificImplementedParamType](issues/MoreSpecificImplementedParamType.md)
  - [MoreSpecificReturnType](issues/MoreSpecificReturnType.md)
  - [MutableDependency](issues/MutableDependency.md)
+ - [ImmutableDependency](issues/ImmutableDependency.md)
  - [NamedArgumentNotAllowed](issues/NamedArgumentNotAllowed.md)
  - [NoEnumProperties](issues/NoEnumProperties.md)
  - [NoInterfaceProperties](issues/NoInterfaceProperties.md)
