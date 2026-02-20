@@ -9,6 +9,7 @@ This issue is emitted to aid [security analysis](https://psalm.dev/docs/security
 ```php
 <?php
 
+/** @api */
 final class CouldBeExternallyMutationFree {
     private int $counter = 0;
 
@@ -18,6 +19,7 @@ final class CouldBeExternallyMutationFree {
     }
 }
 
+/** @api */
 final class CouldBeImmutable {
 }
 

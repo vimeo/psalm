@@ -775,22 +775,6 @@ final class ImmutableAnnotationTest extends TestCase
                     }',
                 'error_message' => 'ImmutableDependency',
             ],
-            'inheritImmutabilityFromParent' => [
-                'code' => '<?php
-                    /** @psalm-immutable */
-                    abstract class SomethingImmutable {
-                        /** @psalm-external-mutation-free */
-                        abstract public function someInteger() : int;
-                    }
-
-                    class MutableImplementation extends SomethingImmutable {
-                        private int $counter = 0;
-                        public function someInteger() : int {
-                            return ++$this->counter;
-                        }
-                    }',
-                'error_message' => 'MissingImmutableAnnotation',
-            ],
             'couldBePure' => [
                 'code' => '<?php
                     function couldBePure(int $a) : int {

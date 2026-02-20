@@ -18,6 +18,45 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'inheritImmutabilityFromParent' => [
+                'input' => '<?php
+                    /** @psalm-external-mutation-free */
+                    abstract class SomethingImmutable {
+                        abstract public function someInteger() : int;
+                    }
+
+                    /**
+                     * @psalm-suppress ImmutableDependency
+                     */
+                    class MutableImplementation extends SomethingImmutable {
+                        private int $counter = 0;
+                        /** @psalm-external-mutation-free */
+                        public function someInteger() : int {
+                            return ++$this->counter;
+                        }
+                    }',
+                'output' => '<?php
+                    /** @psalm-external-mutation-free */
+                    abstract class SomethingImmutable {
+                        abstract public function someInteger() : int;
+                    }
+
+                    /**
+                     * @psalm-suppress ImmutableDependency
+                     *
+                     * @psalm-external-mutation-free
+                     */
+                    class MutableImplementation extends SomethingImmutable {
+                        private int $counter = 0;
+                        /** @psalm-external-mutation-free */
+                        public function someInteger() : int {
+                            return ++$this->counter;
+                        }
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingImmutableAnnotation'],
+                'safe_types' => true,
+            ],
             'addImmutableAnnotation' => [
                 'input' => '<?php
                     class A {
