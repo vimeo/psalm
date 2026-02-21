@@ -1175,11 +1175,6 @@
       <code><![CDATA[$context->self]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
-  <file src="src/Psalm/Internal/Analyzer/Statements/Expression/EncapsulatedStringAnalyzer.php">
-    <PossiblyInvalidOperand>
-      <code><![CDATA[$casted_part_type->getSingleLiteral()->value]]></code>
-    </PossiblyInvalidOperand>
-  </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/ExpressionIdentifier.php">
     <ImplicitToStringCast>
       <code><![CDATA[$stmt->dim->name]]></code>
@@ -2467,9 +2462,6 @@
     <PossiblyInvalidArgument>
       <code><![CDATA[$this->link_format]]></code>
     </PossiblyInvalidArgument>
-    <PossiblyInvalidCast>
-      <code><![CDATA[$this->link_format]]></code>
-    </PossiblyInvalidCast>
     <PossiblyInvalidPropertyAssignmentValue>
       <code><![CDATA[(
                 ini_get('xdebug.file_link_format') ?: get_cfg_var('xdebug.file_link_format')
@@ -2486,9 +2478,6 @@
     <PossiblyInvalidArgument>
       <code><![CDATA[$this->link_format]]></code>
     </PossiblyInvalidArgument>
-    <PossiblyInvalidCast>
-      <code><![CDATA[$this->link_format]]></code>
-    </PossiblyInvalidCast>
     <PossiblyInvalidPropertyAssignmentValue>
       <code><![CDATA[(
                 ini_get('xdebug.file_link_format') ?: get_cfg_var('xdebug.file_link_format')
