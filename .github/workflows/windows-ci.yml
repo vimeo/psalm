@@ -56,11 +56,10 @@ jobs:
         with:
           php-version: '8.4'
           ini-values: zend.assertions=1, assert.exception=1, opcache.enable_cli=1, opcache.jit=function, opcache.jit_buffer_size=512M
-          #ini-values: zend.assertions=1, assert.exception=1
           tools: composer:v2
           coverage: none
-          #extensions: none, curl, dom, filter, intl, json, libxml, mbstring, openssl, opcache, pcre, phar, reflection, simplexml, spl, tokenizer, xml, xmlwriter
-          extensions: none, curl, dom, filter, intl, json, libxml, mbstring, openssl, pcre, phar, reflection, simplexml, spl, tokenizer, xml, xmlwriter
+          extensions: none, curl, dom, filter, intl, json, libxml, mbstring, openssl, opcache, pcre, phar, reflection, simplexml, spl, tokenizer, xml, xmlwriter
+          #extensions: none, curl, dom, filter, intl, json, libxml, mbstring, openssl, pcre, phar, reflection, simplexml, spl, tokenizer, xml, xmlwriter
         env:
           fail-fast: true
 
