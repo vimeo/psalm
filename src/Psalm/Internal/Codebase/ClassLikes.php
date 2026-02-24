@@ -1014,7 +1014,7 @@ final class ClassLikes
     /**
      * @param Mutations::LEVEL_* $allowed_mutations
      */
-    public static function makeImmutable(
+    private static function makeImmutable(
         int $allowed_mutations,
         bool $change,
         ClassLikeStorage $storage,
@@ -1032,7 +1032,7 @@ final class ClassLikes
             IssueBuffer::maybeAdd(
                 new MissingInterfaceImmutableAnnotation(
                     $storage->name
-                    . ' must be marked with either @psalm-immutable or @psalm-mutable to aid security analysis',
+                    . ' must be marked with either @psalm-pure, @psalm-immutable, @psalm-mutation-free, @psalm-external-mutation-free or @psalm-mutable to aid security analysis',
                     $storage->location,
                 ),
                 $storage->suppressed_issues,
