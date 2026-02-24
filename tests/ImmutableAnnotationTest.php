@@ -751,14 +751,14 @@ final class ImmutableAnnotationTest extends TestCase
                     abstract class test {
                         abstract public function somePure(int $a) : int;
                     }',
-                'error_message' => 'somePure must be marked with one of @psalm-pure, @psalm-mutation-free, @psalm-external-mutation-free, @psalm-impure to aid security analysis',
+                'error_message' => 'MissingAbstractPureAnnotation',
             ],
             'mustBePure2' => [
                 'code' => '<?php
                     interface test {
                         public function somePure(int $a) : int;
                     }',
-                'error_message' => 'somePure must be marked with one of @psalm-pure, @psalm-mutation-free, @psalm-external-mutation-free, @psalm-impure to aid security analysis',
+                'error_message' => 'MissingAbstractPureAnnotation',
             ],
             'mustBeImmutableLikeInterfaces' => [
                 'code' => '<?php
