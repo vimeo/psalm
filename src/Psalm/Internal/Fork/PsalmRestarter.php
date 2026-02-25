@@ -14,13 +14,21 @@ use function count;
 use function extension_loaded;
 use function file_get_contents;
 use function file_put_contents;
+use function fwrite;
 use function implode;
 use function in_array;
 use function ini_get;
 use function is_int;
+use function is_resource;
 use function preg_replace;
+use function proc_close;
+use function proc_open;
+use function sprintf;
 use function strlen;
 use function strtolower;
+
+use const PHP_EOL;
+use const STDERR;
 
 /**
  * @internal
@@ -50,6 +58,14 @@ final class PsalmRestarter extends XdebugHandler
         'log_verbosity_level' => 0,
         'save_comments' => 1,
         'restrict_api' => '',
+    ];
+
+    /** @var array<int, string> Signal names for common crash signals */
+    private const CRASH_SIGNALS = [
+        4 => 'SIGILL',
+        6 => 'SIGABRT',
+        8 => 'SIGFPE',
+        11 => 'SIGSEGV',
     ];
 
     private bool $required = false;
@@ -188,7 +204,53 @@ final class PsalmRestarter extends XdebugHandler
         );
         assert(count($command) > 1);
 
-        parent::restart($command);
+        $this->runRestarted($command);
+    }
+
+    /**
+     * Run the restarted process with signal-aware exit code handling.
+     *
+     * PHP's proc_close() returns the raw signal number when a child process
+     * is killed by a signal (e.g. 11 for SIGSEGV), which is indistinguishable
+     * from a normal exit code. This method detects common crash signals and
+     * outputs a helpful error message instead of silently returning a
+     * misleading exit code.
+     *
+     * @param non-empty-list<string> $command
+     * @phpstan-return never
+     */
+    private function runRestarted(array $command): void
+    {
+        $process = proc_open($command, [], $pipes);
+
+        if (is_resource($process)) {
+            $exitCode = proc_close($process);
+        }
+
+        if ($this->tmpIni !== null) {
+            @unlink($this->tmpIni);
+        }
+
+        if (!isset($exitCode)) {
+            fwrite(STDERR, 'Psalm: unable to restart process' . PHP_EOL);
+            exit(-1);
+        }
+
+        if (isset(self::CRASH_SIGNALS[$exitCode])) {
+            $signal = self::CRASH_SIGNALS[$exitCode];
+            fwrite(STDERR, sprintf(
+                'Psalm: restarted process crashed with %s (signal %d).%s'
+                . 'This is most likely caused by a PHP JIT bug. '
+                . 'Try running Psalm with: -dopcache.jit=disable%s',
+                $signal,
+                $exitCode,
+                PHP_EOL,
+                PHP_EOL,
+            ));
+            exit(128 + $exitCode);
+        }
+
+        exit($exitCode);
     }
 
     /**
