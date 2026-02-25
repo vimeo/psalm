@@ -1002,10 +1002,19 @@ final class Psalm
                     . 'JIT acceleration: ON'
                     . PHP_EOL . PHP_EOL);
             } else {
-                $progress->write(PHP_EOL
-                    . 'JIT acceleration: OFF (an error occurred while enabling JIT)' . PHP_EOL
-                    . 'Please report this to https://github.com/vimeo/psalm with your OS and PHP configuration!'
-                    . PHP_EOL . PHP_EOL);
+                $jitSetting = ini_get('opcache.jit');
+                if ($jitSetting === false || $jitSetting === '' || $jitSetting === '0'
+                    || in_array(strtolower($jitSetting), ['off', 'disable', 'disabled'], true)
+                ) {
+                    $progress->write(PHP_EOL
+                        . 'JIT acceleration: OFF (opcache.jit is disabled)'
+                        . PHP_EOL . PHP_EOL);
+                } else {
+                    $progress->write(PHP_EOL
+                        . 'JIT acceleration: OFF (an error occurred while enabling JIT)' . PHP_EOL
+                        . 'Please report this to https://github.com/vimeo/psalm with your OS and PHP configuration!'
+                        . PHP_EOL . PHP_EOL);
+                }
             }
         } else {
             $progress->write(PHP_EOL
