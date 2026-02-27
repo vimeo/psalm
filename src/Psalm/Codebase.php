@@ -31,6 +31,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\Analyzer;
 use Psalm\Internal\Codebase\ClassLikes;
+use Psalm\Internal\Codebase\CodeUseGraph;
 use Psalm\Internal\Codebase\Functions;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\Methods;
@@ -172,6 +173,8 @@ final class Codebase
     public Properties $properties;
 
     public Populator $populator;
+
+    public ?CodeUseGraph $code_use_graph = null;
 
     public ?TaintFlowGraph $taint_flow_graph = null;
 
@@ -335,6 +338,31 @@ final class Codebase
         );
 
         $this->loadAnalyzer();
+    }
+
+    public function addReferenceToClass(
+        string $fq_class_name_lc,
+        Context $context,
+        ?string $file_path = null,
+    ): void {
+        if ($this->code_use_graph === null) {
+            return;
+        }
+        $class = $this->code_use_graph->getNodeForClass($fq_class_name_lc);
+
+        if ($context->calling_method_id !== null) {
+            $caller = $this->code_use_graph->getNodeForFunctionLike($context->calling_method_id);
+        } elseif ($context->calling_function_id !== null) {
+            $caller = $this->code_use_graph->getNodeForFunctionLike($context->calling_function_id);
+        } elseif ($file_path !== null) {
+            $caller = $this->code_use_graph->getNodeForFile($file_path);
+        }
+
+        $this->code_use_graph->addPath(
+            $caller,
+            $class,
+            'use',
+        );
     }
 
     /**

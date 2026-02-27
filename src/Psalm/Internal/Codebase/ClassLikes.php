@@ -334,10 +334,12 @@ final class ClassLikes
         ?CodeLocation $code_location = null,
         ?string $calling_fq_class_name = null,
         ?string $calling_method_id = null,
+        ?string $calling_function_id = null,
     ): bool {
         $fq_class_name_lc = strtolower($this->getUnAliasedName($fq_class_name));
 
-        if ($code_location) {
+        $code_use_graph = ProjectAnalyzer::getInstance()->getCodebase()->code_use_graph;
+        if ($code_location && $code_use_graph) {
             if ($calling_method_id) {
                 $this->file_reference_provider->addMethodReferenceToClass(
                     $calling_method_id,
