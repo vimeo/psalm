@@ -221,7 +221,8 @@ final class StubTest extends TestCase
     public function testStubFileParentClass(): void
     {
         $this->expectException(CodeException::class);
-        $this->expectExceptionMessage('ImplementedParamTypeMismatch');
+        // not ImplementedParamTypeMismatch since it's not a docblock issue, but a fatal signature issue
+        $this->expectExceptionMessage('MethodSignatureMismatch');
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
