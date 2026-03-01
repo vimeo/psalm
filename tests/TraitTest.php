@@ -1071,6 +1071,24 @@ final class TraitTest extends TestCase
                     }',
                 'error_message' => 'UndefinedTrait',
             ],
+            'isClassNoTrait' => [
+                'code' => '<?php
+                    class B {}
+
+                    class A {
+                        use B;
+                    }',
+                'error_message' => 'UndefinedTrait',
+            ],
+            'isInterfaceNoTrait' => [
+                'code' => '<?php
+                    Interface B {}
+
+                    class A {
+                        use B;
+                    }',
+                'error_message' => 'UndefinedTrait',
+            ],
             'missingPropertyType' => [
                 'code' => '<?php
                     trait T {
