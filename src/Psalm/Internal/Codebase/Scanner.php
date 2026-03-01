@@ -445,6 +445,14 @@ final class Scanner
             return;
         }
 
+        // don't scan autoloaded files that should be ignored according to the config
+        // only exemption for stubs, not for  && $this->codebase->register_autoload_files
+        // since stubs are hardcoded list of files, but for autoloaded files
+        // there would no way to ignore them otherwise https://github.com/vimeo/psalm/issues/11433
+        if (!$this->codebase->register_stub_files && $this->config->mustBeIgnored($file_path)) {
+            return;
+        }
+
         $file_contents = $this->file_provider->getContents($file_path);
 
         $from_cache = $this->file_storage_provider->has($file_path, $file_contents);
