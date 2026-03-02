@@ -83485,7 +83485,7 @@ return array (
   array (
     0 => 'mixed',
     'data' => 'string',
-    'options=' => 'array{allowed_classes?: array<array-key, class-string>|bool}',
+    'options=' => 'array{allowed_classes?: array<array-key, class-string>|bool, max_depth?: int}',
   ),
   'unset' => 
   array (
