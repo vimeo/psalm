@@ -84,17 +84,18 @@ function paramsToEntries(ReflectionFunctionAbstract $reflectionFunction, string 
 foreach ([
     'couchbase/couchbase.php',
     'ibm_db2/ibm_db2.php',
-] as $stub) {
-    if ($stub === 'ibm_db2/ibm_db2.php' && PHP_MAJOR_VERSION < 8) {
+] as $stub_path) {
+    if ($stub_path === 'ibm_db2/ibm_db2.php' && PHP_MAJOR_VERSION < 8) {
         continue;
     }
-    $stub = file_get_contents("https://github.com/JetBrains/phpstorm-stubs/raw/refs/heads/master/$stub");
+    $stub = file_get_contents("https://github.com/JetBrains/phpstorm-stubs/raw/refs/heads/master/$stub_path");
     if (PHP_MAJOR_VERSION === 7 && PHP_MINOR_VERSION === 0) {
         $stub = str_replace(['?', '<php'], ['', '<?php'], $stub);
         $stub = str_replace(['public const', 'protected const', 'private const'], 'const', $stub);
     }
-    file_put_contents('temp.php', $stub);
-    require 'temp.php';
+    $temp_path = __DIR__ . '/temp-' . crc32($stub_path) . '.php';
+    file_put_contents($temp_path, $stub);
+    require $temp_path;
 }
 
 foreach (get_defined_functions() as $sub) {
