@@ -3,6 +3,17 @@
 
 declare(strict_types=1);
 
+if (!isset($argv[1])) {
+    throw new Exception('Pass the expected PHP version, like 8.5, as 1st argument to this script');
+    exit(1);
+}
+
+if ($argv[1] !== PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION) {
+    $err = 'The script was called with PHP ' . PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION . ', expected ' . $argv[1];
+    throw new Exception($err);
+    exit(1);
+}
+
 $callmap = [];
 
 function namedTypeName(ReflectionNamedType $refl): string
