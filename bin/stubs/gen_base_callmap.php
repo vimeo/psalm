@@ -100,28 +100,30 @@ foreach ([
 
 foreach (get_defined_functions() as $sub) {
     foreach ($sub as $name) {
-        $name = strtolower($name);
-        if ($name === 'paramstoentries') {
-            continue;
-        }
-        if ($name === 'typetostring') {
-            continue;
-        }
-        if ($name === 'namedtypename') {
-            continue;
-        }
         $func = new ReflectionFunction($name);
+
+        // skip any polyfills that may have been loaded
+        if (!$func->isInternal()) {
+            continue;
+        }
 
         $args = paramsToEntries($func, 'mixed');
 
-        $callmap[$name] = $args;
+        $callmap[strtolower($name)] = $args;
     }
 }
 
 foreach (get_declared_classes() as $class) {
     $refl = new ReflectionClass($class);
+    if (!$refl->isInternal()) {
+        continue;
+    }
 
     foreach ($refl->getMethods() as $method) {
+        if (!$method->isInternal()) {
+            continue;
+        }
+
         $args = paramsToEntries($method, $method->getName() === '__construct' ? 'void' : 'mixed');
 
         $callmap[strtolower($class.'::'.$method->getName())] = $args;
