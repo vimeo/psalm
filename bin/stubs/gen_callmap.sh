@@ -10,4 +10,3 @@ done
 wait
 
 php bin/stubs/gen_callmap.php
-php bin/stubs/gen_callmap.php
