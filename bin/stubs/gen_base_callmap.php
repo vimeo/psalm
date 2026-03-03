@@ -19,17 +19,20 @@ function typeToString($reflection_type, string $defaultType): string
         return $defaultType;
     }
 
+    $maybe_add_null = false;
     if ($reflection_type instanceof ReflectionNamedType) {
         $type = $reflection_type->getName();
+        $maybe_add_null = true;
     } elseif ($reflection_type instanceof ReflectionUnionType) {
         $type = implode('|', array_map('namedTypeName', $reflection_type->getTypes()));
     } elseif ($reflection_type instanceof ReflectionType) {
         $type = $reflection_type->__toString();
+        $maybe_add_null = true;
     } else {
         throw new LogicException('Unexpected reflection class ' . get_class($reflection_type) . ' found.');
     }
 
-    if ($reflection_type->allowsNull() && $type !== 'mixed') {
+    if ($maybe_add_null && $reflection_type->allowsNull() && $type !== 'mixed') {
         $type .= '|null';
     }
 
@@ -108,7 +111,7 @@ foreach (get_declared_classes() as $class) {
 
     foreach ($refl->getMethods() as $method) {
         $args = paramsToEntries($method, $method->getName() === '__construct' ? 'void' : 'mixed');
-    
+
         $callmap[strtolower($class.'::'.$method->getName())] = $args;
     }
 }
