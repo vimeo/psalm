@@ -113,7 +113,7 @@ foreach (get_defined_functions() as $sub) {
     }
 }
 
-foreach (get_declared_classes() as $class) {
+foreach (array_merge(get_declared_interfaces(), get_declared_traits(), get_declared_classes()) as $class) {
     $refl = new ReflectionClass($class);
     if (!$refl->isInternal()) {
         continue;
