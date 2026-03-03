@@ -10199,7 +10199,7 @@ return array (
   'curl_share_init_persistent' => 
   array (
     0 => 'CurlSharePersistentHandle',
-    'share_options' => 'array<array-key, mixed>',
+    'share_options' => 'non-empty-array<array-key, 3|4|5|6>',
   ),
   'curl_share_setopt' => 
   array (
