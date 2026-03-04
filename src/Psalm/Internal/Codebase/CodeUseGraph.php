@@ -6,6 +6,7 @@ namespace Psalm\Internal\Codebase;
 
 use Override;
 use Psalm\CodeLocation;
+use Psalm\Context;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\DataFlow\Path;
 
@@ -49,6 +50,27 @@ final class CodeUseGraph extends DataFlowGraph
     }
 
     /**
+     * @param lowercase-string $class_id
+     * @param lowercase-string $property_name
+     * @psalm-external-mutation-free
+     */
+    public function getNodeForProperty(
+        string $class_id,
+        string $property_name,
+    ): DataFlowNode {
+        $id = 'property '.$class_id.'::'.$property_name;
+        if (array_key_exists($id, $this->nodes)) {
+            return $this->nodes[$id];
+        }
+        $this->nodes[$id] = $node = DataFlowNode::make(
+            $id,
+            $id,
+            null,
+        );
+        return $node;
+    }
+
+    /**
      * @param lowercase-string $func
      * @psalm-external-mutation-free
      */
@@ -66,6 +88,7 @@ final class CodeUseGraph extends DataFlowGraph
         return $node;
     }
 
+    /*
     public function getNodeForFile(
         string $file_path,
     ): DataFlowNode {
@@ -79,7 +102,7 @@ final class CodeUseGraph extends DataFlowGraph
             null,
         );
         return $node;
-    }
+    }*/
     
     /**
      * @psalm-external-mutation-free
@@ -95,6 +118,44 @@ final class CodeUseGraph extends DataFlowGraph
             null,
         );
         return $node;
+    }
+
+    
+    /**
+     * @psalm-external-mutation-free
+     */
+    public function getForGenericUse(): DataFlowNode
+    {
+        if (array_key_exists('generic-use', $this->nodes)) {
+            return $this->nodes['generic-use'];
+        }
+        $this->nodes['generic-use'] = $node = DataFlowNode::make(
+            'generic-use',
+            'generic-use',
+            null,
+        );
+        return $node;
+    }
+
+    public function addReferenceToNode(
+        DataFlowNode $node,
+        Context $context,
+    ): void {
+        if ($context->calling_method_id !== null) {
+            $caller = $this->getNodeForFunctionLike($context->calling_method_id);
+        } elseif ($context->calling_function_id !== null) {
+            $caller = $this->getNodeForFunctionLike($context->calling_function_id);
+        } else {
+            // Source is not a method or function, so we assume it's a file-level use,
+            // so used 
+            $caller = $this->getForGenericUse();
+        }
+
+        $this->addPath(
+            $caller,
+            $node,
+            'use',
+        );
     }
 
     /**

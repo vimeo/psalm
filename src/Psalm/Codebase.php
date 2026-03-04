@@ -340,10 +340,12 @@ final class Codebase
         $this->loadAnalyzer();
     }
 
+    /**
+     * @param lowercase-string $fq_class_name_lc
+     */
     public function addReferenceToClass(
         string $fq_class_name_lc,
         Context $context,
-        ?string $file_path = null,
     ): void {
         if ($this->code_use_graph === null) {
             return;
@@ -354,16 +356,56 @@ final class Codebase
             $caller = $this->code_use_graph->getNodeForFunctionLike($context->calling_method_id);
         } elseif ($context->calling_function_id !== null) {
             $caller = $this->code_use_graph->getNodeForFunctionLike($context->calling_function_id);
-        } elseif ($file_path !== null) {
-            $caller = $this->code_use_graph->getNodeForFile($file_path);
+        } else {
+            // Source is not a method or function, so we assume it's a file-level use,
+            // so used 
+            $caller = $this->code_use_graph->getForGenericUse();
         }
 
-        $this->code_use_graph->addPath(
-            $caller,
+        $this->code_use_graph->addReferenceToNode(
             $class,
-            'use',
+            $context,
         );
     }
+
+    /**
+     * @param lowercase-string $fq_class_name_lc
+     * @param lowercase-string $property_name_lc
+     */
+    public function addReferenceToProperty(
+        string $fq_class_name_lc,
+        string $property_name_lc,
+        Context $context,
+    ): void {
+        if ($this->code_use_graph === null) {
+            return;
+        }
+        $class = $this->code_use_graph->getNodeForProperty($fq_class_name_lc, $property_name_lc);
+
+        $this->code_use_graph->addReferenceToNode(
+            $class,
+            $context,
+        );
+    }
+
+    /**
+     * @param lowercase-string $function_id
+     */
+    public function addReferenceToFunctionLike(
+        string $function_id,
+        Context $context,
+    ): void {
+        if ($this->code_use_graph === null) {
+            return;
+        }
+        $function = $this->code_use_graph->getNodeForFunctionLike($function_id);
+
+        $this->code_use_graph->addReferenceToNode(
+            $function,
+            $context,
+        );
+    }
+
 
     /**
      * Used to register a taint, or to fetch the ID of an already registered taint by its alias.
