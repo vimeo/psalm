@@ -352,16 +352,6 @@ final class Codebase
         }
         $class = $this->code_use_graph->getNodeForClass($fq_class_name_lc);
 
-        if ($context->calling_method_id !== null) {
-            $caller = $this->code_use_graph->getNodeForFunctionLike($context->calling_method_id);
-        } elseif ($context->calling_function_id !== null) {
-            $caller = $this->code_use_graph->getNodeForFunctionLike($context->calling_function_id);
-        } else {
-            // Source is not a method or function, so we assume it's a file-level use,
-            // so used 
-            $caller = $this->code_use_graph->getForGenericUse();
-        }
-
         $this->code_use_graph->addReferenceToNode(
             $class,
             $context,
