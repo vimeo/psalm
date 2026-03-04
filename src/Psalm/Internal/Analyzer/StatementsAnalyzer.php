@@ -428,12 +428,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                 }
             }
 
-            if (isset($statements_analyzer->parsed_docblock->combined_tags['var'])
-                && !($stmt instanceof PhpParser\Node\Stmt\Expression
-                    && $stmt->expr instanceof PhpParser\Node\Expr\Assign)
-                && !$stmt instanceof PhpParser\Node\Stmt\Foreach_
-                && !$stmt instanceof PhpParser\Node\Stmt\Return_
-            ) {
+            if (isset($statements_analyzer->parsed_docblock->combined_tags['var'])) {
                 $file_path = $statements_analyzer->getRootFilePath();
 
                 $file_storage_provider = $codebase->file_storage_provider;
@@ -443,6 +438,17 @@ final class StatementsAnalyzer extends SourceAnalyzer
                 $template_type_map = $statements_analyzer->getTemplateTypeMap();
 
                 $var_comments = [];
+
+                // since it will be processed later when analyzing the assignment
+                // however we must never ignore $this comments
+                // to keep it consistent with @psalm-scope-this
+                $ignore_comment = true;
+                if (!($stmt instanceof PhpParser\Node\Stmt\Expression
+                      && $stmt->expr instanceof PhpParser\Node\Expr\Assign)
+                    && !$stmt instanceof PhpParser\Node\Stmt\Foreach_
+                    && !$stmt instanceof PhpParser\Node\Stmt\Return_) {
+                    $ignore_comment = false;
+                }
 
                 try {
                     $var_comments = $codebase->config->disable_var_parsing
@@ -456,22 +462,32 @@ final class StatementsAnalyzer extends SourceAnalyzer
                             $file_storage->type_aliases,
                         );
                 } catch (IncorrectDocblockException $e) {
-                    IssueBuffer::maybeAdd(
-                        new MissingDocblockType(
-                            $e->getMessage(),
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        ),
-                    );
+                    if (!$ignore_comment) {
+                        IssueBuffer::maybeAdd(
+                            new MissingDocblockType(
+                                $e->getMessage(),
+                                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                            ),
+                        );
+                    }
                 } catch (DocblockParseException $e) {
-                    IssueBuffer::maybeAdd(
-                        new InvalidDocblock(
-                            $e->getMessage(),
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        ),
-                    );
+                    if (!$ignore_comment) {
+                        IssueBuffer::maybeAdd(
+                            new InvalidDocblock(
+                                $e->getMessage(),
+                                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                            ),
+                        );
+                    }
                 }
 
                 foreach ($var_comments as $var_comment) {
+                    // don't check if the class exists yet
+                    if ($ignore_comment
+                        && ($var_comment->var_id !== '$this' || !$var_comment->type)) {
+                        continue;
+                    }
+
                     AssignmentAnalyzer::assignTypeFromVarDocblock(
                         $statements_analyzer,
                         $stmt,
@@ -483,7 +499,11 @@ final class StatementsAnalyzer extends SourceAnalyzer
                         && $var_comment->type
                         && $codebase->classExists((string)$var_comment->type)
                     ) {
-                        $statements_analyzer->setFQCLN((string)$var_comment->type);
+                        $scope_fqcn = (string) $var_comment->type;
+                        $this_type = Type::parseString($scope_fqcn);
+                        $context->self = $scope_fqcn;
+                        $context->vars_in_scope['$this'] = $this_type;
+                        $statements_analyzer->setFQCLN($scope_fqcn);
                     }
                 }
             }
