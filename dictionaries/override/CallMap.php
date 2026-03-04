@@ -5694,19 +5694,10 @@ return array (
   array (
     0 => 'array{error_count: int, errors: array<int, string>, warning_count: int, warnings: array<int, string>}|false',
   ),
-  'datetimeinterface::__serialize' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'datetimeinterface::__unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'array<array-key, mixed>',
-  ),
   'datetimeinterface::diff' => 
   array (
     0 => 'DateInterval',
-    'datetime2' => 'DateTimeInterface',
+    'targetObject' => 'DateTimeInterface',
     'absolute=' => 'bool',
   ),
   'datetimeinterface::format' => 
@@ -7793,18 +7784,6 @@ return array (
   array (
     0 => 'void',
   ),
-  'ds\\collection::copy' => 
-  array (
-    0 => 'Ds\\Collection',
-  ),
-  'ds\\collection::isempty' => 
-  array (
-    0 => 'bool',
-  ),
-  'ds\\collection::toarray' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
   'ds\\deque::allocate' => 
   array (
     0 => 'void',
@@ -7867,15 +7846,6 @@ return array (
   array (
     0 => 'void',
     '...values=' => 'mixed',
-  ),
-  'ds\\hashable::equals' => 
-  array (
-    0 => 'bool',
-    'object' => 'mixed',
-  ),
-  'ds\\hashable::hash' => 
-  array (
-    0 => 'mixed',
   ),
   'ds\\map::allocate' => 
   array (
@@ -7988,78 +7958,20 @@ return array (
     0 => 'void',
     'callback' => 'callable',
   ),
-  'ds\\sequence::capacity' => 
-  array (
-    0 => 'int',
-  ),
-  'ds\\sequence::contains' => 
-  array (
-    0 => 'bool',
-    '...values=' => 'mixed',
-  ),
-  'ds\\sequence::filter' => 
-  array (
-    0 => 'Ds\\Sequence',
-    'callback=' => 'callable',
-  ),
-  'ds\\sequence::find' => 
-  array (
-    0 => 'mixed',
-    'value' => 'mixed',
-  ),
-  'ds\\sequence::first' => 
-  array (
-    0 => 'mixed',
-  ),
-  'ds\\sequence::get' => 
-  array (
-    0 => 'mixed',
-    'index' => 'int',
-  ),
   'ds\\sequence::insert' => 
   array (
     0 => 'void',
     'index' => 'int',
     '...values=' => 'mixed',
   ),
-  'ds\\sequence::join' => 
-  array (
-    0 => 'string',
-    'glue=' => 'string',
-  ),
   'ds\\sequence::last' => 
   array (
     0 => 'void',
-  ),
-  'ds\\sequence::map' => 
-  array (
-    0 => 'Ds\\Sequence',
-    'callback' => 'callable',
-  ),
-  'ds\\sequence::merge' => 
-  array (
-    0 => 'Ds\\Sequence',
-    'values' => 'mixed',
-  ),
-  'ds\\sequence::pop' => 
-  array (
-    0 => 'mixed',
   ),
   'ds\\sequence::push' => 
   array (
     0 => 'void',
     '...values=' => 'mixed',
-  ),
-  'ds\\sequence::reduce' => 
-  array (
-    0 => 'mixed',
-    'callback' => 'callable',
-    'initial=' => 'mixed',
-  ),
-  'ds\\sequence::remove' => 
-  array (
-    0 => 'mixed',
-    'index' => 'int',
   ),
   'ds\\sequence::reverse' => 
   array (
@@ -8080,20 +7992,10 @@ return array (
     'index' => 'int',
     'value' => 'mixed',
   ),
-  'ds\\sequence::shift' => 
-  array (
-    0 => 'mixed',
-  ),
-  'ds\\sequence::slice' => 
-  array (
-    0 => 'Ds\\Sequence',
-    'index' => 'int',
-    'length=' => 'int|null',
-  ),
   'ds\\sequence::sort' => 
   array (
     0 => 'void',
-    'comparator=' => 'callable',
+    'comparator=' => 'callable|null',
   ),
   'ds\\sequence::sorted' => 
   array (
@@ -27375,14 +27277,6 @@ return array (
     'value' => 'mixed',
     '...rest=' => 'mixed',
   ),
-  'iterator::current' => 
-  array (
-    0 => 'mixed',
-  ),
-  'iterator::key' => 
-  array (
-    0 => 'mixed',
-  ),
   'iterator::next' => 
   array (
     0 => 'void',
@@ -27630,10 +27524,6 @@ return array (
     'filename' => 'mixed',
   ),
   'jsonincrementalparser::reset' => 
-  array (
-    0 => 'mixed',
-  ),
-  'jsonserializable::jsonserialize' => 
   array (
     0 => 'mixed',
   ),
@@ -32469,7 +32359,7 @@ return array (
   ),
   'mongodb\\driver\\cursorinterface::getid' => 
   array (
-    0 => 'MongoDB\\Driver\\CursorId',
+    0 => 'MongoDB\\BSON\\Int64',
   ),
   'mongodb\\driver\\cursorinterface::getserver' => 
   array (
@@ -32738,13 +32628,6 @@ return array (
   'mongodb\\driver\\monitoring\\commandsucceededevent::getserviceid' => 
   array (
     0 => 'MongoDB\\BSON\\ObjectId|null',
-  ),
-  'mongodb\\driver\\monitoring\\logsubscriber::log' => 
-  array (
-    0 => 'void',
-    'level' => 'int',
-    'domain' => 'string',
-    'message' => 'string',
   ),
   'mongodb\\driver\\monitoring\\removesubscriber' => 
   array (
@@ -39194,13 +39077,9 @@ return array (
     0 => 'int<0, 255>',
     'character' => 'string',
   ),
-  'outeriterator::current' => 
-  array (
-    0 => 'mixed',
-  ),
   'outeriterator::getinneriterator' => 
   array (
-    0 => 'Iterator',
+    0 => 'Iterator|null',
   ),
   'outeriterator::key' => 
   array (
@@ -46730,10 +46609,6 @@ return array (
   array (
     0 => 'void',
   ),
-  'recursiveiterator::current' => 
-  array (
-    0 => 'mixed',
-  ),
   'recursiveiterator::getchildren' => 
   array (
     0 => 'RecursiveIterator|null',
@@ -48368,10 +48243,6 @@ return array (
   'reflector::__tostring' => 
   array (
     0 => 'string',
-  ),
-  'reflector::export' => 
-  array (
-    0 => 'null|string',
   ),
   'regexiterator::__construct' => 
   array (
@@ -50343,10 +50214,6 @@ return array (
   array (
     0 => 'void',
   ),
-  'seekableiterator::current' => 
-  array (
-    0 => 'mixed',
-  ),
   'seekableiterator::key' => 
   array (
     0 => 'int|string',
@@ -50362,7 +50229,7 @@ return array (
   'seekableiterator::seek' => 
   array (
     0 => 'void',
-    'position' => 'int',
+    'offset' => 'int',
   ),
   'seekableiterator::valid' => 
   array (
@@ -50403,7 +50270,7 @@ return array (
   'serializable::unserialize' => 
   array (
     0 => 'void',
-    'serialized' => 'string',
+    'data' => 'string',
   ),
   'serialize' => 
   array (

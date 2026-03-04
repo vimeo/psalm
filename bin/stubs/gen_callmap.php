@@ -9,7 +9,9 @@ use Psalm\Internal\Provider\Providers;
 use Psalm\Tests\TestConfig;
 use Webmozart\Assert\Assert;
 
-require 'vendor/autoload.php';
+ini_set('memory_limit', '1024M');
+
+require __DIR__ . '/../../vendor/autoload.php';
 require __DIR__ . '/gen_callmap_utils.php';
 
 BypassFinals::enable();
