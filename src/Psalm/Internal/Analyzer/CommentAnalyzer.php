@@ -208,6 +208,102 @@ final class CommentAnalyzer
             }
         }
 
+        if (isset($parsed_docblock->tags['psalm-scope-this'])) {
+            foreach ($parsed_docblock->tags['psalm-scope-this'] as $offset => $var_line) {
+                $var_line = trim($var_line);
+
+                if (!$var_line) {
+                    continue;
+                }
+
+                $type_start = null;
+                $type_end = null;
+
+                $line_parts = self::splitDocLine($var_line);
+
+                $line_number = $comment->getStartLine() + substr_count(
+                    $comment_text,
+                    "\n",
+                    0,
+                    $offset - $comment->getStartFilePos(),
+                );
+                $description = $parsed_docblock->description;
+
+                if ($line_parts[0]) {
+                    $type_start = $offset;
+                    $type_end = $type_start + strlen($line_parts[0]);
+
+                    $line_parts[0] = self::sanitizeDocblockType($line_parts[0]);
+
+                    if ($line_parts[0] === ''
+                        || $line_parts[0][0] === '$'
+                    ) {
+                        throw new IncorrectDocblockException('Misplaced variable');
+                    }
+
+                    try {
+                        $var_type_tokens = TypeTokenizer::getFullyQualifiedTokens(
+                            $line_parts[0],
+                            $aliases,
+                            $template_type_map,
+                            $type_aliases,
+                        );
+                    } catch (TypeParseTreeException) {
+                        throw new DocblockParseException($line_parts[0] . ' is not a valid type');
+                    }
+
+                    $original_type = $line_parts[0];
+
+                    $var_line_number = $line_number;
+
+                    if (count($line_parts) > 1) {
+                        if ($line_parts[1][0] === '$') {
+                            $description = trim(substr($var_line, strlen($line_parts[0]) + strlen($line_parts[1]) + 2));
+                        } else {
+                            $description = trim(substr($var_line, strlen($line_parts[0]) + 1));
+                        }
+                        $description = (string) preg_replace('/\\n \\*\\s+/um', ' ', $description);
+                    }
+                }
+
+                if (!$var_type_tokens || !$original_type) {
+                    continue;
+                }
+
+                try {
+                    $defined_type = TypeParser::parseTokens(
+                        $var_type_tokens,
+                        null,
+                        $template_type_map ?: [],
+                        $type_aliases ?: [],
+                        true,
+                    );
+                } catch (TypeParseTreeException $e) {
+                    throw new DocblockParseException(
+                        $line_parts[0] .
+                        ' is not a valid type' .
+                        ' ('.$e->getMessage().' in ' .
+                        $source->getFilePath() .
+                        ':' .
+                        $comment->getStartLine() .
+                        ')',
+                    );
+                }
+
+                $var_comment = new VarDocblockComment();
+                $var_comment->type = $defined_type;
+                $var_comment->var_id = '$this';
+                $var_comment->line_number = $var_line_number;
+                $var_comment->type_start = $type_start;
+                $var_comment->type_end = $type_end;
+                $var_comment->description = $description;
+
+                self::decorateVarDocblockComment($var_comment, $parsed_docblock);
+
+                $var_comments[] = $var_comment;
+            }
+        }
+
         if (!$var_comments
             && (isset($parsed_docblock->tags['deprecated'])
                 || isset($parsed_docblock->tags['internal'])
