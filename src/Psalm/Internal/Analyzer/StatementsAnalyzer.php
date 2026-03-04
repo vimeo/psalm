@@ -504,6 +504,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                         $context->self = $scope_fqcn;
                         $context->vars_in_scope['$this'] = $this_type;
                         $statements_analyzer->setFQCLN($scope_fqcn);
+                        $context->is_global = false;
                     }
                 }
             }
@@ -855,6 +856,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                 $context->self = $scope_fqcn;
                 $context->vars_in_scope['$this'] = $this_type;
                 $this->setFQCLN($scope_fqcn);
+                $context->is_global = false;
             }
         }
     }
