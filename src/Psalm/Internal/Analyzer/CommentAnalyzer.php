@@ -92,9 +92,6 @@ final class CommentAnalyzer
     ): array {
         $var_id = null;
 
-        $var_type_tokens = null;
-        $original_type = null;
-
         $var_comments = [];
 
         $comment_text = $comment->getText();
@@ -112,6 +109,9 @@ final class CommentAnalyzer
 
         if ($var_tags !== []) {
             foreach ($var_tags as $offset => $var_line) {
+                $var_type_tokens = null;
+                $original_type = null;
+
                 $var_line = trim($var_line);
 
                 if (!$var_line) {
@@ -170,7 +170,7 @@ final class CommentAnalyzer
                     }
                 }
 
-                if (!$var_type_tokens || !$original_type) {
+                if (!$var_type_tokens || $original_type === null) {
                     continue;
                 }
 
@@ -210,6 +210,9 @@ final class CommentAnalyzer
 
         if (isset($parsed_docblock->tags['psalm-scope-this'])) {
             foreach ($parsed_docblock->tags['psalm-scope-this'] as $offset => $var_line) {
+                $var_type_tokens = null;
+                $original_type = null;
+
                 $var_line = trim($var_line);
 
                 if (!$var_line) {
@@ -266,7 +269,7 @@ final class CommentAnalyzer
                     }
                 }
 
-                if (!$var_type_tokens || !$original_type) {
+                if (!$var_type_tokens || $original_type === null) {
                     continue;
                 }
 
@@ -274,8 +277,8 @@ final class CommentAnalyzer
                     $defined_type = TypeParser::parseTokens(
                         $var_type_tokens,
                         null,
-                        $template_type_map ?: [],
-                        $type_aliases ?: [],
+                        $template_type_map ?? [],
+                        $type_aliases ?? [],
                         true,
                     );
                 } catch (TypeParseTreeException $e) {
