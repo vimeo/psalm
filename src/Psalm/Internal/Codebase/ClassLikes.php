@@ -1055,7 +1055,7 @@ final class ClassLikes
 
         IssueBuffer::maybeAdd(
             new MissingImmutableAnnotation(
-                $msg ?? ($storage->name . ' must be marked '.Mutations::TO_ATTRIBUTE_CLASS[
+                $msg ?? ($storage->name . ' must be marked '.Mutations::TO_ATTRIBUTE_CLASSLIKE[
                     $allowed_mutations
                 ].' to aid security analysis,'
                     .' run with --alter --issues=MissingImmutableAnnotation to fix this'),
