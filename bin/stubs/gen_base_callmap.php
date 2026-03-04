@@ -81,6 +81,7 @@ function paramsToEntries(ReflectionFunctionAbstract $reflectionFunction, string 
 }
 
 // TEMP: not recommended, install the extension in the Dockerfile, instead
+$temp_files = [];
 foreach ([
     'couchbase/couchbase.php',
     'ibm_db2/ibm_db2.php',
@@ -93,7 +94,8 @@ foreach ([
         $stub = str_replace(['?', '<php'], ['', '<?php'], $stub);
         $stub = str_replace(['public const', 'protected const', 'private const'], 'const', $stub);
     }
-    $temp_path = __DIR__ . '/temp-' . crc32($stub_path) . '.php';
+    $temp_path = __DIR__ . '/temp-' . crc32($stub_path) . '-' . PHP_MAJOR_VERSION . '-' . PHP_MINOR_VERSION . '.php';
+    $temp_files[] = $temp_path;
     file_put_contents($temp_path, $stub);
     require $temp_path;
 }
@@ -136,3 +138,5 @@ return '.var_export($callmap, true).';';
 $f = __DIR__.'/../../dictionaries/autogen/CallMap_'.PHP_MAJOR_VERSION.PHP_MINOR_VERSION.'.php';
 
 file_put_contents($f, $payload);
+
+array_map('unlink', $temp_files);
