@@ -35,6 +35,13 @@ Some issue types allow the use of `referencedMethod`, `referencedClass` or `refe
       <file name="some_bad_file.php" />  <!-- all InvalidReturnType issues in this file are suppressed -->
     </errorLevel>
   </InvalidReturnType>
+  <InvalidGlobal>
+    <errorLevel type="suppress" allowMissingFiles="true">
+      <directory name="**/emails/" />
+      <directory name="**/views/" />
+      <directory name="**/templates/" />
+    </errorLevel>
+  </InvalidGlobal>
   <UndefinedMethod>
     <errorLevel type="suppress">
       <referencedMethod name="Bar\Bat::bar" /> <!-- not supported for all types of errors -->
