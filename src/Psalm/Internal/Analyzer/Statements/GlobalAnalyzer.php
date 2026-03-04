@@ -29,7 +29,7 @@ final class GlobalAnalyzer
         Context $context,
         ?Context $global_context,
     ): void {
-        if (!$context->collect_initializations && !$global_context) {
+        if (!$context->collect_initializations && !$global_context && $context->self !== null) {
             IssueBuffer::maybeAdd(
                 new InvalidGlobal(
                     'Cannot use global scope here (unless this file is included from a non-global scope)',
