@@ -88,22 +88,6 @@ final class CodeUseGraph extends DataFlowGraph
         return $node;
     }
 
-    /*
-    public function getNodeForFile(
-        string $file_path,
-    ): DataFlowNode {
-        $file_path = 'file '.$file_path;
-        if (array_key_exists($file_path, $this->nodes)) {
-            return $this->nodes[$file_path];
-        }
-        $this->nodes[$file_path] = $node = DataFlowNode::make(
-            $file_path,
-            $file_path,
-            null,
-        );
-        return $node;
-    }*/
-    
     /**
      * @psalm-external-mutation-free
      */
@@ -200,6 +184,19 @@ final class CodeUseGraph extends DataFlowGraph
         }
 
         return $this->isCodeUsed($this->nodes[$func]);
+    }
+    /**
+     * @param lowercase-string $class_id
+     * @param lowercase-string $property_name
+     */
+    public function isPropertyUsed(string $class_id, string $property_name): bool
+    {
+        $id = 'property '.$class_id.'::'.$property_name;
+        if (!array_key_exists($id, $this->nodes)) {
+            return false;
+        }
+
+        return $this->isCodeUsed($this->nodes[$id]);
     }
     /**
      * @param lowercase-string $class_id
