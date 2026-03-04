@@ -29,6 +29,7 @@ use UnexpectedValueException;
 
 use function count;
 use function is_string;
+use function ksort;
 use function preg_match;
 use function preg_replace;
 use function preg_split;
@@ -59,6 +60,7 @@ final class CommentAnalyzer
         Aliases $aliases,
         ?array $template_type_map = null,
         ?array $type_aliases = null,
+        bool $allow_global_tag = false,
     ): array {
         $parsed_docblock = DocComment::parsePreservingLength($comment);
 
@@ -69,6 +71,7 @@ final class CommentAnalyzer
             $aliases,
             $template_type_map,
             $type_aliases,
+            $allow_global_tag,
         );
     }
 
@@ -85,6 +88,7 @@ final class CommentAnalyzer
         Aliases $aliases,
         ?array $template_type_map = null,
         ?array $type_aliases = null,
+        bool $allow_global_tag = false,
     ): array {
         $var_id = null;
 
@@ -96,9 +100,18 @@ final class CommentAnalyzer
         $comment_text = $comment->getText();
 
         $var_line_number = $comment->getStartLine();
-
+        $var_tags = [];
         if (isset($parsed_docblock->combined_tags['var'])) {
-            foreach ($parsed_docblock->combined_tags['var'] as $offset => $var_line) {
+            $var_tags = $parsed_docblock->combined_tags['var'];
+        }
+
+        if ($allow_global_tag && isset($parsed_docblock->tags['global'])) {
+            $var_tags = $var_tags + $parsed_docblock->tags['global'];
+            ksort($var_tags);
+        }
+
+        if ($var_tags !== []) {
+            foreach ($var_tags as $offset => $var_line) {
                 $var_line = trim($var_line);
 
                 if (!$var_line) {
@@ -421,6 +434,7 @@ final class CommentAnalyzer
         PhpParser\Comment\Doc $doc_comment,
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Variable $var,
+        bool $allow_global_tag = false,
     ): array {
         $codebase = $statements_analyzer->getCodebase();
         $parsed_docblock = $statements_analyzer->getParsedDocblock();
@@ -445,6 +459,7 @@ final class CommentAnalyzer
                     $statements_analyzer->getSource()->getAliases(),
                     $statements_analyzer->getSource()->getTemplateTypeMap(),
                     $file_storage->type_aliases,
+                    $allow_global_tag,
                 );
         } catch (IncorrectDocblockException $e) {
             IssueBuffer::maybeAdd(
