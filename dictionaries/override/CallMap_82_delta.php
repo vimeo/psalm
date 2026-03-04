@@ -3,15 +3,6 @@
 return array (
   'added' => 
   array (
-    'datetimeinterface::__serialize' => 
-    array (
-      0 => 'array<array-key, mixed>',
-    ),
-    'datetimeinterface::__unserialize' => 
-    array (
-      0 => 'void',
-      'data' => 'array<array-key, mixed>',
-    ),
     'imap_is_open' => 
     array (
       0 => 'bool',
