@@ -81,6 +81,9 @@ function paramsToEntries(ReflectionFunctionAbstract $reflectionFunction, string 
 }
 
 // TEMP: not recommended, install the extension in the Dockerfile, instead
+// ignore E_DEPRECATED errors for these
+$previous = error_reporting();
+error_reporting($previous & ~E_DEPRECATED & ~E_USER_DEPRECATED);
 $temp_files = [];
 foreach ([
     'couchbase/couchbase.php',
@@ -99,6 +102,7 @@ foreach ([
     file_put_contents($temp_path, $stub);
     require $temp_path;
 }
+error_reporting($previous);
 
 foreach (get_defined_functions() as $sub) {
     foreach ($sub as $name) {
