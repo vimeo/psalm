@@ -7,4 +7,4 @@ RUN chmod +x /usr/local/bin/install-php-extensions
 RUN install-php-extensions memcached grpc soap swoole zookeeper
 RUN install-php-extensions amqp apcu zmq ds event ev redis mongodb imagick pcntl uv-beta ffi pgsql intl gmp mbstring pdo_mysql xml dom iconv zip igbinary gd bcmath
 
-RUN echo 'zend_extension=opcache' > /usr/local/etc/php/php.ini
+RUN php -m | grep -q opcache || echo 'zend_extension=opcache' > /usr/local/etc/php/php.ini
