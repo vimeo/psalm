@@ -286,7 +286,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             if (!$check_classes) {
                 return null;
             }
-            if (!$options->allow_trait || !$codebase->classlikes->traitExists($fq_class_name, $context, !$options->inferred ? $code_location : null)) {
+            if (!$options->allow_trait || !$codebase->classlikes->traitExists($fq_class_name, !$options->inferred ? $code_location : null, $context)) {
                 if ($options->from_docblock) {
                     if (IssueBuffer::accepts(
                         new UndefinedDocblockClass(
