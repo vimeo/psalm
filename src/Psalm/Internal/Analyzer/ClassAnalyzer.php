@@ -1412,7 +1412,11 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 $aliases,
             );
 
-            if (!$codebase->classlikes->hasFullyQualifiedTraitName($fq_trait_name, $class_context)) {
+            if (!$codebase->classlikes->hasFullyQualifiedTraitName(
+                $fq_trait_name,
+                $class_context,
+                $trait_location,
+            )) {
                 IssueBuffer::maybeAdd(
                     new UndefinedTrait(
                         'Trait ' . $fq_trait_name . ' does not exist',

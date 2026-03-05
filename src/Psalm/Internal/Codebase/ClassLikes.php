@@ -450,7 +450,11 @@ final class ClassLikes
     /**
      * @psalm-external-mutation-free
      */
-    public function hasFullyQualifiedTraitName(string $fq_class_name, Context $context): bool
+    public function hasFullyQualifiedTraitName(
+        string $fq_class_name,
+        Context $context,
+        ?CodeLocation $location = null,
+    ): bool
     {
         $fq_class_name_lc = strtolower($this->getUnAliasedName($fq_class_name));
 
@@ -463,6 +467,7 @@ final class ClassLikes
         ProjectAnalyzer::getInstance()->getCodebase()->addReferenceToClass(
             $fq_class_name_lc,
             $context,
+            $location,
         );
 
         return true;

@@ -346,6 +346,7 @@ final class Codebase
     public function addReferenceToClass(
         string $fq_class_name_lc,
         ?Context $context = null,
+        ?CodeLocation $location = null,
     ): void {
         if ($this->code_use_graph === null) {
             return;
@@ -355,6 +356,7 @@ final class Codebase
         $this->code_use_graph->addReferenceToNode(
             $class,
             $context,
+            $location,
         );
     }
 

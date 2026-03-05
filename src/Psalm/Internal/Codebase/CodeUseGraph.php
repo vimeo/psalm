@@ -6,6 +6,7 @@ namespace Psalm\Internal\Codebase;
 
 use LogicException;
 use Override;
+use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\DataFlow\Path;
@@ -37,6 +38,7 @@ final class CodeUseGraph extends DataFlowGraph
      */
     public function getNodeForClass(
         string $class_id,
+        ?CodeLocation $location = null,
     ): DataFlowNode {
         $id = 'class '.$class_id;
         if (array_key_exists($id, $this->nodes)) {
@@ -45,7 +47,7 @@ final class CodeUseGraph extends DataFlowGraph
         $this->nodes[$id] = $node = DataFlowNode::make(
             $id,
             $id,
-            null,
+            $location,
         );
         return $node;
     }
@@ -58,6 +60,7 @@ final class CodeUseGraph extends DataFlowGraph
     public function getNodeForProperty(
         string $class_id,
         string $property_name,
+        ?CodeLocation $location = null,
     ): DataFlowNode {
         $id = 'property '.$class_id.'::'.$property_name;
         if (array_key_exists($id, $this->nodes)) {
@@ -66,7 +69,7 @@ final class CodeUseGraph extends DataFlowGraph
         $this->nodes[$id] = $node = DataFlowNode::make(
             $id,
             $id,
-            null,
+            $location,
         );
         return $node;
     }
@@ -77,47 +80,33 @@ final class CodeUseGraph extends DataFlowGraph
      */
     public function getNodeForFunctionLike(
         string $func,
+        ?CodeLocation $location = null,
     ): DataFlowNode {
-        if (array_key_exists($func, $this->nodes)) {
-            return $this->nodes[$func];
+        $key = 'func '.$func;
+        if (array_key_exists($key, $this->nodes)) {
+            return $this->nodes[$key];
         }
-        $this->nodes[$func] = $node = DataFlowNode::make(
-            $func,
-            $func,
-            null,
+        $this->nodes[$key] = $node = DataFlowNode::make(
+            $key,
+            $key,
+            $location,
         );
         return $node;
     }
-
-    /**
-     * @psalm-external-mutation-free
-     */
-    public function getForPsalmApi(): DataFlowNode
-    {
-        if (array_key_exists('psalm-api', $this->nodes)) {
-            return $this->nodes['psalm-api'];
-        }
-        $this->nodes['psalm-api'] = $node = DataFlowNode::make(
-            'psalm-api',
-            'psalm-api',
-            null,
-        );
-        return $node;
-    }
-
     
     /**
      * @psalm-external-mutation-free
      */
-    public function getForGenericUse(): DataFlowNode
+    public function getForGenericUse(?CodeLocation $location = null): DataFlowNode
     {
-        if (array_key_exists('generic-use', $this->nodes)) {
-            return $this->nodes['generic-use'];
+        $k = $location ? $location->file_path : 'generic-use';
+        if (array_key_exists($k, $this->nodes)) {
+            return $this->nodes[$k];
         }
-        $this->nodes['generic-use'] = $node = DataFlowNode::make(
-            'generic-use',
-            'generic-use',
-            null,
+        $this->nodes[$k] = $node = DataFlowNode::make(
+            $k,
+            $k,
+            $location,
         );
         return $node;
     }
@@ -125,15 +114,16 @@ final class CodeUseGraph extends DataFlowGraph
     public function addReferenceToNode(
         DataFlowNode $node,
         Context $context,
+        ?CodeLocation $location = null,
     ): void {
         if ($context->calling_method_id !== null) {
-            $caller = $this->getNodeForFunctionLike($context->calling_method_id);
+            $caller = $this->getNodeForFunctionLike($context->calling_method_id, $location);
         } elseif ($context->calling_function_id !== null) {
-            $caller = $this->getNodeForFunctionLike($context->calling_function_id);
+            $caller = $this->getNodeForFunctionLike($context->calling_function_id, $location);
         } else {
             // Source is not a method or function, so we assume it's a file-level use,
             // so used
-            $caller = $this->getForGenericUse();
+            $caller = $this->getForGenericUse($location);
         }
 
         $this->addPath(
