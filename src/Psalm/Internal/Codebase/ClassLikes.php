@@ -672,9 +672,9 @@ final class ClassLikes
     /**
      * @psalm-external-mutation-free
      */
-    public function traitExists(string $fq_trait_name, Context $context): bool
+    public function traitExists(string $fq_trait_name, ?CodeLocation $location = null, ?Context $context = null): bool
     {
-        return $this->hasFullyQualifiedTraitName($fq_trait_name, null, $context);
+        return $this->hasFullyQualifiedTraitName($fq_trait_name, $location, $context);
     }
 
     /**
