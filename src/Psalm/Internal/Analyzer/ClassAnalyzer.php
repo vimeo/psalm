@@ -1414,8 +1414,8 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
 
             if (!$codebase->classlikes->hasFullyQualifiedTraitName(
                 $fq_trait_name,
-                $class_context,
                 $trait_location,
+                $class_context,
             )) {
                 IssueBuffer::maybeAdd(
                     new UndefinedTrait(
@@ -1989,7 +1989,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             foreach ($overridden_method_ids as $interface_method_id) {
                 $interface_class = $interface_method_id->fq_class_name;
 
-                if (!$codebase->classlikes->interfaceExists($interface_class, $context)) {
+                if (!$codebase->classlikes->interfaceExists($interface_class, null, $context)) {
                     continue;
                 }
 
@@ -2066,7 +2066,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             $codebase->analyzer->addNodeReference(
                 $this->getFilePath(),
                 $interface_name,
-                $codebase->classlikes->interfaceExists($fq_interface_name, $class_context)
+                $codebase->classlikes->interfaceExists($fq_interface_name, null, $class_context)
                     ? $fq_interface_name
                     : '*'
                         . ($interface_name instanceof PhpParser\Node\Name\FullyQualified
@@ -2491,7 +2491,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 $codebase->analyzer->addNodeReference(
                     $this->getFilePath(),
                     $extended_class,
-                    $codebase->classlikes->classExists($parent_fq_class_name, $class_context)
+                    $codebase->classlikes->classExists($parent_fq_class_name, null, $class_context)
                         ? $parent_fq_class_name
                         : '*'
                             . ($extended_class instanceof PhpParser\Node\Name\FullyQualified

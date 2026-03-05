@@ -269,14 +269,14 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
 
         $interface_exists = $codebase->classlikes->interfaceExists(
             $fq_class_name,
-            $context,
             !$options->inferred ? $code_location : null,
+            $context,
         );
 
         $enum_exists = $codebase->classlikes->enumExists(
             $fq_class_name,
-            $context,
             !$options->inferred ? $code_location : null,
+            $context,
         );
 
         if (!$class_exists

@@ -968,7 +968,7 @@ final class ForeachAnalyzer
                 return;
             }
 
-            if (!$codebase->classlikes->classOrInterfaceExists($iterator_atomic_type->value, $context)) {
+            if (!$codebase->classlikes->classOrInterfaceExists($iterator_atomic_type->value, null, $context)) {
                 return;
             }
         }

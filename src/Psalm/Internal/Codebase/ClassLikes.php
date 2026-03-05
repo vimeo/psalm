@@ -333,8 +333,8 @@ final class ClassLikes
      */
     public function hasFullyQualifiedClassName(
         string $fq_class_name,
-        ?Context $context = null,
         ?CodeLocation $location = null,
+        ?Context $context = null,
     ): bool {
         $fq_class_name_lc = strtolower($this->getUnAliasedName($fq_class_name));
 
@@ -363,8 +363,8 @@ final class ClassLikes
 
         ProjectAnalyzer::getInstance()->getCodebase()->addReferenceToClass(
             $fq_class_name_lc,
-            $context,
             $location,
+            $context,
         );
 
         return true;
@@ -375,8 +375,8 @@ final class ClassLikes
      */
     public function hasFullyQualifiedInterfaceName(
         string $fq_class_name,
-        ?Context $context = null,
         ?CodeLocation $location = null,
+        ?Context $context = null,
     ): bool {
         $fq_class_name_lc = strtolower($this->getUnAliasedName($fq_class_name));
 
@@ -405,8 +405,8 @@ final class ClassLikes
 
         ProjectAnalyzer::getInstance()->getCodebase()->addReferenceToClass(
             $fq_class_name_lc,
-            $context,
             $location,
+            $context,
         );
 
         return true;
@@ -417,8 +417,8 @@ final class ClassLikes
      */
     public function hasFullyQualifiedEnumName(
         string $fq_class_name,
-        ?Context $context = null,
         ?CodeLocation $location = null,
+        ?Context $context = null,
     ): bool {
         $fq_class_name_lc = strtolower($this->getUnAliasedName($fq_class_name));
 
@@ -447,8 +447,8 @@ final class ClassLikes
 
         ProjectAnalyzer::getInstance()->getCodebase()->addReferenceToClass(
             $fq_class_name_lc,
-            $context,
             $location,
+            $context,
         );
 
         return true;
@@ -459,8 +459,8 @@ final class ClassLikes
      */
     public function hasFullyQualifiedTraitName(
         string $fq_class_name,
-        Context $context,
         ?CodeLocation $location = null,
+        ?Context $context = null,
     ): bool
     {
         $fq_class_name_lc = strtolower($this->getUnAliasedName($fq_class_name));
@@ -473,8 +473,8 @@ final class ClassLikes
 
         ProjectAnalyzer::getInstance()->getCodebase()->addReferenceToClass(
             $fq_class_name_lc,
-            $context,
             $location,
+            $context,
         );
 
         return true;
@@ -487,11 +487,11 @@ final class ClassLikes
      */
     public function classOrInterfaceExists(
         string $fq_class_name,
-        ?Context $context = null,
         ?CodeLocation $location = null,
+        ?Context $context = null,
     ): bool {
-        return $this->classExists($fq_class_name, $context, $location)
-            || $this->interfaceExists($fq_class_name, $context, $location);
+        return $this->classExists($fq_class_name, $location, $context)
+            || $this->interfaceExists($fq_class_name, $location, $context);
     }
 
     /**
@@ -501,12 +501,12 @@ final class ClassLikes
      */
     public function classOrInterfaceOrEnumExists(
         string $fq_class_name,
-        ?Context $context = null,
         ?CodeLocation $location = null,
+        ?Context $context = null,
     ): bool {
-        return $this->classExists($fq_class_name, $context, $location)
-            || $this->interfaceExists($fq_class_name, $context, $location)
-            || $this->enumExists($fq_class_name, $context, $location);
+        return $this->classExists($fq_class_name, $location, $context)
+            || $this->interfaceExists($fq_class_name, $location, $context)
+            || $this->enumExists($fq_class_name, $location, $context);
     }
 
     /**
@@ -516,8 +516,8 @@ final class ClassLikes
      */
     public function classExists(
         string $fq_class_name,
-        ?Context $context = null,
         ?CodeLocation $location = null,
+        ?Context $context = null,
     ): bool {
         if (isset(ClassLikeAnalyzer::SPECIAL_TYPES[$fq_class_name])) {
             return false;
@@ -529,8 +529,8 @@ final class ClassLikes
 
         return $this->hasFullyQualifiedClassName(
             $fq_class_name,
-            $context,
             $location,
+            $context,
         );
     }
 
@@ -617,8 +617,8 @@ final class ClassLikes
      */
     public function interfaceExists(
         string $fq_interface_name,
-        ?Context $context = null,
         ?CodeLocation $location = null,
+        ?Context $context = null,
     ): bool {
         if (isset(ClassLikeAnalyzer::SPECIAL_TYPES[strtolower($fq_interface_name)])) {
             return false;
@@ -626,8 +626,8 @@ final class ClassLikes
 
         return $this->hasFullyQualifiedInterfaceName(
             $fq_interface_name,
-            $context,
             $location,
+            $context,
         );
     }
 
@@ -636,8 +636,8 @@ final class ClassLikes
      */
     public function enumExists(
         string $fq_enum_name,
-        ?Context $context = null,
         ?CodeLocation $location = null,
+        ?Context $context = null,
     ): bool {
         if (isset(ClassLikeAnalyzer::SPECIAL_TYPES[strtolower($fq_enum_name)])) {
             return false;
@@ -645,8 +645,8 @@ final class ClassLikes
 
         return $this->hasFullyQualifiedEnumName(
             $fq_enum_name,
-            $context,
             $location,
+            $context,
         );
     }
 
@@ -674,7 +674,7 @@ final class ClassLikes
      */
     public function traitExists(string $fq_trait_name, Context $context): bool
     {
-        return $this->hasFullyQualifiedTraitName($fq_trait_name, $context);
+        return $this->hasFullyQualifiedTraitName($fq_trait_name, null, $context);
     }
 
     /**
