@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use Override;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
+use Psalm\Context;
 use Psalm\Internal\TypeVisitor\CanContainObjectTypeVisitor;
 use Psalm\Internal\TypeVisitor\ClasslikeReplacer;
 use Psalm\Internal\TypeVisitor\ContainsClassLikeVisitor;
@@ -1349,7 +1350,7 @@ trait UnionTrait
         bool $inferred = true,
         bool $inherited = false,
         bool $prevent_template_covariance = false,
-        ?string $calling_method_id = null,
+        ?Context $context = null,
     ): bool {
         if ($this->checked) {
             return true;
@@ -1363,7 +1364,7 @@ trait UnionTrait
             $inferred,
             $inherited,
             $prevent_template_covariance,
-            $calling_method_id,
+            $context,
         );
 
         $checker->traverseArray($this->types);

@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use Override;
 use Psalm\CodeLocation;
 use Psalm\CodeLocation\DocblockTypeLocation;
+use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
@@ -66,7 +67,7 @@ final class TypeChecker extends TypeVisitor
         private readonly bool $inferred = true,
         private readonly bool $inherited = false,
         private bool $prevent_template_covariance = false,
-        private readonly ?string $calling_method_id = null,
+        private readonly ?Context $context = null,
     ) {
     }
 
@@ -122,11 +123,11 @@ final class TypeChecker extends TypeVisitor
             );
         }
 
-        if ($this->calling_method_id
+        if ($this->context?->calling_method_id
             && $atomic->text !== null
         ) {
             $codebase->file_reference_provider->addMethodReferenceToClassMember(
-                $this->calling_method_id,
+                $this->context->calling_method_id,
                 'use:' . $atomic->text . ':' . md5($this->source->getFilePath()),
                 false,
             );
@@ -137,8 +138,7 @@ final class TypeChecker extends TypeVisitor
                 $this->source,
                 $atomic->value,
                 $this->code_location,
-                $this->source->getFQCLN(),
-                $this->calling_method_id,
+                $this->context,
                 $this->suppressed_issues,
                 new ClassLikeNameOptions($this->inferred, false, true, true, $atomic->from_docblock),
             ) === false
@@ -286,7 +286,7 @@ final class TypeChecker extends TypeVisitor
             $this->source,
             $fq_classlike_name,
             $this->code_location,
-            null,
+            $this->context,
             $this->suppressed_issues,
             new ClassLikeNameOptions($this->inferred, false, true, true, $atomic->from_docblock),
         ) === false

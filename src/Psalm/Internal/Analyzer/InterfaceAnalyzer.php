@@ -70,6 +70,7 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
 
                 if (!$codebase->classOrInterfaceExists(
                     $extended_interface_name,
+                    null,
                     $parent_reference_location,
                 )) {
                     // we should not normally get here
@@ -183,7 +184,7 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
                         $fq_interface_name,
                         $actual_method_id,
                         $actual_method_id,
-                        false,
+                        null,
                     );
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Property) {

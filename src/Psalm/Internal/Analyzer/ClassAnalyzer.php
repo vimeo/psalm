@@ -1922,9 +1922,9 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         string $fq_classlike_name,
         MethodIdentifier $analyzed_method_id,
         MethodIdentifier $actual_method_id,
-        Context $context,
+        ?Context $context,
     ): void {
-        $did_explicitly_return = $context->has_returned;
+        $did_explicitly_return = (bool) $context?->has_returned;
         $secondary_return_type_location = null;
 
         $actual_method_storage = $codebase->methods->getStorage($actual_method_id);
