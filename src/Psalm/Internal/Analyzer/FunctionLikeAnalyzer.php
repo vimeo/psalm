@@ -2203,7 +2203,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $closure_type = new TClosure(
                 $storage->params,
                 $closure_return_type,
-                $storage instanceof FunctionStorage
+                $storage instanceof FunctionLikeStorage
                     ? $storage->allowed_mutations
                     : Mutations::LEVEL_ALL,
                 $storage instanceof FunctionStorage ? $storage->byref_uses : [],
