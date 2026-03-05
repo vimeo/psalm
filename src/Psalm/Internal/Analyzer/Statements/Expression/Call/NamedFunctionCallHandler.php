@@ -119,7 +119,7 @@ final class NamedFunctionCallHandler
         if ($function_id === 'class_exists') {
             if ($first_arg) {
                 if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {
-                    if (!$codebase->classlikes->classExists($first_arg->value->value, $context)) {
+                    if (!$codebase->classlikes->classExists($first_arg->value->value, null, $context)) {
                         $context->phantom_classes[strtolower($first_arg->value->value)] = true;
                     }
                 } elseif ($first_arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
@@ -129,7 +129,7 @@ final class NamedFunctionCallHandler
                 ) {
                     $resolved_name = (string) $first_arg->value->class->getAttribute('resolvedName');
 
-                    if (!$codebase->classlikes->classExists($resolved_name, $context)) {
+                    if (!$codebase->classlikes->classExists($resolved_name, null, $context)) {
                         $context->phantom_classes[strtolower($resolved_name)] = true;
                     }
                 }
