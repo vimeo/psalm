@@ -34,16 +34,13 @@ final class TFalse extends TBool
         array $aliased_classes,
         ?string $this_class,
         int $analysis_php_version_id
-    ): ?string {
+    ): string {
         if ($analysis_php_version_id >= 8_02_00) {
             return $this->getKey();
         }
 
-        if ($analysis_php_version_id >= 7_00_00) {
-            return 'bool';
-        }
-
-        return null;
+        // from >= 7_00_00
+        return 'bool';
     }
 
 	#[Override]
