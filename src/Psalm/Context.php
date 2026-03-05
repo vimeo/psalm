@@ -291,6 +291,9 @@ final class Context
 
     public bool $strict_types = false;
 
+    /**
+     * @var lowercase-string|null
+     */
     public ?string $calling_function_id = null;
 
     /**
