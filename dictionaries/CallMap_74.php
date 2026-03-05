@@ -100897,7 +100897,7 @@ return array (
   array (
     0 => 'mixed',
     'variable_representation' => 'string',
-    'allowed_classes=' => 'array{allowed_classes?: array<array-key, class-string>|bool}',
+    'allowed_classes=' => 'array{allowed_classes?: array<array-key, class-string>|bool, max_depth?: int}',
   ),
   'unset' => 
   array (
