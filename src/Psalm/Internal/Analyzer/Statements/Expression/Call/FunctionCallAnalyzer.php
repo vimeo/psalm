@@ -789,7 +789,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 } elseif ($var_type_part instanceof TNull) {
                     // handled above
                 } elseif (!$var_type_part instanceof TNamedObject
-                    || !$codebase->classlikes->classOrInterfaceExists($var_type_part->value)
+                    || !$codebase->classlikes->classOrInterfaceExists($var_type_part->value, $context)
                     || !$codebase->methods->methodExists(
                         new MethodIdentifier(
                             $var_type_part->value,

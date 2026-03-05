@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Codebase;
 
+use LogicException;
 use Override;
-use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\DataFlow\Path;
 
 use function abs;
+use function array_key_exists;
 use function count;
 
 /**
@@ -27,7 +28,7 @@ final class CodeUseGraph extends DataFlowGraph
     #[Override]
     public function addNode(DataFlowNode $node): void
     {
-        throw new \LogicException('Use getNodeForClass or getNodeForFunctionLike instead');
+        throw new LogicException('Use getNodeForClass or getNodeForFunctionLike instead');
     }
 
     /**
@@ -131,7 +132,7 @@ final class CodeUseGraph extends DataFlowGraph
             $caller = $this->getNodeForFunctionLike($context->calling_function_id);
         } else {
             // Source is not a method or function, so we assume it's a file-level use,
-            // so used 
+            // so used
             $caller = $this->getForGenericUse();
         }
 

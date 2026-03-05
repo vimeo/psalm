@@ -1412,7 +1412,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 $aliases,
             );
 
-            if (!$codebase->classlikes->hasFullyQualifiedTraitName($fq_trait_name, $trait_location)) {
+            if (!$codebase->classlikes->hasFullyQualifiedTraitName($fq_trait_name, $class_context)) {
                 IssueBuffer::maybeAdd(
                     new UndefinedTrait(
                         'Trait ' . $fq_trait_name . ' does not exist',
@@ -1862,7 +1862,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 $class_context->self,
                 $analyzed_method_id,
                 $actual_method_id,
-                $method_context->has_returned,
+                $method_context,
             );
         }
 
@@ -1918,8 +1918,9 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         string $fq_classlike_name,
         MethodIdentifier $analyzed_method_id,
         MethodIdentifier $actual_method_id,
-        bool $did_explicitly_return,
+        Context $context,
     ): void {
+        $did_explicitly_return = $context->has_returned;
         $secondary_return_type_location = null;
 
         $actual_method_storage = $codebase->methods->getStorage($actual_method_id);
@@ -1984,7 +1985,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             foreach ($overridden_method_ids as $interface_method_id) {
                 $interface_class = $interface_method_id->fq_class_name;
 
-                if (!$codebase->classlikes->interfaceExists($interface_class)) {
+                if (!$codebase->classlikes->interfaceExists($interface_class, $context)) {
                     continue;
                 }
 
@@ -2061,7 +2062,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             $codebase->analyzer->addNodeReference(
                 $this->getFilePath(),
                 $interface_name,
-                $codebase->classlikes->interfaceExists($fq_interface_name)
+                $codebase->classlikes->interfaceExists($fq_interface_name, $class_context)
                     ? $fq_interface_name
                     : '*'
                         . ($interface_name instanceof PhpParser\Node\Name\FullyQualified
@@ -2488,7 +2489,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 $codebase->analyzer->addNodeReference(
                     $this->getFilePath(),
                     $extended_class,
-                    $codebase->classlikes->classExists($parent_fq_class_name)
+                    $codebase->classlikes->classExists($parent_fq_class_name, $class_context)
                         ? $parent_fq_class_name
                         : '*'
                             . ($extended_class instanceof PhpParser\Node\Name\FullyQualified

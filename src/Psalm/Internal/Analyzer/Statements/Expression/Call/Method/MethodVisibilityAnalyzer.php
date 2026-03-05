@@ -126,7 +126,7 @@ final class MethodVisibilityAnalyzer
         $overridden_method_ids = $codebase_methods->getOverriddenMethodIds($method_id);
         // Remove traits and interfaces
         while (($oldest_declaring_method_id = end($overridden_method_ids))
-            && !$codebase_classlikes->hasFullyQualifiedClassName($oldest_declaring_method_id->fq_class_name)
+            && !$codebase_classlikes->hasFullyQualifiedClassName($oldest_declaring_method_id->fq_class_name, $context)
         ) {
             array_pop($overridden_method_ids);
         }

@@ -73,7 +73,7 @@ final class AttributesAnalyzer
             $attribute_name = (string) $attribute->name;
             $attribute_name_location = new CodeLocation($source, $attribute->name);
 
-            $attribute_class_storage = $codebase->classlikes->classExists($fq_attribute_name)
+            $attribute_class_storage = $codebase->classlikes->classExists($fq_attribute_name, $context)
                 ? $codebase->classlike_storage_provider->get($fq_attribute_name)
                 : null;
 

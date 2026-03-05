@@ -119,7 +119,7 @@ final class NamedFunctionCallHandler
         if ($function_id === 'class_exists') {
             if ($first_arg) {
                 if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {
-                    if (!$codebase->classlikes->classExists($first_arg->value->value)) {
+                    if (!$codebase->classlikes->classExists($first_arg->value->value, $context)) {
                         $context->phantom_classes[strtolower($first_arg->value->value)] = true;
                     }
                 } elseif ($first_arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
@@ -129,7 +129,7 @@ final class NamedFunctionCallHandler
                 ) {
                     $resolved_name = (string) $first_arg->value->class->getAttribute('resolvedName');
 
-                    if (!$codebase->classlikes->classExists($resolved_name)) {
+                    if (!$codebase->classlikes->classExists($resolved_name, $context)) {
                         $context->phantom_classes[strtolower($resolved_name)] = true;
                     }
                 }
@@ -141,7 +141,7 @@ final class NamedFunctionCallHandler
         if ($function_id === 'interface_exists') {
             if ($first_arg) {
                 if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {
-                    if (!$codebase->classlikes->interfaceExists($first_arg->value->value)) {
+                    if (!$codebase->classlikes->interfaceExists($first_arg->value->value, $context)) {
                         $context->phantom_classes[strtolower($first_arg->value->value)] = true;
                     }
                 } elseif ($first_arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
@@ -151,7 +151,7 @@ final class NamedFunctionCallHandler
                 ) {
                     $resolved_name = (string) $first_arg->value->class->getAttribute('resolvedName');
 
-                    if (!$codebase->classlikes->interfaceExists($resolved_name)) {
+                    if (!$codebase->classlikes->interfaceExists($resolved_name, $context)) {
                         $context->phantom_classes[strtolower($resolved_name)] = true;
                     }
                 }
@@ -163,7 +163,7 @@ final class NamedFunctionCallHandler
         if ($function_id === 'enum_exists') {
             if ($first_arg) {
                 if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {
-                    if (!$codebase->classlikes->enumExists($first_arg->value->value)) {
+                    if (!$codebase->classlikes->enumExists($first_arg->value->value, $context)) {
                         $context->phantom_classes[strtolower($first_arg->value->value)] = true;
                     }
                 } elseif ($first_arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
@@ -173,7 +173,7 @@ final class NamedFunctionCallHandler
                 ) {
                     $resolved_name = (string) $first_arg->value->class->getAttribute('resolvedName');
 
-                    if (!$codebase->classlikes->enumExists($resolved_name)) {
+                    if (!$codebase->classlikes->enumExists($resolved_name, $context)) {
                         $context->phantom_classes[strtolower($resolved_name)] = true;
                     }
                 }
