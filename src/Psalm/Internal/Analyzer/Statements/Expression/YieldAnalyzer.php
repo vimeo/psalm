@@ -158,7 +158,7 @@ final class YieldAnalyzer
             if (!$expression_atomic_type instanceof TNamedObject) {
                 continue;
             }
-            if (!$codebase->classlikes->classOrInterfaceExists($expression_atomic_type->value, $context)) {
+            if (!$codebase->classlikes->classOrInterfaceExists($expression_atomic_type->value, null, $context)) {
                 continue;
             }
 
