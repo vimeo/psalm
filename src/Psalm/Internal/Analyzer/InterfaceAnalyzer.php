@@ -70,8 +70,8 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
 
                 if (!$codebase->classOrInterfaceExists(
                     $extended_interface_name,
-                    null,
                     $parent_reference_location,
+                    null,
                 )) {
                     // we should not normally get here
                     return;
