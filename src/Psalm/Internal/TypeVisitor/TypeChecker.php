@@ -287,7 +287,6 @@ final class TypeChecker extends TypeVisitor
             $fq_classlike_name,
             $this->code_location,
             null,
-            null,
             $this->suppressed_issues,
             new ClassLikeNameOptions($this->inferred, false, true, true, $atomic->from_docblock),
         ) === false

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Codebase;
 
 use InvalidArgumentException;
+use PHP_CodeSniffer\Reports\Code;
 use PhpParser;
 use PhpParser\Node\Stmt\ClassLike;
 use PhpParser\NodeTraverser;
@@ -333,6 +334,7 @@ final class ClassLikes
     public function hasFullyQualifiedClassName(
         string $fq_class_name,
         ?Context $context = null,
+        ?CodeLocation $location = null,
     ): bool {
         $fq_class_name_lc = strtolower($this->getUnAliasedName($fq_class_name));
 
@@ -362,6 +364,7 @@ final class ClassLikes
         ProjectAnalyzer::getInstance()->getCodebase()->addReferenceToClass(
             $fq_class_name_lc,
             $context,
+            $location,
         );
 
         return true;
@@ -373,6 +376,7 @@ final class ClassLikes
     public function hasFullyQualifiedInterfaceName(
         string $fq_class_name,
         ?Context $context = null,
+        ?CodeLocation $location = null,
     ): bool {
         $fq_class_name_lc = strtolower($this->getUnAliasedName($fq_class_name));
 
@@ -402,6 +406,7 @@ final class ClassLikes
         ProjectAnalyzer::getInstance()->getCodebase()->addReferenceToClass(
             $fq_class_name_lc,
             $context,
+            $location,
         );
 
         return true;
@@ -413,6 +418,7 @@ final class ClassLikes
     public function hasFullyQualifiedEnumName(
         string $fq_class_name,
         ?Context $context = null,
+        ?CodeLocation $location = null,
     ): bool {
         $fq_class_name_lc = strtolower($this->getUnAliasedName($fq_class_name));
 
@@ -442,6 +448,7 @@ final class ClassLikes
         ProjectAnalyzer::getInstance()->getCodebase()->addReferenceToClass(
             $fq_class_name_lc,
             $context,
+            $location,
         );
 
         return true;
@@ -481,9 +488,10 @@ final class ClassLikes
     public function classOrInterfaceExists(
         string $fq_class_name,
         ?Context $context = null,
+        ?CodeLocation $location = null,
     ): bool {
-        return $this->classExists($fq_class_name, $context)
-            || $this->interfaceExists($fq_class_name, $context);
+        return $this->classExists($fq_class_name, $context, $location)
+            || $this->interfaceExists($fq_class_name, $context, $location);
     }
 
     /**
@@ -494,10 +502,11 @@ final class ClassLikes
     public function classOrInterfaceOrEnumExists(
         string $fq_class_name,
         ?Context $context = null,
+        ?CodeLocation $location = null,
     ): bool {
-        return $this->classExists($fq_class_name, $context)
-            || $this->interfaceExists($fq_class_name, $context)
-            || $this->enumExists($fq_class_name, $context);
+        return $this->classExists($fq_class_name, $context, $location)
+            || $this->interfaceExists($fq_class_name, $context, $location)
+            || $this->enumExists($fq_class_name, $context, $location);
     }
 
     /**
@@ -508,6 +517,7 @@ final class ClassLikes
     public function classExists(
         string $fq_class_name,
         ?Context $context = null,
+        ?CodeLocation $location = null,
     ): bool {
         if (isset(ClassLikeAnalyzer::SPECIAL_TYPES[$fq_class_name])) {
             return false;
@@ -520,6 +530,7 @@ final class ClassLikes
         return $this->hasFullyQualifiedClassName(
             $fq_class_name,
             $context,
+            $location,
         );
     }
 
@@ -607,6 +618,7 @@ final class ClassLikes
     public function interfaceExists(
         string $fq_interface_name,
         ?Context $context = null,
+        ?CodeLocation $location = null,
     ): bool {
         if (isset(ClassLikeAnalyzer::SPECIAL_TYPES[strtolower($fq_interface_name)])) {
             return false;
@@ -615,6 +627,7 @@ final class ClassLikes
         return $this->hasFullyQualifiedInterfaceName(
             $fq_interface_name,
             $context,
+            $location,
         );
     }
 
@@ -624,6 +637,7 @@ final class ClassLikes
     public function enumExists(
         string $fq_enum_name,
         ?Context $context = null,
+        ?CodeLocation $location = null,
     ): bool {
         if (isset(ClassLikeAnalyzer::SPECIAL_TYPES[strtolower($fq_enum_name)])) {
             return false;
@@ -632,6 +646,7 @@ final class ClassLikes
         return $this->hasFullyQualifiedEnumName(
             $fq_enum_name,
             $context,
+            $location,
         );
     }
 

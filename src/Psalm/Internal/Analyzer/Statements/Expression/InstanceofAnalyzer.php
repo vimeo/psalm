@@ -73,8 +73,7 @@ final class InstanceofAnalyzer
                         $statements_analyzer,
                         $fq_class_name,
                         new CodeLocation($statements_analyzer->getSource(), $stmt->class),
-                        $context->self,
-                        $context->calling_method_id,
+                        $context,
                         $statements_analyzer->getSuppressedIssues(),
                     ) === false) {
                         return false;

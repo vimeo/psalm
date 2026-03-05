@@ -1442,8 +1442,7 @@ final class ArgumentAnalyzer
                     $statements_analyzer,
                     $input_expr->value,
                     $arg_location,
-                    $context->self,
-                    $context->calling_method_id,
+                    $context,
                     $statements_analyzer->getSuppressedIssues(),
                     new ClassLikeNameOptions(true),
                 ) === false
@@ -1461,8 +1460,7 @@ final class ArgumentAnalyzer
                                     $statements_analyzer,
                                     $item->value->value,
                                     $arg_location,
-                                    $context->self,
-                                    $context->calling_method_id,
+                                    $context,
                                     $statements_analyzer->getSuppressedIssues(),
                                     new ClassLikeNameOptions(true),
                                 ) === false
@@ -1542,8 +1540,7 @@ final class ArgumentAnalyzer
                                     $statements_analyzer,
                                     $callable_fq_class_name,
                                     $arg_location,
-                                    $context->self,
-                                    $context->calling_method_id,
+                                    $context,
                                     $statements_analyzer->getSuppressedIssues(),
                                     new ClassLikeNameOptions(true),
                                 ) === false

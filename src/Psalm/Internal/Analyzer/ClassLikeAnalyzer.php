@@ -210,8 +210,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         StatementsSource $statements_source,
         string $fq_class_name,
         CodeLocation $code_location,
-        ?string $calling_fq_class_name,
-        ?string $calling_method_id,
+        ?Context $context,
         array $suppressed_issues,
         ?ClassLikeNameOptions $options = null,
         bool $check_classes = true,
@@ -264,23 +263,20 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
 
         $class_exists = $codebase->classlikes->classExists(
             $fq_class_name,
+            $context,
             !$options->inferred ? $code_location : null,
-            $calling_fq_class_name,
-            $calling_method_id,
         );
 
         $interface_exists = $codebase->classlikes->interfaceExists(
             $fq_class_name,
+            $context,
             !$options->inferred ? $code_location : null,
-            $calling_fq_class_name,
-            $calling_method_id,
         );
 
         $enum_exists = $codebase->classlikes->enumExists(
             $fq_class_name,
+            $context,
             !$options->inferred ? $code_location : null,
-            $calling_fq_class_name,
-            $calling_method_id,
         );
 
         if (!$class_exists
@@ -290,7 +286,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             if (!$check_classes) {
                 return null;
             }
-            if (!$options->allow_trait || !$codebase->classlikes->traitExists($fq_class_name, $code_location)) {
+            if (!$options->allow_trait || !$codebase->classlikes->traitExists($fq_class_name, $context, !$options->inferred ? $code_location : null)) {
                 if ($options->from_docblock) {
                     if (IssueBuffer::accepts(
                         new UndefinedDocblockClass(

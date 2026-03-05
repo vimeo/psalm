@@ -120,6 +120,8 @@ final class CodeUseGraph extends DataFlowGraph
             $caller = $this->getNodeForFunctionLike($context->calling_method_id, $location);
         } elseif ($context->calling_function_id !== null) {
             $caller = $this->getNodeForFunctionLike($context->calling_function_id, $location);
+        } elseif ($context->self) {
+            $caller = $this->getNodeForClass($context->self, $location);
         } else {
             // Source is not a method or function, so we assume it's a file-level use,
             // so used
