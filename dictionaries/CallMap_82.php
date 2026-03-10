@@ -46939,6 +46939,12 @@ return array (
     0 => 'void',
     'data' => 'array<array-key, mixed>',
   ),
+  'mongodb\\bson\\binary::fromvector' => 
+  array (
+    0 => 'MongoDB\\BSON\\Binary',
+    'vector' => 'array<array-key, mixed>',
+    'vectorType' => 'MongoDB\\BSON\\VectorType',
+  ),
   'mongodb\\bson\\binary::getdata' => 
   array (
     0 => 'string',
@@ -46947,9 +46953,17 @@ return array (
   array (
     0 => 'int',
   ),
+  'mongodb\\bson\\binary::getvectortype' => 
+  array (
+    0 => 'MongoDB\\BSON\\VectorType',
+  ),
   'mongodb\\bson\\binary::jsonserialize' => 
   array (
     0 => 'mixed',
+  ),
+  'mongodb\\bson\\binary::toarray' => 
+  array (
+    0 => 'array<array-key, mixed>',
   ),
   'mongodb\\bson\\binaryinterface::__tostring' => 
   array (
@@ -47562,6 +47576,10 @@ return array (
   'mongodb\\bson\\utcdatetimeinterface::todatetime' => 
   array (
     0 => 'DateTime',
+  ),
+  'mongodb\\bson\\vectortype::cases' => 
+  array (
+    0 => 'array<array-key, mixed>',
   ),
   'mongodb\\driver\\bulkwrite::__construct' => 
   array (
@@ -106707,8 +106725,8 @@ return array (
   'zookeeperconfig::get' => 
   array (
     0 => 'string',
-    'watcher_cb' => 'callable',
-    '&stat_info' => 'array<array-key, mixed>',
+    'watcher_cb=' => 'callable',
+    '&stat_info=' => 'array<array-key, mixed>',
   ),
   'zookeeperconfig::remove' => 
   array (
