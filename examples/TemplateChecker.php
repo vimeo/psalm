@@ -178,6 +178,7 @@ final class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
         $statements_source = new StatementsAnalyzer(
             $view_method_analyzer,
             new NodeDataProvider(),
+            false,
         );
 
         $statements_source->analyze($pseudo_method_stmts, $context);

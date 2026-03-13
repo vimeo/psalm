@@ -8,6 +8,7 @@ namespace Psalm\SourceControl\Git;
  * Remote info.
  *
  * @author Kitamura Satoshi <with.no.parachute@gmail.com>
+ * @psalm-external-mutation-free
  */
 final class RemoteInfo
 {
@@ -21,6 +22,9 @@ final class RemoteInfo
      */
     private ?string $url = null;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function toArray(): array
     {
         return [
@@ -36,6 +40,7 @@ final class RemoteInfo
      *
      * @param string $name remote name
      * @return $this
+     * @psalm-external-mutation-free
      */
     public function setName(string $name): RemoteInfo
     {
@@ -57,6 +62,7 @@ final class RemoteInfo
      *
      * @param string $url remote URL
      * @return $this
+     * @psalm-external-mutation-free
      */
     public function setUrl(string $url): RemoteInfo
     {

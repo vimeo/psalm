@@ -11,7 +11,6 @@ use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TypeCombiner;
@@ -144,7 +143,7 @@ final class CastAnalyzer
                 }
             }
 
-            if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
+            if ($statements_analyzer->variable_use_graph
             ) {
                 $type = new Union([new TBool()], [
                     'parent_nodes' => $maybe_type->parent_nodes ?? [],
@@ -220,7 +219,7 @@ final class CastAnalyzer
                 $type = Type::getObject();
             }
 
-            if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
+            if ($statements_analyzer->variable_use_graph
             ) {
                 $type = $type->setParentNodes($stmt_expr_type->parent_nodes ?? []);
             }
@@ -247,7 +246,7 @@ final class CastAnalyzer
 
                 foreach ($stmt_expr_type->getAtomicTypes() as $type) {
                     if ($type instanceof Scalar) {
-                        $keyed_array = new TKeyedArray([new Union([$type])], null, null, true);
+                        $keyed_array = TKeyedArray::make([new Union([$type])], null, null, true);
                         $permissible_atomic_types[] = $keyed_array;
                     } elseif ($type instanceof TNull) {
                         $permissible_atomic_types[] = new TArray([Type::getNever(), Type::getNever()]);
@@ -258,7 +257,7 @@ final class CastAnalyzer
                     } elseif ($type instanceof TObjectWithProperties) {
                         $array_type = $type->properties === []
                             ? Type::getArrayAtomic()
-                            : new TKeyedArray(
+                            : TKeyedArray::make(
                                 $type->properties,
                                 null,
                                 [Type::getArrayKey(), Type::getMixed()],
@@ -326,7 +325,7 @@ final class CastAnalyzer
 
         $parent_nodes = [];
 
-        if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
+        if ($statements_analyzer->variable_use_graph) {
             $parent_nodes = $stmt_type->parent_nodes;
         }
 
@@ -512,7 +511,7 @@ final class CastAnalyzer
 
         $parent_nodes = [];
 
-        if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
+        if ($statements_analyzer->variable_use_graph) {
             $parent_nodes = $stmt_type->parent_nodes;
         }
 

@@ -29,6 +29,9 @@ final class ClassLikeStorageProvider
      */
     private static array $new_storage = [];
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(public ?ClassLikeStorageCacheProvider $cache = null)
     {
     }
@@ -82,6 +85,7 @@ final class ClassLikeStorageProvider
 
     /**
      * @return array<string, ClassLikeStorage>
+     * @psalm-external-mutation-free
      */
     public static function getAll(): array
     {
@@ -90,6 +94,7 @@ final class ClassLikeStorageProvider
 
     /**
      * @return array<string, ClassLikeStorage>
+     * @psalm-external-mutation-free
      */
     public function getNew(): array
     {
@@ -130,11 +135,17 @@ final class ClassLikeStorageProvider
         }
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function makeNew(string $fq_classlike_name_lc): void
     {
         self::$new_storage[$fq_classlike_name_lc] = self::$storage[$fq_classlike_name_lc];
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function create(string $fq_classlike_name): ClassLikeStorage
     {
         $fq_classlike_name_lc = strtolower($fq_classlike_name);
@@ -146,6 +157,9 @@ final class ClassLikeStorageProvider
         return $storage;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function remove(string $fq_classlike_name): void
     {
         $fq_classlike_name_lc = strtolower($fq_classlike_name);
@@ -153,12 +167,18 @@ final class ClassLikeStorageProvider
         unset(self::$storage[$fq_classlike_name_lc]);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public static function deleteAll(): void
     {
         self::$storage = [];
         self::$new_storage = [];
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public static function populated(): void
     {
         self::$new_storage = [];

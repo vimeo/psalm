@@ -13,6 +13,9 @@ final class ArrayKeysTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerValidCodeParse(): iterable
     {
@@ -22,7 +25,7 @@ final class ArrayKeysTest extends TestCase
                     $keys = array_keys([]);
                 ',
                 'assertions' => [
-                    '$keys' => 'list<never>',
+                    '$keys' => 'array<never, never>',
                 ],
             ],
             'arrayKeysOfKeyedArrayReturnsNonEmptyListOfStrings' => [
@@ -212,6 +215,9 @@ final class ArrayKeysTest extends TestCase
         ];
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerInvalidCodeParse(): iterable
     {

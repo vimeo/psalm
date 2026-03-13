@@ -294,7 +294,7 @@ final class ArrayFunctionArgumentsAnalyzer
 
                         $by_ref_type = new Union([$objectlike_list->setProperties($properties)]);
                     } elseif ($array_type instanceof TArray && $array_type->isEmptyArray()) {
-                        $by_ref_type = new Union([new TKeyedArray([
+                        $by_ref_type = new Union([TKeyedArray::make([
                             $arg_value_type,
                         ], null, null, true)]);
                     } else {
@@ -808,7 +808,6 @@ final class ArrayFunctionArgumentsAnalyzer
                         }
 
                         $closure_types[] = new TClosure(
-                            'Closure',
                             $method_storage->params,
                             $method_storage->return_type ?: Type::getMixed(),
                         );
@@ -861,7 +860,6 @@ final class ArrayFunctionArgumentsAnalyzer
                         }
                     } else {
                         $closure_types[] = new TClosure(
-                            'Closure',
                             $function_storage->params,
                             $function_storage->return_type ?: Type::getMixed(),
                         );

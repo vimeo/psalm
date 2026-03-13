@@ -16,7 +16,6 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\TaintKind;
 use UnexpectedValueException;
 
 use function array_shift;
@@ -55,7 +54,7 @@ final class InternalCallMapHandler
     private static ?array $call_map_callables = [];
 
     /**
-     * @var non-empty-array<string, non-empty-list<list<TaintKind::*>>>|null
+     * @var non-empty-array<string, non-empty-list<int>>|null
      */
     private static ?array $taint_sink_map = null;
 
@@ -319,7 +318,7 @@ final class InternalCallMapHandler
                 $arg_offset++;
             }
 
-            $possible_callables[] = new TCallable('callable', $function_params, $return_type);
+            $possible_callables[] = new TCallable($function_params, $return_type);
         }
 
         self::$call_map_callables[$call_map_key] = $possible_callables;
@@ -334,6 +333,7 @@ final class InternalCallMapHandler
      * @psalm-assert !null self::$taint_sink_map
      * @psalm-assert !null self::$call_map
      * @psalm-suppress UnresolvableInclude
+     * @psalm-external-mutation-free
      */
     public static function getCallMap(): array
     {
@@ -367,7 +367,7 @@ final class InternalCallMapHandler
         self::$loaded_php_minor_version = $analyzer_minor_version;
 
         /**
-         * @var non-empty-array<string, non-empty-list<list<TaintKind::*>>>
+         * @var non-empty-array<string, non-empty-list<int>>
          */
         $taint_map_data = require(dirname(__DIR__, 4) . '/dictionaries/InternalTaintSinkMap.php');
 
@@ -382,11 +382,17 @@ final class InternalCallMapHandler
         return self::$call_map;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public static function inCallMap(string $key): bool
     {
         return isset(self::getCallMap()[strtolower($key)]);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public static function clearCache(): void
     {
         self::$call_map_callables = [];

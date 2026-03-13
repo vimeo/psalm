@@ -92,6 +92,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
 
     protected ClassLikeStorage $storage;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         protected PhpParser\Node\Stmt\ClassLike $class,
         SourceAnalyzer $source,
@@ -103,6 +106,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         $this->storage = $codebase->classlike_storage_provider->get($fq_class_name);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function __destruct()
     {
@@ -181,6 +187,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         }
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getFunctionLikeAnalyzer(string $method_name): ?MethodAnalyzer
     {
         foreach ($this->class->stmts as $stmt) {
@@ -478,7 +487,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         return $this->parent_fq_class_name;
     }
 
-    /** @psalm-mutation-free */
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function isStatic(): bool
     {
@@ -806,7 +817,8 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * @return  array<string, string>
+     * @return array<string, string>
+     * @psalm-external-mutation-free
      */
     public static function getClassesForFile(Codebase $codebase, string $file_path): array
     {

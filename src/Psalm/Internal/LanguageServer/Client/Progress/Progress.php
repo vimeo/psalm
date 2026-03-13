@@ -18,6 +18,9 @@ final class Progress implements ProgressInterface
     private string $status = self::STATUS_INACTIVE;
     private bool $withPercentage = false;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         private readonly ClientHandler $handler,
         private readonly string $token,

@@ -1,6 +1,7 @@
 <?php
 namespace Vimeo\Test\DummyProject;
 
+/** @psalm-immutable */
 trait SomeTrait
 {
 }

@@ -31,6 +31,9 @@ final class NotInArray extends Assertion
         return '!in-array-' . $this->type;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function isNegation(): bool
     {

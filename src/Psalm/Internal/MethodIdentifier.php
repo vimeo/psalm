@@ -27,6 +27,7 @@ final class MethodIdentifier implements Stringable
 
     /**
      * @param lowercase-string $method_name
+     * @psalm-mutation-free
      */
     public function __construct(public readonly string $fq_class_name, public readonly string $method_name)
     {

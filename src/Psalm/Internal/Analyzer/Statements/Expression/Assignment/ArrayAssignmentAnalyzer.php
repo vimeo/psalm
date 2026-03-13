@@ -16,7 +16,6 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
@@ -47,7 +46,6 @@ use function assert;
 use function count;
 use function end;
 use function implode;
-use function in_array;
 use function is_string;
 use function str_contains;
 use function strlen;
@@ -357,7 +355,7 @@ final class ArrayAssignmentAnalyzer
                     $classStrings[$key_value->value] = true;
                 }
             }
-            $object_like = new TKeyedArray(
+            $object_like = TKeyedArray::make(
                 $properties,
                 $classStrings ?: null,
             );
@@ -389,10 +387,7 @@ final class ArrayAssignmentAnalyzer
         ?string $var_var_id,
         array $key_values,
     ): void {
-        if ($statements_analyzer->data_flow_graph
-            && ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
-                || !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues()))
-        ) {
+        if ($graph = $statements_analyzer->getDataFlowGraphWithSuppressed()) {
             $var_location = new CodeLocation($statements_analyzer->getSource(), $expr->var);
 
             $parent_node = DataFlowNode::getForAssignment(
@@ -400,21 +395,21 @@ final class ArrayAssignmentAnalyzer
                 $var_location,
             );
 
-            $statements_analyzer->data_flow_graph->addNode($parent_node);
+            $graph->addNode($parent_node);
 
             $old_parent_nodes = $stmt_type->parent_nodes;
 
             $stmt_type = $stmt_type->setParentNodes([$parent_node->id => $parent_node]);
 
             foreach ($old_parent_nodes as $old_parent_node) {
-                $statements_analyzer->data_flow_graph->addPath(
+                $graph->addPath(
                     $old_parent_node,
                     $parent_node,
                     '=',
                 );
 
                 if ($stmt_type->by_ref) {
-                    $statements_analyzer->data_flow_graph->addPath(
+                    $graph->addPath(
                         $parent_node,
                         $old_parent_node,
                         '=',
@@ -426,14 +421,14 @@ final class ArrayAssignmentAnalyzer
                 foreach ($child_stmt_type->parent_nodes as $child_parent_node) {
                     if ($key_values) {
                         foreach ($key_values as $key_value) {
-                            $statements_analyzer->data_flow_graph->addPath(
+                            $graph->addPath(
                                 $child_parent_node,
                                 $parent_node,
                                 'arrayvalue-assignment-\'' . $key_value->value . '\'',
                             );
                         }
                     } else {
-                        $statements_analyzer->data_flow_graph->addPath(
+                        $graph->addPath(
                             $child_parent_node,
                             $parent_node,
                             'arrayvalue-assignment',
@@ -607,7 +602,7 @@ final class ArrayAssignmentAnalyzer
                         );
                     } elseif ($prop_count !== null) {
                         assert($array_atomic_type_list !== null);
-                        $array_atomic_type = new TKeyedArray(
+                        $array_atomic_type = TKeyedArray::make(
                             array_fill(
                                 0,
                                 $prop_count,
@@ -637,7 +632,7 @@ final class ArrayAssignmentAnalyzer
                             $array_atomic_type_list,
                         );
                         assert(count($array_atomic_type) > 0);
-                        $array_atomic_type = new TKeyedArray(
+                        $array_atomic_type = TKeyedArray::make(
                             $array_atomic_type,
                             null,
                             null,
@@ -872,19 +867,19 @@ final class ArrayAssignmentAnalyzer
             $parent_var_id = $extended_var_id;
         }
 
-        if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
+        if ($statements_analyzer->variable_use_graph
             && $root_var_id !== null
             && isset($context->references_to_external_scope[$root_var_id])
             && $root_var instanceof Variable && is_string($root_var->name)
             && $root_var_id === '$' . $root_var->name
         ) {
             // Array is a reference to an external scope, mark it as used
-            $statements_analyzer->data_flow_graph->addPath(
+            $statements_analyzer->variable_use_graph->addPath(
                 DataFlowNode::getForAssignment(
                     $root_var_id,
                     new CodeLocation($statements_analyzer->getSource(), $root_var),
                 ),
-                new DataFlowNode('variable-use', 'variable use', null),
+                DataFlowNode::getForVariableUse(),
                 'variable-use',
             );
         }

@@ -18,6 +18,9 @@ final class EnumCaseStorage
 
     public bool $deprecated = false;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         public TLiteralString|TLiteralInt|UnresolvedConstantComponent|null $value,
         public CodeLocation $stmt_location,

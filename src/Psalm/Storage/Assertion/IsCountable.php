@@ -14,17 +14,26 @@ use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 final class IsCountable extends Assertion
 {
     use UnserializeMemoryUsageSuppressionTrait;
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getNegation(): Assertion
     {
         return new IsNotCountable(true);
     }
 
+    /**
+     * @psalm-pure
+     */
     public function __toString(): string
     {
         return 'countable';
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function isNegationOf(Assertion $assertion): bool
     {

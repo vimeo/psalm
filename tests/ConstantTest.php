@@ -75,6 +75,7 @@ final class ConstantTest extends TestCase
 
                 require("tests/file1.php");
 
+                /** @psalm-pure */
                 function bar(): Bar
                 {
                     return bar;
@@ -86,6 +87,9 @@ final class ConstantTest extends TestCase
         $this->analyzeFile($file2, new Context());
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerValidCodeParse(): iterable
     {
@@ -2164,6 +2168,9 @@ final class ConstantTest extends TestCase
         ];
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerInvalidCodeParse(): iterable
     {

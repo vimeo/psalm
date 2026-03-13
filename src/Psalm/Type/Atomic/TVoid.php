@@ -16,6 +16,9 @@ use Psalm\Type\Atomic;
 final class TVoid extends Atomic
 {
     use UnserializeMemoryUsageSuppressionTrait;
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getKey(bool $include_extra = true): string
     {
@@ -35,6 +38,9 @@ final class TVoid extends Atomic
         return $analysis_php_version_id >= 7_01_00 ? $this->getKey() : null;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {

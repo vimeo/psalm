@@ -10,13 +10,17 @@ use Psalm\Context;
 use Psalm\FileManipulation;
 use Psalm\StatementsSource;
 
+/**
+ * @psalm-external-mutation-free
+ */
 final class AfterStatementAnalysisEvent
 {
     /**
      * Called after a statement has been checked
      *
-     * @param  FileManipulation[]   $file_replacements
+     * @param FileManipulation[]   $file_replacements
      * @internal
+     * @psalm-mutation-free
      */
     public function __construct(
         private readonly Stmt $stmt,
@@ -57,6 +61,7 @@ final class AfterStatementAnalysisEvent
 
     /**
      * @param FileManipulation[] $file_replacements
+     * @psalm-external-mutation-free
      */
     public function setFileReplacements(array $file_replacements): void
     {

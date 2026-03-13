@@ -66,9 +66,12 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
  - [LoopInvalidation](issues/LoopInvalidation.md)
  - [MethodSignatureMustOmitReturnType](issues/MethodSignatureMustOmitReturnType.md)
  - [MethodSignatureMustProvideReturnType](issues/MethodSignatureMustProvideReturnType.md)
+ - [MissingAbstractPureAnnotation](issues/MissingAbstractPureAnnotation.md)
  - [MissingDependency](issues/MissingDependency.md)
  - [MissingFile](issues/MissingFile.md)
  - [MissingImmutableAnnotation](issues/MissingImmutableAnnotation.md)
+ - [MissingInterfaceImmutableAnnotation](issues/MissingInterfaceImmutableAnnotation.md)
+ - [MissingPureAnnotation](issues/MissingPureAnnotation.md)
  - [MissingTemplateParam](issues/MissingTemplateParam.md)
  - [MissingThrowsDocblock](issues/MissingThrowsDocblock.md)
  - [NoEnumProperties](issues/NoEnumProperties.md)
@@ -106,6 +109,7 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
  - [UnusedMethodCall](issues/UnusedMethodCall.md)
 ## Errors that only appear at level 1
 
+ - [ImmutableDependency](issues/ImmutableDependency.md)
  - [InvalidClassConstantType](issues/InvalidClassConstantType.md)
  - [LessSpecificClassConstantType](issues/LessSpecificClassConstantType.md)
  - [LessSpecificReturnType](issues/LessSpecificReturnType.md)

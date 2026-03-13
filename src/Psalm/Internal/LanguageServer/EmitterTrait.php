@@ -21,6 +21,7 @@ use const SORT_NUMERIC;
  * Using the trait + interface allows you to add EventEmitter capabilities
  * without having to change your base-class.
  *
+ * @psalm-mutable
  * @copyright Copyright (C) fruux GmbH (https://fruux.com/)
  * @author Evert Pot (http://evertpot.com/)
  * @license http://sabre.io/license/ Modified BSD License
@@ -37,6 +38,8 @@ trait EmitterTrait
 
     /**
      * Subscribe to an event.
+     *
+     * @psalm-external-mutation-free
      */
     #[Override]
     public function on(string $eventName, callable $callBack, int $priority = 100): void
@@ -119,6 +122,7 @@ trait EmitterTrait
      * their priority.
      *
      * @return callable[]
+     * @psalm-external-mutation-free
      */
     #[Override]
     public function listeners(string $eventName): array
@@ -144,6 +148,8 @@ trait EmitterTrait
      *
      * If the listener could not be found, this method will return false. If it
      * was removed it will return true.
+     *
+     * @psalm-external-mutation-free
      */
     #[Override]
     public function removeListener(string $eventName, callable $listener): bool

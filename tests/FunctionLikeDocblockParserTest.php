@@ -64,6 +64,7 @@ final class FunctionLikeDocblockParserTest extends BaseTestCase
 ';
         $php_parser_doc = new Doc($doc);
         $function_docblock = FunctionLikeDocblockParser::parse(
+            ProjectAnalyzer::getInstance()->getCodebase(),
             $php_parser_doc,
             $this->test_code_location,
             $this->test_cased_function_id,
@@ -88,6 +89,7 @@ final class FunctionLikeDocblockParserTest extends BaseTestCase
 ';
         $php_parser_doc = new Doc($doc);
         $function_docblock = FunctionLikeDocblockParser::parse(
+            ProjectAnalyzer::getInstance()->getCodebase(),
             $php_parser_doc,
             $this->test_code_location,
             $this->test_cased_function_id,
@@ -110,6 +112,7 @@ final class FunctionLikeDocblockParserTest extends BaseTestCase
         $this->expectException(IncorrectDocblockException::class);
         $this->expectExceptionMessage('Misplaced variable');
         FunctionLikeDocblockParser::parse(
+            ProjectAnalyzer::getInstance()->getCodebase(),
             $php_parser_doc,
             $this->test_code_location,
             $this->test_cased_function_id,
@@ -125,6 +128,7 @@ final class FunctionLikeDocblockParserTest extends BaseTestCase
 ';
         $php_parser_doc = new Doc($doc);
         $function_docblock = FunctionLikeDocblockParser::parse(
+            ProjectAnalyzer::getInstance()->getCodebase(),
             $php_parser_doc,
             $this->test_code_location,
             $this->test_cased_function_id,
@@ -142,6 +146,7 @@ final class FunctionLikeDocblockParserTest extends BaseTestCase
 ';
         $php_parser_doc = new Doc($doc, 0);
         $function_docblock = FunctionLikeDocblockParser::parse(
+            ProjectAnalyzer::getInstance()->getCodebase(),
             $php_parser_doc,
             $this->test_code_location,
             $this->test_cased_function_id,

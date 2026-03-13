@@ -15,7 +15,10 @@ final class InternalClass extends ClassIssue
     public const ERROR_LEVEL = 4;
     public const SHORTCODE = 174;
 
-    /** @param non-empty-list<non-empty-string> $words */
+    /**
+     * @param non-empty-list<non-empty-string> $words
+     * @psalm-pure
+     */
     public static function listToPhrase(array $words): string
     {
         $words = array_unique($words);

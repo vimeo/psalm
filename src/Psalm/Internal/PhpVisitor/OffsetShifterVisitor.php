@@ -16,6 +16,7 @@ final class OffsetShifterVisitor extends PhpParser\NodeVisitorAbstract
 {
     /**
      * @param array<int, int> $extra_offsets
+     * @psalm-mutation-free
      */
     public function __construct(
         private readonly int $file_offset,

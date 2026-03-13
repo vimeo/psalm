@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Psalm\Internal\Codebase;
 
 use BackedEnum;
-use Exception;
 use InvalidArgumentException;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\MethodIdentifier;
@@ -13,11 +12,13 @@ use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Issue\CircularReference;
+use Psalm\Issue\UndefinedTrait;
 use Psalm\IssueBuffer;
 use Psalm\Progress\Progress;
 use Psalm\Storage\ClassConstantStorage;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
+use Psalm\Storage\Mutations;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TNonEmptyString;
@@ -35,6 +36,7 @@ use function array_splice;
 use function count;
 use function in_array;
 use function key;
+use function min;
 use function reset;
 use function strpos;
 use function strtolower;
@@ -51,6 +53,9 @@ final class Populator
      */
     private array $invalid_class_storages = [];
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         private readonly ClassLikeStorageProvider $classlike_storage_provider,
         private readonly FileStorageProvider $file_storage_provider,
@@ -184,16 +189,19 @@ final class Populator
             }
         }
 
-        if ($storage->mutation_free || $storage->external_mutation_free) {
+        if ($storage->allowed_mutations !== Mutations::LEVEL_ALL) {
             foreach ($storage->methods as $method) {
-                if (!$method->is_static && !$method->external_mutation_free) {
-                    $method->mutation_free = $storage->mutation_free;
-                    $method->external_mutation_free = $storage->external_mutation_free;
-                    $method->immutable = $storage->mutation_free;
+                if (!$method->is_static && !$method->isExternalMutationFree()) {
+                    $method->allowed_mutations = min(
+                        $method->allowed_mutations,
+                        $storage->allowed_mutations,
+                    );
+                    $method->containing_class_allowed_mutations = $storage->allowed_mutations;
+                    $method->has_mutations_annotation = $storage->has_mutations_annotation;
                 }
             }
 
-            if ($storage->mutation_free) {
+            if ($storage->isMutationFree()) {
                 foreach ($storage->properties as $property) {
                     if (!$property->is_static) {
                         $property->readonly = true;
@@ -395,10 +403,9 @@ final class Populator
                     $declaring_method_storage->overridden_downstream = true;
                     $declaring_method_storage->overridden_somewhere = true;
 
-                    if ($declaring_method_storage->mutation_free_inferred) {
-                        $declaring_method_storage->mutation_free = false;
-                        $declaring_method_storage->external_mutation_free = false;
-                        $declaring_method_storage->mutation_free_inferred = false;
+                    if ($declaring_method_storage->mutation_free_assumed) {
+                        $declaring_method_storage->allowed_mutations = Mutations::LEVEL_ALL;
+                        $declaring_method_storage->mutation_free_assumed = false;
                     }
 
                     if ($declaring_method_storage->throws
@@ -440,11 +447,14 @@ final class Populator
         $storage->pseudo_property_set_types += $trait_storage->pseudo_property_set_types;
 
         $storage->pseudo_static_methods += $trait_storage->pseudo_static_methods;
-        
+
         $storage->pseudo_methods += $trait_storage->pseudo_methods;
         $storage->declaring_pseudo_method_ids += $trait_storage->declaring_pseudo_method_ids;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     private static function extendType(
         Union $type,
         ClassLikeStorage $storage,
@@ -876,8 +886,29 @@ final class Populator
         ClassLikeStorage $trait_storage,
     ): void {
         if (!$trait_storage->is_trait) {
-            throw new Exception('Class like storage is not for a trait.');
+            $location = $storage->location ?? $storage->stmt_location;
+            if (!$location) {
+                return;
+            }
+
+            $trait_real_type = 'Class';
+            if ($trait_storage->is_enum) {
+                $trait_real_type = 'Enum';
+            } elseif ($trait_storage->is_interface) {
+                $trait_real_type = 'Interface';
+            }
+
+            IssueBuffer::maybeAdd(
+                new UndefinedTrait(
+                    $trait_real_type . ' ' . $trait_storage->name . ' is not a trait',
+                    $location,
+                ),
+                $storage->suppressed_issues,
+            );
+
+            return;
         }
+
         foreach ($trait_storage->constants as $constant_name => $class_constant_storage) {
             $trait_alias_map_cased = array_flip($storage->trait_alias_map_cased);
             if (isset($trait_alias_map_cased[$constant_name])) {

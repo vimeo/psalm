@@ -7,8 +7,8 @@ namespace Psalm\Internal\Scanner;
 use Psalm\Storage\ImmutableNonCloneableTrait;
 
 /**
- * @psalm-immutable
  * @internal
+ * @psalm-immutable
  */
 abstract class UnresolvedConstantComponent
 {

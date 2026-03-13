@@ -27,6 +27,7 @@ final class ClassConstantStorage
      * @param ClassLikeAnalyzer::VISIBILITY_* $visibility
      * @param list<AttributeStorage> $attributes
      * @param array<int, string> $suppressed_issues
+     * @psalm-mutation-free
      */
     public function __construct(
         /**
@@ -52,6 +53,8 @@ final class ClassConstantStorage
 
     /**
      * Used in the Language Server
+     *
+     * @psalm-mutation-free
      */
     public function getHoverMarkdown(string $const): string
     {

@@ -7,8 +7,8 @@ namespace Psalm\Internal\Scanner\UnresolvedConstant;
 use Psalm\Storage\ImmutableNonCloneableTrait;
 
 /**
- * @psalm-immutable
  * @internal
+ * @psalm-immutable
  */
 final class UnresolvedMultiplicationOp extends UnresolvedBinaryOp
 {

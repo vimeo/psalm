@@ -15,6 +15,9 @@ final class MixedArgumentTypeCoercion extends ArgumentIssue implements MixedIssu
 
     use MixedIssueTrait;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         string $message,
         CodeLocation $code_location,

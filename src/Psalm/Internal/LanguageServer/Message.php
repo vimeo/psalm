@@ -44,6 +44,7 @@ final class Message implements Stringable
 
     /**
      * @param string[] $headers
+     * @psalm-mutation-free
      */
     public function __construct(public ?MessageBody $body = null, array $headers = [])
     {
@@ -53,6 +54,9 @@ final class Message implements Stringable
         $this->headers = $headers;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function __toString(): string
     {

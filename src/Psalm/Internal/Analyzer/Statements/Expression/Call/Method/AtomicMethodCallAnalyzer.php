@@ -19,7 +19,6 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
-use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
@@ -228,10 +227,9 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                         $method_storage = $codebase->methods->getStorage($method_identifier);
 
                         $return_type_candidate = new Union([new TClosure(
-                            'Closure',
                             $method_storage->params,
                             $method_storage->return_type,
-                            $method_storage->pure,
+                            $method_storage->allowed_mutations,
                         )]);
                     }
                 }
@@ -672,11 +670,11 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
 
                         $origin_locations = [];
 
-                        if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
+                        if ($statements_analyzer->variable_use_graph) {
                             foreach ($lhs_type->parent_nodes as $parent_node) {
                                 $origin_locations = [
                                     ...$origin_locations,
-                                    ...$statements_analyzer->data_flow_graph->getOriginLocations($parent_node),
+                                    ...$statements_analyzer->variable_use_graph->getOriginLocations($parent_node),
                                 ];
                             }
                         }

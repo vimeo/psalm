@@ -23,6 +23,9 @@ final class TemplateTypeCollector extends TypeVisitor
      */
     private array $template_types = [];
 
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     protected function enterNode(TypeNode $type): ?int
     {

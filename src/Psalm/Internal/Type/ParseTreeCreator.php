@@ -50,6 +50,7 @@ final class ParseTreeCreator
 
     /**
      * @param list<array{0: string, 1: int, 2?: string}> $type_tokens
+     * @psalm-mutation-free
      */
     public function __construct(private array $type_tokens)
     {
@@ -406,6 +407,9 @@ final class ParseTreeCreator
         }
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     private function handleComma(): void
     {
         if ($this->current_leaf instanceof Root) {
@@ -868,7 +872,19 @@ final class ParseTreeCreator
             case '(':
                 if (in_array(
                     $type_token[0],
-                    ['callable', 'pure-callable', 'Closure', '\Closure', 'pure-Closure'],
+                    [
+                        'callable',
+                        'pure-callable',
+                        'self-mutating-callable',
+                        'self-accessing-callable',
+                        'impure-callable',
+
+                        'Closure', '\Closure',
+                        'pure-Closure',
+                        'self-mutating-Closure',
+                        'self-accessing-Closure',
+                        'impure-Closure',
+                    ],
                     true,
                 )) {
                     $new_leaf = new CallableTree(
@@ -884,8 +900,9 @@ final class ParseTreeCreator
                     );
                 } else {
                     throw new TypeParseTreeException(
-                        'Parenthesis must be preceded by “Closure”, “callable”, "pure-callable" or a valid @method'
-                        . ' name',
+                        'Parenthesis must be preceded by “Closure”, "pure-Closure", "impure-Closure",'
+                        . ' "self-mutating-Closure", "callable”, "pure-callable", "self-mutating-callable",'
+                        . ' "impure-callable" or a valid @method name',
                     );
                 }
 

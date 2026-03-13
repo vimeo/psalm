@@ -9,8 +9,6 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Codebase\TaintFlowGraph;
-use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Internal\Type\TypeExpander;
@@ -314,10 +312,10 @@ class Reconciler
                 continue;
             }
 
-            if (($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+            if (($statements_analyzer->taint_flow_graph
                     && (!$result_type->hasScalarType()
                         || ($result_type->hasString() && !$result_type->hasLiteralString())))
-                || $statements_analyzer->data_flow_graph instanceof VariableUseGraph
+                || $statements_analyzer->variable_use_graph
             ) {
                 if ($before_adjustment && $before_adjustment->parent_nodes) {
                     $result_type = $result_type->setParentNodes($before_adjustment->parent_nodes);
@@ -429,15 +427,16 @@ class Reconciler
      * generates the assertions
      *
      * [
-     *     '$a' => '=int-or-string-array-access',
-     *     '$a[0]' => '=isset',
-     *     '$a[0]->foo' => '=isset',
-     *     '$a[0]->foo->bar' => 'isset' // original assertion
+     * '$a' => '=int-or-string-array-access',
+     * '$a[0]' => '=isset',
+     * '$a[0]->foo' => '=isset',
+     * '$a[0]->foo->bar' => 'isset' // original assertion
      * ]
      *
      * @param array<string, array<array<int, Assertion>>> $new_types
      * @param array<string, Union> $existing_types
      * @return array<string, array<array<int, Assertion>>>
+     * @psalm-external-mutation-free
      */
     private static function addNestedAssertions(array $new_types, array $existing_types): array
     {
@@ -551,6 +550,7 @@ class Reconciler
 
     /**
      * @return non-empty-list<string>
+     * @psalm-external-mutation-free
      */
     public static function breakUpPathIntoParts(string $path): array
     {
@@ -1177,7 +1177,7 @@ class Reconciler
                             $fallback_key_type = $base_atomic_type->type_params[0];
                             $fallback_value_type = $base_atomic_type->type_params[1];
 
-                            $base_atomic_type = new TKeyedArray(
+                            $base_atomic_type = TKeyedArray::make(
                                 [
                                 $array_key_offset => $result_type,
                                 ],
@@ -1208,7 +1208,7 @@ class Reconciler
                                     $base_atomic_type = $base_atomic_type->setProperties($properties);
                                 } else {
                                     // This should actually be a paradox
-                                    $base_atomic_type = new TKeyedArray(
+                                    $base_atomic_type = TKeyedArray::make(
                                         $properties,
                                         null,
                                         $base_atomic_type->fallback_params,
@@ -1242,10 +1242,16 @@ class Reconciler
         }
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     protected static function refineArrayKey(Union $key_type): Union
     {
         return self::refineArrayKeyInner($key_type) ?? $key_type;
     }
+    /**
+     * @psalm-external-mutation-free
+     */
     private static function refineArrayKeyInner(Union $key_type): ?Union
     {
         $refined = false;

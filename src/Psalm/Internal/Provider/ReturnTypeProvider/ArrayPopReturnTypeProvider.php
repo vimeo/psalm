@@ -22,6 +22,7 @@ final class ArrayPopReturnTypeProvider implements FunctionReturnTypeProviderInte
 {
     /**
      * @return array<lowercase-string>
+     * @psalm-pure
      */
     #[Override]
     public static function getFunctionIds(): array

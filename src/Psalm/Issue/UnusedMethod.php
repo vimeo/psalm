@@ -13,6 +13,9 @@ final class UnusedMethod extends MethodIssue
     public const ERROR_LEVEL = -2;
     public const SHORTCODE = 76;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         string $message,
         CodeLocation $code_location,

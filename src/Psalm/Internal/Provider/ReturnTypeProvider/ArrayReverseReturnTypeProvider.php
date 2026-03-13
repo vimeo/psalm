@@ -25,6 +25,7 @@ final class ArrayReverseReturnTypeProvider implements FunctionReturnTypeProvider
 {
     /**
      * @return array<lowercase-string>
+     * @psalm-pure
      */
     #[Override]
     public static function getFunctionIds(): array
@@ -105,7 +106,7 @@ final class ArrayReverseReturnTypeProvider implements FunctionReturnTypeProvider
                 return new Union([$first_arg_array->setProperties($reversed_array_items)]);
             }
 
-            return new Union([new TKeyedArray(
+            return new Union([TKeyedArray::make(
                 $first_arg_array->properties,
                 null,
                 $first_arg_array->fallback_params,

@@ -14,6 +14,7 @@ use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use function strtolower;
 
 /**
+ * @psalm-mutable
  * @internal
  */
 trait CanAlias

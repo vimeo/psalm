@@ -21,8 +21,8 @@ final class ContainsClassLikeVisitor extends TypeVisitor
     private bool $contains_classlike = false;
 
     /**
-     * @psalm-external-mutation-free
      * @param lowercase-string $fq_classlike_name
+     * @psalm-mutation-free
      */
     public function __construct(
         private readonly string $fq_classlike_name,

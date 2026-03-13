@@ -22,6 +22,9 @@ final class OverrideTest extends TestCase
         return $config;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerValidCodeParse(): iterable
     {
@@ -99,12 +102,16 @@ final class OverrideTest extends TestCase
                     <?php
                     class A {
                         /** @psalm-pure */
-                        public function f(): void {}
+                        public function f(int $a): int {
+                            return $a;
+                        }
                     }
                     class B extends A {
                         /** @psalm-pure */
                         #[Override]
-                        public function f(): void {}
+                        public function f(int $a): int {
+                            return $a + 1;
+                        }
                     }
                     PHP,
             ],
@@ -121,6 +128,9 @@ final class OverrideTest extends TestCase
         ];
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerInvalidCodeParse(): iterable
     {

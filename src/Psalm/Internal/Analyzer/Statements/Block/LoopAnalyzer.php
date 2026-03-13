@@ -786,7 +786,8 @@ final class LoopAnalyzer
     }
 
     /**
-     * @param  array<string, array<string, bool>>   $assignment_map
+     * @param array<string, array<string, bool>>   $assignment_map
+     * @psalm-pure
      */
     private static function getAssignmentMapDepth(string $first_var_id, array $assignment_map): int
     {
