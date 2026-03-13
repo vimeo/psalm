@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use Override;
 use Psalm\CodeLocation;
 use Psalm\CodeLocation\DocblockTypeLocation;
+use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
@@ -132,19 +133,21 @@ final class TypeChecker extends TypeVisitor
             );
         }
 
-        if (!isset($this->phantom_classes[strtolower($atomic->value)]) &&
-            ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
+        if (!isset($this->phantom_classes[strtolower($atomic->value)])) {
+            $ctxTmp = new Context();
+            $ctxTmp->self = $this->source->getFQCLN();
+            $ctxTmp->calling_method_id = $this->calling_method_id;
+            if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                 $this->source,
                 $atomic->value,
                 $this->code_location,
-                $this->source->getFQCLN(),
-                $this->calling_method_id,
+                $ctxTmp,
                 $this->suppressed_issues,
                 new ClassLikeNameOptions($this->inferred, false, true, true, $atomic->from_docblock),
-            ) === false
-        ) {
-            $this->has_errors = true;
-            return;
+            ) === false) {
+                $this->has_errors = true;
+                return;
+            }
         }
 
         $fq_class_name_lc = strtolower($atomic->value);
@@ -286,7 +289,6 @@ final class TypeChecker extends TypeVisitor
             $this->source,
             $fq_classlike_name,
             $this->code_location,
-            null,
             null,
             $this->suppressed_issues,
             new ClassLikeNameOptions($this->inferred, false, true, true, $atomic->from_docblock),

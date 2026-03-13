@@ -469,8 +469,7 @@ final class ReturnAnalyzer
                                         $statements_analyzer,
                                         $stmt->expr->value,
                                         new CodeLocation($source, $stmt->expr),
-                                        $context->self,
-                                        $context->calling_method_id,
+                                        $context,
                                         $statements_analyzer->getSuppressedIssues(),
                                         new ClassLikeNameOptions(true),
                                     ) === false
@@ -490,8 +489,7 @@ final class ReturnAnalyzer
                                                         $statements_analyzer,
                                                         $item->value->value,
                                                         new CodeLocation($source, $item->value),
-                                                        $context->self,
-                                                        $context->calling_method_id,
+                                                        $context,
                                                         $statements_analyzer->getSuppressedIssues(),
                                                         new ClassLikeNameOptions(true),
                                                     ) === false
