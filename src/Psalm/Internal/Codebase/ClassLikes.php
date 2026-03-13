@@ -335,8 +335,8 @@ final class ClassLikes
         ?CodeLocation $code_location = null,
         ?Context $context = null,
     ): bool {
-        $calling_fq_class_name = $context->self ?? null;
-        $calling_method_id = $context->calling_method_id ?? null;
+        $calling_fq_class_name = $context?->self;
+        $calling_method_id = $context?->calling_method_id;
 
         $fq_class_name_lc = strtolower($this->getUnAliasedName($fq_class_name));
 
@@ -408,8 +408,8 @@ final class ClassLikes
         ?CodeLocation $code_location = null,
         ?Context $context = null,
     ): bool {
-        $calling_fq_class_name = $context->self ?? null;
-        $calling_method_id = $context->calling_method_id ?? null;
+        $calling_fq_class_name = $context?->self;
+        $calling_method_id = $context?->calling_method_id;
         $fq_class_name_lc = strtolower($this->getUnAliasedName($fq_class_name));
 
         // fixme: this looks like a crazy caching hack
@@ -480,8 +480,8 @@ final class ClassLikes
         ?CodeLocation $code_location = null,
         ?Context $context = null,
     ): bool {
-        $calling_fq_class_name = $context->self ?? null;
-        $calling_method_id = $context->calling_method_id ?? null;
+        $calling_fq_class_name = $context?->self;
+        $calling_method_id = $context?->calling_method_id;
         $fq_class_name_lc = strtolower($this->getUnAliasedName($fq_class_name));
 
         // fixme: this looks like a crazy caching hack
@@ -1331,7 +1331,7 @@ final class ClassLikes
             return false;
         }
         $calling_fq_class_name = $source->getFQCLN();
-        $calling_method_id = $context->calling_method_id ?? null;
+        $calling_method_id = $context?->calling_method_id;
 
         // if we're inside a moved class static method
         if ($codebase->methods_to_move
