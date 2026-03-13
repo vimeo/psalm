@@ -1770,7 +1770,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                         $declaring_method_storage,
                         $this->fq_class_name,
                         $implementer_method_storage->visibility,
-                        new CodeLocation($source, $stmt),
+                        $implementer_method_storage->stmt_location ?? new CodeLocation($source, $stmt),
                         $implementer_method_storage->suppressed_issues,
                         false,
                     );

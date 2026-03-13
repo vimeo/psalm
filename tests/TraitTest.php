@@ -1077,6 +1077,24 @@ final class TraitTest extends TestCase
                     }',
                 'error_message' => 'UndefinedTrait',
             ],
+            'isClassNoTrait' => [
+                'code' => '<?php
+                    class B {}
+
+                    class A {
+                        use B;
+                    }',
+                'error_message' => 'UndefinedTrait',
+            ],
+            'isInterfaceNoTrait' => [
+                'code' => '<?php
+                    Interface B {}
+
+                    class A {
+                        use B;
+                    }',
+                'error_message' => 'UndefinedTrait',
+            ],
             'missingPropertyType' => [
                 'code' => '<?php
                     trait T {
@@ -1157,6 +1175,22 @@ final class TraitTest extends TestCase
                         }
                     }',
                 'error_message' => 'MethodSignatureMismatch',
+            ],
+            'dontReportImplementerErrorOnAbstractTraitMethodTwice' => [
+                'code' => '<?php
+                    trait B {
+                        abstract public function run();
+                    }
+
+                    final class A {
+                        use B;
+
+                        #[Override]
+                        public function run(string $foo): string {
+                            return $foo;
+                        }
+                    }',
+                'error_message' => 'MethodSignatureMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:',
             ],
             'missingTraitPropertyType' => [
                 'code' => '<?php
