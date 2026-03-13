@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace Psalm\Internal;
 
+use Psalm\Progress\Phase;
 use Psalm\Progress\Progress;
 
 use function class_exists;
 
-use const PHP_EOL;
+use function count;
 
 /** @internal */
 final class Preloader
@@ -20,15 +21,15 @@ final class Preloader
             return;
         }
 
-        if ($hasJit) {
-            $progress?->write("JIT compilation in progress... ");
-        }
+        $progress?->startPhase($hasJit ? Phase::JIT_COMPILATION : Phase::PRELOADING);
+        $progress?->expand(count(PreloaderList::CLASSES)+1);
+
         foreach (PreloaderList::CLASSES as $class) {
+            $progress?->taskDone(0);
             class_exists($class);
         }
-        if ($hasJit) {
-            $progress?->write("Done.".PHP_EOL.PHP_EOL);
-        }
+
+        $progress?->finish();
         self::$preloaded = true;
     }
 }

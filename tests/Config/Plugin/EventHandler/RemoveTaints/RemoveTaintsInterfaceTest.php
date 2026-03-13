@@ -56,6 +56,9 @@ final class RemoveTaintsInterfaceTest extends TestCase
         );
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function setUp(): void
     {
@@ -93,6 +96,7 @@ final class RemoveTaintsInterfaceTest extends TestCase
             '<?php // --taint-analysis
 
             /**
+             * @psalm-mutation-free
              * @psalm-taint-sink html $string
              */
             function output($string) {}
@@ -134,6 +138,8 @@ final class RemoveTaintsInterfaceTest extends TestCase
             '<?php // --taint-analysis
 
             /**
+             * @psalm-mutation-free
+             * 
              * @psalm-taint-sink html $build
              */
             function output(array $build) {}
@@ -155,6 +161,7 @@ final class RemoveTaintsInterfaceTest extends TestCase
             '<?php // --taint-analysis
 
             /**
+             * @psalm-mutation-free
              * @psalm-taint-sink html $build
              */
             function output(array $build) {}

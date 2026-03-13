@@ -8,11 +8,13 @@ class A
      */
     public $foo = 'hello';
 
+    /** @psalm-pure */
     public function bar(string $s) : string
     {
-        return $s . ' I’m here';
+        return $s . ' I\'m here';
     }
 
+    /** @psalm-mutation-free */
     public static function bat() : void
     {
     }

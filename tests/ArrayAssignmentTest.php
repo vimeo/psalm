@@ -34,6 +34,9 @@ final class ArrayAssignmentTest extends TestCase
         $this->assertFalse(isset($context->vars_in_scope['$foo[\'a\']']));
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerValidCodeParse(): iterable
     {
@@ -2156,6 +2159,9 @@ final class ArrayAssignmentTest extends TestCase
         ];
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerInvalidCodeParse(): iterable
     {

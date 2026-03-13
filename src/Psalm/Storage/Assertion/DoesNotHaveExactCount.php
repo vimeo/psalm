@@ -19,6 +19,9 @@ final class DoesNotHaveExactCount extends Assertion
     {
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function isNegation(): bool
     {

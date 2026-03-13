@@ -10,13 +10,17 @@ use Psalm\Context;
 use Psalm\FileManipulation;
 use Psalm\StatementsSource;
 
+/**
+ * @psalm-external-mutation-free
+ */
 final class AfterExpressionAnalysisEvent
 {
     /**
      * Called after an expression has been checked
      *
-     * @param  FileManipulation[]   $file_replacements
+     * @param FileManipulation[]   $file_replacements
      * @internal
+     * @psalm-mutation-free
      */
     public function __construct(
         private readonly Expr $expr,
@@ -57,6 +61,7 @@ final class AfterExpressionAnalysisEvent
 
     /**
      * @param FileManipulation[] $file_replacements
+     * @psalm-external-mutation-free
      */
     public function setFileReplacements(array $file_replacements): void
     {

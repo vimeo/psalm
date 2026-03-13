@@ -13,6 +13,9 @@ final class IfThisIsTest extends TestCase
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerValidCodeParse(): iterable
     {
@@ -292,6 +295,7 @@ final class IfThisIsTest extends TestCase
 
     /**
      * @return array<string, array{code: string, error_message: string}>
+     * @psalm-pure
      */
     #[Override]
     public function providerInvalidCodeParse(): iterable

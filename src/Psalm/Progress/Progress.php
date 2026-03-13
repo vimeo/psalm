@@ -22,41 +22,19 @@ abstract class Progress
         error_reporting(E_ERROR);
     }
 
-    public function debug(string $message): void
-    {
-    }
+    abstract public function debug(string $message): void;
 
-    public function startScanningFiles(): void
-    {
-    }
 
-    public function startAnalyzingFiles(): void
-    {
-    }
+    abstract public function startPhase(Phase $phase, int $threads = 1): void;
 
-    public function startAlteringFiles(): void
-    {
-    }
+    abstract public function expand(int $number_of_tasks): void;
 
-    public function alterFileDone(string $file_name): void
-    {
-    }
+    abstract public function taskDone(int $level): void;
 
-    public function start(int $number_of_tasks): void
-    {
-    }
+    abstract public function finish(): void;
 
-    public function expand(int $number_of_tasks): void
-    {
-    }
 
-    public function taskDone(int $level): void
-    {
-    }
-
-    public function finish(): void
-    {
-    }
+    abstract public function alterFileDone(string $file_name): void;
 
     public function write(string $message): void
     {
@@ -68,7 +46,7 @@ abstract class Progress
         $this->write('Warning: ' . $message . PHP_EOL);
     }
 
-    protected static function doesTerminalSupportUtf8(): bool
+    final protected static function doesTerminalSupportUtf8(): bool
     {
         if (stripos(PHP_OS, 'WIN') === 0) {
             if (!function_exists('sapi_windows_cp_is_utf8') || !sapi_windows_cp_is_utf8()) {

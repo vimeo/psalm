@@ -52,7 +52,9 @@ final class MethodAnalyzer extends FunctionLikeAnalyzer
         '__set_state',
     ];
 
-    /** @psalm-external-mutation-free */
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         PhpParser\Node\Stmt\ClassMethod $function,
         SourceAnalyzer $source,
@@ -324,6 +326,9 @@ final class MethodAnalyzer extends FunctionLikeAnalyzer
         }
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getMethodId(?string $context_self = null): MethodIdentifier
     {
         $function_name = (string)$this->function->name;

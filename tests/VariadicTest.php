@@ -42,6 +42,8 @@ final class VariadicTest extends TestCase
                 /**
                  * @param int ...$a_list
                  * @return void
+                 * 
+                 * @psalm-mutation-free 
                  */
                 function f(int ...$a_list) {
                 }
@@ -85,6 +87,7 @@ final class VariadicTest extends TestCase
 
     /**
      * @return iterable<string,array{code: string}>
+     * @psalm-pure
      */
     #[Override]
     public function providerValidCodeParse(): iterable

@@ -55,8 +55,9 @@ final class TypeChecker extends TypeVisitor
     private bool $has_errors = false;
 
     /**
-     * @param  array<string>    $suppressed_issues
-     * @param  array<string, bool> $phantom_classes
+     * @param array<string>    $suppressed_issues
+     * @param array<string, bool> $phantom_classes
+     * @psalm-mutation-free
      */
     public function __construct(
         private readonly StatementsSource $source,
@@ -355,8 +356,8 @@ final class TypeChecker extends TypeVisitor
                     : null;
 
                 if ($method_storage instanceof MethodStorage
-                    && $method_storage->mutation_free
-                    && !$method_storage->mutation_free_inferred
+                    && $method_storage->isMutationFree()
+                    && !$method_storage->mutation_free_assumed
                 ) {
                     // do nothing
                 } else {

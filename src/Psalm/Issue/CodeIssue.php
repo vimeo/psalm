@@ -19,12 +19,18 @@ abstract class CodeIssue
 
     public ?string $dupe_key = null;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         public readonly string $message,
         public readonly CodeLocation $code_location,
     ) {
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getShortLocationWithPrevious(): string
     {
         $previous_text = '';
@@ -37,16 +43,25 @@ abstract class CodeIssue
         return $this->code_location->file_name . ':' . $this->code_location->getLineNumber() . $previous_text;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getShortLocation(): string
     {
         return $this->code_location->file_name . ':' . $this->code_location->getLineNumber();
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getFilePath(): string
     {
         return $this->code_location->file_path;
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getIssueType(): string
     {
         $fqcn_parts = explode('\\', static::class);

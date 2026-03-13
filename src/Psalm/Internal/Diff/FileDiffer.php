@@ -22,6 +22,7 @@ use function substr;
  * Algorithmica 1.1 (1986): 251-266.
  *
  * @internal
+ * @psalm-immutable
  */
 final class FileDiffer
 {

@@ -8,6 +8,7 @@ class SystemClass
     const HELLO = 'hello';
 
     /**
+     * @psalm-mutation-free
      * @param int       $a
      * @param string    $b
      *

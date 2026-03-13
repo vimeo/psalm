@@ -1,6 +1,7 @@
 <?php
 namespace Vimeo\Test\DummyProject;
 
+/** @psalm-immutable */
 final class Bar
 {
     use SomeTrait;
@@ -8,6 +9,7 @@ final class Bar
     /** @var string */
     public $x;
 
+    /** @psalm-mutation-free */
     public function __construct()
     {
         $this->x = 'hello';

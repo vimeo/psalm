@@ -836,6 +836,8 @@ final class LanguageServer extends Dispatcher
      * A notification to ask the server to exit its process.
      * The server should exit with success code 0 if the shutdown request has been received before;
      * otherwise with error code 1.
+     *
+     * @psalm-pure
      */
     public function exit(): never
     {
@@ -994,6 +996,9 @@ final class LanguageServer extends Dispatcher
         return $filepath;
     }
 
+    /**
+     * @psalm-pure
+     */
     private function getPathPart(string $uri): string
     {
         $fragments = parse_url($uri);
@@ -1011,12 +1016,18 @@ final class LanguageServer extends Dispatcher
     // like `$/cancelRequest` to `$this->cancelRequest()`
     // and `$/a/b/c` to `$this->a->b->c()`
 
+    /**
+     * @psalm-pure
+     */
     public function __isset(string $prop_name): bool
     {
         return $prop_name === '$';
     }
 
-    /** @return static */
+    /**
+     * @return static
+     * @psalm-mutation-free
+     */
     public function __get(string $_prop_name): self
     {
         return $this;

@@ -104,6 +104,9 @@ class TestCase extends BaseTestCase
         $this->project_analyzer->setPhpVersion('7.4', 'tests');
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function tearDown(): void
     {
@@ -151,7 +154,7 @@ class TestCase extends BaseTestCase
         $file_analyzer->analyze($context);
 
         if ($codebase->taint_flow_graph) {
-            $codebase->taint_flow_graph->connectSinksAndSources();
+            $codebase->taint_flow_graph->connectSinksAndSources($codebase->progress);
         }
 
         if ($track_unused_suppressions) {

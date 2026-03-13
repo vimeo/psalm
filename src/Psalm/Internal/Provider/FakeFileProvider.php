@@ -52,12 +52,18 @@ final class FakeFileProvider extends FileProvider
         return $this->fake_files[$file_path] ?? parent::getContents($file_path);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function setContents(string $file_path, string $file_contents): void
     {
         $this->fake_files[$file_path] = $file_contents;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function setOpenContents(string $file_path, ?string $file_contents = null): void
     {
@@ -78,6 +84,9 @@ final class FakeFileProvider extends FileProvider
         $this->fake_file_times[$file_path] = (int)microtime(true);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function deleteFile(string $file_path): void
     {
         unset($this->fake_files[$file_path]);

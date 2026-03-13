@@ -60,6 +60,7 @@ final class TypeComparatorTest extends TestCase
 
     /**
      * @return array<array{string}>
+     * @psalm-pure
      */
     public function getAllBasicTypes(): array
     {
@@ -72,6 +73,7 @@ final class TypeComparatorTest extends TestCase
             'int-mask-of' => true,
             'int-mask' => true,
             'pure-Closure' => true,
+            'pure-callable' => true,
         ];
         foreach (TPropertiesOf::tokenNames() as $token_name) {
             $basic_generic_types[$token_name] = true;
@@ -158,7 +160,10 @@ final class TypeComparatorTest extends TestCase
         );
     }
 
-    /** @return iterable<string, list{string, string}> */
+    /**
+     * @return iterable<string, list{string, string}>
+     * @psalm-mutation-free
+     */
     public function getCoercibleComparisons(): iterable
     {
         yield 'callableStringIntoLowercaseString' => [
@@ -173,6 +178,7 @@ final class TypeComparatorTest extends TestCase
 
     /**
      * @return array<array{string, string}>
+     * @psalm-pure
      */
     public function getSuccessfulComparisons(): array
     {
@@ -220,7 +226,10 @@ final class TypeComparatorTest extends TestCase
         ];
     }
 
-    /** @return iterable<string, list{string,string}> */
+    /**
+     * @return iterable<string, list{string,string}>
+     * @psalm-mutation-free
+     */
     public function getUnsuccessfulComparisons(): iterable
     {
         yield 'genericListDoesNotAcceptListTupleWithMismatchedTypes' => [

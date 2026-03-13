@@ -129,6 +129,8 @@ final class ClassLikeStorage implements HasAttributesInterface
 
     public bool $final_from_docblock = false;
 
+    public bool $trait_used = false;
+
     /**
      * @var array<lowercase-string, string>
      */
@@ -160,9 +162,10 @@ final class ClassLikeStorage implements HasAttributesInterface
 
     public bool $is_enum = false;
 
-    public bool $external_mutation_free = false;
+    /** @var Mutations::LEVEL_* */
+    public int $allowed_mutations = Mutations::LEVEL_ALL;
 
-    public bool $mutation_free = false;
+    public bool $has_mutations_annotation = false;
 
     public bool $specialize_instance = false;
 
@@ -387,8 +390,35 @@ final class ClassLikeStorage implements HasAttributesInterface
 
     public bool $readonly = false;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(public string $name)
     {
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function isPure(): bool
+    {
+        return $this->allowed_mutations <= Mutations::LEVEL_NONE;
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function isMutationFree(): bool
+    {
+        return $this->allowed_mutations <= Mutations::LEVEL_INTERNAL_READ;
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function isExternalMutationFree(): bool
+    {
+        return $this->allowed_mutations <= Mutations::LEVEL_INTERNAL_READ_WRITE;
     }
 
     /**
@@ -400,6 +430,9 @@ final class ClassLikeStorage implements HasAttributesInterface
         return $this->attributes;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function hasAttributeIncludingParents(
         string $fq_class_name,
         Codebase $codebase,
@@ -426,6 +459,7 @@ final class ClassLikeStorage implements HasAttributesInterface
      * Get the template constraint types for the class.
      *
      * @return list<Union>
+     * @psalm-mutation-free
      */
     public function getClassTemplateTypes(): array
     {
@@ -438,16 +472,25 @@ final class ClassLikeStorage implements HasAttributesInterface
         return $type_params;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function hasSealedProperties(Config $config): bool
     {
         return $this->sealed_properties ?? ($this->user_defined ? $config->seal_all_properties : false);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function hasSealedMethods(Config $config): bool
     {
         return $this->sealed_methods ?? ($this->user_defined ? $config->seal_all_methods : false);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     private function hasAttribute(string $fq_class_name): bool
     {
         foreach ($this->attributes as $attribute) {
@@ -461,6 +504,7 @@ final class ClassLikeStorage implements HasAttributesInterface
 
     /**
      * @return array<int, string>
+     * @psalm-mutation-free
      */
     public function getSuppressedIssuesForTemplateExtendParams(): array
     {

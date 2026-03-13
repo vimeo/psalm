@@ -32,6 +32,7 @@ final class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderIn
 {
     /**
      * @return array<lowercase-string>
+     * @psalm-pure
      */
     #[Override]
     public static function getFunctionIds(): array
@@ -263,7 +264,7 @@ final class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderIn
             && ($generic_property_count < $max_keyed_array_size * 2
                 || $generic_property_count < 16)
         ) {
-            $objectlike = new TKeyedArray(
+            $objectlike = TKeyedArray::make(
                 $generic_properties,
                 $class_strings ?: null,
                 $all_keyed_arrays || $inner_key_type === null || $inner_value_type === null

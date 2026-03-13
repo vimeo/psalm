@@ -203,6 +203,7 @@ final class EventDispatcher
 
     /**
      * @param class-string $class
+     * @psalm-external-mutation-free
      */
     public function registerClass(string $class): void
     {
@@ -287,6 +288,9 @@ final class EventDispatcher
         }
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function hasAfterMethodCallAnalysisHandlers(): bool
     {
         return count($this->after_method_checks) > 0;
@@ -385,6 +389,9 @@ final class EventDispatcher
         return null;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function hasAfterClassLikeVisitHandlers(): bool
     {
         return count($this->after_visit_classlikes) > 0;
@@ -447,29 +454,23 @@ final class EventDispatcher
         return null;
     }
 
-    /**
-     * @return list<string>
-     */
-    public function dispatchAddTaints(AddRemoveTaintsEvent $event): array
+    public function dispatchAddTaints(AddRemoveTaintsEvent $event): int
     {
-        $added_taints = [];
+        $added_taints = 0;
 
         foreach ($this->add_taints_checks as $handler) {
-            $added_taints = [...$added_taints, ...$handler::addTaints($event)];
+            $added_taints |= $handler::addTaints($event);
         }
 
         return $added_taints;
     }
 
-    /**
-     * @return list<string>
-     */
-    public function dispatchRemoveTaints(AddRemoveTaintsEvent $event): array
+    public function dispatchRemoveTaints(AddRemoveTaintsEvent $event): int
     {
-        $removed_taints = [];
+        $removed_taints = 0;
 
         foreach ($this->remove_taints_checks as $handler) {
-            $removed_taints = [...$removed_taints, ...$handler::removeTaints($event)];
+            $removed_taints |= $handler::removeTaints($event);
         }
 
         return $removed_taints;

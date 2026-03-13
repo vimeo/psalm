@@ -17,6 +17,9 @@ final class FunctionCallTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerValidCodeParse(): iterable
     {
@@ -687,7 +690,7 @@ final class FunctionCallTest extends TestCase
                     /** @var string $string */
                     $elements = explode(" ", $string, -5);',
                 'assertions' => [
-                    '$elements' => 'list<never>',
+                    '$elements' => 'array<never, never>',
                 ],
             ],
             'explodeWithDynamicLimit' => [
@@ -742,7 +745,7 @@ final class FunctionCallTest extends TestCase
                      */
                     $elements = explode($delim, $string, -5);',
                 'assertions' => [
-                    '$elements' => 'list<never>',
+                    '$elements' => 'array<never, never>',
                 ],
             ],
             'explodeWithDynamicDelimiterAndLimit' => [
@@ -2476,6 +2479,9 @@ final class FunctionCallTest extends TestCase
         ];
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerInvalidCodeParse(): iterable
     {

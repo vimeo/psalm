@@ -20,6 +20,7 @@ final class ThrowsAnnotationTest extends TestCase
             '<?php
                 /**
                  * @throws Foo
+                 * @psalm-mutation-free
                  */
                 function bar() : void {}',
         );
@@ -41,6 +42,7 @@ final class ThrowsAnnotationTest extends TestCase
 
                 /**
                  * @throws Foo
+                 * @psalm-mutation-free
                  */
                 function bar() : void {}',
         );
@@ -60,6 +62,7 @@ final class ThrowsAnnotationTest extends TestCase
                 class Foo {
                     /**
                      * @throws MyException|Throwable
+                     * @psalm-mutation-free
                      */
                     public function bar() : void {}
                 }',
@@ -79,6 +82,9 @@ final class ThrowsAnnotationTest extends TestCase
         $this->addFile(
             'somefile.php',
             '<?php
+                /**
+                 * @psalm-pure
+                 */
                 function foo(int $x, int $y) : int {
                     if ($y === 0) {
                         throw new \RangeException("Cannot divide by zero");
@@ -107,6 +113,7 @@ final class ThrowsAnnotationTest extends TestCase
                 /**
                  * @throws RangeException
                  * @throws InvalidArgumentException
+                 * @psalm-pure
                  */
                 function foo(int $x, int $y) : int {
                     if ($y === 0) {
@@ -135,6 +142,7 @@ final class ThrowsAnnotationTest extends TestCase
             '<?php
                 /**
                  * @throws Exception
+                 * @psalm-pure
                  */
                 function foo(int $x, int $y) : int {
                     if ($y === 0) {
@@ -163,6 +171,7 @@ final class ThrowsAnnotationTest extends TestCase
             '<?php
                 /**
                  * @throws Throwable
+                 * @psalm-pure
                  */
                 function foo(int $x, int $y) : int {
                     if ($y < 0) {
@@ -190,6 +199,7 @@ final class ThrowsAnnotationTest extends TestCase
                 /**
                  * @throws RangeException
                  * @throws InvalidArgumentException
+                 * @psalm-pure
                  */
                 function foo(int $x, int $y) : int {
                     if ($y === 0) {
@@ -223,6 +233,7 @@ final class ThrowsAnnotationTest extends TestCase
                 /**
                  * @throws RangeException
                  * @throws InvalidArgumentException
+                 * @psalm-pure
                  */
                 function foo(int $x, int $y) : int {
                     if ($y === 0) {
@@ -239,6 +250,7 @@ final class ThrowsAnnotationTest extends TestCase
                 /**
                  * @throws RangeException
                  * @throws InvalidArgumentException
+                 * @psalm-pure
                  */
                 function bar(int $x, int $y) : void {
                     foo($x, $y);
@@ -261,6 +273,7 @@ final class ThrowsAnnotationTest extends TestCase
                 {
                     /**
                      * @throws \TypeError
+                     * @psalm-pure
                      */
                     public static function notReallyThrowing(int $a): string
                     {
@@ -297,6 +310,7 @@ final class ThrowsAnnotationTest extends TestCase
                 /**
                  * @throws RangeException
                  * @throws InvalidArgumentException
+                 * @psalm-pure
                  */
                 function foo(int $x, int $y) : int {
                     if ($y === 0) {
@@ -336,6 +350,7 @@ final class ThrowsAnnotationTest extends TestCase
                 /**
                  * @throws RangeException
                  * @throws InvalidArgumentException
+                 * @psalm-pure
                  */
                 function foo(int $x, int $y) : int {
                     if ($y === 0) {
@@ -374,6 +389,7 @@ final class ThrowsAnnotationTest extends TestCase
             '<?php
                 /**
                  * @throws
+                 * @psalm-mutation-free
                  */
                 function foo(int $x, int $y) : int {}',
         );
@@ -393,6 +409,7 @@ final class ThrowsAnnotationTest extends TestCase
                 /**
                  * @throws RangeException
                  * @throws InvalidArgumentException
+                 * @psalm-pure
                  */
                 function foo(int $x, int $y) : int {
                     if ($y === 0) {
@@ -429,6 +446,7 @@ final class ThrowsAnnotationTest extends TestCase
                 {
                     /**
                      * @throws \InvalidArgumentException
+                     * @psalm-mutation-free
                      */
                     public function test(): void;
                 }
@@ -437,6 +455,7 @@ final class ThrowsAnnotationTest extends TestCase
                 {
                     /**
                      * {@inheritdoc}
+                     * @psalm-mutation-free
                      */
                     public function test(): void
                     {
@@ -462,12 +481,16 @@ final class ThrowsAnnotationTest extends TestCase
                 {
                     /**
                      * @throws \InvalidArgumentException
+                     * @psalm-mutation-free
                      */
                     public function test(): void;
                 }
 
                 class Bar implements Foo
                 {
+                    /**
+                     * @psalm-mutation-free
+                     */
                     public function test(): void
                     {
                         throw new \InvalidArgumentException();
@@ -492,6 +515,7 @@ final class ThrowsAnnotationTest extends TestCase
                 {
                     /**
                      * @throws \InvalidArgumentException
+                     * @psalm-mutation-free
                      */
                     public function test(): void;
                 }
@@ -501,6 +525,7 @@ final class ThrowsAnnotationTest extends TestCase
                     /**
                      * {@inheritdoc}
                      * @throws \OutOfBoundsException
+                     * @psalm-mutation-free
                      */
                     public function test(): void
                     {
@@ -526,6 +551,7 @@ final class ThrowsAnnotationTest extends TestCase
                 {
                     /**
                      * @throws \InvalidArgumentException
+                     * @psalm-mutation-free
                      */
                     public function test(): void;
                 }
@@ -535,6 +561,7 @@ final class ThrowsAnnotationTest extends TestCase
                     /**
                      * {@inheritdoc}
                      * @throws \OutOfBoundsException
+                     * @psalm-mutation-free
                      */
                     public function test(): void
                     {
@@ -562,6 +589,7 @@ final class ThrowsAnnotationTest extends TestCase
                 {
                     /**
                      * @throws \InvalidArgumentException
+                     * @psalm-mutation-free
                      */
                     public function test(): void;
                 }
@@ -570,6 +598,7 @@ final class ThrowsAnnotationTest extends TestCase
                 {
                     /**
                      * @throws \OutOfBoundsException
+                     * @psalm-mutation-free
                      */
                     public function test(): void
                     {
@@ -595,6 +624,7 @@ final class ThrowsAnnotationTest extends TestCase
             '<?php
                 /**
                  * @return void
+                 * @psalm-mutation-free
                  */
                 function foo() : void {
                     try {
@@ -619,6 +649,7 @@ final class ThrowsAnnotationTest extends TestCase
             '<?php
                 /**
                  * @throws \RuntimeException
+                 * @psalm-mutation-free
                  */
                 function method(): void
                 {
@@ -647,11 +678,13 @@ final class ThrowsAnnotationTest extends TestCase
             'somefile.php',
             '<?php
                 final class Monkey {
-                    /** @throws InvalidArgumentException */
+                    /** @throws InvalidArgumentException
+                     * @psalm-mutation-free */
                     public function spendsItsDay(): void {
                         $this->havingFun();
                     }
-                    /** @throws \Monkey\Shit */
+                    /** @throws \Monkey\Shit
+                     * @psalm-mutation-free */
                     private function havingFun(): void {}
                 }
             ',
@@ -681,6 +714,7 @@ final class ThrowsAnnotationTest extends TestCase
                 {
                     /**
                      * @throws Throwable
+                     * @psalm-mutation-free
                      */
                     private function methodOne(): void {
                         $this->methodTwo();
@@ -688,6 +722,7 @@ final class ThrowsAnnotationTest extends TestCase
 
                     /**
                      * @throws TestExceptionInterface
+                     * @psalm-mutation-free
                      */
                     private function methodTwo(): void {}
                 }

@@ -1136,7 +1136,8 @@ final class TemplateStandinTypeReplacer
     }
 
     /**
-     * @param  array<string, array<string, non-empty-list<TemplateBound>>>  $template_types
+     * @param array<string, array<string, non-empty-list<TemplateBound>>>  $template_types
+     * @psalm-external-mutation-free
      */
     public static function getRootTemplateType(
         array $template_types,
@@ -1185,7 +1186,8 @@ final class TemplateStandinTypeReplacer
      * If instead given a collection of lower bounds it normally returns a union of those
      * bound types.
      *
-     * @param  non-empty-list<TemplateBound>  $lower_bounds
+     * @param non-empty-list<TemplateBound>  $lower_bounds
+     * @psalm-external-mutation-free
      */
     public static function getMostSpecificTypeFromBounds(array $lower_bounds, ?Codebase $codebase): Union
     {

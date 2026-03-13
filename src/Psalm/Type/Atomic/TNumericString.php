@@ -13,6 +13,9 @@ use Override;
  */
 final class TNumericString extends TNonEmptyString
 {
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getId(bool $exact = true, bool $nested = false): string
     {
@@ -23,18 +26,27 @@ final class TNumericString extends TNonEmptyString
         return 'numeric-string';
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getKey(bool $include_extra = true): string
     {
         return 'numeric-string';
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getAssertionString(): string
     {

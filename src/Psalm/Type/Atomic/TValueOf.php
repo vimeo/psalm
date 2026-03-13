@@ -55,6 +55,9 @@ final class TValueOf extends Atomic
         ));
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     protected function getChildNodeKeys(): array
     {
@@ -69,7 +72,8 @@ final class TValueOf extends Atomic
     }
 
     /**
-     * @param  array<lowercase-string, string> $aliased_classes
+     * @param array<lowercase-string, string> $aliased_classes
+     * @psalm-pure
      */
     #[Override]
     public function toPhpString(
@@ -81,18 +85,27 @@ final class TValueOf extends Atomic
         return null;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getAssertionString(): string
     {
         return 'mixed';
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public static function isViableTemplateType(Union $template_type): bool
     {
         foreach ($template_type->getAtomicTypes() as $type) {

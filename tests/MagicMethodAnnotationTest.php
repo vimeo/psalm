@@ -253,6 +253,9 @@ final class MagicMethodAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerValidCodeParse(): iterable
     {
@@ -295,7 +298,7 @@ final class MagicMethodAnnotationTest extends TestCase
                     '$b' => 'mixed',
                     '$c' => 'bool',
                     '$d' => 'array<array-key, int|string>',
-                    '$e' => 'callable():string',
+                    '$e' => 'impure-callable():string',
                 ],
             ],
             'validSimpleAnnotationsWithStatic' => [
@@ -336,7 +339,7 @@ final class MagicMethodAnnotationTest extends TestCase
                     '$b' => 'mixed',
                     '$c' => 'bool',
                     '$d' => 'array<array-key, int|string>',
-                    '$e' => 'callable():string',
+                    '$e' => 'impure-callable():string',
                     '$f' => 'Child',
                 ],
             ],
@@ -1148,6 +1151,9 @@ final class MagicMethodAnnotationTest extends TestCase
         ];
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerInvalidCodeParse(): iterable
     {

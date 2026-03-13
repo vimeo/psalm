@@ -22,6 +22,9 @@ use function count;
 
 final class CustomArrayMapFunctionStorageProvider implements DynamicFunctionStorageProviderInterface
 {
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public static function getFunctionIds(): array
     {
@@ -74,6 +77,9 @@ final class CustomArrayMapFunctionStorageProvider implements DynamicFunctionStor
         return $custom_array_map_storage;
     }
 
+    /**
+     * @psalm-pure
+     */
     private static function createLastArrayMapParam(Union $input_array_type): FunctionLikeParameter
     {
         return new FunctionLikeParameter(
@@ -89,8 +95,10 @@ final class CustomArrayMapFunctionStorageProvider implements DynamicFunctionStor
 
     /**
      * Resolves value type from array-like type:
-     *     list<int> -> int
-     *     list<int|string> -> int|string
+     * list<int> -> int
+     * list<int|string> -> int|string
+     *
+     * @psalm-external-mutation-free
      */
     private static function toValueType(Codebase $codebase, Union $array_like_type): ?Union
     {
@@ -109,13 +117,15 @@ final class CustomArrayMapFunctionStorageProvider implements DynamicFunctionStor
         return Type::combineUnionTypeArray($value_types, $codebase);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     private static function createExpectedCallable(
         Union $input_type,
         DynamicTemplateProvider $template_provider,
         int $return_template_offset = 0,
     ): TCallable {
         return new TCallable(
-            'callable',
             [new FunctionLikeParameter('a', false, $input_type, $input_type)],
             new Union([
                 $template_provider->createTemplate('T' . $return_template_offset),
@@ -125,6 +135,7 @@ final class CustomArrayMapFunctionStorageProvider implements DynamicFunctionStor
 
     /**
      * @return list<TCallable>
+     * @psalm-mutation-free
      */
     private static function createRestCallables(
         DynamicTemplateProvider $template_provider,
@@ -149,6 +160,7 @@ final class CustomArrayMapFunctionStorageProvider implements DynamicFunctionStor
      * Extracts return type for custom_array_map from last callable arg.
      *
      * @param non-empty-list<TCallable> $all_expected_callables
+     * @psalm-pure
      */
     private static function createReturnType(array $all_expected_callables): Union
     {
@@ -161,6 +173,7 @@ final class CustomArrayMapFunctionStorageProvider implements DynamicFunctionStor
      * Creates variadic template list for custom_array_map function.
      *
      * @return list<TTemplateParam>
+     * @psalm-mutation-free
      */
     private static function createTemplates(
         DynamicTemplateProvider $template_provider,

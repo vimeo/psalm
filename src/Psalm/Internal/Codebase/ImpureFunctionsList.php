@@ -7,13 +7,19 @@ namespace Psalm\Internal\Codebase;
 use function dirname;
 use function strtolower;
 
-/** @internal */
+/**
+ * @internal
+ * @psalm-external-mutation-free
+ */
 final class ImpureFunctionsList
 {
     /** @var null|array<string, true> */
     private static ?array $impure_functions_list = null;
 
-    /** @psalm-assert !null self::$impure_functions_list */
+    /**
+     * @psalm-assert !null self::$impure_functions_list
+     * @psalm-external-mutation-free
+     */
     private static function load(): void
     {
         if (self::$impure_functions_list !== null) {
@@ -24,6 +30,9 @@ final class ImpureFunctionsList
         self::$impure_functions_list = require(dirname(__DIR__, 4) . '/dictionaries/ImpureFunctionsList.php');
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public static function isImpure(string $function_id): bool
     {
         self::load();

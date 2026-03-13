@@ -15,7 +15,6 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\IncludeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\ForbiddenCode;
@@ -416,11 +415,11 @@ final class NamedFunctionCallHandler
             $source = $statements_analyzer->getSource();
 
             if ($source instanceof FunctionLikeAnalyzer) {
-                if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
+                if ($statements_analyzer->variable_use_graph) {
                     foreach ($source->param_nodes as $param_node) {
-                        $statements_analyzer->data_flow_graph->addPath(
+                        $statements_analyzer->variable_use_graph->addPath(
                             $param_node,
-                            new DataFlowNode('variable-use', 'variable use', null),
+                            DataFlowNode::getForVariableUse(),
                             'variable-use',
                         );
                     }

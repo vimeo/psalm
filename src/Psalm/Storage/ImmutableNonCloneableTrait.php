@@ -9,6 +9,9 @@ namespace Psalm\Storage;
  */
 trait ImmutableNonCloneableTrait
 {
+    /**
+     * @psalm-mutation-free
+     */
     private function __clone()
     {
     }

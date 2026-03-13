@@ -47,6 +47,7 @@ final class YieldAnalyzer
         if ($doc_comment) {
             try {
                 $var_comments = CommentAnalyzer::getTypeFromComment(
+                    $codebase,
                     $doc_comment,
                     $statements_analyzer,
                     $statements_analyzer->getAliases(),

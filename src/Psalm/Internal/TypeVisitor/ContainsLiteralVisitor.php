@@ -21,6 +21,9 @@ final class ContainsLiteralVisitor extends TypeVisitor
 {
     private bool $contains_literal = false;
 
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     protected function enterNode(TypeNode $type): ?int
     {

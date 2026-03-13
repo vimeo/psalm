@@ -162,7 +162,12 @@ final class ExpressionScanner
                     $doc_comment = $second_arg_value->getDocComment();
                     if ($doc_comment) {
                         try {
-                            $var_comments = CommentAnalyzer::getTypeFromComment($doc_comment, $file_scanner, $aliases);
+                            $var_comments = CommentAnalyzer::getTypeFromComment(
+                                $codebase,
+                                $doc_comment,
+                                $file_scanner,
+                                $aliases,
+                            );
                             foreach ($var_comments as $var_comment) {
                                 if ($var_comment->type) {
                                     $const_type = $var_comment->type;

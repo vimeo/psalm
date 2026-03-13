@@ -74,6 +74,9 @@ final class IssetAnalyzer
         $context->inside_isset = false;
     }
 
+    /**
+     * @psalm-pure
+     */
     private static function isValidStatement(PhpParser\Node\Expr $stmt): bool
     {
         return $stmt instanceof PhpParser\Node\Expr\Variable

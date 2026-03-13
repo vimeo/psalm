@@ -392,14 +392,16 @@ final class MissingMethodCallHandler
         }
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     private static function createFirstClassCallableReturnType(?MethodStorage $method_storage = null): Union
     {
         if ($method_storage) {
             return new Union([new TClosure(
-                'Closure',
                 $method_storage->params,
                 $method_storage->return_type,
-                $method_storage->pure,
+                $method_storage->allowed_mutations,
             )]);
         }
 
@@ -415,6 +417,7 @@ final class MissingMethodCallHandler
      * @param ClassLikeStorage $static_class_storage The called class
      * @param lowercase-string $method_name_lc
      * @return array{MethodStorage, ClassLikeStorage}
+     * @psalm-mutation-free
      */
     private static function findPseudoMethodAndClassStorages(
         Codebase $codebase,

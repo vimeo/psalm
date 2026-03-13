@@ -11,12 +11,16 @@ use Psalm\FileManipulation;
 use Psalm\StatementsSource;
 use Psalm\Type\Union;
 
+/**
+ * @psalm-external-mutation-free
+ */
 final class AfterFunctionCallAnalysisEvent
 {
     /**
      * @param non-empty-string $function_id
      * @param FileManipulation[] $file_replacements
      * @internal
+     * @psalm-mutation-free
      */
     public function __construct(
         private readonly FuncCall $expr,
@@ -72,6 +76,7 @@ final class AfterFunctionCallAnalysisEvent
 
     /**
      * @param FileManipulation[] $file_replacements
+     * @psalm-external-mutation-free
      */
     public function setFileReplacements(array $file_replacements): void
     {

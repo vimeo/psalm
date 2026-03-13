@@ -22,6 +22,7 @@ final class IssueData
      * @param self::SEVERITY_* $severity
      * @param ?list<DataFlowNodeData|array{label: string, entry_path_type: string}> $taint_trace
      * @param ?list<DataFlowNodeData> $other_references
+     * @psalm-mutation-free
      */
     public function __construct(
         public string $severity,

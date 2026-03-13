@@ -100,6 +100,9 @@ class FileAnalyzer extends SourceAnalyzer
 
     private ?Union $return_type = null;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         public ProjectAnalyzer $project_analyzer,
         protected string $file_path,
@@ -162,7 +165,7 @@ class FileAnalyzer extends SourceAnalyzer
         $leftover_stmts = $this->populateCheckers($stmts);
 
         $this->node_data = new NodeDataProvider();
-        $statements_analyzer = new StatementsAnalyzer($this, $this->node_data);
+        $statements_analyzer = new StatementsAnalyzer($this, $this->node_data, true);
 
         foreach ($file_storage->docblock_issues as $docblock_issue) {
             IssueBuffer::maybeAdd($docblock_issue);
@@ -171,7 +174,7 @@ class FileAnalyzer extends SourceAnalyzer
         // if there are any leftover statements, evaluate them,
         // in turn causing the classes/interfaces be evaluated
         if ($leftover_stmts) {
-            $statements_analyzer->analyze($leftover_stmts, $this->context, $global_context, true);
+            $statements_analyzer->analyze($leftover_stmts, $this->context, $global_context);
 
             foreach ($leftover_stmts as $leftover_stmt) {
                 if ($leftover_stmt instanceof PhpParser\Node\Stmt\Return_) {
@@ -345,11 +348,17 @@ class FileAnalyzer extends SourceAnalyzer
         }
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addNamespacedClassAnalyzer(string $fq_class_name, ClassAnalyzer $class_analyzer): void
     {
         $this->class_analyzers_to_analyze[strtolower($fq_class_name)] = $class_analyzer;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addNamespacedInterfaceAnalyzer(string $fq_class_name, InterfaceAnalyzer $interface_analyzer): void
     {
         $this->interface_analyzers_to_analyze[strtolower($fq_class_name)] = $interface_analyzer;
@@ -416,6 +425,9 @@ class FileAnalyzer extends SourceAnalyzer
         }
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getFunctionLikeAnalyzer(MethodIdentifier $method_id): ?MethodAnalyzer
     {
         $fq_class_name = $method_id->fq_class_name;
@@ -432,7 +444,9 @@ class FileAnalyzer extends SourceAnalyzer
         return $class_analyzer_to_examine->getFunctionLikeAnalyzer($method_name);
     }
 
-    /** @psalm-mutation-free */
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getNamespace(): ?string
     {
@@ -467,6 +481,9 @@ class FileAnalyzer extends SourceAnalyzer
         return $this->aliased_classes_flipped_replaceable;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public static function clearCache(): void
     {
         TypeTokenizer::clearCache();
@@ -509,6 +526,9 @@ class FileAnalyzer extends SourceAnalyzer
         return $this->root_file_path ?: $this->file_path;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function setRootFilePath(string $file_path, string $file_name): void
     {
@@ -516,11 +536,17 @@ class FileAnalyzer extends SourceAnalyzer
         $this->root_file_path = $file_path;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addRequiredFilePath(string $file_path): void
     {
         $this->required_file_paths[$file_path] = true;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addParentFilePath(string $file_path): void
     {
         $this->parent_file_paths[$file_path] = true;
@@ -577,6 +603,7 @@ class FileAnalyzer extends SourceAnalyzer
 
     /**
      * @param array<int, string> $new_issues
+     * @psalm-external-mutation-free
      */
     #[Override]
     public function addSuppressedIssues(array $new_issues): void
@@ -590,6 +617,7 @@ class FileAnalyzer extends SourceAnalyzer
 
     /**
      * @param array<int, string> $new_issues
+     * @psalm-external-mutation-free
      */
     #[Override]
     public function removeSuppressedIssues(array $new_issues): void
@@ -601,21 +629,27 @@ class FileAnalyzer extends SourceAnalyzer
         $this->suppressed_issues = array_diff_key($this->suppressed_issues, $new_issues);
     }
 
-    /** @psalm-mutation-free */
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getFQCLN(): ?string
     {
         return null;
     }
 
-    /** @psalm-mutation-free */
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getParentFQCLN(): ?string
     {
         return null;
     }
 
-    /** @psalm-mutation-free */
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getClassName(): ?string
     {
@@ -623,8 +657,8 @@ class FileAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * @psalm-mutation-free
      * @return array<string, array<string, Union>>|null
+     * @psalm-pure
      */
     #[Override]
     public function getTemplateTypeMap(): ?array
@@ -632,7 +666,9 @@ class FileAnalyzer extends SourceAnalyzer
         return null;
     }
 
-    /** @psalm-mutation-free */
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function isStatic(): bool
     {
@@ -687,6 +723,9 @@ class FileAnalyzer extends SourceAnalyzer
         return $this->return_type;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function clearSourceBeforeDestruction(): void
     {
         unset($this->source);

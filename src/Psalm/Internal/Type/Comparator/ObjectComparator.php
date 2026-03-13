@@ -139,8 +139,9 @@ final class ObjectComparator
     }
 
     /**
-     * @param  TNamedObject|TTemplateParam|TIterable  $type_part
+     * @param TNamedObject|TTemplateParam|TIterable  $type_part
      * @return array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject>
+     * @psalm-mutation-free
      */
     private static function getIntersectionTypes(Atomic $type_part): array
     {
