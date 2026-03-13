@@ -140,7 +140,6 @@ final class AttributesAnalyzer
             $fq_attribute_name,
             $attribute_name_location,
             null,
-            null,
             $suppressed_issues,
             new ClassLikeNameOptions(
                 false,

@@ -629,8 +629,7 @@ final class ForeachAnalyzer
                         $statements_analyzer,
                         $iterator_atomic_type->value,
                         new CodeLocation($statements_analyzer->getSource(), $expr),
-                        $context->self,
-                        $context->calling_method_id,
+                        $context,
                         $statements_analyzer->getSuppressedIssues(),
                         new ClassLikeNameOptions(true),
                     ) === false) {

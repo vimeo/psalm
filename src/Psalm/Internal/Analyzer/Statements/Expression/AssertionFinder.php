@@ -2691,7 +2691,6 @@ final class AssertionFinder
                 $var_type,
                 new CodeLocation($source, $whichclass_expr),
                 null,
-                null,
                 $source->getSuppressedIssues(),
             ) !== false
         ) {
@@ -3394,7 +3393,6 @@ final class AssertionFinder
                     $source,
                     $var_type,
                     new CodeLocation($source, $whichclass_expr),
-                    null,
                     null,
                     $source->getSuppressedIssues(),
                     new ClassLikeNameOptions(true),

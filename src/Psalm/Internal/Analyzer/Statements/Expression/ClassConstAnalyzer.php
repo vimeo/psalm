@@ -114,8 +114,7 @@ final class ClassConstAnalyzer
                             $statements_analyzer,
                             $fq_class_name,
                             new CodeLocation($statements_analyzer->getSource(), $stmt->class),
-                            $context->self,
-                            $context->calling_method_id,
+                            $context,
                             $statements_analyzer->getSuppressedIssues(),
                             new ClassLikeNameOptions(false, true),
                         ) === false) {
@@ -137,7 +136,7 @@ final class ClassConstAnalyzer
                     $statements_analyzer,
                     $stmt->class,
                     $fq_class_name,
-                    $context->calling_method_id,
+                    $context,
                     false,
                     $stmt->class->getFirst() === 'self',
                 );
@@ -523,7 +522,7 @@ final class ClassConstAnalyzer
                     $statements_analyzer,
                     $stmt->class,
                     $fq_class_name,
-                    $context->calling_method_id,
+                    $context,
                 );
             }
 

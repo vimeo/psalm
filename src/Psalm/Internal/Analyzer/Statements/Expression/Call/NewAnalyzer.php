@@ -191,7 +191,7 @@ final class NewAnalyzer extends CallAnalyzer
                     $statements_analyzer,
                     $stmt->class,
                     $fq_class_name,
-                    $context->calling_method_id,
+                    $context,
                 );
             }
 
@@ -213,8 +213,7 @@ final class NewAnalyzer extends CallAnalyzer
                     $statements_analyzer,
                     $fq_class_name,
                     new CodeLocation($statements_analyzer->getSource(), $stmt->class),
-                    $context->self,
-                    $context->calling_method_id,
+                    $context,
                     $statements_analyzer->getSuppressedIssues(),
                 ) === false) {
                     ArgumentsAnalyzer::analyze(
