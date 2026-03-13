@@ -120,6 +120,51 @@ final class CoreStubsTest extends TestCase
             'ignored_issues' => [],
             'php_version' => '8.2',
         ];
+        yield 'DatePeriod with DateTime start binds TDate to DateTime' => [
+            'code' => '<?php
+
+            $period = new DatePeriod(
+                new DateTime("now"),
+                DateInterval::createFromDateString("1 day"),
+                new DateTime("+1 week")
+            );
+            $dt = null;
+            foreach ($period as $dt) {
+                echo $dt->format("Y-m-d");
+            }',
+            'assertions' => [
+                '$period' => 'DatePeriod<DateTime, DateTime>',
+                '$dt' => 'DateTime|null',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.2',
+        ];
+        yield 'DatePeriod getIterator returns correctly typed Iterator' => [
+            'code' => '<?php
+
+            $period = new DatePeriod(
+                new DateTimeImmutable("now"),
+                DateInterval::createFromDateString("1 day"),
+                new DateTimeImmutable("+1 week")
+            );
+            $iterator = $period->getIterator();',
+            'assertions' => [
+                '$iterator' => 'Iterator<int, DateTimeImmutable>',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.2',
+        ];
+        yield 'DatePeriod getIterator with ISO string returns Iterator of DateTime' => [
+            'code' => '<?php
+
+            $period = new DatePeriod("R4/2012-07-01T00:00:00Z/P7D");
+            $iterator = $period->getIterator();',
+            'assertions' => [
+                '$iterator' => 'Iterator<int, DateTime>',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.2',
+        ];
         yield 'sprintf yields a non-empty-string for non-empty-string value' => [
             'code' => '<?php
 
