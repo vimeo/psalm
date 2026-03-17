@@ -16,6 +16,8 @@ abstract class CodeIssue
     public const ERROR_LEVEL = -1;
     /** @var int<0, max> */
     public const SHORTCODE = 0;
+    /** @var non-empty-string|null */
+    public const DOCUMENTATION_URL = null;
 
     public ?string $dupe_key = null;
 
@@ -107,6 +109,7 @@ abstract class CodeIssue
                 ]
                 : null,
             $this->dupe_key,
+            static::DOCUMENTATION_URL,
         );
     }
 }
