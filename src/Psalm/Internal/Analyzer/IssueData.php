@@ -49,7 +49,7 @@ final class IssueData
         ?string $documentation_url = null,
     ) {
         $this->link = match (true) {
-            is_string($documentation_url) => $documentation_url,
+            $documentation_url !== null => $documentation_url,
             $shortcode > 0 => 'https://psalm.dev/' . str_pad((string) $shortcode, 3, "0", STR_PAD_LEFT),
             default => '',
         };
