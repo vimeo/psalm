@@ -38,37 +38,57 @@ final class AfterMethodCallAnalysisEvent
 
     /**
      * @return MethodCall|StaticCall
+     *
+     * @psalm-mutation-free
      */
     public function getExpr(): Expr
     {
         return $this->expr;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getMethodId(): string
     {
         return $this->method_id;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getAppearingMethodId(): string
     {
         return $this->appearing_method_id;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getDeclaringMethodId(): string
     {
         return $this->declaring_method_id;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getContext(): Context
     {
         return $this->context;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getStatementsSource(): StatementsSource
     {
         return $this->statements_source;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getCodebase(): Codebase
     {
         return $this->codebase;
@@ -76,12 +96,17 @@ final class AfterMethodCallAnalysisEvent
 
     /**
      * @return FileManipulation[]
+     *
+     * @psalm-mutation-free
      */
     public function getFileReplacements(): array
     {
         return $this->file_replacements;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getReturnTypeCandidate(): ?Union
     {
         return $this->return_type_candidate;

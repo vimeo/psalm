@@ -29,21 +29,33 @@ final class AfterClassLikeVisitEvent
     ) {
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getStmt(): ClassLike
     {
         return $this->stmt;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getStorage(): ClassLikeStorage
     {
         return $this->storage;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getStatementsSource(): FileSource
     {
         return $this->statements_source;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getCodebase(): Codebase
     {
         return $this->codebase;
@@ -51,6 +63,8 @@ final class AfterClassLikeVisitEvent
 
     /**
      * @return FileManipulation[]
+     *
+     * @psalm-mutation-free
      */
     public function getFileReplacements(): array
     {

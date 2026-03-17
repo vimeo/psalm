@@ -31,21 +31,33 @@ final class BeforeExpressionAnalysisEvent
     ) {
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getExpr(): Expr
     {
         return $this->expr;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getContext(): Context
     {
         return $this->context;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getStatementsSource(): StatementsSource
     {
         return $this->statements_source;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getCodebase(): Codebase
     {
         return $this->codebase;
@@ -53,6 +65,8 @@ final class BeforeExpressionAnalysisEvent
 
     /**
      * @return list<FileManipulation>
+     *
+     * @psalm-mutation-free
      */
     public function getFileReplacements(): array
     {
