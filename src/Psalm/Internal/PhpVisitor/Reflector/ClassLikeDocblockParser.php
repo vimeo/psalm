@@ -47,7 +47,6 @@ use function substr;
 use function substr_count;
 use function trim;
 
-
 /**
  * @internal
  */
@@ -383,7 +382,8 @@ final class ClassLikeDocblockParser
                         $after_paren = substr($method_entry, $method_close_paren + 1);
                         // Optionally consume return type annotation after the closing paren
                         if (preg_match('/^ ?(\: ?(\??[\\\\a-zA-Z0-9_]+))/', $after_paren, $return_matches)) {
-                            $method_entry = substr($method_entry, 0, $method_close_paren + 1 + strlen($return_matches[0]));
+                            $end = $method_close_paren + 1 + strlen($return_matches[0]);
+                            $method_entry = substr($method_entry, 0, $end);
                         } else {
                             $method_entry = substr($method_entry, 0, $method_close_paren + 1);
                         }

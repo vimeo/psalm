@@ -213,6 +213,15 @@ final class ClassLikeDocblockParserTest extends TestCase
                     'x' => ['type' => 'int|string'],
                 ],
             ],
+            // String literal union types in parentheses (Laravel-style)
+            "\$this lock(('none'|'shared'|'default'|'exclusive') \$value)" => [
+                'name' => 'lock',
+                'returnType' => 'static',
+                'is_static' => false,
+                'params' => [
+                    'value' => ['type' => 'string'],
+                ],
+            ],
         ];
 
         $res = [];

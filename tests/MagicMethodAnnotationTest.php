@@ -1167,11 +1167,20 @@ final class MagicMethodAnnotationTest extends TestCase
                     $a = $child->nullable();
                     $b = $child->lock("shared");
                     $c = $child->foo(1);
-                    $child->baz(1, 2);',
+                    $child->baz(1, 2);
+
+                    /**
+                     * @method $this lock((\'none\'|\'shared\'|\'default\'|\'exclusive\') $value)
+                     */
+                    class SingleQuoteChild extends ParentClass {}
+
+                    $sq = new SingleQuoteChild();
+                    $d = $sq->lock(\'shared\');',
                 'assertions' => [
                     '$a' => 'Child',
                     '$b' => 'Child',
                     '$c' => 'Child',
+                    '$d' => 'SingleQuoteChild',
                 ],
             ],
         ];
