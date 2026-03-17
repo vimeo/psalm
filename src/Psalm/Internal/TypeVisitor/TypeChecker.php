@@ -57,6 +57,7 @@ final class TypeChecker extends TypeVisitor
     /**
      * @param array<string>    $suppressed_issues
      * @param array<string, bool> $phantom_classes
+     * @param lowercase-string|null $calling_method_id
      * @psalm-mutation-free
      */
     public function __construct(
@@ -133,18 +134,18 @@ final class TypeChecker extends TypeVisitor
             );
         }
 
-        if (!isset($this->phantom_classes[strtolower($atomic->value)]) &&
-            ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
+        if (!isset($this->phantom_classes[strtolower($atomic->value)])) {
+            if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                 $this->source,
                 $atomic->value,
                 $this->code_location,
                 $this->context,
                 $this->suppressed_issues,
                 new ClassLikeNameOptions($this->inferred, false, true, true, $atomic->from_docblock),
-            ) === false
-        ) {
-            $this->has_errors = true;
-            return;
+            ) === false) {
+                $this->has_errors = true;
+                return;
+            }
         }
 
         $fq_class_name_lc = strtolower($atomic->value);

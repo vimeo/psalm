@@ -86,7 +86,10 @@ final class AtomicStaticCallAnalyzer
                 $statements_analyzer,
                 $fq_class_name,
                 new CodeLocation($statements_analyzer, $stmt->class),
-                $context,
+                !$context->collect_initializations
+                    && !$context->collect_mutations
+                    ? $context
+                    : null,
                 $statements_analyzer->getSuppressedIssues(),
                 new ClassLikeNameOptions(
                     $stmt->class instanceof PhpParser\Node\Name
@@ -279,7 +282,7 @@ final class AtomicStaticCallAnalyzer
                 $statements_analyzer,
                 $stmt->class,
                 $fq_class_name,
-                $context->calling_method_id,
+                $context,
                 false,
                 $stmt->class->getFirst() === 'self',
             );
@@ -787,7 +790,7 @@ final class AtomicStaticCallAnalyzer
                     $statements_analyzer,
                     $stmt->class,
                     $fq_class_name,
-                    $context->calling_method_id,
+                    $context,
                 );
             }
 

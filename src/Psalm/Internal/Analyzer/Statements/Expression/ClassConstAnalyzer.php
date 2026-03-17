@@ -136,7 +136,7 @@ final class ClassConstAnalyzer
                     $statements_analyzer,
                     $stmt->class,
                     $fq_class_name,
-                    $context->calling_method_id,
+                    $context,
                     false,
                     $stmt->class->getFirst() === 'self',
                 );
@@ -522,7 +522,7 @@ final class ClassConstAnalyzer
                     $statements_analyzer,
                     $stmt->class,
                     $fq_class_name,
-                    $context->calling_method_id,
+                    $context,
                 );
             }
 

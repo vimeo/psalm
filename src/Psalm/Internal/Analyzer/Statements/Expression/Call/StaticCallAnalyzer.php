@@ -163,7 +163,10 @@ final class StaticCallAnalyzer extends CallAnalyzer
                         $statements_analyzer,
                         $fq_class_name,
                         new CodeLocation($source, $stmt->class),
-                        $context,
+                        !$context->collect_initializations
+                            && !$context->collect_mutations
+                            ? $context
+                            : null,
                         $statements_analyzer->getSuppressedIssues(),
                         new ClassLikeNameOptions(false, false, false, true),
                         $context->check_classes,

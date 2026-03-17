@@ -336,6 +336,9 @@ final class ClassLikes
         ?CodeLocation $location = null,
         ?Context $context = null,
     ): bool {
+        $calling_fq_class_name = $context?->self;
+        $calling_method_id = $context?->calling_method_id;
+
         $fq_class_name_lc = strtolower($this->getUnAliasedName($fq_class_name));
 
         // fixme: this looks like a crazy caching hack
@@ -378,6 +381,8 @@ final class ClassLikes
         ?CodeLocation $location = null,
         ?Context $context = null,
     ): bool {
+        $calling_fq_class_name = $context?->self;
+        $calling_method_id = $context?->calling_method_id;
         $fq_class_name_lc = strtolower($this->getUnAliasedName($fq_class_name));
 
         // fixme: this looks like a crazy caching hack
@@ -420,6 +425,8 @@ final class ClassLikes
         ?CodeLocation $location = null,
         ?Context $context = null,
     ): bool {
+        $calling_fq_class_name = $context?->self;
+        $calling_method_id = $context?->calling_method_id;
         $fq_class_name_lc = strtolower($this->getUnAliasedName($fq_class_name));
 
         // fixme: this looks like a crazy caching hack
@@ -1228,15 +1235,12 @@ final class ClassLikes
         FileManipulationBuffer::addCodeMigrations($code_migrations);
     }
 
-    /**
-     * @param lowercase-string|null $calling_method_id
-     */
     public function handleClassLikeReferenceInMigration(
         Codebase $codebase,
         StatementsSource $source,
         PhpParser\Node $class_name_node,
         string $fq_class_name,
-        ?string $calling_method_id,
+        ?Context $context,
         bool $force_change = false,
         bool $was_self = false,
     ): bool {
@@ -1244,6 +1248,7 @@ final class ClassLikes
             return false;
         }
         $calling_fq_class_name = $source->getFQCLN();
+        $calling_method_id = $context?->calling_method_id;
 
         // if we're inside a moved class static method
         if ($codebase->methods_to_move

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Psalm\Internal\Codebase;
 
 use BackedEnum;
-use Exception;
 use InvalidArgumentException;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\MethodIdentifier;
@@ -13,6 +12,7 @@ use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Issue\CircularReference;
+use Psalm\Issue\UndefinedTrait;
 use Psalm\IssueBuffer;
 use Psalm\Progress\Progress;
 use Psalm\Storage\ClassConstantStorage;
@@ -442,7 +442,7 @@ final class Populator
         $storage->pseudo_property_set_types += $trait_storage->pseudo_property_set_types;
 
         $storage->pseudo_static_methods += $trait_storage->pseudo_static_methods;
-        
+
         $storage->pseudo_methods += $trait_storage->pseudo_methods;
         $storage->declaring_pseudo_method_ids += $trait_storage->declaring_pseudo_method_ids;
     }
@@ -881,8 +881,29 @@ final class Populator
         ClassLikeStorage $trait_storage,
     ): void {
         if (!$trait_storage->is_trait) {
-            throw new Exception('Class like storage is not for a trait.');
+            $location = $storage->location ?? $storage->stmt_location;
+            if (!$location) {
+                return;
+            }
+
+            $trait_real_type = 'Class';
+            if ($trait_storage->is_enum) {
+                $trait_real_type = 'Enum';
+            } elseif ($trait_storage->is_interface) {
+                $trait_real_type = 'Interface';
+            }
+
+            IssueBuffer::maybeAdd(
+                new UndefinedTrait(
+                    $trait_real_type . ' ' . $trait_storage->name . ' is not a trait',
+                    $location,
+                ),
+                $storage->suppressed_issues,
+            );
+
+            return;
         }
+
         foreach ($trait_storage->constants as $constant_name => $class_constant_storage) {
             $trait_alias_map_cased = array_flip($storage->trait_alias_map_cased);
             if (isset($trait_alias_map_cased[$constant_name])) {

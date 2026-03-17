@@ -271,7 +271,7 @@ When `true`, Psalm will attempt to find all unused code (including unused variab
   forceJit="[bool]"
 >
 ```
-When `true`, Psalm will exit immediately if JIT acceleration (up to +20% performance) cannot be enabled, the equivalent of running with `--force-jit`. Defaults to `false`.
+When `true`, Psalm will enable JIT acceleration and exit immediately if it cannot be enabled, the equivalent of running with `--force-jit`. When `false` (default), Psalm runs without JIT.
 
 #### noCache
 ```xml
