@@ -314,7 +314,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     $this->getAliases(),
                 );
 
-                if ($codebase->classOrInterfaceExists($fq_classlike_name)) {
+                if ($codebase->classOrInterfaceExists($fq_classlike_name, null, $class_context)) {
                     IssueBuffer::maybeAdd(
                         new ReservedWord(
                             'Cannot use ' . $param_name . ' as template name since the class already exists',
@@ -2061,7 +2061,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             $codebase->analyzer->addNodeReference(
                 $this->getFilePath(),
                 $interface_name,
-                $codebase->classlikes->interfaceExists($fq_interface_name)
+                $codebase->classlikes->interfaceExists($fq_interface_name, null, $class_context)
                     ? $fq_interface_name
                     : '*'
                         . ($interface_name instanceof PhpParser\Node\Name\FullyQualified
@@ -2486,7 +2486,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 $codebase->analyzer->addNodeReference(
                     $this->getFilePath(),
                     $extended_class,
-                    $codebase->classlikes->classExists($parent_fq_class_name)
+                    $codebase->classlikes->classExists($parent_fq_class_name, null, $class_context)
                         ? $parent_fq_class_name
                         : '*'
                             . ($extended_class instanceof PhpParser\Node\Name\FullyQualified

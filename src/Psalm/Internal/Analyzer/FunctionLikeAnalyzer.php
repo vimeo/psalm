@@ -301,7 +301,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     $this->getAliases(),
                 );
 
-                if ($codebase->classOrInterfaceExists($fq_classlike_name)) {
+                if ($codebase->classOrInterfaceExists($fq_classlike_name, null, $context)) {
                     IssueBuffer::maybeAdd(
                         new ReservedWord(
                             'Cannot use ' . $param_name . ' as template name since the class already exists',
@@ -813,7 +813,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             foreach ($storage->throws as $expected_exception => $_) {
                 if ($expected_exception === $possibly_thrown_exception
                     || (
-                        $codebase->classOrInterfaceExists($possibly_thrown_exception)
+                        $codebase->classOrInterfaceExists($possibly_thrown_exception, null, $context)
                         && (
                             $codebase->interfaceExtends($possibly_thrown_exception, $expected_exception)
                             || $codebase->classExtendsOrImplements($possibly_thrown_exception, $expected_exception)

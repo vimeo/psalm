@@ -462,7 +462,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 $codebase,
                 $stmt,
                 $method_id,
-                $codebase->interfaceExists($fq_class_name),
+                $codebase->interfaceExists($fq_class_name, null, $context),
                 $context,
                 $codebase->config,
                 $all_intersection_return_type,
