@@ -224,7 +224,7 @@ final class NewAnalyzer extends CallAnalyzer
                     return true;
                 }
 
-                if ($codebase->interfaceExists($fq_class_name)) {
+                if ($codebase->interfaceExists($fq_class_name, null, $context)) {
                     IssueBuffer::maybeAdd(
                         new InterfaceInstantiation(
                             'Interface ' . $fq_class_name . ' cannot be instantiated',

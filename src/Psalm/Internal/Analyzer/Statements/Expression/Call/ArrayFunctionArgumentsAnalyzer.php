@@ -791,7 +791,7 @@ final class ArrayFunctionArgumentsAnalyzer
                                 $callable_fq_class_name = $container_class;
                         }
 
-                        if (!$codebase->classOrInterfaceExists($callable_fq_class_name)) {
+                        if (!$codebase->classOrInterfaceExists($callable_fq_class_name, null, $context)) {
                             return;
                         }
 

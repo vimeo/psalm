@@ -731,7 +731,7 @@ final class ForeachAnalyzer
                         'Traversable',
                     ) ||
                     (
-                        $codebase->interfaceExists($iterator_atomic_type->value)
+                        $codebase->interfaceExists($iterator_atomic_type->value, null, $context)
                         && $codebase->interfaceExtends(
                             $iterator_atomic_type->value,
                             'Traversable',
@@ -743,7 +743,7 @@ final class ForeachAnalyzer
                         $iterator_atomic_type->value,
                         'IteratorAggregate',
                     )
-                    || ($codebase->interfaceExists($iterator_atomic_type->value)
+                    || ($codebase->interfaceExists($iterator_atomic_type->value, null, $context)
                         && $codebase->interfaceExtends(
                             $iterator_atomic_type->value,
                             'IteratorAggregate',
@@ -810,7 +810,7 @@ final class ForeachAnalyzer
                                 [$key_type_part, $value_type_part] = $array_atomic_type->type_params;
                             } else {
                                 if ($array_atomic_type instanceof TNamedObject
-                                    && $codebase->classExists($array_atomic_type->value)
+                                    && $codebase->classExists($array_atomic_type->value, null, $context)
                                     && $codebase->classImplements(
                                         $array_atomic_type->value,
                                         'Traversable',
@@ -848,7 +848,11 @@ final class ForeachAnalyzer
                                 if ($array_atomic_type instanceof TIterable
                                     || ($array_atomic_type instanceof TNamedObject
                                         && ($array_atomic_type->value === 'Traversable'
-                                            || ($codebase->classOrInterfaceExists($array_atomic_type->value)
+                                            || ($codebase->classOrInterfaceExists(
+                                                $array_atomic_type->value,
+                                                null,
+                                                $context,
+                                            )
                                                 && $codebase->classImplements(
                                                     $array_atomic_type->value,
                                                     'Traversable',
@@ -925,7 +929,7 @@ final class ForeachAnalyzer
                     'Iterator',
                 ) ||
                     (
-                        $codebase->interfaceExists($iterator_atomic_type->value)
+                        $codebase->interfaceExists($iterator_atomic_type->value, null, $context)
                         && $codebase->interfaceExtends(
                             $iterator_atomic_type->value,
                             'Iterator',

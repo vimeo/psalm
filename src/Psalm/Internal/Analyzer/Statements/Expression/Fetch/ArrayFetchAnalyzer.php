@@ -1812,7 +1812,7 @@ final class ArrayFetchAnalyzer
     ): void {
         $codebase = $statements_analyzer->getCodebase();
         if (strtolower($type->value) === 'simplexmlelement'
-            || ($codebase->classExists($type->value)
+            || ($codebase->classExists($type->value, null, $context)
                 && $codebase->classExtendsOrImplements($type->value, 'SimpleXMLElement'))
         ) {
             $call_array_access_type = new Union([new TNull(), new TNamedObject('SimpleXMLElement')]);

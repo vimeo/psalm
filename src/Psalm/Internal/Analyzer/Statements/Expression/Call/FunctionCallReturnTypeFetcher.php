@@ -338,7 +338,7 @@ final class FunctionCallReturnTypeFetcher
                     ]);
 
                 case 'get_parent_class':
-                    if ($context->self && $codebase->classExists($context->self)) {
+                    if ($context->self && $codebase->classExists($context->self, null, $context)) {
                         $classlike_storage = $codebase->classlike_storage_provider->get($context->self);
 
                         if ($classlike_storage->parent_classes) {
