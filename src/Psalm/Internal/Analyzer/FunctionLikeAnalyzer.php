@@ -947,12 +947,13 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             );
         }
 
+        $t = $storage instanceof MethodStorage ? Attribute::TARGET_METHOD : Attribute::TARGET_FUNCTION;
         AttributesAnalyzer::analyze(
             $this,
             $context,
             $storage,
             $this->function->attrGroups,
-            $storage instanceof MethodStorage ? Attribute::TARGET_METHOD : Attribute::TARGET_FUNCTION,
+            $t,
             $storage->suppressed_issues + $this->getSuppressedIssues(),
         );
 
