@@ -55,7 +55,7 @@ final class Mutations
 
     const LEVEL_ALL = self::LEVEL_EXTERNAL;
 
-    const TO_ATTRIBUTE_CLASS = [
+    const TO_ATTRIBUTE_CLASSLIKE = [
         self::LEVEL_NONE => 'psalm-pure',
         self::LEVEL_INTERNAL_READ => 'psalm-immutable',
         self::LEVEL_INTERNAL_READ_WRITE => 'psalm-external-mutation-free',
