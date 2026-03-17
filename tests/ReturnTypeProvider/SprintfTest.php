@@ -198,6 +198,85 @@ final class SprintfTest extends TestCase
             'php_version' => '8.0',
         ];
 
+        yield 'sprintfComplexPlaceholderNotYetSupported4' => [
+            'code' => '<?php
+                $precision = 1;
+                $flt = 1.234;
+                $val = sprintf("%.*f", $precision, $flt);
+            ',
+            'assertions' => [
+                '$val===' => 'string',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+
+        yield 'printfComplexPlaceholderNotYetSupported4' => [
+            'code' => '<?php
+                $precision = 1;
+                $flt = 1.234;
+                $val = printf("%.*f", $precision, $flt);
+            ',
+            'assertions' => [
+                '$val===' => 'int<0, max>',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+
+        yield 'sprintfComplexPlaceholderNotYetSupported5' => [
+            'code' => '<?php
+                $flt = 1.234;
+                $precision = 1;
+                $val = sprintf("%1\$.*2\$f", $flt, $precision);
+            ',
+            'assertions' => [
+                '$val===' => 'string',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+
+        yield 'sprintfComplexPlaceholderNotYetSupported6' => [
+            'code' => '<?php
+                $precision = 1;
+                $flt = 1.234;
+                $val = sprintf("%2\$.*1\$f", $precision, $flt);
+            ',
+            'assertions' => [
+                '$val===' => 'string',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+
+        yield 'sprintfComplexPlaceholderNotYetSupported7' => [
+            'code' => '<?php
+                $flt = 1.234;
+                $precision = 1;
+                $val = sprintf("%10.*2\$f", $flt, $precision);
+            ',
+            'assertions' => [
+                '$val===' => 'string',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+
+        yield 'sprintfComplexPlaceholderNotYetSupported8' => [
+            'code' => '<?php
+                $precision = 1;
+                $width = 10;
+                $flt = 1.234;
+                $val = sprintf("%3\$*2\$.*1\$f", $precision, $width, $flt);
+            ',
+            'assertions' => [
+                '$val===' => 'string',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+
         yield 'sprintfSplatUnpackingArray' => [
             'code' => '<?php
                 $a = ["a", "b", "c"];
@@ -332,6 +411,72 @@ final class SprintfTest extends TestCase
                     $x = sprintf("%1$+0.0s", "abc");
                 ',
                 'error_message' => 'InvalidArgument',
+            ],
+            'sprintfEscapedPercentLiteralStillReportsTooManyArguments' => [
+                'code' => '<?php
+                    $x = sprintf("%%.*f", "a", "b");
+                ',
+                'error_message' => 'TooManyArguments',
+            ],
+            'sprintfEscapedPercentThenPrecisionStarStillReportsTooFewArguments' => [
+                'code' => '<?php
+                    $x = sprintf("%%%.*f", 1);
+                ',
+                'error_message' => 'TooFewArguments',
+            ],
+            'sprintfPositionalEscapedPercentThenPrecisionStarStillReportsTooFewArguments' => [
+                'code' => '<?php
+                    $x = sprintf("%1$%%.*f", 1);
+                ',
+                'error_message' => 'TooFewArguments',
+            ],
+            'sprintfPrecisionStarTooFewArguments' => [
+                'code' => '<?php
+                    $x = sprintf("%.*f", 1);
+                ',
+                'error_message' => 'TooFewArguments',
+            ],
+            'sprintfPrecisionStarTooManyArguments' => [
+                'code' => '<?php
+                    $x = sprintf("%.*f", 1, 1.23, 99);
+                ',
+                'error_message' => 'TooManyArguments',
+            ],
+            'sprintfPositionalPrecisionStarTooFewArguments' => [
+                'code' => '<?php
+                    $x = sprintf("%1\$.*2\$f", 1.23);
+                ',
+                'error_message' => 'TooFewArguments',
+            ],
+            'sprintfPositionalPrecisionStarTooManyArguments' => [
+                'code' => '<?php
+                    $x = sprintf("%1\$.*2\$f", 1.23, 1, 99);
+                ',
+                'error_message' => 'TooManyArguments',
+            ],
+            'sprintfWidthAndPositionalPrecisionStarTooFewArguments' => [
+                'code' => '<?php
+                    $x = sprintf("%10.*2\$f", 1.23);
+                ',
+                'error_message' => 'TooFewArguments',
+            ],
+            'sprintfWidthAndPositionalPrecisionStarTooManyArguments' => [
+                'code' => '<?php
+                    $x = sprintf("%10.*2\$f", 1.23, 1, 99);
+                ',
+                'error_message' => 'TooManyArguments',
+            ],
+            'sprintfPositionalWidthAndPrecisionStarTooFewArguments' => [
+                'code' => '<?php
+                    $x = sprintf("%3\$*2\$.*1\$f", 1, 10);
+                ',
+                'error_message' => 'TooFewArguments',
+            ],
+            'sprintfPositionalWidthAndPrecisionStarTooManyArguments' => [
+                'code' => '<?php
+                    $x = sprintf("%3\$*2\$.*1\$f", 1, 10, 1.23, 99);
+                ',
+                'error_message' => 'TooManyArguments',
             ],
             'printfVariableFormat' => [
                 'code' => '<?php
