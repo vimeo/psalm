@@ -1315,9 +1315,6 @@ final class ClassLikes
         FileManipulationBuffer::addCodeMigrations($code_migrations);
     }
 
-    /**
-     * @param lowercase-string|null $calling_method_id
-     */
     public function handleClassLikeReferenceInMigration(
         Codebase $codebase,
         StatementsSource $source,

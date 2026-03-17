@@ -57,6 +57,7 @@ final class TypeChecker extends TypeVisitor
     /**
      * @param array<string>    $suppressed_issues
      * @param array<string, bool> $phantom_classes
+     * @param lowercase-string|null $calling_method_id
      * @psalm-mutation-free
      */
     public function __construct(
