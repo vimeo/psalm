@@ -232,7 +232,6 @@ class FileAnalyzer extends SourceAnalyzer
                         $fq_source_classlike,
                         $location,
                         null,
-                        null,
                         $this->suppressed_issues,
                         new ClassLikeNameOptions(
                             true,

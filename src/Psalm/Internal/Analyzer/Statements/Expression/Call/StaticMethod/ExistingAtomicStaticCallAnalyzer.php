@@ -357,7 +357,7 @@ final class ExistingAtomicStaticCallAnalyzer
                             $statements_analyzer,
                             $stmt->class,
                             $new_fq_class_name,
-                            $context->calling_method_id,
+                            $context,
                             strtolower($old_declaring_fq_class_name) !== strtolower($new_fq_class_name),
                             $stmt->class->getFirst() === 'self',
                         )) {

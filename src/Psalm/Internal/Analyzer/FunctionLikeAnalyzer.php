@@ -750,8 +750,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     $statements_analyzer,
                     $expected_exception,
                     $storage->throw_locations[$expected_exception],
-                    $context->self,
-                    $context->calling_method_id,
+                    $context,
                     $statements_analyzer->getSuppressedIssues(),
                     new ClassLikeNameOptions(
                         false,
@@ -1448,7 +1447,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     $this,
                     $param_name_node,
                     $resolved_name,
-                    $context->calling_method_id,
+                    $context,
                     false,
                     true,
                 );
@@ -1482,7 +1481,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     $this,
                     $return_name_node,
                     $resolved_name,
-                    $context->calling_method_id,
+                    $context,
                     false,
                     true,
                 );
