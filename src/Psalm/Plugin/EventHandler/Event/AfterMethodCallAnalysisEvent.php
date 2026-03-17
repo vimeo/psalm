@@ -38,7 +38,6 @@ final class AfterMethodCallAnalysisEvent
 
     /**
      * @return MethodCall|StaticCall
-     *
      * @psalm-mutation-free
      */
     public function getExpr(): Expr
@@ -96,7 +95,6 @@ final class AfterMethodCallAnalysisEvent
 
     /**
      * @return FileManipulation[]
-     *
      * @psalm-mutation-free
      */
     public function getFileReplacements(): array

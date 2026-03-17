@@ -65,7 +65,6 @@ final class BeforeExpressionAnalysisEvent
 
     /**
      * @return list<FileManipulation>
-     *
      * @psalm-mutation-free
      */
     public function getFileReplacements(): array

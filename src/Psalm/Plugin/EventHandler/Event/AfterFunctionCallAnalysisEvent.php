@@ -43,7 +43,6 @@ final class AfterFunctionCallAnalysisEvent
 
     /**
      * @return non-empty-string
-     *
      * @psalm-mutation-free
      */
     public function getFunctionId(): string
@@ -85,7 +84,6 @@ final class AfterFunctionCallAnalysisEvent
 
     /**
      * @return FileManipulation[]
-     *
      * @psalm-mutation-free
      */
     public function getFileReplacements(): array

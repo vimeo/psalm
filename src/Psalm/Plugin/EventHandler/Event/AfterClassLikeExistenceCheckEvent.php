@@ -62,7 +62,6 @@ final class AfterClassLikeExistenceCheckEvent
 
     /**
      * @return FileManipulation[]
-     *
      * @psalm-mutation-free
      */
     public function getFileReplacements(): array
