@@ -8,7 +8,11 @@ SCRIPT_DIR="$(realpath "$SCRIPT_DIR")"
 PSALM="$(readlink -f "$SCRIPT_DIR/../../psalm")"
 PSALM_PHAR="$(readlink -f "$SCRIPT_DIR/../../build/psalm.phar" || echo "")"
 
-if [ ! -f "$PSALM_PHAR" ]; then PSALM_PHAR="$PSALM"; fi
+if [ ! -f "$PSALM_PHAR" ]; then
+	PSALM_PHAR="$PSALM"
+	cd "$SCRIPT_DIR/../../"
+	composer update --no-dev --prefer-dist
+fi
 
 which gsed > /dev/null && sed=gsed || sed=sed
 
