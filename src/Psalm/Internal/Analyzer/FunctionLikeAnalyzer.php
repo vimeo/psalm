@@ -518,7 +518,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     new ImpureFunctionCall(
                         $storage->cased_name . ' is marked @'.Mutations::TO_ATTRIBUTE_FUNCTIONLIKE[
                             $storage->allowed_mutations
-                        ].' but its containing class is marked with a lower level of allowed mutations, @'.Mutations::TO_ATTRIBUTE_CLASSLIKE[
+                        ].' but its containing class is marked with a lower level of allowed mutations'
+                        .', @'.Mutations::TO_ATTRIBUTE_CLASSLIKE[
                             $storage->containing_class_allowed_mutations
                         ],
                         $storage->location,

@@ -191,6 +191,9 @@ final class DataFlowNode implements Stringable
         );
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public function __toString(): string
     {

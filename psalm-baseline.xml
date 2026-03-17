@@ -29,6 +29,10 @@
     </ImplicitToStringCast>
   </file>
   <file src="src/Psalm/CodeLocation.php">
+    <ImpureFunctionCall>
+      <code><![CDATA[__unserialize]]></code>
+      <code><![CDATA[calculateRealLocation]]></code>
+    </ImpureFunctionCall>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$this->docblock_line_number]]></code>
       <code><![CDATA[$this->docblock_line_number]]></code>
@@ -302,6 +306,9 @@
     <InvalidOperand>
       <code><![CDATA[$time_taken / $node_counter->count]]></code>
     </InvalidOperand>
+    <PossiblyNullArgument>
+      <code><![CDATA[$storage->location]]></code>
+    </PossiblyNullArgument>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$context->calling_method_id]]></code>
       <code><![CDATA[!$storage->cased_name]]></code>
@@ -2859,6 +2866,14 @@
       <code><![CDATA[CustomMetadataTrait]]></code>
     </MutableDependency>
   </file>
+  <file src="src/Psalm/Storage/EnumCaseStorage.php">
+    <ImpureMethodCall>
+      <code><![CDATA[ConstantTypeResolver::resolve(
+                $classlikes,
+                $case_value,
+            )]]></code>
+    </ImpureMethodCall>
+  </file>
   <file src="src/Psalm/Storage/FunctionLikeStorage.php">
     <ImplicitToStringCast>
       <code><![CDATA[$param->type ?: 'mixed']]></code>
@@ -2882,6 +2897,11 @@
       <code><![CDATA[$location]]></code>
     </PossiblyUnusedProperty>
   </file>
+  <file src="src/Psalm/Storage/UnserializeMemoryUsageSuppressionTrait.php">
+    <ImpureFunctionCall>
+      <code><![CDATA[__unserialize]]></code>
+    </ImpureFunctionCall>
+  </file>
   <file src="src/Psalm/Type.php">
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$namespace]]></code>
@@ -2891,11 +2911,17 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Type/Atomic.php">
+    <ImpureByReferenceAssignment>
+      <code><![CDATA[$node]]></code>
+      <code><![CDATA[$node]]></code>
+    </ImpureByReferenceAssignment>
     <ImpureMethodCall>
       <code><![CDATA[$codebase->classOrInterfaceExists($this->value)]]></code>
       <code><![CDATA[$codebase->classOrInterfaceExists($this->value)]]></code>
       <code><![CDATA[$codebase->classOrInterfaceExists($this->value)]]></code>
       <code><![CDATA[$visitor->traverse($type)]]></code>
+      <code><![CDATA[$visitor->traverse($type)]]></code>
+      <code><![CDATA[$visitor->traverse($value)]]></code>
       <code><![CDATA[$visitor->traverse($value)]]></code>
       <code><![CDATA[TemplateStandinTypeReplacer::getMappedGenericTypeParams(
                 $codebase,
@@ -2903,6 +2929,19 @@
                 new TGenericObject("Traversable", [Type::getMixed(), Type::getMixed()]),
             )]]></code>
     </ImpureMethodCall>
+    <ImpurePropertyAssignment>
+      <code><![CDATA[$node->{$key}]]></code>
+      <code><![CDATA[$result->from_docblock]]></code>
+      <code><![CDATA[$result->from_docblock]]></code>
+      <code><![CDATA[$result->offset_end]]></code>
+      <code><![CDATA[$result->offset_end]]></code>
+      <code><![CDATA[$result->offset_start]]></code>
+      <code><![CDATA[$result->offset_start]]></code>
+      <code><![CDATA[$result->text]]></code>
+      <code><![CDATA[$result->text]]></code>
+      <code><![CDATA[$type->is_enum]]></code>
+      <code><![CDATA[$type->is_interface]]></code>
+    </ImpurePropertyAssignment>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[array_keys($template_type_map[$value])[0]]]></code>
     </PossiblyUndefinedIntArrayOffset>
@@ -3325,6 +3364,13 @@
     </ImpureMethodCall>
   </file>
   <file src="src/Psalm/Type/Union.php">
+    <ImpureByReferenceAssignment>
+      <code><![CDATA[$node]]></code>
+      <code><![CDATA[$node]]></code>
+    </ImpureByReferenceAssignment>
+    <ImpureMethodCall>
+      <code><![CDATA[$visitor->traverse($type)]]></code>
+    </ImpureMethodCall>
     <PossiblyUnusedProperty>
       <code><![CDATA[$ignore_isset]]></code>
     </PossiblyUnusedProperty>

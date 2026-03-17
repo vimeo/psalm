@@ -35,21 +35,33 @@ final class AfterFunctionLikeAnalysisEvent
     ) {
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getStmt(): Node\FunctionLike
     {
         return $this->stmt;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getFunctionlikeStorage(): FunctionLikeStorage
     {
         return $this->functionlike_storage;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getStatementsSource(): StatementsSource
     {
         return $this->statements_source;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getCodebase(): Codebase
     {
         return $this->codebase;
@@ -57,6 +69,7 @@ final class AfterFunctionLikeAnalysisEvent
 
     /**
      * @return FileManipulation[]
+     * @psalm-mutation-free
      */
     public function getFileReplacements(): array
     {
@@ -72,11 +85,17 @@ final class AfterFunctionLikeAnalysisEvent
         $this->file_replacements = $file_replacements;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getNodeTypeProvider(): NodeTypeProvider
     {
         return $this->node_type_provider;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getContext(): Context
     {
         return $this->context;

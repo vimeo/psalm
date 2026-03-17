@@ -769,6 +769,7 @@
             <xs:enumeration value="geos"/>
             <xs:enumeration value="gmp"/>
             <xs:enumeration value="ibm_db2"/>
+            <xs:enumeration value="memcached"/>
             <xs:enumeration value="mongodb"/>
             <xs:enumeration value="mysqli"/>
             <xs:enumeration value="pdo"/>
