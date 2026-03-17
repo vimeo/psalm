@@ -10,6 +10,13 @@ Head over to [plugin template repository](https://github.com/weirdan/psalm-plugi
 
 Run `composer create-project weirdan/psalm-plugin-skeleton:dev-master your-plugin-name` to quickly bootstrap a new plugin project in `your-plugin-name` folder. Make sure you adjust namespaces in `composer.json`, `Plugin.php` and `tests` folder.
 
+## Psalm plugin API
+
+Backwards compatibility for the plugin API is now covered by a separate metapackage, [psalm/psalm-plugin-api](https://packagist.org/packages/psalm/psalm-plugin-api).  
+
+This is a separate, empty metapackage: its major version will be bumped every time a breaking change occurs within Psalm's plugin API; minors will also be bumped when adding new features to Psalm's plugin API.  
+
+Plugins, starting from the first stable release of v7, need to explicitly require a caret range (i.e. ^1, NOT 1.0.0) that package in order to avoid breaking changes during Psalm upgrades.  
 
 ## Stub files
 

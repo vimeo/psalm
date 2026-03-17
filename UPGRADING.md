@@ -2,6 +2,12 @@
 
 ## Changed
 
+- Backwards compatibility for the plugin API is now covered by a separate metapackage, [psalm/psalm-plugin-api](https://packagist.org/packages/psalm/psalm-plugin-api).  
+
+  This is a separate, empty metapackage: its major version will be bumped every time a breaking change occurs within Psalm's plugin API; minors will also be bumped when adding new features to Psalm's plugin API.  
+
+  Plugins, starting from the first stable release of v7, need to explicitly require a caret range (i.e. ^1, NOT 1.0.0) that package in order to avoid breaking changes during Psalm upgrades.  
+
 - [BC] The parameters $calling_fq_class_name and $calling_method_id of Psalm\Codebase#classOrInterfaceExists() were removed and replaced with a single Psalm\Context|null parameter
 - [BC] The parameters $calling_fq_class_name and $calling_method_id of Psalm\Codebase#classOrInterfaceOrEnumExists() were removed and replaced with a single Psalm\Context|null parameter
 - [BC] The parameters $calling_fq_class_name and $calling_method_id of Psalm\Codebase#classExists() were removed and replaced with a single Psalm\Context|null parameter
