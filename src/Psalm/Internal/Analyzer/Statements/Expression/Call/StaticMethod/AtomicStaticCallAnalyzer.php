@@ -88,11 +88,7 @@ final class AtomicStaticCallAnalyzer
                 new CodeLocation($statements_analyzer, $stmt->class),
                 !$context->collect_initializations
                     && !$context->collect_mutations
-                    ? $context->self
-                    : null,
-                !$context->collect_initializations
-                    && !$context->collect_mutations
-                    ? $context->calling_method_id
+                    ? $context
                     : null,
                 $statements_analyzer->getSuppressedIssues(),
                 new ClassLikeNameOptions(
@@ -114,8 +110,7 @@ final class AtomicStaticCallAnalyzer
                 $statements_analyzer,
                 $fq_class_name,
                 new CodeLocation($statements_analyzer, $stmt->class),
-                $context->self,
-                $context->calling_method_id,
+                $context,
                 $statements_analyzer->getSuppressedIssues(),
             )) {
                 return;
@@ -147,8 +142,7 @@ final class AtomicStaticCallAnalyzer
                 $statements_analyzer,
                 $fq_class_name,
                 new CodeLocation($statements_analyzer, $stmt->class),
-                $context->self,
-                $context->calling_method_id,
+                $context,
                 $statements_analyzer->getSuppressedIssues(),
             )) {
                 return;
@@ -288,7 +282,7 @@ final class AtomicStaticCallAnalyzer
                 $statements_analyzer,
                 $stmt->class,
                 $fq_class_name,
-                $context->calling_method_id,
+                $context,
                 false,
                 $stmt->class->getFirst() === 'self',
             );
@@ -796,7 +790,7 @@ final class AtomicStaticCallAnalyzer
                     $statements_analyzer,
                     $stmt->class,
                     $fq_class_name,
-                    $context->calling_method_id,
+                    $context,
                 );
             }
 

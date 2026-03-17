@@ -11,6 +11,7 @@ use PhpParser\NodeTraverser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Config;
+use Psalm\Context;
 use Psalm\Exception\UnpopulatedClasslikeException;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
@@ -332,9 +333,11 @@ final class ClassLikes
     public function hasFullyQualifiedClassName(
         string $fq_class_name,
         ?CodeLocation $code_location = null,
-        ?string $calling_fq_class_name = null,
-        ?string $calling_method_id = null,
+        ?Context $context = null,
     ): bool {
+        $calling_fq_class_name = $context?->self;
+        $calling_method_id = $context?->calling_method_id;
+
         $fq_class_name_lc = strtolower($this->getUnAliasedName($fq_class_name));
 
         if ($code_location) {
@@ -403,9 +406,10 @@ final class ClassLikes
     public function hasFullyQualifiedInterfaceName(
         string $fq_class_name,
         ?CodeLocation $code_location = null,
-        ?string $calling_fq_class_name = null,
-        ?string $calling_method_id = null,
+        ?Context $context = null,
     ): bool {
+        $calling_fq_class_name = $context?->self;
+        $calling_method_id = $context?->calling_method_id;
         $fq_class_name_lc = strtolower($this->getUnAliasedName($fq_class_name));
 
         // fixme: this looks like a crazy caching hack
@@ -474,9 +478,10 @@ final class ClassLikes
     public function hasFullyQualifiedEnumName(
         string $fq_class_name,
         ?CodeLocation $code_location = null,
-        ?string $calling_fq_class_name = null,
-        ?string $calling_method_id = null,
+        ?Context $context = null,
     ): bool {
+        $calling_fq_class_name = $context?->self;
+        $calling_method_id = $context?->calling_method_id;
         $fq_class_name_lc = strtolower($this->getUnAliasedName($fq_class_name));
 
         // fixme: this looks like a crazy caching hack
@@ -570,11 +575,10 @@ final class ClassLikes
     public function classOrInterfaceExists(
         string $fq_class_name,
         ?CodeLocation $code_location = null,
-        ?string $calling_fq_class_name = null,
-        ?string $calling_method_id = null,
+        ?Context $context = null,
     ): bool {
-        return $this->classExists($fq_class_name, $code_location, $calling_fq_class_name, $calling_method_id)
-            || $this->interfaceExists($fq_class_name, $code_location, $calling_fq_class_name, $calling_method_id);
+        return $this->classExists($fq_class_name, $code_location, $context)
+            || $this->interfaceExists($fq_class_name, $code_location, $context);
     }
 
     /**
@@ -585,12 +589,11 @@ final class ClassLikes
     public function classOrInterfaceOrEnumExists(
         string $fq_class_name,
         ?CodeLocation $code_location = null,
-        ?string $calling_fq_class_name = null,
-        ?string $calling_method_id = null,
+        ?Context $context = null,
     ): bool {
-        return $this->classExists($fq_class_name, $code_location, $calling_fq_class_name, $calling_method_id)
-            || $this->interfaceExists($fq_class_name, $code_location, $calling_fq_class_name, $calling_method_id)
-            || $this->enumExists($fq_class_name, $code_location, $calling_fq_class_name, $calling_method_id);
+        return $this->classExists($fq_class_name, $code_location, $context)
+            || $this->interfaceExists($fq_class_name, $code_location, $context)
+            || $this->enumExists($fq_class_name, $code_location, $context);
     }
 
     /**
@@ -601,8 +604,7 @@ final class ClassLikes
     public function classExists(
         string $fq_class_name,
         ?CodeLocation $code_location = null,
-        ?string $calling_fq_class_name = null,
-        ?string $calling_method_id = null,
+        ?Context $context = null,
     ): bool {
         if (isset(ClassLikeAnalyzer::SPECIAL_TYPES[$fq_class_name])) {
             return false;
@@ -615,8 +617,7 @@ final class ClassLikes
         return $this->hasFullyQualifiedClassName(
             $fq_class_name,
             $code_location,
-            $calling_fq_class_name,
-            $calling_method_id,
+            $context,
         );
     }
 
@@ -704,8 +705,7 @@ final class ClassLikes
     public function interfaceExists(
         string $fq_interface_name,
         ?CodeLocation $code_location = null,
-        ?string $calling_fq_class_name = null,
-        ?string $calling_method_id = null,
+        ?Context $context = null,
     ): bool {
         if (isset(ClassLikeAnalyzer::SPECIAL_TYPES[strtolower($fq_interface_name)])) {
             return false;
@@ -714,8 +714,7 @@ final class ClassLikes
         return $this->hasFullyQualifiedInterfaceName(
             $fq_interface_name,
             $code_location,
-            $calling_fq_class_name,
-            $calling_method_id,
+            $context,
         );
     }
 
@@ -725,8 +724,7 @@ final class ClassLikes
     public function enumExists(
         string $fq_enum_name,
         ?CodeLocation $code_location = null,
-        ?string $calling_fq_class_name = null,
-        ?string $calling_method_id = null,
+        ?Context $context = null,
     ): bool {
         if (isset(ClassLikeAnalyzer::SPECIAL_TYPES[strtolower($fq_enum_name)])) {
             return false;
@@ -735,8 +733,7 @@ final class ClassLikes
         return $this->hasFullyQualifiedEnumName(
             $fq_enum_name,
             $code_location,
-            $calling_fq_class_name,
-            $calling_method_id,
+            $context,
         );
     }
 
@@ -1318,15 +1315,12 @@ final class ClassLikes
         FileManipulationBuffer::addCodeMigrations($code_migrations);
     }
 
-    /**
-     * @param lowercase-string|null $calling_method_id
-     */
     public function handleClassLikeReferenceInMigration(
         Codebase $codebase,
         StatementsSource $source,
         PhpParser\Node $class_name_node,
         string $fq_class_name,
-        ?string $calling_method_id,
+        ?Context $context,
         bool $force_change = false,
         bool $was_self = false,
     ): bool {
@@ -1334,6 +1328,7 @@ final class ClassLikes
             return false;
         }
         $calling_fq_class_name = $source->getFQCLN();
+        $calling_method_id = $context?->calling_method_id;
 
         // if we're inside a moved class static method
         if ($codebase->methods_to_move

@@ -741,14 +741,12 @@ final class Codebase
     public function classOrInterfaceExists(
         string $fq_class_name,
         ?CodeLocation $code_location = null,
-        ?string $calling_fq_class_name = null,
-        ?string $calling_method_id = null,
+        ?Context $context = null,
     ): bool {
         return $this->classlikes->classOrInterfaceExists(
             $fq_class_name,
             $code_location,
-            $calling_fq_class_name,
-            $calling_method_id,
+            $context,
         );
     }
 
@@ -761,14 +759,12 @@ final class Codebase
     public function classOrInterfaceOrEnumExists(
         string $fq_class_name,
         ?CodeLocation $code_location = null,
-        ?string $calling_fq_class_name = null,
-        ?string $calling_method_id = null,
+        ?Context $context = null,
     ): bool {
         return $this->classlikes->classOrInterfaceOrEnumExists(
             $fq_class_name,
             $code_location,
-            $calling_fq_class_name,
-            $calling_method_id,
+            $context,
         );
     }
 
@@ -787,14 +783,12 @@ final class Codebase
     public function classExists(
         string $fq_class_name,
         ?CodeLocation $code_location = null,
-        ?string $calling_fq_class_name = null,
-        ?string $calling_method_id = null,
+        ?Context $context = null,
     ): bool {
         return $this->classlikes->classExists(
             $fq_class_name,
             $code_location,
-            $calling_fq_class_name,
-            $calling_method_id,
+            $context,
         );
     }
 
@@ -826,14 +820,12 @@ final class Codebase
     public function interfaceExists(
         string $fq_interface_name,
         ?CodeLocation $code_location = null,
-        ?string $calling_fq_class_name = null,
-        ?string $calling_method_id = null,
+        ?Context $context = null,
     ): bool {
         return $this->classlikes->interfaceExists(
             $fq_interface_name,
             $code_location,
-            $calling_fq_class_name,
-            $calling_method_id,
+            $context,
         );
     }
 

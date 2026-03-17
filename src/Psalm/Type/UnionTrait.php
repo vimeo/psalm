@@ -1340,6 +1340,7 @@ trait UnionTrait
     /**
      * @param  array<string>    $suppressed_issues
      * @param  array<string, bool> $phantom_classes
+     * @param  ?lowercase-string $calling_method_id
      */
     public function check(
         StatementsSource $source,

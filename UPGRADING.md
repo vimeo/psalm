@@ -2,6 +2,10 @@
 
 ## Changed
 
+- [BC] The parameters $calling_fq_class_name and $calling_method_id of Psalm\Codebase#classOrInterfaceExists() were removed and replaced with a single Psalm\Context|null parameter
+- [BC] The parameters $calling_fq_class_name and $calling_method_id of Psalm\Codebase#classOrInterfaceOrEnumExists() were removed and replaced with a single Psalm\Context|null parameter
+- [BC] The parameters $calling_fq_class_name and $calling_method_id of Psalm\Codebase#classExists() were removed and replaced with a single Psalm\Context|null parameter
+- [BC] The parameters $calling_fq_class_name and $calling_method_id of Psalm\Codebase#interfaceExists() were removed and replaced with a single Psalm\Context|null parameter
 - [BC] Property Psalm\Type\Atomic\TCallable#$is_pure was removed and replaced with an `$allowed_mutations` property
 - [BC] Property Psalm\Type\Atomic\TClosure#$is_pure was removed and replaced with an `$allowed_mutations` property
 - [BC] Property Psalm\Type\Atomic\CallableTrait#$is_pure was removed and replaced with an `$allowed_mutations` property
