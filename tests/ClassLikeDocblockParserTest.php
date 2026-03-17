@@ -171,6 +171,32 @@ final class ClassLikeDocblockParserTest extends TestCase
                 'is_static' => true,
                 'params' => [],
             ],
+            // Parenthesized union types in method parameters (issue #11730)
+            'foo((int|string) $value)' => [
+                'name' => 'foo',
+                'returnType' => '',
+                'is_static' => false,
+                'params' => [
+                    'value' => ['type' => 'int|string'],
+                ],
+            ],
+            '$this lock((int|string) $value)' => [
+                'name' => 'lock',
+                'returnType' => 'static',
+                'is_static' => false,
+                'params' => [
+                    'value' => ['type' => 'int|string'],
+                ],
+            ],
+            'void bar((int|string) $x, int $y)' => [
+                'name' => 'bar',
+                'returnType' => 'void',
+                'is_static' => false,
+                'params' => [
+                    'x' => ['type' => 'int|string'],
+                    'y' => ['type' => 'int'],
+                ],
+            ],
         ];
 
         $res = [];

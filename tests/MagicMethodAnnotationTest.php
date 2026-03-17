@@ -1148,6 +1148,28 @@ final class MagicMethodAnnotationTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['ParamNameMismatch'],
             ],
+            'parenthesizedUnionTypeInMethodParam' => [
+                'code' => '<?php
+                    class ParentClass {
+                        public function __call(string $name, array $args): static { return $this; }
+                    }
+
+                    /**
+                     * @method $this foo((int|string) $value)
+                     * @method $this bar(("a"|"b") $value)
+                     * @method void baz((int|string) $x, int $y)
+                     */
+                    class Child extends ParentClass {}
+
+                    $child = new Child();
+                    $a = $child->foo(1);
+                    $b = $child->bar("a");
+                    $child->baz(1, 2);',
+                'assertions' => [
+                    '$a' => 'Child',
+                    '$b' => 'Child',
+                ],
+            ],
         ];
     }
 
