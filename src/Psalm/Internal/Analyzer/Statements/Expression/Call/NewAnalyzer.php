@@ -148,7 +148,7 @@ final class NewAnalyzer extends CallAnalyzer
                 $codebase->analyzer->addNodeReference(
                     $statements_analyzer->getFilePath(),
                     $stmt->class,
-                    $codebase->classlikes->classExists($fq_class_name)
+                    $codebase->classlikes->classExists($fq_class_name, null, $context)
                         ? $fq_class_name
                         : '*'
                             . ($stmt->class instanceof PhpParser\Node\Name\FullyQualified
@@ -224,7 +224,7 @@ final class NewAnalyzer extends CallAnalyzer
                     return true;
                 }
 
-                if ($codebase->interfaceExists($fq_class_name)) {
+                if ($codebase->interfaceExists($fq_class_name, null, $context)) {
                     IssueBuffer::maybeAdd(
                         new InterfaceInstantiation(
                             'Interface ' . $fq_class_name . ' cannot be instantiated',
@@ -262,7 +262,7 @@ final class NewAnalyzer extends CallAnalyzer
             }
 
             if (strtolower($fq_class_name) !== 'stdclass' &&
-                $codebase->classlikes->classExists($fq_class_name)
+                $codebase->classlikes->classExists($fq_class_name, null, $context)
             ) {
                 self::analyzeNamedConstructor(
                     $statements_analyzer,
@@ -840,7 +840,7 @@ final class NewAnalyzer extends CallAnalyzer
                     $new_types []= new Union([$new_type_part]);
 
                     if ($lhs_type_part->as_type
-                        && $codebase->classlikes->classExists($lhs_type_part->as_type->value)
+                        && $codebase->classlikes->classExists($lhs_type_part->as_type->value, null, $context)
                     ) {
                         $as_storage = $codebase->classlike_storage_provider->get(
                             $lhs_type_part->as_type->value,
@@ -889,7 +889,7 @@ final class NewAnalyzer extends CallAnalyzer
                         }
 
                         if ($lhs_type_part->as_type
-                            && $codebase->classlikes->classExists($lhs_type_part->as_type->value)
+                            && $codebase->classlikes->classExists($lhs_type_part->as_type->value, null, $context)
                         ) {
                             $as_storage = $codebase->classlike_storage_provider->get(
                                 $lhs_type_part->as_type->value,

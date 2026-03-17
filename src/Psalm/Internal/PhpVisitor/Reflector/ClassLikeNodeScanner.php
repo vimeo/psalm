@@ -1506,10 +1506,7 @@ final class ClassLikeNodeScanner
 
 
         if (!isset($storage->enum_cases[$stmt->name->name])) {
-            $case = new EnumCaseStorage(
-                $enum_value,
-                $case_location,
-            );
+            $deprecated = false;
 
             $attrs = $this->getAttributeStorageFromStatement(
                 $this->codebase,
@@ -1525,7 +1522,7 @@ final class ClassLikeNodeScanner
                     || $attribute->fq_class_name === 'JetBrains\\PhpStorm\\Deprecated'
                     || $attribute->fq_class_name === 'Deprecated'
                 ) {
-                    $case->deprecated = true;
+                    $deprecated = true;
                     break;
                 }
             }
@@ -1535,10 +1532,14 @@ final class ClassLikeNodeScanner
                 $comments = DocComment::parsePreservingLength($comment);
 
                 if (isset($comments->tags['deprecated'])) {
-                    $case->deprecated = true;
+                    $deprecated = true;
                 }
             }
-            $storage->enum_cases[$stmt->name->name] = $case;
+            $storage->enum_cases[$stmt->name->name] = new EnumCaseStorage(
+                $enum_value,
+                $case_location,
+                $deprecated,
+            );
         } else {
             IssueBuffer::maybeAdd(
                 new DuplicateEnumCase(

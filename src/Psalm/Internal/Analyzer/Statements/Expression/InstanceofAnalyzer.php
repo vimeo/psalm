@@ -58,7 +58,7 @@ final class InstanceofAnalyzer
                     $codebase->analyzer->addNodeReference(
                         $statements_analyzer->getFilePath(),
                         $stmt->class,
-                        $codebase->classlikes->classOrInterfaceOrEnumExists($fq_class_name)
+                        $codebase->classlikes->classOrInterfaceOrEnumExists($fq_class_name, null, $context)
                             ? $fq_class_name
                             : '*'
                                 . ($stmt->class instanceof PhpParser\Node\Name\FullyQualified

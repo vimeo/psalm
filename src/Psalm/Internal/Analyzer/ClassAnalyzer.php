@@ -1412,7 +1412,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 $aliases,
             );
 
-            if (!$codebase->classlikes->hasFullyQualifiedTraitName($fq_trait_name, $trait_location)) {
+            if (!$codebase->classlikes->hasFullyQualifiedTraitName($fq_trait_name, $trait_location, $class_context)) {
                 IssueBuffer::maybeAdd(
                     new UndefinedTrait(
                         'Trait ' . $fq_trait_name . ' does not exist',
@@ -1490,7 +1490,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             if ($storage->allowed_mutations < $trait_storage->allowed_mutations) {
                 IssueBuffer::maybeAdd(
                     new MutableDependency(
-                        $storage->name . ' is marked '.Mutations::TO_ATTRIBUTE_CLASS[
+                        $storage->name . ' is marked '.Mutations::TO_ATTRIBUTE_CLASSLIKE[
                             $storage->allowed_mutations
                         ].' but ' . $fq_trait_name . ' is not',
                         new CodeLocation($previous_trait_analyzer ?? $this, $trait_name),
@@ -2061,7 +2061,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             $codebase->analyzer->addNodeReference(
                 $this->getFilePath(),
                 $interface_name,
-                $codebase->classlikes->interfaceExists($fq_interface_name)
+                $codebase->classlikes->interfaceExists($fq_interface_name, null, $class_context)
                     ? $fq_interface_name
                     : '*'
                         . ($interface_name instanceof PhpParser\Node\Name\FullyQualified
@@ -2211,7 +2211,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             ) {
                 IssueBuffer::maybeAdd(
                     new ImmutableDependency(
-                        $fq_interface_name . ' is marked with @'.Mutations::TO_ATTRIBUTE_CLASS[
+                        $fq_interface_name . ' is marked with @'.Mutations::TO_ATTRIBUTE_CLASSLIKE[
                             $interface_storage->allowed_mutations
                         ].', but '
                         . $fq_class_name . ' is not',
@@ -2458,7 +2458,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             ) {
                 IssueBuffer::maybeAdd(
                     new ImmutableDependency(
-                        $parent_fq_class_name . ' is marked with @'.Mutations::TO_ATTRIBUTE_CLASS[
+                        $parent_fq_class_name . ' is marked with @'.Mutations::TO_ATTRIBUTE_CLASSLIKE[
                             $parent_class_storage->allowed_mutations
                         ].', but '
                         . $fq_class_name . ' is not',
@@ -2471,7 +2471,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             ) {
                 IssueBuffer::maybeAdd(
                     new MutableDependency(
-                        $fq_class_name . ' is marked with @'.Mutations::TO_ATTRIBUTE_CLASS[
+                        $fq_class_name . ' is marked with @'.Mutations::TO_ATTRIBUTE_CLASSLIKE[
                             $storage->allowed_mutations
                         ].', but parent class '
                         . $parent_fq_class_name . ' is not',
@@ -2486,7 +2486,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 $codebase->analyzer->addNodeReference(
                     $this->getFilePath(),
                     $extended_class,
-                    $codebase->classlikes->classExists($parent_fq_class_name)
+                    $codebase->classlikes->classExists($parent_fq_class_name, null, $class_context)
                         ? $parent_fq_class_name
                         : '*'
                             . ($extended_class instanceof PhpParser\Node\Name\FullyQualified
