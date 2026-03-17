@@ -314,7 +314,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     $this->getAliases(),
                 );
 
-                if ($codebase->classOrInterfaceExists($fq_classlike_name, null, $class_context)) {
+                if ($codebase->classOrInterfaceExists($fq_classlike_name)) {
                     IssueBuffer::maybeAdd(
                         new ReservedWord(
                             'Cannot use ' . $param_name . ' as template name since the class already exists',
