@@ -51,6 +51,8 @@ final class RemoteInfo
 
     /**
      * Return remote name.
+     *
+     * @psalm-mutation-free
      */
     public function getName(): ?string
     {
@@ -73,6 +75,8 @@ final class RemoteInfo
 
     /**
      * Return remote URL.
+     *
+     * @psalm-mutation-free
      */
     public function getUrl(): ?string
     {

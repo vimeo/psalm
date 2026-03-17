@@ -510,6 +510,24 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             && !$context->collect_initializations
             && !$context->collect_mutations
         ) {
+            if ($storage instanceof MethodStorage
+                && $storage->has_mutations_annotation
+                && $storage->containing_class_allowed_mutations < $storage->allowed_mutations
+            ) {
+                IssueBuffer::maybeAdd(
+                    new ImpureFunctionCall(
+                        $storage->cased_name . ' is marked @'.Mutations::TO_ATTRIBUTE_FUNCTIONLIKE[
+                            $storage->allowed_mutations
+                        ].' but its containing class is marked with a lower level of allowed mutations'
+                        .', @'.Mutations::TO_ATTRIBUTE_CLASSLIKE[
+                            $storage->containing_class_allowed_mutations
+                        ],
+                        $storage->location,
+                    ),
+                    $storage->suppressed_issues,
+                );
+            }
+
             if ($this->function->stmts === null) {
                 $isVoid = $storage->return_type
                     ? $storage->return_type->isVoid()
@@ -2186,9 +2204,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $closure_type = new TClosure(
                 $storage->params,
                 $closure_return_type,
-                $storage instanceof FunctionStorage
-                    ? $storage->allowed_mutations
-                    : Mutations::LEVEL_ALL,
+                $storage->allowed_mutations,
                 $storage instanceof FunctionStorage ? $storage->byref_uses : [],
             );
 

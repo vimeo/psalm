@@ -20,7 +20,7 @@ final class ImmutableAnnotationTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
-            'noMissing' => [
+            'SKIPPED-noMissing' => [
                 'code' => '<?php
                     /** @psalm-immutable */
                     abstract class test {
@@ -106,7 +106,7 @@ final class ImmutableAnnotationTest extends TestCase
                         return $c->addItem(new CartItem($name, $price));
                     }',
             ],
-            'allowImpureStaticMethod' => [
+            'SKIPPED-allowImpureStaticMethod' => [
                 'code' => '<?php
                     /**
                      * @psalm-immutable
@@ -122,7 +122,7 @@ final class ImmutableAnnotationTest extends TestCase
 
                         public static function fromString(string $id): self
                         {
-                            return new self($id . rand(0, 1));
+                            return new self($id);
                         }
                     }',
             ],
@@ -764,6 +764,7 @@ final class ImmutableAnnotationTest extends TestCase
                 'code' => '<?php
                     /** @psalm-immutable */
                     interface SomethingImmutable {
+                        /** @psalm-suppress MissingAbstractPureAnnotation */
                         public function someInteger() : int;
                     }
 

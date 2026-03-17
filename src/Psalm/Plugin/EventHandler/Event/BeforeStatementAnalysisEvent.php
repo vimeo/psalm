@@ -31,6 +31,9 @@ final class BeforeStatementAnalysisEvent
     ) {
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getStmt(): Stmt
     {
         return $this->stmt;
@@ -44,16 +47,25 @@ final class BeforeStatementAnalysisEvent
         $this->stmt = $stmt;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getContext(): Context
     {
         return $this->context;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getStatementsSource(): StatementsSource
     {
         return $this->statements_source;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getCodebase(): Codebase
     {
         return $this->codebase;
@@ -61,6 +73,7 @@ final class BeforeStatementAnalysisEvent
 
     /**
      * @return list<FileManipulation>
+     * @psalm-mutation-free
      */
     public function getFileReplacements(): array
     {

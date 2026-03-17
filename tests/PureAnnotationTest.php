@@ -1099,6 +1099,26 @@ final class PureAnnotationTest extends TestCase
                     }',
                 'error_message' => 'ImpurePropertyFetch',
             ],
+            'pureClassCannotContainLowerPurityMethods' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    class A {
+                        /** @psalm-impure */
+                        public static function test(int $a): void {
+                            echo "test";
+                        }
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+            ],
+            'pureClassCannotContainLowerPurityAbstractMethods' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    abstract class A {
+                        /** @psalm-impure */
+                        abstract public static function test(int $a): void;
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+            ],
             'impureThis' => [
                 'code' => '<?php
                     class A {

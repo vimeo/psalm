@@ -31,21 +31,33 @@ final class AfterClassLikeAnalysisEvent
     ) {
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getStmt(): Node\Stmt\ClassLike
     {
         return $this->stmt;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getClasslikeStorage(): ClassLikeStorage
     {
         return $this->classlike_storage;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getStatementsSource(): StatementsSource
     {
         return $this->statements_source;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getCodebase(): Codebase
     {
         return $this->codebase;
@@ -53,6 +65,7 @@ final class AfterClassLikeAnalysisEvent
 
     /**
      * @return FileManipulation[]
+     * @psalm-mutation-free
      */
     public function getFileReplacements(): array
     {

@@ -28,21 +28,33 @@ final class AfterClassLikeExistenceCheckEvent
     ) {
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getFqClassName(): string
     {
         return $this->fq_class_name;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getCodeLocation(): CodeLocation
     {
         return $this->code_location;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getStatementsSource(): StatementsSource
     {
         return $this->statements_source;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getCodebase(): Codebase
     {
         return $this->codebase;
@@ -50,6 +62,7 @@ final class AfterClassLikeExistenceCheckEvent
 
     /**
      * @return FileManipulation[]
+     * @psalm-mutation-free
      */
     public function getFileReplacements(): array
     {
