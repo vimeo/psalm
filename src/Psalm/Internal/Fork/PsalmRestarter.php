@@ -205,6 +205,7 @@ final class PsalmRestarter extends XdebugHandler
     }
 
     /**
+     * @psalm-mutation-free
      * @return array<string, int|string>
      */
     private function getEffectiveOpcacheSettings(): array
@@ -218,7 +219,7 @@ final class PsalmRestarter extends XdebugHandler
 
     /**
      * @return positive-int
-     * @psalm-pure
+     * @psalm-mutation-free
      */
     private function getRequiredMemoryConsumption(): int
     {
