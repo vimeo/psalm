@@ -47,7 +47,6 @@ use function substr;
 use function substr_count;
 use function trim;
 
-use const PREG_OFFSET_CAPTURE;
 
 /**
  * @internal
