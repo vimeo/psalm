@@ -96,7 +96,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             $initialization_context = clone $context;
             [$calling_method_class] = explode('::', $context->calling_method_id);
             $initialization_context->calling_method_id = $calling_method_class . '::__construct';
-            $codebase->addReferenceToMethod(
+            $codebase->addReferenceToFunctionLike(
                 strtolower((string) $method_id),
                 new CodeLocation($statements_analyzer->getSource(), $stmt_name),
                 $initialization_context,
@@ -151,7 +151,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             $initialization_context = clone $context;
             [$calling_method_class] = explode('::', $context->calling_method_id);
             $initialization_context->calling_method_id = $calling_method_class . '::__construct';
-            $codebase->addReferenceToMethod(
+            $codebase->addReferenceToFunctionLike(
                 strtolower((string) $method_id),
                 new CodeLocation($statements_analyzer->getSource(), $stmt_name),
                 $initialization_context,

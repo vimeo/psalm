@@ -142,49 +142,6 @@ final class CodeUseGraph extends DataFlowGraph
      * @param lowercase-string $method_id
      * @psalm-external-mutation-free
      */
-    public function getNodeForMethod(
-        string $method_id,
-        ?CodeLocation $location = null,
-    ): DataFlowNode {
-        $id = 'method ' . $method_id;
-        if (array_key_exists($id, $this->nodes)) {
-            return $this->nodes[$id];
-        }
-
-        $this->nodes[$id] = $node = DataFlowNode::make(
-            $id,
-            $id,
-            $location,
-        );
-
-        return $node;
-    }
-
-    /**
-     * @param lowercase-string $method_id
-     */
-    public function getNodeForMethodReturn(
-        string $method_id,
-        ?CodeLocation $location = null,
-    ): DataFlowNode {
-        $id = 'method-return ' . $method_id;
-        if (array_key_exists($id, $this->nodes)) {
-            return $this->nodes[$id];
-        }
-
-        $this->nodes[$id] = $node = DataFlowNode::make(
-            $id,
-            $id,
-            $location,
-        );
-
-        return $node;
-    }
-
-    /**
-     * @param lowercase-string $method_id
-     * @psalm-external-mutation-free
-     */
     public function getNodeForMissingMethod(
         string $method_id,
         ?CodeLocation $location = null,
@@ -351,40 +308,6 @@ final class CodeUseGraph extends DataFlowGraph
         return $this->getIncomingUseSources('func ' . $func);
     }
 
-    /**
-     * @param lowercase-string $method_id
-     */
-    public function isMethodUsed(string $method_id): bool
-    {
-        $id = 'method ' . $method_id;
-        if (!array_key_exists($id, $this->nodes)) {
-            return false;
-        }
-
-        return $this->hasIncomingUse($id);
-    }
-
-    /**
-     * @param lowercase-string $method_id
-     */
-    public function isMethodReturnUsed(string $method_id): bool
-    {
-        $id = 'method-return ' . $method_id;
-        if (!array_key_exists($id, $this->nodes)) {
-            return false;
-        }
-
-        return $this->hasIncomingUse($id);
-    }
-
-    /**
-     * @param lowercase-string $method_id
-     * @return array<string, bool>
-     */
-    public function getMethodReferences(string $method_id): array
-    {
-        return $this->getIncomingUseSources('method ' . $method_id);
-    }
     /**
      * @param lowercase-string $class_id
      * @param lowercase-string $property_name

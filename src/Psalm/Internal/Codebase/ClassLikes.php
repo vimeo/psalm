@@ -824,8 +824,7 @@ final class ClassLikes
             ) {
                 if (!$classlike_storage->is_trait) {
                     if ($find_unused_code) {
-                        $class_referenced = $codebase->code_use_graph
-                            && $codebase->code_use_graph->isClassUsed($fq_class_name_lc);
+                        $class_referenced = $codebase->code_use_graph?->isClassUsed($fq_class_name_lc) ?? false;
 
                         if ($classlike_storage->public_api || $class_referenced) {
                             $this->checkMethodReferences($classlike_storage, $methods);
@@ -1776,8 +1775,7 @@ final class ClassLikes
             }
 
             $method_id_lc = strtolower((string) $method_id);
-            $method_referenced = $codebase->code_use_graph
-                && $codebase->code_use_graph->isMethodUsed($method_id_lc);
+            $method_referenced = $codebase->code_use_graph?->isFunctionlikeUsed($method_id_lc) ?? false;
 
             if (!$method_referenced
                 && $method_storage->location
@@ -1829,10 +1827,9 @@ final class ClassLikes
                                     break;
                                 }
 
-                                $parent_method_referenced = $codebase->code_use_graph
-                                    && $codebase->code_use_graph->isMethodUsed(
-                                        strtolower((string) $parent_method_id),
-                                    );
+                                $parent_method_referenced = $codebase->code_use_graph?->isFunctionlikeUsed(
+                                    strtolower((string) $parent_method_id),
+                                ) ?? false;
 
                                 if (!$parent_method_storage->abstract || $parent_method_referenced) {
                                     $has_parent_references = true;
@@ -1865,8 +1862,9 @@ final class ClassLikes
 
                             if (isset($interface_storage->methods[$method_name])) {
                                 $interface_method_id = $fq_interface_name_lc . '::' . $method_name;
-                                $interface_method_referenced = $codebase->code_use_graph
-                                    && $codebase->code_use_graph->isMethodUsed($interface_method_id);
+                                $interface_method_referenced = $codebase->code_use_graph?->isFunctionlikeUsed(
+                                    $interface_method_id,
+                                ) ?? false;
 
                                 if ($interface_method_referenced) {
                                     $has_parent_references = true;
@@ -1962,8 +1960,8 @@ final class ClassLikes
                     && ($method_storage->is_static || !$method_storage->probably_fluent)
                 ) {
                     $method_return_id = strtolower((string) $method_id);
-                    $method_return_referenced = $codebase->code_use_graph
-                        && $codebase->code_use_graph->isMethodReturnUsed($method_return_id);
+                    $method_return_referenced =
+                        $codebase->code_use_graph?->isFunctionlikeReturnUsed($method_return_id) ?? false;
 
                     if (!$method_return_referenced) {
                         if ($method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE) {
@@ -2192,20 +2190,17 @@ final class ClassLikes
             }
 
             $referenced_property_name = strtolower($classlike_storage->name) . '::$' . $property_name;
-            $property_referenced = $codebase->code_use_graph
-                && $codebase->code_use_graph->isPropertyUsed(
-                    strtolower($classlike_storage->name),
-                    $property_name,
-                );
+            $property_referenced = $codebase->code_use_graph?->isPropertyUsed(
+                strtolower($classlike_storage->name),
+                $property_name,
+            ) ?? false;
 
             $property_constructor_referenced = false;
             if ($property_referenced && $property_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE) {
-                $property_references = $codebase->code_use_graph
-                    ? $codebase->code_use_graph->getPropertyReferences(
-                        strtolower($classlike_storage->name),
-                        $property_name,
-                    )
-                    : [];
+                $property_references = $codebase->code_use_graph?->getPropertyReferences(
+                    strtolower($classlike_storage->name),
+                    $property_name,
+                ) ?? [];
 
                 if (count($property_references) === 1) {
                     $constructor_name = strtolower($classlike_storage->name) . '::__construct';

@@ -348,8 +348,8 @@ final class Analyzer
                     $codebase->taint_flow_graph->addGraph($pool_data['taint_data']);
                 }
 
-                if ($codebase->code_use_graph && $pool_data['code_use_data']) {
-                    $codebase->code_use_graph->addGraph($pool_data['code_use_data']);
+                if ($pool_data['code_use_data']) {
+                    $codebase->code_use_graph?->addGraph($pool_data['code_use_data']);
                 }
 
                 $codebase->file_reference_provider->addMethodDependencies(

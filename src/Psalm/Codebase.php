@@ -397,26 +397,6 @@ final class Codebase
     /**
      * @param lowercase-string $method_id
      */
-    public function addReferenceToMethod(
-        string $method_id,
-        ?CodeLocation $location = null,
-        ?Context $context = null,
-        bool $is_return_value_used = false,
-    ): void {
-        if ($this->code_use_graph === null) {
-            return;
-        }
-
-        $method = $is_return_value_used
-            ? $this->code_use_graph->getNodeForMethodReturn($method_id)
-            : $this->code_use_graph->getNodeForMethod($method_id);
-
-        $this->code_use_graph->addReferenceToNode($method, $context, $location);
-    }
-
-    /**
-     * @param lowercase-string $method_id
-     */
     public function addReferenceToMissingMethod(
         string $method_id,
         ?CodeLocation $location = null,
