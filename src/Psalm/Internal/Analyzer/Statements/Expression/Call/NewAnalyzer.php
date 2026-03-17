@@ -102,10 +102,10 @@ final class NewAnalyzer extends CallAnalyzer
                 if ($context->calling_method_id
                     && !$stmt->class instanceof PhpParser\Node\Name\FullyQualified
                 ) {
-                    $codebase->file_reference_provider->addMethodReferenceToClassMember(
-                        $context->calling_method_id,
+                    $codebase->addReferenceToFunctionLike(
                         'use:' . $stmt->class->getFirst() . ':' . md5($statements_analyzer->getFilePath()),
-                        false,
+                        new CodeLocation($statements_analyzer->getSource(), $stmt->class),
+                        $context,
                     );
                 }
 

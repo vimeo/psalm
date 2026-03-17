@@ -93,11 +93,13 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         $result->existent_method_ids[$method_id->__toString()] = true;
 
         if ($context->collect_initializations && $context->calling_method_id) {
+            $initialization_context = clone $context;
             [$calling_method_class] = explode('::', $context->calling_method_id);
-            $codebase->file_reference_provider->addMethodReferenceToClassMember(
-                $calling_method_class . '::__construct',
+            $initialization_context->calling_method_id = $calling_method_class . '::__construct';
+            $codebase->addReferenceToMethod(
                 strtolower((string) $method_id),
-                false,
+                new CodeLocation($statements_analyzer->getSource(), $stmt_name),
+                $initialization_context,
             );
         }
 
@@ -146,11 +148,13 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         }
 
         if ($context->collect_initializations && $context->calling_method_id) {
+            $initialization_context = clone $context;
             [$calling_method_class] = explode('::', $context->calling_method_id);
-            $codebase->file_reference_provider->addMethodReferenceToClassMember(
-                $calling_method_class . '::__construct',
+            $initialization_context->calling_method_id = $calling_method_class . '::__construct';
+            $codebase->addReferenceToMethod(
                 strtolower((string) $method_id),
-                false,
+                new CodeLocation($statements_analyzer->getSource(), $stmt_name),
+                $initialization_context,
             );
         }
 

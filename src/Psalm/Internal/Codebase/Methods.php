@@ -136,9 +136,17 @@ final class Methods
         $source_file_path = $source ? $source->getFilePath() : $source_file_path;
 
         $calling_class_name = $source ? $source->getFQCLN() : null;
+        $codebase = $source?->getCodebase();
 
         if (!$calling_class_name && $calling_method_id) {
             $calling_class_name = explode('::', $calling_method_id)[0];
+        }
+
+        $calling_context = null;
+        if ($calling_method_id !== null) {
+            $calling_context = new Context();
+            $calling_context->calling_method_id = $calling_method_id;
+            $calling_context->self = $calling_class_name;
         }
 
         $declaring_method_id = $class_storage->declaring_method_ids[$method_name] ?? null;
@@ -154,15 +162,13 @@ final class Methods
 
             if ($declaring_fq_class_name !== strtolower((string) $calling_class_name)) {
                 if ($calling_method_id) {
-                    $this->file_reference_provider->addMethodReferenceToClass(
-                        $calling_method_id,
-                        $declaring_fq_class_name,
-                    );
+                    if ($codebase && $calling_context) {
+                        $codebase->addReferenceToClass($declaring_fq_class_name, $code_location, $calling_context);
+                    }
                 } elseif ($source_file_path) {
-                    $this->file_reference_provider->addNonMethodReferenceToClass(
-                        $source_file_path,
-                        $declaring_fq_class_name,
-                    );
+                    if ($codebase) {
+                        $codebase->addReferenceToClass($declaring_fq_class_name, $code_location, null);
+                    }
                 }
             }
 
@@ -172,32 +178,39 @@ final class Methods
             ) {
                 foreach ($class_storage->potential_declaring_method_ids[$method_name] as $potential_id => $_) {
                     if ($calling_method_id) {
-                        $this->file_reference_provider->addMethodReferenceToClassMember(
-                            $calling_method_id,
-                            $potential_id,
-                            $is_used,
-                        );
+                        if ($codebase && $calling_context) {
+                            $codebase->addReferenceToMethod(
+                                $potential_id,
+                                $code_location,
+                                $calling_context,
+                                $is_used,
+                            );
+                        }
                     } elseif ($source_file_path) {
-                        $this->file_reference_provider->addFileReferenceToClassMember(
-                            $source_file_path,
-                            $potential_id,
-                            $is_used,
-                        );
+                        if ($codebase) {
+                            $codebase->addReferenceToMethod($potential_id, $code_location, null, $is_used);
+                        }
                     }
                 }
             } else {
                 if ($calling_method_id) {
-                    $this->file_reference_provider->addMethodReferenceToClassMember(
-                        $calling_method_id,
-                        strtolower((string) $declaring_method_id),
-                        $is_used,
-                    );
+                    if ($codebase && $calling_context) {
+                        $codebase->addReferenceToMethod(
+                            strtolower((string) $declaring_method_id),
+                            $code_location,
+                            $calling_context,
+                            $is_used,
+                        );
+                    }
                 } elseif ($source_file_path) {
-                    $this->file_reference_provider->addFileReferenceToClassMember(
-                        $source_file_path,
-                        strtolower((string) $declaring_method_id),
-                        $is_used,
-                    );
+                    if ($codebase) {
+                        $codebase->addReferenceToMethod(
+                            strtolower((string) $declaring_method_id),
+                            $code_location,
+                            null,
+                            $is_used,
+                        );
+                    }
                 }
             }
 
@@ -219,17 +232,23 @@ final class Methods
                 }
 
                 if ($calling_method_id) {
-                    $this->file_reference_provider->addMethodReferenceToClassMember(
-                        $calling_method_id,
-                        $interface_method_id_lc,
-                        $is_used,
-                    );
+                    if ($codebase && $calling_context) {
+                        $codebase->addReferenceToMethod(
+                            $interface_method_id_lc,
+                            $code_location,
+                            $calling_context,
+                            $is_used,
+                        );
+                    }
                 } elseif ($source_file_path) {
-                    $this->file_reference_provider->addFileReferenceToClassMember(
-                        $source_file_path,
-                        $interface_method_id_lc,
-                        $is_used,
-                    );
+                    if ($codebase) {
+                        $codebase->addReferenceToMethod(
+                            $interface_method_id_lc,
+                            $code_location,
+                            null,
+                            $is_used,
+                        );
+                    }
                 }
             }
 
@@ -251,17 +270,23 @@ final class Methods
 
                     if ($calling_method_id) {
                         // also store failures in case the method is added later
-                        $this->file_reference_provider->addMethodReferenceToClassMember(
-                            $calling_method_id,
-                            strtolower((string) $overridden_method_id),
-                            $is_used,
-                        );
+                        if ($codebase && $calling_context) {
+                            $codebase->addReferenceToMethod(
+                                strtolower((string) $overridden_method_id),
+                                $code_location,
+                                $calling_context,
+                                $is_used,
+                            );
+                        }
                     } elseif ($source_file_path) {
-                        $this->file_reference_provider->addFileReferenceToClassMember(
-                            $source_file_path,
-                            strtolower((string) $overridden_method_id),
-                            $is_used,
-                        );
+                        if ($codebase) {
+                            $codebase->addReferenceToMethod(
+                                strtolower((string) $overridden_method_id),
+                                $code_location,
+                                null,
+                                $is_used,
+                            );
+                        }
                     }
                 }
             }
@@ -271,15 +296,13 @@ final class Methods
 
         if ($source_file_path && $fq_class_name !== strtolower((string) $calling_class_name)) {
             if ($calling_method_id) {
-                $this->file_reference_provider->addMethodReferenceToClass(
-                    $calling_method_id,
-                    $fq_class_name,
-                );
+                if ($codebase && $calling_context) {
+                    $codebase->addReferenceToClass($fq_class_name, $code_location, $calling_context);
+                }
             } else {
-                $this->file_reference_provider->addNonMethodReferenceToClass(
-                    $source_file_path,
-                    $fq_class_name,
-                );
+                if ($codebase) {
+                    $codebase->addReferenceToClass($fq_class_name, $code_location, null);
+                }
             }
         }
 
@@ -306,29 +329,29 @@ final class Methods
 
             if ($calling_method_id) {
                 // also store failures in case the method is added later
-                $this->file_reference_provider->addMethodReferenceToMissingClassMember(
-                    $calling_method_id,
-                    $potential_id,
-                );
+                if ($codebase && $calling_context) {
+                    $codebase->addReferenceToMissingMethod($potential_id, $code_location, $calling_context);
+                }
             } elseif ($source_file_path) {
-                $this->file_reference_provider->addFileReferenceToMissingClassMember(
-                    $source_file_path,
-                    $potential_id,
-                );
+                if ($codebase) {
+                    $codebase->addReferenceToMissingMethod($potential_id, $code_location, null);
+                }
             }
         }
 
         if ($calling_method_id) {
             // also store failures in case the method is added later
-            $this->file_reference_provider->addMethodReferenceToMissingClassMember(
-                $calling_method_id,
-                strtolower((string) $method_id),
-            );
+            if ($codebase && $calling_context) {
+                $codebase->addReferenceToMissingMethod(
+                    strtolower((string) $method_id),
+                    $code_location,
+                    $calling_context,
+                );
+            }
         } elseif ($source_file_path) {
-            $this->file_reference_provider->addFileReferenceToMissingClassMember(
-                $source_file_path,
-                strtolower((string) $method_id),
-            );
+            if ($codebase) {
+                $codebase->addReferenceToMissingMethod(strtolower((string) $method_id), $code_location, null);
+            }
         }
 
         return false;

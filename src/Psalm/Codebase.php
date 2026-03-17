@@ -16,7 +16,6 @@ use LanguageServerProtocol\Position;
 use LanguageServerProtocol\Range;
 use LanguageServerProtocol\SignatureInformation;
 use LanguageServerProtocol\TextEdit;
-use PHP_CodeSniffer\Reports\Code;
 use PhpParser;
 use PhpParser\Node\Arg;
 use Psalm\CodeLocation\Raw;
@@ -352,13 +351,9 @@ final class Codebase
         if ($this->code_use_graph === null) {
             return;
         }
-        $class = $this->code_use_graph->getNodeForClass($fq_class_name_lc);
 
-        $this->code_use_graph->addReferenceToNode(
-            $class,
-            $context,
-            $location,
-        );
+        $class = $this->code_use_graph->getNodeForClass($fq_class_name_lc);
+        $this->code_use_graph->addReferenceToNode($class, $context, $location);
     }
 
     /**
@@ -374,13 +369,9 @@ final class Codebase
         if ($this->code_use_graph === null) {
             return;
         }
-        $class = $this->code_use_graph->getNodeForProperty($fq_class_name_lc, $property_name_lc);
 
-        $this->code_use_graph->addReferenceToNode(
-            $class,
-            $context,
-            $location,
-        );
+        $property = $this->code_use_graph->getNodeForProperty($fq_class_name_lc, $property_name_lc);
+        $this->code_use_graph->addReferenceToNode($property, $context, $location);
     }
 
     /**
@@ -390,17 +381,89 @@ final class Codebase
         string $function_id,
         ?CodeLocation $location = null,
         ?Context $context = null,
+        bool $is_return_value_used = false,
     ): void {
         if ($this->code_use_graph === null) {
             return;
         }
-        $function = $this->code_use_graph->getNodeForFunctionLike($function_id);
 
-        $this->code_use_graph->addReferenceToNode(
-            $function,
-            $context,
-            $location,
-        );
+        $function = $is_return_value_used
+            ? $this->code_use_graph->getNodeForFunctionLikeReturn($function_id)
+            : $this->code_use_graph->getNodeForFunctionLike($function_id);
+
+        $this->code_use_graph->addReferenceToNode($function, $context, $location);
+    }
+
+    /**
+     * @param lowercase-string $method_id
+     */
+    public function addReferenceToMethod(
+        string $method_id,
+        ?CodeLocation $location = null,
+        ?Context $context = null,
+        bool $is_return_value_used = false,
+    ): void {
+        if ($this->code_use_graph === null) {
+            return;
+        }
+
+        $method = $is_return_value_used
+            ? $this->code_use_graph->getNodeForMethodReturn($method_id)
+            : $this->code_use_graph->getNodeForMethod($method_id);
+
+        $this->code_use_graph->addReferenceToNode($method, $context, $location);
+    }
+
+    /**
+     * @param lowercase-string $method_id
+     */
+    public function addReferenceToMissingMethod(
+        string $method_id,
+        ?CodeLocation $location = null,
+        ?Context $context = null,
+    ): void {
+        if ($this->code_use_graph === null) {
+            return;
+        }
+
+        $method = $this->code_use_graph->getNodeForMissingMethod($method_id);
+        $this->code_use_graph->addReferenceToNode($method, $context, $location);
+    }
+
+    /**
+     * @param lowercase-string $fq_class_name_lc
+     * @param lowercase-string $property_name_lc
+     */
+    public function addReferenceToMissingProperty(
+        string $fq_class_name_lc,
+        string $property_name_lc,
+        ?CodeLocation $location = null,
+        ?Context $context = null,
+    ): void {
+        if ($this->code_use_graph === null) {
+            return;
+        }
+
+        $property = $this->code_use_graph->getNodeForMissingProperty($fq_class_name_lc, $property_name_lc);
+        $this->code_use_graph->addReferenceToNode($property, $context, $location);
+    }
+
+    /**
+     * @param lowercase-string $fq_class_name_lc
+     * @param lowercase-string $const_name_lc
+     */
+    public function addReferenceToClassConstant(
+        string $fq_class_name_lc,
+        string $const_name_lc,
+        ?CodeLocation $location = null,
+        ?Context $context = null,
+    ): void {
+        if ($this->code_use_graph === null) {
+            return;
+        }
+
+        $constant = $this->code_use_graph->getNodeForClassConstant($fq_class_name_lc, $const_name_lc);
+        $this->code_use_graph->addReferenceToNode($constant, $context, $location);
     }
 
 
@@ -575,6 +638,7 @@ final class Codebase
         $this->classlikes->collect_references = true;
         $this->find_unused_code = $find_unused_code;
         $this->find_unused_variables = true;
+        $this->code_use_graph = new CodeUseGraph();
     }
 
     /**

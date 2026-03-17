@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Psalm\Internal\Codebase;
 
 use InvalidArgumentException;
-use PHP_CodeSniffer\Reports\Code;
 use PhpParser;
 use PhpParser\Node\Stmt\ClassLike;
 use PhpParser\NodeTraverser;
@@ -825,9 +824,10 @@ final class ClassLikes
             ) {
                 if (!$classlike_storage->is_trait) {
                     if ($find_unused_code) {
-                        if ($classlike_storage->public_api
-                            || $this->file_reference_provider->isClassReferenced($fq_class_name_lc)
-                        ) {
+                        $class_referenced = $codebase->code_use_graph
+                            && $codebase->code_use_graph->isClassUsed($fq_class_name_lc);
+
+                        if ($classlike_storage->public_api || $class_referenced) {
                             $this->checkMethodReferences($classlike_storage, $methods);
                             $this->checkPropertyReferences($classlike_storage);
                         } else {
@@ -1775,9 +1775,9 @@ final class ClassLikes
                 continue;
             }
 
-            $method_referenced = $this->file_reference_provider->isClassMethodReferenced(
-                strtolower((string) $method_id),
-            );
+            $method_id_lc = strtolower((string) $method_id);
+            $method_referenced = $codebase->code_use_graph
+                && $codebase->code_use_graph->isMethodUsed($method_id_lc);
 
             if (!$method_referenced
                 && $method_storage->location
@@ -1829,9 +1829,10 @@ final class ClassLikes
                                     break;
                                 }
 
-                                $parent_method_referenced = $this->file_reference_provider->isClassMethodReferenced(
-                                    strtolower((string) $parent_method_id),
-                                );
+                                $parent_method_referenced = $codebase->code_use_graph
+                                    && $codebase->code_use_graph->isMethodUsed(
+                                        strtolower((string) $parent_method_id),
+                                    );
 
                                 if (!$parent_method_storage->abstract || $parent_method_referenced) {
                                     $has_parent_references = true;
@@ -1863,9 +1864,9 @@ final class ClassLikes
                             }
 
                             if (isset($interface_storage->methods[$method_name])) {
-                                $interface_method_referenced = $this->file_reference_provider->isClassMethodReferenced(
-                                    $fq_interface_name_lc . '::' . $method_name,
-                                );
+                                $interface_method_id = $fq_interface_name_lc . '::' . $method_name;
+                                $interface_method_referenced = $codebase->code_use_graph
+                                    && $codebase->code_use_graph->isMethodUsed($interface_method_id);
 
                                 if ($interface_method_referenced) {
                                     $has_parent_references = true;
@@ -1960,9 +1961,9 @@ final class ClassLikes
                     && $method_id->method_name !== '__tostring'
                     && ($method_storage->is_static || !$method_storage->probably_fluent)
                 ) {
-                    $method_return_referenced = $this->file_reference_provider->isMethodReturnReferenced(
-                        strtolower((string) $method_id),
-                    );
+                    $method_return_id = strtolower((string) $method_id);
+                    $method_return_referenced = $codebase->code_use_graph
+                        && $codebase->code_use_graph->isMethodReturnUsed($method_return_id);
 
                     if (!$method_return_referenced) {
                         if ($method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE) {
@@ -2191,20 +2192,27 @@ final class ClassLikes
             }
 
             $referenced_property_name = strtolower($classlike_storage->name) . '::$' . $property_name;
-            $property_referenced = $this->file_reference_provider->isClassPropertyReferenced(
-                $referenced_property_name,
-            );
+            $property_referenced = $codebase->code_use_graph
+                && $codebase->code_use_graph->isPropertyUsed(
+                    strtolower($classlike_storage->name),
+                    $property_name,
+                );
 
             $property_constructor_referenced = false;
             if ($property_referenced && $property_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE) {
-                $all_method_references = $this->file_reference_provider->getAllMethodReferencesToClassProperties();
+                $property_references = $codebase->code_use_graph
+                    ? $codebase->code_use_graph->getPropertyReferences(
+                        strtolower($classlike_storage->name),
+                        $property_name,
+                    )
+                    : [];
 
-                if (isset($all_method_references[$referenced_property_name])
-                    && count($all_method_references[$referenced_property_name]) === 1) {
+                if (count($property_references) === 1) {
                     $constructor_name = strtolower($classlike_storage->name) . '::__construct';
-                    $property_references = $all_method_references[$referenced_property_name];
+                    $constructor_reference_id = 'func ' . $constructor_name;
 
-                    $property_constructor_referenced = isset($property_references[$constructor_name])
+                    $property_constructor_referenced = (isset($property_references[$constructor_name])
+                            || isset($property_references[$constructor_reference_id]))
                         && !$property_storage->is_static;
                 }
             }

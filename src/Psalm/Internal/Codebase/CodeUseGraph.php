@@ -13,7 +13,6 @@ use Psalm\Internal\DataFlow\Path;
 
 use function abs;
 use function array_key_exists;
-use function count;
 
 /**
  * @internal
@@ -75,6 +74,30 @@ final class CodeUseGraph extends DataFlowGraph
     }
 
     /**
+     * @param lowercase-string $class_id
+     * @param lowercase-string $const_name
+     * @psalm-external-mutation-free
+     */
+    public function getNodeForClassConstant(
+        string $class_id,
+        string $const_name,
+        ?CodeLocation $location = null,
+    ): DataFlowNode {
+        $id = 'const ' . $class_id . '::' . $const_name;
+        if (array_key_exists($id, $this->nodes)) {
+            return $this->nodes[$id];
+        }
+
+        $this->nodes[$id] = $node = DataFlowNode::make(
+            $id,
+            $id,
+            $location,
+        );
+
+        return $node;
+    }
+
+    /**
      * @param lowercase-string $func
      * @psalm-external-mutation-free
      */
@@ -91,6 +114,116 @@ final class CodeUseGraph extends DataFlowGraph
             $key,
             $location,
         );
+        return $node;
+    }
+
+    /**
+     * @param lowercase-string $func
+     */
+    public function getNodeForFunctionLikeReturn(
+        string $func,
+        ?CodeLocation $location = null,
+    ): DataFlowNode {
+        $id = 'return ' . $func;
+        if (array_key_exists($id, $this->nodes)) {
+            return $this->nodes[$id];
+        }
+
+        $this->nodes[$id] = $node = DataFlowNode::make(
+            $id,
+            $id,
+            $location,
+        );
+
+        return $node;
+    }
+
+    /**
+     * @param lowercase-string $method_id
+     * @psalm-external-mutation-free
+     */
+    public function getNodeForMethod(
+        string $method_id,
+        ?CodeLocation $location = null,
+    ): DataFlowNode {
+        $id = 'method ' . $method_id;
+        if (array_key_exists($id, $this->nodes)) {
+            return $this->nodes[$id];
+        }
+
+        $this->nodes[$id] = $node = DataFlowNode::make(
+            $id,
+            $id,
+            $location,
+        );
+
+        return $node;
+    }
+
+    /**
+     * @param lowercase-string $method_id
+     */
+    public function getNodeForMethodReturn(
+        string $method_id,
+        ?CodeLocation $location = null,
+    ): DataFlowNode {
+        $id = 'method-return ' . $method_id;
+        if (array_key_exists($id, $this->nodes)) {
+            return $this->nodes[$id];
+        }
+
+        $this->nodes[$id] = $node = DataFlowNode::make(
+            $id,
+            $id,
+            $location,
+        );
+
+        return $node;
+    }
+
+    /**
+     * @param lowercase-string $method_id
+     * @psalm-external-mutation-free
+     */
+    public function getNodeForMissingMethod(
+        string $method_id,
+        ?CodeLocation $location = null,
+    ): DataFlowNode {
+        $id = 'missing-method ' . $method_id;
+        if (array_key_exists($id, $this->nodes)) {
+            return $this->nodes[$id];
+        }
+
+        $this->nodes[$id] = $node = DataFlowNode::make(
+            $id,
+            $id,
+            $location,
+        );
+
+        return $node;
+    }
+
+    /**
+     * @param lowercase-string $class_id
+     * @param lowercase-string $property_name
+     * @psalm-external-mutation-free
+     */
+    public function getNodeForMissingProperty(
+        string $class_id,
+        string $property_name,
+        ?CodeLocation $location = null,
+    ): DataFlowNode {
+        $id = 'missing-property ' . $class_id . '::' . $property_name;
+        if (array_key_exists($id, $this->nodes)) {
+            return $this->nodes[$id];
+        }
+
+        $this->nodes[$id] = $node = DataFlowNode::make(
+            $id,
+            $id,
+            $location,
+        );
+
         return $node;
     }
     
@@ -113,14 +246,14 @@ final class CodeUseGraph extends DataFlowGraph
 
     public function addReferenceToNode(
         DataFlowNode $node,
-        Context $context,
+        ?Context $context,
         ?CodeLocation $location = null,
     ): void {
-        if ($context->calling_method_id !== null) {
+        if ($context?->calling_method_id !== null) {
             $caller = $this->getNodeForFunctionLike($context->calling_method_id, $location);
-        } elseif ($context->calling_function_id !== null) {
+        } elseif ($context?->calling_function_id !== null) {
             $caller = $this->getNodeForFunctionLike($context->calling_function_id, $location);
-        } elseif ($context->self) {
+        } elseif ($context?->self) {
             $caller = $this->getNodeForClass($context->self, $location);
         } else {
             // Source is not a method or function, so we assume it's a file-level use,
@@ -133,6 +266,22 @@ final class CodeUseGraph extends DataFlowGraph
             $node,
             'use',
         );
+    }
+
+    /**
+     * @psalm-external-mutation-free
+     */
+    public function addGraph(self $other): void
+    {
+        $this->nodes += $other->nodes;
+
+        foreach ($other->forward_edges as $key => $map) {
+            if (!isset($this->forward_edges[$key])) {
+                $this->forward_edges[$key] = $map;
+            } else {
+                $this->forward_edges[$key] += $map;
+            }
+        }
     }
 
     /**
@@ -172,11 +321,69 @@ final class CodeUseGraph extends DataFlowGraph
      */
     public function isFunctionlikeUsed(string $func): bool
     {
-        if (!array_key_exists($func, $this->nodes)) {
+        $id = 'func ' . $func;
+        if (!array_key_exists($id, $this->nodes)) {
             return false;
         }
 
-        return $this->isCodeUsed($this->nodes[$func]);
+        return $this->hasIncomingUse($id);
+    }
+
+    /**
+     * @param lowercase-string $func
+     */
+    public function isFunctionlikeReturnUsed(string $func): bool
+    {
+        $id = 'return ' . $func;
+        if (!array_key_exists($id, $this->nodes)) {
+            return false;
+        }
+
+        return $this->hasIncomingUse($id);
+    }
+
+    /**
+     * @param lowercase-string $func
+     * @return array<string, bool>
+     */
+    public function getFunctionlikeReferences(string $func): array
+    {
+        return $this->getIncomingUseSources('func ' . $func);
+    }
+
+    /**
+     * @param lowercase-string $method_id
+     */
+    public function isMethodUsed(string $method_id): bool
+    {
+        $id = 'method ' . $method_id;
+        if (!array_key_exists($id, $this->nodes)) {
+            return false;
+        }
+
+        return $this->hasIncomingUse($id);
+    }
+
+    /**
+     * @param lowercase-string $method_id
+     */
+    public function isMethodReturnUsed(string $method_id): bool
+    {
+        $id = 'method-return ' . $method_id;
+        if (!array_key_exists($id, $this->nodes)) {
+            return false;
+        }
+
+        return $this->hasIncomingUse($id);
+    }
+
+    /**
+     * @param lowercase-string $method_id
+     * @return array<string, bool>
+     */
+    public function getMethodReferences(string $method_id): array
+    {
+        return $this->getIncomingUseSources('method ' . $method_id);
     }
     /**
      * @param lowercase-string $class_id
@@ -189,7 +396,17 @@ final class CodeUseGraph extends DataFlowGraph
             return false;
         }
 
-        return $this->isCodeUsed($this->nodes[$id]);
+        return $this->hasIncomingUse($id);
+    }
+
+    /**
+     * @param lowercase-string $class_id
+     * @param lowercase-string $property_name
+     * @return array<string, bool>
+     */
+    public function getPropertyReferences(string $class_id, string $property_name): array
+    {
+        return $this->getIncomingUseSources('property '.$class_id.'::'.$property_name);
     }
     /**
      * @param lowercase-string $class_id
@@ -201,77 +418,37 @@ final class CodeUseGraph extends DataFlowGraph
             return false;
         }
 
-        return $this->isCodeUsed($this->nodes[$id]);
+        return $this->hasIncomingUse($id);
     }
 
-    private function isCodeUsed(DataFlowNode $assignment_node): bool
+    private function hasIncomingUse(string $node_id): bool
     {
-        $visited_source_ids = [];
-
-        $sources = [$assignment_node];
-
-        for ($i = 0; count($sources) && $i < 200; $i++) {
-            $new_child_nodes = [];
-
-            foreach ($sources as $source) {
-                $visited_source_ids[$source->id] = true;
-
-                if ($this->getChildNodes(
-                    $new_child_nodes,
-                    $source,
-                    $visited_source_ids,
-                )) {
-                    return true;
-                }
+        foreach ($this->forward_edges as $from_id => $to_nodes) {
+            if ($from_id === $node_id) {
+                continue;
             }
 
-            $sources = $new_child_nodes;
+            if (isset($to_nodes[$node_id])) {
+                return true;
+            }
         }
 
         return false;
     }
 
     /**
-     * @param array<string, bool> $visited_source_ids
-     * @param array<string, DataFlowNode> $child_nodes
-     * @param-out array<string, DataFlowNode> $child_nodes
+     * @return array<string, bool>
      */
-    private function getChildNodes(
-        array &$child_nodes,
-        DataFlowNode $generated_source,
-        array $visited_source_ids,
-    ): bool {
-        if (!isset($this->forward_edges[$generated_source->id])) {
-            return false;
+    private function getIncomingUseSources(string $node_id): array
+    {
+        $references = [];
+
+        foreach ($this->forward_edges as $from_id => $to_nodes) {
+            if (isset($to_nodes[$node_id])) {
+                $references[$from_id] = true;
+            }
         }
 
-        foreach ($this->forward_edges[$generated_source->id] as $to_id => $path) {
-            $path_type = $path->type;
-
-            if ($path_type === 'psalm-api') {
-                return true;
-            }
-
-            if (isset($visited_source_ids[$to_id])) {
-                continue;
-            }
-
-            $path_types = $generated_source->path_types;
-            $path_types []= $path_type;
-            $new_destination = new DataFlowNode(
-                $to_id,
-                null,
-                null,
-                $to_id,
-                null,
-                0,
-                null,
-                $path_types,
-            );
-
-            $child_nodes[$to_id] = $new_destination;
-        }
-
-        return false;
+        return $references;
     }
 }

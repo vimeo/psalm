@@ -1129,9 +1129,14 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 );
             }
 
-            $codebase->file_reference_provider->addMethodReferenceToMissingClassMember(
-                $fq_class_name_lc . '::__construct',
-                strtolower($property_class_name) . '::$' . $property_name,
+            $constructor_context = new Context();
+            $constructor_context->calling_method_id = $fq_class_name_lc . '::__construct';
+            $constructor_context->self = $storage->name;
+            $codebase->addReferenceToProperty(
+                strtolower($property_class_name),
+                $property_name,
+                $property->location,
+                $constructor_context,
             );
 
             if ($property->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE) {
