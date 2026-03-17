@@ -1007,8 +1007,13 @@ final class Psalm
                     . 'JIT acceleration: OFF (an error occurred while enabling JIT)' . PHP_EOL
                     . 'Please report this to https://github.com/vimeo/psalm with your OS and PHP configuration!'
                     . PHP_EOL . PHP_EOL);
+            } else {
+                $progress->write(PHP_EOL
+                    . 'JIT acceleration: OFF' . PHP_EOL
+                    . 'You can enable JIT acceleration (experimental) with --force-jit.'
+                    . PHP_EOL . PHP_EOL);
             }
-        } elseif ($force_jit) {
+        } else {
             $progress->write(PHP_EOL
                 . 'JIT acceleration: OFF (opcache not installed or not enabled)' . PHP_EOL
                 . 'Install and enable the opcache extension to use JIT with --force-jit.'
