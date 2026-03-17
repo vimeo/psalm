@@ -409,7 +409,7 @@ final class CallableTypeComparator
         ) {
             return new TCallable();
         } elseif ($input_type_part instanceof TNamedObject
-            && $codebase->classExists($input_type_part->value)
+            && $codebase->classExists($input_type_part->value, null, $context)
         ) {
             $invoke_id = new MethodIdentifier(
                 $input_type_part->value,

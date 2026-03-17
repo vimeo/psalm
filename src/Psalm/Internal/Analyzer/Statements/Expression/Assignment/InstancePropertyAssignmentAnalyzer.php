@@ -977,8 +977,8 @@ final class InstancePropertyAssignmentAnalyzer
         $class_exists = false;
         $interface_exists = false;
 
-        if (!$codebase->classExists($lhs_type_part->value)) {
-            if ($codebase->interfaceExists($lhs_type_part->value)) {
+        if (!$codebase->classExists($lhs_type_part->value, null, $context)) {
+            if ($codebase->interfaceExists($lhs_type_part->value, null, $context)) {
                 $interface_exists = true;
                 $interface_storage = $codebase->classlike_storage_provider->get(
                     strtolower($lhs_type_part->value),
@@ -988,7 +988,7 @@ final class InstancePropertyAssignmentAnalyzer
 
                 foreach ($intersection_types as $intersection_type) {
                     if ($intersection_type instanceof TNamedObject
-                        && $codebase->classExists($intersection_type->value)
+                        && $codebase->classExists($intersection_type->value, null, $context)
                     ) {
                         $fq_class_name = $intersection_type->value;
                         $class_exists = true;

@@ -64,7 +64,7 @@ final class CloneAnalyzer
                 } elseif ($clone_type_part instanceof TObject) {
                     $possibly_valid = true;
                 } elseif ($clone_type_part instanceof TNamedObject) {
-                    if (!$codebase->classlikes->classOrInterfaceExists($clone_type_part->value)) {
+                    if (!$codebase->classlikes->classOrInterfaceExists($clone_type_part->value, null, $context)) {
                         $invalid_clones[] = $clone_type_part->getId();
                     } else {
                         $clone_method_id = new MethodIdentifier(

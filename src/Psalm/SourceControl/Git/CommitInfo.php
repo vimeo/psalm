@@ -79,6 +79,8 @@ final class CommitInfo
 
     /**
      * Return commit ID.
+     *
+     * @psalm-mutation-free
      */
     public function getId(): ?string
     {
@@ -99,6 +101,8 @@ final class CommitInfo
 
     /**
      * Return author name.
+     *
+     * @psalm-mutation-free
      */
     public function getAuthorName(): ?string
     {
@@ -119,6 +123,8 @@ final class CommitInfo
 
     /**
      * Return author email.
+     *
+     * @psalm-mutation-free
      */
     public function getAuthorEmail(): ?string
     {
@@ -139,6 +145,8 @@ final class CommitInfo
 
     /**
      * Return committer name.
+     *
+     * @psalm-mutation-free
      */
     public function getCommitterName(): ?string
     {
@@ -159,6 +167,8 @@ final class CommitInfo
 
     /**
      * Return committer email.
+     *
+     * @psalm-mutation-free
      */
     public function getCommitterEmail(): ?string
     {
@@ -179,6 +189,8 @@ final class CommitInfo
 
     /**
      * Return commit message.
+     *
+     * @psalm-mutation-free
      */
     public function getMessage(): ?string
     {
@@ -199,6 +211,8 @@ final class CommitInfo
 
     /**
      * Return commit date.
+     *
+     * @psalm-mutation-free
      */
     public function getDate(): ?int
     {
