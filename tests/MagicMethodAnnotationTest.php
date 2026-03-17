@@ -1148,6 +1148,41 @@ final class MagicMethodAnnotationTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['ParamNameMismatch'],
             ],
+            'parenthesizedUnionTypeInMethodParam' => [
+                'code' => '<?php
+                    class ParentClass {
+                        public function __call(string $name, array $args): static { return $this; }
+                    }
+
+                    /**
+                     * @method $this nullable(bool $value = true)
+                     * @method $this default(mixed $value)
+                     * @method $this lock(("none"|"shared"|"default"|"exclusive") $value)
+                     * @method $this foo((int|string) $value)
+                     * @method void baz((int|string) $x, int $y)
+                     */
+                    class Child extends ParentClass {}
+
+                    $child = new Child();
+                    $a = $child->nullable();
+                    $b = $child->lock("shared");
+                    $c = $child->foo(1);
+                    $child->baz(1, 2);
+
+                    /**
+                     * @method $this lock((\'none\'|\'shared\'|\'default\'|\'exclusive\') $value)
+                     */
+                    class SingleQuoteChild extends ParentClass {}
+
+                    $sq = new SingleQuoteChild();
+                    $d = $sq->lock(\'shared\');',
+                'assertions' => [
+                    '$a' => 'Child',
+                    '$b' => 'Child',
+                    '$c' => 'Child',
+                    '$d' => 'SingleQuoteChild',
+                ],
+            ],
         ];
     }
 
