@@ -953,6 +953,7 @@ final class Psalm
         Progress $progress,
     ): void {
         $ini_handler = new PsalmRestarter('PSALM');
+        $ini_handler->enableJit = $force_jit;
 
         if (isset($options['disable-extension'])) {
             if (is_array($options['disable-extension'])) {
@@ -1001,20 +1002,25 @@ final class Psalm
                 $progress->write(PHP_EOL
                     . 'JIT acceleration: ON'
                     . PHP_EOL . PHP_EOL);
-            } else {
+            } elseif ($force_jit) {
                 $progress->write(PHP_EOL
                     . 'JIT acceleration: OFF (an error occurred while enabling JIT)' . PHP_EOL
                     . 'Please report this to https://github.com/vimeo/psalm with your OS and PHP configuration!'
+                    . PHP_EOL . PHP_EOL);
+            } else {
+                $progress->write(PHP_EOL
+                    . 'JIT acceleration: OFF' . PHP_EOL
+                    . 'You can enable JIT acceleration (experimental) with --force-jit.'
                     . PHP_EOL . PHP_EOL);
             }
         } else {
             $progress->write(PHP_EOL
                 . 'JIT acceleration: OFF (opcache not installed or not enabled)' . PHP_EOL
-                . 'Install and enable the opcache extension to make use of JIT for a 20%+ performance boost!'
+                . 'Install and enable the opcache extension to use JIT with --force-jit.'
                 . PHP_EOL . PHP_EOL);
         }
         if ($force_jit && !$hasJit) {
-            $progress->write('Exiting because JIT was requested but is not available.' . PHP_EOL . PHP_EOL);
+            $progress->write('Exiting because --force-jit was set but JIT is not available.' . PHP_EOL . PHP_EOL);
             exit(1);
         }
 
@@ -1393,7 +1399,7 @@ final class Psalm
                 Used to disable certain extensions while Psalm is running.
 
             --force-jit
-                If set, requires JIT acceleration to be available in order to run Psalm, exiting immediately if it cannot be enabled.
+                Enable JIT acceleration. Exits immediately if JIT cannot be enabled.
 
             --threads=INT
                 If greater than one, Psalm will run the scan and analysis on multiple threads, speeding things up.
