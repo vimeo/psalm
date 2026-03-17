@@ -358,7 +358,7 @@ final class InstancePropertyFetchAnalyzer
 
             foreach ($stmt_var_type->getAtomicTypes() as $lhs_type_part) {
                 if ($lhs_type_part instanceof TNamedObject) {
-                    if (!$codebase->classExists($lhs_type_part->value)) {
+                    if (!$codebase->classExists($lhs_type_part->value, null, $context)) {
                         continue;
                     }
 
@@ -406,7 +406,7 @@ final class InstancePropertyFetchAnalyzer
             // log the appearance
             foreach ($stmt_var_type->getAtomicTypes() as $lhs_type_part) {
                 if ($lhs_type_part instanceof TNamedObject) {
-                    if (!$codebase->classExists($lhs_type_part->value)) {
+                    if (!$codebase->classExists($lhs_type_part->value, null, $context)) {
                         continue;
                     }
 

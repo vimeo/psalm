@@ -547,8 +547,11 @@ final class ClassLikes
     /**
      * @psalm-external-mutation-free
      */
-    public function hasFullyQualifiedTraitName(string $fq_class_name, ?CodeLocation $code_location = null): bool
-    {
+    public function hasFullyQualifiedTraitName(
+        string $fq_class_name,
+        ?CodeLocation $code_location = null,
+        ?Context $_ = null,
+    ): bool {
         $fq_class_name_lc = strtolower($this->getUnAliasedName($fq_class_name));
 
         if (!isset($this->existing_traits_lc[$fq_class_name_lc]) ||
@@ -759,9 +762,12 @@ final class ClassLikes
     /**
      * @psalm-external-mutation-free
      */
-    public function traitExists(string $fq_trait_name, ?CodeLocation $code_location = null): bool
-    {
-        return $this->hasFullyQualifiedTraitName($fq_trait_name, $code_location);
+    public function traitExists(
+        string $fq_trait_name,
+        ?CodeLocation $code_location = null,
+        ?Context $context = null,
+    ): bool {
+        return $this->hasFullyQualifiedTraitName($fq_trait_name, $code_location, $context);
     }
 
     /**

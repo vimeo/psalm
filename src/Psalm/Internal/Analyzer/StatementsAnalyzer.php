@@ -518,7 +518,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
 
                     if ($var_comment->var_id === '$this'
                         && $var_comment->type
-                        && $codebase->classExists((string)$var_comment->type)
+                        && $codebase->classExists((string)$var_comment->type, null, $context)
                     ) {
                         $statements_analyzer->setFQCLN((string)$var_comment->type);
                     }
@@ -859,7 +859,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
             $trimmed = trim(reset($comments->tags['psalm-scope-this']));
             $scope_fqcn = Type::getFQCLNFromString($trimmed, $this->getAliases());
 
-            if (!$codebase->classExists($scope_fqcn)) {
+            if (!$codebase->classExists($scope_fqcn, null, $context)) {
                 IssueBuffer::maybeAdd(
                     new UndefinedDocblockClass(
                         'Scope class ' . $scope_fqcn . ' does not exist',

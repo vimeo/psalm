@@ -1412,7 +1412,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 $aliases,
             );
 
-            if (!$codebase->classlikes->hasFullyQualifiedTraitName($fq_trait_name, $trait_location)) {
+            if (!$codebase->classlikes->hasFullyQualifiedTraitName($fq_trait_name, $trait_location, $class_context)) {
                 IssueBuffer::maybeAdd(
                     new UndefinedTrait(
                         'Trait ' . $fq_trait_name . ' does not exist',
@@ -2061,7 +2061,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             $codebase->analyzer->addNodeReference(
                 $this->getFilePath(),
                 $interface_name,
-                $codebase->classlikes->interfaceExists($fq_interface_name)
+                $codebase->classlikes->interfaceExists($fq_interface_name, null, $class_context)
                     ? $fq_interface_name
                     : '*'
                         . ($interface_name instanceof PhpParser\Node\Name\FullyQualified
@@ -2486,7 +2486,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 $codebase->analyzer->addNodeReference(
                     $this->getFilePath(),
                     $extended_class,
-                    $codebase->classlikes->classExists($parent_fq_class_name)
+                    $codebase->classlikes->classExists($parent_fq_class_name, null, $class_context)
                         ? $parent_fq_class_name
                         : '*'
                             . ($extended_class instanceof PhpParser\Node\Name\FullyQualified
