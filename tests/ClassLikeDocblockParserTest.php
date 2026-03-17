@@ -197,6 +197,22 @@ final class ClassLikeDocblockParserTest extends TestCase
                     'y' => ['type' => 'int'],
                 ],
             ],
+            'static $this lock((int|string) $value)' => [
+                'name' => 'lock',
+                'returnType' => 'static',
+                'is_static' => true,
+                'params' => [
+                    'value' => ['type' => 'int|string'],
+                ],
+            ],
+            'baz((int|string) $x) : bool' => [
+                'name' => 'baz',
+                'returnType' => 'bool',
+                'is_static' => false,
+                'params' => [
+                    'x' => ['type' => 'int|string'],
+                ],
+            ],
         ];
 
         $res = [];

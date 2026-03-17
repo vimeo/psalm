@@ -1155,19 +1155,23 @@ final class MagicMethodAnnotationTest extends TestCase
                     }
 
                     /**
+                     * @method $this nullable(bool $value = true)
+                     * @method $this default(mixed $value)
+                     * @method $this lock(("none"|"shared"|"default"|"exclusive") $value)
                      * @method $this foo((int|string) $value)
-                     * @method $this bar(("a"|"b") $value)
                      * @method void baz((int|string) $x, int $y)
                      */
                     class Child extends ParentClass {}
 
                     $child = new Child();
-                    $a = $child->foo(1);
-                    $b = $child->bar("a");
+                    $a = $child->nullable();
+                    $b = $child->lock("shared");
+                    $c = $child->foo(1);
                     $child->baz(1, 2);',
                 'assertions' => [
                     '$a' => 'Child',
                     '$b' => 'Child',
+                    '$c' => 'Child',
                 ],
             ],
         ];
