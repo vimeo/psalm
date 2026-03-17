@@ -222,6 +222,16 @@ final class ClassLikeDocblockParserTest extends TestCase
                     'value' => ['type' => 'string'],
                 ],
             ],
+            // Multiple parenthesized union parameters
+            'void qux((int|string) $x, (bool|null) $y)' => [
+                'name' => 'qux',
+                'returnType' => 'void',
+                'is_static' => false,
+                'params' => [
+                    'x' => ['type' => 'int|string'],
+                    'y' => ['type' => 'bool|null'],
+                ],
+            ],
         ];
 
         $res = [];

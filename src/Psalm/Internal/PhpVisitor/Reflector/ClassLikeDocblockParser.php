@@ -367,9 +367,17 @@ final class ClassLikeDocblockParser
                     $depth = 0;
                     $method_close_paren = null;
                     for ($i = $method_open_paren, $len = strlen($method_entry); $i < $len; ++$i) {
-                        if ($method_entry[$i] === '(') {
+                        $char = $method_entry[$i];
+                        if ($char === "'" || $char === '"') {
+                            $close = strpos($method_entry, $char, $i + 1);
+                            if ($close !== false) {
+                                $i = $close;
+                            }
+                            continue;
+                        }
+                        if ($char === '(') {
                             ++$depth;
-                        } elseif ($method_entry[$i] === ')') {
+                        } elseif ($char === ')') {
                             --$depth;
                             if ($depth === 0) {
                                 $method_close_paren = $i;
