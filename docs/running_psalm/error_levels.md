@@ -40,6 +40,7 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
  - [ImplementationRequirementViolation](issues/ImplementationRequirementViolation.md)
  - [ImpureByReferenceAssignment](issues/ImpureByReferenceAssignment.md)
  - [ImpureFunctionCall](issues/ImpureFunctionCall.md)
+ - [ImpureGlobalVariable](issues/ImpureGlobalVariable.md)
  - [ImpureMethodCall](issues/ImpureMethodCall.md)
  - [ImpurePropertyAssignment](issues/ImpurePropertyAssignment.md)
  - [ImpurePropertyFetch](issues/ImpurePropertyFetch.md)
