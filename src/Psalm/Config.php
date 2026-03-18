@@ -41,6 +41,7 @@ use Psalm\Issue\CodeIssue;
 use Psalm\Issue\ConfigIssue;
 use Psalm\Issue\FunctionIssue;
 use Psalm\Issue\MethodIssue;
+use Psalm\Issue\PluginIssue;
 use Psalm\Issue\PropertyIssue;
 use Psalm\Issue\VariableIssue;
 use Psalm\Plugin\PluginEntryPointInterface;
@@ -1940,6 +1941,21 @@ final class Config
 
         if ($reporting_level === null) {
             $reporting_level = $this->getReportingLevelForFile($issue_type, $e->getFilePath());
+        }
+
+        // For plugin issues outside the Psalm\Issue\ namespace, getReportingLevelForFile()
+        // cannot resolve the class to check ERROR_LEVEL, so we check it here directly.
+        // Skip when an explicit issue handler is configured, as user config takes priority.
+        if ($reporting_level === self::REPORT_ERROR
+            && $e instanceof PluginIssue
+            && !isset($this->issue_handlers[$issue_type])
+        ) {
+            /** @var int */
+            $issue_level = $e::ERROR_LEVEL;
+
+            if ($issue_level > 0 && $issue_level < $this->level) {
+                $reporting_level = self::REPORT_INFO;
+            }
         }
 
         if (!$this->report_info && $reporting_level === self::REPORT_INFO) {
