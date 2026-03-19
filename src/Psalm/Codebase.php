@@ -906,8 +906,6 @@ final class Codebase
 
     /**
      * Whether or not a given method exists
-     * 
-     * @param lowercase-string|null $calling_method_id
      */
     public function methodExists(
         string|MethodIdentifier $method_id,
@@ -922,7 +920,12 @@ final class Codebase
         return $this->methods->methodExists(
             $this,
             MethodIdentifier::wrap($method_id),
-            $calling_method_id !== null ? MethodIdentifier::wrap($calling_method_id) : null,
+            $calling_method_id !== null
+                ? (is_string($calling_method_id)
+                    ? strtolower($calling_method_id)
+                    : strtolower((string) $calling_method_id)
+                )
+                : null,
             $code_location,
             $source,
             $source_file_path,
