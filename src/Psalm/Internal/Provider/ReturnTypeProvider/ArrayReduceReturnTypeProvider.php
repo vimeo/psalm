@@ -245,7 +245,7 @@ final class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderI
                                 strtolower($method_name),
                             );
 
-                            if (!$codebase->methods->methodExists(
+                            if (!$codebase->methodExists(
                                 $method_id,
                                 !$context->collect_initializations
                                     && !$context->collect_mutations
@@ -266,7 +266,7 @@ final class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderI
 
                             $self_class = 'self';
 
-                            $return_type = $codebase->methods->getMethodReturnType(
+                            $return_type = $codebase->getMethodReturnType(
                                 $method_id,
                                 $self_class,
                             ) ?? Type::getMixed();

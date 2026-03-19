@@ -644,7 +644,7 @@ final class AtomicTypeComparator
                         return true;
                     }
 
-                    if ($codebase->methods->methodExists(
+                    if ($codebase->methodExists(
                         new MethodIdentifier(
                             $input_type_part->value,
                             '__tostring',

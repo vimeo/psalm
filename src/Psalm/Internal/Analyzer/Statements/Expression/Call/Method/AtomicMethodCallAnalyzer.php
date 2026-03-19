@@ -214,7 +214,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                         strtolower($method_name_type->getSingleStringLiteral()->value),
                     );
                     //the call to methodExists will register that the method was called from somewhere
-                    if ($codebase->methods->methodExists(
+                    if ($codebase->methodExists(
                         $method_identifier,
                         $context->calling_method_id,
                         null,
@@ -261,7 +261,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
         $naive_method_id = $method_id;
 
         // this tells us whether or not we can stay on the happy path
-        $naive_method_exists = $codebase->methods->methodExists(
+        $naive_method_exists = $codebase->methodExists(
             $method_id,
             $context->calling_method_id,
             $codebase->collect_locations
@@ -354,7 +354,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
         }
 
         if (($fake_method_exists
-                && $codebase->methods->methodExists(new MethodIdentifier($fq_class_name, '__call')))
+                && $codebase->methodExists(new MethodIdentifier($fq_class_name, '__call')))
             || !$naive_method_exists
             || !MethodAnalyzer::isMethodVisible(
                 $method_id,
@@ -381,7 +381,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
             }
 
             if (!$interface_has_method
-                && $codebase->methods->methodExists(
+                && $codebase->methodExists(
                     new MethodIdentifier($fq_class_name, '__call'),
                     $context->calling_method_id,
                     $codebase->collect_locations
@@ -430,7 +430,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
         if ($lhs_var_id === '$this'
             && $context->self
             && $fq_class_name !== $context->self
-            && $codebase->methods->methodExists(
+            && $codebase->methodExists(
                 new MethodIdentifier($context->self, $method_name_lc),
             )
         ) {
@@ -445,7 +445,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
 
         $corrected_method_exists = ($naive_method_exists && $method_id === $naive_method_id)
             || ($method_id !== $naive_method_id
-                && $codebase->methods->methodExists(
+                && $codebase->methodExists(
                     $method_id,
                     $context->calling_method_id,
                     $codebase->collect_locations && $method_id !== $source_method_id
@@ -771,7 +771,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                                 $lhs_type_part_new->value,
                             );
 
-                            if ($codebase->methods->methodExists(
+                            if ($codebase->methodExists(
                                 $new_method_id,
                                 $context->calling_method_id,
                                 $codebase->collect_locations
@@ -839,7 +839,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 $method_name_lc,
             );
 
-            if ($codebase->methods->methodExists(
+            if ($codebase->methodExists(
                 $new_method_id,
                 $context->calling_method_id,
                 $codebase->collect_locations
