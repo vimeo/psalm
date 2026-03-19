@@ -801,7 +801,7 @@ final class CastAnalyzer
                             $context->calling_method_id,
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         )) {
-                            $return_type = $codebase->methods->getMethodReturnType(
+                            $return_type = $codebase->getMethodReturnType(
                                 $intersection_method_id,
                                 $self_class,
                             ) ?? Type::getString();

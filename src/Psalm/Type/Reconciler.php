@@ -880,11 +880,9 @@ class Reconciler
 
                                     $declaring_class = $declaring_method_id->fq_class_name;
 
-                                    $method_return_type = $codebase->methods->getMethodReturnType(
+                                    $method_return_type = $codebase->getMethodReturnType(
                                         $method_id,
                                         $declaring_class,
-                                        null,
-                                        null,
                                     );
 
                                     if ($method_return_type) {

@@ -171,6 +171,67 @@ final class ClassLikeDocblockParserTest extends TestCase
                 'is_static' => true,
                 'params' => [],
             ],
+            // Parenthesized union types in method parameters (issue #11730)
+            'foo((int|string) $value)' => [
+                'name' => 'foo',
+                'returnType' => '',
+                'is_static' => false,
+                'params' => [
+                    'value' => ['type' => 'int|string'],
+                ],
+            ],
+            '$this lock((int|string) $value)' => [
+                'name' => 'lock',
+                'returnType' => 'static',
+                'is_static' => false,
+                'params' => [
+                    'value' => ['type' => 'int|string'],
+                ],
+            ],
+            'void bar((int|string) $x, int $y)' => [
+                'name' => 'bar',
+                'returnType' => 'void',
+                'is_static' => false,
+                'params' => [
+                    'x' => ['type' => 'int|string'],
+                    'y' => ['type' => 'int'],
+                ],
+            ],
+            'static $this lock((int|string) $value)' => [
+                'name' => 'lock',
+                'returnType' => 'static',
+                'is_static' => true,
+                'params' => [
+                    'value' => ['type' => 'int|string'],
+                ],
+            ],
+            'baz((int|string) $x) : bool' => [
+                'name' => 'baz',
+                'returnType' => 'bool',
+                'is_static' => false,
+                'params' => [
+                    'x' => ['type' => 'int|string'],
+                ],
+            ],
+            // String literal union types in parentheses (Laravel-style)
+            "\$this lock(('none'|'shared'|'default'|'exclusive') \$value)" => [
+                'name' => 'lock',
+                'returnType' => 'static',
+                'is_static' => false,
+                'params' => [
+                    'value' => ['type' => 'string'],
+                ],
+            ],
+            // Multiple parenthesized union parameters
+            'void qux((int|string) $x, (bool|null) $y)' => [
+                'name' => 'qux',
+                'returnType' => 'void',
+                'is_static' => false,
+                'params' => [
+                    'x' => ['type' => 'int|string'],
+                    'y' => ['type' => 'bool|null'],
+                ],
+            ],
         ];
 
         $res = [];

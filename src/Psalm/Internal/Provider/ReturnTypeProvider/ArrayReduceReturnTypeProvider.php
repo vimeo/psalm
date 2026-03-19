@@ -266,7 +266,7 @@ final class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderI
 
                             $self_class = 'self';
 
-                            $return_type = $codebase->methods->getMethodReturnType(
+                            $return_type = $codebase->getMethodReturnType(
                                 $method_id,
                                 $self_class,
                             ) ?? Type::getMixed();

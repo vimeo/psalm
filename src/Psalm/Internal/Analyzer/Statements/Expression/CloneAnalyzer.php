@@ -37,7 +37,6 @@ final class CloneAnalyzer
         Context $context,
     ): bool {
         $codebase = $statements_analyzer->getCodebase();
-        $codebase_methods = $codebase->methods;
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
             return false;
         }
@@ -72,7 +71,7 @@ final class CloneAnalyzer
                             '__clone',
                         );
 
-                        $does_method_exist = $codebase_methods->methodExists(
+                        $does_method_exist = $codebase->methodExists(
                             $clone_method_id,
                             $context->calling_method_id,
                             $location,

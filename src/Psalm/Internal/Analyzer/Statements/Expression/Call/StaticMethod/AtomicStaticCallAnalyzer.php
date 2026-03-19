@@ -507,10 +507,9 @@ final class AtomicStaticCallAnalyzer
                     )]);
                 } elseif ($codebase->methodExists(
                     $call_static_method_id = new MethodIdentifier($method_id->fq_class_name, '__callstatic'),
+                    null,
                     new CodeLocation($statements_analyzer, $stmt),
-                    null,
-                    null,
-                    false,
+                    is_used: false,
                 )) {
                     $return_type_candidate = new Union([new TClosure(
                         null,

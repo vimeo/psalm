@@ -85,7 +85,7 @@ final class Methods
      *
      * @param lowercase-string|null $calling_method_id
      */
-    public function methodExistsInternal(
+    public function methodExists(
         Codebase $codebase,
         MethodIdentifier $method_id,
         ?string $calling_method_id = null,
@@ -577,6 +577,7 @@ final class Methods
      * @param  list<PhpParser\Node\Arg>|null $args
      */
     public function getMethodReturnType(
+        Codebase $codebase,
         MethodIdentifier $method_id,
         ?string &$self_class,
         ?SourceAnalyzer $source_analyzer = null,
@@ -655,7 +656,7 @@ final class Methods
                     $case_value = $case_storage->getValue($this->classlikes);
 
                     if (UnionTypeComparator::isContainedBy(
-                        $source_analyzer->getCodebase(),
+                        $codebase,
                         // XXX: why TString? Perhaps it should be string|int?
                         new Union([$case_value ?? new TString()]),
                         $first_arg_type,
@@ -697,6 +698,7 @@ final class Methods
 
                     if ($atomic_type instanceof TNamedObject
                         && $this->methodExists(
+                            $codebase,
                             new MethodIdentifier($atomic_type->value, '__invoke'),
                         )
                     ) {
@@ -773,7 +775,7 @@ final class Methods
                     $this->classlike_storage_provider->get($overridden_method_id->fq_class_name);
 
                 $overridden_storage_return_type = TypeExpander::expandUnion(
-                    $source_analyzer->getCodebase(),
+                    $codebase,
                     $overridden_storage->return_type,
                     $overridden_method_id->fq_class_name,
                     $appearing_fq_class_name,
@@ -784,13 +786,13 @@ final class Methods
                 );
 
                 $old_contained_by_new = UnionTypeComparator::isContainedBy(
-                    $source_analyzer->getCodebase(),
+                    $codebase,
                     $candidate_type,
                     $overridden_storage_return_type,
                 );
 
                 $new_contained_by_old = UnionTypeComparator::isContainedBy(
-                    $source_analyzer->getCodebase(),
+                    $codebase,
                     $overridden_storage_return_type,
                     $candidate_type,
                 );
@@ -799,7 +801,7 @@ final class Methods
                     || ($old_contained_by_new && $new_contained_by_old)
                 ) {
                     $found_generic_params = ClassTemplateParamCollector::collect(
-                        $source_analyzer->getCodebase(),
+                        $codebase,
                         $appearing_fq_class_storage,
                         $appearing_fq_class_storage,
                         $appearing_method_name,
@@ -820,7 +822,7 @@ final class Methods
                         $overridden_storage_return_type = TemplateInferredTypeReplacer::replace(
                             $overridden_storage_return_type,
                             $template_result,
-                            $source_analyzer->getCodebase(),
+                            $codebase,
                         );
                     }
 
@@ -830,7 +832,7 @@ final class Methods
                             $attempted_intersection = Type::intersectUnionTypes(
                                 $candidate_type,
                                 $overridden_storage_return_type,
-                                $source_analyzer->getCodebase(),
+                                $codebase,
                             );
                         } catch (InvalidArgumentException) {
                             // TODO: fix
@@ -839,7 +841,7 @@ final class Methods
                         $attempted_intersection = Type::intersectUnionTypes(
                             $overridden_storage_return_type,
                             $candidate_type,
-                            $source_analyzer->getCodebase(),
+                            $codebase,
                         );
                     }
 
@@ -900,13 +902,13 @@ final class Methods
 
                 if ($candidate_type && $source_analyzer && !$candidate_type->isMixed()) {
                     $old_contained_by_new = UnionTypeComparator::isContainedBy(
-                        $source_analyzer->getCodebase(),
+                        $codebase,
                         $candidate_type,
                         $overridden_return_type,
                     );
 
                     $new_contained_by_old = UnionTypeComparator::isContainedBy(
-                        $source_analyzer->getCodebase(),
+                        $codebase,
                         $overridden_return_type,
                         $candidate_type,
                     );
@@ -917,7 +919,7 @@ final class Methods
                         $attempted_intersection = Type::intersectUnionTypes(
                             $candidate_type,
                             $overridden_return_type,
-                            $source_analyzer->getCodebase(),
+                            $codebase,
                         );
 
                         if ($attempted_intersection) {
