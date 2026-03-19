@@ -1,0 +1,30 @@
+name: Psalm
+
+on:
+  pull_request: null
+# Run on push to the main branch as well:
+# push:
+#  branches:
+#   - main
+
+jobs:
+  psalm:
+    name: Psalm
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '__PHP_VERSION__'
+          coverage: none
+
+      - uses: ramsey/composer-install@v4
+
+      # Tips for enhancing this step:
+      #  - respect baseline: --use-baseline=psalm-baseline.xml
+      #  - report results to Shepherd (https://shepherd.dev) for historical type cover tracking: --shepherd
+      #  - specify a path to the config: -c psalm.xml
+      #  - disable php-cli memory limit by prefixing with: php -d memory_limit=-1
+      - name: Run Psalm
+        run: vendor/bin/psalm --output-format=github --no-progress --no-suggestions
