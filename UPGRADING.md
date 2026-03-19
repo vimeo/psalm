@@ -8,6 +8,7 @@
 
   Plugins, starting from the first stable release of v7, need to explicitly require a caret range (i.e. ^1, NOT 1.0.0) that package in order to avoid breaking changes during Psalm upgrades.  
 
+- [BC] The signature of `Psalm\Codebase#methodExists` changed.
 - [BC] The parameters $calling_fq_class_name and $calling_method_id of Psalm\Codebase#classOrInterfaceExists() were removed and replaced with a single Psalm\Context|null parameter
 - [BC] The parameters $calling_fq_class_name and $calling_method_id of Psalm\Codebase#classOrInterfaceOrEnumExists() were removed and replaced with a single Psalm\Context|null parameter
 - [BC] The parameters $calling_fq_class_name and $calling_method_id of Psalm\Codebase#classExists() were removed and replaced with a single Psalm\Context|null parameter
