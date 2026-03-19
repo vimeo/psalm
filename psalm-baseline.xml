@@ -1933,7 +1933,6 @@
       <code><![CDATA[$e]]></code>
     </ImplicitToStringCast>
     <PossiblyUndefinedIntArrayOffset>
-      <code><![CDATA[$matches[0]]]></code>
       <code><![CDATA[$method_tree->children[0]]]></code>
       <code><![CDATA[$method_tree->children[1]]]></code>
     </PossiblyUndefinedIntArrayOffset>

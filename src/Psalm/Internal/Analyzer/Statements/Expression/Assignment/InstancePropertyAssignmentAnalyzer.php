@@ -1015,7 +1015,7 @@ final class InstancePropertyAssignmentAnalyzer
                         return null;
                     }
 
-                    if (!$codebase->methods->methodExists(
+                    if (!$codebase->methodExists(
                         new MethodIdentifier(
                             $fq_class_name,
                             '__set',
@@ -1060,7 +1060,7 @@ final class InstancePropertyAssignmentAnalyzer
                         false,
                     ) !== true)
             )
-            && $codebase->methods->methodExists(
+            && $codebase->methodExists(
                 $set_method_id,
                 $context->calling_method_id,
                 $codebase->collect_locations

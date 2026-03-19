@@ -45,7 +45,12 @@ final class IssueData
         public ?array $taint_trace = null,
         public ?array $other_references = null,
         public readonly ?string $dupe_key = null,
+        ?string $documentation_url = null,
     ) {
-        $this->link = $shortcode ? 'https://psalm.dev/' . str_pad((string) $shortcode, 3, "0", STR_PAD_LEFT) : '';
+        $this->link = match (true) {
+            $documentation_url !== null => $documentation_url,
+            $shortcode > 0 => 'https://psalm.dev/' . str_pad((string) $shortcode, 3, "0", STR_PAD_LEFT),
+            default => '',
+        };
     }
 }

@@ -47,8 +47,6 @@ use function substr;
 use function substr_count;
 use function trim;
 
-use const PREG_OFFSET_CAPTURE;
-
 /**
  * @internal
  */
@@ -362,10 +360,44 @@ final class ClassLikeDocblockParser
                     $method_entry,
                 );
 
-                $end_of_method_regex = '/(?<!array\()\) ?(\: ?(\??[\\\\a-zA-Z0-9_]+))?/';
+                // Find the method's closing parenthesis by tracking nesting depth,
+                // so parenthesized union types like ('a'|'b') don't terminate the scan early.
+                $method_open_paren = strpos($method_entry, '(');
+                if ($method_open_paren !== false) {
+                    $depth = 0;
+                    $method_close_paren = null;
+                    for ($i = $method_open_paren, $len = strlen($method_entry); $i < $len; ++$i) {
+                        $char = $method_entry[$i];
+                        if ($char === "'" || $char === '"') {
+                            $close = strpos($method_entry, $char, $i + 1);
+                            if ($close !== false) {
+                                $i = $close;
+                            }
+                            continue;
+                        }
+                        if ($char === '(') {
+                            ++$depth;
+                        } elseif ($char === ')') {
+                            --$depth;
+                            if ($depth === 0) {
+                                $method_close_paren = $i;
+                                break;
+                            }
+                        }
+                    }
 
-                if (preg_match($end_of_method_regex, $method_entry, $matches, PREG_OFFSET_CAPTURE)) {
-                    $method_entry = substr($method_entry, 0, $matches[0][1] + strlen($matches[0][0]));
+                    if ($method_close_paren !== null) {
+                        $after_paren = substr($method_entry, $method_close_paren + 1);
+                        // Optionally consume return type annotation after the closing paren
+                        if (preg_match('/^ ?(\: ?(\??[\\\\a-zA-Z0-9_]+))/', $after_paren, $return_matches)
+                            && isset($return_matches[0])
+                        ) {
+                            $end = $method_close_paren + 1 + strlen($return_matches[0]);
+                            $method_entry = substr($method_entry, 0, $end);
+                        } else {
+                            $method_entry = substr($method_entry, 0, $method_close_paren + 1);
+                        }
+                    }
                 }
 
                 $method_entry = str_replace([', ', '( '], [',', '('], $method_entry);

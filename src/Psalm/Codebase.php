@@ -976,19 +976,29 @@ final class Codebase
      */
     public function methodExists(
         string|MethodIdentifier $method_id,
-        ?CodeLocation $code_location = null,
         string|MethodIdentifier|null $calling_method_id = null,
-        ?string $file_path = null,
-        bool $is_used = true,
+        ?CodeLocation $code_location = null,
+        ?StatementsSource $source = null,
+        ?string $source_file_path = null,
+        bool $use_method_existence_provider = true,
+        bool $is_used = false,
+        bool $with_pseudo = false,
     ): bool {
         return $this->methods->methodExists(
+            $this,
             MethodIdentifier::wrap($method_id),
-            is_string($calling_method_id) ? strtolower($calling_method_id) : strtolower((string) $calling_method_id),
+            $calling_method_id !== null
+                ? (is_string($calling_method_id)
+                    ? strtolower($calling_method_id)
+                    : strtolower((string) $calling_method_id)
+                )
+                : null,
             $code_location,
-            null,
-            $file_path,
-            true,
+            $source,
+            $source_file_path,
+            $use_method_existence_provider,
             $is_used,
+            $with_pseudo,
         );
     }
 
@@ -1017,6 +1027,7 @@ final class Codebase
         array $call_args = [],
     ): ?Union {
         return $this->methods->getMethodReturnType(
+            $this,
             MethodIdentifier::wrap($method_id),
             $self_class,
             null,

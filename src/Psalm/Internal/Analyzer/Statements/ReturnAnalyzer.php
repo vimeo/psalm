@@ -271,6 +271,7 @@ final class ReturnAnalyzer
                     $self_class = $context->self;
 
                     $declared_return_type = $codebase->methods->getMethodReturnType(
+                        $codebase,
                         MethodIdentifier::wrap($cased_method_id),
                         $self_class,
                         $statements_analyzer,

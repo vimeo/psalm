@@ -23,6 +23,8 @@ use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Issue\TooManyArguments;
 use Psalm\Issue\UndefinedFunction;
 use Psalm\Tests\Config\Plugin\FileTypeSelfRegisteringPlugin;
+use Psalm\Tests\Config\Plugin\TestPluginIssue;
+use Psalm\Tests\Config\Plugin\TestPluginIssueDefaultLevel;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
@@ -2010,6 +2012,72 @@ final class ConfigTest extends TestCase
                     'Function Foo\Bar\baz does not exist',
                     new Raw('aaa', 'aaa.php', 'aaa.php', 1, 2),
                     'foo\bar\baz',
+                ),
+            ),
+        );
+    }
+
+    public function testPluginIssueErrorLevelReportedAsInfoWhenBelowConfigLevel(): void
+    {
+        $config = Config::loadFromXML(
+            (string) getcwd(),
+            <<<XML
+            <?xml version="1.0"?>
+            <psalm errorLevel="3">
+            </psalm>
+            XML,
+        );
+
+        $this->assertSame(
+            Config::REPORT_INFO,
+            $config->getReportingLevelForIssue(
+                new TestPluginIssue(
+                    'test message',
+                    new Raw('aaa', 'aaa.php', 'aaa.php', 1, 2),
+                ),
+            ),
+        );
+    }
+
+    public function testPluginIssueErrorLevelReportedAsErrorWhenAtConfigLevel(): void
+    {
+        $config = Config::loadFromXML(
+            (string) getcwd(),
+            <<<XML
+            <?xml version="1.0"?>
+            <psalm errorLevel="2">
+            </psalm>
+            XML,
+        );
+
+        $this->assertSame(
+            Config::REPORT_ERROR,
+            $config->getReportingLevelForIssue(
+                new TestPluginIssue(
+                    'test message',
+                    new Raw('aaa', 'aaa.php', 'aaa.php', 1, 2),
+                ),
+            ),
+        );
+    }
+
+    public function testPluginIssueDefaultErrorLevelRemainsError(): void
+    {
+        $config = Config::loadFromXML(
+            (string) getcwd(),
+            <<<XML
+            <?xml version="1.0"?>
+            <psalm errorLevel="3">
+            </psalm>
+            XML,
+        );
+
+        $this->assertSame(
+            Config::REPORT_ERROR,
+            $config->getReportingLevelForIssue(
+                new TestPluginIssueDefaultLevel(
+                    'test message',
+                    new Raw('aaa', 'aaa.php', 'aaa.php', 1, 2),
                 ),
             ),
         );
