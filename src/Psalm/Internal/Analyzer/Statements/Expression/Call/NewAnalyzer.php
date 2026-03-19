@@ -99,22 +99,22 @@ final class NewAnalyzer extends CallAnalyzer
             if (!in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)) {
                 $aliases = $statements_analyzer->getAliases();
 
-                if ($context->calling_method_id
-                    && !$stmt->class instanceof PhpParser\Node\Name\FullyQualified
-                ) {
-                    $codebase->addReferenceToFunctionLike(
-                        'use:' . $stmt->class->getFirst() . ':' . md5($statements_analyzer->getFilePath()),
-                        new CodeLocation($statements_analyzer->getSource(), $stmt->class),
-                        $context,
-                    );
-                }
-
                 $fq_class_name = ClassLikeAnalyzer::getFQCLNFromNameObject(
                     $stmt->class,
                     $aliases,
                 );
 
                 $fq_class_name = $codebase->classlikes->getUnAliasedName($fq_class_name);
+
+                if ($context->calling_method_id
+                    && !$stmt->class instanceof PhpParser\Node\Name\FullyQualified
+                ) {
+                    $codebase->addReferenceToClass(
+                        $fq_class_name,
+                        new CodeLocation($statements_analyzer->getSource(), $stmt->class),
+                        $context,
+                    );
+                }
             } elseif ($context->self !== null) {
                 switch ($stmt->class->getFirst()) {
                     case 'self':
