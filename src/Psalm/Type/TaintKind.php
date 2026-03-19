@@ -34,6 +34,13 @@ final class TaintKind
     public const SYSTEM_SECRET = (1 << 17);
     public const INPUT_LLM_PROMPT = (1 << 18);
 
+    /**
+     * Bitmask of all INPUT_* taint types. Used as the default taint for
+     * user-controlled sources (e.g. $_GET, $_POST) so they propagate to any
+     * input sink.
+     * Excludes USER_SECRET and SYSTEM_SECRET, which represent
+     * sensitive data leaking out rather than untrusted data flowing in.
+     */
     public const ALL_INPUT = self::INPUT_CALLABLE | self::INPUT_UNSERIALIZE | self::INPUT_INCLUDE
         | self::INPUT_EVAL | self::INPUT_LDAP | self::INPUT_SQL | self::INPUT_HTML
         | self::INPUT_HAS_QUOTES | self::INPUT_SHELL | self::INPUT_SSRF | self::INPUT_FILE
