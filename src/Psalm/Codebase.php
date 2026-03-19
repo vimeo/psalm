@@ -960,6 +960,7 @@ final class Codebase
         array $call_args = [],
     ): ?Union {
         return $this->methods->getMethodReturnType(
+            $this,
             MethodIdentifier::wrap($method_id),
             $self_class,
             null,
