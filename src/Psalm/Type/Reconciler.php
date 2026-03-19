@@ -866,7 +866,7 @@ class Reconciler
                                         strtolower(substr($property_name, 0, -2)),
                                     );
 
-                                    if (!$codebase->methods->methodExists($method_id)) {
+                                    if (!$codebase->methodExists($method_id)) {
                                         return null;
                                     }
 

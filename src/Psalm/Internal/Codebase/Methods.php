@@ -86,6 +86,7 @@ final class Methods
      * @param lowercase-string|null $calling_method_id
      */
     public function methodExists(
+        Codebase $codebase,
         MethodIdentifier $method_id,
         ?string $calling_method_id = null,
         ?CodeLocation $code_location = null,

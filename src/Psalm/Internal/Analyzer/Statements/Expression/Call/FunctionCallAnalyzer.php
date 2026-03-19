@@ -775,7 +775,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     }
 
                     if ($potential_method_id) {
-                        $codebase->methods->methodExists(
+                        $codebase->methodExists(
                             $potential_method_id,
                             $context->calling_method_id,
                             null,
@@ -790,7 +790,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     // handled above
                 } elseif (!$var_type_part instanceof TNamedObject
                     || !$codebase->classlikes->classOrInterfaceExists($var_type_part->value, null, $context)
-                    || !$codebase->methods->methodExists(
+                    || !$codebase->methodExists(
                         new MethodIdentifier(
                             $var_type_part->value,
                             '__invoke',

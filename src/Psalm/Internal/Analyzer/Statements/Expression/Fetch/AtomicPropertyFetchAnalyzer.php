@@ -608,7 +608,7 @@ final class AtomicPropertyFetchAnalyzer
                         false,
                     ) !== true)
             )
-            && $codebase->methods->methodExists(
+            && $codebase->methodExists(
                 $get_method_id,
                 $context->calling_method_id,
                 $codebase->collect_locations

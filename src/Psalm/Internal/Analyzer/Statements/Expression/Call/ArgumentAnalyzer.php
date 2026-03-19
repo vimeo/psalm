@@ -917,7 +917,7 @@ final class ArgumentAnalyzer
                     }
 
                     if ($potential_method_id && $potential_method_id !== 'not-callable') {
-                        $codebase->methods->methodExists(
+                        $codebase->methodExists(
                             $potential_method_id,
                             $context->calling_method_id,
                             $arg_location,
@@ -1107,7 +1107,7 @@ final class ArgumentAnalyzer
             }
 
             foreach ($potential_method_ids as $potential_method_id) {
-                $codebase->methods->methodExists(
+                $codebase->methodExists(
                     $potential_method_id,
                     $context->calling_method_id,
                     $arg_location,
@@ -1566,8 +1566,8 @@ final class ArgumentAnalyzer
                                     return;
                                 }
 
-                                if (!$codebase->methods->methodExists($function_id_part)
-                                    && !$codebase->methods->methodExists($call_method_id)
+                                if (!$codebase->methodExists($function_id_part)
+                                    && !$codebase->methodExists($call_method_id)
                                 ) {
                                     $non_existent_method_ids[] = $function_id_part;
                                 }
