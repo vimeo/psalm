@@ -39,6 +39,7 @@ final class PsalmRestarter extends XdebugHandler
         'log_verbosity_level' => 0,
         'save_comments' => 1,
         'restrict_api' => '',
+        'jit' => 'off',
     ];
 
     private const JIT_OPCACHE_SETTINGS = [
@@ -200,7 +201,7 @@ final class PsalmRestarter extends XdebugHandler
     private function getEffectiveOpcacheSettings(): array
     {
         if ($this->enableJit) {
-            return self::REQUIRED_OPCACHE_SETTINGS + self::JIT_OPCACHE_SETTINGS;
+            return array_merge(self::REQUIRED_OPCACHE_SETTINGS, self::JIT_OPCACHE_SETTINGS);
         }
 
         return self::REQUIRED_OPCACHE_SETTINGS;
