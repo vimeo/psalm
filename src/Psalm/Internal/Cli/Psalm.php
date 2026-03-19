@@ -152,7 +152,7 @@ final class Psalm
         'root:',
         'set-baseline::',
         'show-info:',
-        'show-snippet:',
+        'show-snippet::',
         'stats',
         'threads:',
         'scan-threads:',

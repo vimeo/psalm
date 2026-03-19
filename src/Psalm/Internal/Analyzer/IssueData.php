@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Analyzer;
 
-use function is_string;
 use function str_pad;
 
 use const STR_PAD_LEFT;
