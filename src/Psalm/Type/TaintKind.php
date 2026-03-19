@@ -30,9 +30,9 @@ final class TaintKind
     public const INPUT_XPATH = (1 << 13);
     public const INPUT_SLEEP = (1 << 14);
     public const INPUT_EXTRACT = (1 << 15);
-    public const USER_SECRET = (1 << 16);
-    public const SYSTEM_SECRET = (1 << 17);
-    public const INPUT_LLM_PROMPT = (1 << 18);
+    public const INPUT_LLM_PROMPT = (1 << 16);
+    public const USER_SECRET = (1 << 17);
+    public const SYSTEM_SECRET = (1 << 18);
 
     /**
      * Bitmask of all INPUT_* taint types. Used as the default taint for
@@ -41,11 +41,7 @@ final class TaintKind
      * Excludes USER_SECRET and SYSTEM_SECRET, which represent
      * sensitive data leaking out rather than untrusted data flowing in.
      */
-    public const ALL_INPUT = self::INPUT_CALLABLE | self::INPUT_UNSERIALIZE | self::INPUT_INCLUDE
-        | self::INPUT_EVAL | self::INPUT_LDAP | self::INPUT_SQL | self::INPUT_HTML
-        | self::INPUT_HAS_QUOTES | self::INPUT_SHELL | self::INPUT_SSRF | self::INPUT_FILE
-        | self::INPUT_COOKIE | self::INPUT_HEADER | self::INPUT_XPATH | self::INPUT_SLEEP
-        | self::INPUT_EXTRACT | self::INPUT_LLM_PROMPT;
+    public const ALL_INPUT = (1 << 17) - 1;
 
     /** @internal */
     public const NUMERIC_ONLY = self::INPUT_SLEEP;
