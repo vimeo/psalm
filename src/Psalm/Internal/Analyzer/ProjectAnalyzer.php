@@ -571,8 +571,8 @@ final class ProjectAnalyzer
                 strtolower($source_parts[1]),
             );
 
-            if ($this->codebase->methods->methodExists($source_method_id)) {
-                if ($this->codebase->methods->methodExists(
+            if ($this->codebase->methodExists($source_method_id)) {
+                if ($this->codebase->methodExists(
                     new MethodIdentifier(
                         $destination_parts[0],
                         strtolower($destination_parts[1]),

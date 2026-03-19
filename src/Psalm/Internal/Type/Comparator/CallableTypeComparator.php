@@ -416,7 +416,7 @@ final class CallableTypeComparator
                 '__invoke',
             );
 
-            if ($codebase->methods->methodExists($invoke_id)) {
+            if ($codebase->methodExists($invoke_id)) {
                 $declaring_method_id = $codebase->methods->getDeclaringMethodId($invoke_id);
                 $template_result = null;
 

@@ -177,6 +177,7 @@ final class MethodCallReturnTypeFetcher
             $self_fq_class_name = $fq_class_name;
 
             $return_type_candidate = $codebase->methods->getMethodReturnType(
+                $codebase,
                 $method_id,
                 $self_fq_class_name,
                 $statements_analyzer,

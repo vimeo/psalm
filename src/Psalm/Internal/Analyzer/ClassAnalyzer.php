@@ -1932,6 +1932,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         $original_fq_classlike_name = $fq_classlike_name;
 
         $return_type = $codebase->methods->getMethodReturnType(
+            $codebase,
             $analyzed_method_id,
             $fq_classlike_name,
             $method_analyzer,
@@ -1988,7 +1989,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     continue;
                 }
 
-                $interface_return_type = $codebase->methods->getMethodReturnType(
+                $interface_return_type = $codebase->getMethodReturnType(
                     $interface_method_id,
                     $interface_class,
                 );

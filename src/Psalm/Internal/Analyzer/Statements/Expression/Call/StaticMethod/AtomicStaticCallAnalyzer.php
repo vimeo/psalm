@@ -234,7 +234,7 @@ final class AtomicStaticCallAnalyzer
                             strtolower($method_name_type->getSingleStringLiteral()->value),
                         );
                         //the call to methodExists will register that the method was called from somewhere
-                        if ($codebase->methods->methodExists(
+                        if ($codebase->methodExists(
                             $method_identifier,
                             $context->calling_method_id,
                             null,
@@ -326,7 +326,7 @@ final class AtomicStaticCallAnalyzer
         }
 
         if ($intersection_types
-            && !$codebase->methods->methodExists($method_id)
+            && !$codebase->methodExists($method_id)
         ) {
             foreach ($intersection_types as $intersection_type) {
                 if (!$intersection_type instanceof TNamedObject) {
@@ -338,7 +338,7 @@ final class AtomicStaticCallAnalyzer
                     $method_name_lc,
                 );
 
-                if ($codebase->methods->methodExists($intersection_method_id)) {
+                if ($codebase->methodExists($intersection_method_id)) {
                     $method_id = $intersection_method_id;
                     $cased_method_id = $intersection_type->value . '::' . $stmt_name->name;
                     $fq_class_name = $intersection_type->value;
@@ -349,7 +349,7 @@ final class AtomicStaticCallAnalyzer
 
         $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
-        $naive_method_exists = $codebase->methods->methodExists(
+        $naive_method_exists = $codebase->methodExists(
             $method_id,
             !$context->collect_initializations
                 && !$context->collect_mutations
@@ -389,7 +389,7 @@ final class AtomicStaticCallAnalyzer
                     $method_name_lc,
                 );
 
-                if ($codebase->methods->methodExists(
+                if ($codebase->methodExists(
                     $new_method_id,
                     $context->calling_method_id,
                     $codebase->collect_locations
@@ -507,10 +507,9 @@ final class AtomicStaticCallAnalyzer
                     )]);
                 } elseif ($codebase->methodExists(
                     $call_static_method_id = new MethodIdentifier($method_id->fq_class_name, '__callstatic'),
+                    null,
                     new CodeLocation($statements_analyzer, $stmt),
-                    null,
-                    null,
-                    false,
+                    is_used: false,
                 )) {
                     $return_type_candidate = new Union([new TClosure(
                         null,
@@ -554,7 +553,7 @@ final class AtomicStaticCallAnalyzer
             '__callstatic',
         );
 
-        $callstatic_method_exists = $codebase->methods->methodExists($callstatic_id);
+        $callstatic_method_exists = $codebase->methodExists($callstatic_id);
 
         $with_pseudo = $callstatic_method_exists
             || $codebase->config->use_phpdoc_method_without_magic_or_parent;
