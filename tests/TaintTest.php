@@ -173,6 +173,20 @@ final class TaintTest extends TestCase
                         public function exec(string $sql) : void {}
                     }',
             ],
+            'llmPromptWithSafeInput' => [
+                'code' => '<?php
+                    class LlmAgent {
+                        /**
+                         * @psalm-taint-sink llm_prompt $prompt
+                         */
+                        public function prompt(string $prompt): string {
+                            return "";
+                        }
+                    }
+
+                    $agent = new LlmAgent();
+                    $agent->prompt("Summarize this document");',
+            ],
             'taintedInputToParamButSafe' => [
                 'code' => '<?php
                     class A {
@@ -815,6 +829,32 @@ final class TaintTest extends TestCase
     public function providerInvalidCodeParse(): array
     {
         return [
+            'taintedLlmPromptFromUserInput' => [
+                'code' => '<?php
+                    class LlmAgent {
+                        /** @psalm-taint-sink llm_prompt $prompt */
+                        public function prompt(string $prompt): string {
+                            return "";
+                        }
+                    }
+
+                    $agent = new LlmAgent();
+                    $agent->prompt((string) $_GET["question"]);',
+                'error_message' => 'TaintedLlmPrompt',
+            ],
+            'taintedLlmPromptFromConcatenatedInput' => [
+                'code' => '<?php
+                    class LlmAgent {
+                        /** @psalm-taint-sink llm_prompt $prompt */
+                        public function prompt(string $prompt): string {
+                            return "";
+                        }
+                    }
+
+                    $agent = new LlmAgent();
+                    $agent->prompt("Tell me about " . (string) $_GET["topic"]);',
+                'error_message' => 'TaintedLlmPrompt',
+            ],
             'taintedInputFromMethodReturnTypeSimple' => [
                 'code' => '<?php
                     class A {

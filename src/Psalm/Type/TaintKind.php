@@ -32,8 +32,13 @@ final class TaintKind
     public const INPUT_EXTRACT = (1 << 15);
     public const USER_SECRET = (1 << 16);
     public const SYSTEM_SECRET = (1 << 17);
+    public const INPUT_LLM_PROMPT = (1 << 18);
 
-    public const ALL_INPUT = (1 << 16) - 1;
+    public const ALL_INPUT = self::INPUT_CALLABLE | self::INPUT_UNSERIALIZE | self::INPUT_INCLUDE
+        | self::INPUT_EVAL | self::INPUT_LDAP | self::INPUT_SQL | self::INPUT_HTML
+        | self::INPUT_HAS_QUOTES | self::INPUT_SHELL | self::INPUT_SSRF | self::INPUT_FILE
+        | self::INPUT_COOKIE | self::INPUT_HEADER | self::INPUT_XPATH | self::INPUT_SLEEP
+        | self::INPUT_EXTRACT | self::INPUT_LLM_PROMPT;
 
     /** @internal */
     public const NUMERIC_ONLY = self::INPUT_SLEEP;
@@ -41,7 +46,7 @@ final class TaintKind
     public const BOOL_ONLY = self::INPUT_SLEEP;
 
     /** @internal Keep this synced with the above */
-    public const BUILTIN_TAINT_COUNT = 18;
+    public const BUILTIN_TAINT_COUNT = 19;
 
 
     // Map of taint kind names to their bitmask values, used in taint annotations
@@ -64,6 +69,7 @@ final class TaintKind
         'extract' => self::INPUT_EXTRACT,
         'user_secret' => self::USER_SECRET,
         'system_secret' => self::SYSTEM_SECRET,
+        'llm_prompt' => self::INPUT_LLM_PROMPT,
 
         'input_except_sleep' => self::ALL_INPUT & ~self::INPUT_SLEEP,
 
