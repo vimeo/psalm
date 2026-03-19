@@ -391,7 +391,7 @@ final class NewAnalyzer extends CallAnalyzer
 
         $method_id = new MethodIdentifier($fq_class_name, '__construct');
 
-        if ($codebase->methods->methodExists(
+        if ($codebase->methodExists(
             $method_id,
             $context->calling_method_id,
             $codebase->collect_locations ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null,
@@ -861,7 +861,7 @@ final class NewAnalyzer extends CallAnalyzer
                 }
 
                 if ($lhs_type_part->as_type) {
-                    $codebase->methods->methodExists(
+                    $codebase->methodExists(
                         new MethodIdentifier(
                             $lhs_type_part->as_type->value,
                             '__construct',

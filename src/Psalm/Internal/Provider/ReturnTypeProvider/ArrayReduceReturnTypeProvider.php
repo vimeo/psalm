@@ -245,7 +245,7 @@ final class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderI
                                 strtolower($method_name),
                             );
 
-                            if (!$codebase->methods->methodExists(
+                            if (!$codebase->methodExists(
                                 $method_id,
                                 !$context->collect_initializations
                                     && !$context->collect_mutations

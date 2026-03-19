@@ -796,7 +796,7 @@ final class CastAnalyzer
                             '__tostring',
                         );
 
-                        if ($codebase->methods->methodExists(
+                        if ($codebase->methodExists(
                             $intersection_method_id,
                             $context->calling_method_id,
                             new CodeLocation($statements_analyzer->getSource(), $stmt),

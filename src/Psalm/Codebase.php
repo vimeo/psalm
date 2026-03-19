@@ -1025,7 +1025,8 @@ final class Codebase
         ?string $file_path = null,
         bool $is_used = true,
     ): bool {
-        return $this->methods->methodExists(
+        return $this->methods->methodExistsInternal(
+            $this,
             MethodIdentifier::wrap($method_id),
             is_string($calling_method_id) ? strtolower($calling_method_id) : strtolower((string) $calling_method_id),
             $code_location,

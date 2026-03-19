@@ -176,7 +176,7 @@ final class MethodAnalyzer extends FunctionLikeAnalyzer
         ?string $calling_method_id = null,
         bool $with_pseudo = false,
     ): ?bool {
-        if ($codebase->methods->methodExists(
+        if ($codebase->methodExists(
             $method_id,
             $calling_method_id,
             !$calling_method_id

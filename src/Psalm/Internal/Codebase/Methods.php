@@ -85,7 +85,8 @@ final class Methods
      *
      * @param lowercase-string|null $calling_method_id
      */
-    public function methodExists(
+    public function methodExistsInternal(
+        Codebase $codebase,
         MethodIdentifier $method_id,
         ?string $calling_method_id = null,
         ?CodeLocation $code_location = null,
@@ -136,7 +137,6 @@ final class Methods
         $source_file_path = $source ? $source->getFilePath() : $source_file_path;
 
         $calling_class_name = $source ? $source->getFQCLN() : null;
-        $codebase = $source?->getCodebase();
 
         if (!$calling_class_name && $calling_method_id) {
             $calling_class_name = explode('::', $calling_method_id)[0];
