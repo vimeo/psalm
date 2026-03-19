@@ -40,11 +40,12 @@ final class CodeUseGraph extends DataFlowGraph
         ?CodeLocation $location = null,
     ): DataFlowNode {
         $id = 'class '.$class_id;
-        if (array_key_exists($id, $this->nodes)) {
-            return $this->nodes[$id];
+        $key = $location !== null ? $id . '@' . $location->getHash() : $id;
+        if (array_key_exists($key, $this->nodes)) {
+            return $this->nodes[$key];
         }
-        $this->nodes[$id] = $node = DataFlowNode::make(
-            $id,
+        $this->nodes[$key] = $node = DataFlowNode::make(
+            $key,
             $id,
             $location,
         );
@@ -62,11 +63,12 @@ final class CodeUseGraph extends DataFlowGraph
         ?CodeLocation $location = null,
     ): DataFlowNode {
         $id = 'property '.$class_id.'::'.$property_name;
-        if (array_key_exists($id, $this->nodes)) {
-            return $this->nodes[$id];
+        $key = $location !== null ? $id . '@' . $location->getHash() : $id;
+        if (array_key_exists($key, $this->nodes)) {
+            return $this->nodes[$key];
         }
-        $this->nodes[$id] = $node = DataFlowNode::make(
-            $id,
+        $this->nodes[$key] = $node = DataFlowNode::make(
+            $key,
             $id,
             $location,
         );
@@ -84,12 +86,13 @@ final class CodeUseGraph extends DataFlowGraph
         ?CodeLocation $location = null,
     ): DataFlowNode {
         $id = 'const ' . $class_id . '::' . $const_name;
-        if (array_key_exists($id, $this->nodes)) {
-            return $this->nodes[$id];
+        $key = $location !== null ? $id . '@' . $location->getHash() : $id;
+        if (array_key_exists($key, $this->nodes)) {
+            return $this->nodes[$key];
         }
 
-        $this->nodes[$id] = $node = DataFlowNode::make(
-            $id,
+        $this->nodes[$key] = $node = DataFlowNode::make(
+            $key,
             $id,
             $location,
         );
@@ -105,13 +108,14 @@ final class CodeUseGraph extends DataFlowGraph
         string $func,
         ?CodeLocation $location = null,
     ): DataFlowNode {
-        $key = 'func '.$func;
+        $id = 'func '.$func;
+        $key = $location !== null ? $id . '@' . $location->getHash() : $id;
         if (array_key_exists($key, $this->nodes)) {
             return $this->nodes[$key];
         }
         $this->nodes[$key] = $node = DataFlowNode::make(
             $key,
-            $key,
+            $id,
             $location,
         );
         return $node;
@@ -125,12 +129,13 @@ final class CodeUseGraph extends DataFlowGraph
         ?CodeLocation $location = null,
     ): DataFlowNode {
         $id = 'return ' . $func;
-        if (array_key_exists($id, $this->nodes)) {
-            return $this->nodes[$id];
+        $key = $location !== null ? $id . '@' . $location->getHash() : $id;
+        if (array_key_exists($key, $this->nodes)) {
+            return $this->nodes[$key];
         }
 
-        $this->nodes[$id] = $node = DataFlowNode::make(
-            $id,
+        $this->nodes[$key] = $node = DataFlowNode::make(
+            $key,
             $id,
             $location,
         );
@@ -147,12 +152,13 @@ final class CodeUseGraph extends DataFlowGraph
         ?CodeLocation $location = null,
     ): DataFlowNode {
         $id = 'missing-method ' . $method_id;
-        if (array_key_exists($id, $this->nodes)) {
-            return $this->nodes[$id];
+        $key = $location !== null ? $id . '@' . $location->getHash() : $id;
+        if (array_key_exists($key, $this->nodes)) {
+            return $this->nodes[$key];
         }
 
-        $this->nodes[$id] = $node = DataFlowNode::make(
-            $id,
+        $this->nodes[$key] = $node = DataFlowNode::make(
+            $key,
             $id,
             $location,
         );
@@ -171,12 +177,13 @@ final class CodeUseGraph extends DataFlowGraph
         ?CodeLocation $location = null,
     ): DataFlowNode {
         $id = 'missing-property ' . $class_id . '::' . $property_name;
-        if (array_key_exists($id, $this->nodes)) {
-            return $this->nodes[$id];
+        $key = $location !== null ? $id . '@' . $location->getHash() : $id;
+        if (array_key_exists($key, $this->nodes)) {
+            return $this->nodes[$key];
         }
 
-        $this->nodes[$id] = $node = DataFlowNode::make(
-            $id,
+        $this->nodes[$key] = $node = DataFlowNode::make(
+            $key,
             $id,
             $location,
         );
@@ -189,13 +196,14 @@ final class CodeUseGraph extends DataFlowGraph
      */
     public function getForGenericUse(?CodeLocation $location = null): DataFlowNode
     {
-        $k = $location ? $location->file_path : 'generic-use';
+        $id = 'generic-use';
+        $k = $location !== null ? $id . '@' . $location->getHash() : $id;
         if (array_key_exists($k, $this->nodes)) {
             return $this->nodes[$k];
         }
         $this->nodes[$k] = $node = DataFlowNode::make(
             $k,
-            $k,
+            $id,
             $location,
         );
         return $node;
