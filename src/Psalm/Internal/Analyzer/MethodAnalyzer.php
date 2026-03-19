@@ -176,18 +176,15 @@ final class MethodAnalyzer extends FunctionLikeAnalyzer
         ?string $calling_method_id = null,
         bool $with_pseudo = false,
     ): ?bool {
-        if ($codebase->methods->methodExists(
-            $method_id,
-            $calling_method_id,
-            !$calling_method_id
+        if ($codebase->methodExists(
+            method_id: $method_id,
+            calling_method_id: $calling_method_id,
+            code_location: !$calling_method_id
                 || $calling_method_id !== strtolower((string) $method_id)
                 ? $code_location
                 : null,
-            null,
-            $code_location->file_path,
-            true,
-            false,
-            $with_pseudo,
+            source_file_path: $code_location->file_path,
+            with_pseudo: $with_pseudo,
         )) {
             return true;
         }

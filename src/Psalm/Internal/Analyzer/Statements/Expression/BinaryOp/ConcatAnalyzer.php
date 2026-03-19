@@ -425,7 +425,7 @@ final class ConcatAnalyzer
                         '__tostring',
                     );
 
-                    if ($codebase->methods->methodExists(
+                    if ($codebase->methodExists(
                         $to_string_method_id,
                         $context->calling_method_id,
                         $codebase->collect_locations

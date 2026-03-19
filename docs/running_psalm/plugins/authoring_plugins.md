@@ -4,11 +4,11 @@
 
 ### Using a template repository
 
-Head over to [plugin template repository](https://github.com/weirdan/psalm-plugin-skeleton) on GitHub, login and click `Use this template` button.
+Head over to [plugin template repository](https://github.com/danog/psalm-plugin-skeleton) on GitHub, login and click `Use this template` button.
 
 ### Using skeleton project
 
-Run `composer create-project weirdan/psalm-plugin-skeleton:dev-master your-plugin-name` to quickly bootstrap a new plugin project in `your-plugin-name` folder. Make sure you adjust namespaces in `composer.json`, `Plugin.php` and `tests` folder.
+Run `composer create-project psalm/psalm-plugin-skeleton:dev-master your-plugin-name` to quickly bootstrap a new plugin project in `your-plugin-name` folder. Make sure you adjust namespaces in `composer.json`, `Plugin.php` and `tests` folder.
 
 ## Psalm plugin API
 
@@ -17,6 +17,10 @@ Backwards compatibility for the plugin API is now covered by a separate metapack
 This is a separate, empty metapackage: its major version will be bumped every time a breaking change occurs within Psalm's plugin API; minors will also be bumped when adding new features to Psalm's plugin API.  
 
 Plugins, starting from the first stable release of v7, need to explicitly require a caret range (i.e. ^1, NOT 1.0.0) that package in order to avoid breaking changes during Psalm upgrades.  
+
+Plugins that support v7 betas can already require `0.x` versions of the package.  
+
+All plugin API versions with a list of contained breaking changes will be listed in the readme of [psalm/psalm-plugin-api](https://packagist.org/packages/psalm/psalm-plugin-api).  
 
 ## Stub files
 
