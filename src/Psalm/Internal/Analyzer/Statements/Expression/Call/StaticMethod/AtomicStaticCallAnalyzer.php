@@ -505,7 +505,8 @@ final class AtomicStaticCallAnalyzer
                         $codebase->getMethodReturnType($method_id, $fq_class_name),
                         $codebase->methods->getStorage($declaring_method_id)->allowed_mutations,
                     )]);
-                } elseif ($codebase->methodExists(
+                } elseif ($codebase->methods->methodExists(
+                    $codebase,
                     $call_static_method_id = new MethodIdentifier($method_id->fq_class_name, '__callstatic'),
                     new CodeLocation($statements_analyzer, $stmt),
                     null,
