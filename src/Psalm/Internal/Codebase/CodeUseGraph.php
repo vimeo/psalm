@@ -23,10 +23,8 @@ final class CodeUseGraph extends DataFlowGraph
     /** @var array<string, DataFlowNode> */
     private array $nodes = [];
 
-    private readonly bool $collect_locations;
-    public function __construct(Codebase $codebase)
+    public function __construct(public bool $collect_locations)
     {
-        $this->collect_locations = $codebase->collect_locations;
     }
 
     /**
