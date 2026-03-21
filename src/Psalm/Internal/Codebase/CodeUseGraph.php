@@ -6,6 +6,7 @@ namespace Psalm\Internal\Codebase;
 
 use LogicException;
 use Override;
+use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -21,6 +22,12 @@ final class CodeUseGraph extends DataFlowGraph
 {
     /** @var array<string, DataFlowNode> */
     private array $nodes = [];
+
+    private readonly bool $collect_locations;
+    public function __construct(Codebase $codebase)
+    {
+        $this->collect_locations = $codebase->collect_locations;
+    }
 
     /**
      * @psalm-external-mutation-free
@@ -40,7 +47,7 @@ final class CodeUseGraph extends DataFlowGraph
         ?CodeLocation $location = null,
     ): DataFlowNode {
         $id = 'class '.$class_id;
-        $key = $location !== null ? $id . '@' . $location->getHash() : $id;
+        $key = $this->collect_locations && $location !== null ? $id . '@' . $location->getHash() : $id;
         if (array_key_exists($key, $this->nodes)) {
             return $this->nodes[$key];
         }
@@ -63,7 +70,7 @@ final class CodeUseGraph extends DataFlowGraph
         ?CodeLocation $location = null,
     ): DataFlowNode {
         $id = 'property '.$class_id.'::'.$property_name;
-        $key = $location !== null ? $id . '@' . $location->getHash() : $id;
+        $key = $this->collect_locations && $location !== null ? $id . '@' . $location->getHash() : $id;
         if (array_key_exists($key, $this->nodes)) {
             return $this->nodes[$key];
         }
@@ -86,7 +93,7 @@ final class CodeUseGraph extends DataFlowGraph
         ?CodeLocation $location = null,
     ): DataFlowNode {
         $id = 'const ' . $class_id . '::' . $const_name;
-        $key = $location !== null ? $id . '@' . $location->getHash() : $id;
+        $key = $this->collect_locations && $location !== null ? $id . '@' . $location->getHash() : $id;
         if (array_key_exists($key, $this->nodes)) {
             return $this->nodes[$key];
         }
@@ -109,7 +116,7 @@ final class CodeUseGraph extends DataFlowGraph
         ?CodeLocation $location = null,
     ): DataFlowNode {
         $id = 'func '.$func;
-        $key = $location !== null ? $id . '@' . $location->getHash() : $id;
+        $key = $this->collect_locations && $location !== null ? $id . '@' . $location->getHash() : $id;
         if (array_key_exists($key, $this->nodes)) {
             return $this->nodes[$key];
         }
@@ -129,7 +136,7 @@ final class CodeUseGraph extends DataFlowGraph
         ?CodeLocation $location = null,
     ): DataFlowNode {
         $id = 'return ' . $func;
-        $key = $location !== null ? $id . '@' . $location->getHash() : $id;
+        $key = $this->collect_locations && $location !== null ? $id . '@' . $location->getHash() : $id;
         if (array_key_exists($key, $this->nodes)) {
             return $this->nodes[$key];
         }
@@ -152,7 +159,7 @@ final class CodeUseGraph extends DataFlowGraph
         ?CodeLocation $location = null,
     ): DataFlowNode {
         $id = 'missing-method ' . $method_id;
-        $key = $location !== null ? $id . '@' . $location->getHash() : $id;
+        $key = $this->collect_locations && $location !== null ? $id . '@' . $location->getHash() : $id;
         if (array_key_exists($key, $this->nodes)) {
             return $this->nodes[$key];
         }
@@ -177,7 +184,7 @@ final class CodeUseGraph extends DataFlowGraph
         ?CodeLocation $location = null,
     ): DataFlowNode {
         $id = 'missing-property ' . $class_id . '::' . $property_name;
-        $key = $location !== null ? $id . '@' . $location->getHash() : $id;
+        $key = $this->collect_locations && $location !== null ? $id . '@' . $location->getHash() : $id;
         if (array_key_exists($key, $this->nodes)) {
             return $this->nodes[$key];
         }
@@ -197,7 +204,7 @@ final class CodeUseGraph extends DataFlowGraph
     public function getForGenericUse(?CodeLocation $location = null): DataFlowNode
     {
         $id = 'generic-use';
-        $k = $location !== null ? $id . '@' . $location->getHash() : $id;
+        $k = $this->collect_locations && $location !== null ? $id . '@' . $location->getHash() : $id;
         if (array_key_exists($k, $this->nodes)) {
             return $this->nodes[$k];
         }
@@ -214,16 +221,20 @@ final class CodeUseGraph extends DataFlowGraph
         ?Context $context,
         ?CodeLocation $location = null,
     ): void {
+        $caller = null;
         if ($context?->calling_method_id !== null) {
             $caller = $this->getNodeForFunctionLike($context->calling_method_id, $location);
         } elseif ($context?->calling_function_id !== null) {
             $caller = $this->getNodeForFunctionLike($context->calling_function_id, $location);
         } elseif ($context?->self) {
             $caller = $this->getNodeForClass($context->self, $location);
-        } else {
+        } elseif ($this->collect_locations && $location) {
             // Source is not a method or function, so we assume it's a file-level use,
             // so used
             $caller = $this->getForGenericUse($location);
+        }
+        if ($caller === null) {
+            return;
         }
 
         $this->addPath(
