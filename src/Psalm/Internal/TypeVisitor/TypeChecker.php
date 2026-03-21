@@ -127,8 +127,8 @@ final class TypeChecker extends TypeVisitor
         if ($this->context?->calling_method_id
             && $atomic->text !== null
         ) {
-            $codebase->addReferenceToFunctionLike(
-                'use:' . $atomic->text . ':' . md5($this->source->getFilePath()),
+            $codebase->addReferenceToClass(
+                $atomic->value,
                 $this->code_location,
                 $this->context,
             );
