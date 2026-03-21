@@ -226,24 +226,12 @@ final class Methods
                         );
                     }
 
-                    if ($calling_method_id) {
-                        // also store failures in case the method is added later
-                        if ($calling_context) {
-                            $codebase->addReferenceToFunctionLike(
-                                strtolower((string) $overridden_method_id),
-                                $code_location,
-                                $calling_context,
-                                $is_used,
-                            );
-                        }
-                    } elseif ($source_file_path) {
-                        $codebase->addReferenceToFunctionLike(
-                            strtolower((string) $overridden_method_id),
-                            $code_location,
-                            null,
-                            $is_used,
-                        );
-                    }
+                    $codebase->addReferenceToFunctionLike(
+                        strtolower((string) $overridden_method_id),
+                        $code_location,
+                        $calling_context,
+                        $is_used,
+                    );
                 }
             }
 
@@ -275,28 +263,14 @@ final class Methods
         foreach ($class_storage->parent_classes + $class_storage->used_traits as $potential_future_declaring_fqcln) {
             $potential_id = strtolower($potential_future_declaring_fqcln) . '::' . $method_name;
 
-            if ($calling_method_id) {
-                // also store failures in case the method is added later
-                if ($calling_context) {
-                    $codebase->addReferenceToMissingMethod($potential_id, $code_location, $calling_context);
-                }
-            } elseif ($source_file_path) {
-                $codebase->addReferenceToMissingMethod($potential_id, $code_location, null);
-            }
+            $codebase->addReferenceToMissingMethod($potential_id, $code_location, $calling_context);
         }
 
-        if ($calling_method_id) {
-            // also store failures in case the method is added later
-            if ($calling_context) {
-                $codebase->addReferenceToMissingMethod(
-                    strtolower((string) $method_id),
-                    $code_location,
-                    $calling_context,
-                );
-            }
-        } elseif ($source_file_path) {
-            $codebase->addReferenceToMissingMethod(strtolower((string) $method_id), $code_location, null);
-        }
+        $codebase->addReferenceToMissingMethod(
+            strtolower((string) $method_id),
+            $code_location,
+            $calling_context,
+        );
 
         return false;
     }
