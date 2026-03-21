@@ -33,7 +33,6 @@ use Psalm\Type\Union;
 use function count;
 use function explode;
 use function in_array;
-use function md5;
 use function strtolower;
 
 /**

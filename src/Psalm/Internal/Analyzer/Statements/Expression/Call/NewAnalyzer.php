@@ -62,7 +62,6 @@ use function array_map;
 use function array_values;
 use function count;
 use function in_array;
-use function md5;
 use function preg_match;
 use function reset;
 use function strtolower;

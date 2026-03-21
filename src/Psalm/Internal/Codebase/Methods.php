@@ -161,11 +161,7 @@ final class Methods
             $declaring_fq_class_name = strtolower($declaring_method_id->fq_class_name);
 
             if ($declaring_fq_class_name !== strtolower((string) $calling_class_name)) {
-                if ($calling_context) {
-                    $codebase->addReferenceToClass($declaring_fq_class_name, $code_location, $calling_context);
-                } elseif ($source_file_path) {
-                    $codebase->addReferenceToClass($declaring_fq_class_name, $code_location, null);
-                }
+                $codebase->addReferenceToClass($declaring_fq_class_name, $code_location, $calling_context);
             }
 
             if ((string) $method_id !== (string) $declaring_method_id
@@ -173,33 +169,20 @@ final class Methods
                 && isset($class_storage->potential_declaring_method_ids[$method_name])
             ) {
                 foreach ($class_storage->potential_declaring_method_ids[$method_name] as $potential_id => $_) {
-                    if ($calling_context) {
-                        $codebase->addReferenceToFunctionLike(
-                            $potential_id,
-                            $code_location,
-                            $calling_context,
-                            $is_used,
-                        );
-                    } elseif ($source_file_path) {
-                        $codebase->addReferenceToFunctionLike($potential_id, $code_location, null, $is_used);
-                    }
-                }
-            } else {
-                if ($calling_context) {
                     $codebase->addReferenceToFunctionLike(
-                        strtolower((string) $declaring_method_id),
+                        $potential_id,
                         $code_location,
                         $calling_context,
                         $is_used,
                     );
-                } elseif ($source_file_path) {
-                    $codebase->addReferenceToFunctionLike(
-                        strtolower((string) $declaring_method_id),
-                        $code_location,
-                        null,
-                        $is_used,
-                    );
                 }
+            } else {
+                $codebase->addReferenceToFunctionLike(
+                    strtolower((string) $declaring_method_id),
+                    $code_location,
+                    $calling_context,
+                    $is_used,
+                );
             }
 
             if ($this->collect_locations && $code_location) {
@@ -219,21 +202,12 @@ final class Methods
                     );
                 }
 
-                if ($calling_context) {
-                    $codebase->addReferenceToFunctionLike(
-                        $interface_method_id_lc,
-                        $code_location,
-                        $calling_context,
-                        $is_used,
-                    );
-                } elseif ($source_file_path) {
-                    $codebase->addReferenceToFunctionLike(
-                        $interface_method_id_lc,
-                        $code_location,
-                        null,
-                        $is_used,
-                    );
-                }
+                $codebase->addReferenceToFunctionLike(
+                    $interface_method_id_lc,
+                    $code_location,
+                    $calling_context,
+                    $is_used,
+                );
             }
 
             $declaring_method_class = $declaring_method_id->fq_class_name;
@@ -277,11 +251,7 @@ final class Methods
         }
 
         if ($source_file_path && $fq_class_name !== strtolower((string) $calling_class_name)) {
-            if ($calling_context) {
-                $codebase->addReferenceToClass($fq_class_name, $code_location, $calling_context);
-            } else {
-                $codebase->addReferenceToClass($fq_class_name, $code_location, null);
-            }
+            $codebase->addReferenceToClass($fq_class_name, $code_location, $calling_context);
         }
 
         if ($class_storage->abstract && isset($class_storage->overridden_method_ids[$method_name])) {

@@ -614,7 +614,6 @@ final class Analyzer
             foreach ($references_to_mixed_member_names as $i => $_) {
                 unset($references_to_mixed_member_names[$i][$file_path]);
             }
-
         }
 
         foreach ($this->existing_issues as $file_path => $issues) {

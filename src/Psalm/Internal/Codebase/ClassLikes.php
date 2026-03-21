@@ -467,8 +467,7 @@ final class ClassLikes
         string $fq_class_name,
         ?CodeLocation $location = null,
         ?Context $context = null,
-    ): bool
-    {
+    ): bool {
         $fq_class_name_lc = strtolower($this->getUnAliasedName($fq_class_name));
 
         if (!isset($this->existing_traits_lc[$fq_class_name_lc]) ||

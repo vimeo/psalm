@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Codebase;
 
-use Psalm\Codebase;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
