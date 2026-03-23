@@ -542,7 +542,7 @@ final class TypeParser
 
         if ($last_invalid_type !== null) {
             throw new TypeParseTreeException(
-                'Invalid templated classname \'' . $t->getId() . '\'',
+                'Invalid templated classname \'' . $last_invalid_type->getId() . '\'',
             );
         }
 
