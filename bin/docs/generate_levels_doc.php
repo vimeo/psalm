@@ -30,11 +30,17 @@ foreach ($grouped_issues as &$i) {
 
 $result = "<!-- begin list -->\n## Always treated as errors\n\n";
 
+$result .= 'These issues have very low false-positive rates and indicate definite problems.'
+    . ' They cannot be suppressed by changing the error level.' . "\n\n";
+
 foreach ($grouped_issues[-1] as $issue_type) {
     $result .= ' - [' . $issue_type . '](issues/' . $issue_type . '.md)' . "\n";
 }
 
 $result .= "## Errors that only appear at level 1\n\n";
+
+$result .= 'At the default level (2), these are reported as info.'
+    . ' Set `errorLevel="1"` to treat them as errors.' . "\n\n";
 
 foreach ($grouped_issues[1] as $issue_type) {
     $result .= ' - [' . $issue_type . '](issues/' . $issue_type . '.md)' . "\n";
@@ -43,9 +49,9 @@ foreach ($grouped_issues[1] as $issue_type) {
 $result .= "\n";
 
 foreach ([2, 3, 4, 5, 6, 7] as $level) {
-    $result .= '## Errors ignored at level ' . ($level + 1) . ($level < 7 ? ' and higher' : '') . "\n\n";
+    $result .= '## Errors at level ' . $level . ' and below' . "\n\n";
 
-    $result .= 'These issues are treated as errors at level ' . $level . ' and below.' . "\n\n";
+    $result .= 'These issues become info (non-blocking) at level ' . ($level + 1) . ($level < 7 ? ' and higher' : '') . '.' . "\n\n";
 
     foreach ($grouped_issues[$level] as $issue_type) {
         $result .= ' - [' . $issue_type . '](issues/' . $issue_type . '.md)' . "\n";
@@ -55,6 +61,10 @@ foreach ([2, 3, 4, 5, 6, 7] as $level) {
 }
 
 $result .= "## Feature-specific errors\n\n";
+
+$result .= 'These issues are only reported when their corresponding feature is enabled'
+    . ' (e.g., `--taint-analysis` for Tainted* issues, `--find-unused-code` for Unused* issues).'
+    . ' When enabled, they are always treated as errors.' . "\n\n";
 
 foreach ($grouped_issues[-2] as $issue_type) {
     $result .= ' - [' . $issue_type . '](issues/' . $issue_type . '.md)' . "\n";

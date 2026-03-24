@@ -1,25 +1,31 @@
 # Error levels
 
-You can run Psalm in at different levels of strictness from 1 to 8.
+Psalm can run at error levels 1 (strictest) through 8 (most lenient). The default is **level 2**.
 
-Level 1 is the most strict, level 8 is the most lenient.
+A stricter level (lower number) reports more issues as errors. A more lenient level (higher number) demotes issues to info (non-blocking).
 
-When no level is explicitly defined, psalm defaults to level 2.
+### Quick-reference summary
 
-Some issues are always treated as errors. These are issues with a very low probability of false-positives.
+| Level | Strictness | What changes compared to the level above |
+|-------|-----------|-------------------------------|
+| 1 (strictest) | Everything is an error | Adds `Mixed*` issues, `LessSpecificReturnType` as errors |
+| **2 (default)** | Most issues | `Mixed*` demoted to info |
+| 3 | Moderate | `Deprecated*`, `MissingParamType`, `PropertyNotSetInConstructor` demoted to info |
+| 4 | Lenient | `Possibly*` issues demoted to info |
+| 5 | More lenient | `InvalidScalarArgument`, `RedundantCondition`, `TooManyArguments` demoted to info |
+| 6 | Very lenient | `FalsableReturnStatement`, `InvalidNullableReturnType` demoted to info |
+| 7 | Extremely lenient | `InvalidArgument`, `InvalidMethodCall`, `UndefinedMethod` demoted to info |
+| 8 (most lenient) | Almost nothing | `MethodSignatureMismatch`, `UninitializedProperty` demoted to info |
 
-At level 1 all issues (except those emitted for opt-in features) that Psalm can find are treated as errors. Those issues include any situation where Psalm cannot infer the type of a given expression.
+### Special categories
 
-At level 2 Psalm ignores those `Mixed*` issues, but treats most other issues as errors.
-
-At level 3 Psalm starts to be a little more lenient. For example Psalm allows missing param types, return types and property types.
-
-At level 4 Psalm ignores issues for _possible_ problems. These are more likely to be false positives – where the application code may guarantee behaviour that Psalm isn't able to infer.
-
-Level 5 and above allows a more non-verifiable code, and higher levels are even more permissive.
+- **Always errors**: Issues with very low false-positive rates (e.g., `UndefinedClass`, `UndefinedVariable`). These cannot be suppressed by changing the error level.
+- **Feature-specific errors**: Issues only reported when their feature is enabled (e.g., `--taint-analysis` for `Tainted*`, `--find-unused-code` for `Unused*`). When enabled, they are always treated as errors.
 
 <!-- begin list -->
 ## Always treated as errors
+
+These issues have very low false-positive rates and indicate definite problems. They cannot be suppressed by changing the error level.
 
  - [AbstractMethodCall](issues/AbstractMethodCall.md)
  - [ComplexFunction](issues/ComplexFunction.md)
@@ -106,6 +112,8 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
  - [UnusedMethodCall](issues/UnusedMethodCall.md)
 ## Errors that only appear at level 1
 
+At the default level (2), these are reported as info. Set `errorLevel="1"` to treat them as errors.
+
  - [InvalidClassConstantType](issues/InvalidClassConstantType.md)
  - [LessSpecificClassConstantType](issues/LessSpecificClassConstantType.md)
  - [LessSpecificReturnType](issues/LessSpecificReturnType.md)
@@ -132,9 +140,9 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
  - [RedundantIdentityWithTrue](issues/RedundantIdentityWithTrue.md)
  - [Trace](issues/Trace.md)
 
-## Errors ignored at level 3 and higher
+## Errors at level 2 and below
 
-These issues are treated as errors at level 2 and below.
+These issues become info (non-blocking) at level 3 and higher.
 
  - [ClassMustBeFinal](issues/ClassMustBeFinal.md)
  - [DeprecatedClass](issues/DeprecatedClass.md)
@@ -172,9 +180,9 @@ These issues are treated as errors at level 2 and below.
  - [UnsafeInstantiation](issues/UnsafeInstantiation.md)
  - [UnsupportedReferenceUsage](issues/UnsupportedReferenceUsage.md)
 
-## Errors ignored at level 4 and higher
+## Errors at level 3 and below
 
-These issues are treated as errors at level 3 and below.
+These issues become info (non-blocking) at level 4 and higher.
 
  - [ArgumentTypeCoercion](issues/ArgumentTypeCoercion.md)
  - [LessSpecificReturnStatement](issues/LessSpecificReturnStatement.md)
@@ -215,9 +223,9 @@ These issues are treated as errors at level 3 and below.
  - [PropertyTypeCoercion](issues/PropertyTypeCoercion.md)
  - [RiskyCast](issues/RiskyCast.md)
 
-## Errors ignored at level 5 and higher
+## Errors at level 4 and below
 
-These issues are treated as errors at level 4 and below.
+These issues become info (non-blocking) at level 5 and higher.
 
  - [FalseOperand](issues/FalseOperand.md)
  - [ForbiddenCode](issues/ForbiddenCode.md)
@@ -253,9 +261,9 @@ These issues are treated as errors at level 4 and below.
  - [UndefinedMagicPropertyAssignment](issues/UndefinedMagicPropertyAssignment.md)
  - [UndefinedMagicPropertyFetch](issues/UndefinedMagicPropertyFetch.md)
 
-## Errors ignored at level 6 and higher
+## Errors at level 5 and below
 
-These issues are treated as errors at level 5 and below.
+These issues become info (non-blocking) at level 6 and higher.
 
  - [ConstructorSignatureMismatch](issues/ConstructorSignatureMismatch.md)
  - [FalsableReturnStatement](issues/FalsableReturnStatement.md)
@@ -266,9 +274,9 @@ These issues are treated as errors at level 5 and below.
  - [UndefinedInterfaceMethod](issues/UndefinedInterfaceMethod.md)
  - [UndefinedThisPropertyAssignment](issues/UndefinedThisPropertyAssignment.md)
 
-## Errors ignored at level 7 and higher
+## Errors at level 6 and below
 
-These issues are treated as errors at level 6 and below.
+These issues become info (non-blocking) at level 7 and higher.
 
  - [AmbiguousConstantInheritance](issues/AmbiguousConstantInheritance.md)
  - [InvalidArgument](issues/InvalidArgument.md)
@@ -301,9 +309,9 @@ These issues are treated as errors at level 6 and below.
  - [UndefinedPropertyFetch](issues/UndefinedPropertyFetch.md)
  - [UndefinedThisPropertyFetch](issues/UndefinedThisPropertyFetch.md)
 
-## Errors ignored at level 8
+## Errors at level 7 and below
 
-These issues are treated as errors at level 7 and below.
+These issues become info (non-blocking) at level 8.
 
  - [AbstractInstantiation](issues/AbstractInstantiation.md)
  - [AssignmentToVoid](issues/AssignmentToVoid.md)
@@ -323,6 +331,8 @@ These issues are treated as errors at level 7 and below.
  - [UninitializedProperty](issues/UninitializedProperty.md)
 
 ## Feature-specific errors
+
+These issues are only reported when their corresponding feature is enabled (e.g., `--taint-analysis` for Tainted* issues, `--find-unused-code` for Unused* issues). When enabled, they are always treated as errors.
 
  - [LiteralKeyUnshapedArray](issues/LiteralKeyUnshapedArray.md)
  - [MissingOverrideAttribute](issues/MissingOverrideAttribute.md)
