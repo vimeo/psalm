@@ -1132,10 +1132,9 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             $constructor_context = new Context();
             $constructor_context->calling_method_id = $fq_class_name_lc . '::__construct';
             $constructor_context->self = $storage->name;
-            $codebase->addReferenceToProperty(
+            $codebase->addReferenceToMissingProperty(
                 strtolower($property_class_name),
                 $property_name,
-                true,
                 $property->location,
                 $constructor_context,
             );
