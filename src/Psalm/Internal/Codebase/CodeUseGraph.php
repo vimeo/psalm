@@ -42,6 +42,7 @@ final class CodeUseGraph extends DataFlowGraph
     public function getNodeForClass(
         string $class_id,
     ): DataFlowNode {
+        $class_id = strtolower($class_id);
         $id = 'class '.$class_id;
         if (array_key_exists($id, $this->nodes)) {
             return $this->nodes[$id];
@@ -52,7 +53,7 @@ final class CodeUseGraph extends DataFlowGraph
 
     /**
      * @param lowercase-string $class_id
-     * @param lowercase-string $property_name
+     * @param string $property_name
      * @psalm-external-mutation-free
      */
     public function getNodeForProperty(
@@ -60,6 +61,7 @@ final class CodeUseGraph extends DataFlowGraph
         string $property_name,
         bool $reading,
     ): DataFlowNode {
+        $class_id = strtolower($class_id);
         if (!$reading) {
             return $this->getNodeForClass($class_id);
         }
@@ -73,13 +75,13 @@ final class CodeUseGraph extends DataFlowGraph
 
     /**
      * @param lowercase-string $class_id
-     * @param lowercase-string $const_name
      * @psalm-external-mutation-free
      */
     public function getNodeForClassConstant(
         string $class_id,
         string $const_name,
     ): DataFlowNode {
+        $class_id = strtolower($class_id);
         $id = 'const ' . $class_id . '::' . $const_name;
         if (array_key_exists($id, $this->nodes)) {
             return $this->nodes[$id];
@@ -96,6 +98,7 @@ final class CodeUseGraph extends DataFlowGraph
     public function getNodeForFunctionLike(
         string $func,
     ): DataFlowNode {
+        $func = strtolower($func);
         $key = 'func '.$func;
         if (array_key_exists($key, $this->nodes)) {
             return $this->nodes[$key];
@@ -110,6 +113,7 @@ final class CodeUseGraph extends DataFlowGraph
     public function getNodeForFunctionLikeReturn(
         string $func,
     ): DataFlowNode {
+        $func = strtolower($func);
         $id = 'return ' . $func;
         if (array_key_exists($id, $this->nodes)) {
             return $this->nodes[$id];
@@ -126,6 +130,7 @@ final class CodeUseGraph extends DataFlowGraph
     public function getNodeForMissingMethod(
         string $method_id,
     ): DataFlowNode {
+        $method_id = strtolower($method_id);
         $id = 'missing-method ' . $method_id;
         if (array_key_exists($id, $this->nodes)) {
             return $this->nodes[$id];
@@ -137,13 +142,13 @@ final class CodeUseGraph extends DataFlowGraph
 
     /**
      * @param lowercase-string $class_id
-     * @param lowercase-string $property_name
      * @psalm-external-mutation-free
      */
     public function getNodeForMissingProperty(
         string $class_id,
         string $property_name,
     ): DataFlowNode {
+        $class_id = strtolower($class_id);
         $id = 'missing-property ' . $class_id . '::' . $property_name;
         if (array_key_exists($id, $this->nodes)) {
             return $this->nodes[$id];
@@ -180,7 +185,6 @@ final class CodeUseGraph extends DataFlowGraph
         }
         $location_caller = $this->getForGenericUse($location);
 
-        $caller = null;
         if ($context?->calling_method_id !== null) {
             $caller = $this->getNodeForFunctionLike($context->calling_method_id);
         } elseif ($context?->calling_function_id !== null) {
@@ -197,7 +201,7 @@ final class CodeUseGraph extends DataFlowGraph
             'use',
         );
 
-        if ($location !== null) {
+        if ($location !== null && $caller !== $location_caller) {
             $this->addPath(
                 $location_caller,
                 $node,
@@ -382,7 +386,7 @@ final class CodeUseGraph extends DataFlowGraph
     /**
      * @return array<string, bool>
      */
-    private function getIncomingUseSources(string $node_id): array
+    public function getIncomingUseSources(string $node_id): array
     {
         $references = [];
 
@@ -393,5 +397,21 @@ final class CodeUseGraph extends DataFlowGraph
         }
 
         return $references;
+    }
+
+    public function getAllIncomingUseSources(): array
+    {
+        $result = [];
+
+        foreach ($this->forward_edges as $from_id => $to_nodes) {
+            foreach ($to_nodes as $to_id => $_) {
+                if (!isset($result[$to_id])) {
+                    $result[$to_id] = [];
+                }
+                $result[$to_id][$from_id] = true;
+            }
+        }
+
+        return $result;
     }
 }
