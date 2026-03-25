@@ -163,7 +163,7 @@ final class CodeUseGraph extends DataFlowGraph
      */
     public function getForGenericUse(?CodeLocation $location = null): DataFlowNode
     {
-        $k = $this->collect_locations && $location !== null ? $location->file_path : 'generic-use';
+        $k = $this->collect_locations && $location !== null ? $location->getHash() : 'generic-use';
         if (array_key_exists($k, $this->nodes)) {
             return $this->nodes[$k];
         }
