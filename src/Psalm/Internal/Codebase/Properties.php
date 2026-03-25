@@ -91,11 +91,7 @@ final class Properties
             && !$context->collect_mutations
         ) {
             $codebase = $source->getCodebase();
-            if ($context->calling_method_id) {
-                $codebase->addReferenceToClass($fq_class_name_lc, $code_location, $context);
-            } else {
-                $codebase->addReferenceToClass($fq_class_name_lc, $code_location, null);
-            }
+            $codebase->addReferenceToClass($fq_class_name_lc, $code_location, $context);
         }
 
         if (isset($class_storage->declaring_property_ids[$property_name])) {

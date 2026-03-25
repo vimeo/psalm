@@ -42,17 +42,16 @@ final class CodeUseGraph extends DataFlowGraph
      */
     public function getNodeForClass(
         string $class_id,
-        ?CodeLocation $location = null,
     ): DataFlowNode {
         $id = 'class '.$class_id;
-        $key = $this->collect_locations && $location !== null ? $id . '@' . $location->getHash() : $id;
+        $key = $id;
         if (array_key_exists($key, $this->nodes)) {
             return $this->nodes[$key];
         }
         $this->nodes[$key] = $node = DataFlowNode::make(
             $key,
             $id,
-            $location,
+            null,
         );
         return $node;
     }
@@ -65,17 +64,16 @@ final class CodeUseGraph extends DataFlowGraph
     public function getNodeForProperty(
         string $class_id,
         string $property_name,
-        ?CodeLocation $location = null,
     ): DataFlowNode {
         $id = 'property '.$class_id.'::'.$property_name;
-        $key = $this->collect_locations && $location !== null ? $id . '@' . $location->getHash() : $id;
+        $key = $id;
         if (array_key_exists($key, $this->nodes)) {
             return $this->nodes[$key];
         }
         $this->nodes[$key] = $node = DataFlowNode::make(
             $key,
             $id,
-            $location,
+            null,
         );
         return $node;
     }
@@ -88,10 +86,9 @@ final class CodeUseGraph extends DataFlowGraph
     public function getNodeForClassConstant(
         string $class_id,
         string $const_name,
-        ?CodeLocation $location = null,
     ): DataFlowNode {
         $id = 'const ' . $class_id . '::' . $const_name;
-        $key = $this->collect_locations && $location !== null ? $id . '@' . $location->getHash() : $id;
+        $key = $id;
         if (array_key_exists($key, $this->nodes)) {
             return $this->nodes[$key];
         }
@@ -99,7 +96,7 @@ final class CodeUseGraph extends DataFlowGraph
         $this->nodes[$key] = $node = DataFlowNode::make(
             $key,
             $id,
-            $location,
+            null,
         );
 
         return $node;
@@ -111,17 +108,16 @@ final class CodeUseGraph extends DataFlowGraph
      */
     public function getNodeForFunctionLike(
         string $func,
-        ?CodeLocation $location = null,
     ): DataFlowNode {
         $id = 'func '.$func;
-        $key = $this->collect_locations && $location !== null ? $id . '@' . $location->getHash() : $id;
+        $key = $id;
         if (array_key_exists($key, $this->nodes)) {
             return $this->nodes[$key];
         }
         $this->nodes[$key] = $node = DataFlowNode::make(
             $key,
             $id,
-            $location,
+            null,
         );
         return $node;
     }
@@ -131,10 +127,9 @@ final class CodeUseGraph extends DataFlowGraph
      */
     public function getNodeForFunctionLikeReturn(
         string $func,
-        ?CodeLocation $location = null,
     ): DataFlowNode {
         $id = 'return ' . $func;
-        $key = $this->collect_locations && $location !== null ? $id . '@' . $location->getHash() : $id;
+        $key = $id;
         if (array_key_exists($key, $this->nodes)) {
             return $this->nodes[$key];
         }
@@ -142,7 +137,7 @@ final class CodeUseGraph extends DataFlowGraph
         $this->nodes[$key] = $node = DataFlowNode::make(
             $key,
             $id,
-            $location,
+            null,
         );
 
         return $node;
@@ -154,10 +149,9 @@ final class CodeUseGraph extends DataFlowGraph
      */
     public function getNodeForMissingMethod(
         string $method_id,
-        ?CodeLocation $location = null,
     ): DataFlowNode {
         $id = 'missing-method ' . $method_id;
-        $key = $this->collect_locations && $location !== null ? $id . '@' . $location->getHash() : $id;
+        $key = $id;
         if (array_key_exists($key, $this->nodes)) {
             return $this->nodes[$key];
         }
@@ -165,7 +159,7 @@ final class CodeUseGraph extends DataFlowGraph
         $this->nodes[$key] = $node = DataFlowNode::make(
             $key,
             $id,
-            $location,
+            null,
         );
 
         return $node;
@@ -179,10 +173,9 @@ final class CodeUseGraph extends DataFlowGraph
     public function getNodeForMissingProperty(
         string $class_id,
         string $property_name,
-        ?CodeLocation $location = null,
     ): DataFlowNode {
         $id = 'missing-property ' . $class_id . '::' . $property_name;
-        $key = $this->collect_locations && $location !== null ? $id . '@' . $location->getHash() : $id;
+        $key = $id;
         if (array_key_exists($key, $this->nodes)) {
             return $this->nodes[$key];
         }
@@ -190,7 +183,7 @@ final class CodeUseGraph extends DataFlowGraph
         $this->nodes[$key] = $node = DataFlowNode::make(
             $key,
             $id,
-            $location,
+            null,
         );
 
         return $node;
@@ -221,18 +214,18 @@ final class CodeUseGraph extends DataFlowGraph
     ): void {
         $caller = null;
         if ($context?->calling_method_id !== null) {
-            $caller = $this->getNodeForFunctionLike($context->calling_method_id, $location);
+            $caller = $this->getNodeForFunctionLike($context->calling_method_id);
         } elseif ($context?->calling_function_id !== null) {
-            $caller = $this->getNodeForFunctionLike($context->calling_function_id, $location);
+            $caller = $this->getNodeForFunctionLike($context->calling_function_id);
         } elseif ($context?->self) {
-            $caller = $this->getNodeForClass($context->self, $location);
-        } elseif ($this->collect_locations && $location) {
+            $caller = $this->getNodeForClass($context->self);
+        } else {
+            if (!$this->collect_locations) {
+                $location = null;
+            }
             // Source is not a method or function, so we assume it's a file-level use,
             // so used
             $caller = $this->getForGenericUse($location);
-        }
-        if ($caller === null) {
-            return;
         }
 
         $this->addPath(
