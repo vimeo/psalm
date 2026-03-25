@@ -6,7 +6,6 @@ namespace Psalm\Internal\Codebase;
 
 use LogicException;
 use Override;
-use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -64,7 +63,12 @@ final class CodeUseGraph extends DataFlowGraph
     public function getNodeForProperty(
         string $class_id,
         string $property_name,
+        bool $reading,
     ): DataFlowNode {
+        if (!$reading) {
+            return $this->getNodeForClass($class_id);
+        }
+
         $id = 'property '.$class_id.'::'.$property_name;
         $key = $id;
         if (array_key_exists($key, $this->nodes)) {
@@ -212,6 +216,11 @@ final class CodeUseGraph extends DataFlowGraph
         ?Context $context,
         ?CodeLocation $location = null,
     ): void {
+        if (!$this->collect_locations) {
+            $location = null;
+        }
+        $location_caller = $this->getForGenericUse($location);
+
         $caller = null;
         if ($context?->calling_method_id !== null) {
             $caller = $this->getNodeForFunctionLike($context->calling_method_id);
@@ -220,12 +229,7 @@ final class CodeUseGraph extends DataFlowGraph
         } elseif ($context?->self) {
             $caller = $this->getNodeForClass($context->self);
         } else {
-            if (!$this->collect_locations) {
-                $location = null;
-            }
-            // Source is not a method or function, so we assume it's a file-level use,
-            // so used
-            $caller = $this->getForGenericUse($location);
+            $caller = $location_caller;
         }
 
         $this->addPath(
@@ -233,6 +237,14 @@ final class CodeUseGraph extends DataFlowGraph
             $node,
             'use',
         );
+
+        if ($location !== null) {
+            $this->addPath(
+                $location_caller,
+                $node,
+                'use',
+            );
+        }
     }
 
     /**

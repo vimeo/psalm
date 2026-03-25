@@ -363,6 +363,7 @@ final class Codebase
     public function addReferenceToProperty(
         string $fq_class_name_lc,
         string $property_name_lc,
+        bool $reading,
         ?CodeLocation $location = null,
         ?Context $context = null,
     ): void {
@@ -370,7 +371,7 @@ final class Codebase
             return;
         }
 
-        $property = $this->code_use_graph->getNodeForProperty($fq_class_name_lc, $property_name_lc);
+        $property = $this->code_use_graph->getNodeForProperty($fq_class_name_lc, $property_name_lc, $reading);
         $this->code_use_graph->addReferenceToNode($property, $context, $location);
     }
 
@@ -1018,6 +1019,25 @@ final class Codebase
         return $this->functions->getStorage($statements_analyzer, strtolower($function_id));
     }
 
+    /**
+     * Whether or not a given property exists
+     */
+    public function propertyExists(
+        string $property_id,
+        bool $read_mode,
+        ?StatementsSource $source = null,
+        ?Context $context = null,
+        ?CodeLocation $code_location = null,
+    ): bool {
+        return $this->properties->propertyExists(
+            $this,
+            $property_id,
+            $read_mode,
+            $source,
+            $context,
+            $code_location,
+        );
+    }
     /**
      * Whether or not a given method exists
      */

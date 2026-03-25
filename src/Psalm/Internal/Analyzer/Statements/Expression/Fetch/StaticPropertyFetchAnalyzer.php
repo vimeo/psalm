@@ -219,7 +219,7 @@ final class StaticPropertyFetchAnalyzer
 
             if ($codebase->collect_references) {
                 // log the appearance
-                $codebase->properties->propertyExists(
+                $codebase->propertyExists(
                     $property_id,
                     true,
                     $statements_analyzer,
@@ -244,7 +244,7 @@ final class StaticPropertyFetchAnalyzer
             return true;
         }
 
-        if (!$codebase->properties->propertyExists(
+        if (!$codebase->propertyExists(
             $property_id,
             true,
             $statements_analyzer,

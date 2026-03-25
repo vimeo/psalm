@@ -120,7 +120,7 @@ final class StaticPropertyAssignmentAnalyzer
                 );
             }
 
-            if (!$codebase->properties->propertyExists($property_id, false, $statements_analyzer, $context)) {
+            if (!$codebase->propertyExists($property_id, false, $statements_analyzer, $context)) {
                 IssueBuffer::maybeAdd(
                     new UndefinedPropertyAssignment(
                         'Static property ' . $property_id . ' is not defined',

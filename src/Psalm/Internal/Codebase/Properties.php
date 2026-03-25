@@ -51,6 +51,7 @@ final class Properties
      * Whether or not a given property exists
      */
     public function propertyExists(
+        Codebase $codebase,
         string $property_id,
         bool $read_mode,
         ?StatementsSource $source = null,
@@ -90,43 +91,19 @@ final class Properties
             && !$context->collect_initializations
             && !$context->collect_mutations
         ) {
-            $codebase = $source->getCodebase();
             $codebase->addReferenceToClass($fq_class_name_lc, $code_location, $context);
         }
 
         if (isset($class_storage->declaring_property_ids[$property_name])) {
             $declaring_property_class = strtolower($class_storage->declaring_property_ids[$property_name]);
 
-            if ($context && $context->calling_method_id) {
-                $source_codebase = $source ? $source->getCodebase() : null;
-
-                if ($source_codebase instanceof Codebase) {
-                    $source_codebase->addReferenceToProperty($declaring_property_class, $property_name, $code_location, $context);
-
-                    if ($read_mode) {
-                        $source_codebase->addReferenceToProperty(
-                            $declaring_property_class,
-                            $property_name,
-                            $code_location,
-                            $context,
-                        );
-                    }
-                }
-            } elseif ($source) {
-                $source_codebase = $source->getCodebase();
-                if ($source_codebase instanceof Codebase) {
-                    $source_codebase->addReferenceToProperty($declaring_property_class, $property_name, $code_location, null);
-
-                    if ($read_mode) {
-                        $source_codebase->addReferenceToProperty(
-                            $declaring_property_class,
-                            $property_name,
-                            $code_location,
-                            null,
-                        );
-                    }
-                }
-            }
+            $codebase->addReferenceToProperty(
+                $declaring_property_class,
+                $property_name,
+                $read_mode,
+                $code_location,
+                $context,
+            );
 
             if ($this->collect_locations && $code_location) {
                 $this->file_reference_provider->addCallingLocationForClassProperty(
@@ -138,28 +115,12 @@ final class Properties
             return true;
         }
 
-        if ($context && $context->calling_method_id) {
-            $source_codebase = $source ? $source->getCodebase() : null;
-            if ($source_codebase instanceof Codebase) {
-                $source_codebase->addReferenceToMissingProperty(
+                $codebase->addReferenceToMissingProperty(
                     $fq_class_name_lc,
                     $property_name,
                     $code_location,
                     $context,
                 );
-            }
-        } elseif ($source) {
-            $source_codebase = $source->getCodebase();
-            if ($source_codebase instanceof Codebase) {
-                $source_codebase->addReferenceToMissingProperty(
-                    $fq_class_name_lc,
-                    $property_name,
-                    $code_location,
-                    null,
-                );
-            }
-        }
-
         return false;
     }
 

@@ -622,13 +622,13 @@ final class ProjectAnalyzer
                     );
                 }
 
-                if (!$this->codebase->properties->propertyExists($source, true)) {
+                if (!$this->codebase->propertyExists($source, true)) {
                     throw new RefactorException(
                         'Property ' . $source . ' does not exist',
                     );
                 }
 
-                if ($this->codebase->properties->propertyExists($destination, true)) {
+                if ($this->codebase->propertyExists($destination, true)) {
                     throw new RefactorException(
                         'Destination property ' . $destination . ' already exists',
                     );

@@ -1135,6 +1135,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             $codebase->addReferenceToProperty(
                 strtolower($property_class_name),
                 $property_name,
+                true,
                 $property->location,
                 $constructor_context,
             );

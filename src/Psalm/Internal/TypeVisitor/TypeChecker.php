@@ -42,7 +42,6 @@ use ReflectionProperty;
 use function array_keys;
 use function array_search;
 use function count;
-use function md5;
 use function str_contains;
 use function str_starts_with;
 use function strtolower;
