@@ -115,12 +115,12 @@ final class Properties
             return true;
         }
 
-                $codebase->addReferenceToMissingProperty(
-                    $fq_class_name_lc,
-                    $property_name,
-                    $code_location,
-                    $context,
-                );
+        $codebase->addReferenceToMissingProperty(
+            $fq_class_name_lc,
+            $property_name,
+            $code_location,
+            $context,
+        );
         return false;
     }
 
