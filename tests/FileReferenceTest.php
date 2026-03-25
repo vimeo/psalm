@@ -201,7 +201,6 @@ final class FileReferenceTest extends TestCase
                         '/var/www/somefile.php' => true,
                         'func foo\b::__construct' => true,
                         'func foo\c::foo' => true,
-                        'generic-use' => true,
                     ],
                     'class foo\c' => [
                         '/var/www/somefile.php' => true,
@@ -209,7 +208,6 @@ final class FileReferenceTest extends TestCase
                     ],
                     'class foo\d' => [
                         '/var/www/somefile.php' => true,
-                        'generic-use' => true,
                     ],
                     'func foo\a::bat' => [
                         '/var/www/somefile.php' => true,
@@ -221,9 +219,6 @@ final class FileReferenceTest extends TestCase
                     ],
                     'func foo\d::__construct' => [
                         '/var/www/somefile.php' => true,
-                    ],
-                    'missing-method foo\a::__callstatic' => [
-                        'generic-use' => true,
                     ],
                     'missing-method foo\a::__construct' => [
                         '/var/www/somefile.php' => true,
@@ -262,13 +257,19 @@ final class FileReferenceTest extends TestCase
                     'class foo\a' => [
                         '/var/www/somefile.php' => true,
                         'func foo\d::bat' => true,
-                        'generic-use' => true,
                     ],
                     'class foo\b' => [
                         '/var/www/somefile.php' => true,
-                        'generic-use' => true,
                     ],
                     'class foo\c' => [
+                        '/var/www/somefile.php' => true,
+                        'func foo\d::bat' => true,
+                    ],
+                    'func foo\a::__construct' => [
+                        '/var/www/somefile.php' => true,
+                        'func foo\d::bat' => true,
+                    ],
+                    'func foo\a::bar' => [
                         '/var/www/somefile.php' => true,
                         'func foo\d::bat' => true,
                     ],
@@ -276,7 +277,7 @@ final class FileReferenceTest extends TestCase
                         '/var/www/somefile.php' => true,
                         'func foo\d::bat' => true,
                     ],
-                    'func foo\a::__construct' => [
+                    'func foo\b::bar' => [
                         '/var/www/somefile.php' => true,
                         'func foo\d::bat' => true,
                     ],
@@ -285,10 +286,6 @@ final class FileReferenceTest extends TestCase
                         'func foo\d::bat' => true,
                     ],
                     'func foo\b::bar' => [
-                        '/var/www/somefile.php' => true,
-                        'func foo\d::bat' => true,
-                    ],
-                    'func foo\a::bar' => [
                         '/var/www/somefile.php' => true,
                         'func foo\d::bat' => true,
                     ],
@@ -319,13 +316,13 @@ final class FileReferenceTest extends TestCase
                     }',
                 [
                     'class foo\a' => [
-                        'func foo\b::__construct' => true,
                         '/var/www/somefile.php' => true,
+                        'func foo\b::__construct' => true,
                         'func foo\c::foo' => true,
                     ],
                     'const foo\a::c' => [
-                        'func foo\b::__construct' => true,
                         '/var/www/somefile.php' => true,
+                        'func foo\b::__construct' => true,
                         'func foo\c::foo' => true,
                     ],
                 ],
@@ -352,13 +349,13 @@ final class FileReferenceTest extends TestCase
                     }',
                 [
                     'class foo\a' => [
-                        'func foo\b::__construct' => true,
                         '/var/www/somefile.php' => true,
+                        'func foo\b::__construct' => true,
                         'func foo\c::foo' => true,
                     ],
                     'property foo\a::fooBar' => [
-                        'func foo\b::__construct' => true,
                         '/var/www/somefile.php' => true,
+                        'func foo\b::__construct' => true,
                         'func foo\c::foo' => true,
                     ],
                 ],
@@ -385,18 +382,18 @@ final class FileReferenceTest extends TestCase
                     }',
                 [
                     'class foo\a' => [
-                        'func foo\b::__construct' => true,
                         '/var/www/somefile.php' => true,
+                        'func foo\b::__construct' => true,
                         'func foo\c::foo' => true,
                     ],
                     'missing-method foo\a::__construct' => [
-                        'func foo\b::__construct' => true,
                         '/var/www/somefile.php' => true,
+                        'func foo\b::__construct' => true,
                         'func foo\c::foo' => true,
                     ],
                     'property foo\a::fooBar' => [
-                        'func foo\b::__construct' => true,
                         '/var/www/somefile.php' => true,
+                        'func foo\b::__construct' => true,
                         'func foo\c::foo' => true,
                     ],
                 ],
@@ -421,14 +418,13 @@ final class FileReferenceTest extends TestCase
                         use T;
                     }',
                 [
-                    'class ns\t' => [
-                        'class ns\c' => true,
-                        '/var/www/somefile.php' => true,
-                    ],
                     'class ns\a' => [
                         '/var/www/somefile.php' => true,
-                        'generic-use' => true,
                         'func ns\c::bar' => true,
+                    ],
+                    'class ns\t' => [
+                        '/var/www/somefile.php' => true,
+                        'class ns\c' => true,
                     ],
                     'func ns\a::foo' => [
                         '/var/www/somefile.php' => true,
