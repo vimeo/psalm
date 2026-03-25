@@ -43,15 +43,10 @@ final class CodeUseGraph extends DataFlowGraph
         string $class_id,
     ): DataFlowNode {
         $id = 'class '.$class_id;
-        $key = $id;
-        if (array_key_exists($key, $this->nodes)) {
-            return $this->nodes[$key];
+        if (array_key_exists($id, $this->nodes)) {
+            return $this->nodes[$id];
         }
-        $this->nodes[$key] = $node = DataFlowNode::make(
-            $key,
-            $id,
-            null,
-        );
+        $this->nodes[$id] = $node = DataFlowNode::make($id, $id, null);
         return $node;
     }
 
@@ -68,17 +63,11 @@ final class CodeUseGraph extends DataFlowGraph
         if (!$reading) {
             return $this->getNodeForClass($class_id);
         }
-
         $id = 'property '.$class_id.'::'.$property_name;
-        $key = $id;
-        if (array_key_exists($key, $this->nodes)) {
-            return $this->nodes[$key];
+        if (array_key_exists($id, $this->nodes)) {
+            return $this->nodes[$id];
         }
-        $this->nodes[$key] = $node = DataFlowNode::make(
-            $key,
-            $id,
-            null,
-        );
+        $this->nodes[$id] = $node = DataFlowNode::make($id, $id, null);
         return $node;
     }
 
@@ -92,17 +81,11 @@ final class CodeUseGraph extends DataFlowGraph
         string $const_name,
     ): DataFlowNode {
         $id = 'const ' . $class_id . '::' . $const_name;
-        $key = $id;
-        if (array_key_exists($key, $this->nodes)) {
-            return $this->nodes[$key];
+        if (array_key_exists($id, $this->nodes)) {
+            return $this->nodes[$id];
         }
 
-        $this->nodes[$key] = $node = DataFlowNode::make(
-            $key,
-            $id,
-            null,
-        );
-
+        $this->nodes[$id] = $node = DataFlowNode::make($id, $id, null);
         return $node;
     }
 
@@ -113,16 +96,11 @@ final class CodeUseGraph extends DataFlowGraph
     public function getNodeForFunctionLike(
         string $func,
     ): DataFlowNode {
-        $id = 'func '.$func;
-        $key = $id;
+        $key = 'func '.$func;
         if (array_key_exists($key, $this->nodes)) {
             return $this->nodes[$key];
         }
-        $this->nodes[$key] = $node = DataFlowNode::make(
-            $key,
-            $id,
-            null,
-        );
+        $this->nodes[$key] = $node = DataFlowNode::make($key, $key, null);
         return $node;
     }
 
@@ -133,17 +111,11 @@ final class CodeUseGraph extends DataFlowGraph
         string $func,
     ): DataFlowNode {
         $id = 'return ' . $func;
-        $key = $id;
-        if (array_key_exists($key, $this->nodes)) {
-            return $this->nodes[$key];
+        if (array_key_exists($id, $this->nodes)) {
+            return $this->nodes[$id];
         }
 
-        $this->nodes[$key] = $node = DataFlowNode::make(
-            $key,
-            $id,
-            null,
-        );
-
+        $this->nodes[$id] = $node = DataFlowNode::make($id, $id, null);
         return $node;
     }
 
@@ -155,17 +127,11 @@ final class CodeUseGraph extends DataFlowGraph
         string $method_id,
     ): DataFlowNode {
         $id = 'missing-method ' . $method_id;
-        $key = $id;
-        if (array_key_exists($key, $this->nodes)) {
-            return $this->nodes[$key];
+        if (array_key_exists($id, $this->nodes)) {
+            return $this->nodes[$id];
         }
 
-        $this->nodes[$key] = $node = DataFlowNode::make(
-            $key,
-            $id,
-            null,
-        );
-
+        $this->nodes[$id] = $node = DataFlowNode::make($id, $id, null);
         return $node;
     }
 
@@ -179,33 +145,26 @@ final class CodeUseGraph extends DataFlowGraph
         string $property_name,
     ): DataFlowNode {
         $id = 'missing-property ' . $class_id . '::' . $property_name;
-        $key = $id;
-        if (array_key_exists($key, $this->nodes)) {
-            return $this->nodes[$key];
+        if (array_key_exists($id, $this->nodes)) {
+            return $this->nodes[$id];
         }
 
-        $this->nodes[$key] = $node = DataFlowNode::make(
-            $key,
-            $id,
-            null,
-        );
-
+        $this->nodes[$id] = $node = DataFlowNode::make($id, $id, null);
         return $node;
     }
-    
+
     /**
      * @psalm-external-mutation-free
      */
     public function getForGenericUse(?CodeLocation $location = null): DataFlowNode
     {
-        $id = 'generic-use';
-        $k = $this->collect_locations && $location !== null ? $id . '@' . $location->getHash() : $id;
+        $k = $this->collect_locations && $location !== null ? $location->file_path : 'generic-use';
         if (array_key_exists($k, $this->nodes)) {
             return $this->nodes[$k];
         }
         $this->nodes[$k] = $node = DataFlowNode::make(
             $k,
-            $id,
+            'generic-use',
             $location,
         );
         return $node;
@@ -331,6 +290,15 @@ final class CodeUseGraph extends DataFlowGraph
     }
 
     /**
+     * @param lowercase-string $method_id
+     * @return array<string, bool>
+     */
+    public function getMissingMethodReferences(string $method_id): array
+    {
+        return $this->getIncomingUseSources('missing-method ' . $method_id);
+    }
+
+    /**
      * @param lowercase-string $class_id
      * @param lowercase-string $property_name
      */
@@ -353,6 +321,36 @@ final class CodeUseGraph extends DataFlowGraph
     {
         return $this->getIncomingUseSources('property '.$class_id.'::'.$property_name);
     }
+
+    /**
+     * @param lowercase-string $class_id
+     * @param lowercase-string $property_name
+     * @return array<string, bool>
+     */
+    public function getMissingPropertyReferences(string $class_id, string $property_name): array
+    {
+        return $this->getIncomingUseSources('missing-property ' . $class_id . '::' . $property_name);
+    }
+
+    /**
+     * @param lowercase-string $class_id
+     * @return array<string, bool>
+     */
+    public function getClassReferences(string $class_id): array
+    {
+        return $this->getIncomingUseSources('class ' . $class_id);
+    }
+
+    /**
+     * @param lowercase-string $class_id
+     * @param lowercase-string $const_name
+     * @return array<string, bool>
+     */
+    public function getClassConstantReferences(string $class_id, string $const_name): array
+    {
+        return $this->getIncomingUseSources('const ' . $class_id . '::' . $const_name);
+    }
+
     /**
      * @param lowercase-string $class_id
      */
