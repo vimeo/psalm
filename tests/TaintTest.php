@@ -173,6 +173,37 @@ final class TaintTest extends TestCase
                         public function exec(string $sql) : void {}
                     }',
             ],
+            'llmPromptWithSafeInput' => [
+                'code' => '<?php
+                    class LlmAgent {
+                        /**
+                         * @psalm-taint-sink llm_prompt $prompt
+                         */
+                        public function prompt(string $prompt): string {
+                            return "";
+                        }
+                    }
+
+                    $agent = new LlmAgent();
+                    $agent->prompt("Summarize this document");',
+            ],
+            'llmPromptEscaped' => [
+                'code' => '<?php
+                    class LlmAgent {
+                        /** @psalm-taint-sink llm_prompt $prompt */
+                        public function prompt(string $prompt): string {
+                            return "";
+                        }
+                    }
+
+                    /** @psalm-taint-escape llm_prompt */
+                    function sanitize_for_llm(string $input): string {
+                        return $input;
+                    }
+
+                    $agent = new LlmAgent();
+                    $agent->prompt(sanitize_for_llm((string) $_GET["question"]));',
+            ],
             'taintedInputToParamButSafe' => [
                 'code' => '<?php
                     class A {
@@ -815,6 +846,49 @@ final class TaintTest extends TestCase
     public function providerInvalidCodeParse(): array
     {
         return [
+            'taintedLlmPromptFromUserInput' => [
+                'code' => '<?php
+                    class LlmAgent {
+                        /** @psalm-taint-sink llm_prompt $prompt */
+                        public function prompt(string $prompt): string {
+                            return "";
+                        }
+                    }
+
+                    $agent = new LlmAgent();
+                    $agent->prompt((string) $_GET["question"]);',
+                'error_message' => 'TaintedLlmPrompt',
+            ],
+            'taintedLlmPromptFromConcatenatedInput' => [
+                'code' => '<?php
+                    class LlmAgent {
+                        /** @psalm-taint-sink llm_prompt $prompt */
+                        public function prompt(string $prompt): string {
+                            return "";
+                        }
+                    }
+
+                    $agent = new LlmAgent();
+                    $agent->prompt("Tell me about " . (string) $_GET["topic"]);',
+                'error_message' => 'TaintedLlmPrompt',
+            ],
+            'taintedLlmPromptThroughFunction' => [
+                'code' => '<?php
+                    class LlmAgent {
+                        /** @psalm-taint-sink llm_prompt $prompt */
+                        public function prompt(string $prompt): string {
+                            return "";
+                        }
+                    }
+
+                    function buildPrompt(string $userInput): string {
+                        return "Tell me about " . $userInput;
+                    }
+
+                    $agent = new LlmAgent();
+                    $agent->prompt(buildPrompt((string) $_GET["topic"]));',
+                'error_message' => 'TaintedLlmPrompt',
+            ],
             'taintedInputFromMethodReturnTypeSimple' => [
                 'code' => '<?php
                     class A {
