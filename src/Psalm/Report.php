@@ -28,6 +28,7 @@ abstract class Report
     final public const TYPE_XML = 'xml';
     final public const TYPE_JUNIT = 'junit';
     final public const TYPE_CHECKSTYLE = 'checkstyle';
+    final public const TYPE_TABLE = 'table';
     final public const TYPE_TEXT = 'text';
     final public const TYPE_GITHUB_ACTIONS = 'github';
     final public const TYPE_PHP_STORM = 'phpstorm';
