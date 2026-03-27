@@ -84,6 +84,8 @@ final class MethodCallReturnTypeFetcher
             return Type::getClosure();
         }
 
+        $return_type_candidate = null;
+
         if ($codebase->methods->return_type_provider->has($premixin_method_id->fq_class_name)) {
             $return_type_candidate = $codebase->methods->return_type_provider->getReturnType(
                 $statements_analyzer,
@@ -94,13 +96,10 @@ final class MethodCallReturnTypeFetcher
                 new CodeLocation($statements_analyzer->getSource(), $stmt->name),
                 $lhs_type_part instanceof TGenericObject ? $lhs_type_part->type_params : null,
             );
-
-            if ($return_type_candidate) {
-                return $return_type_candidate;
-            }
         }
 
-        if ($premixin_method_id->method_name === 'getcode'
+        if (!$return_type_candidate
+            && $premixin_method_id->method_name === 'getcode'
             && $premixin_method_id->fq_class_name !== Exception::class
             && $premixin_method_id->fq_class_name !== RuntimeException::class
             && $premixin_method_id->fq_class_name !== PDOException::class
@@ -109,10 +108,13 @@ final class MethodCallReturnTypeFetcher
                 || $codebase->interfaceExtends($premixin_method_id->fq_class_name, Throwable::class)
             )
         ) {
-            return Type::getInt();
+            $return_type_candidate = Type::getInt();
         }
 
-        if ($declaring_method_id && $declaring_method_id !== $method_id) {
+        if (!$return_type_candidate
+            && $declaring_method_id
+            && $declaring_method_id !== $method_id
+        ) {
             $declaring_fq_class_name = $declaring_method_id->fq_class_name;
             $declaring_method_name = $declaring_method_id->method_name;
 
@@ -128,72 +130,91 @@ final class MethodCallReturnTypeFetcher
                     $fq_class_name,
                     $method_name,
                 );
-
-                if ($return_type_candidate) {
-                    return $return_type_candidate;
-                }
             }
         }
 
-        if (InternalCallMapHandler::inCallMap((string) $call_map_id)) {
-            if (($template_result->lower_bounds || $class_storage->stubbed)
-                && ($method_storage = ($class_storage->methods[$method_id->method_name] ?? null))
-                && $method_storage->return_type
-            ) {
-                $return_type_candidate = $method_storage->return_type;
+        if (!$return_type_candidate) {
+            if (InternalCallMapHandler::inCallMap((string) $call_map_id)) {
+                if (($template_result->lower_bounds || $class_storage->stubbed)
+                    && ($method_storage = ($class_storage->methods[$method_id->method_name] ?? null))
+                    && $method_storage->return_type
+                ) {
+                    $return_type_candidate = $method_storage->return_type;
 
-                $return_type_candidate = self::replaceTemplateTypes(
-                    $return_type_candidate,
-                    $template_result,
-                    $method_id,
-                    count($stmt->getArgs()),
-                    $codebase,
-                );
-            } else {
-                $callmap_callables = InternalCallMapHandler::getCallablesFromCallMap((string) $call_map_id);
+                    $return_type_candidate = self::replaceTemplateTypes(
+                        $return_type_candidate,
+                        $template_result,
+                        $method_id,
+                        count($stmt->getArgs()),
+                        $codebase,
+                    );
+                } else {
+                    $callmap_callables = InternalCallMapHandler::getCallablesFromCallMap((string) $call_map_id);
 
-                if (!$callmap_callables || $callmap_callables[0]->return_type === null) {
-                    throw new UnexpectedValueException('Shouldn’t get here');
+                    if (!$callmap_callables || $callmap_callables[0]->return_type === null) {
+                        throw new UnexpectedValueException('Shouldn’t get here');
+                    }
+
+                    $return_type_candidate = $callmap_callables[0]->return_type;
                 }
 
-                $return_type_candidate = $callmap_callables[0]->return_type;
-            }
+                if ($return_type_candidate->isFalsable()) {
+                    $return_type_candidate = $return_type_candidate->setProperties([
+                        'ignore_falsable_issues' => true,
+                    ]);
+                }
 
-            if ($return_type_candidate->isFalsable()) {
-                $return_type_candidate = $return_type_candidate->setProperties([
-                    'ignore_falsable_issues' => true,
-                ]);
-            }
+                $return_type_candidate = TypeExpander::expandUnion(
+                    $codebase,
+                    $return_type_candidate,
+                    $fq_class_name,
+                    $static_type,
+                    $class_storage->parent_class,
+                    true,
+                    false,
+                    false,
+                    true,
+                );
+            } else {
+                $self_fq_class_name = $fq_class_name;
 
-            $return_type_candidate = TypeExpander::expandUnion(
-                $codebase,
-                $return_type_candidate,
-                $fq_class_name,
-                $static_type,
-                $class_storage->parent_class,
-                true,
-                false,
-                false,
-                true,
-            );
-        } else {
-            $self_fq_class_name = $fq_class_name;
+                $return_type_candidate = $codebase->methods->getMethodReturnType(
+                    $method_id,
+                    $self_fq_class_name,
+                    $statements_analyzer,
+                    $args,
+                    $template_result,
+                );
 
-            $return_type_candidate = $codebase->methods->getMethodReturnType(
-                $method_id,
-                $self_fq_class_name,
-                $statements_analyzer,
-                $args,
-                $template_result,
-            );
+                if ($return_type_candidate) {
+                    if ($template_result->lower_bounds) {
+                        $return_type_candidate = TypeExpander::expandUnion(
+                            $codebase,
+                            $return_type_candidate,
+                            $fq_class_name,
+                            null,
+                            $class_storage->parent_class,
+                            true,
+                            false,
+                            $static_type instanceof TNamedObject
+                            && $codebase->classlike_storage_provider->get($static_type->value)->final,
+                            true,
+                        );
+                    }
 
-            if ($return_type_candidate) {
-                if ($template_result->lower_bounds) {
+                    $return_type_candidate = self::replaceTemplateTypes(
+                        $return_type_candidate,
+                        $template_result,
+                        $method_id,
+                        count($stmt->getArgs()),
+                        $codebase,
+                    );
+
                     $return_type_candidate = TypeExpander::expandUnion(
                         $codebase,
                         $return_type_candidate,
-                        $fq_class_name,
-                        null,
+                        $self_fq_class_name,
+                        $static_type,
                         $class_storage->parent_class,
                         true,
                         false,
@@ -201,58 +222,37 @@ final class MethodCallReturnTypeFetcher
                         && $codebase->classlike_storage_provider->get($static_type->value)->final,
                         true,
                     );
-                }
 
-                $return_type_candidate = self::replaceTemplateTypes(
-                    $return_type_candidate,
-                    $template_result,
-                    $method_id,
-                    count($stmt->getArgs()),
-                    $codebase,
-                );
-
-                $return_type_candidate = TypeExpander::expandUnion(
-                    $codebase,
-                    $return_type_candidate,
-                    $self_fq_class_name,
-                    $static_type,
-                    $class_storage->parent_class,
-                    true,
-                    false,
-                    $static_type instanceof TNamedObject
-                    && $codebase->classlike_storage_provider->get($static_type->value)->final,
-                    true,
-                );
-
-                $return_type_location = $codebase->methods->getMethodReturnTypeLocation(
-                    $method_id,
-                    $secondary_return_type_location,
-                );
-
-                if ($secondary_return_type_location) {
-                    $return_type_location = $secondary_return_type_location;
-                }
-
-                $config = Config::getInstance();
-
-                // only check the type locally if it's defined externally
-                if ($return_type_location && !$config->isInProjectDirs($return_type_location->file_path)) {
-                    /** @psalm-suppress UnusedMethodCall Actually generates issues */
-                    $return_type_candidate->check(
-                        $statements_analyzer,
-                        new CodeLocation($statements_analyzer, $stmt),
-                        $statements_analyzer->getSuppressedIssues(),
-                        $context->phantom_classes,
-                        true,
-                        false,
-                        false,
-                        $context->calling_method_id,
+                    $return_type_location = $codebase->methods->getMethodReturnTypeLocation(
+                        $method_id,
+                        $secondary_return_type_location,
                     );
+
+                    if ($secondary_return_type_location) {
+                        $return_type_location = $secondary_return_type_location;
+                    }
+
+                    $config = Config::getInstance();
+
+                    // only check the type locally if it's defined externally
+                    if ($return_type_location && !$config->isInProjectDirs($return_type_location->file_path)) {
+                        /** @psalm-suppress UnusedMethodCall Actually generates issues */
+                        $return_type_candidate->check(
+                            $statements_analyzer,
+                            new CodeLocation($statements_analyzer, $stmt),
+                            $statements_analyzer->getSuppressedIssues(),
+                            $context->phantom_classes,
+                            true,
+                            false,
+                            false,
+                            $context->calling_method_id,
+                        );
+                    }
+                } else {
+                    $result->returns_by_ref =
+                        $result->returns_by_ref
+                        || $codebase->methods->getMethodReturnsByRef($method_id);
                 }
-            } else {
-                $result->returns_by_ref =
-                    $result->returns_by_ref
-                    || $codebase->methods->getMethodReturnsByRef($method_id);
             }
         }
 
