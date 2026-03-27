@@ -4,15 +4,11 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
-use Override;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\IssueBuffer;
-use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
-use Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface;
-use Psalm\Type;
-use Psalm\Type\Union;
+use Psalm\Test\Config\Plugin\Hook\TaintTestMethodReturnTypeProvider;
 
 use function array_map;
 use function preg_quote;
@@ -73,6 +69,8 @@ final class TaintTest extends TestCase
 
     public function testTaintSourcePreservedWhenMethodReturnTypeProviderActive(): void
     {
+        require_once __DIR__ . '/Config/Plugin/Hook/TaintTestMethodReturnTypeProvider.php';
+
         $this->expectException(CodeException::class);
         $this->expectExceptionMessageMatches('/TaintedHtml/');
 
@@ -2769,30 +2767,5 @@ final class TaintTest extends TestCase
                 ],
             ],
         ];
-    }
-}
-
-/**
- * @psalm-suppress UnusedClass
- */
-final class TaintTestMethodReturnTypeProvider implements MethodReturnTypeProviderInterface
-{
-    /**
-     * @return list<lowercase-string>
-     */
-    #[Override]
-    public static function getClassLikeNames(): array
-    {
-        return ['myservice'];
-    }
-
-    #[Override]
-    public static function getMethodReturnType(MethodReturnTypeProviderEvent $event): ?Union
-    {
-        if ($event->getMethodNameLowercase() === 'getuserinput') {
-            return Type::getString();
-        }
-
-        return null;
     }
 }
