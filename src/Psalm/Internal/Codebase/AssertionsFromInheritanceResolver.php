@@ -15,9 +15,13 @@ use function strtolower;
 
 /**
  * @internal
+ * @psalm-external-mutation-free
  */
 final class AssertionsFromInheritanceResolver
 {
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         private readonly Codebase $codebase,
     ) {
@@ -25,6 +29,7 @@ final class AssertionsFromInheritanceResolver
 
     /**
      * @return array<int,Possibilities>
+     * @psalm-external-mutation-free
      */
     public function resolve(
         MethodStorage $method_storage,

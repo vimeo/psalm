@@ -10,7 +10,6 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Type;
 use Psalm\Type\Atomic\TFloat;
@@ -118,13 +117,13 @@ final class UnaryPlusMinusAnalyzer
         string $type,
     ): void {
         $result_type = $statements_analyzer->node_data->getType($stmt);
-        if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph && $result_type) {
+        if ($statements_analyzer->variable_use_graph && $result_type) {
             $var_location = new CodeLocation($statements_analyzer, $stmt);
 
             $stmt_value_type = $statements_analyzer->node_data->getType($value);
 
             $new_parent_node = DataFlowNode::getForAssignment($type, $var_location);
-            $statements_analyzer->data_flow_graph->addNode($new_parent_node);
+            $statements_analyzer->variable_use_graph->addNode($new_parent_node);
             $statements_analyzer->node_data->setType(
                 $stmt,
                 $result_type->setParentNodes([
@@ -134,7 +133,7 @@ final class UnaryPlusMinusAnalyzer
 
             if ($stmt_value_type && $stmt_value_type->parent_nodes) {
                 foreach ($stmt_value_type->parent_nodes as $parent_node) {
-                    $statements_analyzer->data_flow_graph->addPath($parent_node, $new_parent_node, $type);
+                    $statements_analyzer->variable_use_graph->addPath($parent_node, $new_parent_node, $type);
                 }
             }
         }

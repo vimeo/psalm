@@ -13,6 +13,9 @@ use function htmlspecialchars;
 use const ENT_QUOTES;
 use const ENT_XML1;
 
+/**
+ * @psalm-external-mutation-free
+ */
 abstract class Report
 {
     final public const TYPE_COMPACT = 'compact';
@@ -25,6 +28,7 @@ abstract class Report
     final public const TYPE_XML = 'xml';
     final public const TYPE_JUNIT = 'junit';
     final public const TYPE_CHECKSTYLE = 'checkstyle';
+    final public const TYPE_TABLE = 'table';
     final public const TYPE_TEXT = 'text';
     final public const TYPE_GITHUB_ACTIONS = 'github';
     final public const TYPE_PHP_STORM = 'phpstorm';
@@ -51,6 +55,7 @@ abstract class Report
     /**
      * @param array<int, IssueData> $issues_data
      * @param array<string, int> $fixable_issue_counts
+     * @psalm-mutation-free
      */
     public function __construct(
         array $issues_data,
@@ -75,6 +80,9 @@ abstract class Report
         $this->in_ci = $report_options->in_ci;
     }
 
+    /**
+     * @psalm-pure
+     */
     protected function xmlEncode(string $data): string
     {
         return htmlspecialchars($data, ENT_XML1 | ENT_QUOTES);
@@ -84,6 +92,7 @@ abstract class Report
 
     /**
      * @return array<string, self::TYPE_*>
+     * @psalm-pure
      */
     public static function getMapping(): array
     {

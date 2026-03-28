@@ -65,9 +65,9 @@ trait UnionTrait
     /**
      * Constructs a Union instance
      *
-     * @psalm-external-mutation-free
      * @param non-empty-array<Atomic>     $types
      * @param TProperties $properties
+     * @psalm-mutation-free
      */
     public function __construct(array $types, array $properties = [])
     {
@@ -1340,6 +1340,7 @@ trait UnionTrait
     /**
      * @param  array<string>    $suppressed_issues
      * @param  array<string, bool> $phantom_classes
+     * @param  ?lowercase-string $calling_method_id
      */
     public function check(
         StatementsSource $source,
@@ -1599,6 +1600,7 @@ trait UnionTrait
     }
 
     /**
+     * @psalm-api
      * @psalm-mutation-free
      */
     public function isEmptyArray(): bool
@@ -1617,6 +1619,20 @@ trait UnionTrait
         return $this->types === [];
     }
 
+    public function getTaintsToRemove(): int
+    {
+        if (!$this->isSingle()) {
+            return 0;
+        }
+        // numeric types can't be tainted (except sleep & custom taints), neither can bool
+        if ($this->isInt() || $this->isFloat()) {
+            return TaintKind::ALL_INPUT & ~TaintKind::NUMERIC_ONLY;
+        }
+        if ($this->isBool()) {
+            return TaintKind::ALL_INPUT & ~TaintKind::BOOL_ONLY;
+        }
+        return 0;
+    }
     #[Override]
     public function visit(TypeVisitor $visitor): bool
     {

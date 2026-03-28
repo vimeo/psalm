@@ -45,6 +45,9 @@ class TArray extends Atomic
         parent::__construct($from_docblock);
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getKey(bool $include_extra = true): string
     {
@@ -166,6 +169,9 @@ class TArray extends Atomic
         return $this;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     protected function getChildNodeKeys(): array
     {

@@ -23,6 +23,9 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
      */
     private array $assignment_map = [];
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(protected ?string $this_class_name)
     {
     }

@@ -14,23 +14,35 @@ use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 final class ArrayKeyDoesNotExist extends Assertion
 {
     use UnserializeMemoryUsageSuppressionTrait;
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getNegation(): Assertion
     {
         return new ArrayKeyExists();
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function isNegation(): bool
     {
         return true;
     }
 
+    /**
+     * @psalm-pure
+     */
     public function __toString(): string
     {
         return '!array-key-exists';
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function isNegationOf(Assertion $assertion): bool
     {

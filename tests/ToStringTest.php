@@ -13,6 +13,9 @@ final class ToStringTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerValidCodeParse(): iterable
     {
@@ -211,6 +214,9 @@ final class ToStringTest extends TestCase
         ];
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerInvalidCodeParse(): iterable
     {
@@ -262,6 +268,7 @@ final class ToStringTest extends TestCase
                         }
                     }
 
+                    /** @psalm-mutation-free */
                     function fooFoo(string $b): void {}
                     fooFoo(new A());',
                 'error_message' => 'InvalidArgument',
@@ -275,6 +282,7 @@ final class ToStringTest extends TestCase
                         }
                     }
 
+                    /** @psalm-mutation-free */
                     function fooFoo(string $b): void {}
                     fooFoo(new A());',
                 'error_message' => 'ImplicitToStringCast',
@@ -288,7 +296,10 @@ final class ToStringTest extends TestCase
                         }
                     }
 
-                    /** @param string|int $b */
+                    /** 
+                     * @param string|int $b
+                     * @psalm-mutation-free 
+                     */
                     function fooFoo($b): void {}
                     fooFoo(new A());',
                 'error_message' => 'ImplicitToStringCast',
@@ -299,6 +310,7 @@ final class ToStringTest extends TestCase
                         public function __toString();
                     }
 
+                    /** @psalm-mutation-free */
                     function takesString(string $str): void { }
 
                     function takesI(I $i): void
@@ -309,6 +321,7 @@ final class ToStringTest extends TestCase
             ],
             'resourceCannotBeCoercedToString' => [
                 'code' => '<?php
+                    /** @psalm-mutation-free */
                     function takesString(string $s) : void {}
                     $a = fopen("php://memory", "r");
                     takesString($a);',
@@ -388,6 +401,7 @@ final class ToStringTest extends TestCase
                     interface Stringable {
                         function __toString() {}
                     }
+                    /** @psalm-mutation-free */
                     function foo(Stringable $s): void {}
 
                     class Bar {

@@ -20,6 +20,9 @@ final class LegacyProgress implements ProgressInterface
     private string $status = self::STATUS_INACTIVE;
     private ?string $title = null;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         private readonly ClientHandler $handler,
     ) {

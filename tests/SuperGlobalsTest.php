@@ -13,6 +13,9 @@ final class SuperGlobalsTest extends TestCase
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
 
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public function providerValidCodeParse(): iterable
     {
@@ -39,6 +42,9 @@ final class SuperGlobalsTest extends TestCase
         ];
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public function providerInvalidCodeParse(): iterable
     {

@@ -115,6 +115,10 @@ final class PsalmEndToEndTest extends TestCase
     {
         $this->runPsalmInit();
 
+        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
+        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
+        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
+
         $this->assertStringContainsString(
             'No errors found!',
             $this->runPsalm(['--alter', '--issues=all'], self::$tmpDir, false, true)['STDOUT'],
@@ -126,6 +130,10 @@ final class PsalmEndToEndTest extends TestCase
     public function testPsalter(): void
     {
         $this->runPsalmInit();
+        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
+        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
+        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
+
         (new Process([PHP_BINARY, $this->psalter, '--alter', '--issues=InvalidReturnType'], self::$tmpDir))->mustRun();
         $this->assertSame(0, $this->runPsalm([], self::$tmpDir)['CODE']);
     }
@@ -133,6 +141,10 @@ final class PsalmEndToEndTest extends TestCase
     public function testPsalm(): void
     {
         $this->runPsalmInit(1);
+        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
+        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
+        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
+
         $result = $this->runPsalm([], self::$tmpDir, true);
         $this->assertStringContainsString(
             'Target PHP version: 7.1 (inferred from composer.json)',
@@ -170,6 +182,10 @@ final class PsalmEndToEndTest extends TestCase
         copy(__DIR__ . '/../fixtures/DummyProjectWithErrors/diff_composer.lock', self::$tmpDir . '/composer.lock');
 
         $this->runPsalmInit(1);
+        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
+        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
+        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
+
         $result = $this->runPsalm(['--diff', '-m'], self::$tmpDir, true);
         $this->assertStringContainsString('InvalidReturnType', $result['STDOUT']);
         $this->assertStringContainsString('InvalidReturnStatement', $result['STDOUT']);
@@ -197,7 +213,7 @@ final class PsalmEndToEndTest extends TestCase
 
         $this->assertStringContainsString('TaintedHtml', $result['STDOUT']);
         $this->assertStringContainsString('TaintedTextWithQuotes', $result['STDOUT']);
-        $this->assertStringContainsString('2 errors', $result['STDOUT']);
+        $this->assertStringContainsString('4 errors', $result['STDOUT']);
         $this->assertSame(2, $result['CODE']);
     }
 
@@ -223,7 +239,7 @@ final class PsalmEndToEndTest extends TestCase
 
         $this->assertStringContainsString('TaintedHtml', $result['STDOUT']);
         $this->assertStringContainsString('TaintedTextWithQuotes', $result['STDOUT']);
-        $this->assertStringContainsString('2 errors', $result['STDOUT']);
+        $this->assertStringContainsString('4 errors', $result['STDOUT']);
         $this->assertSame(2, $result['CODE']);
     }
 
@@ -269,7 +285,7 @@ final class PsalmEndToEndTest extends TestCase
 
         $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
         assert($psalmXml !== false);
-        $psalmXml = (string) preg_replace('/findUnusedCode="(true|false)"/', '', $psalmXml, 1);
+        $psalmXml = (string) preg_replace('/findUnusedCode="(true|false)"/', 'runTaintAnalysis="false"', $psalmXml, 1);
         file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
 
         $result = $this->runPsalm(['--no-progress'], self::$tmpDir);

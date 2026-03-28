@@ -13,11 +13,15 @@ use Psalm\FileManipulation;
 use Psalm\StatementsSource;
 use Psalm\Type\Union;
 
+/**
+ * @psalm-external-mutation-free
+ */
 final class AfterMethodCallAnalysisEvent
 {
     /**
-     * @param  FileManipulation[] $file_replacements
+     * @param FileManipulation[] $file_replacements
      * @internal
+     * @psalm-mutation-free
      */
     public function __construct(
         private readonly MethodCall|StaticCall $expr,
@@ -34,37 +38,56 @@ final class AfterMethodCallAnalysisEvent
 
     /**
      * @return MethodCall|StaticCall
+     * @psalm-mutation-free
      */
     public function getExpr(): Expr
     {
         return $this->expr;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getMethodId(): string
     {
         return $this->method_id;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getAppearingMethodId(): string
     {
         return $this->appearing_method_id;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getDeclaringMethodId(): string
     {
         return $this->declaring_method_id;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getContext(): Context
     {
         return $this->context;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getStatementsSource(): StatementsSource
     {
         return $this->statements_source;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getCodebase(): Codebase
     {
         return $this->codebase;
@@ -72,12 +95,16 @@ final class AfterMethodCallAnalysisEvent
 
     /**
      * @return FileManipulation[]
+     * @psalm-mutation-free
      */
     public function getFileReplacements(): array
     {
         return $this->file_replacements;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getReturnTypeCandidate(): ?Union
     {
         return $this->return_type_candidate;
@@ -85,12 +112,16 @@ final class AfterMethodCallAnalysisEvent
 
     /**
      * @param FileManipulation[] $file_replacements
+     * @psalm-external-mutation-free
      */
     public function setFileReplacements(array $file_replacements): void
     {
         $this->file_replacements = $file_replacements;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function setReturnTypeCandidate(?Union $return_type_candidate): void
     {
         $this->return_type_candidate = $return_type_candidate;

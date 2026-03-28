@@ -45,12 +45,18 @@ final class TDependentGetClass extends TString implements DependentType
         return $this->typeof;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getReplacement(): TClassString
     {
         return new TClassString();
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {

@@ -14,7 +14,8 @@ use Override;
 class TString extends Scalar
 {
     /**
-     * @param  array<lowercase-string, string> $aliased_classes
+     * @param array<lowercase-string, string> $aliased_classes
+     * @psalm-pure
      */
     #[Override]
     public function toPhpString(
@@ -26,6 +27,9 @@ class TString extends Scalar
         return $analysis_php_version_id >= 7_00_00 ? 'string' : null;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getKey(bool $include_extra = true): string
     {

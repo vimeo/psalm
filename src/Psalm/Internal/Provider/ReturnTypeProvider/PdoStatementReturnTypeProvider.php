@@ -22,6 +22,9 @@ use Psalm\Type\Union;
  */
 final class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterface
 {
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public static function getClassLikeNames(): array
     {

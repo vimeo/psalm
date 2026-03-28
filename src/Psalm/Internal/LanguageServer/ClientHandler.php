@@ -17,6 +17,9 @@ final class ClientHandler
 {
     public IdGenerator $idGenerator;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(public ProtocolReader $protocolReader, public ProtocolWriter $protocolWriter)
     {
         $this->idGenerator = new IdGenerator;

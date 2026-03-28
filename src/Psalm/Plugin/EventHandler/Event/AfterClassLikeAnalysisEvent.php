@@ -10,13 +10,17 @@ use Psalm\FileManipulation;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 
+/**
+ * @psalm-external-mutation-free
+ */
 final class AfterClassLikeAnalysisEvent
 {
     /**
      * Called after a statement has been checked
      *
-     * @param  FileManipulation[]   $file_replacements
+     * @param FileManipulation[]   $file_replacements
      * @internal
+     * @psalm-mutation-free
      */
     public function __construct(
         private readonly Node\Stmt\ClassLike $stmt,
@@ -27,21 +31,33 @@ final class AfterClassLikeAnalysisEvent
     ) {
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getStmt(): Node\Stmt\ClassLike
     {
         return $this->stmt;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getClasslikeStorage(): ClassLikeStorage
     {
         return $this->classlike_storage;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getStatementsSource(): StatementsSource
     {
         return $this->statements_source;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getCodebase(): Codebase
     {
         return $this->codebase;
@@ -49,6 +65,7 @@ final class AfterClassLikeAnalysisEvent
 
     /**
      * @return FileManipulation[]
+     * @psalm-mutation-free
      */
     public function getFileReplacements(): array
     {
@@ -57,6 +74,7 @@ final class AfterClassLikeAnalysisEvent
 
     /**
      * @param FileManipulation[] $file_replacements
+     * @psalm-external-mutation-free
      */
     public function setFileReplacements(array $file_replacements): void
     {

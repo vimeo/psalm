@@ -17,6 +17,9 @@ final class FunctionCallTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerValidCodeParse(): iterable
     {
@@ -687,7 +690,7 @@ final class FunctionCallTest extends TestCase
                     /** @var string $string */
                     $elements = explode(" ", $string, -5);',
                 'assertions' => [
-                    '$elements' => 'list<never>',
+                    '$elements' => 'array<never, never>',
                 ],
             ],
             'explodeWithDynamicLimit' => [
@@ -742,7 +745,7 @@ final class FunctionCallTest extends TestCase
                      */
                     $elements = explode($delim, $string, -5);',
                 'assertions' => [
-                    '$elements' => 'list<never>',
+                    '$elements' => 'array<never, never>',
                 ],
             ],
             'explodeWithDynamicDelimiterAndLimit' => [
@@ -2466,9 +2469,19 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '7.0',
             ],
+            'unserializeWithMaxDepthOption' => [
+                'code' => '<?php
+                    unserialize("", ["allowed_classes" => false, "max_depth" => 1]);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
         ];
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerInvalidCodeParse(): iterable
     {
@@ -3211,6 +3224,13 @@ final class FunctionCallTest extends TestCase
                     extract($a);
                     takesInt($foo);',
                 'error_message' => 'InvalidScalarArgument',
+            ],
+            'unserializeWithInvalidMaxDepthType' => [
+                'code' => '<?php
+                    unserialize("", ["max_depth" => "foo"]);',
+                'error_message' => 'InvalidScalarArgument',
+                'ignored_issues' => [],
+                'php_version' => '7.4',
             ],
         ];
     }

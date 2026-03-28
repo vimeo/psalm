@@ -15,6 +15,9 @@ final class TraitTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerValidCodeParse(): iterable
     {
@@ -1042,6 +1045,9 @@ final class TraitTest extends TestCase
         ];
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerInvalidCodeParse(): iterable
     {
@@ -1068,6 +1074,24 @@ final class TraitTest extends TestCase
                 'code' => '<?php
                     class B {
                         use A;
+                    }',
+                'error_message' => 'UndefinedTrait',
+            ],
+            'isClassNoTrait' => [
+                'code' => '<?php
+                    class B {}
+
+                    class A {
+                        use B;
+                    }',
+                'error_message' => 'UndefinedTrait',
+            ],
+            'isInterfaceNoTrait' => [
+                'code' => '<?php
+                    Interface B {}
+
+                    class A {
+                        use B;
                     }',
                 'error_message' => 'UndefinedTrait',
             ],
@@ -1151,6 +1175,22 @@ final class TraitTest extends TestCase
                         }
                     }',
                 'error_message' => 'MethodSignatureMismatch',
+            ],
+            'dontReportImplementerErrorOnAbstractTraitMethodTwice' => [
+                'code' => '<?php
+                    trait B {
+                        abstract public function run();
+                    }
+
+                    final class A {
+                        use B;
+
+                        #[Override]
+                        public function run(string $foo): string {
+                            return $foo;
+                        }
+                    }',
+                'error_message' => 'MethodSignatureMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:',
             ],
             'missingTraitPropertyType' => [
                 'code' => '<?php

@@ -11,6 +11,9 @@ final class PossiblyUnusedProperty extends PropertyIssue
     public const ERROR_LEVEL = -2;
     public const SHORTCODE = 149;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         string $message,
         CodeLocation $code_location,

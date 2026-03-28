@@ -11,6 +11,9 @@ use Psalm\Internal\Type\ParseTree;
  */
 final class ConditionalTree extends ParseTree
 {
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(public TemplateIsTree $condition, ?ParseTree $parent = null)
     {
         $this->parent = $parent;

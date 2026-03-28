@@ -428,7 +428,7 @@ final class IfElseAnalyzer
                             $codebase,
                         );
 
-                        if (!$combined_type->equals($context->vars_in_scope[$var_id])) {
+                        if (!$combined_type->equals($context->vars_in_scope[$var_id], true, false)) {
                             $context->removeDescendents($var_id, $combined_type);
                         }
 

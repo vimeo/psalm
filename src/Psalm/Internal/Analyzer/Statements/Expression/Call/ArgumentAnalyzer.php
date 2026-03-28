@@ -19,10 +19,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
-use Psalm\Internal\Codebase\TaintFlowGraph;
-use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
-use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
@@ -65,7 +62,6 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_diff;
 use function array_filter;
 use function count;
 use function explode;
@@ -781,11 +777,11 @@ final class ArgumentAnalyzer
 
             $origin_locations = [];
 
-            if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
+            if ($statements_analyzer->variable_use_graph) {
                 foreach ($input_type->parent_nodes as $parent_node) {
                     $origin_locations = [
                         ...$origin_locations,
-                        ...$statements_analyzer->data_flow_graph->getOriginLocations($parent_node),
+                        ...$statements_analyzer->variable_use_graph->getOriginLocations($parent_node),
                     ];
                 }
             }
@@ -895,6 +891,7 @@ final class ArgumentAnalyzer
                     $atomic_type,
                     $container_callable_type,
                     $statements_analyzer,
+                    $context,
                     true,
                 );
 
@@ -920,7 +917,7 @@ final class ArgumentAnalyzer
                     }
 
                     if ($potential_method_id && $potential_method_id !== 'not-callable') {
-                        $codebase->methods->methodExists(
+                        $codebase->methodExists(
                             $potential_method_id,
                             $context->calling_method_id,
                             $arg_location,
@@ -998,7 +995,7 @@ final class ArgumentAnalyzer
 
             $param_types_without_callable = array_filter(
                 $param_type->getAtomicTypes(),
-                static fn(Atomic $atomic) => !$atomic instanceof Atomic\TCallableInterface,
+                static fn(Atomic $atomic) => !$atomic->isCallableType(),
             );
             $param_type_without_callable = [] !== $param_types_without_callable
                 ? new Union($param_types_without_callable)
@@ -1110,7 +1107,7 @@ final class ArgumentAnalyzer
             }
 
             foreach ($potential_method_ids as $potential_method_id) {
-                $codebase->methods->methodExists(
+                $codebase->methodExists(
                     $potential_method_id,
                     $context->calling_method_id,
                     $arg_location,
@@ -1141,11 +1138,11 @@ final class ArgumentAnalyzer
             if ($union_comparison_results->type_coerced_from_mixed) {
                 $origin_locations = [];
 
-                if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
+                if ($statements_analyzer->variable_use_graph) {
                     foreach ($input_type->parent_nodes as $parent_node) {
                         $origin_locations = [
                             ...$origin_locations,
-                            ...$statements_analyzer->data_flow_graph->getOriginLocations($parent_node),
+                            ...$statements_analyzer->variable_use_graph->getOriginLocations($parent_node),
                         ];
                     }
                 }
@@ -1445,8 +1442,7 @@ final class ArgumentAnalyzer
                     $statements_analyzer,
                     $input_expr->value,
                     $arg_location,
-                    $context->self,
-                    $context->calling_method_id,
+                    $context,
                     $statements_analyzer->getSuppressedIssues(),
                     new ClassLikeNameOptions(true),
                 ) === false
@@ -1464,8 +1460,7 @@ final class ArgumentAnalyzer
                                     $statements_analyzer,
                                     $item->value->value,
                                     $arg_location,
-                                    $context->self,
-                                    $context->calling_method_id,
+                                    $context,
                                     $statements_analyzer->getSuppressedIssues(),
                                     new ClassLikeNameOptions(true),
                                 ) === false
@@ -1545,8 +1540,7 @@ final class ArgumentAnalyzer
                                     $statements_analyzer,
                                     $callable_fq_class_name,
                                     $arg_location,
-                                    $context->self,
-                                    $context->calling_method_id,
+                                    $context,
                                     $statements_analyzer->getSuppressedIssues(),
                                     new ClassLikeNameOptions(true),
                                 ) === false
@@ -1564,12 +1558,16 @@ final class ArgumentAnalyzer
                                     '__call',
                                 );
 
-                                if (!$codebase->classOrInterfaceOrEnumExists($callable_fq_class_name)) {
+                                if (!$codebase->classOrInterfaceOrEnumExists(
+                                    $callable_fq_class_name,
+                                    null,
+                                    $context,
+                                )) {
                                     return;
                                 }
 
-                                if (!$codebase->methods->methodExists($function_id_part)
-                                    && !$codebase->methods->methodExists($call_method_id)
+                                if (!$codebase->methodExists($function_id_part)
+                                    && !$codebase->methodExists($call_method_id)
                                 ) {
                                     $non_existent_method_ids[] = $function_id_part;
                                 }
@@ -1751,33 +1749,17 @@ final class ArgumentAnalyzer
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
-        if (!$statements_analyzer->data_flow_graph
-            || ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
-                && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues()))
-        ) {
+        if (!$graph = $statements_analyzer->getDataFlowGraphWithSuppressed()) {
             return;
         }
+        $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
 
-        // literal data can’t be tainted
-        if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
-            && $input_type->isSingle()
-            && $input_type->hasLiteralValue()
-        ) {
-            return;
-        }
-
-        // numeric types can't be tainted, neither can bool
-        if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
-            && $input_type->isSingle()
-            && ($input_type->isInt() || $input_type->isFloat() || $input_type->isBool())
-        ) {
-            return;
-        }
+        $removed_taints = $taint_flow_graph ? $input_type->getTaintsToRemove() : 0;
 
         $event = new AddRemoveTaintsEvent($expr, $context, $statements_analyzer, $codebase);
 
         $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
-        $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+        $removed_taints |= $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
         if ($function_param->type && $function_param->type->isString() && !$input_type->isString()) {
             $input_type = CastAnalyzer::castStringAttempt(
@@ -1794,7 +1776,7 @@ final class ArgumentAnalyzer
                 $cased_method_id,
                 $cased_method_id,
                 $argument_offset,
-                $statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+                $taint_flow_graph
                     ? $function_param->location
                     : null,
                 $function_call_location,
@@ -1804,12 +1786,12 @@ final class ArgumentAnalyzer
                 $cased_method_id,
                 $cased_method_id,
                 $argument_offset,
-                $statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+                $taint_flow_graph
                     ? $function_param->location
                     : null,
             );
 
-            if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+            if ($taint_flow_graph
                 && $method_id
                 && $method_id->method_name !== '__construct'
             ) {
@@ -1831,8 +1813,8 @@ final class ArgumentAnalyzer
                         null,
                     );
 
-                    $statements_analyzer->data_flow_graph->addNode($new_sink);
-                    $statements_analyzer->data_flow_graph->addPath(
+                    $taint_flow_graph->addNode($new_sink);
+                    $taint_flow_graph->addPath(
                         $method_node,
                         $new_sink,
                         'arg',
@@ -1843,7 +1825,7 @@ final class ArgumentAnalyzer
             }
         }
 
-        if ($method_id && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+        if ($method_id && $taint_flow_graph) {
             $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
             if ($declaring_method_id && (string) $declaring_method_id !== (string) $method_id) {
@@ -1855,8 +1837,8 @@ final class ArgumentAnalyzer
                     null,
                 );
 
-                $statements_analyzer->data_flow_graph->addNode($new_sink);
-                $statements_analyzer->data_flow_graph->addPath(
+                $taint_flow_graph->addNode($new_sink);
+                $taint_flow_graph->addPath(
                     $method_node,
                     $new_sink,
                     'arg',
@@ -1866,16 +1848,16 @@ final class ArgumentAnalyzer
             }
         }
 
-        $statements_analyzer->data_flow_graph->addNode($method_node);
+        $graph->addNode($method_node);
 
         $argument_value_node = DataFlowNode::getForAssignment(
             'call to ' . $cased_method_id,
             $arg_location,
         );
 
-        $statements_analyzer->data_flow_graph->addNode($argument_value_node);
+        $graph->addNode($argument_value_node);
 
-        $statements_analyzer->data_flow_graph->addPath(
+        $graph->addPath(
             $argument_value_node,
             $method_node,
             'arg',
@@ -1884,8 +1866,8 @@ final class ArgumentAnalyzer
         );
 
         foreach ($input_type->parent_nodes as $parent_node) {
-            $statements_analyzer->data_flow_graph->addNode($method_node);
-            $statements_analyzer->data_flow_graph->addPath(
+            $graph->addNode($method_node);
+            $graph->addPath(
                 $parent_node,
                 $argument_value_node,
                 'arg',
@@ -1894,11 +1876,10 @@ final class ArgumentAnalyzer
             );
         }
 
-        $taints = array_diff($added_taints, $removed_taints);
-        if ($taints !== [] && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
-            $taint_source = TaintSource::fromNode($argument_value_node);
-            $taint_source->taints = $taints;
-            $statements_analyzer->data_flow_graph->addSource($taint_source);
+        $taints = $added_taints & ~$removed_taints;
+        if ($taints !== 0 && $taint_flow_graph) {
+            $taint_source = $argument_value_node->setTaints($taints);
+            $taint_flow_graph->addSource($taint_source);
         }
     }
 }

@@ -12,13 +12,17 @@ use Psalm\NodeTypeProvider;
 use Psalm\StatementsSource;
 use Psalm\Storage\FunctionLikeStorage;
 
+/**
+ * @psalm-external-mutation-free
+ */
 final class AfterFunctionLikeAnalysisEvent
 {
     /**
      * Called after a statement has been checked
      *
-     * @param  FileManipulation[]   $file_replacements
+     * @param FileManipulation[]   $file_replacements
      * @internal
+     * @psalm-mutation-free
      */
     public function __construct(
         private readonly Node\FunctionLike $stmt,
@@ -31,21 +35,33 @@ final class AfterFunctionLikeAnalysisEvent
     ) {
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getStmt(): Node\FunctionLike
     {
         return $this->stmt;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getFunctionlikeStorage(): FunctionLikeStorage
     {
         return $this->functionlike_storage;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getStatementsSource(): StatementsSource
     {
         return $this->statements_source;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getCodebase(): Codebase
     {
         return $this->codebase;
@@ -53,6 +69,7 @@ final class AfterFunctionLikeAnalysisEvent
 
     /**
      * @return FileManipulation[]
+     * @psalm-mutation-free
      */
     public function getFileReplacements(): array
     {
@@ -61,17 +78,24 @@ final class AfterFunctionLikeAnalysisEvent
 
     /**
      * @param FileManipulation[] $file_replacements
+     * @psalm-external-mutation-free
      */
     public function setFileReplacements(array $file_replacements): void
     {
         $this->file_replacements = $file_replacements;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getNodeTypeProvider(): NodeTypeProvider
     {
         return $this->node_type_provider;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getContext(): Context
     {
         return $this->context;

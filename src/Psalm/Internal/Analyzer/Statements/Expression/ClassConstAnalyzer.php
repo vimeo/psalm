@@ -114,8 +114,7 @@ final class ClassConstAnalyzer
                             $statements_analyzer,
                             $fq_class_name,
                             new CodeLocation($statements_analyzer->getSource(), $stmt->class),
-                            $context->self,
-                            $context->calling_method_id,
+                            $context,
                             $statements_analyzer->getSuppressedIssues(),
                             new ClassLikeNameOptions(false, true),
                         ) === false) {
@@ -137,18 +136,18 @@ final class ClassConstAnalyzer
                     $statements_analyzer,
                     $stmt->class,
                     $fq_class_name,
-                    $context->calling_method_id,
+                    $context,
                     false,
                     $stmt->class->getFirst() === 'self',
                 );
             }
 
-            if ($codebase->classlikes->classExists($fq_class_name)) {
+            if ($codebase->classlikes->classExists($fq_class_name, null, $context)) {
                 $fq_class_name = $codebase->classlikes->getUnAliasedName($fq_class_name);
             }
 
             if ($stmt->name instanceof PhpParser\Node\Identifier && $stmt->name->name === 'class') {
-                if ($codebase->classlikes->classExists($fq_class_name)) {
+                if ($codebase->classlikes->classExists($fq_class_name, null, $context)) {
                     $const_class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
                     $fq_class_name = $const_class_storage->name;
 
@@ -192,7 +191,7 @@ final class ClassConstAnalyzer
             }
 
             // if we're ignoring that the class doesn't exist, exit anyway
-            if (!$codebase->classlikes->classOrInterfaceOrEnumExists($fq_class_name)) {
+            if (!$codebase->classlikes->classOrInterfaceOrEnumExists($fq_class_name, null, $context)) {
                 return true;
             }
 
@@ -511,7 +510,7 @@ final class ClassConstAnalyzer
                 return true;
             }
 
-            if ($codebase->classlikes->classExists($fq_class_name)) {
+            if ($codebase->classlikes->classExists($fq_class_name, null, $context)) {
                 $fq_class_name = $codebase->classlikes->getUnAliasedName($fq_class_name);
             }
 
@@ -523,12 +522,12 @@ final class ClassConstAnalyzer
                     $statements_analyzer,
                     $stmt->class,
                     $fq_class_name,
-                    $context->calling_method_id,
+                    $context,
                 );
             }
 
             // if we're ignoring that the class doesn't exist, exit anyway
-            if (!$codebase->classlikes->classOrInterfaceOrEnumExists($fq_class_name)) {
+            if (!$codebase->classlikes->classOrInterfaceOrEnumExists($fq_class_name, null, $context)) {
                 return true;
             }
 

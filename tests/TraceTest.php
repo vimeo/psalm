@@ -11,6 +11,9 @@ final class TraceTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerInvalidCodeParse(): iterable
     {

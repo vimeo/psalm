@@ -92,6 +92,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
 
     protected ClassLikeStorage $storage;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         protected PhpParser\Node\Stmt\ClassLike $class,
         SourceAnalyzer $source,
@@ -103,6 +106,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         $this->storage = $codebase->classlike_storage_provider->get($fq_class_name);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function __destruct()
     {
@@ -181,6 +187,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         }
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getFunctionLikeAnalyzer(string $method_name): ?MethodAnalyzer
     {
         foreach ($this->class->stmts as $stmt) {
@@ -201,8 +210,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         StatementsSource $statements_source,
         string $fq_class_name,
         CodeLocation $code_location,
-        ?string $calling_fq_class_name,
-        ?string $calling_method_id,
+        ?Context $context,
         array $suppressed_issues,
         ?ClassLikeNameOptions $options = null,
         bool $check_classes = true,
@@ -256,22 +264,19 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         $class_exists = $codebase->classlikes->classExists(
             $fq_class_name,
             !$options->inferred ? $code_location : null,
-            $calling_fq_class_name,
-            $calling_method_id,
+            $context,
         );
 
         $interface_exists = $codebase->classlikes->interfaceExists(
             $fq_class_name,
             !$options->inferred ? $code_location : null,
-            $calling_fq_class_name,
-            $calling_method_id,
+            $context,
         );
 
         $enum_exists = $codebase->classlikes->enumExists(
             $fq_class_name,
             !$options->inferred ? $code_location : null,
-            $calling_fq_class_name,
-            $calling_method_id,
+            $context,
         );
 
         if (!$class_exists
@@ -478,7 +483,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         return $this->parent_fq_class_name;
     }
 
-    /** @psalm-mutation-free */
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function isStatic(): bool
     {
@@ -806,7 +813,8 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * @return  array<string, string>
+     * @return array<string, string>
+     * @psalm-external-mutation-free
      */
     public static function getClassesForFile(Codebase $codebase, string $file_path): array
     {

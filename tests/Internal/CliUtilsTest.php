@@ -33,7 +33,10 @@ final class CliUtilsTest extends TestCase
         $argv = $this->argv;
     }
 
-    /** @return iterable<string,array{list<string>,list<string>}> */
+    /**
+     * @return iterable<string,array{list<string>,list<string>}>
+     * @psalm-mutation-free
+     */
     public function provideGetArguments(): iterable
     {
         $psalter = __DIR__ . '/../../psalter';

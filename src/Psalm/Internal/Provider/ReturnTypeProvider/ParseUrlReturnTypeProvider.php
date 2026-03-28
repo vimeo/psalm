@@ -36,6 +36,7 @@ final class ParseUrlReturnTypeProvider implements FunctionReturnTypeProviderInte
 {
     /**
      * @return array<lowercase-string>
+     * @psalm-pure
      */
     #[Override]
     public static function getFunctionIds(): array
@@ -151,7 +152,7 @@ final class ParseUrlReturnTypeProvider implements FunctionReturnTypeProviderInte
             $component_types['port'] = new Union([new TInt()], ['possibly_undefined' => true]);
 
             self::$return_type = new Union([
-                new TKeyedArray(
+                TKeyedArray::make(
                     $component_types,
                     null,
                 ),

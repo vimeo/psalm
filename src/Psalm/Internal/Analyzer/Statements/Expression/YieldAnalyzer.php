@@ -47,6 +47,7 @@ final class YieldAnalyzer
         if ($doc_comment) {
             try {
                 $var_comments = CommentAnalyzer::getTypeFromComment(
+                    $codebase,
                     $doc_comment,
                     $statements_analyzer,
                     $statements_analyzer->getAliases(),
@@ -157,7 +158,7 @@ final class YieldAnalyzer
             if (!$expression_atomic_type instanceof TNamedObject) {
                 continue;
             }
-            if (!$codebase->classlikes->classOrInterfaceExists($expression_atomic_type->value)) {
+            if (!$codebase->classlikes->classOrInterfaceExists($expression_atomic_type->value, null, $context)) {
                 continue;
             }
 

@@ -10,8 +10,14 @@ use Psalm\Report;
 
 use function sprintf;
 
+/**
+ * @psalm-external-mutation-free
+ */
 final class TextReport extends Report
 {
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public function create(): string
     {

@@ -25,6 +25,9 @@ final class FunctionExistenceProvider
      */
     private static array $handlers = [];
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct()
     {
         self::$handlers = [];
@@ -47,12 +50,16 @@ final class FunctionExistenceProvider
     /**
      * @param lowercase-string $function_id
      * @param Closure(FunctionExistenceProviderEvent): ?bool $c
+     * @psalm-external-mutation-free
      */
     public function registerClosure(string $function_id, Closure $c): void
     {
         self::$handlers[$function_id][] = $c;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function has(string $function_id): bool
     {
         return isset(self::$handlers[strtolower($function_id)]);

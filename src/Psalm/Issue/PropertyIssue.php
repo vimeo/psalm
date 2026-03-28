@@ -8,6 +8,9 @@ use Psalm\CodeLocation;
 
 abstract class PropertyIssue extends CodeIssue
 {
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         string $message,
         CodeLocation $code_location,

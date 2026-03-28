@@ -22,6 +22,7 @@ final class ArrayFillKeysReturnTypeProvider implements FunctionReturnTypeProvide
 {
     /**
      * @return array<lowercase-string>
+     * @psalm-pure
      */
     #[Override]
     public static function getFunctionIds(): array
@@ -82,7 +83,7 @@ final class ArrayFillKeysReturnTypeProvider implements FunctionReturnTypeProvide
                     $key_k->possibly_undefined,
                 );
             }
-            return new Union([new TKeyedArray(
+            return new Union([TKeyedArray::make(
                 $result,
                 null,
                 null,

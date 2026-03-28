@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Scanner;
 
+use Psalm\Storage\Mutations;
+
 /**
  * @internal
  */
@@ -77,11 +79,6 @@ final class FunctionDocblockComment
     public bool $variadic = false;
 
     /**
-     * Whether or not the function is pure
-     */
-    public bool $pure = false;
-
-    /**
      * Whether or not to specialize a given call (useful for taint analysis)
      */
     public bool $specialize_call = false;
@@ -99,19 +96,21 @@ final class FunctionDocblockComment
     public array $added_taints = [];
 
     /**
-     * @var array<string>
+     * @var list<string>
+     */
+    public array $conditionally_removed_taints = [];
+
+    /**
+     * @var list<string>
      */
     public array $removed_taints = [];
 
     /**
-     * @var array<int, array{name:string, taint: string}>
+     * @var array<int, array{name:string, taint: int}>
      */
     public array $taint_sink_params = [];
 
-    /**
-     * @var array<string>
-     */
-    public array $taint_source_types = [];
+    public int $taint_source_types = 0;
 
     /**
      * @var array<int, array{name:string}>
@@ -160,9 +159,10 @@ final class FunctionDocblockComment
 
     public bool $inheritdoc = false;
 
-    public bool $mutation_free = false;
+    /** @var Mutations::LEVEL_* */
+    public int $allowed_mutations = Mutations::LEVEL_ALL;
 
-    public bool $external_mutation_free = false;
+    public bool $has_mutations_annotation = false;
 
     public bool $no_named_args = false;
 

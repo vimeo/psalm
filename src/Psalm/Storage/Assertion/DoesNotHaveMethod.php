@@ -18,6 +18,9 @@ final class DoesNotHaveMethod extends Assertion
     {
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function isNegation(): bool
     {

@@ -14,11 +14,17 @@ use const DIRECTORY_SEPARATOR;
 
 final class CreatorTest extends TestCase
 {
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public static function setUpBeforeClass(): void
     {
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public function setUp(): void
     {

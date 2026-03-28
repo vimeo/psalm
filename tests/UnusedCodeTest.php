@@ -41,6 +41,14 @@ final class UnusedCodeTest extends TestCase
         );
 
         $this->project_analyzer->getCodebase()->reportUnusedCode();
+        $this->project_analyzer->getCodebase()->config->setCustomErrorLevel(
+            'MissingPureAnnotation',
+            Config::REPORT_SUPPRESS,
+        );
+        $this->project_analyzer->getCodebase()->config->setCustomErrorLevel(
+            'MissingAbstractPureAnnotation',
+            Config::REPORT_SUPPRESS,
+        );
         $this->project_analyzer->setPhpVersion('7.3', 'tests');
     }
 
@@ -172,6 +180,7 @@ final class UnusedCodeTest extends TestCase
 
     /**
      * @return array<string, array{code:string}>
+     * @psalm-pure
      */
     public function providerValidCodeParse(): array
     {
@@ -690,7 +699,10 @@ final class UnusedCodeTest extends TestCase
             ],
             'functionUsedAsArrayKeyInc' => [
                 'code' => '<?php
-                    /** @param array<int, int> $arr */
+                    /**
+                     * @param array<int, int> $arr
+                     * @psalm-pure
+                     */
                     function inc(array $arr) : array {
                         $arr[strlen("hello")]++;
                         return $arr;
@@ -1040,7 +1052,7 @@ final class UnusedCodeTest extends TestCase
             'functionCallUsedInThrow' => [
                 'code' => '<?php
                     /**
-                     * @psalm-pure
+                     * @psalm-mutation-free
                      */
                     function getException(): \Exception
                     {
@@ -1390,6 +1402,7 @@ final class UnusedCodeTest extends TestCase
 
     /**
      * @return array<string,array{code:string,error_message:string,ignored_issues?:list<string>}>
+     * @psalm-pure
      */
     public function providerInvalidCodeParse(): array
     {
@@ -1510,6 +1523,24 @@ final class UnusedCodeTest extends TestCase
                     takesA(new B);',
                 'error_message' => 'PossiblyUnusedMethod',
             ],
+            'SKIPPED-unusedRecursivelyUsedMethodIndirect' => [
+                'code' => '<?php
+                    final class C {
+                        public function foo(int $v) : void {
+                            if ($v) {
+                                $this->bar($v-1);
+                            }
+                        }
+                        public function bar(int $v) : void {
+                            $this->foo($v);
+                        }
+
+                        public function baz() : void {}
+                    }
+
+                    (new C)->baz();',
+                'error_message' => 'PossiblyUnusedMethod',
+            ],
             'unusedRecursivelyUsedMethod' => [
                 'code' => '<?php
                     final class C {
@@ -1607,6 +1638,7 @@ final class UnusedCodeTest extends TestCase
             'unusedMethodCallForExternalMutationFreeClass' => [
                 'code' => '<?php
                     /**
+                     * @api
                      * @psalm-external-mutation-free
                      */
                     final class A {
@@ -1619,16 +1651,21 @@ final class UnusedCodeTest extends TestCase
                         public function setFoo(string $foo) : void {
                             $this->foo = $foo;
                         }
+
+                        public function getFoo() : string {
+                            return $this->foo;
+                        }
                     }
 
                     function foo() : void {
-                        (new A("hello"))->setFoo("goodbye");
+                        (new A("hello"))->getFoo();
                     }',
                 'error_message' => 'UnusedMethodCall',
             ],
             'unusedMethodCallForGeneratingMethod' => [
                 'code' => '<?php
                     /**
+                     * @api
                      * @psalm-external-mutation-free
                      */
                     final class A {
@@ -1638,6 +1675,7 @@ final class UnusedCodeTest extends TestCase
                             $this->foo = $foo;
                         }
 
+                        /** @psalm-mutation-free */
                         public function getFoo() : string {
                             return "abular" . $this->foo;
                         }

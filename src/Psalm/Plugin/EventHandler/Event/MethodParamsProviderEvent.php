@@ -9,11 +9,15 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\StatementsSource;
 
+/**
+ * @psalm-immutable
+ */
 final class MethodParamsProviderEvent
 {
     /**
-     * @param  list<PhpParser\Node\Arg>    $call_args
+     * @param list<PhpParser\Node\Arg>    $call_args
      * @internal
+     * @psalm-mutation-free
      */
     public function __construct(
         private readonly string $fq_classlike_name,

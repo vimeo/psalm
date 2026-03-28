@@ -33,6 +33,8 @@ final class GitInfoCollector
 
     /**
      * Constructor.
+     *
+     * @psalm-mutation-free
      */
     public function __construct()
     {

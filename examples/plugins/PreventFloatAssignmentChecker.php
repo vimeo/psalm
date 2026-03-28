@@ -41,6 +41,9 @@ final class PreventFloatAssignmentChecker implements AfterExpressionAnalysisInte
     }
 }
 
+/**
+ * 
+ */
 final class NoFloatAssignment extends PluginIssue
 {
 }

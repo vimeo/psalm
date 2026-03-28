@@ -448,8 +448,9 @@ abstract class CallAnalyzer
     }
 
     /**
-     * @param  array<string, array<string, Union>>  $template_extended_params
-     * @param  array<string, array<string, Union>>  $found_generic_params
+     * @param array<string, array<string, Union>>  $template_extended_params
+     * @param array<string, array<string, Union>>  $found_generic_params
+     * @psalm-mutation-free
      */
     public static function getGenericParamForOffset(
         string $fq_class_name,

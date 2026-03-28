@@ -44,6 +44,9 @@ final class ClassTest extends TestCase
         );
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerValidCodeParse(): iterable
     {
@@ -244,6 +247,7 @@ final class ClassTest extends TestCase
                             return "baz";
                         }
 
+                        /** @psalm-mutation-free */
                         public static function bat(): string {
                             return "baz";
                         }
@@ -272,6 +276,7 @@ final class ClassTest extends TestCase
                             return "baz";
                         }
 
+                        /** @psalm-mutation-free */
                         public static function bat(): string {
                             return "baz";
                         }
@@ -947,6 +952,9 @@ final class ClassTest extends TestCase
         ];
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerInvalidCodeParse(): iterable
     {

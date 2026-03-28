@@ -8,6 +8,9 @@ use Psalm\Codebase;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\SourceControl\SourceControlInfo;
 
+/**
+ * @psalm-immutable
+ */
 final class AfterAnalysisEvent
 {
     /**
@@ -15,6 +18,7 @@ final class AfterAnalysisEvent
      *
      * @param array<string, list<IssueData>> $issues where string key is a filepath
      * @internal
+     * @psalm-mutation-free
      */
     public function __construct(
         private readonly Codebase $codebase,

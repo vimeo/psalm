@@ -7,6 +7,7 @@ namespace Psalm\Internal\PhpVisitor\Reflector;
 use AssertionError;
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\DocComment;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\IncorrectDocblockException;
@@ -16,7 +17,7 @@ use Psalm\Internal\Scanner\FunctionDocblockComment;
 use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\IssueBuffer;
-use Psalm\Type\TaintKindGroup;
+use Psalm\Storage\Mutations;
 
 use function array_keys;
 use function array_shift;
@@ -53,6 +54,7 @@ final class FunctionLikeDocblockParser
      * @throws DocblockParseException if there was a problem parsing the docblock
      */
     public static function parse(
+        Codebase $codebase,
         PhpParser\Comment\Doc $comment,
         CodeLocation $code_location,
         string $cased_function_id,
@@ -246,7 +248,10 @@ final class FunctionLikeDocblockParser
                 }
 
                 if (count($param_parts) >= 2) {
-                    $info->taint_sink_params[] = ['name' => $param_parts[1], 'taint' => $param_parts[0]];
+                    $t = $codebase->getOrRegisterTaint($param_parts[0], $code_location);
+                    if ($t !== null) {
+                        $info->taint_sink_params[] = ['name' => $param_parts[1], 'taint' => $t];
+                    }
                 } else {
                     IssueBuffer::maybeAdd(
                         new InvalidDocblock(
@@ -271,17 +276,10 @@ final class FunctionLikeDocblockParser
 
                     if (str_starts_with($taint_type, 'exec_')) {
                         $taint_type = substr($taint_type, 5);
-
-                        if ($taint_type === 'tainted') {
-                            $taint_type = TaintKindGroup::GROUP_INPUT;
+                        $t = $codebase->getOrRegisterTaint($taint_type, $code_location);
+                        if ($t !== null) {
+                            $info->taint_sink_params[] = ['name' => $param_parts[0], 'taint' => $t];
                         }
-
-                        if ($taint_type === 'misc') {
-                            // @todo `text` is semantically not defined in `TaintKind`, maybe drop it
-                            $taint_type = 'text';
-                        }
-
-                        $info->taint_sink_params[] = ['name' => $param_parts[0], 'taint' => $taint_type];
                     }
                 }
             }
@@ -295,7 +293,10 @@ final class FunctionLikeDocblockParser
                 }
 
                 if ($param_parts[0]) {
-                    $info->taint_source_types[] = $param_parts[0];
+                    $t = $codebase->getOrRegisterTaint($param_parts[0], $code_location);
+                    if ($t !== null) {
+                        $info->taint_source_types |= $t;
+                    }
                 } else {
                     IssueBuffer::maybeAdd(
                         new InvalidDocblock(
@@ -314,17 +315,11 @@ final class FunctionLikeDocblockParser
                 }
 
                 if ($param_parts[0]) {
-                    if ($param_parts[0] === 'tainted') {
-                        $param_parts[0] = TaintKindGroup::GROUP_INPUT;
-                    }
-
-                    if ($param_parts[0] === 'misc') {
-                        // @todo `text` is semantically not defined in `TaintKind`, maybe drop it
-                        $param_parts[0] = 'text';
-                    }
-
                     if ($param_parts[0] !== 'none') {
-                        $info->taint_source_types[] = $param_parts[0];
+                        $t = $codebase->getOrRegisterTaint($param_parts[0], $code_location);
+                        if ($t !== null) {
+                            $info->taint_source_types |= $t;
+                        }
                     }
                 }
             }
@@ -359,7 +354,7 @@ final class FunctionLikeDocblockParser
                 } elseif ($param[0] === '(') {
                     $line_parts = CommentAnalyzer::splitDocLine($param);
 
-                    $info->removed_taints[] = CommentAnalyzer::sanitizeDocblockType($line_parts[0]);
+                    $info->conditionally_removed_taints[] = CommentAnalyzer::sanitizeDocblockType($line_parts[0]);
                 } else {
                     $info->removed_taints[] = explode(' ', $param)[0];
                 }
@@ -578,16 +573,21 @@ final class FunctionLikeDocblockParser
         }
 
         $info->variadic = isset($parsed_docblock->tags['psalm-variadic']);
-        $info->pure = isset($parsed_docblock->tags['psalm-pure'])
+        if (isset($parsed_docblock->tags['psalm-pure'])
             || isset($parsed_docblock->tags['phpstan-pure'])
-            || isset($parsed_docblock->tags['pure']);
-
-        if (isset($parsed_docblock->tags['psalm-mutation-free'])) {
-            $info->mutation_free = true;
-        }
-
-        if (isset($parsed_docblock->tags['psalm-external-mutation-free'])) {
-            $info->external_mutation_free = true;
+            || isset($parsed_docblock->tags['pure'])
+        ) {
+            $info->allowed_mutations = Mutations::LEVEL_NONE;
+            $info->has_mutations_annotation = true;
+        } elseif (isset($parsed_docblock->tags['psalm-mutation-free'])) {
+            $info->allowed_mutations = Mutations::LEVEL_INTERNAL_READ;
+            $info->has_mutations_annotation = true;
+        } elseif (isset($parsed_docblock->tags['psalm-external-mutation-free'])) {
+            $info->allowed_mutations = Mutations::LEVEL_INTERNAL_READ_WRITE;
+            $info->has_mutations_annotation = true;
+        } elseif (isset($parsed_docblock->tags['psalm-impure'])) {
+            $info->allowed_mutations = Mutations::LEVEL_ALL;
+            $info->has_mutations_annotation = true;
         }
 
         if (isset($parsed_docblock->tags['no-named-arguments'])) {
@@ -696,6 +696,7 @@ final class FunctionLikeDocblockParser
 
     /**
      * @throws DocblockParseException if a duplicate is found
+     * @psalm-mutation-free
      */
     private static function checkDuplicatedTags(ParsedDocblock $parsed_docblock): void
     {
@@ -714,6 +715,7 @@ final class FunctionLikeDocblockParser
     /**
      * @param array<int, string> $param
      * @throws DocblockParseException  if a duplicate is found
+     * @psalm-pure
      */
     private static function checkDuplicatedParams(array $param): void
     {
@@ -780,6 +782,7 @@ final class FunctionLikeDocblockParser
     /**
      * @param list<int> $offsets
      * @return list<int>
+     * @psalm-mutation-free
      */
     private static function tagOffsetsToLines(array $offsets, PhpParser\Comment\Doc $comment): array
     {
@@ -790,6 +793,9 @@ final class FunctionLikeDocblockParser
         return $ret;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     private static function docblockLineNumber(PhpParser\Comment\Doc $comment, int $offset): int
     {
         return $comment->getStartLine() + substr_count(

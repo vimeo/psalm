@@ -40,6 +40,9 @@ final class LanguageClient
      */
     private readonly ClientHandler $handler;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         ProtocolReader $reader,
         ProtocolWriter $writer,
@@ -131,6 +134,9 @@ final class LanguageClient
         );
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function makeProgress(string $token): ProgressInterface
     {
         if ($this->server->clientCapabilities->window->workDoneProgress ?? false) {

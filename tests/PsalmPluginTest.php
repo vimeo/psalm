@@ -282,7 +282,10 @@ final class PsalmPluginTest extends TestCase
         $this->assertSame(0, $disable_command->getStatusCode());
     }
 
-    /** @return string[][] */
+    /**
+     * @return string[][]
+     * @psalm-pure
+     */
     public function commands(): array
     {
         return [

@@ -26,7 +26,7 @@ It could range from:
 ```php
 <?php
 
-$content = file_get_contents($_GET['header']);
+$content = fopen($_GET['header'], "r");
 echo $content;
 ```
 

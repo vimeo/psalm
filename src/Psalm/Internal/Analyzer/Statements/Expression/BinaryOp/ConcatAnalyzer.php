@@ -10,9 +10,9 @@ use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
-use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
@@ -88,11 +88,11 @@ final class ConcatAnalyzer
 
                     $origin_locations = [];
 
-                    if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
+                    if ($statements_analyzer->variable_use_graph) {
                         foreach ($left_type->parent_nodes as $parent_node) {
                             $origin_locations = [
                                 ...$origin_locations,
-                                ...$statements_analyzer->data_flow_graph->getOriginLocations($parent_node),
+                                ...$statements_analyzer->variable_use_graph->getOriginLocations($parent_node),
                             ];
                         }
                     }
@@ -115,11 +115,11 @@ final class ConcatAnalyzer
                     $arg_location = new CodeLocation($statements_analyzer->getSource(), $right);
                     $origin_locations = [];
 
-                    if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
+                    if ($statements_analyzer->variable_use_graph) {
                         foreach ($right_type->parent_nodes as $parent_node) {
                             $origin_locations = [
                                 ...$origin_locations,
-                                ...$statements_analyzer->data_flow_graph->getOriginLocations($parent_node),
+                                ...$statements_analyzer->variable_use_graph->getOriginLocations($parent_node),
                             ];
                         }
                     }
@@ -425,7 +425,7 @@ final class ConcatAnalyzer
                         '__tostring',
                     );
 
-                    if ($codebase->methods->methodExists(
+                    if ($codebase->methodExists(
                         $to_string_method_id,
                         $context->calling_method_id,
                         $codebase->collect_locations
@@ -443,22 +443,22 @@ final class ConcatAnalyzer
                             continue;
                         }
 
-                        if ($context->mutation_free && !$storage->mutation_free) {
-                            IssueBuffer::maybeAdd(
-                                new ImpureMethodCall(
-                                    'Cannot call a possibly-mutating method '
-                                        . $atomic_type->value . '::__toString from a pure context',
-                                    new CodeLocation($statements_analyzer, $operand),
-                                ),
-                                $statements_analyzer->getSuppressedIssues(),
-                            );
-                        } elseif ($statements_analyzer->getSource()
-                                instanceof FunctionLikeAnalyzer
-                            && $statements_analyzer->getSource()->track_mutations
-                        ) {
-                            $statements_analyzer->getSource()->inferred_has_mutation = true;
-                            $statements_analyzer->getSource()->inferred_impure = true;
-                        }
+                        $var_id = ExpressionIdentifier::getExtendedVarId(
+                            $operand,
+                            $statements_analyzer->getFQCLN(),
+                            $statements_analyzer,
+                        );
+                        $statements_analyzer->signalMutation(
+                            $storage->allowed_mutations,
+                            $context,
+                            'possibly-mutating method '
+                                        . $atomic_type->value . '::__toString',
+                            ImpureMethodCall::class,
+                            $operand,
+                            null,
+                            false,
+                            $var_id === '$this' ? $storage : null,
+                        );
                     }
                 }
             }
