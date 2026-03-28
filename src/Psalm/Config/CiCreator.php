@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Psalm\Config;
 
 use JsonException;
-use Psalm\Internal\Composer;
 
+use function array_merge;
 use function assert;
 use function dirname;
 use function file_exists;
@@ -23,14 +23,14 @@ use const JSON_THROW_ON_ERROR;
 /** @internal */
 final class CiCreator
 {
-    private const DEFAULT_PHP_VERSION = '8.3';
+    private const DEFAULT_PSALM_VERSION = 'latest';
 
     public static function getContents(string $current_dir): string
     {
-        $php_version = self::detectPhpVersion($current_dir) ?? self::DEFAULT_PHP_VERSION;
+        $psalm_version = self::detectPsalmVersion($current_dir) ?? self::DEFAULT_PSALM_VERSION;
         $template = self::loadTemplate();
 
-        return str_replace('__PHP_VERSION__', $php_version, $template);
+        return str_replace('__PSALM_VERSION__', $psalm_version, $template);
     }
 
     private static function loadTemplate(): string
@@ -45,41 +45,52 @@ final class CiCreator
         return $contents;
     }
 
-    private static function detectPhpVersion(string $current_dir): ?string
+    private static function detectPsalmVersion(string $current_dir): ?string
     {
-        $composer_json_path = Composer::getJsonFilePath($current_dir);
+        $composer_lock_path = $current_dir . DIRECTORY_SEPARATOR . 'composer.lock';
 
-        if (!file_exists($composer_json_path)) {
+        if (!file_exists($composer_lock_path)) {
             return null;
         }
 
-        $contents = file_get_contents($composer_json_path);
+        $contents = file_get_contents($composer_lock_path);
         if ($contents === false) {
             return null;
         }
 
         try {
-            $composer_json = json_decode($contents, true, 512, JSON_THROW_ON_ERROR);
+            $lock = json_decode($contents, true, 512, JSON_THROW_ON_ERROR);
         } catch (JsonException) {
             return null;
         }
 
-        if (!is_array($composer_json)) {
+        if (!is_array($lock)) {
             return null;
         }
 
-        $php_constraint = $composer_json['require']['php'] ?? null;
+        $packages = isset($lock['packages']) && is_array($lock['packages']) ? $lock['packages'] : [];
+        $packages_dev = isset($lock['packages-dev']) && is_array($lock['packages-dev']) ? $lock['packages-dev'] : [];
+        /** @var list<mixed> $all_packages */
+        $all_packages = array_merge($packages, $packages_dev);
+        foreach ($all_packages as $package) {
+            if (!is_array($package)) {
+                continue;
+            }
+            if (($package['name'] ?? null) !== 'vimeo/psalm') {
+                continue;
+            }
+            $version = $package['version'] ?? null;
+            if (!is_string($version)) {
+                return null;
+            }
+            // Extract major version from e.g. "6.8.4" or "v6.8.4"
+            if (preg_match('/v?(\d+)/', $version, $matches) === 1
+                && isset($matches[1])
+            ) {
+                return $matches[1];
+            }
 
-        if (!is_string($php_constraint)) {
             return null;
-        }
-
-        // Extract the minimum version from common constraint patterns
-        // e.g. ">=8.1", "^8.1", "~8.1", "8.1.*", ">=8.1 <8.4"
-        if (preg_match('/(\d+\.\d+)/', $php_constraint, $matches) === 1
-            && isset($matches[1])
-        ) {
-            return $matches[1];
         }
 
         return null;

@@ -1586,7 +1586,7 @@ final class Psalm
 
             --init-ci
                 Create a GitHub Actions workflow file at .github/workflows/psalm.yml.
-                Detects the PHP version from composer.json.
+                Uses the official Psalm Docker image, pinned to the major version from composer.lock.
 
             --debug
                 Debug information
