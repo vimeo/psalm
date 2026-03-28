@@ -701,7 +701,7 @@ final class InstancePropertyAssignmentAnalyzer
             $statements_analyzer,
         );
 
-        $var_id = ExpressionIdentifier::getVarId(
+        $var_id = ExpressionIdentifier::getExtendedVarId(
             $stmt,
             $statements_analyzer->getFQCLN(),
             $statements_analyzer,

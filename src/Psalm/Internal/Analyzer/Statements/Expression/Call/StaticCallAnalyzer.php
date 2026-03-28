@@ -93,8 +93,21 @@ final class StaticCallAnalyzer extends CallAnalyzer
                         $construct_fq_class_name = $construct_class_storage->name;
 
                         foreach ($construct_class_storage->properties as $property_name => $property_storage) {
+                            if (!isset($context->vars_in_scope['$this->' . $property_name])) {
+                                continue;
+                            }
+
+                            if ($property_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE) {
+                                continue;
+                            }
+
+                            if ($context->vars_in_scope['$this->' . $property_name]->initialized) {
+                                continue;
+                            }
+
                             if ($property_storage->is_promoted
-                                && isset($context->vars_in_scope['$this->' . $property_name])) {
+                                || ($construct_class_storage->stubbed && !empty($property_storage->type->initialized))
+                            ) {
                                 $context_type = $context->vars_in_scope['$this->' . $property_name];
                                 $context->vars_in_scope['$this->' . $property_name] = $context_type->setProperties(
                                     [
