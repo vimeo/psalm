@@ -154,6 +154,10 @@ final class TypeTokenizer
                 $type_tokens[++$rtc] = ['', ++$i];
                 $was_char = false;
                 continue;
+            } elseif ($was_space
+                && in_array($type_tokens[$rtc][0], ['covariant', 'contravariant'], true)
+            ) {
+                $type_tokens[++$rtc] = ['', $i];
             } elseif ($was_char) {
                 $type_tokens[++$rtc] = ['', $i];
             }
@@ -353,6 +357,7 @@ final class TypeTokenizer
                 $string_type_token[0],
                 [
                     '<', '>', '|', '?', ',', '{', '}', ':', '::', '[', ']', '(', ')', '&', '=', '...', 'as', 'is',
+                    'covariant', 'contravariant',
                 ],
                 true,
             )) {

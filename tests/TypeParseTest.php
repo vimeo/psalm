@@ -141,6 +141,26 @@ final class TypeParseTest extends TestCase
         $this->assertSame('B<int>', (string) Type::parseString('B<int>'));
     }
 
+    public function testGenericWithInlineCovariant(): void
+    {
+        $this->assertSame('B<int>', (string) Type::parseString('B<covariant int>'));
+    }
+
+    public function testGenericWithInlineContravariant(): void
+    {
+        $this->assertSame('B<int>', (string) Type::parseString('B<contravariant int>'));
+    }
+
+    public function testGenericWithMultipleInlineVariance(): void
+    {
+        $this->assertSame('B<int, string>', (string) Type::parseString('B<covariant int, contravariant string>'));
+    }
+
+    public function testGenericWithInlineVarianceAndUnion(): void
+    {
+        $this->assertSame('B<int|string>', (string) Type::parseString('B<covariant int|string>'));
+    }
+
     public function testIntersection(): void
     {
         $this->assertSame('I1&I2&I3', (string) Type::parseString('I1&I2&I3'));
