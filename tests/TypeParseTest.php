@@ -58,6 +58,26 @@ final class TypeParseTest extends TestCase
         $this->assertSame('A|static', (string) Type::parseString('$this|A'));
     }
 
+    public function testThisInGenericTypeParam(): void
+    {
+        $this->assertSame('B<static>', (string) Type::parseString('B<$this>'));
+    }
+
+    public function testThisAsFirstGenericTypeParam(): void
+    {
+        $this->assertSame('B<static, A>', (string) Type::parseString('B<$this, A>'));
+    }
+
+    public function testThisInMultipleGenericTypeParams(): void
+    {
+        $this->assertSame('B<A, static>', (string) Type::parseString('B<A, $this>'));
+    }
+
+    public function testThisInNestedGenericTypeParam(): void
+    {
+        $this->assertSame('A<B<static>>', (string) Type::parseString('A<B<$this>>'));
+    }
+
     public function testIntOrString(): void
     {
         $this->assertSame('int|string', (string) Type::parseString('int|string'));
