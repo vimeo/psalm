@@ -13,7 +13,10 @@ use Override;
  */
 final class TTrue extends TBool
 {
-    /** @var true */
+    /**
+     * @readonly
+     * @var true
+     */
     public bool $value = true;
 
     #[Override]
@@ -22,9 +25,27 @@ final class TTrue extends TBool
         return 'true';
     }
 
+    /**
+     * @param  array<lowercase-string, string> $aliased_classes
+     */
+	#[Override]
+    public function toPhpString(
+        ?string $namespace,
+        array $aliased_classes,
+        ?string $this_class,
+        int $analysis_php_version_id
+    ): string {
+        if ($analysis_php_version_id >= 8_02_00) {
+            return $this->getKey();
+        }
+
+        // from >= 7_00_00
+        return 'bool';
+    }
+
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
-        return false;
+        return $analysis_php_version_id >= 8_02_00;
     }
 }
