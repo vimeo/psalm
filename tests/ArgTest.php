@@ -15,6 +15,9 @@ final class ArgTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerValidCodeParse(): iterable
     {
@@ -125,7 +128,7 @@ final class ArgTest extends TestCase
                 'assertions' => [
                     '$a' => 'array{a: int, b: int}',
                     '$b' => 'non-empty-list<int>',
-                    '$c' => 'list<never>',
+                    '$c' => 'array<never, never>',
                 ],
             ],
             'arrayModificationFunctions' => [
@@ -376,6 +379,9 @@ final class ArgTest extends TestCase
         ];
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerInvalidCodeParse(): iterable
     {

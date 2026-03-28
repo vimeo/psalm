@@ -10,6 +10,7 @@ abstract class TypeVisitor
     public const DONT_TRAVERSE_CHILDREN = 2;
 
     /**
+     * @psalm-external-mutation-free
      * @return self::STOP_TRAVERSAL|self::DONT_TRAVERSE_CHILDREN|null
      */
     abstract protected function enterNode(TypeNode $type): ?int;

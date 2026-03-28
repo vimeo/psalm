@@ -9,11 +9,15 @@ use Psalm\Codebase;
 use Psalm\FileManipulation;
 use Psalm\StatementsSource;
 
+/**
+ * @psalm-external-mutation-free
+ */
 final class AfterClassLikeExistenceCheckEvent
 {
     /**
      * @param FileManipulation[] $file_replacements
      * @internal
+     * @psalm-mutation-free
      */
     public function __construct(
         private readonly string $fq_class_name,
@@ -24,21 +28,33 @@ final class AfterClassLikeExistenceCheckEvent
     ) {
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getFqClassName(): string
     {
         return $this->fq_class_name;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getCodeLocation(): CodeLocation
     {
         return $this->code_location;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getStatementsSource(): StatementsSource
     {
         return $this->statements_source;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getCodebase(): Codebase
     {
         return $this->codebase;
@@ -46,6 +62,7 @@ final class AfterClassLikeExistenceCheckEvent
 
     /**
      * @return FileManipulation[]
+     * @psalm-mutation-free
      */
     public function getFileReplacements(): array
     {
@@ -54,6 +71,7 @@ final class AfterClassLikeExistenceCheckEvent
 
     /**
      * @param FileManipulation[] $file_replacements
+     * @psalm-external-mutation-free
      */
     public function setFileReplacements(array $file_replacements): void
     {

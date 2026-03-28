@@ -52,6 +52,9 @@ final class ProjectCheckerTest extends TestCase
         self::$config = new TestConfig();
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function setUp(): void
     {
@@ -123,6 +126,7 @@ final class ProjectCheckerTest extends TestCase
             /**
              * @return void
              * @phpcsSuppress SlevomatCodingStandard.TypeHints.ReturnTypeHint
+             * @psalm-external-mutation-free
              */
             #[Override]
             public static function afterCodebasePopulated(AfterCodebasePopulatedEvent $event)

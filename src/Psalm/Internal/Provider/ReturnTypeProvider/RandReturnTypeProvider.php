@@ -21,6 +21,7 @@ final class RandReturnTypeProvider implements FunctionReturnTypeProviderInterfac
 {
     /**
      * @return array<lowercase-string>
+     * @psalm-pure
      */
     #[Override]
     public static function getFunctionIds(): array

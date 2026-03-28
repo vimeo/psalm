@@ -11,7 +11,6 @@ use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\FileManipulation;
-use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallProhibitionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer;
@@ -288,33 +287,16 @@ final class ExistingAtomicStaticCallAnalyzer
             }
 
             if (!$context->inside_throw) {
-                if ($context->pure && !$method_storage->pure) {
-                    IssueBuffer::maybeAdd(
-                        new ImpureMethodCall(
-                            'Cannot call an impure method from a pure context',
-                            new CodeLocation($statements_analyzer, $stmt_name),
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                } elseif ($context->mutation_free && !$method_storage->mutation_free) {
-                    IssueBuffer::maybeAdd(
-                        new ImpureMethodCall(
-                            'Cannot call a possibly-mutating method from a mutation-free context',
-                            new CodeLocation($statements_analyzer, $stmt_name),
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                } elseif ($statements_analyzer->getSource()
-                        instanceof FunctionLikeAnalyzer
-                    && $statements_analyzer->getSource()->track_mutations
-                    && !$method_storage->pure
-                ) {
-                    if (!$method_storage->mutation_free) {
-                        $statements_analyzer->getSource()->inferred_has_mutation = true;
-                    }
-
-                    $statements_analyzer->getSource()->inferred_impure = true;
-                }
+                $statements_analyzer->signalMutation(
+                    $method_storage->allowed_mutations,
+                    $context,
+                    'method',
+                    ImpureMethodCall::class,
+                    $stmt,
+                    null,
+                    false,
+                    $method_storage,
+                );
             }
 
             $assertionsResolver = new AssertionsFromInheritanceResolver($codebase);
@@ -375,7 +357,7 @@ final class ExistingAtomicStaticCallAnalyzer
                             $statements_analyzer,
                             $stmt->class,
                             $new_fq_class_name,
-                            $context->calling_method_id,
+                            $context,
                             strtolower($old_declaring_fq_class_name) !== strtolower($new_fq_class_name),
                             $stmt->class->getFirst() === 'self',
                         )) {
@@ -484,6 +466,7 @@ final class ExistingAtomicStaticCallAnalyzer
         Config $config,
     ): ?Union {
         $return_type_candidate = $codebase->methods->getMethodReturnType(
+            $codebase,
             $method_id,
             $self_fq_class_name,
             $statements_analyzer,
@@ -606,6 +589,8 @@ final class ExistingAtomicStaticCallAnalyzer
 
     /**
      * Dumb way to determine whether a type contains "static" somewhere inside.
+     *
+     * @psalm-external-mutation-free
      */
     private static function hasStaticInType(Type\TypeNode $type): bool
     {
@@ -616,6 +601,7 @@ final class ExistingAtomicStaticCallAnalyzer
 
     /**
      * @return non-empty-array<string,non-empty-list<TemplateBound>>
+     * @psalm-mutation-free
      */
     private static function resolveTemplateResultLowerBound(
         Codebase $codebase,

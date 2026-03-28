@@ -8,10 +8,53 @@ use Override;
 
 final class PureAnnotationAdditionTest extends FileManipulationTestCase
 {
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerValidCodeParse(): array
     {
         return [
+            'correctClassCasing' => [
+                'input' => '<?php
+                    interface F {
+                        /**
+                         * @return static
+                         * @psalm-mutation-free
+                         */
+                        public function m(): self;
+                    }
+
+                    abstract class G implements F {}
+
+                    class H extends G {
+                        public function m(): F {
+                            return $this;
+                        }
+                    }',
+                'output' => '<?php
+                    interface F {
+                        /**
+                         * @return static
+                         * @psalm-mutation-free
+                         */
+                        public function m(): self;
+                    }
+
+                    abstract class G implements F {}
+
+                    class H extends G {
+                        /**
+                         * @psalm-mutation-free
+                         */
+                        public function m(): F {
+                            return $this;
+                        }
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
             'addPureAnnotationToFunction' => [
                 'input' => '<?php
                     function foo(string $s): string {
@@ -23,6 +66,273 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                      */
                     function foo(string $s): string {
                         return $s;
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
+            'selfCall' => [
+                'input' => '<?php
+                    function foo(string $s, int $v): string {
+                        if ($v > 5) {
+                            return foo($s, $v - 1);
+                        }
+                        return $s;
+                    }',
+                'output' => '<?php
+                    /**
+                     * @psalm-pure
+                     */
+                    function foo(string $s, int $v): string {
+                        if ($v > 5) {
+                            return foo($s, $v - 1);
+                        }
+                        return $s;
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
+            'SKIPPED-selfCallIndirect' => [
+                'input' => '<?php
+                    function foo(string $s, int $v): string {
+                        if ($v > 5) {
+                            return bar($s, $v - 1);
+                        }
+                        return $s;
+                    }
+                    function bar(string $s, int $v): string {
+                        return foo($s, $v);
+                    }',
+                'output' => '<?php
+                    /**
+                     * @psalm-pure
+                     */
+                    function foo(string $s, int $v): string {
+                        if ($v > 5) {
+                            return bar($s, $v - 1);
+                        }
+                        return $s;
+                    }
+                    /**
+                     * @psalm-pure
+                     */
+                    function bar(string $s, int $v): string {
+                        return foo($s, $v);
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
+            'selfMethodCall' => [
+                'input' => '<?php
+                    class A {
+                        public function foo(string $s, int $v): string {
+                            if ($v > 5) {
+                                return $this->foo($s, $v - 1);
+                            }
+                            return $s;
+                        }
+                    }',
+                'output' => '<?php
+                    class A {
+                        /**
+                         * @psalm-mutation-free
+                         */
+                        public function foo(string $s, int $v): string {
+                            if ($v > 5) {
+                                return $this->foo($s, $v - 1);
+                            }
+                            return $s;
+                        }
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
+            'selfMethodCall2' => [
+                'input' => '<?php
+                    class A {
+                        public A $a;
+                        public function foo(int $ex): int {
+                            if ($ex === 0) {
+                                return $ex;
+                            }
+                            return $this->a->foo($ex - 1);
+                        }
+                    }
+                    class B extends A {
+                        public function foo(int $ex): int {
+                            echo "test";
+                            if ($ex === 0) {
+                                return $ex;
+                            }
+                            return $this->a->foo($ex - 1);
+                        }
+                    }',
+                'output' => '<?php
+                    class A {
+                        public A $a;
+                        public function foo(int $ex): int {
+                            if ($ex === 0) {
+                                return $ex;
+                            }
+                            return $this->a->foo($ex - 1);
+                        }
+                    }
+                    class B extends A {
+                        public function foo(int $ex): int {
+                            echo "test";
+                            if ($ex === 0) {
+                                return $ex;
+                            }
+                            return $this->a->foo($ex - 1);
+                        }
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
+            'selfMethodCall3' => [
+                'input' => '<?php
+                    class A {
+                        public function foo(int $ex): int {
+                            if ($ex === 0) {
+                                return $ex;
+                            }
+                            return $this->foo($ex - 1);
+                        }
+                    }
+                    class B extends A {
+                        public function foo(int $ex): int {
+                            echo "test";
+                            if ($ex === 0) {
+                                return $ex;
+                            }
+                            return $this->foo($ex - 1);
+                        }
+                    }',
+                'output' => '<?php
+                    class A {
+                        /**
+                         * @psalm-mutation-free
+                         */
+                        public function foo(int $ex): int {
+                            if ($ex === 0) {
+                                return $ex;
+                            }
+                            return $this->foo($ex - 1);
+                        }
+                    }
+                    class B extends A {
+                        public function foo(int $ex): int {
+                            echo "test";
+                            if ($ex === 0) {
+                                return $ex;
+                            }
+                            return $this->foo($ex - 1);
+                        }
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
+            'selfStaticMethodCall' => [
+                'input' => '<?php
+                    class A {
+                        public static function foo(string $s, int $v): string {
+                            if ($v > 5) {
+                                return self::foo($s, $v - 1);
+                            }
+                            return $s;
+                        }
+                    }',
+                'output' => '<?php
+                    class A {
+                        /**
+                         * @psalm-pure
+                         */
+                        public static function foo(string $s, int $v): string {
+                            if ($v > 5) {
+                                return self::foo($s, $v - 1);
+                            }
+                            return $s;
+                        }
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
+            'SKIPPED-selfClosureCall' => [
+                'input' => '<?php
+                    $f = function(string $s, int $v) use (&$f): string {
+                        if ($v > 5) {
+                            return $f($s, $v - 1);
+                        }
+                        return $s;
+                    }',
+                'output' => '<?php
+                    /**
+                     * @psalm-pure
+                     */
+                    $f = function(string $s, int $v) use (&$f): string {
+                        if ($v > 5) {
+                            return $f($s, $v - 1);
+                        }
+                        return $s;
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
+            'propertySetIsNotMutationFree' => [
+                'input' => '<?php
+                    class A {
+                        /**
+                         * @psalm-readonly-allow-private-mutation
+                         * @var list<FunctionLikeParameter>
+                         */
+                        public array $params = [];
+
+                        /**
+                         * @psalm-readonly-allow-private-mutation
+                         * @var array<string, bool>
+                         */
+                        public array $param_lookup = [];
+
+                        /**
+                         * @internal
+                         */
+                        public function addParam(FunctionLikeParameter $param, ?bool $lookup_value = null): void
+                        {
+                            $this->params[] = $param;
+                            $this->param_lookup[$param->name] = $lookup_value ?? true;
+                        }
+                    }',
+                'output' => '<?php
+                    class A {
+                        /**
+                         * @psalm-readonly-allow-private-mutation
+                         * @var list<FunctionLikeParameter>
+                         */
+                        public array $params = [];
+
+                        /**
+                         * @psalm-readonly-allow-private-mutation
+                         * @var array<string, bool>
+                         */
+                        public array $param_lookup = [];
+
+                        /**
+                         * @internal
+                         *
+                         * @psalm-external-mutation-free
+                         */
+                        public function addParam(FunctionLikeParameter $param, ?bool $lookup_value = null): void
+                        {
+                            $this->params[] = $param;
+                            $this->param_lookup[$param->name] = $lookup_value ?? true;
+                        }
                     }',
                 'php_version' => '7.4',
                 'issues_to_fix' => ['MissingPureAnnotation'],
@@ -134,6 +444,9 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                     abstract class A {
                         public int $a = 5;
 
+                        /**
+                         * @psalm-mutation-free
+                         */
                         public function foo() : self {
                             return $this;
                         }
@@ -150,6 +463,7 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                         public int $a = 5;
 
                         public function foo(string $s) : string {
+                            echo "test";
                             return $string . $this->a;
                         }
                     }
@@ -164,11 +478,15 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                         public int $a = 5;
 
                         public function foo(string $s) : string {
+                            echo "test";
                             return $string . $this->a;
                         }
                     }
 
                     class B extends A {
+                        /**
+                         * @psalm-pure
+                         */
                         public function foo(string $s) : string {
                             return $string;
                         }
@@ -196,6 +514,9 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                     class A {
                         public int $a = 5;
 
+                        /**
+                         * @psalm-mutation-free
+                         */
                         public function foo(string $s) : string {
                             return $string . $this->a;
                         }

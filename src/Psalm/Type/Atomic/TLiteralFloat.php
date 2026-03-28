@@ -6,6 +6,8 @@ namespace Psalm\Type\Atomic;
 
 use Override;
 
+use function is_nan;
+
 /**
  * Denotes a floating point value where the exact numeric value is known.
  *
@@ -21,6 +23,9 @@ final class TLiteralFloat extends TFloat
     #[Override]
     public function getKey(bool $include_extra = true): string
     {
+        if (is_nan($this->value)) {
+            return 'float(NAN)';
+        }
         return 'float(' . $this->value . ')';
     }
 
@@ -30,12 +35,16 @@ final class TLiteralFloat extends TFloat
         if (!$exact) {
             return 'float';
         }
+        if (is_nan($this->value)) {
+            return 'float(NAN)';
+        }
 
         return 'float(' . $this->value . ')';
     }
 
     /**
-     * @param  array<lowercase-string, string> $aliased_classes
+     * @param array<lowercase-string, string> $aliased_classes
+     * @psalm-pure
      */
     #[Override]
     public function toNamespacedString(

@@ -18,10 +18,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodVisibilityAn
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
-use Psalm\Internal\DataFlow\TaintSink;
-use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
@@ -61,7 +58,6 @@ use Psalm\Type\Atomic\TUnknownClassString;
 use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 
-use function array_diff;
 use function array_map;
 use function array_values;
 use function count;
@@ -152,7 +148,7 @@ final class NewAnalyzer extends CallAnalyzer
                 $codebase->analyzer->addNodeReference(
                     $statements_analyzer->getFilePath(),
                     $stmt->class,
-                    $codebase->classlikes->classExists($fq_class_name)
+                    $codebase->classlikes->classExists($fq_class_name, null, $context)
                         ? $fq_class_name
                         : '*'
                             . ($stmt->class instanceof PhpParser\Node\Name\FullyQualified
@@ -191,7 +187,7 @@ final class NewAnalyzer extends CallAnalyzer
                     $statements_analyzer,
                     $stmt->class,
                     $fq_class_name,
-                    $context->calling_method_id,
+                    $context,
                 );
             }
 
@@ -213,8 +209,7 @@ final class NewAnalyzer extends CallAnalyzer
                     $statements_analyzer,
                     $fq_class_name,
                     new CodeLocation($statements_analyzer->getSource(), $stmt->class),
-                    $context->self,
-                    $context->calling_method_id,
+                    $context,
                     $statements_analyzer->getSuppressedIssues(),
                 ) === false) {
                     ArgumentsAnalyzer::analyze(
@@ -229,7 +224,7 @@ final class NewAnalyzer extends CallAnalyzer
                     return true;
                 }
 
-                if ($codebase->interfaceExists($fq_class_name)) {
+                if ($codebase->interfaceExists($fq_class_name, null, $context)) {
                     IssueBuffer::maybeAdd(
                         new InterfaceInstantiation(
                             'Interface ' . $fq_class_name . ' cannot be instantiated',
@@ -267,7 +262,7 @@ final class NewAnalyzer extends CallAnalyzer
             }
 
             if (strtolower($fq_class_name) !== 'stdclass' &&
-                $codebase->classlikes->classExists($fq_class_name)
+                $codebase->classlikes->classExists($fq_class_name, null, $context)
             ) {
                 self::analyzeNamedConstructor(
                     $statements_analyzer,
@@ -396,7 +391,7 @@ final class NewAnalyzer extends CallAnalyzer
 
         $method_id = new MethodIdentifier($fq_class_name, '__construct');
 
-        if ($codebase->methods->methodExists(
+        if ($codebase->methodExists(
             $method_id,
             $context->calling_method_id,
             $codebase->collect_locations ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null,
@@ -459,22 +454,19 @@ final class NewAnalyzer extends CallAnalyzer
                     );
                 }
 
-                if (!$method_storage->external_mutation_free && !$context->inside_throw) {
-                    if ($context->pure) {
-                        IssueBuffer::maybeAdd(
-                            new ImpureMethodCall(
-                                'Cannot call an impure constructor from a pure context',
-                                new CodeLocation($statements_analyzer, $stmt),
-                            ),
-                            $statements_analyzer->getSuppressedIssues(),
-                        );
-                    } elseif ($statements_analyzer->getSource()
-                        instanceof FunctionLikeAnalyzer
-                        && $statements_analyzer->getSource()->track_mutations
-                    ) {
-                        $statements_analyzer->getSource()->inferred_has_mutation = true;
-                        $statements_analyzer->getSource()->inferred_impure = true;
-                    }
+                if (!$context->inside_throw &&
+                    !$method_storage->isExternalMutationFree()
+                ) {
+                    $statements_analyzer->signalMutation(
+                        $method_storage->allowed_mutations,
+                        $context,
+                        'constructor ' . $codebase->methods->getCasedMethodId($declaring_method_id),
+                        ImpureMethodCall::class,
+                        $stmt,
+                        null,
+                        false,
+                        $method_storage,
+                    );
                 }
 
                 if ($method_storage->assertions && $stmt->class instanceof PhpParser\Node\Name) {
@@ -634,7 +626,7 @@ final class NewAnalyzer extends CallAnalyzer
             );
         }
 
-        if ($storage->external_mutation_free) {
+        if ($storage->isExternalMutationFree()) {
             $stmt->setAttribute('external_mutation_free', true);
             $stmt_type = $statements_analyzer->node_data->getType($stmt);
 
@@ -646,7 +638,7 @@ final class NewAnalyzer extends CallAnalyzer
             }
         }
 
-        if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+        if ($statements_analyzer->taint_flow_graph
             && !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
             && ($stmt_type = $statements_analyzer->node_data->getType($stmt))
         ) {
@@ -660,7 +652,7 @@ final class NewAnalyzer extends CallAnalyzer
                 $method_storage = $codebase->methods->getStorage($declaring_method_id);
             }
 
-            if ($storage->external_mutation_free
+            if ($storage->isExternalMutationFree()
                 || ($method_storage && $method_storage->specialize_call)
             ) {
                 $method_source = DataFlowNode::getForMethodReturn(
@@ -677,7 +669,7 @@ final class NewAnalyzer extends CallAnalyzer
                 );
             }
 
-            $statements_analyzer->data_flow_graph->addNode($method_source);
+            $statements_analyzer->taint_flow_graph->addNode($method_source);
 
             $stmt_type = $stmt_type->setParentNodes([$method_source->id => $method_source]);
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
@@ -719,38 +711,36 @@ final class NewAnalyzer extends CallAnalyzer
         if ($has_single_class) {
             $fq_class_name = $stmt_class_type->getSingleStringLiteral()->value;
         } else {
-            if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+            if ($statements_analyzer->taint_flow_graph
                 && $stmt_class_type->parent_nodes
                 && !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
             ) {
                 $arg_location = new CodeLocation($statements_analyzer->getSource(), $stmt_class);
 
-                $custom_call_sink = TaintSink::getForMethodArgument(
+                $custom_call_sink = DataFlowNode::getForMethodArgument(
                     'variable-call',
                     'variable-call',
                     0,
                     $arg_location,
                     $arg_location,
+                    TaintKind::INPUT_CALLABLE,
                 );
 
-                $custom_call_sink->taints = [TaintKind::INPUT_CALLABLE];
-
-                $statements_analyzer->data_flow_graph->addSink($custom_call_sink);
+                $statements_analyzer->taint_flow_graph->addSink($custom_call_sink);
 
                 $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
 
                 $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
                 $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
-                $taints = array_diff($added_taints, $removed_taints);
-                if ($added_taints !== []) {
-                    $taint_source = TaintSource::fromNode($custom_call_sink);
-                    $taint_source->taints = $taints;
-                    $statements_analyzer->data_flow_graph->addSource($taint_source);
+                $taints = $added_taints & ~$removed_taints;
+                if ($added_taints !== 0) {
+                    $taint_source = $custom_call_sink->setTaints($taints);
+                    $statements_analyzer->taint_flow_graph->addSource($taint_source);
                 }
 
                 foreach ($stmt_class_type->parent_nodes as $parent_node) {
-                    $statements_analyzer->data_flow_graph->addPath(
+                    $statements_analyzer->taint_flow_graph->addPath(
                         $parent_node,
                         $custom_call_sink,
                         'call',
@@ -850,7 +840,7 @@ final class NewAnalyzer extends CallAnalyzer
                     $new_types []= new Union([$new_type_part]);
 
                     if ($lhs_type_part->as_type
-                        && $codebase->classlikes->classExists($lhs_type_part->as_type->value)
+                        && $codebase->classlikes->classExists($lhs_type_part->as_type->value, null, $context)
                     ) {
                         $as_storage = $codebase->classlike_storage_provider->get(
                             $lhs_type_part->as_type->value,
@@ -871,7 +861,7 @@ final class NewAnalyzer extends CallAnalyzer
                 }
 
                 if ($lhs_type_part->as_type) {
-                    $codebase->methods->methodExists(
+                    $codebase->methodExists(
                         new MethodIdentifier(
                             $lhs_type_part->as_type->value,
                             '__construct',
@@ -899,7 +889,7 @@ final class NewAnalyzer extends CallAnalyzer
                         }
 
                         if ($lhs_type_part->as_type
-                            && $codebase->classlikes->classExists($lhs_type_part->as_type->value)
+                            && $codebase->classlikes->classExists($lhs_type_part->as_type->value, null, $context)
                         ) {
                             $as_storage = $codebase->classlike_storage_provider->get(
                                 $lhs_type_part->as_type->value,

@@ -25,6 +25,9 @@ use function realpath;
  */
 final class Workspace
 {
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         protected LanguageServer $server,
         protected Codebase $codebase,

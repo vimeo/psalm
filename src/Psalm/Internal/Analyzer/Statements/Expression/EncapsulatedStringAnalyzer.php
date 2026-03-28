@@ -11,9 +11,8 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
-use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
 use Psalm\Type\Atomic\TLiteralFloat;
@@ -25,9 +24,6 @@ use Psalm\Type\Atomic\TNonspecificLiteralInt;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
-
-use function array_diff;
-use function in_array;
 
 /**
  * @internal
@@ -93,13 +89,11 @@ final class EncapsulatedStringAnalyzer
                     }
                 }
 
-                if ($statements_analyzer->data_flow_graph
-                    && !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
-                ) {
+                if ($graph = $statements_analyzer->getDataFlowGraphWithSuppressed()) {
                     $var_location = new CodeLocation($statements_analyzer, $part);
 
                     $new_parent_node = DataFlowNode::getForAssignment('concat', $var_location);
-                    $statements_analyzer->data_flow_graph->addNode($new_parent_node);
+                    $graph->addNode($new_parent_node);
 
                     $parent_nodes[$new_parent_node->id] = $new_parent_node;
 
@@ -109,16 +103,15 @@ final class EncapsulatedStringAnalyzer
                     $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
                     $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
-                    $taints = array_diff($added_taints, $removed_taints);
-                    if ($taints !== [] && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
-                        $taint_source = TaintSource::fromNode($new_parent_node);
-                        $taint_source->taints = $taints;
-                        $statements_analyzer->data_flow_graph->addSource($taint_source);
+                    $taints = $added_taints & ~$removed_taints;
+                    if ($taints !== 0 && !$graph instanceof VariableUseGraph) {
+                        $taint_source = $new_parent_node->setTaints($taints);
+                        $graph->addSource($taint_source);
                     }
 
                     if ($casted_part_type->parent_nodes) {
                         foreach ($casted_part_type->parent_nodes as $parent_node) {
-                            $statements_analyzer->data_flow_graph->addPath(
+                            $graph->addPath(
                                 $parent_node,
                                 $new_parent_node,
                                 'concat',

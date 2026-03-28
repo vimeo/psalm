@@ -12,12 +12,16 @@ use Psalm\Type\Union;
 use function is_string;
 use function str_replace;
 
+/**
+ * @psalm-external-mutation-free
+ */
 final class Possibilities
 {
     use UnserializeMemoryUsageSuppressionTrait;
 
     /**
      * @param list<Assertion> $rule
+     * @psalm-mutation-free
      */
     public function __construct(
         /**
@@ -29,6 +33,9 @@ final class Possibilities
     ) {
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function getUntemplatedCopy(
         TemplateResult $template_result,
         ?string $this_var_id,

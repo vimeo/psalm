@@ -20,6 +20,7 @@ use function substr_replace;
 
 /**
  * @internal
+ * @psalm-external-mutation-free
  */
 final class FileManipulationBuffer
 {
@@ -31,6 +32,7 @@ final class FileManipulationBuffer
 
     /**
      * @param FileManipulation[] $file_manipulations
+     * @psalm-external-mutation-free
      */
     public static function add(string $file_path, array $file_manipulations): void
     {
@@ -43,7 +45,10 @@ final class FileManipulationBuffer
         }
     }
 
-    /** @param CodeMigration[] $code_migrations */
+    /**
+     * @param CodeMigration[] $code_migrations
+     * @psalm-external-mutation-free
+     */
     public static function addCodeMigrations(array $code_migrations): void
     {
         self::$code_migrations = array_merge(self::$code_migrations, $code_migrations);
@@ -51,6 +56,7 @@ final class FileManipulationBuffer
 
     /**
      * @return array{int, int}
+     * @psalm-external-mutation-free
      */
     private static function getCodeOffsets(
         string $source_file_path,
@@ -80,6 +86,9 @@ final class FileManipulationBuffer
         return [$start_offset, $middle_offset];
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public static function addForCodeLocation(
         CodeLocation $code_location,
         string $replacement_text,
@@ -113,6 +122,9 @@ final class FileManipulationBuffer
         );
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public static function addVarAnnotationToRemove(DocblockTypeLocation $code_location): void
     {
         $bounds = $code_location->getSelectionBounds();
@@ -171,6 +183,7 @@ final class FileManipulationBuffer
 
     /**
      * @return FileManipulation[]
+     * @psalm-external-mutation-free
      */
     public static function getManipulationsForFile(string $file_path): array
     {
@@ -179,6 +192,7 @@ final class FileManipulationBuffer
 
     /**
      * @return array<string, FileManipulation[]>
+     * @psalm-external-mutation-free
      */
     public static function getMigrationManipulations(FileProvider $file_provider): array
     {
@@ -232,12 +246,16 @@ final class FileManipulationBuffer
 
     /**
      * @return array<string, FileManipulation[]>
+     * @psalm-external-mutation-free
      */
     public static function getAll(): array
     {
         return self::$file_manipulations;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public static function clearCache(): void
     {
         self::$file_manipulations = [];

@@ -21,6 +21,9 @@ use function in_array;
  */
 final class ImagickPixelColorReturnTypeProvider implements MethodReturnTypeProviderInterface
 {
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public static function getClassLikeNames(): array
     {
@@ -60,7 +63,7 @@ final class ImagickPixelColorReturnTypeProvider implements MethodReturnTypeProvi
         $types = [];
         if (isset($formats[0])) {
             $types []= new Union([
-                new TKeyedArray([
+                TKeyedArray::make([
                     'r' => Type::getIntRange(0, 255),
                     'g' => Type::getIntRange(0, 255),
                     'b' => Type::getIntRange(0, 255),
@@ -70,7 +73,7 @@ final class ImagickPixelColorReturnTypeProvider implements MethodReturnTypeProvi
         }
         if (isset($formats[1])) {
             $types []= new Union([
-                new TKeyedArray([
+                TKeyedArray::make([
                     'r' => Type::getFloat(),
                     'g' => Type::getFloat(),
                     'b' => Type::getFloat(),
@@ -80,7 +83,7 @@ final class ImagickPixelColorReturnTypeProvider implements MethodReturnTypeProvi
         }
         if (isset($formats[2])) {
             $types []= new Union([
-                new TKeyedArray([
+                TKeyedArray::make([
                     'r' => Type::getIntRange(0, 255),
                     'g' => Type::getIntRange(0, 255),
                     'b' => Type::getIntRange(0, 255),

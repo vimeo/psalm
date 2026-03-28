@@ -6,21 +6,22 @@ use PhpParser\Node\ArrayItem;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\RemoveTaintsInterface;
+use Psalm\Type\TaintKind;
 
 final class SafeArrayKeyChecker implements RemoveTaintsInterface
 {
     /**
      * Called to see what taints should be removed
      *
-     * @return list<string>
+     * @return int
      */
     #[\Override]
-    public static function removeTaints(AddRemoveTaintsEvent $event): array
+    public static function removeTaints(AddRemoveTaintsEvent $event): int
     {
         $item = $event->getExpr();
         $statements_analyzer = $event->getStatementsSource();
         if (!($item instanceof ArrayItem) || !($statements_analyzer instanceof StatementsAnalyzer)) {
-            return [];
+            return 0;
         }
         $item_key_value = '';
         if ($item->key) {
@@ -34,8 +35,8 @@ final class SafeArrayKeyChecker implements RemoveTaintsInterface
         }
 
         if ($item_key_value === 'safe_key') {
-            return ['html'];
+            return TaintKind::INPUT_HTML;
         }
-        return [];
+        return 0;
     }
 }

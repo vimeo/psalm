@@ -43,6 +43,7 @@ final class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderI
 {
     /**
      * @return array<lowercase-string>
+     * @psalm-pure
      */
     #[Override]
     public static function getFunctionIds(): array
@@ -118,7 +119,7 @@ final class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderI
                     return Type::getEmptyArray();
                 }
 
-                return new Union([new TKeyedArray(
+                return new Union([TKeyedArray::make(
                     $new_properties,
                     null,
                     $first_arg_array->fallback_params,

@@ -16,6 +16,9 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
  */
 final class ScannerTask implements Task
 {
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(private string $file)
     {
     }

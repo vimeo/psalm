@@ -14,23 +14,35 @@ use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 final class Falsy extends Assertion
 {
     use UnserializeMemoryUsageSuppressionTrait;
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getNegation(): Assertion
     {
         return new Truthy();
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function isNegation(): bool
     {
         return true;
     }
 
+    /**
+     * @psalm-pure
+     */
     public function __toString(): string
     {
         return 'falsy';
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function isNegationOf(Assertion $assertion): bool
     {

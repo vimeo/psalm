@@ -252,7 +252,7 @@ More complex types can be constructed as follows. The following represents an as
 
 ``` php
         new Union([
-            new TKeyedArray([
+            TKeyedArray::make([
                 'key_1' => new Union([new TString()]),
                 'key_2' => new Union([new TInt()]),
                 'key_3' => new Union([new TBool()])])]);

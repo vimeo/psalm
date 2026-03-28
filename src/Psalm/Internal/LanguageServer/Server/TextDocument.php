@@ -38,6 +38,9 @@ use function substr_count;
  */
 final class TextDocument
 {
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         protected LanguageServer $server,
         protected Codebase $codebase,

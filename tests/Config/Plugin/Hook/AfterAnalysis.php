@@ -8,10 +8,15 @@ use Override;
 use Psalm\Plugin\EventHandler\AfterAnalysisInterface;
 use Psalm\Plugin\EventHandler\Event\AfterAnalysisEvent;
 
+/**
+ * @psalm-immutable
+ */
 final class AfterAnalysis implements AfterAnalysisInterface
 {
     /**
      * Called after analysis is complete
+     *
+     * @psalm-mutation-free
      */
     #[Override]
     public static function afterAnalysis(AfterAnalysisEvent $event): void

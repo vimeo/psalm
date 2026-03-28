@@ -25,6 +25,9 @@ final class HasExactCount extends Assertion
         return new DoesNotHaveExactCount($this->count);
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function hasEquality(): bool
     {

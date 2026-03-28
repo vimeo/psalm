@@ -39,6 +39,7 @@ final class FilterInputReturnTypeProvider implements FunctionReturnTypeProviderI
 {
     /**
      * @return array<lowercase-string>
+     * @psalm-pure
      */
     #[Override]
     public static function getFunctionIds(): array
@@ -102,6 +103,7 @@ final class FilterInputReturnTypeProvider implements FunctionReturnTypeProviderI
             $helper = FilterUtils::getOptionsArgValueOrError(
                 $call_args[3],
                 $statements_analyzer,
+                $event->getContext(),
                 $codebase,
                 $code_location,
                 $function_id,

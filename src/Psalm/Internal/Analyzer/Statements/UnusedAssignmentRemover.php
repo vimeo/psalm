@@ -120,6 +120,9 @@ final class UnusedAssignmentRemover
         }
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     private static function getPartialRemovalBounds(
         Codebase $codebase,
         CodeLocation $var_loc,
@@ -173,8 +176,9 @@ final class UnusedAssignmentRemover
     }
 
     /**
-     * @param  PhpParser\Node\Expr\Assign|PhpParser\Node\Expr\AssignOp|PhpParser\Node\Expr\AssignRef $cur_assign
-     * @param  array<string, CodeLocation>    $var_loc_map
+     * @param PhpParser\Node\Expr\Assign|PhpParser\Node\Expr\AssignOp|PhpParser\Node\Expr\AssignRef $cur_assign
+     * @param array<string, CodeLocation>    $var_loc_map
+     * @psalm-external-mutation-free
      */
     private function markRemovedChainAssignVar(PhpParser\Node\Expr $cur_assign, array $var_loc_map): void
     {
@@ -353,6 +357,9 @@ final class UnusedAssignmentRemover
         return [null, $search_level];
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function checkIfVarRemoved(string $var_id, CodeLocation $var_loc): bool
     {
         return array_key_exists($var_id, $this->removed_unref_vars)

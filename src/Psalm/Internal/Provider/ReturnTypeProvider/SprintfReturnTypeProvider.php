@@ -39,6 +39,7 @@ final class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInter
 {
     /**
      * @return array<lowercase-string>
+     * @psalm-pure
      */
     #[Override]
     public static function getFunctionIds(): array
@@ -161,17 +162,20 @@ final class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInter
                     return Type::getString('');
                 }
 
-                // these placeholders are too complex to handle for now
-                if (preg_match(
-                    '/%(?:\d+\$)?[-+]?(?:\d+|\*)(?:\.(?:\d+|\*))?[bcdouxXeEfFgGhHs]/',
+                // these placeholders still fall back to a generic return type,
+                // but we validate their format and argument count first
+                $has_complex_placeholder = preg_match(
+                    '/%(?:\d+\$)?[-+]?(?:'
+                    . '(?:\d+|\*(?:\d+\$)?)(?:\.(?:\d+|\*(?:\d+\$)?))?'
+                    . '|\.\*(?:\d+\$)?'
+                    . ')[bcdouxXeEfFgGhHs]/',
                     $type->getSingleStringLiteral()->value,
-                ) === 1) {
-                    return null;
-                }
+                ) === 1;
 
                 // assume a random, high number for tests
                 $provided_placeholders_count = $has_splat_args === true ? 100 : count($call_args) - 1;
-                $dummy = array_fill(0, $provided_placeholders_count, '');
+                // Use integer dummies for * width/precision so PHP validates arity without raising a false ValueError.
+                $dummy = array_fill(0, $provided_placeholders_count, $has_complex_placeholder ? 0 : '');
 
                 // check if we have enough/too many arguments and a valid format
                 $initial_result = null;
@@ -285,6 +289,10 @@ final class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInter
                     if (array_pop($dummy) === null) {
                         break;
                     }
+                }
+
+                if ($has_complex_placeholder) {
+                    return null;
                 }
 
                 if ($event->getFunctionId() === 'printf') {

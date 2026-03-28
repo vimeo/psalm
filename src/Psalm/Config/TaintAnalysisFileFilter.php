@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Psalm\Config;
 
-/** @internal */
+/**
+ * @internal
+ */
 final class TaintAnalysisFileFilter extends FileFilter
 {
 }

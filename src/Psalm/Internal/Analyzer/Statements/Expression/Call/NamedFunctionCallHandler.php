@@ -15,7 +15,6 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\IncludeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\ForbiddenCode;
@@ -120,7 +119,7 @@ final class NamedFunctionCallHandler
         if ($function_id === 'class_exists') {
             if ($first_arg) {
                 if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {
-                    if (!$codebase->classlikes->classExists($first_arg->value->value)) {
+                    if (!$codebase->classlikes->classExists($first_arg->value->value, null, $context)) {
                         $context->phantom_classes[strtolower($first_arg->value->value)] = true;
                     }
                 } elseif ($first_arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
@@ -130,7 +129,7 @@ final class NamedFunctionCallHandler
                 ) {
                     $resolved_name = (string) $first_arg->value->class->getAttribute('resolvedName');
 
-                    if (!$codebase->classlikes->classExists($resolved_name)) {
+                    if (!$codebase->classlikes->classExists($resolved_name, null, $context)) {
                         $context->phantom_classes[strtolower($resolved_name)] = true;
                     }
                 }
@@ -142,7 +141,7 @@ final class NamedFunctionCallHandler
         if ($function_id === 'interface_exists') {
             if ($first_arg) {
                 if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {
-                    if (!$codebase->classlikes->interfaceExists($first_arg->value->value)) {
+                    if (!$codebase->classlikes->interfaceExists($first_arg->value->value, null, $context)) {
                         $context->phantom_classes[strtolower($first_arg->value->value)] = true;
                     }
                 } elseif ($first_arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
@@ -152,7 +151,7 @@ final class NamedFunctionCallHandler
                 ) {
                     $resolved_name = (string) $first_arg->value->class->getAttribute('resolvedName');
 
-                    if (!$codebase->classlikes->interfaceExists($resolved_name)) {
+                    if (!$codebase->classlikes->interfaceExists($resolved_name, null, $context)) {
                         $context->phantom_classes[strtolower($resolved_name)] = true;
                     }
                 }
@@ -416,11 +415,11 @@ final class NamedFunctionCallHandler
             $source = $statements_analyzer->getSource();
 
             if ($source instanceof FunctionLikeAnalyzer) {
-                if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
+                if ($statements_analyzer->variable_use_graph) {
                     foreach ($source->param_nodes as $param_node) {
-                        $statements_analyzer->data_flow_graph->addPath(
+                        $statements_analyzer->variable_use_graph->addPath(
                             $param_node,
-                            new DataFlowNode('variable-use', 'variable use', null),
+                            DataFlowNode::getForVariableUse(),
                             'variable-use',
                         );
                     }

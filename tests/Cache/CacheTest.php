@@ -45,6 +45,9 @@ final class CacheTest extends TestCase
         RuntimeCaches::clearAll();
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function tearDown(): void
     {
@@ -56,6 +59,7 @@ final class CacheTest extends TestCase
     /**
      * @param array<string, list<IssueData>> $issue_data
      * @return array<string, list<string>>
+     * @psalm-mutation-free
      */
     private static function normalizeIssueData(array $issue_data): array
     {
@@ -90,6 +94,22 @@ final class CacheTest extends TestCase
                     </projectFiles>
                 </psalm>
                 XML,
+        );
+        $config->setCustomErrorLevel(
+            'MissingImmutableAnnotation',
+            Config::REPORT_SUPPRESS,
+        );
+        $config->setCustomErrorLevel(
+            'MissingInterfaceImmutableAnnotation',
+            Config::REPORT_SUPPRESS,
+        );
+        $config->setCustomErrorLevel(
+            'MissingPureAnnotation',
+            Config::REPORT_SUPPRESS,
+        );
+        $config->setCustomErrorLevel(
+            'MissingAbstractPureAnnotation',
+            Config::REPORT_SUPPRESS,
         );
         $config->setIncludeCollector(new IncludeCollector());
 
@@ -132,6 +152,7 @@ final class CacheTest extends TestCase
      *         issues?: array<string, list<string>>,
      *     }>,
      * }>
+     * @psalm-mutation-free
      */
     public static function provideCacheInteractions(): iterable
     {

@@ -11,8 +11,14 @@ use Psalm\Report;
 use function sprintf;
 use function strtr;
 
+/**
+ * @psalm-external-mutation-free
+ */
 final class GithubActionsReport extends Report
 {
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public function create(): string
     {
@@ -47,6 +53,9 @@ final class GithubActionsReport extends Report
         return $output;
     }
 
+    /**
+     * @psalm-pure
+     */
     private function escapeData(string $data): string
     {
         return strtr(
@@ -59,6 +68,9 @@ final class GithubActionsReport extends Report
         );
     }
 
+    /**
+     * @psalm-pure
+     */
     private function escapeProperty(mixed $value): string
     {
         return strtr(

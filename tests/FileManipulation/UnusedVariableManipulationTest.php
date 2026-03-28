@@ -6,8 +6,14 @@ namespace Psalm\Tests\FileManipulation;
 
 use Override;
 
+/**
+ * @psalm-immutable
+ */
 final class UnusedVariableManipulationTest extends FileManipulationTestCase
 {
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerValidCodeParse(): array
     {
@@ -593,6 +599,7 @@ final class UnusedVariableManipulationTest extends FileManipulationTestCase
                             $this->foo = $foo;
                         }
 
+                        /** @psalm-mutation-free */
                         public function getFoo() : void {
                             return "abular" . $this->foo;
                         }
@@ -619,6 +626,7 @@ final class UnusedVariableManipulationTest extends FileManipulationTestCase
                             $this->foo = $foo;
                         }
 
+                        /** @psalm-mutation-free */
                         public function getFoo() : void {
                             return "abular" . $this->foo;
                         }

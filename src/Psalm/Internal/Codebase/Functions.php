@@ -8,6 +8,8 @@ use Exception;
 use PhpParser\Node\Arg;
 use PhpParser\Node\Expr\Closure as ClosureNode;
 use Psalm\Codebase;
+use Psalm\Context;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\DynamicFunctionStorageProvider;
@@ -16,9 +18,9 @@ use Psalm\Internal\Provider\FunctionExistenceProvider;
 use Psalm\Internal\Provider\FunctionParamsProvider;
 use Psalm\Internal\Provider\FunctionReturnTypeProvider;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
-use Psalm\NodeTypeProvider;
 use Psalm\StatementsSource;
 use Psalm\Storage\FunctionStorage;
+use Psalm\Storage\Mutations;
 use Psalm\Type\Atomic\TNamedObject;
 use UnexpectedValueException;
 
@@ -27,8 +29,8 @@ use function count;
 use function end;
 use function explode;
 use function implode;
-use function in_array;
 use function is_bool;
+use function max;
 use function rtrim;
 use function str_contains;
 use function str_ends_with;
@@ -68,6 +70,7 @@ final class Functions
 
     /**
      * @param non-empty-lowercase-string $function_id
+     * @psalm-external-mutation-free
      */
     public function getStorage(
         ?StatementsAnalyzer $statements_analyzer,
@@ -148,6 +151,9 @@ final class Functions
         return $declaring_file_storage->functions[$function_id];
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addGlobalFunction(string $function_id, FunctionStorage $storage): void
     {
         self::$stubbed_functions[strtolower($function_id)] = $storage;
@@ -155,12 +161,16 @@ final class Functions
 
     /**
      * @param array<lowercase-string, FunctionStorage> $stubs
+     * @psalm-external-mutation-free
      */
     public function addGlobalFunctions(array $stubs): void
     {
         self::$stubbed_functions += $stubs;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function hasStubbedFunction(string $function_id): bool
     {
         return isset(self::$stubbed_functions[strtolower($function_id)]);
@@ -168,6 +178,7 @@ final class Functions
 
     /**
      * @return array<lowercase-string, FunctionStorage>
+     * @psalm-external-mutation-free
      */
     public function getAllStubbedFunctions(): array
     {
@@ -373,6 +384,9 @@ final class Functions
         return $matching_functions;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public static function isVariadic(Codebase $codebase, string $function_id, string $file_path): bool
     {
         $file_storage = $codebase->file_storage_provider->get($file_path);
@@ -392,51 +406,63 @@ final class Functions
 
     /**
      * @param ?list<Arg> $args
+     * @return Mutations::LEVEL_*
      */
-    public function isCallMapFunctionPure(
+    public function getCallMapFunctionMutations(
+        ?StatementsAnalyzer $statements_analyzer,
+        ?Context $context,
         Codebase $codebase,
-        ?NodeTypeProvider $type_provider,
         string $function_id,
         ?array $args,
         bool &$must_use = true,
-    ): bool {
+    ): int {
         if (ImpureFunctionsList::isImpure($function_id)) {
-            return false;
+            return Mutations::LEVEL_ALL;
         }
 
+        $type_provider = $statements_analyzer?->node_data;
         if ($function_id === 'serialize' && isset($args[0]) && $type_provider) {
             $serialize_type = $type_provider->getType($args[0]->value);
 
             if ($serialize_type && $serialize_type->canContainObjectType($codebase)) {
-                return false;
+                return Mutations::LEVEL_ALL;
             }
         }
 
         if (str_starts_with($function_id, 'image')) {
-            return false;
+            return Mutations::LEVEL_ALL;
         }
 
         if (str_starts_with($function_id, 'readline')) {
-            return false;
+            return Mutations::LEVEL_ALL;
         }
 
         if (($function_id === 'var_export' || $function_id === 'print_r') && !isset($args[1])) {
-            return false;
+            return Mutations::LEVEL_ALL;
         }
 
         if ($function_id === 'assert') {
             $must_use = false;
-            return true;
+            return Mutations::LEVEL_NONE;
         }
 
         if ($function_id === 'func_num_args' || $function_id === 'func_get_args') {
-            return true;
+            return Mutations::LEVEL_NONE;
         }
 
-        if (in_array($function_id, ['count', 'sizeof']) && isset($args[0]) && $type_provider) {
-            $count_type = $type_provider->getType($args[0]->value);
+        if ((
+                $function_id === 'count'
+                || $function_id === 'sizeof'
+            )
+            && isset($args[0]) && $type_provider
+            && $statements_analyzer
+            && $context
+        ) {
+            $var = $args[0]->value;
+            $count_type = $type_provider->getType($var);
 
             if ($count_type) {
+                $mutations = Mutations::LEVEL_NONE;
                 foreach ($count_type->getAtomicTypes() as $atomic_count_type) {
                     if ($atomic_count_type instanceof TNamedObject) {
                         $count_method_id = new MethodIdentifier(
@@ -445,12 +471,25 @@ final class Functions
                         );
 
                         try {
-                            return $codebase->methods->getStorage($count_method_id)->mutation_free;
+                            $storage = $codebase->methods->getStorage($count_method_id);
                         } catch (Exception) {
-                            // do nothing
+                            continue;
                         }
+                        $mutations = max($mutations, MethodCallPurityAnalyzer::getMethodAllowedMutations(
+                            $statements_analyzer,
+                            $var,
+                            $count_method_id,
+                            $storage,
+                            $context,
+                        ));
+
+                        $statements_analyzer->signalMutationOnlyInferred(
+                            $storage->allowed_mutations,
+                            $storage,
+                        );
                     }
                 }
+                return $mutations;
             }
         }
 
@@ -465,12 +504,13 @@ final class Functions
             || ($args !== null && count($args) === 0)
             || ($function_callable->return_type && $function_callable->return_type->isVoid())
         ) {
-            return false;
+            return Mutations::LEVEL_ALL;
         }
 
         $must_use = $function_id !== 'array_map'
             || (isset($args[0]) && !$args[0]->value instanceof ClosureNode);
 
+        $mutations = Mutations::LEVEL_NONE;
         foreach ($function_callable->params as $i => $param) {
             if ($type_provider && $param->type && $param->type->hasCallableType() && isset($args[$i])) {
                 $arg_type = $type_provider->getType($args[$i]->value);
@@ -482,8 +522,8 @@ final class Functions
                             $possible_callable,
                         );
 
-                        if ($possible_callable && !$possible_callable->is_pure) {
-                            return false;
+                        if ($possible_callable && $possible_callable->allowed_mutations !== Mutations::LEVEL_NONE) {
+                            $mutations = max($mutations, $possible_callable->allowed_mutations);
                         }
                     }
                 }
@@ -494,9 +534,12 @@ final class Functions
             }
         }
 
-        return true;
+        return $mutations;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public static function clearCache(): void
     {
         self::$stubbed_functions = [];

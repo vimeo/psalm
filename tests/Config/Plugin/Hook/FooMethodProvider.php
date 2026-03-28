@@ -23,6 +23,7 @@ final class FooMethodProvider implements
 {
     /**
      * @return array<string>
+     * @psalm-pure
      */
     #[Override]
     public static function getClassLikeNames(): array
@@ -30,6 +31,9 @@ final class FooMethodProvider implements
         return ['Ns\Foo'];
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public static function doesMethodExist(MethodExistenceProviderEvent $event): ?bool
     {

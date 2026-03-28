@@ -11,12 +11,16 @@ use Psalm\FileManipulation;
 use Psalm\StatementsSource;
 use Psalm\Type\Union;
 
+/**
+ * @psalm-external-mutation-free
+ */
 final class AfterFunctionCallAnalysisEvent
 {
     /**
      * @param non-empty-string $function_id
      * @param FileManipulation[] $file_replacements
      * @internal
+     * @psalm-mutation-free
      */
     public function __construct(
         private readonly FuncCall $expr,
@@ -29,6 +33,9 @@ final class AfterFunctionCallAnalysisEvent
     ) {
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getExpr(): FuncCall
     {
         return $this->expr;
@@ -36,27 +43,40 @@ final class AfterFunctionCallAnalysisEvent
 
     /**
      * @return non-empty-string
+     * @psalm-mutation-free
      */
     public function getFunctionId(): string
     {
         return $this->function_id;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getContext(): Context
     {
         return $this->context;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getStatementsSource(): StatementsSource
     {
         return $this->statements_source;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getCodebase(): Codebase
     {
         return $this->codebase;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getReturnTypeCandidate(): Union
     {
         return $this->return_type_candidate;
@@ -64,6 +84,7 @@ final class AfterFunctionCallAnalysisEvent
 
     /**
      * @return FileManipulation[]
+     * @psalm-mutation-free
      */
     public function getFileReplacements(): array
     {
@@ -72,6 +93,7 @@ final class AfterFunctionCallAnalysisEvent
 
     /**
      * @param FileManipulation[] $file_replacements
+     * @psalm-external-mutation-free
      */
     public function setFileReplacements(array $file_replacements): void
     {

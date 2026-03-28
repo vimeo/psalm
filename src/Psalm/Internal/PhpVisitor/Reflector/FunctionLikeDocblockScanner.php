@@ -40,6 +40,7 @@ use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\Mutations;
 use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
@@ -47,19 +48,16 @@ use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
-use Psalm\Type\TaintKindGroup;
 use Psalm\Type\Union;
 
 use function array_any;
 use function array_filter;
 use function array_merge;
-use function array_search;
-use function array_splice;
-use function array_unique;
 use function array_values;
 use function count;
 use function explode;
 use function in_array;
+use function min;
 use function preg_last_error_msg;
 use function preg_match;
 use function preg_replace;
@@ -102,17 +100,17 @@ final class FunctionLikeDocblockScanner
 
         $config = Config::getInstance();
 
-        if ($docblock_info->mutation_free) {
-            $storage->mutation_free = true;
-
-            if ($storage instanceof MethodStorage) {
-                $storage->external_mutation_free = true;
-                $storage->mutation_free_inferred = false;
-            }
-        }
-
-        if ($storage instanceof MethodStorage && $docblock_info->external_mutation_free) {
-            $storage->external_mutation_free = true;
+        $storage->allowed_mutations = min(
+            $docblock_info->allowed_mutations,
+            $storage->allowed_mutations,
+        );
+        $storage->has_mutations_annotation = $docblock_info->has_mutations_annotation;
+        
+        if ($storage instanceof MethodStorage
+            && $docblock_info->allowed_mutations <= Mutations::LEVEL_INTERNAL_READ
+        ) {
+            // If we explicitly marked this as mutation free, it's not inferred anymore.
+            $storage->mutation_free_assumed = false;
         }
 
         if ($docblock_info->deprecated) {
@@ -137,18 +135,18 @@ final class FunctionLikeDocblockScanner
             $storage->variadic = true;
         }
 
-        if ($docblock_info->pure) {
-            $storage->pure = true;
+        $storage->allowed_mutations = min(
+            $docblock_info->allowed_mutations,
+            $storage->allowed_mutations,
+        );
+        $storage->has_mutations_annotation = $docblock_info->has_mutations_annotation;
+
+        if ($docblock_info->allowed_mutations === Mutations::LEVEL_NONE
+            || $docblock_info->specialize_call
+        ) {
             $storage->specialize_call = true;
-            $storage->mutation_free = true;
-            if ($storage instanceof MethodStorage) {
-                $storage->external_mutation_free = true;
-            }
         }
 
-        if ($docblock_info->specialize_call) {
-            $storage->specialize_call = true;
-        }
 
         // we make sure we only add ignore flag for internal stubs if the config is set to true
         if ($docblock_info->ignore_nullable_return
@@ -355,47 +353,43 @@ final class FunctionLikeDocblockScanner
 
             foreach ($storage->params as $param_storage) {
                 if ($param_storage->name === $param_name) {
-                    $param_storage->sinks[] = $taint_sink_param['taint'];
+                    $param_storage->sinks |= $taint_sink_param['taint'];
                 }
             }
         }
 
-        $docblock_info->taint_source_types = array_values(array_unique($docblock_info->taint_source_types));
-        // expand 'input' group to all items, e.g. `['other', 'input']` -> `['other', 'html', 'sql', 'shell', ...]`
-        $inputIndex = array_search(TaintKindGroup::GROUP_INPUT, $docblock_info->taint_source_types, true);
-        if ($inputIndex !== false) {
-            array_splice(
-                $docblock_info->taint_source_types,
-                $inputIndex,
-                1,
-                TaintKindGroup::ALL_INPUT,
-            );
-        }
         // merge taints from doc block to storage, enforce uniqueness and having consecutive index keys
-        $storage->taint_source_types = array_merge($storage->taint_source_types, $docblock_info->taint_source_types);
-        $storage->taint_source_types = array_values(array_unique($storage->taint_source_types));
+        $storage->taint_source_types |= $docblock_info->taint_source_types;
+        $location = new CodeLocation($file_scanner, $stmt, null, true);
 
-        $storage->added_taints = $docblock_info->added_taints;
+        foreach ($docblock_info->added_taints as $taint) {
+            $t = $codebase->getOrRegisterTaint($taint, $location);
+            if ($t !== null) {
+                $storage->added_taints |= $t;
+            }
+        }
 
         foreach ($docblock_info->removed_taints as $removed_taint) {
-            if ($removed_taint[0] === '(') {
-                self::handleRemovedTaint(
-                    $codebase,
-                    $stmt,
-                    $aliases,
-                    $removed_taint,
-                    $function_template_types,
-                    $class_template_types,
-                    $type_aliases,
-                    $storage,
-                    $classlike_storage,
-                    $cased_function_id,
-                    $file_storage,
-                    $file_scanner,
-                );
-            } else {
-                $storage->removed_taints[] = $removed_taint;
+            $t = $codebase->getOrRegisterTaint($removed_taint, $location);
+            if ($t !== null) {
+                $storage->removed_taints |= $t;
             }
+        }
+        foreach ($docblock_info->conditionally_removed_taints as $removed_taint) {
+            self::handleConditionallyRemovedTaint(
+                $codebase,
+                $stmt,
+                $aliases,
+                $removed_taint,
+                $function_template_types,
+                $class_template_types,
+                $type_aliases,
+                $storage,
+                $classlike_storage,
+                $cased_function_id,
+                $file_storage,
+                $file_scanner,
+            );
         }
 
         self::handleTaintFlow($docblock_info, $storage);
@@ -1157,7 +1151,7 @@ final class FunctionLikeDocblockScanner
      * @param array<string, non-empty-array<string, Union>> $function_template_types
      * @param array<string, non-empty-array<string, Union>> $class_template_types
      */
-    private static function handleRemovedTaint(
+    private static function handleConditionallyRemovedTaint(
         Codebase $codebase,
         PhpParser\Node\FunctionLike $stmt,
         Aliases $aliases,

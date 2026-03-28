@@ -590,7 +590,7 @@ final class SimpleTypeInferer
             && $array_creation_info->can_create_objectlike
             && $array_creation_info->property_types
         ) {
-            $objectlike = new TKeyedArray(
+            $objectlike = TKeyedArray::make(
                 $array_creation_info->property_types,
                 $array_creation_info->class_strings,
                 null,

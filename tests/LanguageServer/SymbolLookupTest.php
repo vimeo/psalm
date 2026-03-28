@@ -82,14 +82,17 @@ final class SymbolLookupTest extends TestCase
                     }
                 }
 
+                /** @psalm-mutation-free */
                 function bar() : int {
                     return 5;
                 }
 
+                /** @psalm-pure */
                 function baz(int $a) : int {
                     return $a;
                 }
 
+                /** @psalm-pure */
                 function qux(int $a, int $b) : int {
                     return $a + $b;
                 }
@@ -259,6 +262,7 @@ final class SymbolLookupTest extends TestCase
                     }
                 }
 
+                /** @psalm-mutation-free */
                 function bar() : int {
                     return 5;
                 }',
@@ -308,7 +312,7 @@ final class SymbolLookupTest extends TestCase
         ));
 
         $this->assertNotNull($function_symbol_location);
-        $this->assertSame(16, $function_symbol_location->getLineNumber());
+        $this->assertSame(17, $function_symbol_location->getLineNumber());
         $this->assertSame(26, $function_symbol_location->getColumn());
 
         $function_symbol_location = $this->codebase->getSymbolLocationByReference(new Reference(

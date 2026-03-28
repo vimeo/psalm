@@ -1,3 +1,4 @@
 <?php
 
-function custom_taint_source(){}
+/** @psalm-mutation-free */
+function custom_taint_source(): void {}

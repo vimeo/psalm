@@ -24,6 +24,9 @@ final class IsClassEqual extends Assertion
         return new IsClassNotEqual($this->type);
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function hasEquality(): bool
     {

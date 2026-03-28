@@ -47,6 +47,7 @@ final class FunctionCallInfo
 
     /**
      * @mutation-free
+     * @psalm-mutation-free
      */
     public function hasByReferenceParameters(): bool
     {

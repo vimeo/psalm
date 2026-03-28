@@ -8,8 +8,8 @@ use Psalm\Internal\Type\TypeAlias;
 use Psalm\Storage\ImmutableNonCloneableTrait;
 
 /**
- * @psalm-immutable
  * @internal
+ * @psalm-immutable
  */
 final class InlineTypeAlias implements TypeAlias
 {
@@ -17,6 +17,7 @@ final class InlineTypeAlias implements TypeAlias
 
     /**
      * @param list<array{0: string, 1: int, 2?: string}> $replacement_tokens
+     * @psalm-mutation-free
      */
     public function __construct(public readonly array $replacement_tokens)
     {

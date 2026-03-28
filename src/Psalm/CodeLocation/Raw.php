@@ -9,9 +9,14 @@ use Psalm\CodeLocation;
 use function substr;
 use function substr_count;
 
-/** @psalm-immutable */
+/**
+ * @psalm-immutable
+ */
 final class Raw extends CodeLocation
 {
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         string $file_contents,
         string $file_path,

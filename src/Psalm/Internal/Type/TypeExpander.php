@@ -498,7 +498,7 @@ final class TypeExpander
                 unset($property_type);
             }
             if ($changed) {
-                $return_type = new TKeyedArray(
+                $return_type = TKeyedArray::make(
                     $properties,
                     $return_type->class_strings,
                     $fallback_params,
@@ -988,7 +988,7 @@ final class TypeExpander
         if ($properties === []) {
             return [$return_type];
         }
-        return [new TKeyedArray(
+        return [TKeyedArray::make(
             $properties,
             null,
             $all_sealed ? null : [Type::getString(), Type::getMixed()],

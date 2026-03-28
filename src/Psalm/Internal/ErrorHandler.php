@@ -53,7 +53,10 @@ final class ErrorHandler
         }
     }
 
-    /** @psalm-suppress UnusedConstructor added to prevent instantiations */
+    /**
+     * @psalm-suppress UnusedConstructor added to prevent instantiations
+     * @psalm-mutation-free
+     */
     private function __construct()
     {
     }

@@ -10,8 +10,14 @@ use function strrpos;
 use function substr;
 use function trim;
 
+/**
+ * @psalm-external-mutation-free
+ */
 final class FileManipulation
 {
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         public int $start,
         public int $end,
@@ -21,6 +27,9 @@ final class FileManipulation
     ) {
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getKey(): string
     {
         return $this->start === $this->end
@@ -28,6 +37,9 @@ final class FileManipulation
             : ($this->start . ':' . $this->end);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function transform(string $existing_contents): string
     {
         if ($this->preserve_indentation) {

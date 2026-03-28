@@ -26,6 +26,7 @@ final class PluginRegistrationSocket implements RegistrationInterface
 {
     /**
      * @internal
+     * @psalm-mutation-free
      */
     public function __construct(
         public readonly Config $config,
@@ -33,6 +34,9 @@ final class PluginRegistrationSocket implements RegistrationInterface
     ) {
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function addStubFile(string $file_name): void
     {

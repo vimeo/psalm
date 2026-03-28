@@ -62,6 +62,7 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\EnumCaseStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\Mutations;
 use Psalm\Storage\PropertyHookStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
@@ -81,6 +82,7 @@ use function assert;
 use function count;
 use function implode;
 use function ltrim;
+use function min;
 use function preg_match;
 use function preg_split;
 use function sprintf;
@@ -117,6 +119,9 @@ final class ClassLikeNodeScanner
      */
     public array $type_aliases = [];
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         private readonly Codebase $codebase,
         private readonly FileStorage $file_storage,
@@ -289,6 +294,7 @@ final class ClassLikeNodeScanner
             $this->codebase->classlikes->addFullyQualifiedTraitName($fq_classlike_name, $this->file_path);
         } elseif ($node instanceof PhpParser\Node\Stmt\Enum_) {
             $storage->is_enum = true;
+            $storage->allowed_mutations = Mutations::LEVEL_INTERNAL_READ;
             $storage->final = true;
 
             if ($node->scalarType) {
@@ -702,8 +708,11 @@ final class ClassLikeNodeScanner
                 }
             }
 
-            $storage->mutation_free = $docblock_info->mutation_free;
-            $storage->external_mutation_free = $docblock_info->external_mutation_free;
+            $storage->allowed_mutations = min(
+                $docblock_info->allowed_mutations,
+                $storage->allowed_mutations,
+            );
+            $storage->has_mutations_annotation = $docblock_info->has_mutations_annotation;
             $storage->specialize_instance = $docblock_info->taint_specialize;
 
             $storage->override_property_visibility = $docblock_info->override_property_visibility;
@@ -792,12 +801,19 @@ final class ClassLikeNodeScanner
                 if ($attribute->fq_class_name === 'Psalm\\Immutable'
                     || $attribute->fq_class_name === 'JetBrains\\PhpStorm\\Immutable'
                 ) {
-                    $storage->mutation_free = true;
-                    $storage->external_mutation_free = true;
+                    $storage->allowed_mutations = min(
+                        Mutations::LEVEL_INTERNAL_READ,
+                        $storage->allowed_mutations,
+                    );
+                    $storage->has_mutations_annotation = true;
                 }
 
                 if ($attribute->fq_class_name === 'Psalm\\ExternalMutationFree') {
-                    $storage->external_mutation_free = true;
+                    $storage->allowed_mutations = min(
+                        Mutations::LEVEL_INTERNAL_READ_WRITE,
+                        $storage->allowed_mutations,
+                    );
+                    $storage->has_mutations_annotation = true;
                 }
 
                 if ($attribute->fq_class_name === 'AllowDynamicProperties' && $storage->readonly) {
@@ -1230,8 +1246,8 @@ final class ClassLikeNodeScanner
         $storage->cased_name = '__construct';
         $storage->defining_fqcln = $class_storage->name;
 
-        $storage->mutation_free = $storage->external_mutation_free = true;
-        $storage->mutation_free_inferred = true;
+        $storage->allowed_mutations = Mutations::LEVEL_NONE;
+        $storage->mutation_free_assumed = true;
 
         $class_storage->declaring_method_ids['__construct'] = new MethodIdentifier(
             $class_storage->name,
@@ -1279,6 +1295,7 @@ final class ClassLikeNodeScanner
 
             try {
                 $var_comments = CommentAnalyzer::getTypeFromComment(
+                    $this->codebase,
                     $comment,
                     $this->file_scanner,
                     $this->aliases,
@@ -1489,10 +1506,7 @@ final class ClassLikeNodeScanner
 
 
         if (!isset($storage->enum_cases[$stmt->name->name])) {
-            $case = new EnumCaseStorage(
-                $enum_value,
-                $case_location,
-            );
+            $deprecated = false;
 
             $attrs = $this->getAttributeStorageFromStatement(
                 $this->codebase,
@@ -1508,7 +1522,7 @@ final class ClassLikeNodeScanner
                     || $attribute->fq_class_name === 'JetBrains\\PhpStorm\\Deprecated'
                     || $attribute->fq_class_name === 'Deprecated'
                 ) {
-                    $case->deprecated = true;
+                    $deprecated = true;
                     break;
                 }
             }
@@ -1518,10 +1532,14 @@ final class ClassLikeNodeScanner
                 $comments = DocComment::parsePreservingLength($comment);
 
                 if (isset($comments->tags['deprecated'])) {
-                    $case->deprecated = true;
+                    $deprecated = true;
                 }
             }
-            $storage->enum_cases[$stmt->name->name] = $case;
+            $storage->enum_cases[$stmt->name->name] = new EnumCaseStorage(
+                $enum_value,
+                $case_location,
+                $deprecated,
+            );
         } else {
             IssueBuffer::maybeAdd(
                 new DuplicateEnumCase(
@@ -1591,6 +1609,7 @@ final class ClassLikeNodeScanner
 
             try {
                 $var_comments = CommentAnalyzer::getTypeFromComment(
+                    $this->codebase,
                     $comment,
                     $this->file_scanner,
                     $this->aliases,
@@ -1980,10 +1999,11 @@ final class ClassLikeNodeScanner
     }
 
     /**
-     * @param  array<string>    $type_alias_comment_lines
-     * @param  array<string, TypeAlias> $type_aliases
+     * @param array<string>    $type_alias_comment_lines
+     * @param array<string, TypeAlias> $type_aliases
      * @return array<string, InlineTypeAlias>
      * @throws DocblockParseException if there was a problem parsing the docblock
+     * @psalm-external-mutation-free
      */
     private static function getTypeAliasesFromCommentLines(
         array $type_alias_comment_lines,

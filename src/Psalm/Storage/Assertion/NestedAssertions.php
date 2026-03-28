@@ -34,6 +34,9 @@ final class NestedAssertions extends Assertion
         return '@' . json_encode($this->assertions, JSON_THROW_ON_ERROR);
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function isNegationOf(Assertion $assertion): bool
     {

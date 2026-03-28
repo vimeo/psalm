@@ -99,7 +99,6 @@ final class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
             $method_id->fq_class_name,
             new CodeLocation($this, $stmt),
             null,
-            null,
             [],
             new ClassLikeNameOptions(true),
         ) === false
@@ -178,6 +177,7 @@ final class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
         $statements_source = new StatementsAnalyzer(
             $view_method_analyzer,
             new NodeDataProvider(),
+            false,
         );
 
         $statements_source->analyze($pseudo_method_stmts, $context);

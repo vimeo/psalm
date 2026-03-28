@@ -35,6 +35,7 @@ final class ArrayFilterParamsProvider implements FunctionParamsProviderInterface
 {
     /**
      * @return array<lowercase-string>
+     * @psalm-pure
      */
     #[Override]
     public static function getFunctionIds(): array
@@ -264,7 +265,6 @@ final class ArrayFilterParamsProvider implements FunctionParamsProviderInterface
         }
 
         $callable = new TCallable(
-            'callable',
             $callback_arg,
             Type::getMixed(),
         );
