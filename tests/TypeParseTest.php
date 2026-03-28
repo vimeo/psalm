@@ -58,6 +58,56 @@ final class TypeParseTest extends TestCase
         $this->assertSame('A|static', (string) Type::parseString('$this|A'));
     }
 
+    public function testThisInGenericTypeParam(): void
+    {
+        $this->assertSame('B<static>', (string) Type::parseString('B<$this>'));
+    }
+
+    public function testThisAsFirstGenericTypeParam(): void
+    {
+        $this->assertSame('B<static, A>', (string) Type::parseString('B<$this, A>'));
+    }
+
+    public function testThisInMultipleGenericTypeParams(): void
+    {
+        $this->assertSame('B<A, static>', (string) Type::parseString('B<A, $this>'));
+    }
+
+    public function testThisInNestedGenericTypeParam(): void
+    {
+        $this->assertSame('A<B<static>>', (string) Type::parseString('A<B<$this>>'));
+    }
+
+    public function testThisIntersection(): void
+    {
+        $this->assertSame('Foo', (string) Type::parseString('$this&Foo'));
+    }
+
+    public function testThisIntersectionInsideGenericParam(): void
+    {
+        $this->assertSame('B<Foo>', (string) Type::parseString('B<$this&Foo>'));
+    }
+
+    public function testThisUnionInsideGenericParam(): void
+    {
+        $this->assertSame('B<Foo|static>', (string) Type::parseString('B<$this|Foo>'));
+    }
+
+    public function testThisInKeyedArrayValue(): void
+    {
+        $this->assertSame('array{key: static}', (string) Type::parseString('array{key: $this}'));
+    }
+
+    public function testThisAsCallableReturnType(): void
+    {
+        $this->assertSame('impure-Closure(Foo):static', (string) Type::parseString('Closure(Foo): $this'));
+    }
+
+    public function testThisModelVariableNotTreatedAsThis(): void
+    {
+        $this->assertSame('impure-Closure(string):void', (string) Type::parseString('Closure(string $thisModel): void'));
+    }
+
     public function testIntOrString(): void
     {
         $this->assertSame('int|string', (string) Type::parseString('int|string'));
