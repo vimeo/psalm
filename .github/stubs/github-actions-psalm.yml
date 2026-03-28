@@ -12,7 +12,7 @@ jobs:
     name: Psalm
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/vimeo/psalm:__PSALM_VERSION__
+      image: ghcr.io/danog/psalm:__PSALM_VERSION__
     steps:
       - uses: actions/checkout@v4
 
