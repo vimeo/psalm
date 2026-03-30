@@ -8,6 +8,7 @@ use Psalm\Codebase;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TNamedObject;
 
@@ -139,7 +140,18 @@ final class GenericTypeComparator
                 && !$container_param->hasTemplate()
                 && !$input_param->hasTemplate()
             ) {
-                if ($input_param->containsAnyLiteral()) {
+                $input_has_literal_or_range = $input_param->containsAnyLiteral();
+
+                if (!$input_has_literal_or_range) {
+                    foreach ($input_param->getAtomicTypes() as $atomic_type) {
+                        if ($atomic_type instanceof TIntRange) {
+                            $input_has_literal_or_range = true;
+                            break;
+                        }
+                    }
+                }
+
+                if ($input_has_literal_or_range) {
                     if ($atomic_comparison_result_type_params !== null) {
                         $atomic_comparison_result_type_params[$i] = $container_param;
                     }
