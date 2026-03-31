@@ -199,9 +199,9 @@ class ReflectionClass implements Reflector {
     /**
      * @param list<mixed> $args
      *
-     * @return T
+     * @return T|null
      */
-    public function newInstanceArgs(array $args): object {}
+    public function newInstanceArgs(array $args = []): ?object {}
 
     /**
      * @return T
