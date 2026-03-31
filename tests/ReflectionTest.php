@@ -16,6 +16,27 @@ final class ReflectionTest extends TestCase
     #[Override]
     public function providerValidCodeParse(): iterable
     {
+        yield 'ReflectionClass::newInstance' => [
+            'code' => <<<'PHP'
+                <?php
+                $a = (new ReflectionClass(stdClass::class))->newInstance();
+                PHP,
+            'assertions' => ['$a===' => 'stdClass'],
+        ];
+        yield 'ReflectionClass::newInstanceArgs' => [
+            'code' => <<<'PHP'
+                <?php
+                $a = (new ReflectionClass(stdClass::class))->newInstanceArgs();
+                PHP,
+            'assertions' => ['$a===' => 'null|stdClass'],
+        ];
+        yield 'ReflectionClass::newInstanceWithoutConstructor' => [
+            'code' => <<<'PHP'
+                <?php
+                $a = (new ReflectionClass(stdClass::class))->newInstanceWithoutConstructor();
+                PHP,
+            'assertions' => ['$a===' => 'stdClass'],
+        ];
         yield 'ReflectionClass::isSubclassOf' => [
             'code' => <<<'PHP'
                 <?php
@@ -117,7 +138,7 @@ final class ReflectionTest extends TestCase
                 $a = new Foo();
                 $b = (new ReflectionObject($a))->newInstanceArgs([]);
                 PHP,
-            'assertions' => ['$b===' => 'Foo'],
+            'assertions' => ['$b===' => 'Foo|null'],
         ];
         yield 'ReflectionObject::newInstanceWithoutConstructor' => [
             'code' => <<<'PHP'
