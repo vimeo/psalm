@@ -1034,6 +1034,18 @@ final class IntRangeTest extends TestCase
                     '$z' => 'int<min, 9223372036854775807>|null',
                 ],
             ],
+            'intRangeComparisonNearIntMinDoesNotCrash' => [
+                'code' => '<?php
+                    /**
+                     * @param int<min, 0> $value
+                     */
+                    function foo(int $value): string {
+                        if ($value < -9223372036854775807) {
+                            return "impossible";
+                        }
+                        return "ok";
+                    }',
+            ],
         ];
     }
 
@@ -1041,6 +1053,18 @@ final class IntRangeTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'intRangeComparisonNearIntMaxIsContradiction' => [
+                'code' => '<?php
+                    /**
+                     * @param int<0, max> $value
+                     */
+                    function foo(int $value): void {
+                        if ($value > 9223372036854775807) {
+                            echo "impossible";
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
             'intRangeNotContained' => [
                 'code' => '<?php
                     /**
