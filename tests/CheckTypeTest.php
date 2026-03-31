@@ -51,6 +51,71 @@ final class CheckTypeTest extends TestCase
                 $_a = 1;
                 /** @psalm-check-type $_a = A */',
         ];
+        yield 'checkReturnTypeSubtype' => [
+            'code' => '<?php
+                function foo(): int {
+                    /** @psalm-check-return-type int */
+                    return 1;
+                }
+            ',
+        ];
+        yield 'checkReturnTypeExactMatch' => [
+            'code' => '<?php
+                function foo(string $s): string {
+                    /** @psalm-check-return-type-exact string */
+                    return $s;
+                }
+            ',
+        ];
+        yield 'checkReturnTypeArray' => [
+            'code' => '<?php
+                /** @psalm-check-return-type array{name: string, driver: string} */
+                return ["name" => "primary", "driver" => "mysql"];
+            ',
+        ];
+        yield 'checkReturnTypeVoid' => [
+            'code' => '<?php
+                function foo(): void {
+                    /** @psalm-check-return-type void */
+                    return;
+                }
+            ',
+        ];
+        yield 'checkReturnTypeNullable' => [
+            'code' => '<?php
+                function foo(?string $s): ?string {
+                    /** @psalm-check-return-type null|string */
+                    return $s;
+                }
+            ',
+        ];
+        yield 'checkReturnTypeUnion' => [
+            'code' => '<?php
+                /** @return int|string */
+                function foo(bool $b) {
+                    /** @psalm-check-return-type int|string */
+                    return $b ? 1 : "hello";
+                }
+            ',
+        ];
+        yield 'checkReturnTypeOnNonReturnIsIgnored' => [
+            'code' => '<?php
+                /** @psalm-check-return-type string */
+                $x = 1;
+            ',
+        ];
+        yield 'checkReturnTypeNamespaced' => [
+            'code' => '<?php
+                namespace X;
+
+                final class A {}
+
+                function foo(): A {
+                    /** @psalm-check-return-type A */
+                    return new A();
+                }
+            ',
+        ];
     }
 
     #[Override]
@@ -113,6 +178,57 @@ final class CheckTypeTest extends TestCase
         yield 'invalidIncompleteSyntaxNoType' => [
             'code' => '<?php
                 /** @psalm-check-type $var = */
+            ',
+            'error_message' => 'InvalidDocblock',
+        ];
+        yield 'checkReturnTypeMismatch' => [
+            'code' => '<?php
+                function foo(): string {
+                    /** @psalm-check-return-type int */
+                    return "hello";
+                }
+            ',
+            'error_message' => 'CheckType',
+        ];
+        yield 'checkReturnTypeExactLiteralMoreSpecific' => [
+            'code' => '<?php
+                // return 1 infers as literal 1, which is more specific than int
+                function foo(): int {
+                    /** @psalm-check-return-type-exact int */
+                    return 1;
+                }
+            ',
+            'error_message' => 'CheckType',
+        ];
+        yield 'checkReturnTypeVoidMismatch' => [
+            'code' => '<?php
+                function foo(): void {
+                    /** @psalm-check-return-type string */
+                    return;
+                }
+            ',
+            'error_message' => 'CheckType',
+        ];
+        yield 'checkReturnTypeNullableMismatch' => [
+            'code' => '<?php
+                function foo(?string $s): ?string {
+                    /** @psalm-check-return-type string */
+                    return $s;
+                }
+            ',
+            'error_message' => 'CheckType',
+        ];
+        yield 'checkReturnTypeArrayMissingKey' => [
+            'code' => '<?php
+                /** @psalm-check-return-type array{name: string, driver: string} */
+                return ["name" => "primary"];
+            ',
+            'error_message' => 'CheckType',
+        ];
+        yield 'checkReturnTypeEmpty' => [
+            'code' => '<?php
+                /** @psalm-check-return-type */
+                return 1;
             ',
             'error_message' => 'InvalidDocblock',
         ];
