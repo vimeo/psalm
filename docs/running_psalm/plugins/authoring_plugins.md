@@ -4,7 +4,7 @@
 
 ### Using a template repository
 
-Head over to [plugin template repository](https://github.com/danog/psalm-plugin-skeleton) on GitHub, login and click `Use this template` button.
+Head over to [plugin template repository](https://github.com/psalm/psalm-plugin-skeleton) on GitHub, login and click `Use this template` button.
 
 ### Using skeleton project
 
