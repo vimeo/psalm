@@ -129,7 +129,7 @@ final class FileReferenceTest extends TestCase
 
                     new A();',
                 'A',
-                ['4:25:A'],
+                [],
             ],
             'getMethodLocation' => [
                 '<?php
@@ -140,7 +140,7 @@ final class FileReferenceTest extends TestCase
 
                     (new A())->foo();',
                 'A::foo',
-                ['7:32:foo'],
+                [],
             ],
             'getPropertyLocation' => [
                 '<?php
@@ -151,7 +151,7 @@ final class FileReferenceTest extends TestCase
 
                     echo (new A())->foo;',
                 'A::$foo',
-                ['7:37:foo'],
+                [],
             ],
         ];
     }
@@ -209,21 +209,12 @@ final class FileReferenceTest extends TestCase
                     $a = new A();',
                 [
                     'class foo\a' => [
-                        '/var/www/somefile.php:13:29' => true,
-                        '/var/www/somefile.php:13:33' => true,
-                        '/var/www/somefile.php:14:29' => true,
-                        '/var/www/somefile.php:14:32' => true,
-                        '/var/www/somefile.php:26:29' => true,
-                        '/var/www/somefile.php:26:33' => true,
                         '/var/www/somefile.php:40:26' => true,
                         '/var/www/somefile.php:40:30' => true,
                         'func foo\b::__construct' => true,
                         'func foo\c::foo' => true,
                     ],
                     'class foo\c' => [
-                        '/var/www/somefile.php:19:30' => true,
-                        '/var/www/somefile.php:19:34' => true,
-                        '/var/www/somefile.php:19:38' => true,
                         'func foo\b::bar' => true,
                     ],
                     'class foo\d' => [
@@ -232,26 +223,20 @@ final class FileReferenceTest extends TestCase
                         '/var/www/somefile.php:38:21' => true,
                     ],
                     'func foo\a::bat' => [
-                        '/var/www/somefile.php:14:29' => true,
-                        '/var/www/somefile.php:14:32' => true,
                         'func foo\b::__construct' => true,
                     ],
                     'func foo\c::foo' => [
-                        '/var/www/somefile.php:19:38' => true,
                         'func foo\b::bar' => true,
                     ],
                     'func foo\d::__construct' => [
                         '/var/www/somefile.php:37:26' => true,
                     ],
                     'missing-method foo\a::__construct' => [
-                        '/var/www/somefile.php:13:29' => true,
-                        '/var/www/somefile.php:26:29' => true,
                         '/var/www/somefile.php:40:26' => true,
                         'func foo\b::__construct' => true,
                         'func foo\c::foo' => true,
                     ],
                     'missing-method foo\c::__construct' => [
-                        '/var/www/somefile.php:19:30' => true,
                         'func foo\b::bar' => true,
                     ],
                 ],
@@ -281,39 +266,30 @@ final class FileReferenceTest extends TestCase
                 [
                     'class foo\a' => [
                         '/var/www/somefile.php:11:37' => true,
-                        '/var/www/somefile.php:18:34' => true,
-                        '/var/www/somefile.php:19:33' => true,
                         'func foo\d::bat' => true,
                     ],
                     'class foo\b' => [
                         '/var/www/somefile.php:13:37' => true,
                     ],
                     'class foo\c' => [
-                        '/var/www/somefile.php:18:38' => true,
                         'func foo\d::bat' => true,
                     ],
                     'func foo\a::__construct' => [
-                        '/var/www/somefile.php:18:34' => true,
                         'func foo\d::bat' => true,
                     ],
                     'func foo\a::bar' => [
-                        '/var/www/somefile.php:19:33' => true,
                         'func foo\d::bat' => true,
                     ],
                     'func foo\b::__construct' => [
-                        '/var/www/somefile.php:18:34' => true,
                         'func foo\d::bat' => true,
                     ],
                     'func foo\b::bar' => [
-                        '/var/www/somefile.php:19:33' => true,
                         'func foo\d::bat' => true,
                     ],
                     'func foo\c::__construct' => [
-                        '/var/www/somefile.php:18:34' => true,
                         'func foo\d::bat' => true,
                     ],
                     'func foo\c::bar' => [
-                        '/var/www/somefile.php:19:33' => true,
                         'func foo\d::bat' => true,
                     ],
                 ],
@@ -339,14 +315,10 @@ final class FileReferenceTest extends TestCase
                     }',
                 [
                     'class foo\a' => [
-                        '/var/www/somefile.php:10:34' => true,
-                        '/var/www/somefile.php:16:34' => true,
                         'func foo\b::__construct' => true,
                         'func foo\c::foo' => true,
                     ],
                     'const foo\a::c' => [
-                        '/var/www/somefile.php:10:34' => true,
-                        '/var/www/somefile.php:16:34' => true,
                         'func foo\b::__construct' => true,
                         'func foo\c::foo' => true,
                     ],
@@ -374,14 +346,10 @@ final class FileReferenceTest extends TestCase
                     }',
                 [
                     'class foo\a' => [
-                        '/var/www/somefile.php:11:34' => true,
-                        '/var/www/somefile.php:17:34' => true,
                         'func foo\b::__construct' => true,
                         'func foo\c::foo' => true,
                     ],
                     'property foo\a::fooBar' => [
-                        '/var/www/somefile.php:11:34' => true,
-                        '/var/www/somefile.php:17:34' => true,
                         'func foo\b::__construct' => true,
                         'func foo\c::foo' => true,
                     ],
@@ -409,24 +377,14 @@ final class FileReferenceTest extends TestCase
                     }',
                 [
                     'class foo\a' => [
-                        '/var/www/somefile.php:11:34' => true,
-                        '/var/www/somefile.php:11:35' => true,
-                        '/var/www/somefile.php:11:39' => true,
-                        '/var/www/somefile.php:17:34' => true,
-                        '/var/www/somefile.php:17:35' => true,
-                        '/var/www/somefile.php:17:39' => true,
                         'func foo\b::__construct' => true,
                         'func foo\c::foo' => true,
                     ],
                     'missing-method foo\a::__construct' => [
-                        '/var/www/somefile.php:11:35' => true,
-                        '/var/www/somefile.php:17:35' => true,
                         'func foo\b::__construct' => true,
                         'func foo\c::foo' => true,
                     ],
                     'property foo\a::fooBar' => [
-                        '/var/www/somefile.php:11:34' => true,
-                        '/var/www/somefile.php:17:34' => true,
                         'func foo\b::__construct' => true,
                         'func foo\c::foo' => true,
                     ],
@@ -453,16 +411,12 @@ final class FileReferenceTest extends TestCase
                     }',
                 [
                     'class ns\a' => [
-                        '/var/www/somefile.php:11:45' => true,
-                        '/var/www/somefile.php:12:33' => true,
                         'func ns\c::bar' => true,
                     ],
                     'class ns\t' => [
-                        '/var/www/somefile.php:17:29' => true,
                         'class ns\c' => true,
                     ],
                     'func ns\a::foo' => [
-                        '/var/www/somefile.php:12:33' => true,
                         'func ns\c::bar' => true,
                     ],
                 ],

@@ -745,7 +745,8 @@ final class Codebase
         }
 
         if (str_contains($symbol, '::')) {
-            return $this->findReferencesToMethod($symbol);
+            return $this->findReferencesToMethod($symbol)
+                + $this->findReferencesToClassConstant($symbol);
         }
 
         return $this->findReferencesToClassLike($symbol);
@@ -790,6 +791,17 @@ final class Codebase
         }
 
         return $locations;
+    }
+
+    public function findReferencesToClassConstant(string $const_id): array
+    {
+        /** @psalm-suppress PossiblyUndefinedIntArrayOffset */
+        [$fq_class_name, $const_name] = explode('::', $const_id);
+
+        return $this->code_use_graph?->getClassConstantReferenceLocations(
+            strtolower($fq_class_name),
+            strtolower($const_name),
+        ) ?? [];
     }
 
     /**

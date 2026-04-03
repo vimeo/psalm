@@ -193,7 +193,7 @@ final class CodeUseGraph extends DataFlowGraph
         } elseif ($context?->self) {
             $caller = $this->getNodeForClass($context->self);
         } elseif ($location !== null) {
-            $caller = $location_caller;
+            $caller = null;
         } else {
             return;
         }
@@ -261,6 +261,8 @@ final class CodeUseGraph extends DataFlowGraph
         $this->forward_edges[$from_id][$to_id] = new Path($path_type, $length);
     }
 
+    // --- is*Used ---
+
     /**
      * @param lowercase-string $func
      */
@@ -288,24 +290,6 @@ final class CodeUseGraph extends DataFlowGraph
     }
 
     /**
-     * @param lowercase-string $func
-     * @return array<string, bool>
-     */
-    public function getFunctionlikeReferences(string $func): array
-    {
-        return $this->getIncomingUseSources('func ' . $func);
-    }
-
-    /**
-     * @param lowercase-string $func
-     * @return array<int, CodeLocation>
-     */
-    public function getFunctionlikeReferenceLocations(string $func): array
-    {
-        return $this->getIncomingUseSourceLocations('func ' . $func);
-    }
-
-    /**
      * @param lowercase-string $class_id
      * @param lowercase-string $property_name
      */
@@ -321,22 +305,59 @@ final class CodeUseGraph extends DataFlowGraph
 
     /**
      * @param lowercase-string $class_id
+     */
+    public function isClassUsed(string $class_id): bool
+    {
+        $id = 'class '.$class_id;
+        if (!array_key_exists($id, $this->nodes)) {
+            return false;
+        }
+
+        return $this->hasIncomingUse($id);
+    }
+
+    /**
+     * @param lowercase-string $class_id
+     * @param lowercase-string $const_name
+     */
+    public function isClassConstantUsed(string $class_id, string $const_name): bool
+    {
+        $id = 'const ' . $class_id . '::' . $const_name;
+        if (!array_key_exists($id, $this->nodes)) {
+            return false;
+        }
+
+        return $this->hasIncomingUse($id);
+    }
+
+    // --- get*References ---
+
+    /**
+     * @param lowercase-string $func
+     * @return array<string, bool>
+     */
+    public function getFunctionlikeReferences(string $func): array
+    {
+        return $this->getIncomingUseSources('func ' . $func);
+    }
+
+    /**
+     * @param lowercase-string $func
+     * @return array<string, bool>
+     */
+    public function getFunctionlikeReturnReferences(string $func): array
+    {
+        return $this->getIncomingUseSources('return ' . $func);
+    }
+
+    /**
+     * @param lowercase-string $class_id
      * @param lowercase-string $property_name
      * @return array<string, bool>
      */
     public function getPropertyReferences(string $class_id, string $property_name): array
     {
         return $this->getIncomingUseSources('property '.$class_id.'::'.$property_name);
-    }
-
-    /**
-     * @param lowercase-string $class_id
-     * @param lowercase-string $property_name
-     * @return array<int, CodeLocation>
-     */
-    public function getPropertyReferenceLocations(string $class_id, string $property_name): array
-    {
-        return $this->getIncomingUseSourceLocations('property '.$class_id.'::'.$property_name);
     }
 
     /**
@@ -360,6 +381,65 @@ final class CodeUseGraph extends DataFlowGraph
 
     /**
      * @param lowercase-string $class_id
+     * @param lowercase-string $const_name
+     * @return array<string, bool>
+     */
+    public function getClassConstantReferences(string $class_id, string $const_name): array
+    {
+        return $this->getIncomingUseSources('const ' . $class_id . '::' . $const_name);
+    }
+
+    /**
+     * @param lowercase-string $method_id
+     * @return array<string, bool>
+     */
+    public function getMissingMethodReferences(string $method_id): array
+    {
+        return $this->getIncomingUseSources('missing-method ' . $method_id);
+    }
+
+    // --- get*ReferenceLocations ---
+
+    /**
+     * @param lowercase-string $func
+     * @return array<int, CodeLocation>
+     */
+    public function getFunctionlikeReferenceLocations(string $func): array
+    {
+        return $this->getIncomingUseSourceLocations('func ' . $func);
+    }
+
+    /**
+     * @param lowercase-string $func
+     * @return array<int, CodeLocation>
+     */
+    public function getFunctionlikeReturnReferenceLocations(string $func): array
+    {
+        return $this->getIncomingUseSourceLocations('return ' . $func);
+    }
+
+    /**
+     * @param lowercase-string $class_id
+     * @param lowercase-string $property_name
+     * @return array<int, CodeLocation>
+     */
+    public function getPropertyReferenceLocations(string $class_id, string $property_name): array
+    {
+        return $this->getIncomingUseSourceLocations('property '.$class_id.'::'.$property_name);
+    }
+
+    /**
+     * @param lowercase-string $class_id
+     * @param lowercase-string $property_name
+     * @return array<int, CodeLocation>
+     */
+    public function getMissingPropertyReferenceLocations(string $class_id, string $property_name): array
+    {
+        return $this->getIncomingUseSourceLocations('missing-property ' . $class_id . '::' . $property_name);
+    }
+
+    /**
+     * @param lowercase-string $class_id
      * @return array<int, CodeLocation>
      */
     public function getClassReferenceLocations(string $class_id): array
@@ -370,24 +450,20 @@ final class CodeUseGraph extends DataFlowGraph
     /**
      * @param lowercase-string $class_id
      * @param lowercase-string $const_name
-     * @return array<string, bool>
+     * @return array<int, CodeLocation>
      */
-    public function getClassConstantReferences(string $class_id, string $const_name): array
+    public function getClassConstantReferenceLocations(string $class_id, string $const_name): array
     {
-        return $this->getIncomingUseSources('const ' . $class_id . '::' . $const_name);
+        return $this->getIncomingUseSourceLocations('const ' . $class_id . '::' . $const_name);
     }
 
     /**
-     * @param lowercase-string $class_id
+     * @param lowercase-string $method_id
+     * @return array<int, CodeLocation>
      */
-    public function isClassUsed(string $class_id): bool
+    public function getMissingMethodReferenceLocations(string $method_id): array
     {
-        $id = 'class '.$class_id;
-        if (!array_key_exists($id, $this->nodes)) {
-            return false;
-        }
-
-        return $this->hasIncomingUse($id);
+        return $this->getIncomingUseSourceLocations('missing-method ' . $method_id);
     }
 
     private function hasIncomingUse(string $node_id): bool
@@ -463,6 +539,28 @@ final class CodeUseGraph extends DataFlowGraph
                     $result[$to_id] = [];
                 }
                 $result[$to_id][$from_id] = true;
+            }
+        }
+
+        return $result;
+    }
+    public function getAllIncomingUseSourceLocations(): array
+    {
+        $result = [];
+
+        foreach ($this->forward_edges as $from_id => $to_nodes) {
+            foreach ($to_nodes as $to_id => $_) {
+                if ($to_nodes[$to_id]->type === 'use') {
+                    continue;
+                }
+
+                $code_location = $this->nodes[$from_id]->code_location ?? null;
+
+                if ($code_location === null) {
+                    continue;
+                }
+
+                $result[] = $code_location;
             }
         }
 
