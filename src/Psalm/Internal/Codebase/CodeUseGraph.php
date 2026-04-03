@@ -470,6 +470,8 @@ final class CodeUseGraph extends DataFlowGraph
         return $this->getIncomingUseSourceLocations('missing-method ' . $method_id);
     }
 
+    // General
+
     private function hasIncomingUse(string $node_id): bool
     {
         foreach ($this->forward_edges as $from_id => $to_nodes) {
@@ -508,6 +510,8 @@ final class CodeUseGraph extends DataFlowGraph
     {
         return $this->locations[$node_id] ?? [];
     }
+
+    // All
 
     public function getAllIncomingUseSources(): array
     {
