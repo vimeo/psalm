@@ -51,6 +51,7 @@ trait CanAlias
 
     public function visitUse(PhpParser\Node\Stmt\Use_ $stmt): void
     {
+        /** @var Codebase $codebase */
         $codebase = $this->getCodebase();
 
         foreach ($stmt->uses as $use) {
@@ -75,11 +76,10 @@ trait CanAlias
                         (int) $use->getAttribute('endFilePos'),
                         $use_path,
                     );
-                    if ($codebase->collect_locations) {
-                        // register the path
-                        $loc = new CodeLocation($this, $use);
-                        $codebase->use_referencing_locations[$use_path_lc][$loc->getHash()] = $loc;
-                    }
+                    $codebase->addReferenceToClass(
+                        $use_path_lc,
+                        new CodeLocation($this, $use),
+                    );
 
                     if ($codebase->alter_code) {
                         if (isset($codebase->class_transforms[$use_path_lc])) {
@@ -127,11 +127,10 @@ trait CanAlias
                     break;
 
                 case PhpParser\Node\Stmt\Use_::TYPE_NORMAL:
-                    if ($codebase->collect_locations) {
-                        // register the path
-                        $loc = new CodeLocation($this, $use);
-                        $codebase->use_referencing_locations[strtolower($use_path)][$loc->getHash()] = $loc;
-                    }
+                    $codebase->addReferenceToClass(
+                        strtolower($use_path),
+                        new CodeLocation($this, $use),
+                    );
 
                     $this->aliased_classes[strtolower($use_alias)] = $use_path;
                     $this->aliased_classes_flipped[strtolower($use_path)] = $use_alias;
