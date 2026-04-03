@@ -77,8 +77,8 @@ trait CanAlias
                     );
                     if ($codebase->collect_locations) {
                         // register the path
-                        $codebase->use_referencing_locations[$use_path_lc][] =
-                            new CodeLocation($this, $use);
+                        $loc = new CodeLocation($this, $use);
+                        $codebase->use_referencing_locations[$use_path_lc][$loc->getHash()] = $loc;
                     }
 
                     if ($codebase->alter_code) {
@@ -129,8 +129,8 @@ trait CanAlias
                 case PhpParser\Node\Stmt\Use_::TYPE_NORMAL:
                     if ($codebase->collect_locations) {
                         // register the path
-                        $codebase->use_referencing_locations[strtolower($use_path)][] =
-                            new CodeLocation($this, $use);
+                        $loc = new CodeLocation($this, $use);
+                        $codebase->use_referencing_locations[strtolower($use_path)][$loc->getHash()] = $loc;
                     }
 
                     $this->aliased_classes[strtolower($use_alias)] = $use_path;

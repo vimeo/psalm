@@ -64,18 +64,16 @@ final class FileReferenceTest extends TestCase
         $this->analyzeFile($file_path, $context);
 
         $found_references = $this->project_analyzer->getCodebase()->findReferencesToSymbol($symbol);
+        $found_references = array_values($found_references);
 
         $this->assertSame(count($found_references), count($expected_locations));
 
-        foreach ($expected_locations as $i => $expected_location) {
-            $actual_location = $found_references[$i];
+        foreach ($found_references as &$loc) {
+            $loc = $loc->getLineNumber() . ':' . $loc->getColumn()
+                    . ':' . $loc->getSelectedText();
+        } unset($loc);
 
-            $this->assertSame(
-                $expected_location,
-                $actual_location->getLineNumber() . ':' . $actual_location->getColumn()
-                    . ':' . $actual_location->getSelectedText(),
-            );
-        }
+        $this->assertEquals($expected_locations, $found_references);
     }
 
     /**
@@ -129,7 +127,10 @@ final class FileReferenceTest extends TestCase
 
                     new A();',
                 'A',
-                [],
+                [
+                    '4:25:A',
+                    '4:21:new A()',
+                ],
             ],
             'getMethodLocation' => [
                 '<?php
@@ -140,7 +141,7 @@ final class FileReferenceTest extends TestCase
 
                     (new A())->foo();',
                 'A::foo',
-                [],
+                ['7:32:foo'],
             ],
             'getPropertyLocation' => [
                 '<?php
@@ -151,7 +152,7 @@ final class FileReferenceTest extends TestCase
 
                     echo (new A())->foo;',
                 'A::$foo',
-                [],
+                ['7:26:(new A())->foo'],
             ],
         ];
     }

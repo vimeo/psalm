@@ -114,7 +114,7 @@ final class Codebase
      * A map of fully-qualified use declarations to the files
      * that reference them (keyed by filename)
      *
-     * @var array<lowercase-string, array<int, CodeLocation>>
+     * @var array<lowercase-string, array<string, CodeLocation>>
      */
     public array $use_referencing_locations = [];
 
@@ -731,7 +731,7 @@ final class Codebase
     }
 
     /**
-     * @return array<int, CodeLocation>
+     * @return array<string, CodeLocation>
      * @psalm-external-mutation-free
      */
     public function findReferencesToSymbol(string $symbol): array
@@ -753,7 +753,7 @@ final class Codebase
     }
 
     /**
-     * @return array<int, CodeLocation>
+     * @return array<string, CodeLocation>
      * @psalm-external-mutation-free
      */
     public function findReferencesToMethod(string $method_id): array
@@ -762,7 +762,7 @@ final class Codebase
     }
 
     /**
-     * @return array<int, CodeLocation>
+     * @return array<string, CodeLocation>
      * @psalm-external-mutation-free
      */
     public function findReferencesToProperty(string $property_id): array
@@ -778,7 +778,7 @@ final class Codebase
 
     /**
      * @return CodeLocation[]
-     * @psalm-return array<int, CodeLocation>
+     * @psalm-return array<string, CodeLocation>
      * @psalm-external-mutation-free
      */
     public function findReferencesToClassLike(string $fq_class_name): array
