@@ -821,6 +821,9 @@ final class ClassLikes
             if ($classlike_storage->location
                 && $this->config->isInProjectDirs($classlike_storage->location->file_path)
             ) {
+                if ($classlike_storage->public_api) {
+                    $codebase->addReferenceToClass($fq_class_name_lc);
+                }
                 if (!$classlike_storage->is_trait) {
                     if ($find_unused_code) {
                         $class_referenced = $codebase->code_use_graph?->isClassUsed($fq_class_name_lc) ?? false;

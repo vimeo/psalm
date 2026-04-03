@@ -68,6 +68,22 @@ final class Functions
         self::$stubbed_functions = [];
     }
 
+    public function consolidateAnalyzedData(Codebase $codebase): void
+    {
+        foreach (self::$stubbed_functions as $function_id => $storage) {
+            if ($storage->public_api) {
+                $codebase->addReferenceToFunctionLike($function_id);
+            }
+        }
+        foreach ($this->file_storage_provider->getAll() as $file_storage) {
+            foreach ($file_storage->functions as $function_id => $storage) {
+                if ($storage->public_api) {
+                    $codebase->addReferenceToFunctionLike($function_id);
+                }
+            }
+        }
+    }
+
     /**
      * @param non-empty-lowercase-string $function_id
      * @psalm-external-mutation-free

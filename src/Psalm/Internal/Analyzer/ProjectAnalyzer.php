@@ -483,6 +483,10 @@ final class ProjectAnalyzer
 
     public function consolidateAnalyzedData(): void
     {
+        $this->codebase->functions->consolidateAnalyzedData(
+            $this->codebase,
+        );
+
         $this->codebase->classlikes->consolidateAnalyzedData(
             $this->codebase->methods,
             $this->progress,
