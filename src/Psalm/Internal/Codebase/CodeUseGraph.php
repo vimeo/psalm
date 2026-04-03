@@ -193,7 +193,7 @@ final class CodeUseGraph extends DataFlowGraph
         } elseif ($context?->self) {
             $caller = $this->getNodeForClass($context->self);
         } elseif ($location !== null) {
-            $caller = null;
+            $caller = $location_caller;
         } else {
             return;
         }
