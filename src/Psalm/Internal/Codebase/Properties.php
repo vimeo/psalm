@@ -105,13 +105,6 @@ final class Properties
                 $context,
             );
 
-            if ($this->collect_locations && $code_location) {
-                $this->file_reference_provider->addCallingLocationForClassProperty(
-                    $code_location,
-                    $declaring_property_class . '::$' . $property_name,
-                );
-            }
-
             return true;
         }
 

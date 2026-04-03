@@ -185,22 +185,8 @@ final class Methods
                 );
             }
 
-            if ($this->collect_locations && $code_location) {
-                $this->file_reference_provider->addCallingLocationForClassMethod(
-                    $code_location,
-                    strtolower((string) $declaring_method_id),
-                );
-            }
-
             foreach ($class_storage->class_implements as $fq_interface_name) {
                 $interface_method_id_lc = strtolower($fq_interface_name . '::' . $method_name);
-
-                if ($this->collect_locations && $code_location) {
-                    $this->file_reference_provider->addCallingLocationForClassMethod(
-                        $code_location,
-                        $interface_method_id_lc,
-                    );
-                }
 
                 $codebase->addReferenceToFunctionLike(
                     $interface_method_id_lc,
@@ -219,13 +205,6 @@ final class Methods
                 $overridden_method_ids = $declaring_class_storage->overridden_method_ids[$declaring_method_name];
 
                 foreach ($overridden_method_ids as $overridden_method_id) {
-                    if ($this->collect_locations && $code_location) {
-                        $this->file_reference_provider->addCallingLocationForClassMethod(
-                            $code_location,
-                            strtolower((string) $overridden_method_id),
-                        );
-                    }
-
                     $codebase->addReferenceToFunctionLike(
                         strtolower((string) $overridden_method_id),
                         $code_location,

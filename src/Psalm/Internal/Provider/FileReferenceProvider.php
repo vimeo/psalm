@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Provider;
 
-use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\IssueData;
@@ -54,21 +53,6 @@ final class FileReferenceProvider
      * @var array<string, array<string, bool>>
      */
     private static array $references_to_mixed_member_names = [];
-
-    /**
-     * @var array<string, array<int, CodeLocation>>
-     */
-    private static array $class_method_locations = [];
-
-    /**
-     * @var array<string, array<int, CodeLocation>>
-     */
-    private static array $class_property_locations = [];
-
-    /**
-     * @var array<string, array<int, CodeLocation>>
-     */
-    private static array $class_locations = [];
 
     /**
      * @var array<string, string>
@@ -376,101 +360,9 @@ final class FileReferenceProvider
     /**
      * @psalm-external-mutation-free
      */
-    public function addCallingLocationForClassMethod(CodeLocation $code_location, string $referenced_member_id): void
-    {
-        if (!isset(self::$class_method_locations[$referenced_member_id])) {
-            self::$class_method_locations[$referenced_member_id] = [$code_location];
-        } else {
-            self::$class_method_locations[$referenced_member_id][] = $code_location;
-        }
-    }
-
-    /**
-     * @psalm-external-mutation-free
-     */
-    public function addCallingLocationForClassProperty(
-        CodeLocation $code_location,
-        string $referenced_property_id,
-    ): void {
-        if (!isset(self::$class_property_locations[$referenced_property_id])) {
-            self::$class_property_locations[$referenced_property_id] = [$code_location];
-        } else {
-            self::$class_property_locations[$referenced_property_id][] = $code_location;
-        }
-    }
-
-    /**
-     * @psalm-external-mutation-free
-     */
-    public function addCallingLocationForClass(CodeLocation $code_location, string $referenced_class): void
-    {
-        if (!isset(self::$class_locations[$referenced_class])) {
-            self::$class_locations[$referenced_class] = [$code_location];
-        } else {
-            self::$class_locations[$referenced_class][] = $code_location;
-        }
-    }
-
-    /**
-     * @psalm-external-mutation-free
-     */
     public function isMethodParamUsed(string $method_id, int $offset): bool
     {
         return !empty(self::$method_param_uses[$method_id][$offset]);
-    }
-
-    /**
-     * @return array<string, array<int, CodeLocation>>
-     * @psalm-external-mutation-free
-     */
-    public function getAllClassMethodLocations(): array
-    {
-        return self::$class_method_locations;
-    }
-
-    /**
-     * @return array<string, array<int, CodeLocation>>
-     * @psalm-external-mutation-free
-     */
-    public function getAllClassPropertyLocations(): array
-    {
-        return self::$class_property_locations;
-    }
-
-    /**
-     * @return array<string, array<int, CodeLocation>>
-     * @psalm-external-mutation-free
-     */
-    public function getAllClassLocations(): array
-    {
-        return self::$class_locations;
-    }
-
-    /**
-     * @return array<int, CodeLocation>
-     * @psalm-external-mutation-free
-     */
-    public function getClassMethodLocations(string $method_id): array
-    {
-        return self::$class_method_locations[$method_id] ?? [];
-    }
-
-    /**
-     * @return array<int, CodeLocation>
-     * @psalm-external-mutation-free
-     */
-    public function getClassPropertyLocations(string $property_id): array
-    {
-        return self::$class_property_locations[$property_id] ?? [];
-    }
-
-    /**
-     * @return array<int, CodeLocation>
-     * @psalm-external-mutation-free
-     */
-    public function getClassLocations(string $fq_class_name_lc): array
-    {
-        return self::$class_locations[$fq_class_name_lc] ?? [];
     }
 
     /**
@@ -540,60 +432,6 @@ final class FileReferenceProvider
     public function setMethodParamUses(array $references): void
     {
         self::$method_param_uses = $references;
-    }
-
-    /**
-     * @param array<string, array<int, CodeLocation>> $references
-     * @psalm-external-mutation-free
-     */
-    public function addClassMethodLocations(array $references): void
-    {
-        foreach ($references as $referenced_member_id => $locations) {
-            if (isset(self::$class_method_locations[$referenced_member_id])) {
-                self::$class_method_locations[$referenced_member_id] = [
-                    ...self::$class_method_locations[$referenced_member_id],
-                    ...$locations,
-                ];
-            } else {
-                self::$class_method_locations[$referenced_member_id] = $locations;
-            }
-        }
-    }
-
-    /**
-     * @param array<string, array<int, CodeLocation>> $references
-     * @psalm-external-mutation-free
-     */
-    public function addClassPropertyLocations(array $references): void
-    {
-        foreach ($references as $referenced_member_id => $locations) {
-            if (isset(self::$class_property_locations[$referenced_member_id])) {
-                self::$class_property_locations[$referenced_member_id] = [
-                    ...self::$class_property_locations[$referenced_member_id],
-                    ...$locations,
-                ];
-            } else {
-                self::$class_property_locations[$referenced_member_id] = $locations;
-            }
-        }
-    }
-
-    /**
-     * @param array<string, array<int, CodeLocation>> $references
-     * @psalm-external-mutation-free
-     */
-    public function addClassLocations(array $references): void
-    {
-        foreach ($references as $referenced_member_id => $locations) {
-            if (isset(self::$class_locations[$referenced_member_id])) {
-                self::$class_locations[$referenced_member_id] = [
-                    ...self::$class_locations[$referenced_member_id],
-                    ...$locations,
-                ];
-            } else {
-                self::$class_locations[$referenced_member_id] = $locations;
-            }
-        }
     }
 
     /**
@@ -702,9 +540,6 @@ final class FileReferenceProvider
         self::$file_references = [];
         self::$method_dependencies = [];
         self::$references_to_mixed_member_names = [];
-        self::$class_method_locations = [];
-        self::$class_property_locations = [];
-        self::$class_locations = [];
         self::$analyzed_methods = [];
         self::$issues = [];
         self::$file_maps = [];

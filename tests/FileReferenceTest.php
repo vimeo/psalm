@@ -129,7 +129,7 @@ final class FileReferenceTest extends TestCase
 
                     new A();',
                 'A',
-                [],
+                ['4:25:A'],
             ],
             'getMethodLocation' => [
                 '<?php
@@ -141,6 +141,17 @@ final class FileReferenceTest extends TestCase
                     (new A())->foo();',
                 'A::foo',
                 ['7:32:foo'],
+            ],
+            'getPropertyLocation' => [
+                '<?php
+                    class A {
+                        /** @var int */
+                        public $foo = 1;
+                    }
+
+                    echo (new A())->foo;',
+                'A::$foo',
+                ['7:37:foo'],
             ],
         ];
     }

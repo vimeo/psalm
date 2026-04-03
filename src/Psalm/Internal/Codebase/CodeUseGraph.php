@@ -175,10 +175,28 @@ final class CodeUseGraph extends DataFlowGraph
         return $node;
     }
 
+    private function getForSymbolUse(CodeLocation $location): DataFlowNode
+    {
+        $key = $location->getShortSummary() . ' symbol-use';
+
+        if (array_key_exists($key, $this->nodes)) {
+            return $this->nodes[$key];
+        }
+
+        $this->nodes[$key] = $node = DataFlowNode::make(
+            $key,
+            'symbol-use',
+            $location,
+        );
+
+        return $node;
+    }
+
     public function addReferenceToNode(
         DataFlowNode $node,
         ?Context $context,
         ?CodeLocation $location = null,
+        string $location_path_type = 'use',
     ): void {
         if (!$this->collect_locations) {
             $location = null;
@@ -200,16 +218,29 @@ final class CodeUseGraph extends DataFlowGraph
         $this->addPath(
             $caller,
             $node,
-            'use',
+            $caller === $location_caller ? $location_path_type : 'use',
         );
 
         if ($location !== null && $caller !== $location_caller) {
             $this->addPath(
                 $location_caller,
                 $node,
-                'use',
+                $location_path_type,
             );
         }
+    }
+
+    public function addSymbolLocationReferenceToNode(DataFlowNode $node, CodeLocation $location): void
+    {
+        if (!$this->collect_locations) {
+            return;
+        }
+
+        $this->addPath(
+            $this->getForSymbolUse($location),
+            $node,
+            'use-symbol',
+        );
     }
 
     /**
@@ -296,6 +327,15 @@ final class CodeUseGraph extends DataFlowGraph
     }
 
     /**
+     * @param lowercase-string $func
+     * @return array<int, CodeLocation>
+     */
+    public function getFunctionlikeReferenceLocations(string $func): array
+    {
+        return $this->getIncomingUseSourceLocations('func ' . $func);
+    }
+
+    /**
      * @param lowercase-string $method_id
      * @return array<string, bool>
      */
@@ -331,6 +371,16 @@ final class CodeUseGraph extends DataFlowGraph
     /**
      * @param lowercase-string $class_id
      * @param lowercase-string $property_name
+     * @return array<int, CodeLocation>
+     */
+    public function getPropertyReferenceLocations(string $class_id, string $property_name): array
+    {
+        return $this->getIncomingUseSourceLocations('property '.$class_id.'::'.$property_name);
+    }
+
+    /**
+     * @param lowercase-string $class_id
+     * @param lowercase-string $property_name
      * @return array<string, bool>
      */
     public function getMissingPropertyReferences(string $class_id, string $property_name): array
@@ -345,6 +395,15 @@ final class CodeUseGraph extends DataFlowGraph
     public function getClassReferences(string $class_id): array
     {
         return $this->getIncomingUseSources('class ' . $class_id);
+    }
+
+    /**
+     * @param lowercase-string $class_id
+     * @return array<int, CodeLocation>
+     */
+    public function getClassReferenceLocations(string $class_id): array
+    {
+        return $this->getIncomingUseSourceLocations('class ' . $class_id);
     }
 
     /**
@@ -378,6 +437,10 @@ final class CodeUseGraph extends DataFlowGraph
             }
 
             if (isset($to_nodes[$node_id])) {
+                if ($to_nodes[$node_id]->type === 'use-symbol') {
+                    continue;
+                }
+
                 return true;
             }
         }
@@ -393,9 +456,33 @@ final class CodeUseGraph extends DataFlowGraph
         $references = [];
 
         foreach ($this->forward_edges as $from_id => $to_nodes) {
-            if (isset($to_nodes[$node_id])) {
+            if (isset($to_nodes[$node_id]) && $to_nodes[$node_id]->type !== 'use-symbol') {
                 $references[$from_id] = true;
             }
+        }
+
+        return $references;
+    }
+
+    /**
+     * @return array<int, CodeLocation>
+     */
+    private function getIncomingUseSourceLocations(string $node_id): array
+    {
+        $references = [];
+
+        foreach ($this->forward_edges as $from_id => $to_nodes) {
+            if (!isset($to_nodes[$node_id]) || $to_nodes[$node_id]->type !== 'use-symbol') {
+                continue;
+            }
+
+            $code_location = $this->nodes[$from_id]->code_location ?? null;
+
+            if ($code_location === null) {
+                continue;
+            }
+
+            $references[] = $code_location;
         }
 
         return $references;
@@ -407,6 +494,10 @@ final class CodeUseGraph extends DataFlowGraph
 
         foreach ($this->forward_edges as $from_id => $to_nodes) {
             foreach ($to_nodes as $to_id => $_) {
+                if ($to_nodes[$to_id]->type === 'use-symbol') {
+                    continue;
+                }
+
                 if (!isset($result[$to_id])) {
                     $result[$to_id] = [];
                 }

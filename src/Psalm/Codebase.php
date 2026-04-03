@@ -757,7 +757,7 @@ final class Codebase
      */
     public function findReferencesToMethod(string $method_id): array
     {
-        return $this->file_reference_provider->getClassMethodLocations(strtolower($method_id));
+        return $this->code_use_graph?->getFunctionlikeReferenceLocations(strtolower($method_id)) ?? [];
     }
 
     /**
@@ -769,9 +769,10 @@ final class Codebase
         /** @psalm-suppress PossiblyUndefinedIntArrayOffset */
         [$fq_class_name, $property_name] = explode('::', $property_id);
 
-        return $this->file_reference_provider->getClassPropertyLocations(
-            strtolower($fq_class_name) . '::' . $property_name,
-        );
+        return $this->code_use_graph?->getPropertyReferenceLocations(
+            strtolower($fq_class_name),
+            ltrim($property_name, '$'),
+        ) ?? [];
     }
 
     /**
@@ -782,7 +783,7 @@ final class Codebase
     public function findReferencesToClassLike(string $fq_class_name): array
     {
         $fq_class_name_lc = strtolower($fq_class_name);
-        $locations = $this->file_reference_provider->getClassLocations($fq_class_name_lc);
+        $locations = $this->code_use_graph?->getClassReferenceLocations($fq_class_name_lc) ?? [];
 
         if (isset($this->use_referencing_locations[$fq_class_name_lc])) {
             $locations = [...$locations, ...$this->use_referencing_locations[$fq_class_name_lc]];
@@ -1037,6 +1038,7 @@ final class Codebase
             $code_location,
         );
     }
+
     /**
      * Whether or not a given method exists
      */

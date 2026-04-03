@@ -7,7 +7,6 @@ namespace Psalm\Internal\Codebase;
 use Amp\Future;
 use InvalidArgumentException;
 use PhpParser;
-use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\FileManipulation;
@@ -80,9 +79,6 @@ use const PHP_INT_MAX;
  *      method_param_uses: array<string, array<int, array<string, bool>>>,
  *      analyzed_methods: array<string, array<string, int>>,
  *      file_maps: array<string, FileMapType>,
- *      class_locations: array<string, array<int, CodeLocation>>,
- *      class_method_locations: array<string, array<int, CodeLocation>>,
- *      class_property_locations: array<string, array<int, CodeLocation>>,
  *      possible_method_param_types: array<string, array<int, Union>>,
  *      code_use_data: ?CodeUseGraph,
  *      taint_data: ?TaintFlowGraph,
@@ -362,15 +358,6 @@ final class Analyzer
                     $pool_data['mixed_member_names'],
                 );
                 $this->function_timings += $pool_data['function_timings'];
-                $codebase->file_reference_provider->addClassLocations(
-                    $pool_data['class_locations'],
-                );
-                $codebase->file_reference_provider->addClassMethodLocations(
-                    $pool_data['class_method_locations'],
-                );
-                $codebase->file_reference_provider->addClassPropertyLocations(
-                    $pool_data['class_property_locations'],
-                );
 
                 foreach ($pool_data['mutable_classes'] as $class => $level) {
                     if (array_key_exists($class, $this->mutable_classes)) {
