@@ -210,18 +210,15 @@ final class FileReferenceTest extends TestCase
                     $a = new A();',
                 [
                     'class foo\a' => [
-                        '/var/www/somefile.php:40:26' => true,
-                        '/var/www/somefile.php:40:30' => true,
                         'func foo\b::__construct' => true,
                         'func foo\c::foo' => true,
+                        'generic-use' => true,
                     ],
                     'class foo\c' => [
                         'func foo\b::bar' => true,
                     ],
                     'class foo\d' => [
-                        '/var/www/somefile.php:37:26' => true,
-                        '/var/www/somefile.php:37:30' => true,
-                        '/var/www/somefile.php:38:21' => true,
+                        'generic-use' => true,
                     ],
                     'func foo\a::bat' => [
                         'func foo\b::__construct' => true,
@@ -230,12 +227,12 @@ final class FileReferenceTest extends TestCase
                         'func foo\b::bar' => true,
                     ],
                     'func foo\d::__construct' => [
-                        '/var/www/somefile.php:37:26' => true,
+                        'generic-use' => true,
                     ],
                     'missing-method foo\a::__construct' => [
-                        '/var/www/somefile.php:40:26' => true,
                         'func foo\b::__construct' => true,
                         'func foo\c::foo' => true,
+                        'generic-use' => true,
                     ],
                     'missing-method foo\c::__construct' => [
                         'func foo\b::bar' => true,
@@ -266,11 +263,10 @@ final class FileReferenceTest extends TestCase
                     }',
                 [
                     'class foo\a' => [
-                        '/var/www/somefile.php:11:37' => true,
                         'func foo\d::bat' => true,
                     ],
                     'class foo\b' => [
-                        '/var/www/somefile.php:13:37' => true,
+                        'generic-use' => true,
                     ],
                     'class foo\c' => [
                         'func foo\d::bat' => true,
