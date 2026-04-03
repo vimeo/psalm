@@ -65,6 +65,7 @@ final class CodeUseGraph extends DataFlowGraph
         if (!$reading) {
             return $this->getNodeForClass($class_id);
         }
+
         $id = 'property '.$class_id.'::'.$property_name;
         if (array_key_exists($id, $this->nodes)) {
             return $this->nodes[$id];
@@ -175,28 +176,10 @@ final class CodeUseGraph extends DataFlowGraph
         return $node;
     }
 
-    private function getForSymbolUse(CodeLocation $location): DataFlowNode
-    {
-        $key = $location->getShortSummary() . ' symbol-use';
-
-        if (array_key_exists($key, $this->nodes)) {
-            return $this->nodes[$key];
-        }
-
-        $this->nodes[$key] = $node = DataFlowNode::make(
-            $key,
-            'symbol-use',
-            $location,
-        );
-
-        return $node;
-    }
-
     public function addReferenceToNode(
         DataFlowNode $node,
         ?Context $context,
         ?CodeLocation $location = null,
-        string $location_path_type = 'use',
     ): void {
         if (!$this->collect_locations) {
             $location = null;
@@ -218,29 +201,16 @@ final class CodeUseGraph extends DataFlowGraph
         $this->addPath(
             $caller,
             $node,
-            $caller === $location_caller ? $location_path_type : 'use',
+            'use',
         );
 
         if ($location !== null && $caller !== $location_caller) {
             $this->addPath(
                 $location_caller,
                 $node,
-                $location_path_type,
+                'use-symbol',
             );
         }
-    }
-
-    public function addSymbolLocationReferenceToNode(DataFlowNode $node, CodeLocation $location): void
-    {
-        if (!$this->collect_locations) {
-            return;
-        }
-
-        $this->addPath(
-            $this->getForSymbolUse($location),
-            $node,
-            'use-symbol',
-        );
     }
 
     /**
@@ -333,15 +303,6 @@ final class CodeUseGraph extends DataFlowGraph
     public function getFunctionlikeReferenceLocations(string $func): array
     {
         return $this->getIncomingUseSourceLocations('func ' . $func);
-    }
-
-    /**
-     * @param lowercase-string $method_id
-     * @return array<string, bool>
-     */
-    public function getMissingMethodReferences(string $method_id): array
-    {
-        return $this->getIncomingUseSources('missing-method ' . $method_id);
     }
 
     /**
