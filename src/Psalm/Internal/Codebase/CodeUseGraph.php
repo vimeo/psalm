@@ -223,6 +223,14 @@ final class CodeUseGraph extends DataFlowGraph
                 $this->forward_edges[$key] += $map;
             }
         }
+
+        foreach ($other->locations as $node_id => $locations) {
+            if (!isset($this->locations[$node_id])) {
+                $this->locations[$node_id] = $locations;
+            } else {
+                $this->locations[$node_id] += $locations;
+            }
+        }
     }
 
     /**
