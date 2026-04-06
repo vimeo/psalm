@@ -988,4 +988,89 @@ final class IncludeTest extends TestCase
         // from MethodAnalyzer when the method was missing from storage.
         $file_analyzer->analyze();
     }
+
+    /**
+     * Regression test: ClassLikeAnalyzer::getMethodMutations() must not crash
+     * when a used trait's storage is missing (e.g. a vendor trait that was
+     * registered via reflection but never scanned). The trait should be
+     * skipped gracefully instead of throwing InvalidArgumentException.
+     *
+     * Real-world scenario: Illuminate\Console\Command uses trait
+     * PromptsForMissingInput. The trait exists (registered via reflection)
+     * but was never scanned, so ClassLikeStorageProvider has no entry for it.
+     * When Psalm analyzes a user class extending Command and traces
+     * constructor mutations, ClassLikeAnalyzer::getMethodMutations() iterates
+     * the AST's TraitUse nodes and must handle missing storage gracefully.
+     */
+    public function testGetMethodMutationsDoesNotCrashWhenTraitStorageMissing(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+
+        $config->throw_exception = false;
+
+        // Two files: parent class uses a trait, child class triggers
+        // getMethodMutations by calling parent::__construct().
+        $parent_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'parent.php';
+        $child_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'child.php';
+
+        // The parent class uses a trait whose storage will be removed.
+        // The trait is intentionally empty — it has no methods, so its
+        // removal won't leave stale declaring_method_ids in class storage.
+        $this->addFile($parent_path, '<?php
+            namespace Foo;
+
+            trait MyTrait {}
+
+            class Base {
+                use MyTrait;
+
+                public function __construct() {}
+            }
+        ');
+
+        // The child class has an uninitialized typed property and calls
+        // parent::__construct(). This triggers collect_initializations,
+        // which calls getMethodMutations on Base to trace mutations.
+        // Base's AST has "use MyTrait", and getMethodMutations will
+        // try to resolve that trait.
+        $this->addFile($child_path, '<?php
+            namespace Foo;
+
+            class Child extends Base {
+                public string $name;
+
+                public function __construct() {
+                    parent::__construct();
+                    $this->name = "test";
+                }
+            }
+        ');
+
+        $codebase->addFilesToAnalyze([
+            $parent_path => $parent_path,
+            $child_path => $child_path,
+        ]);
+        $codebase->scanFiles();
+
+        // Remove the trait storage but keep it in existing_traits — this
+        // simulates a trait registered via reflection but never scanned
+        // (exactly what happens with PromptsForMissingInput).
+        $ref = new ReflectionProperty(ClassLikeStorageProvider::class, 'storage');
+        /** @var array<string, ClassLikeStorage> $all */
+        $all = $ref->getValue();
+        unset($all['foo\\mytrait']);
+        $ref->setValue(null, $all);
+
+        // Analyze only the child file — this triggers getMethodMutations
+        // on the parent class's constructor, which iterates TraitUse nodes.
+        $file_analyzer = new FileAnalyzer(
+            $this->project_analyzer,
+            $child_path,
+            $config->shortenFileName($child_path),
+        );
+        // This must not crash — previously threw InvalidArgumentException
+        // from ClassLikeStorageProvider::get() for the missing trait.
+        $file_analyzer->analyze();
+    }
 }
