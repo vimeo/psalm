@@ -6,6 +6,7 @@ namespace Psalm\Internal\Type;
 
 use InvalidArgumentException;
 use Psalm\Codebase;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -37,6 +38,8 @@ use function array_shift;
 use function array_values;
 use function assert;
 use function str_starts_with;
+use function strpos;
+use function substr;
 
 /**
  * @internal
@@ -52,6 +55,7 @@ final class TemplateInferredTypeReplacer
         Union $union,
         TemplateResult $template_result,
         ?Codebase $codebase,
+        bool $apply_defaults = true,
     ): Union {
         $new_types = [];
 
@@ -71,6 +75,7 @@ final class TemplateInferredTypeReplacer
                     $atomic_type,
                     $inferred_lower_bounds,
                     $key,
+                    $apply_defaults ? $template_result : null,
                 );
 
                 if ($template_type) {
@@ -250,6 +255,7 @@ final class TemplateInferredTypeReplacer
         TTemplateParam $atomic_type,
         array $inferred_lower_bounds,
         string $key,
+        ?TemplateResult $template_result = null,
     ): ?Union {
         $template_type = null;
 
@@ -326,6 +332,21 @@ final class TemplateInferredTypeReplacer
                     } catch (InvalidArgumentException) {
                     }
                 }
+            }
+        }
+
+        if ($template_type === null
+            || ($template_type->isMixed() && $atomic_type->as->isMixed())
+            || $template_type->isNever()
+        ) {
+            $default_type = self::getTemplateDefault(
+                $atomic_type,
+                $template_result,
+                $codebase,
+            );
+
+            if ($default_type !== null) {
+                $template_type = $default_type;
             }
         }
 
@@ -557,5 +578,89 @@ final class TemplateInferredTypeReplacer
         );
 
         return $class_template_type;
+    }
+
+    private static function getTemplateDefault(
+        TTemplateParam $atomic_type,
+        ?TemplateResult $template_result,
+        ?Codebase $codebase,
+    ): ?Union {
+        if ($template_result === null) {
+            return null;
+        }
+
+        $defining_class = $atomic_type->defining_class;
+        $param_name = $atomic_type->param_name;
+
+        // Check TemplateResult first (populated from method/class storage at call sites)
+        $default = $template_result->template_type_defaults[$param_name][$defining_class] ?? null;
+
+        // Fall back to storage lookup for class-level defaults
+        if ($default === null && $codebase !== null) {
+            $default = self::lookupDefaultFromStorage($codebase, $param_name, $defining_class);
+        }
+
+        if ($default === null) {
+            return null;
+        }
+
+        // Resolve any template params in the default type using current inference
+        return self::replace($default, $template_result, $codebase, false);
+    }
+
+    private static function lookupDefaultFromStorage(
+        Codebase $codebase,
+        string $param_name,
+        string $defining_class,
+    ): ?Union {
+        if (str_starts_with($defining_class, 'fn-')) {
+            // Method/function template - extract the function ID
+            $function_id = substr($defining_class, 3);
+
+            if (strpos($function_id, '::') !== false) {
+                // It's a method — look up via classlike storage to avoid issues
+                // with Methods::getStorage() requiring full class resolution
+                $method_id = MethodIdentifier::wrap($function_id);
+
+                try {
+                    $classlike_storage = $codebase->classlike_storage_provider->get(
+                        $method_id->fq_class_name,
+                    );
+                } catch (InvalidArgumentException) {
+                    return null;
+                }
+
+                $method_storage = $classlike_storage->methods[$method_id->method_name] ?? null;
+
+                if ($method_storage === null) {
+                    return null;
+                }
+
+                return $method_storage->template_type_defaults[$param_name] ?? null;
+            }
+
+            // It's a function
+            if ($function_id === '') {
+                return null;
+            }
+
+            try {
+                /** @var non-empty-lowercase-string $function_id */
+                $function_storage = $codebase->functions->getStorage(null, $function_id);
+
+                return $function_storage->template_type_defaults[$param_name] ?? null;
+            } catch (UnexpectedValueException | InvalidArgumentException) {
+                return null;
+            }
+        }
+
+        // Class-level template
+        try {
+            $classlike_storage = $codebase->classlike_storage_provider->get($defining_class);
+
+            return $classlike_storage->template_type_defaults[$param_name] ?? null;
+        } catch (InvalidArgumentException) {
+            return null;
+        }
     }
 }

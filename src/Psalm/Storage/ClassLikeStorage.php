@@ -278,6 +278,15 @@ final class ClassLikeStorage implements HasAttributesInterface
     public ?array $template_types = null;
 
     /**
+     * An array holding default types for template parameters.
+     *
+     * When a template parameter is not explicitly provided, the default type is used instead of mixed.
+     *
+     * @var array<string, Union>|null
+     */
+    public ?array $template_type_defaults = null;
+
+    /**
      * @var array<int, bool>|null
      */
     public ?array $template_covariants = null;
