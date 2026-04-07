@@ -48,7 +48,7 @@ final class ClassLikeDocblockComment
     public array $mixins = [];
 
     /**
-     * @var array<int, array{string, ?string, ?string, bool, int}>
+     * @var array<int, array{string, ?string, ?string, bool, int, ?string}>
      */
     public array $templates = [];
 

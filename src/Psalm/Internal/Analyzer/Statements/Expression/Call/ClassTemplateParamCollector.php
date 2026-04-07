@@ -147,7 +147,9 @@ final class ClassTemplateParamCollector
                         $class_storage->name => $output_type_extends ?? Type::getMixed(),
                     ];
                 } else {
-                    $class_template_params[$type_name] = [$class_storage->name => Type::getMixed()];
+                    $class_template_params[$type_name] = [
+                        $class_storage->name => $class_storage->template_type_defaults[$type_name] ?? Type::getMixed(),
+                    ];
                 }
             }
         }
@@ -173,7 +175,14 @@ final class ClassTemplateParamCollector
 
                 if (!$self_call) {
                     if (!isset($class_template_params[$type_name])) {
-                        $class_template_params[$type_name][$class_storage->name] = $type;
+                        $default = (!($lhs_type_part instanceof TGenericObject)
+                            && isset($class_storage->template_type_defaults[$type_name]))
+                            ? $class_storage->template_type_defaults[$type_name]
+                            : $type;
+
+                        $class_template_params[$type_name] = [
+                            $class_storage->name => $default,
+                        ];
                     }
                 }
             }

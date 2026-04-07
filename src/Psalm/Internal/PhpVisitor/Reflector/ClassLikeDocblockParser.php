@@ -27,7 +27,9 @@ use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
 
 use function array_key_first;
+use function array_search;
 use function array_shift;
+use function array_slice;
 use function count;
 use function explode;
 use function implode;
@@ -85,6 +87,14 @@ final class ClassLikeDocblockParser
                     $source_prefix = 'phpstan';
                 }
 
+                $eq_pos = array_search('=', $template_type, true);
+                $default_type_string = null;
+                if ($eq_pos !== false) {
+                    $default_tokens = array_slice($template_type, $eq_pos + 1);
+                    $default_type_string = implode(' ', $default_tokens) ?: null;
+                    $template_type = array_slice($template_type, 0, $eq_pos);
+                }
+
                 if (count($template_type) > 1
                     && in_array(strtolower($template_type[0]), ['as', 'super', 'of'], true)
                 ) {
@@ -95,6 +105,7 @@ final class ClassLikeDocblockParser
                         implode(' ', $template_type),
                         false,
                         $offset - $comment->getStartFilePos(),
+                        $default_type_string,
                     ];
                 } else {
                     $templates[$template_name][$source_prefix] = [
@@ -103,6 +114,7 @@ final class ClassLikeDocblockParser
                         null,
                         false,
                         $offset - $comment->getStartFilePos(),
+                        $default_type_string,
                     ];
                 }
             }
@@ -128,6 +140,14 @@ final class ClassLikeDocblockParser
                     $source_prefix = 'phpstan';
                 }
 
+                $eq_pos = array_search('=', $template_type, true);
+                $default_type_string = null;
+                if ($eq_pos !== false) {
+                    $default_tokens = array_slice($template_type, $eq_pos + 1);
+                    $default_type_string = implode(' ', $default_tokens) ?: null;
+                    $template_type = array_slice($template_type, 0, $eq_pos);
+                }
+
                 if (count($template_type) > 1
                     && in_array(strtolower($template_type[0]), ['as', 'super', 'of'], true)
                 ) {
@@ -138,6 +158,7 @@ final class ClassLikeDocblockParser
                         implode(' ', $template_type),
                         true,
                         $offset - $comment->getStartFilePos(),
+                        $default_type_string,
                     ];
                 } else {
                     $templates[$template_name][$source_prefix] = [
@@ -146,6 +167,7 @@ final class ClassLikeDocblockParser
                         null,
                         true,
                         $offset - $comment->getStartFilePos(),
+                        $default_type_string,
                     ];
                 }
             }

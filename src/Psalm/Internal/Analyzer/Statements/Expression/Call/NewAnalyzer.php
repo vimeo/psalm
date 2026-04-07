@@ -25,6 +25,7 @@ use Psalm\Internal\DataFlow\TaintSink;
 use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateBound;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
@@ -617,6 +618,12 @@ final class NewAnalyzer extends CallAnalyzer
                             // than their bounds, so a later write on a bare `new SplObjectStorage()`
                             // reports InvalidArgument. No type variable is minted for it.
                             $generic_param_type = Type::getNever();
+                        } elseif (isset($storage->template_type_defaults[$template_name])) {
+                            $generic_param_type = TemplateInferredTypeReplacer::replace(
+                                $storage->template_type_defaults[$template_name],
+                                $template_result,
+                                $codebase,
+                            );
                         } else {
                             $generic_param_type = array_values($base_type)[0];
 
@@ -725,14 +732,14 @@ final class NewAnalyzer extends CallAnalyzer
                 $statements_analyzer->getSuppressedIssues(),
             );
         } elseif ($storage->template_types) {
+            $type_params = [];
+            foreach ($storage->template_types as $template_name => $type_map) {
+                $type_params[] = $storage->template_type_defaults[$template_name] ?? reset($type_map);
+            }
+
             $result_atomic_type = new TGenericObject(
                 $fq_class_name,
-                array_values(
-                    array_map(
-                        static fn($map) => reset($map),
-                        $storage->template_types,
-                    ),
-                ),
+                $type_params,
                 false,
                 $from_static,
             );
