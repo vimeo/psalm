@@ -464,6 +464,31 @@ final class ClassLikeNodeScanner
                     }
 
                     $storage->template_covariants[$i] = $template_map[3];
+
+                    $default_type_string = $template_map[5] ?? null;
+                    if ($default_type_string !== null) {
+                        $default_type_string = CommentAnalyzer::sanitizeDocblockType($default_type_string);
+                        try {
+                            $default_type = TypeParser::parseTokens(
+                                TypeTokenizer::getFullyQualifiedTokens(
+                                    $default_type_string,
+                                    $this->aliases,
+                                    $storage->template_types,
+                                    $this->type_aliases,
+                                ),
+                                null,
+                                $storage->template_types,
+                                $this->type_aliases,
+                            );
+
+                            $storage->template_type_defaults[$template_name] = $default_type;
+                        } catch (TypeParseTreeException $e) {
+                            $storage->docblock_issues[] = new InvalidDocblock(
+                                'Template ' . $template_name . ' has invalid default type - ' . $e->getMessage(),
+                                $name_location ?? $class_location,
+                            );
+                        }
+                    }
                 }
 
                 $this->class_template_types = $storage->template_types;

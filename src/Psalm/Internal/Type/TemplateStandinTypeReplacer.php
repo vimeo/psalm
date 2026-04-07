@@ -1256,7 +1256,15 @@ final class TemplateStandinTypeReplacer
             } elseif (!empty($class_storage->template_extended_params[$container_class])) {
                 $input_type_params = array_values($class_storage->template_extended_params[$container_class]);
             } else {
-                $input_type_params = array_fill(0, count($class_storage->template_types ?? []), Type::getMixed());
+                if ($class_storage->template_type_defaults !== null) {
+                    $input_type_params = [];
+                    foreach ($class_storage->template_types ?? [] as $template_name => $_) {
+                        $input_type_params[] = $class_storage->template_type_defaults[$template_name]
+                            ?? Type::getMixed();
+                    }
+                } else {
+                    $input_type_params = array_fill(0, count($class_storage->template_types ?? []), Type::getMixed());
+                }
             }
         } else {
             $input_type_params = [];
