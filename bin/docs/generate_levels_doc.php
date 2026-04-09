@@ -51,7 +51,8 @@ $result .= "\n";
 foreach ([2, 3, 4, 5, 6, 7] as $level) {
     $result .= '## Errors at level ' . $level . ' and below' . "\n\n";
 
-    $result .= 'These issues become info (non-blocking) at level ' . ($level + 1) . ($level < 7 ? ' and higher' : '') . '.' . "\n\n";
+    $suffix = $level < 7 ? ' and higher' : '';
+    $result .= 'These issues become info (non-blocking) at level ' . ($level + 1) . $suffix . '.' . "\n\n";
 
     foreach ($grouped_issues[$level] as $issue_type) {
         $result .= ' - [' . $issue_type . '](issues/' . $issue_type . '.md)' . "\n";
