@@ -177,6 +177,7 @@
  - [ParentNotFound](issues/ParentNotFound.md)
  - [ParseError](issues/ParseError.md)
  - [PluginIssue](issues/PluginIssue.md)
+ - [PositionalArgumentNotAllowed](issues/PositionalArgumentNotAllowed.md)
  - [PossibleRawObjectIteration](issues/PossibleRawObjectIteration.md)
  - [PossiblyFalseArgument](issues/PossiblyFalseArgument.md)
  - [PossiblyFalseIterator](issues/PossiblyFalseIterator.md)

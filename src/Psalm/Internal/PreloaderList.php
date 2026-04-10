@@ -1218,6 +1218,7 @@ final class PreloaderList {
         \Psalm\Issue\ParentNotFound::class,
         \Psalm\Issue\ParseError::class,
         \Psalm\Issue\PluginIssue::class,
+        \Psalm\Issue\PositionalArgumentNotAllowed::class,
         \Psalm\Issue\PossibleRawObjectIteration::class,
         \Psalm\Issue\PossiblyFalseArgument::class,
         \Psalm\Issue\PossiblyFalseIterator::class,
