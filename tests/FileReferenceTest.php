@@ -263,6 +263,7 @@ final class FileReferenceTest extends TestCase
                     }',
                 [
                     'class foo\a' => [
+                        'class foo\b' => true,
                         'func foo\d::bat' => true,
                     ],
                     'class foo\b' => [

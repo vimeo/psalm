@@ -335,9 +335,6 @@ final class ClassLikes
         ?CodeLocation $location = null,
         ?Context $context = null,
     ): bool {
-        $calling_fq_class_name = $context?->self;
-        $calling_method_id = $context?->calling_method_id;
-
         $fq_class_name_lc = strtolower($this->getUnAliasedName($fq_class_name));
 
         // fixme: this looks like a crazy caching hack

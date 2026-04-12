@@ -278,6 +278,11 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
 
         $parent_fq_class_name = $this->parent_fq_class_name;
 
+        if (!$class_context) {
+            $class_context = new Context($this->fq_class_name);
+            $class_context->parent = $parent_fq_class_name;
+        }
+
         if ($class instanceof PhpParser\Node\Stmt\Class_ && $class->extends && $parent_fq_class_name) {
             $this->checkParentClass(
                 $class,
@@ -372,11 +377,6 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     );
                 }
             }
-        }
-
-        if (!$class_context) {
-            $class_context = new Context($this->fq_class_name);
-            $class_context->parent = $parent_fq_class_name;
         }
 
         if ($global_context) {
