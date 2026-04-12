@@ -820,7 +820,7 @@ final class ClassLikes
             ) {
                 if ($classlike_storage->public_api) {
                     $node = $codebase->code_use_graph->getNodeForClass($fq_class_name_lc);
-                    $codebase->code_use_graph->addReferenceToNode($node, null);
+                    $codebase->code_use_graph->markAsPublicApi($node);
                 }
                 if (!$classlike_storage->is_trait) {
                     if ($find_unused_code) {

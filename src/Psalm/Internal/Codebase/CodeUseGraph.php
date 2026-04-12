@@ -167,7 +167,7 @@ final class CodeUseGraph extends DataFlowGraph
     /**
      * @psalm-external-mutation-free
      */
-    public function getForGenericUse(): DataFlowNode
+    private function getForGenericUse(): DataFlowNode
     {
         if (array_key_exists('generic-use', $this->nodes)) {
             return $this->nodes['generic-use'];
@@ -178,6 +178,31 @@ final class CodeUseGraph extends DataFlowGraph
             null,
         );
         return $node;
+    }
+
+    /**
+     * @psalm-external-mutation-free
+     */
+    private function getForPublicApi(): DataFlowNode
+    {
+        if (array_key_exists('public-api', $this->nodes)) {
+            return $this->nodes['public-api'];
+        }
+        $this->nodes['public-api'] = $node = DataFlowNode::make(
+            'public-api',
+            'public-api',
+            null,
+        );
+        return $node;
+    }
+
+    public function markAsPublicApi(DataFlowNode $node): void
+    {
+        $this->addPath(
+            $this->getForPublicApi(),
+            $node,
+            'use',
+        );
     }
 
     public function addReferenceToNode(
@@ -277,7 +302,7 @@ final class CodeUseGraph extends DataFlowGraph
             return false;
         }
 
-        return $this->hasIncomingUse($id);
+        return $this->isUsed($id);
     }
 
     /**
@@ -290,7 +315,7 @@ final class CodeUseGraph extends DataFlowGraph
             return false;
         }
 
-        return $this->hasIncomingUse($id);
+        return $this->isUsed($id);
     }
 
     /**
@@ -304,7 +329,7 @@ final class CodeUseGraph extends DataFlowGraph
             return false;
         }
 
-        return $this->hasIncomingUse($id);
+        return $this->isUsed($id);
     }
 
     /**
@@ -317,7 +342,7 @@ final class CodeUseGraph extends DataFlowGraph
             return false;
         }
 
-        return $this->hasIncomingUse($id);
+        return $this->isUsed($id);
     }
 
     /**
@@ -331,7 +356,7 @@ final class CodeUseGraph extends DataFlowGraph
             return false;
         }
 
-        return $this->hasIncomingUse($id);
+        return $this->isUsed($id);
     }
 
     // --- get*References ---
@@ -472,7 +497,7 @@ final class CodeUseGraph extends DataFlowGraph
 
     // General
 
-    private function hasIncomingUse(string $node_id): bool
+    private function isUsed(string $node_id): bool
     {
         foreach ($this->forward_edges as $from_id => $to_nodes) {
             if ($from_id === $node_id) {
