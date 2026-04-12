@@ -76,10 +76,11 @@ trait CanAlias
                         (int) $use->getAttribute('endFilePos'),
                         $use_path,
                     );
-                    $codebase->addReferenceToClass(
-                        $use_path_lc,
-                        new CodeLocation($this, $use),
-                    );
+                    if ($codebase->collect_locations) {
+                        // register the path
+                        $codebase->use_referencing_locations[strtolower($use_path)][] =
+                            new CodeLocation($this, $use);
+                    }
 
                     if ($codebase->alter_code) {
                         if (isset($codebase->class_transforms[$use_path_lc])) {
@@ -127,10 +128,11 @@ trait CanAlias
                     break;
 
                 case PhpParser\Node\Stmt\Use_::TYPE_NORMAL:
-                    $codebase->addReferenceToClass(
-                        strtolower($use_path),
-                        new CodeLocation($this, $use),
-                    );
+                    if ($codebase->collect_locations) {
+                        // register the path
+                        $codebase->use_referencing_locations[strtolower($use_path)][] =
+                            new CodeLocation($this, $use);
+                    }
 
                     $this->aliased_classes[strtolower($use_alias)] = $use_path;
                     $this->aliased_classes_flipped[strtolower($use_path)] = $use_alias;

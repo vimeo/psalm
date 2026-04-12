@@ -110,6 +110,17 @@ use const PHP_VERSION_ID;
  */
 final class Codebase
 {
+    /**
+     * A map of fully-qualified use declarations to the files
+     * that reference them (keyed by filename).
+     * 
+     * Separated from the CodeUseGraph because a use import does not 
+     * automatically mean a class is actually used.
+     *
+     * @var array<lowercase-string, array<int, CodeLocation>>
+     */
+    public array $use_referencing_locations = [];
+
     public FileStorageProvider $file_storage_provider;
 
     public ClassLikeStorageProvider $classlike_storage_provider;
@@ -776,7 +787,13 @@ final class Codebase
     public function findReferencesToClassLike(string $fq_class_name): array
     {
         $fq_class_name_lc = strtolower($fq_class_name);
-        return $this->code_use_graph?->getClassReferenceLocations($fq_class_name_lc) ?? [];
+        $refs = $this->code_use_graph?->getClassReferenceLocations($fq_class_name_lc) ?? [];
+
+        if (isset($this->use_referencing_locations[$fq_class_name_lc])) {
+            $refs = [...$refs, ...$this->use_referencing_locations[$fq_class_name_lc]];
+        }
+
+        return $refs;
     }
 
     public function findReferencesToClassConstant(string $const_id): array
