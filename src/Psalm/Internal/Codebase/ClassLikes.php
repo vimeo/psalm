@@ -2207,9 +2207,12 @@ final class ClassLikes
 
             $property_constructor_referenced = false;
             if ($property_referenced && $property_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE) {
-                $property_references = $codebase->code_use_graph?->getPropertyReferences(
-                    strtolower($classlike_storage->name),
-                    $property_name,
+                $property_references = $codebase->code_use_graph?->getReferences(
+                    $codebase->code_use_graph?->getNodeForProperty(
+                        strtolower($classlike_storage->name),
+                        $property_name,
+                        true,
+                    )
                 ) ?? [];
 
                 if (count($property_references) === 1) {
