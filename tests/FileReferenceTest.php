@@ -109,7 +109,7 @@ final class FileReferenceTest extends TestCase
             }
         };
 
-        $all = $graph->getAllIncomingUseSources();
+        $all = $graph->getAllReferences();
         $ksort_recursive($all);
         $this->assertSame($expected_references, $all);
     }

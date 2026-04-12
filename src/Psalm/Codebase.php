@@ -761,7 +761,7 @@ final class Codebase
      */
     public function findReferencesToMethod(string $method_id): array
     {
-        return $this->code_use_graph?->getReferences(
+        return $this->code_use_graph?->getReferenceLocations(
             $this->code_use_graph?->getNodeForFunctionLike(strtolower($method_id))
         ) ?? [];
     }
@@ -775,7 +775,7 @@ final class Codebase
         /** @psalm-suppress PossiblyUndefinedIntArrayOffset */
         [$fq_class_name, $property_name] = explode('::', $property_id);
 
-        return $this->code_use_graph?->getReferences(
+        return $this->code_use_graph?->getReferenceLocations(
             $this->code_use_graph?->getNodeForProperty(
                 strtolower($fq_class_name),
                 ltrim($property_name, '$'),
@@ -809,7 +809,7 @@ final class Codebase
         /** @psalm-suppress PossiblyUndefinedIntArrayOffset */
         [$fq_class_name, $const_name] = explode('::', $const_id);
 
-        return $this->code_use_graph?->getReferences(
+        return $this->code_use_graph?->getReferenceLocations(
             $this->code_use_graph?->getNodeForClassConstant(
                 strtolower($fq_class_name),
                 strtolower($const_name),
