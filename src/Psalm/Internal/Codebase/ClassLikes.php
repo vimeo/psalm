@@ -822,7 +822,8 @@ final class ClassLikes
                 && $this->config->isInProjectDirs($classlike_storage->location->file_path)
             ) {
                 if ($classlike_storage->public_api) {
-                    $codebase->addReferenceToClass($fq_class_name_lc);
+                    $node = $codebase->code_use_graph->getNodeForClass($fq_class_name_lc);
+                    $codebase->code_use_graph->addReferenceToNode($node, null);
                 }
                 if (!$classlike_storage->is_trait) {
                     if ($find_unused_code) {
