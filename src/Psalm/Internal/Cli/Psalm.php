@@ -179,6 +179,7 @@ final class Psalm
         'dump-taint-graph:',
         'find-unused-psalm-suppress',
         'error-level:',
+        'only-taint',
     ];
 
     /**
@@ -369,6 +370,7 @@ final class Psalm
                 isset($options['report-show-info'])
                     ? $options['report-show-info'] !== 'false' && $options['report-show-info'] !== '0'
                     : true,
+                array_key_exists('only-taint', $options),
             ),
             $threads,
             $scanThreads,
@@ -888,6 +890,7 @@ final class Psalm
         $stdout_report_options->show_snippet = !isset($options['show-snippet']) || $options['show-snippet'] !== "false";
         $stdout_report_options->pretty = isset($options['pretty-print']) && $options['pretty-print'] !== "false";
         $stdout_report_options->in_ci = $in_ci;
+        $stdout_report_options->only_taint = array_key_exists('only-taint', $options);
 
         return $stdout_report_options;
     }
@@ -1457,6 +1460,11 @@ final class Psalm
 
             --taint-analysis
                 Run Psalm in taint analysis mode – see https://psalm.dev/docs/security_analysis for more info
+
+            --only-taint
+                Show only taint-related issues (those with a taint trace), suppressing all other findings.
+                Useful for security-focused scans. Works with all output formats. Exit code 2 is based
+                solely on taint issues when this flag is set (non-taint errors do not affect the exit code).
 
             --dump-taint-graph=OUTPUT_PATH
                 Output the taint graph using the DOT language – requires --taint-analysis

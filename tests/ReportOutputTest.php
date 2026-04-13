@@ -761,6 +761,144 @@ final class ReportOutputTest extends TestCase
         unlink(__DIR__ . '/test-report.json');
     }
 
+    public function testOnlyTaintFilterKeepsTaintIssuesAndDropsOthers(): void
+    {
+        $taint_issue = new IssueData(
+            IssueData::SEVERITY_ERROR,
+            10,
+            10,
+            'TaintedInput',
+            'Detected tainted input',
+            'somefile.php',
+            'somefile.php',
+            'echo $tainted;',
+            '$tainted',
+            100,
+            108,
+            95,
+            109,
+            6,
+            14,
+            0,
+            -1,
+            [['label' => 'taint source', 'entry_path_type' => 'arg']],
+        );
+
+        $non_taint_issue = new IssueData(
+            IssueData::SEVERITY_ERROR,
+            5,
+            5,
+            'UndefinedVariable',
+            'Cannot find referenced variable $x',
+            'somefile.php',
+            'somefile.php',
+            'echo $x;',
+            '$x',
+            50,
+            52,
+            45,
+            53,
+            6,
+            8,
+        );
+
+        $issues_data = [$taint_issue, $non_taint_issue];
+
+        $report_options = new ReportOptions();
+        $report_options->only_taint = true;
+
+        $report = new JsonReport($issues_data, [], $report_options);
+        $decoded = json_decode($report->create(), true, 512, JSON_THROW_ON_ERROR);
+
+        $this->assertCount(1, $decoded);
+        $this->assertSame('TaintedInput', $decoded[0]['type']);
+    }
+
+    public function testOnlyTaintFilterWithNoTaintIssuesReturnsEmpty(): void
+    {
+        $non_taint_issue = new IssueData(
+            IssueData::SEVERITY_ERROR,
+            5,
+            5,
+            'UndefinedVariable',
+            'Cannot find referenced variable $x',
+            'somefile.php',
+            'somefile.php',
+            'echo $x;',
+            '$x',
+            50,
+            52,
+            45,
+            53,
+            6,
+            8,
+        );
+
+        $issues_data = [$non_taint_issue];
+
+        $report_options = new ReportOptions();
+        $report_options->only_taint = true;
+
+        $report = new JsonReport($issues_data, [], $report_options);
+        $decoded = json_decode($report->create(), true, 512, JSON_THROW_ON_ERROR);
+
+        $this->assertSame([], $decoded);
+    }
+
+    public function testOnlyTaintFilterTreatsEmptyTaintTraceAsTaintIssue(): void
+    {
+        // taint_trace = [] (empty array) is non-null, so it passes the filter.
+        // This documents the contract: only null means "no taint info".
+        $issue_with_empty_trace = new IssueData(
+            IssueData::SEVERITY_ERROR,
+            5,
+            5,
+            'TaintedInput',
+            'Detected tainted input',
+            'somefile.php',
+            'somefile.php',
+            'echo $x;',
+            '$x',
+            50,
+            52,
+            45,
+            53,
+            6,
+            8,
+            0,
+            -1,
+            [], // empty taint_trace — non-null, so treated as a taint issue
+        );
+
+        $report_options = new ReportOptions();
+        $report_options->only_taint = true;
+
+        $report = new JsonReport([$issue_with_empty_trace], [], $report_options);
+        $decoded = json_decode($report->create(), true, 512, JSON_THROW_ON_ERROR);
+
+        $this->assertCount(1, $decoded);
+    }
+
+    public function testGetFileReportOptionsPropagatesToOnlyTaint(): void
+    {
+        $options = ProjectAnalyzer::getFileReportOptions(
+            [__DIR__ . '/test-report.json'],
+            true,
+            true,
+        );
+
+        $this->assertCount(1, $options);
+        $this->assertTrue($options[0]->only_taint);
+    }
+
+    public function testGetFileReportOptionsDefaultsOnlyTaintToFalse(): void
+    {
+        $options = ProjectAnalyzer::getFileReportOptions([__DIR__ . '/test-report.json']);
+
+        $this->assertCount(1, $options);
+        $this->assertFalse($options[0]->only_taint);
+    }
+
     /**
      * Needed when running on Windows
      *

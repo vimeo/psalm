@@ -26,4 +26,6 @@ final class ReportOptions
     public bool $show_suggestions = true;
 
     public bool $in_ci = false;
+
+    public bool $only_taint = false;
 }

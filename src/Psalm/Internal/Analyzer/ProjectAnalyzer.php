@@ -269,8 +269,11 @@ final class ProjectAnalyzer
      * @param  array<string>  $report_file_paths
      * @return list<ReportOptions>
      */
-    public static function getFileReportOptions(array $report_file_paths, bool $show_info = true): array
-    {
+    public static function getFileReportOptions(
+        array $report_file_paths,
+        bool $show_info = true,
+        bool $only_taint = false,
+    ): array {
         $report_options = [];
 
         $mapping = Report::getMapping();
@@ -284,6 +287,7 @@ final class ProjectAnalyzer
                     $o->show_info = $show_info;
                     $o->output_path = $report_file_path;
                     $o->use_color = false;
+                    $o->only_taint = $only_taint;
                     $report_options[] = $o;
                     continue 2;
                 }

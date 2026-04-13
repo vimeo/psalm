@@ -65,14 +65,23 @@ abstract class Report
         protected int $total_expression_count = 1,
     ) {
         if (!$report_options->show_info) {
-            $this->issues_data = array_filter(
+            $issues_data = array_filter(
                 $issues_data,
                 static fn(IssueData $issue_data): bool => $issue_data->severity !== IssueData::SEVERITY_INFO,
             );
-        } else {
-            $this->issues_data = $issues_data;
         }
 
+        // This filter is the guard for direct API use (e.g. constructing a Report subclass directly).
+        // When called through the standard CLI path, IssueBuffer::finish() pre-filters the issues
+        // before passing them here, so this check is a no-op in that case.
+        if ($report_options->only_taint) {
+            $issues_data = array_filter(
+                $issues_data,
+                static fn(IssueData $issue_data): bool => $issue_data->taint_trace !== null,
+            );
+        }
+
+        $this->issues_data = $issues_data;
         $this->use_color = $report_options->use_color;
         $this->show_snippet = $report_options->show_snippet;
         $this->show_info = $report_options->show_info;

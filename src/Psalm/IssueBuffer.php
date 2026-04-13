@@ -43,6 +43,7 @@ use Psalm\Report\XmlReport;
 use RuntimeException;
 use UnexpectedValueException;
 
+use function array_filter;
 use function array_keys;
 use function array_merge;
 use function array_pop;
@@ -707,13 +708,35 @@ final class IssueBuffer
             }
         }
 
+        // When --only-taint is active, build a filtered view for output and exit-code counting.
+        // $issues_data (unfiltered) is kept for AfterAnalysisEvent so plugins always see the full dataset.
+        $display_issues_data = $issues_data;
+        if ($project_analyzer->stdout_report_options->only_taint) {
+            if (!$codebase->taint_flow_graph) {
+                fwrite(STDERR, 'Warning: --only-taint has no effect because taint analysis is not enabled. '
+                    . 'All issues are suppressed. Use --taint-analysis to enable taint tracking.' . PHP_EOL);
+            }
+
+            /** @var array<string, list<IssueData>> $display_issues_data */
+            $display_issues_data = [];
+            foreach ($issues_data as $file_path => $file_issues) {
+                $filtered = array_values(array_filter(
+                    $file_issues,
+                    static fn(IssueData $issue_data): bool => $issue_data->taint_trace !== null,
+                ));
+                if ($filtered !== []) {
+                    $display_issues_data[$file_path] = $filtered;
+                }
+            }
+        }
+
         echo self::getOutput(
-            $issues_data,
+            $display_issues_data,
             $project_analyzer->stdout_report_options,
             $codebase->analyzer->getTotalTypeCoverage($codebase),
         );
 
-        foreach ($issues_data as $file_issues) {
+        foreach ($display_issues_data as $file_issues) {
             foreach ($file_issues as $issue_data) {
                 if ($issue_data->severity === Config::REPORT_ERROR) {
                     ++$error_count;
@@ -757,7 +780,7 @@ final class IssueBuffer
             file_put_contents(
                 $report_options->output_path,
                 self::getOutput(
-                    $issues_data,
+                    $display_issues_data,
                     $report_options,
                     $codebase->analyzer->getTotalTypeCoverage($codebase),
                 ),
@@ -775,6 +798,8 @@ final class IssueBuffer
                     ? "\e[0;31m" . $error_count . " errors\e[0m"
                     : $error_count . ' errors'
                 ) . ' found' . "\n";
+            } elseif ($project_analyzer->stdout_report_options->only_taint) {
+                echo "No taint issues found!\n";
             } else {
                 self::printSuccessMessage($project_analyzer);
             }
