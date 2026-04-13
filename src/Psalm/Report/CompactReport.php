@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Psalm\Report;
 
 use Override;
-use Psalm\Config;
 use Psalm\Internal\Analyzer\DataFlowNodeData;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Report;
@@ -15,7 +14,6 @@ use function count;
 use function implode;
 use function in_array;
 use function str_contains;
-use function strtoupper;
 
 /**
  * @psalm-external-mutation-free
@@ -34,9 +32,6 @@ final class CompactReport extends Report
         $output = '';
 
         foreach ($this->issues_data as $issue_data) {
-            $is_error = $issue_data->severity === Config::REPORT_ERROR;
-            $prefix = $is_error ? '' : strtoupper($issue_data->severity) . ' ';
-
             $chain_parts = $issue_data->taint_trace !== null
                 ? $this->buildChainParts($issue_data)
                 : null;
@@ -45,11 +40,11 @@ final class CompactReport extends Report
                 $hop_count = count($chain_parts) - 1;
                 $hop_label = $hop_count <= 1 ? 'direct' : (string) $hop_count;
 
-                $output .= $prefix . $issue_data->file_name . ':' . $issue_data->line_from
+                $output .= $issue_data->file_name . ':' . $issue_data->line_from
                     . ':' . $issue_data->column_from . ' ' . $issue_data->type . ' [' . $hop_label . ']' . "\n";
                 $output .= '  ' . implode(' → ', $chain_parts) . "\n";
             } else {
-                $output .= $prefix . $issue_data->file_name . ':' . $issue_data->line_from
+                $output .= $issue_data->file_name . ':' . $issue_data->line_from
                     . ':' . $issue_data->column_from . ' ' . $issue_data->type . ': ' . $issue_data->message . "\n";
             }
         }

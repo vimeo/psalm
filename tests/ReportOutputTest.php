@@ -560,7 +560,7 @@ final class ReportOutputTest extends TestCase
             somefile.php:4:10 UndefinedVariable: Cannot find referenced variable $as_you_____type
             somefile.php:4:10 MixedReturnStatement: Could not infer a return type
             somefile.php:9:6 UndefinedConstant: Const CHANGE_ME is not defined, consider enabling the allConstantsGlobal config option if scanning legacy codebases
-            INFO somefile.php:18:6 PossiblyUndefinedGlobalVariable: Possibly undefined global variable $a, first seen on line 12
+            somefile.php:18:6 PossiblyUndefinedGlobalVariable: Possibly undefined global variable $a, first seen on line 12
 
             EOF,
             $this->toUnixLineEndings(IssueBuffer::getOutput(IssueBuffer::getIssuesData(), $compact_report_options)),
