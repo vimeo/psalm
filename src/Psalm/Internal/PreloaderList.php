@@ -737,6 +737,7 @@ final class PreloaderList {
         \Psalm\Internal\Cache::class,
         \Psalm\Internal\Clause::class,
         \Psalm\Internal\CliUtils::class,
+        \Psalm\Internal\Cli\IdeDetector::class,
         \Psalm\Internal\Cli\LanguageServer::class,
         \Psalm\Internal\Cli\Plugin::class,
         \Psalm\Internal\Cli\Psalm::class,

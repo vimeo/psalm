@@ -476,8 +476,7 @@ final class Psalm
      */
     private static function findDefaultOutputFormat(): string
     {
-        $emulator = getenv('TERMINAL_EMULATOR');
-        if (is_string($emulator) && str_starts_with($emulator, 'JetBrains')) {
+        if (IdeDetector::detect() === IdeDetector::PHPSTORM) {
             return Report::TYPE_PHP_STORM;
         }
 
