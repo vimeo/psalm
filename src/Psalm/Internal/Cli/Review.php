@@ -85,19 +85,19 @@ final class Review
 
         /** @psalm-suppress RiskyTruthyFalsyComparison */
         $mode = match ($modeKey) {
-            'code-server' => static fn(string $file, int $line, int $column) => 'code-server -r ' .
+            IdeDetector::IDE_VS_CODE_SERVER => static fn(string $file, int $line, int $column) => 'code-server -r ' .
                     escapeshellarg($file) . ':' .
                     escapeshellarg((string)$line) . ':' .
                     escapeshellarg((string)$column),
 
-            'phpstorm' => static fn(string $file, int $line, int $column) => (PHP_OS_FAMILY === 'Darwin'
+            IdeDetector::IDE_PHPSTORM => static fn(string $file, int $line, int $column) => (PHP_OS_FAMILY === 'Darwin'
                 ? (($phpstormPath = getenv('PHPSTORM'))
                     ? 'open -na ' . escapeshellarg($phpstormPath) . ' --args'
                     : 'open -nb com.jetbrains.PhpStorm --args')
                 : escapeshellarg(getenv('PHPSTORM') ?: 'phpstorm')
                 ). ' --line ' . escapeshellarg((string) $line) . " --column {$column} " . escapeshellarg($file),
 
-            'code' => static fn(string $file, int $line, int $column)
+            IdeDetector::IDE_VS_CODE => static fn(string $file, int $line, int $column)
                  => 'code --goto ' . escapeshellarg($file) . ':' .
                  escapeshellarg((string) $line) . ':' .
                  escapeshellarg((string) $column),

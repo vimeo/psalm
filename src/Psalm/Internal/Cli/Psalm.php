@@ -476,7 +476,7 @@ final class Psalm
      */
     private static function findDefaultOutputFormat(): string
     {
-        if (IdeDetector::detect() === IdeDetector::PHPSTORM) {
+        if (IdeDetector::detect() === IdeDetector::IDE_PHPSTORM) {
             return Report::TYPE_PHP_STORM;
         }
 
