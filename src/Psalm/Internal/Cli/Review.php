@@ -23,6 +23,7 @@ use function fputs;
 use function gc_collect_cycles;
 use function gc_disable;
 use function getenv;
+use function in_array;
 use function json_decode;
 use function ltrim;
 use function passthru;
@@ -78,10 +79,20 @@ final class Review
         }
 
         $issues = array_shift($args);
-        $modeKey = array_shift($args) ?? IdeDetector::detect() ?? throw new AssertionError(
-            'No IDE was specified and none could be auto-detected. ' .
-            "Pass 'code', 'phpstorm', or 'code-server' as the second argument.",
-        );
+
+        // Peek at the next argument: if it's a known IDE name consume it, otherwise
+        // leave it in $args as a filter and fall back to auto-detection.
+        $knownIdes = [IdeDetector::IDE_PHPSTORM, IdeDetector::IDE_VS_CODE, IdeDetector::IDE_VS_CODE_SERVER];
+        $peeked = $args[0] ?? null;
+        if ($peeked !== null && in_array($peeked, $knownIdes, true)) {
+            array_shift($args);
+            $modeKey = $peeked;
+        } else {
+            $modeKey = IdeDetector::detect() ?? throw new AssertionError(
+                'No IDE was specified and none could be auto-detected. ' .
+                "Pass 'code', 'phpstorm', or 'code-server' as the second argument.",
+            );
+        }
 
         /** @psalm-suppress RiskyTruthyFalsyComparison */
         $mode = match ($modeKey) {
