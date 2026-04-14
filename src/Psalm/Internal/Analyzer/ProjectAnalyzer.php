@@ -237,7 +237,8 @@ final class ProjectAnalyzer
     }
 
     private bool $extra_files_initialized = false;
-    private function initExtraFiles(): void {
+    private function initExtraFiles(): void
+    {
         $file_extensions = $this->config->getFileExtensions();
         foreach ($this->config->getExtraDirectories() as $dir_name) {
             $file_paths = $this->file_provider->getFilesInDir(
@@ -253,7 +254,8 @@ final class ProjectAnalyzer
     }
 
     private bool $project_files_initialized = false;
-    private function initProjectFiles(): void {
+    private function initProjectFiles(): void
+    {
         if ($this->project_files_initialized) {
             return;
         }
