@@ -18,29 +18,29 @@ use function str_starts_with;
  */
 final class IdeDetector
 {
-    public const PHPSTORM = 'phpstorm';
-    public const CODE = 'code';
-    public const CODE_SERVER = 'code-server';
+    public const IDE_PHPSTORM = 'phpstorm';
+    public const IDE_VS_CODE = 'code';
+    public const IDE_VS_CODE_SERVER = 'code-server';
 
     /**
-     * @return self::PHPSTORM|self::CODE|self::CODE_SERVER|null
+     * @return self::IDE_*|null
      */
     public static function detect(): ?string
     {
         // JetBrains IDEs (PhpStorm, IntelliJ IDEA, etc.) set TERMINAL_EMULATOR=JetBrains-JediTerm
         $emulator = getenv('TERMINAL_EMULATOR');
         if (is_string($emulator) && str_starts_with($emulator, 'JetBrains')) {
-            return self::PHPSTORM;
+            return self::IDE_PHPSTORM;
         }
 
         // code-server (browser-based VS Code) sets VSCODE_PROXY_URI; desktop VS Code does not
         if (getenv('VSCODE_PROXY_URI') !== false) {
-            return self::CODE_SERVER;
+            return self::IDE_VS_CODE_SERVER;
         }
 
         // Desktop VS Code sets TERM_PROGRAM=vscode in its integrated terminal
         if (getenv('TERM_PROGRAM') === 'vscode') {
-            return self::CODE;
+            return self::IDE_VS_CODE;
         }
 
         return null;
