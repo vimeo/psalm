@@ -61,7 +61,7 @@ final class Review
             exit("Return code {$result}\n");
         }
     }
-    
+
     /** @param list<string> $argv */
     public static function run(array $argv): void
     {
@@ -78,10 +78,13 @@ final class Review
         }
 
         $issues = array_shift($args);
-        $mode = array_shift($args);
+        $modeKey = array_shift($args) ?? IdeDetector::detect() ?? throw new AssertionError(
+            'No IDE was specified and none could be auto-detected. ' .
+            "Pass 'code', 'phpstorm', or 'code-server' as the second argument.",
+        );
 
         /** @psalm-suppress RiskyTruthyFalsyComparison */
-        $mode = match ($mode) {
+        $mode = match ($modeKey) {
             'code-server' => static fn(string $file, int $line, int $column) => 'code-server -r ' .
                     escapeshellarg($file) . ':' .
                     escapeshellarg((string)$line) . ':' .
@@ -98,15 +101,14 @@ final class Review
                  => 'code --goto ' . escapeshellarg($file) . ':' .
                  escapeshellarg((string) $line) . ':' .
                  escapeshellarg((string) $column),
-            
-            null => throw new AssertionError("No IDE was specified as second parameter!"),
-            default => throw new AssertionError("The only allowed IDEs are vscode, phpstorm, code-server, got $mode")
+
+            default => throw new AssertionError("The only allowed IDEs are code, phpstorm, code-server, got $modeKey"),
         };
 
         if (!file_exists($issues)) {
             throw new RuntimeException("$issues does not exist!");
         }
-        
+
         $issues = file_get_contents($issues);
         if ($issues === false) {
             throw new AssertionError("Could not read issues");
@@ -124,7 +126,7 @@ final class Review
                 $issues = array_filter($issues, static fn(array $i) => $i['type'] === $issue);
             }
         }
-        
+
         $allCount = count($issues);
         $issues = array_values($issues);
         foreach ($issues as $k => [
@@ -145,20 +147,20 @@ final class Review
             }
             echo "{$type}: {$message}" . PHP_EOL . PHP_EOL;
             echo $snippet . PHP_EOL;
-        
+
             $pos = strpos($snippet, $selected);
             assert($pos !== false);
             $snippetTrimmed = ltrim($snippet);
             $lenTab = strlen($snippet) - strlen($snippetTrimmed);
-        
+
             echo substr($snippet, 0, $lenTab);
             echo str_repeat(' ', $pos - $lenTab);
             echo str_repeat('^', strlen($selected));
             echo PHP_EOL . PHP_EOL;
-        
+
             printf('%d%% (%d/%d)', (int)($k * 100 / $allCount), $k, $allCount);
             echo PHP_EOL;
-        
+
             self::r($mode($file, $line, $column));
 
             /** @psalm-suppress RiskyTruthyFalsyComparison */
@@ -173,13 +175,15 @@ final class Review
         fputs(
             STDERR,
             PHP_EOL . "Usage:" . PHP_EOL . PHP_EOL .
-                "psalm-review report.json code|phpstorm|code-server " .
+                "psalm-review report.json [code|phpstorm|code-server] " .
                 "[ inv|rev|[~-]IssueType1 ] [ [~-]IssueType2 ] ... " . PHP_EOL .
-                "psalm --review report.json code|phpstorm|code-server " .
+                "psalm --review report.json [code|phpstorm|code-server] " .
                 "[ inv|rev|[~-]IssueType1 ] [ [~-]IssueType2 ] ... " . PHP_EOL . PHP_EOL .
                 "Will parse the Psalm JSON report in report.json ".
                 "and open the specified IDE at the line and column of the issue, ".
                 "one by one for all issues.".PHP_EOL.
+                "The IDE argument is optional when running inside a supported IDE's integrated terminal ".
+                "(PhpStorm, VS Code, code-server are auto-detected).".PHP_EOL.
                 "Press enter to go to the next issue, q to quit.".PHP_EOL.PHP_EOL.
                 "The extra arguments may be used to filter only for issues of the specified types, ".
                 "or for all issues except the specified types (with the ~ or - inversion);".PHP_EOL.
