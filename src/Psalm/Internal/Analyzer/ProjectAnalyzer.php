@@ -146,11 +146,13 @@ final class ProjectAnalyzer
     public array $check_paths_files = [];
 
     /**
+     * @psalm-suppress PropertyNotSetInConstructor Intentional to throw if accessed before initialization
      * @var array<string,string>
      */
     private array $project_files;
 
     /**
+     * @psalm-suppress PropertyNotSetInConstructor Intentional to throw if accessed before initialization
      * @var array<string,string>
      */
     private array $extra_files;
