@@ -280,6 +280,8 @@ final class Bat
                 </psalm>',
             ),
         );
+        $this->project_analyzer->initExtraFiles();
+        $this->project_analyzer->initProjectFiles();
 
         $this->project_analyzer->setPhpVersion('8.1', 'tests');
 
