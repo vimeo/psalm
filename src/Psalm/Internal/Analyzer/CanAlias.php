@@ -78,7 +78,7 @@ trait CanAlias
                     );
                     if ($codebase->collect_locations) {
                         // register the path
-                        $codebase->use_referencing_locations[strtolower($use_path)][] =
+                        $codebase->use_referencing_locations[$use_path_lc][] =
                             new CodeLocation($this, $use);
                     }
 

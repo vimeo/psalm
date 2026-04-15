@@ -70,15 +70,21 @@ final class Functions
 
     public function consolidateAnalyzedData(Codebase $codebase): void
     {
+        if (!$codebase->code_use_graph) {
+            return;
+        }
+        $code_use_graph = $codebase->code_use_graph;
         foreach (self::$stubbed_functions as $function_id => $storage) {
             if ($storage->public_api) {
-                $codebase->addReferenceToFunctionLike($function_id);
+                $node = $code_use_graph->getNodeForFunctionLike($function_id);
+                $code_use_graph->markAsPublicApi($node);
             }
         }
         foreach ($this->file_storage_provider->getAll() as $file_storage) {
             foreach ($file_storage->functions as $function_id => $storage) {
                 if ($storage->public_api) {
-                    $codebase->addReferenceToFunctionLike($function_id);
+                    $node = $code_use_graph->getNodeForFunctionLike($function_id);
+                    $code_use_graph->markAsPublicApi($node);
                 }
             }
         }
