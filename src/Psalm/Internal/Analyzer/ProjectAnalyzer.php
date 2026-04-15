@@ -242,6 +242,7 @@ final class ProjectAnalyzer
         if ($this->extra_files_initialized) {
             return;
         }
+        $this->extra_files = [];
         $file_extensions = $this->config->getFileExtensions();
         foreach ($this->config->getExtraDirectories() as $dir_name) {
             $file_paths = $this->file_provider->getFilesInDir(
@@ -263,6 +264,7 @@ final class ProjectAnalyzer
         if ($this->project_files_initialized) {
             return;
         }
+        $this->project_files = [];
         $file_extensions = $this->config->getFileExtensions();
         foreach ($this->config->getProjectDirectories() as $dir_name) {
             $file_paths = $this->file_provider->getFilesInDir(
