@@ -140,6 +140,9 @@ use const SCANDIR_SORT_NONE;
  */
 final class Config
 {
+    /**
+     * @var bool
+     */
     public const INIT_PROJECT_FILES_NOW = false;
 
     final public const DEFAULT_BASELINE_NAME = 'psalm-baseline.xml';
