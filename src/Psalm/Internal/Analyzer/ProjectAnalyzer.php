@@ -148,12 +148,12 @@ final class ProjectAnalyzer
     /**
      * @var array<string,string>
      */
-    private array $project_files = [];
+    private array $project_files;
 
     /**
      * @var array<string,string>
      */
-    private array $extra_files = [];
+    private array $extra_files;
 
     /**
      * @var array<string, string>
@@ -352,10 +352,7 @@ final class ProjectAnalyzer
     /** @psalm-mutation-free */
     public function canReportIssues(string $file_path): bool
     {
-        if ($this->project_files_initialized) {
-            return isset($this->project_files[$file_path]);
-        }
-        return $this->config->isInProjectDirs($file_path);
+        return isset($this->project_files[$file_path]);
     }
 
     /**
@@ -965,6 +962,8 @@ final class ProjectAnalyzer
     {
         $this->progress->write($this->generatePHPVersionMessage());
         $this->progress->startPhase(Phase::SCAN, $this->scanThreads);
+
+        $this->initProjectFiles();
         $this->initExtraFiles();
 
         $this->config->visitPreloadedStubFiles($this->codebase, $this->progress);
