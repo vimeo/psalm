@@ -371,9 +371,6 @@ final class ProjectAnalyzer
     /** @psalm-mutation-free */
     public function canReportIssues(string $file_path): bool
     {
-        if (!$this->project_files_initialized) {
-            return $this->config->isInProjectDirs($file_path);
-        }
         $list = $this->project_files;
         return isset($list[$file_path]);
     }
@@ -986,7 +983,22 @@ final class ProjectAnalyzer
         $this->progress->write($this->generatePHPVersionMessage());
         $this->progress->startPhase(Phase::SCAN, $this->scanThreads);
 
-        //$this->initProjectFiles();
+        if (!$this->project_files_initialized) {
+            $file_extensions = $this->config->getFileExtensions();
+            $this->project_files = [];
+            foreach ($paths_to_check as $file_path) {
+                if (is_dir($file_path)) {
+                    foreach ($this->file_provider->getFilesInDir(
+                        $file_path,
+                        $file_extensions,
+                    ) as $file_path) {
+                        $this->project_files[$file_path] = $file_path;
+                    }
+                } elseif (is_file($file_path)) {
+                    $this->project_files[$file_path] = $file_path;
+                }
+            }
+        }
         $this->initExtraFiles();
 
         $this->config->visitPreloadedStubFiles($this->codebase, $this->progress);
