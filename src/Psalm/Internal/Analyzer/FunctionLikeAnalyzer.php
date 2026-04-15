@@ -1163,7 +1163,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $var_type = $param_type;
 
             if ($function_param->is_variadic) {
-                if ($storage->allow_named_arg_calls) {
+                if ($storage->require_named_arg_calls) {
+                    $var_type = new Union([
+                        new TArray([Type::getString(), $param_type]),
+                    ], [
+                        'by_ref' => $function_param->by_ref,
+                        'parent_nodes' => $parent_nodes,
+                    ]);
+                } elseif ($storage->allow_named_arg_calls) {
                     $var_type = new Union([
                         new TArray([Type::getArrayKey(), $param_type]),
                     ], [

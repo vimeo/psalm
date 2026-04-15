@@ -43,6 +43,7 @@ use Psalm\Issue\NamedArgumentNotAllowed;
 use Psalm\Issue\NoValue;
 use Psalm\Issue\NullArgument;
 use Psalm\Issue\ParentNotFound;
+use Psalm\Issue\PositionalArgumentNotAllowed;
 use Psalm\Issue\PossiblyFalseArgument;
 use Psalm\Issue\PossiblyInvalidArgument;
 use Psalm\Issue\PossiblyNullArgument;
@@ -153,6 +154,7 @@ final class ArgumentAnalyzer
         ?TemplateResult $template_result,
         bool $specialize_taint,
         bool $in_call_map,
+        bool $require_named_args,
     ): ?bool {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -261,6 +263,7 @@ final class ArgumentAnalyzer
             $template_result,
             $specialize_taint,
             $in_call_map,
+            $require_named_args,
         ) === false) {
             return false;
         }
@@ -291,6 +294,7 @@ final class ArgumentAnalyzer
         ?TemplateResult $template_result,
         bool $specialize_taint,
         bool $in_call_map,
+        bool $require_named_args,
     ): ?bool {
         if (!$function_param->type) {
             if (!$codebase->infer_types_from_usage && !$statements_analyzer->data_flow_graph) {
@@ -521,10 +525,15 @@ final class ArgumentAnalyzer
             if ($arg_value_type->hasArray()) {
                 $unpacked_atomic_array = $arg_value_type->getArray();
                 $arg_key_allowed = true;
+                $positional_key_not_allowed = false;
 
                 if ($unpacked_atomic_array instanceof TKeyedArray) {
                     if (!$allow_named_args && !$unpacked_atomic_array->getGenericKeyType()->isInt()) {
                         $arg_key_allowed = false;
+                    }
+
+                    if ($require_named_args && !$unpacked_atomic_array->getGenericKeyType()->isString()) {
+                        $positional_key_not_allowed = true;
                     }
 
                     if ($function_param->is_variadic) {
@@ -561,6 +570,11 @@ final class ArgumentAnalyzer
                     if (!$allow_named_args && !$unpacked_atomic_array->type_params[0]->isInt()) {
                         $arg_key_allowed = false;
                     }
+
+                    if ($require_named_args && !$unpacked_atomic_array->type_params[0]->isString()) {
+                        $positional_key_not_allowed = true;
+                    }
+
                     $arg_value_type = $unpacked_atomic_array->type_params[1];
                 }
 
@@ -576,10 +590,24 @@ final class ArgumentAnalyzer
                         $statements_analyzer->getSuppressedIssues(),
                     );
                 }
+
+                if ($positional_key_not_allowed) {
+                    IssueBuffer::maybeAdd(
+                        new PositionalArgumentNotAllowed(
+                            'Method ' . $cased_method_id
+                                . ' called with positional unpacked array ' . $unpacked_atomic_array->getId()
+                                . ' (array with int keys)',
+                            new CodeLocation($statements_analyzer->getSource(), $arg->value),
+                            $cased_method_id,
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+                }
             } else {
                 $non_iterable = false;
                 $invalid_key = false;
                 $invalid_string_key = false;
+                $invalid_int_key = false;
                 $possibly_matches = false;
                 foreach ($arg_value_type->getAtomicTypes() as $atomic_type) {
                     if (!$atomic_type->isIterable($codebase)) {
@@ -599,6 +627,11 @@ final class ArgumentAnalyzer
                             && !$key_type->isInt()
                         ) {
                             $invalid_string_key = true;
+
+                            continue;
+                        }
+                        if ($require_named_args && !$key_type->isString()) {
+                            $invalid_int_key = true;
 
                             continue;
                         }
@@ -653,6 +686,18 @@ final class ArgumentAnalyzer
                         );
                     }
                 }
+                if ($invalid_int_key) {
+                    IssueBuffer::maybeAdd(
+                        new PositionalArgumentNotAllowed(
+                            'Method ' . $cased_method_id
+                                . ' called with positional unpacked iterable ' . $arg_value_type->getId()
+                                . ' (iterable with int keys)',
+                            new CodeLocation($statements_analyzer->getSource(), $arg->value),
+                            $cased_method_id,
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+                }
 
                 return null;
             }
@@ -661,6 +706,17 @@ final class ArgumentAnalyzer
                 IssueBuffer::maybeAdd(
                     new NamedArgumentNotAllowed(
                         'Method ' . $cased_method_id. ' called with named argument ' . $arg->name->name,
+                        new CodeLocation($statements_analyzer->getSource(), $arg->value),
+                        $cased_method_id,
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
+
+            if ($require_named_args && $arg->name === null && !$arg instanceof VirtualArg) {
+                IssueBuffer::maybeAdd(
+                    new PositionalArgumentNotAllowed(
+                        'Method ' . $cased_method_id . ' must be called with named arguments',
                         new CodeLocation($statements_analyzer->getSource(), $arg->value),
                         $cased_method_id,
                     ),

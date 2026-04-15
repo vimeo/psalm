@@ -176,6 +176,8 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
 
     public bool $allow_named_arg_calls = true;
 
+    public bool $require_named_arg_calls = false;
+
     /**
      * @var list<AttributeStorage>
      */
