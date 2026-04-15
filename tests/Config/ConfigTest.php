@@ -88,6 +88,8 @@ final class ConfigTest extends TestCase
         );
 
         $p->setPhpVersion('7.3', 'tests');
+        $p->initExtraFiles();
+        $p->initProjectFiles();
 
         return $p;
     }

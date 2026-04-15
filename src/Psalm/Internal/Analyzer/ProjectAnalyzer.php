@@ -237,7 +237,10 @@ final class ProjectAnalyzer
     }
 
     private bool $extra_files_initialized = false;
-    private function initExtraFiles(): void
+    /**
+     * @internal
+     */
+    public function initExtraFiles(): void
     {
         if ($this->extra_files_initialized) {
             return;
@@ -259,7 +262,11 @@ final class ProjectAnalyzer
     }
 
     private bool $project_files_initialized = false;
-    private function initProjectFiles(): void
+
+    /**
+     * @internal
+     */
+    public function initProjectFiles(): void
     {
         if ($this->project_files_initialized) {
             return;
@@ -329,6 +336,9 @@ final class ProjectAnalyzer
 
     public function serverMode(LanguageServer $server): void
     {
+        $this->initExtraFiles();
+        $this->initProjectFiles();
+
         $server->logInfo("Initializing: Visiting Autoload Files...");
         $this->visitAutoloadFiles();
         $this->codebase->diff_methods = true;
@@ -354,7 +364,8 @@ final class ProjectAnalyzer
     /** @psalm-mutation-free */
     public function canReportIssues(string $file_path): bool
     {
-        return isset($this->project_files[$file_path]);
+        $list = $this->project_files;
+        return isset($list[$file_path]);
     }
 
     /**
