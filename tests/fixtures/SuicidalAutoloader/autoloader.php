@@ -19,6 +19,8 @@ spl_autoload_register(static function (string $className) {
         'Stringable',
         'AllowDynamicProperties',
 
+        'Symfony\\Polyfill\\',
+
         // https://github.com/symfony/symfony/pull/40203
         // these are actually functions, referenced as `if (!function_exists(u::class))`
         'Symfony\Component\String\u',
