@@ -1362,7 +1362,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         new ParadoxicalCondition(
                             'Parameter cannot be void',
                             $function_param->type_location,
-                            'void',
                         ),
                         $this->suppressed_issues,
                     );
@@ -1373,7 +1372,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         new ParadoxicalCondition(
                             'Parameter cannot be never',
                             $function_param->type_location,
-                            'never',
                         ),
                         $this->suppressed_issues,
                     );
