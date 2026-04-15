@@ -159,6 +159,8 @@ final class VariadicTest extends TestCase
                 new FakeParserCacheProvider(),
             ),
         );
+        $project_analyzer->initExtraFiles();
+        $project_analyzer->initProjectFiles();
         $project_analyzer->setPhpVersion('7.3', 'tests');
 
         $config->setIncludeCollector(new IncludeCollector());
