@@ -269,6 +269,12 @@ final class ParseTreeCreator
         $potential_name = substr($current_token[0], 1);
         if ($potential_name !== '') {
             $new_leaf->name = $potential_name;
+
+            $next_token = $this->t + 1 < $this->type_token_count ? $this->type_tokens[$this->t + 1] : null;
+            if ($next_token && $next_token[0] === '=') {
+                ++$this->t;
+                $new_leaf->has_default = true;
+            }
         }
 
         if ($current_parent !== $this->current_leaf) {
