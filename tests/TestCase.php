@@ -128,6 +128,8 @@ class TestCase extends BaseTestCase
 
     public function analyzeFile(string $file_path, Context $context, bool $track_unused_suppressions = true, bool $taint_flow_tracking = false): void
     {
+        $this->project_analyzer->initExtraFiles();
+        $this->project_analyzer->initProjectFiles();
         $codebase = $this->project_analyzer->getCodebase();
 
         if ($taint_flow_tracking) {

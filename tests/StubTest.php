@@ -65,6 +65,8 @@ final class StubTest extends TestCase
                 new FakeParserCacheProvider(),
             ),
         );
+        $project_analyzer->initExtraFiles();
+        $project_analyzer->initProjectFiles();
         $project_analyzer->setPhpVersion('7.4', 'tests');
 
         $config->setIncludeCollector(new IncludeCollector());
