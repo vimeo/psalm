@@ -14,6 +14,7 @@ use function getcwd;
 
 final class TestConfig extends Config
 {
+    public const INIT_PROJECT_FILES_NOW = true;
     private static ?ProjectFileFilter $cached_project_files = null;
 
     public function __construct()

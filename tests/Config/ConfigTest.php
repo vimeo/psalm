@@ -86,8 +86,12 @@ final class ConfigTest extends TestCase
                 new FakeParserCacheProvider(),
             ),
         );
+        $p->initExtraFiles();
+        $p->initProjectFiles();
 
         $p->setPhpVersion('7.3', 'tests');
+        $p->initExtraFiles();
+        $p->initProjectFiles();
 
         return $p;
     }
