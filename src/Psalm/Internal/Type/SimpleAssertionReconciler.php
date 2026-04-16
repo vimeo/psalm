@@ -1960,9 +1960,37 @@ final class SimpleAssertionReconciler extends Reconciler
         ?CodeLocation $code_location,
         array         $suppressed_issues,
     ): Union {
-        $existing_var_type = $existing_var_type->getBuilder();
         //we add 1 from the assertion value because we're on a strict operator
         $assertion_value = $assertion->value + 1;
+
+        // overflow to float means the assertion value exceeds PHP_INT_MAX —
+        // no int can satisfy "> PHP_INT_MAX", so all int types must be removed
+        if (!is_int($assertion_value)) {
+            $existing_var_type = $existing_var_type->getBuilder();
+            foreach ($existing_var_type->getAtomicTypes() as $atomic_type) {
+                if ($atomic_type instanceof TInt) {
+                    $existing_var_type->removeType($atomic_type->getKey());
+                }
+            }
+            if ($existing_var_type->isUnionEmpty()) {
+                if ($var_id && $code_location) {
+                    self::triggerIssueForImpossible(
+                        $existing_var_type,
+                        $old_var_type_string,
+                        $var_id ?? '',
+                        $assertion,
+                        false,
+                        $negated,
+                        $code_location,
+                        $suppressed_issues,
+                    );
+                }
+                $existing_var_type->addType(new TNever());
+            }
+            return $existing_var_type->freeze();
+        }
+
+        $existing_var_type = $existing_var_type->getBuilder();
 
         $redundant = true;
 
@@ -2071,6 +2099,34 @@ final class SimpleAssertionReconciler extends Reconciler
     ): Union {
         //we remove 1 from the assertion value because we're on a strict operator
         $assertion_value = $assertion->value - 1;
+
+        // underflow to float means the assertion value is below PHP_INT_MIN —
+        // no int can satisfy "< PHP_INT_MIN", so all int types must be removed
+        if (!is_int($assertion_value)) {
+            $existing_var_type = $existing_var_type->getBuilder();
+            foreach ($existing_var_type->getAtomicTypes() as $atomic_type) {
+                if ($atomic_type instanceof TInt) {
+                    $existing_var_type->removeType($atomic_type->getKey());
+                }
+            }
+            if ($existing_var_type->isUnionEmpty()) {
+                if ($var_id && $code_location) {
+                    self::triggerIssueForImpossible(
+                        $existing_var_type,
+                        $old_var_type_string,
+                        $var_id ?? '',
+                        $assertion,
+                        false,
+                        $negated,
+                        $code_location,
+                        $suppressed_issues,
+                    );
+                }
+                $existing_var_type->addType(new TNever());
+            }
+            return $existing_var_type->freeze();
+        }
+
         $existing_var_type = $existing_var_type->getBuilder();
 
         $redundant = true;
