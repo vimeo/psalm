@@ -146,6 +146,10 @@ final class FunctionLikeDocblockScanner
             }
         }
 
+        if ($docblock_info->no_discard) {
+            $storage->no_discard = true;
+        }
+
         if ($docblock_info->specialize_call) {
             $storage->specialize_call = true;
         }
@@ -651,7 +655,6 @@ final class FunctionLikeDocblockScanner
             return null;
         }
 
-        /** @psalm-suppress UnusedMethodCall */
         $namespaced_type->queueClassLikesForScanning(
             $codebase,
             $file_storage,
@@ -820,7 +823,6 @@ final class FunctionLikeDocblockScanner
 
             $storage_param->has_docblock_type = true;
 
-            /** @psalm-suppress UnusedMethodCall */
             $new_param_type->queueClassLikesForScanning(
                 $codebase,
                 $file_storage,
@@ -1040,7 +1042,6 @@ final class FunctionLikeDocblockScanner
                 }
             }
 
-            /** @psalm-suppress UnusedMethodCall */
             $storage->return_type->queueClassLikesForScanning($codebase, $file_storage);
         } catch (TypeParseTreeException $e) {
             $storage->docblock_issues[] = new InvalidDocblock(
@@ -1190,7 +1191,6 @@ final class FunctionLikeDocblockScanner
                 $type_aliases,
             );
 
-            /** @psalm-suppress UnusedMethodCall */
             $removed_taint->queueClassLikesForScanning($codebase, $file_storage);
 
             $removed_taint_single = $removed_taint->getSingleAtomic();
@@ -1410,7 +1410,6 @@ final class FunctionLikeDocblockScanner
             return;
         }
 
-        /** @psalm-suppress UnusedMethodCall */
         $out_type->queueClassLikesForScanning(
             $codebase,
             $file_storage,

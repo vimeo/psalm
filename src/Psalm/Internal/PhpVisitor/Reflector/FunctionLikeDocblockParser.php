@@ -582,6 +582,8 @@ final class FunctionLikeDocblockParser
             || isset($parsed_docblock->tags['phpstan-pure'])
             || isset($parsed_docblock->tags['pure']);
 
+        $info->no_discard = isset($parsed_docblock->tags['psalm-no-discard']);
+
         if (isset($parsed_docblock->tags['psalm-mutation-free'])) {
             $info->mutation_free = true;
         }

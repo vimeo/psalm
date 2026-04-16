@@ -82,6 +82,11 @@ final class FunctionDocblockComment
     public bool $pure = false;
 
     /**
+     * Whether or not the function return value must be used
+     */
+    public bool $no_discard = false;
+
+    /**
      * Whether or not to specialize a given call (useful for taint analysis)
      */
     public bool $specialize_call = false;
