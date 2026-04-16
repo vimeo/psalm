@@ -29,6 +29,9 @@ spl_autoload_register(static function (string $className) {
     if (in_array($className, $knownBadClasses)) {
         return;
     }
+    if (str_starts_with($className, 'Symfony\\Polyfill\\')) {
+        return;
+    }
     $ex = new RuntimeException('Attempted to load ' . $className);
     echo $ex->__toString() . "\n\n" . $ex->getTraceAsString() . "\n\n";
     exit(70);
