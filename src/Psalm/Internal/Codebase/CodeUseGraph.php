@@ -310,7 +310,8 @@ final class CodeUseGraph
         $this->resolveInner($this->getForGenericUse()->id, Mutations::LEVEL_NONE);
 
         foreach ($this->nodes as $node) {
-            if (!$node->used) {
+            if (!$node->used && !$node->visited_secondary) {
+                $node->visited_secondary = true;
                 $this->resolveInnerMutations($node->id, $node->mutation_level);
             }
         }
@@ -321,7 +322,8 @@ final class CodeUseGraph
             $node = $this->nodes[$to_id];
             if (!$node->used || $node->mutation_level < $level) {
                 $node->used = true;
-                $this->resolveInner($to_id, max($level, $node->mutation_level));
+                $node->mutation_level = max($node->mutation_level, $level);
+                $this->resolveInner($to_id, $node->mutation_level);
             }
         }
     }
@@ -329,9 +331,14 @@ final class CodeUseGraph
     private function resolveInnerMutations(string $id, int $level): void {
         foreach ($this->forward_edges[$id] as $to_id => $_) {
             $node = $this->nodes[$to_id];
-            if ($node->mutation_level < $level) {
-                $this->resolveInnerMutations($to_id, max($level, $node->mutation_level));
+            if (($node->used || $node->visited_secondary) 
+                && $node->mutation_level >= $level
+            ) {
+                continue;
             }
+            $node->visited_secondary = true;
+            $node->mutation_level = max($node->mutation_level, $level);
+            $this->resolveInnerMutations($to_id, $node->mutation_level);
         }
     }
 
