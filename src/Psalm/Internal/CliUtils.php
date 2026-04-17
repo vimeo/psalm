@@ -87,27 +87,33 @@ final class CliUtils
         }
 
         $autoload_files = [];
-
         foreach ($autoload_roots as $autoload_root) {
             $has_autoloader = false;
 
-            $nested_autoload_file = dirname($autoload_root, 2) . DIRECTORY_SEPARATOR . 'autoload.php';
-
-            // note: don't realpath $nested_autoload_file, or phar version will fail
-            if (file_exists($nested_autoload_file)) {
-                if (!in_array($nested_autoload_file, $autoload_files, false)) {
-                    $autoload_files[] = $nested_autoload_file;
-                }
-                $has_autoloader = true;
-            }
-
+            // check if the current dir has a vendor first, before loading any parent directories
+            // since composer uses a flat dependency model, there's only 1 vendor and no nesting
+            // except if psalm would scope the vendor with php-scoper - which we do, but only distribute as phar
+            // therefore that's not an issue here
+            // unless there's a different composer.json path, but that means a different autoload_root iteration too
+            // fix https://github.com/vimeo/psalm/issues/7381
             $vendor_autoload_file =
                 $autoload_root . DIRECTORY_SEPARATOR . $vendor_dir . DIRECTORY_SEPARATOR . 'autoload.php';
 
             // note: don't realpath $vendor_autoload_file, or phar version will fail
             if (file_exists($vendor_autoload_file)) {
-                if (!in_array($vendor_autoload_file, $autoload_files, false)) {
+                if (!in_array($vendor_autoload_file, $autoload_files, true)) {
                     $autoload_files[] = $vendor_autoload_file;
+                }
+                $has_autoloader = true;
+            }
+
+            // if the working/root dir is not vendor/vimeo/psalm, make sure we load psalm's autoloader too
+            $nested_autoload_file = dirname($autoload_root, 2) . DIRECTORY_SEPARATOR . 'autoload.php';
+
+            // note: don't realpath $nested_autoload_file, or phar version will fail
+            if (!$has_autoloader && file_exists($nested_autoload_file)) {
+                if (!in_array($nested_autoload_file, $autoload_files, true)) {
+                    $autoload_files[] = $nested_autoload_file;
                 }
                 $has_autoloader = true;
             }
