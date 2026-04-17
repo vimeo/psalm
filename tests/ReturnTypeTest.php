@@ -1449,7 +1449,7 @@ final class ReturnTypeTest extends TestCase
             'voidParamType' => [
                 'code' => '<?php
                     function f(void $p): void {}',
-                'error_message' => 'ReservedWord',
+                'error_message' => 'ParadoxicalCondition',
             ],
             'voidClass' => [
                 'code' => '<?php
