@@ -307,10 +307,8 @@ final class Refactor
             chdir($current_dir);
         }
 
-        $in_ci = CliUtils::runningInCI();
-
-        $threads = Psalm::getThreads($options, $config, $in_ci, false);
-        $scanThreads = Psalm::getThreads($options, $config, $in_ci, true);
+        $threads = Psalm::getThreads($options, $config, false);
+        $scanThreads = Psalm::getThreads($options, $config, true);
 
         $providers = new Providers(
             new FileProvider(),
