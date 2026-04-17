@@ -6,10 +6,14 @@ namespace Psalm\Internal\Codebase;
 
 use LogicException;
 use Override;
+use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\DataFlow\UseFlowNode;
 use Psalm\Internal\DataFlow\Path;
+use Psalm\Storage\Mutations;
+use SplQueue;
+use SplStack;
 
 use function abs;
 use function array_key_exists;
@@ -17,27 +21,23 @@ use function array_key_exists;
 /**
  * @internal
  */
-final class CodeUseGraph extends DataFlowGraph
+final class CodeUseGraph
 {
-    /** @var array<string, DataFlowNode> */
+    /** @var array<string, UseFlowNode> */
     private array $nodes = [];
+
+    /** @var array<string, array<string, Path>> */
+    private array $forward_edges = [];
 
     /**
      * @var array<string, array<string, Location>> maps from node id to location hash to location
      */
     private array $locations = [];
 
-    public function __construct(public bool $collect_locations)
+    public function __construct(
+        private readonly Codebase $codebase,
+    )
     {
-    }
-
-    /**
-     * @psalm-external-mutation-free
-     */
-    #[Override]
-    public function addNode(DataFlowNode $node): void
-    {
-        throw new LogicException('Use getNodeForClass or getNodeForFunctionLike instead');
     }
 
     /**
@@ -45,12 +45,12 @@ final class CodeUseGraph extends DataFlowGraph
      * @param bool $maybe
      * @psalm-external-mutation-free
      * 
-     * @return $maybe ? DataFlowNode|null : DataFlowNode
+     * @return $maybe ? UseFlowNode|null : UseFlowNode
      */
     public function getNodeForClass(
         string $class_id,
         bool $maybe = false,
-    ): ?DataFlowNode {
+    ): ?UseFlowNode {
         $class_id = strtolower($class_id);
         $id = 'class '.$class_id;
         if (array_key_exists($id, $this->nodes)) {
@@ -58,7 +58,7 @@ final class CodeUseGraph extends DataFlowGraph
         } else if ($maybe) {
             return null;
         }
-        $this->nodes[$id] = $node = DataFlowNode::make($id, $id, null);
+        $this->nodes[$id] = $node = new UseFlowNode($id);
         return $node;
     }
 
@@ -67,14 +67,14 @@ final class CodeUseGraph extends DataFlowGraph
      * @param string $property_name
      * @psalm-external-mutation-free
      * 
-     * @return $maybe ? DataFlowNode|null : DataFlowNode
+     * @return $maybe ? UseFlowNode|null : UseFlowNode
      */
     public function getNodeForProperty(
         string $class_id,
         string $property_name,
         bool $reading,
         bool $maybe = false,
-    ): ?DataFlowNode {
+    ): ?UseFlowNode {
         $class_id = strtolower($class_id);
         if (!$reading) {
             return $this->getNodeForClass($class_id, $maybe);
@@ -86,7 +86,7 @@ final class CodeUseGraph extends DataFlowGraph
         } else if ($maybe) {
             return null;
         }
-        $this->nodes[$id] = $node = DataFlowNode::make($id, $id, null);
+        $this->nodes[$id] = $node = new UseFlowNode($id);
         return $node;
     }
 
@@ -94,13 +94,13 @@ final class CodeUseGraph extends DataFlowGraph
      * @param lowercase-string $class_id
      * @psalm-external-mutation-free
      * 
-     * @return $maybe ? DataFlowNode|null : DataFlowNode
+     * @return $maybe ? UseFlowNode|null : UseFlowNode
      */
     public function getNodeForClassConstant(
         string $class_id,
         string $const_name,
         bool $maybe = false,
-    ): ?DataFlowNode {
+    ): ?UseFlowNode {
         $class_id = strtolower($class_id);
         $id = 'const ' . $class_id . '::' . $const_name;
         if (array_key_exists($id, $this->nodes)) {
@@ -109,7 +109,7 @@ final class CodeUseGraph extends DataFlowGraph
             return null;
         }
 
-        $this->nodes[$id] = $node = DataFlowNode::make($id, $id, null);
+        $this->nodes[$id] = $node = new UseFlowNode($id);
         return $node;
     }
 
@@ -120,7 +120,7 @@ final class CodeUseGraph extends DataFlowGraph
     public function getNodeForFunctionLike(
         string $func,
         bool $maybe = false,
-    ): ?DataFlowNode {
+    ): ?UseFlowNode {
         $func = strtolower($func);
         $key = 'func '.$func;
         if (array_key_exists($key, $this->nodes)) {
@@ -128,19 +128,19 @@ final class CodeUseGraph extends DataFlowGraph
         } else if ($maybe) {
             return null;
         }
-        $this->nodes[$key] = $node = DataFlowNode::make($key, $key, null);
+        $this->nodes[$key] = $node = new UseFlowNode($key);
         return $node;
     }
 
     /**
      * @param lowercase-string $func
      * @psalm-external-mutation-free
-     * @return $maybe ? DataFlowNode|null : DataFlowNode
+     * @return $maybe ? UseFlowNode|null : UseFlowNode
      */
     public function getNodeForFunctionLikeReturn(
         string $func,
         bool $maybe = false,
-    ): ?DataFlowNode {
+    ): ?UseFlowNode {
         $func = strtolower($func);
         $id = 'return ' . $func;
         if (array_key_exists($id, $this->nodes)) {
@@ -149,19 +149,19 @@ final class CodeUseGraph extends DataFlowGraph
             return null;
         }
 
-        $this->nodes[$id] = $node = DataFlowNode::make($id, $id, null);
+        $this->nodes[$id] = $node = new UseFlowNode($id);
         return $node;
     }
 
     /**
      * @param lowercase-string $method_id
      * @psalm-external-mutation-free
-     * @return $maybe ? DataFlowNode|null : DataFlowNode
+     * @return $maybe ? UseFlowNode|null : UseFlowNode
      */
     public function getNodeForMissingMethod(
         string $method_id,
         bool $maybe = false,
-    ): ?DataFlowNode {
+    ): ?UseFlowNode {
         $method_id = strtolower($method_id);
         $id = 'missing-method ' . $method_id;
         if (array_key_exists($id, $this->nodes)) {
@@ -170,20 +170,20 @@ final class CodeUseGraph extends DataFlowGraph
             return null;
         }
 
-        $this->nodes[$id] = $node = DataFlowNode::make($id, $id, null);
+        $this->nodes[$id] = $node = new UseFlowNode($id);
         return $node;
     }
 
     /**
      * @param lowercase-string $class_id
      * @psalm-external-mutation-free
-     * @return $maybe ? DataFlowNode|null : DataFlowNode
+     * @return $maybe ? UseFlowNode|null : UseFlowNode
      */
     public function getNodeForMissingProperty(
         string $class_id,
         string $property_name,
         bool $maybe = false,
-    ): ?DataFlowNode {
+    ): ?UseFlowNode {
         $class_id = strtolower($class_id);
         $id = 'missing-property ' . $class_id . '::' . $property_name;
         if (array_key_exists($id, $this->nodes)) {
@@ -192,43 +192,35 @@ final class CodeUseGraph extends DataFlowGraph
             return null;
         }
 
-        $this->nodes[$id] = $node = DataFlowNode::make($id, $id, null);
+        $this->nodes[$id] = $node = new UseFlowNode($id);
         return $node;
     }
 
     /**
      * @psalm-external-mutation-free
      */
-    private function getForGenericUse(): DataFlowNode
+    private function getForGenericUse(): UseFlowNode
     {
         if (array_key_exists('generic-use', $this->nodes)) {
             return $this->nodes['generic-use'];
         }
-        $this->nodes['generic-use'] = $node = DataFlowNode::make(
-            'generic-use',
-            'generic-use',
-            null,
-        );
+        $this->nodes['generic-use'] = $node = new UseFlowNode('generic-use');
         return $node;
     }
 
     /**
      * @psalm-external-mutation-free
      */
-    private function getForPublicApi(): DataFlowNode
+    private function getForPublicApi(): UseFlowNode
     {
         if (array_key_exists('public-api', $this->nodes)) {
             return $this->nodes['public-api'];
         }
-        $this->nodes['public-api'] = $node = DataFlowNode::make(
-            'public-api',
-            'public-api',
-            null,
-        );
+        $this->nodes['public-api'] = $node = new UseFlowNode('public-api');
         return $node;
     }
 
-    public function markAsPublicApi(DataFlowNode $node): void
+    public function markAsPublicApi(UseFlowNode $node): void
     {
         $this->addPath(
             $this->getForPublicApi(),
@@ -238,7 +230,7 @@ final class CodeUseGraph extends DataFlowGraph
     }
 
     public function addReferenceToNode(
-        DataFlowNode $node,
+        UseFlowNode $node,
         ?Context $context,
         ?CodeLocation $location = null,
     ): void {
@@ -260,7 +252,7 @@ final class CodeUseGraph extends DataFlowGraph
             'use',
         );
 
-        if ($this->collect_locations && $location !== null) {
+        if ($this->codebase->collect_locations && $location !== null) {
             $id = $location->getHash();
             $this->locations[$node->id][$id] = $location;
         }
@@ -293,13 +285,10 @@ final class CodeUseGraph extends DataFlowGraph
     /**
      * @psalm-external-mutation-free
      */
-    #[Override]
     public function addPath(
-        DataFlowNode $from,
-        DataFlowNode $to,
+        UseFlowNode $from,
+        UseFlowNode $to,
         string $path_type,
-        int $added_taints = 0,
-        int $removed_taints = 0,
     ): void {
         $from_id = $from->id;
         $to_id = $to->id;
@@ -308,23 +297,47 @@ final class CodeUseGraph extends DataFlowGraph
             return;
         }
 
-        $length = 0;
+        $this->forward_edges[$from_id][$to_id] = new Path($path_type, 0);
+    }
 
-        if ($from->code_location
-            && $to->code_location
-            && $from->code_location->file_path === $to->code_location->file_path
-        ) {
-            $to_line = $to->code_location->raw_line_number;
-            $from_line = $from->code_location->raw_line_number;
-            $length = abs($to_line - $from_line);
+    public function resolve(): void {
+        if ($this->getForPublicApi()->used) {
+            return;
         }
+        $this->getForGenericUse();
 
-        $this->forward_edges[$from_id][$to_id] = new Path($path_type, $length);
+        $this->resolveInner($this->getForPublicApi()->id, Mutations::LEVEL_NONE);
+        $this->resolveInner($this->getForGenericUse()->id, Mutations::LEVEL_NONE);
+
+        foreach ($this->nodes as $node) {
+            if (!$node->used) {
+                $this->resolveInnerMutations($node->id, $node->mutation_level);
+            }
+        }
+    }
+
+    private function resolveInner(string $id, int $level): void {
+        foreach ($this->forward_edges[$id] as $to_id => $_) {
+            $node = $this->nodes[$to_id];
+            if (!$node->used || $node->mutation_level < $level) {
+                $node->used = true;
+                $this->resolveInner($to_id, max($level, $node->mutation_level));
+            }
+        }
+    }
+
+    private function resolveInnerMutations(string $id, int $level): void {
+        foreach ($this->forward_edges[$id] as $to_id => $_) {
+            $node = $this->nodes[$to_id];
+            if ($node->mutation_level < $level) {
+                $this->resolveInnerMutations($to_id, max($level, $node->mutation_level));
+            }
+        }
     }
 
     // General
 
-    public function isUsed(?DataFlowNode $node): bool
+    public function isUsed(?UseFlowNode $node): bool
     {
         if ($node === null) {
             return false;
@@ -347,7 +360,7 @@ final class CodeUseGraph extends DataFlowGraph
     /**
      * @return array<string, bool>
      */
-    public function getReferences(?DataFlowNode $node): array
+    public function getReferences(?UseFlowNode $node): array
     {
         if ($node === null) {
             return [];
@@ -368,7 +381,7 @@ final class CodeUseGraph extends DataFlowGraph
     /**
      * @return array<string, CodeLocation>
      */
-    public function getReferenceLocations(?DataFlowNode $node): array
+    public function getReferenceLocations(?UseFlowNode $node): array
     {
         if ($node === null) {
             return [];

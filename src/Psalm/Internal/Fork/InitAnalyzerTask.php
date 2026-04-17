@@ -31,7 +31,7 @@ final class InitAnalyzerTask implements Task
         }
 
         if ($codebase->code_use_graph) {
-            $codebase->code_use_graph = new CodeUseGraph($codebase->collect_locations);
+            $codebase->code_use_graph = new CodeUseGraph($codebase);
         }
 
         $file_reference_provider->setReferencesToMixedMemberNames([]);

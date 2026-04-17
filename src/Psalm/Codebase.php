@@ -608,7 +608,7 @@ final class Codebase
     public function collectLocations(): void
     {
         $this->collect_locations = true;
-        $this->code_use_graph ??= new CodeUseGraph($this->collect_locations);
+        $this->code_use_graph ??= new CodeUseGraph($this);
         $this->code_use_graph->collect_locations = true;
         $this->classlikes->collect_locations = true;
         $this->methods->collect_locations = true;
@@ -624,7 +624,7 @@ final class Codebase
         $this->classlikes->collect_references = true;
         $this->find_unused_code = $find_unused_code;
         $this->find_unused_variables = true;
-        $this->code_use_graph = new CodeUseGraph($this->collect_locations);
+        $this->code_use_graph = new CodeUseGraph($this);
     }
 
     /**
