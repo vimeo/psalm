@@ -656,6 +656,20 @@ final class IssueBuffer
                         if ($filter->suppressions > 0 || $filter->getErrorLevel() != Config::REPORT_SUPPRESS) {
                             continue;
                         }
+
+                        $suppression_paths = str_replace(
+                            $codebase->config->base_dir,
+                            '',
+                            implode(', ', [...$filter->getFiles(), ...$filter->getDirectories()]),
+                        );
+
+                        // if allowMissingFiles="true" with a glob pattern
+                        // and the directories/files do not exist, it can be empty
+                        // since this can only happen with allowMissingFiles="true", we also want to ignore it here
+                        if ($suppression_paths === '') {
+                            continue;
+                        }
+
                         $issues_data['config'][] = new IssueData(
                             IssueData::SEVERITY_ERROR,
                             0,
@@ -664,11 +678,7 @@ final class IssueBuffer
                             sprintf(
                                 'Suppressed issue type "%s" for %s was not thrown.',
                                 $type,
-                                str_replace(
-                                    $codebase->config->base_dir,
-                                    '',
-                                    implode(', ', [...$filter->getFiles(), ...$filter->getDirectories()]),
-                                ),
+                                $suppression_paths,
                             ),
                             $codebase->config->source_filename ?? '',
                             '',
