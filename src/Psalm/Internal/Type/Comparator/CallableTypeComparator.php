@@ -381,12 +381,34 @@ final class CallableTypeComparator
                         );
                     }
 
-                    return new TCallable(
+                    $callable = new TCallable(
                         'callable',
                         $method_storage->params,
                         $converted_return_type,
                         $method_storage->pure,
                     );
+
+                    // Resolve method-level templates against the expected callable shape, so
+                    // `[Id::class, 'id']` with `@template B` matches `callable(int): int` etc.
+                    if ($method_storage->template_types !== null && $container_type_part !== null) {
+                        $template_result = new TemplateResult($method_storage->template_types, []);
+
+                        TemplateStandinTypeReplacer::fillTemplateResult(
+                            new Union([$callable]),
+                            $template_result,
+                            $codebase,
+                            null,
+                            new Union([$container_type_part]),
+                        );
+
+                        $callable = TemplateInferredTypeReplacer::replace(
+                            new Union([$callable]),
+                            $template_result,
+                            $codebase,
+                        )->getSingleAtomic();
+                    }
+
+                    return $callable;
                 } catch (UnexpectedValueException) {
                     // do nothing
                 }
