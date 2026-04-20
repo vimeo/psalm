@@ -1261,6 +1261,23 @@ final class MethodCallTest extends TestCase
                         }
                     }',
             ],
+            'classAddedBeforeAnalyzedVersion' => [
+                'code' => '<?php
+                    $w = new WeakMap();
+                    $w->count();',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'methodAddedBeforeAnalyzedVersion' => [
+                'code' => '<?php
+                    $date = new DateTimeImmutable();
+                    $date->setMicrosecond(426286);
+                    $r = $date->getMicrosecond();',
+                'assertions' => ['$r' => 'int'],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
         ];
     }
 
@@ -1831,6 +1848,49 @@ final class MethodCallTest extends TestCase
                     $_a = (new A)->foo(...);
                 PHP,
                 'error_message' => 'UndefinedMethod',
+            ],
+            'SKIPPED-classDoesNotExistYetInAnalyzedVersion' => [
+                'code' => '<?php
+                    new WeakMap();',
+                'error_message' => 'UndefinedClass',
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
+            'SKIPPED-classAndMethodDoesNotExistYetInAnalyzedVersion' => [
+                'code' => '<?php
+                    /**
+                     * @var WeakMap $w
+                     */
+                    $w->count();',
+                'error_message' => 'MixedMethodCall',
+                'ignored_issues' => ['UndefinedClass'],
+                'php_version' => '7.4',
+            ],
+            'classAndMethodDoesNotExistYetInAnalyzedVersion' => [
+                'code' => '<?php
+                    /**
+                     * @var WeakMap $w
+                     */
+                    $w->count();',
+                'error_message' => 'UndefinedMethod',
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
+            'methodDoesNotExistYetInInterfaceInAnalyzedVersion' => [
+                'code' => '<?php
+                $date = new DateTimeImmutable();
+                echo $date->getMicrosecond();',
+                'error_message' => 'UndefinedMethod',
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'methodDoesNotExistYetInClassInAnalyzedVersion' => [
+                'code' => '<?php
+                    $date = new DateTimeImmutable();
+                    $date->setMicrosecond(426286);',
+                'error_message' => 'UndefinedMethod',
+                'ignored_issues' => [],
+                'php_version' => '8.3',
             ],
         ];
     }
