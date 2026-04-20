@@ -889,7 +889,7 @@ final class Codebase
     {
         if (strpos($symbol, '::')) {
             $symbol = substr($symbol, 0, -2);
-            /** @psalm-suppress ArgumentTypeCoercion */
+            /** @psalm-suppress ArgumentTypeCoercion, TooFewArguments */
             $method_id = new MethodIdentifier(...explode('::', $symbol));
 
             $declaring_method_id = $this->methods->getDeclaringMethodId($method_id);
@@ -938,7 +938,7 @@ final class Codebase
             if (strpos($reference->symbol, '()')) {
                 $symbol = substr($reference->symbol, 0, -2);
 
-                /** @psalm-suppress ArgumentTypeCoercion */
+                /** @psalm-suppress ArgumentTypeCoercion, TooFewArguments */
                 $method_id = new MethodIdentifier(...explode('::', $symbol));
 
                 $declaring_method_id = $this->methods->getDeclaringMethodId(
@@ -1158,7 +1158,7 @@ final class Codebase
                 if (strpos($reference->symbol, '()')) {
                     $symbol = substr($reference->symbol, 0, -2);
 
-                    /** @psalm-suppress ArgumentTypeCoercion */
+                    /** @psalm-suppress ArgumentTypeCoercion, TooFewArguments */
                     $method_id = new MethodIdentifier(
                         ...explode('::', $symbol),
                     );
