@@ -81,6 +81,7 @@ final class PsalmRestarter extends XdebugHandler
      *
      * @param bool $default
      * @phpcsSuppress SlevomatCodingStandard.TypeHints.ParameterTypeHint.MissingNativeTypeHint
+     * @psalm-suppress MethodSignatureMismatch
      */
     #[Override]
     protected function requiresRestart($default): bool
@@ -154,6 +155,7 @@ final class PsalmRestarter extends XdebugHandler
      *
      * @param non-empty-list<string> $command
      * @phpcsSuppress SlevomatCodingStandard.TypeHints.ParameterTypeHint.MissingNativeTypeHint
+     * @psalm-suppress MethodSignatureMismatch
      */
     #[Override]
     protected function restart($command): void

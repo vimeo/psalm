@@ -797,7 +797,7 @@ final class UnusedCodeTest extends TestCase
                             return "";
                         }
 
-                        public function unserialize($data) : void {}
+                        public function unserialize(string $data) : void {}
                     }
 
                     new Foo();',
