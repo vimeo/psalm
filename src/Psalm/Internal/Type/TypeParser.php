@@ -89,12 +89,14 @@ use function count;
 use function defined;
 use function end;
 use function explode;
+use function implode;
 use function in_array;
 use function is_int;
 use function is_numeric;
 use function preg_match;
 use function preg_replace;
 use function reset;
+use function spl_object_hash;
 use function str_contains;
 use function str_starts_with;
 use function stripslashes;
@@ -1085,8 +1087,17 @@ final class TypeParser
         $has_null = false;
 
         $atomic_types = [];
+        $seen_canonicals = [];
 
         foreach ($parse_tree->children as $child_tree) {
+            $canonical = self::canonicalizeChild($child_tree);
+            if (isset($seen_canonicals[$canonical])) {
+                throw new TypeParseTreeException(
+                    'Duplicate type ' . $canonical . ' in union type',
+                );
+            }
+            $seen_canonicals[$canonical] = true;
+
             if ($child_tree instanceof NullableTree) {
                 if (!isset($child_tree->children[0])) {
                     throw new TypeParseTreeException('Invalid ? character');
@@ -1134,6 +1145,34 @@ final class TypeParser
         }
 
         return TypeCombiner::combine($atomic_types);
+    }
+
+    private static function canonicalizeChild(ParseTree $tree): string
+    {
+        if ($tree instanceof Value) {
+            return strtolower($tree->value);
+        }
+        if ($tree instanceof GenericTree) {
+            $params = [];
+            foreach ($tree->children as $child) {
+                $params[] = self::canonicalizeChild($child);
+            }
+            return strtolower($tree->value) . '<' . implode(',', $params) . '>';
+        }
+        if ($tree instanceof NullableTree && isset($tree->children[0])) {
+            return '?' . self::canonicalizeChild($tree->children[0]);
+        }
+        if ($tree instanceof IntersectionTree) {
+            $parts = [];
+            foreach ($tree->children as $child) {
+                $parts[] = self::canonicalizeChild($child);
+            }
+            return implode('&', $parts);
+        }
+        if ($tree instanceof EncapsulationTree && isset($tree->children[0])) {
+            return self::canonicalizeChild($tree->children[0]);
+        }
+        return spl_object_hash($tree);
     }
 
     /**
