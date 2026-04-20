@@ -579,7 +579,7 @@ final class ExistingAtomicStaticCallAnalyzer
                     true,
                     false,
                     false,
-                    $context->calling_method_id,
+                    $context,
                 );
             }
         }

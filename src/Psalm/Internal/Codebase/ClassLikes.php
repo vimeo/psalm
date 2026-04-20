@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Codebase;
 
 use InvalidArgumentException;
+use PHP_CodeSniffer\Reports\Code;
 use PhpParser;
 use PhpParser\Node\Stmt\ClassLike;
 use PhpParser\NodeTraverser;
@@ -332,40 +333,13 @@ final class ClassLikes
      */
     public function hasFullyQualifiedClassName(
         string $fq_class_name,
-        ?CodeLocation $code_location = null,
+        ?CodeLocation $location = null,
         ?Context $context = null,
     ): bool {
         $calling_fq_class_name = $context?->self;
         $calling_method_id = $context?->calling_method_id;
 
         $fq_class_name_lc = strtolower($this->getUnAliasedName($fq_class_name));
-
-        if ($code_location) {
-            if ($calling_method_id) {
-                $this->file_reference_provider->addMethodReferenceToClass(
-                    $calling_method_id,
-                    $fq_class_name_lc,
-                );
-            } elseif (!$calling_fq_class_name || strtolower($calling_fq_class_name) !== $fq_class_name_lc) {
-                $this->file_reference_provider->addNonMethodReferenceToClass(
-                    $code_location->file_path,
-                    $fq_class_name_lc,
-                );
-
-                if ($calling_fq_class_name) {
-                    $class_storage = $this->classlike_storage_provider->get($calling_fq_class_name);
-
-                    if ($class_storage->location
-                        && $class_storage->location->file_path !== $code_location->file_path
-                    ) {
-                        $this->file_reference_provider->addNonMethodReferenceToClass(
-                            $class_storage->location->file_path,
-                            $fq_class_name_lc,
-                        );
-                    }
-                }
-            }
-        }
 
         // fixme: this looks like a crazy caching hack
         if (!isset($this->existing_classes_lc[$fq_class_name_lc])
@@ -390,12 +364,11 @@ final class ClassLikes
             return false;
         }
 
-        if ($this->collect_locations && $code_location) {
-            $this->file_reference_provider->addCallingLocationForClass(
-                $code_location,
-                strtolower($fq_class_name),
-            );
-        }
+        ProjectAnalyzer::getInstance()->getCodebase()->addReferenceToClass(
+            $fq_class_name_lc,
+            $location,
+            $context,
+        );
 
         return true;
     }
@@ -405,7 +378,7 @@ final class ClassLikes
      */
     public function hasFullyQualifiedInterfaceName(
         string $fq_class_name,
-        ?CodeLocation $code_location = null,
+        ?CodeLocation $location = null,
         ?Context $context = null,
     ): bool {
         $calling_fq_class_name = $context?->self;
@@ -435,39 +408,11 @@ final class ClassLikes
             return false;
         }
 
-        if ($this->collect_references && $code_location) {
-            if ($calling_method_id) {
-                $this->file_reference_provider->addMethodReferenceToClass(
-                    $calling_method_id,
-                    $fq_class_name_lc,
-                );
-            } else {
-                $this->file_reference_provider->addNonMethodReferenceToClass(
-                    $code_location->file_path,
-                    $fq_class_name_lc,
-                );
-
-                if ($calling_fq_class_name) {
-                    $class_storage = $this->classlike_storage_provider->get($calling_fq_class_name);
-
-                    if ($class_storage->location
-                        && $class_storage->location->file_path !== $code_location->file_path
-                    ) {
-                        $this->file_reference_provider->addNonMethodReferenceToClass(
-                            $class_storage->location->file_path,
-                            $fq_class_name_lc,
-                        );
-                    }
-                }
-            }
-        }
-
-        if ($this->collect_locations && $code_location) {
-            $this->file_reference_provider->addCallingLocationForClass(
-                $code_location,
-                strtolower($fq_class_name),
-            );
-        }
+        ProjectAnalyzer::getInstance()->getCodebase()->addReferenceToClass(
+            $fq_class_name_lc,
+            $location,
+            $context,
+        );
 
         return true;
     }
@@ -477,7 +422,7 @@ final class ClassLikes
      */
     public function hasFullyQualifiedEnumName(
         string $fq_class_name,
-        ?CodeLocation $code_location = null,
+        ?CodeLocation $location = null,
         ?Context $context = null,
     ): bool {
         $calling_fq_class_name = $context?->self;
@@ -507,39 +452,11 @@ final class ClassLikes
             return false;
         }
 
-        if ($this->collect_references && $code_location) {
-            if ($calling_method_id) {
-                $this->file_reference_provider->addMethodReferenceToClass(
-                    $calling_method_id,
-                    $fq_class_name_lc,
-                );
-            } else {
-                $this->file_reference_provider->addNonMethodReferenceToClass(
-                    $code_location->file_path,
-                    $fq_class_name_lc,
-                );
-
-                if ($calling_fq_class_name) {
-                    $class_storage = $this->classlike_storage_provider->get($calling_fq_class_name);
-
-                    if ($class_storage->location
-                        && $class_storage->location->file_path !== $code_location->file_path
-                    ) {
-                        $this->file_reference_provider->addNonMethodReferenceToClass(
-                            $class_storage->location->file_path,
-                            $fq_class_name_lc,
-                        );
-                    }
-                }
-            }
-        }
-
-        if ($this->collect_locations && $code_location) {
-            $this->file_reference_provider->addCallingLocationForClass(
-                $code_location,
-                strtolower($fq_class_name),
-            );
-        }
+        ProjectAnalyzer::getInstance()->getCodebase()->addReferenceToClass(
+            $fq_class_name_lc,
+            $location,
+            $context,
+        );
 
         return true;
     }
@@ -549,9 +466,10 @@ final class ClassLikes
      */
     public function hasFullyQualifiedTraitName(
         string $fq_class_name,
-        ?CodeLocation $code_location = null,
-        ?Context $_ = null,
-    ): bool {
+        ?CodeLocation $location = null,
+        ?Context $context = null,
+    ): bool
+    {
         $fq_class_name_lc = strtolower($this->getUnAliasedName($fq_class_name));
 
         if (!isset($this->existing_traits_lc[$fq_class_name_lc]) ||
@@ -560,12 +478,11 @@ final class ClassLikes
             return false;
         }
 
-        if ($this->collect_references && $code_location) {
-            $this->file_reference_provider->addNonMethodReferenceToClass(
-                $code_location->file_path,
-                $fq_class_name_lc,
-            );
-        }
+        ProjectAnalyzer::getInstance()->getCodebase()->addReferenceToClass(
+            $fq_class_name_lc,
+            $location,
+            $context,
+        );
 
         return true;
     }
@@ -577,11 +494,11 @@ final class ClassLikes
      */
     public function classOrInterfaceExists(
         string $fq_class_name,
-        ?CodeLocation $code_location = null,
+        ?CodeLocation $location = null,
         ?Context $context = null,
     ): bool {
-        return $this->classExists($fq_class_name, $code_location, $context)
-            || $this->interfaceExists($fq_class_name, $code_location, $context);
+        return $this->classExists($fq_class_name, $location, $context)
+            || $this->interfaceExists($fq_class_name, $location, $context);
     }
 
     /**
@@ -591,12 +508,12 @@ final class ClassLikes
      */
     public function classOrInterfaceOrEnumExists(
         string $fq_class_name,
-        ?CodeLocation $code_location = null,
+        ?CodeLocation $location = null,
         ?Context $context = null,
     ): bool {
-        return $this->classExists($fq_class_name, $code_location, $context)
-            || $this->interfaceExists($fq_class_name, $code_location, $context)
-            || $this->enumExists($fq_class_name, $code_location, $context);
+        return $this->classExists($fq_class_name, $location, $context)
+            || $this->interfaceExists($fq_class_name, $location, $context)
+            || $this->enumExists($fq_class_name, $location, $context);
     }
 
     /**
@@ -606,7 +523,7 @@ final class ClassLikes
      */
     public function classExists(
         string $fq_class_name,
-        ?CodeLocation $code_location = null,
+        ?CodeLocation $location = null,
         ?Context $context = null,
     ): bool {
         if (isset(ClassLikeAnalyzer::SPECIAL_TYPES[$fq_class_name])) {
@@ -619,7 +536,7 @@ final class ClassLikes
 
         return $this->hasFullyQualifiedClassName(
             $fq_class_name,
-            $code_location,
+            $location,
             $context,
         );
     }
@@ -707,7 +624,7 @@ final class ClassLikes
      */
     public function interfaceExists(
         string $fq_interface_name,
-        ?CodeLocation $code_location = null,
+        ?CodeLocation $location = null,
         ?Context $context = null,
     ): bool {
         if (isset(ClassLikeAnalyzer::SPECIAL_TYPES[strtolower($fq_interface_name)])) {
@@ -716,7 +633,7 @@ final class ClassLikes
 
         return $this->hasFullyQualifiedInterfaceName(
             $fq_interface_name,
-            $code_location,
+            $location,
             $context,
         );
     }
@@ -726,7 +643,7 @@ final class ClassLikes
      */
     public function enumExists(
         string $fq_enum_name,
-        ?CodeLocation $code_location = null,
+        ?CodeLocation $location = null,
         ?Context $context = null,
     ): bool {
         if (isset(ClassLikeAnalyzer::SPECIAL_TYPES[strtolower($fq_enum_name)])) {
@@ -735,7 +652,7 @@ final class ClassLikes
 
         return $this->hasFullyQualifiedEnumName(
             $fq_enum_name,
-            $code_location,
+            $location,
             $context,
         );
     }
@@ -762,12 +679,9 @@ final class ClassLikes
     /**
      * @psalm-external-mutation-free
      */
-    public function traitExists(
-        string $fq_trait_name,
-        ?CodeLocation $code_location = null,
-        ?Context $context = null,
-    ): bool {
-        return $this->hasFullyQualifiedTraitName($fq_trait_name, $code_location, $context);
+    public function traitExists(string $fq_trait_name, ?CodeLocation $location = null, ?Context $context = null): bool
+    {
+        return $this->hasFullyQualifiedTraitName($fq_trait_name, $location, $context);
     }
 
     /**
@@ -1017,7 +931,7 @@ final class ClassLikes
     /**
      * @param Mutations::LEVEL_* $allowed_mutations
      */
-    public static function makeImmutable(
+    private static function makeImmutable(
         int $allowed_mutations,
         bool $change,
         ClassLikeStorage $storage,
@@ -1035,7 +949,7 @@ final class ClassLikes
             IssueBuffer::maybeAdd(
                 new MissingInterfaceImmutableAnnotation(
                     $storage->name
-                    . ' must be marked with either @psalm-immutable or @psalm-mutable to aid security analysis',
+                    . ' must be marked with either @psalm-pure, @psalm-immutable, @psalm-mutation-free, @psalm-external-mutation-free or @psalm-mutable to aid security analysis',
                     $storage->location,
                 ),
                 $storage->suppressed_issues,

@@ -244,7 +244,7 @@ final class MethodCallReturnTypeFetcher
                         true,
                         false,
                         false,
-                        $context->calling_method_id,
+                        $context,
                     );
                 }
             } else {

@@ -16,6 +16,7 @@ use LanguageServerProtocol\Position;
 use LanguageServerProtocol\Range;
 use LanguageServerProtocol\SignatureInformation;
 use LanguageServerProtocol\TextEdit;
+use PHP_CodeSniffer\Reports\Code;
 use PhpParser;
 use PhpParser\Node\Arg;
 use Psalm\CodeLocation\Raw;
@@ -31,6 +32,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\Analyzer;
 use Psalm\Internal\Codebase\ClassLikes;
+use Psalm\Internal\Codebase\CodeUseGraph;
 use Psalm\Internal\Codebase\Functions;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\Methods;
@@ -172,6 +174,8 @@ final class Codebase
     public Properties $properties;
 
     public Populator $populator;
+
+    public ?CodeUseGraph $code_use_graph = null;
 
     public ?TaintFlowGraph $taint_flow_graph = null;
 
@@ -336,6 +340,69 @@ final class Codebase
 
         $this->loadAnalyzer();
     }
+
+    /**
+     * @param lowercase-string $fq_class_name_lc
+     */
+    public function addReferenceToClass(
+        string $fq_class_name_lc,
+        ?CodeLocation $location = null,
+        ?Context $context = null,
+    ): void {
+        if ($this->code_use_graph === null) {
+            return;
+        }
+        $class = $this->code_use_graph->getNodeForClass($fq_class_name_lc);
+
+        $this->code_use_graph->addReferenceToNode(
+            $class,
+            $context,
+            $location,
+        );
+    }
+
+    /**
+     * @param lowercase-string $fq_class_name_lc
+     * @param lowercase-string $property_name_lc
+     */
+    public function addReferenceToProperty(
+        string $fq_class_name_lc,
+        string $property_name_lc,
+        ?CodeLocation $location = null,
+        ?Context $context = null,
+    ): void {
+        if ($this->code_use_graph === null) {
+            return;
+        }
+        $class = $this->code_use_graph->getNodeForProperty($fq_class_name_lc, $property_name_lc);
+
+        $this->code_use_graph->addReferenceToNode(
+            $class,
+            $context,
+            $location,
+        );
+    }
+
+    /**
+     * @param lowercase-string $function_id
+     */
+    public function addReferenceToFunctionLike(
+        string $function_id,
+        ?CodeLocation $location = null,
+        ?Context $context = null,
+    ): void {
+        if ($this->code_use_graph === null) {
+            return;
+        }
+        $function = $this->code_use_graph->getNodeForFunctionLike($function_id);
+
+        $this->code_use_graph->addReferenceToNode(
+            $function,
+            $context,
+            $location,
+        );
+    }
+
 
     /**
      * Used to register a taint, or to fetch the ID of an already registered taint by its alias.

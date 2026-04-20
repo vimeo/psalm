@@ -184,7 +184,7 @@ final class AtomicPropertyFetchAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         if (!$codebase->classExists($lhs_type_part->value, null, $context)
-            && !$codebase->classlikes->enumExists($lhs_type_part->value)
+            && !$codebase->classlikes->enumExists($lhs_type_part->value, null, $context)
         ) {
             $interface_exists = false;
 
