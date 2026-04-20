@@ -97,10 +97,9 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
 
             if (!$existing_var_type->isNullable()
                 && $key
-                && !str_contains($key, '[')
                 && (!$existing_var_type->hasMixed() || $existing_var_type->isAlwaysTruthy())
             ) {
-                if ($code_location) {
+                if ($code_location && !str_contains($key, '[')) {
                     if ($existing_var_type->from_static_property) {
                         IssueBuffer::maybeAdd(
                             new RedundantPropertyInitializationCheck(
