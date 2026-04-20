@@ -1474,4 +1474,86 @@ final class StubTest extends TestCase
         $this->expectExceptionMessage('TaintedHtml - src/somefile.php');
         $this->analyzeFile($file_path, new Context());
     }
+
+    /**
+     * @runInSeparateProcess
+     */
+    public function testPsalmScopeThisAutoloader(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                    autoloader="tests/fixtures/stubs/this-scope-loader.php"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace A\B;
+
+                use X\Y;
+
+                /**
+                * @psalm-scope-this Y
+                */
+                $a = $this->run();
+
+                echo "a" . $a;
+                ',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * @runInSeparateProcess
+     */
+    public function testVarThisAutoloader(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                    autoloader="tests/fixtures/stubs/this-scope-loader.php"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace A\B;
+
+                use X\Y;
+
+                /**
+                * @var Y $this
+                */
+                $a = $this->run();
+
+                echo "a" . $a;
+                ',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
 }

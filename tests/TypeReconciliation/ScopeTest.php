@@ -234,6 +234,42 @@ final class ScopeTest extends TestCase
                     }
                     PHP,
             ],
+            'psalmVarThisInTemplateVariableAssigned' => [
+                'code' => '<?php
+                    /** @var Exception $this */
+                    $m = $this->getMessage();
+                ?>
+                <h1><?php echo $m; ?></h1>',
+            ],
+            'psalmScopeThisInTemplateVariableAssigned' => [
+                'code' => '<?php
+                    /** @psalm-scope-this Exception */
+                    $m = $this->getMessage();
+                ?>
+                <h1><?php echo $m; ?></h1>',
+            ],
+            'psalmVarThisGlobal' => [
+                'code' => '<?php
+                    /**
+                     * @global string $my_global
+                     *
+                     * @var Exception $this
+                     */
+                    global $my_global;
+                ?>
+                <h1><?php echo $my_global; ?></h1>',
+            ],
+            'psalmScopeThisGlobal' => [
+                'code' => '<?php
+                    /**
+                     * @global string $my_global
+                     *
+                     * @psalm-scope-this Exception
+                     */
+                    global $my_global;
+                ?>
+                <h1><?php echo $my_global; ?></h1>',
+            ],
         ];
     }
 
