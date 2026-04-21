@@ -10199,7 +10199,7 @@ return array (
   'curl_share_init_persistent' => 
   array (
     0 => 'CurlSharePersistentHandle',
-    'share_options' => 'non-empty-array<array-key, 3|4|5|6>',
+    'share_options' => 'array<array-key, mixed>',
   ),
   'curl_share_setopt' => 
   array (
@@ -75244,7 +75244,7 @@ return array (
   ),
   'sqlite3result::columnname' => 
   array (
-    0 => 'string',
+    0 => 'false|string',
     'column' => 'int',
   ),
   'sqlite3result::columntype' => 

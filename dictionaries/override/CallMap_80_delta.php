@@ -29902,12 +29902,12 @@ return array (
     array (
       'old' => 
       array (
-        0 => 'string',
+        0 => 'false|string',
         'column_number' => 'int',
       ),
       'new' => 
       array (
-        0 => 'string',
+        0 => 'false|string',
         'column' => 'int',
       ),
     ),
