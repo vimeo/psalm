@@ -784,27 +784,32 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
                 foreach ($codelocations as $codelocation) {
                     // issues are suppressed in ThrowAnalyzer, CallAnalyzer, etc.
-                    IssueBuffer::maybeAdd(
-                        new MissingThrowsDocblock(
-                            $possibly_thrown_exception . ' is thrown but not caught - please either catch'
-                                . ' or add a @throws annotation',
-                            $codelocation,
-                            $possibly_thrown_exception,
-                        ),
+                    $codeIssue = new MissingThrowsDocblock(
+                        $possibly_thrown_exception . ' is thrown but not caught - please either catch'
+                        . ' or add a @throws annotation',
+                        $codelocation,
+                        $possibly_thrown_exception,
                     );
+
+                    IssueBuffer::maybeAdd(
+                        $codeIssue,
+                        $this->getSuppressedIssues(),
+                        true,
+                    );
+
+                    if ($codebase->alter_code
+                        && isset($project_analyzer->getIssuesToFix()['MissingThrowsDocblock'])
+                        && !IssueBuffer::isSuppressed($codeIssue, $this->getSuppressedIssues())
+                    ) {
+                        $manipulator = FunctionDocblockManipulator::getForFunction(
+                            $project_analyzer,
+                            $this->source->getFilePath(),
+                            $this->function,
+                        );
+                        $manipulator->addThrowsDocblock($missingThrowsDocblockErrors);
+                    }
                 }
             }
-        }
-
-        if ($codebase->alter_code
-            && isset($project_analyzer->getIssuesToFix()['MissingThrowsDocblock'])
-        ) {
-            $manipulator = FunctionDocblockManipulator::getForFunction(
-                $project_analyzer,
-                $this->source->getFilePath(),
-                $this->function,
-            );
-            $manipulator->addThrowsDocblock($missingThrowsDocblockErrors);
         }
 
         if ($codebase->taint_flow_graph
@@ -2035,7 +2040,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     $this->getSuppressedIssues(),
                     true,
                 );
-                    
+
                 if ($codebase->alter_code
                     && $storage->stmt_location !== null
                     && isset($this->getProjectAnalyzer()->getIssuesToFix()['MissingOverrideAttribute'])
