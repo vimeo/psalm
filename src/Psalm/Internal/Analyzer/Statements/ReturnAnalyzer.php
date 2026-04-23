@@ -10,6 +10,7 @@ use Psalm\CodeLocation\DocblockTypeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Exception\DocblockParseException;
+use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\ClosureAnalyzer;
@@ -27,6 +28,9 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\Type\TypeParser;
+use Psalm\Internal\Type\TypeTokenizer;
+use Psalm\Issue\CheckType;
 use Psalm\Issue\FalsableReturnStatement;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidReturnStatement;
@@ -54,6 +58,7 @@ use function explode;
 use function implode;
 use function reset;
 use function strtolower;
+use function trim;
 
 /**
  * @internal
@@ -206,6 +211,8 @@ final class ReturnAnalyzer
         }
 
         $statements_analyzer->node_data->setType($stmt, $stmt_type);
+
+        self::checkReturnType($statements_analyzer, $stmt, $codebase, $stmt_type);
 
         if ($context->finally_scope) {
             foreach ($context->vars_in_scope as $var_id => &$type) {
@@ -715,5 +722,84 @@ final class ReturnAnalyzer
             return $parent_return_type;
         }
         return $return_type;
+    }
+
+    private static function checkReturnType(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Stmt\Return_ $stmt,
+        Codebase $codebase,
+        Union $stmt_type,
+    ): void {
+        $parsed_docblock = $statements_analyzer->getParsedDocblock();
+        if ($parsed_docblock === null) {
+            return;
+        }
+
+        $checked_return_types = [];
+        foreach ($parsed_docblock->tags['psalm-check-return-type'] ?? [] as $check) {
+            $checked_return_types[] = [trim($check), false];
+        }
+        foreach ($parsed_docblock->tags['psalm-check-return-type-exact'] ?? [] as $check) {
+            $checked_return_types[] = [trim($check), true];
+        }
+
+        if ($checked_return_types === []) {
+            return;
+        }
+
+        $source = $statements_analyzer->getSource();
+
+        foreach ($checked_return_types as [$check_type_string, $is_exact]) {
+            if ($check_type_string === '') {
+                IssueBuffer::maybeAdd(
+                    new InvalidDocblock(
+                        'Invalid format for @psalm-check-return-type' . ($is_exact ? '-exact' : ''),
+                        new CodeLocation($source, $stmt),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+                continue;
+            }
+
+            try {
+                $path = $statements_analyzer->getRootFilePath();
+                $file_storage = $codebase->file_storage_provider->get($path);
+
+                $check_tokens = TypeTokenizer::getFullyQualifiedTokens(
+                    $check_type_string,
+                    $statements_analyzer->getAliases(),
+                    $statements_analyzer->getTemplateTypeMap(),
+                    $file_storage->type_aliases,
+                );
+                $check_type = TypeParser::parseTokens(
+                    $check_tokens,
+                    null,
+                    $statements_analyzer->getTemplateTypeMap() ?? [],
+                    $file_storage->type_aliases,
+                    true,
+                );
+
+                if (!UnionTypeComparator::isContainedBy($codebase, $stmt_type, $check_type)
+                    || ($is_exact && !UnionTypeComparator::isContainedBy($codebase, $check_type, $stmt_type))
+                ) {
+                    IssueBuffer::maybeAdd(
+                        new CheckType(
+                            "Checked return type {$check_type->getId()} does not match "
+                                . "inferred type {$stmt_type->getId()}",
+                            new CodeLocation($source, $stmt),
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+                }
+            } catch (TypeParseTreeException $e) {
+                IssueBuffer::maybeAdd(
+                    new InvalidDocblock(
+                        $e->getMessage(),
+                        new CodeLocation($source, $stmt),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
+        }
     }
 }
