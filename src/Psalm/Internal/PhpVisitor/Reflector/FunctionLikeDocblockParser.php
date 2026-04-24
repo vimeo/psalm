@@ -19,7 +19,9 @@ use Psalm\IssueBuffer;
 use Psalm\Type\TaintKindGroup;
 
 use function array_keys;
+use function array_search;
 use function array_shift;
+use function array_slice;
 use function array_unique;
 use function count;
 use function explode;
@@ -507,6 +509,14 @@ final class FunctionLikeDocblockParser
                     $source_prefix = 'phpstan';
                 }
 
+                $eq_pos = array_search('=', $template_type, true);
+                $default_type_string = null;
+                if ($eq_pos !== false) {
+                    $default_tokens = array_slice($template_type, $eq_pos + 1);
+                    $default_type_string = implode(' ', $default_tokens) ?: null;
+                    $template_type = array_slice($template_type, 0, $eq_pos);
+                }
+
                 if (count($template_type) > 1
                     && in_array(strtolower($template_type[0]), ['as', 'super', 'of'], true)
                 ) {
@@ -516,9 +526,16 @@ final class FunctionLikeDocblockParser
                         $template_modifier,
                         implode(' ', $template_type),
                         false,
+                        $default_type_string,
                     ];
                 } else {
-                    $templates[$template_name][$source_prefix] = [$template_name, null, null, false];
+                    $templates[$template_name][$source_prefix] = [
+                        $template_name,
+                        null,
+                        null,
+                        false,
+                        $default_type_string,
+                    ];
                 }
             }
         }

@@ -64,6 +64,7 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_diff;
+use function array_key_first;
 use function array_map;
 use function array_merge;
 use function array_shift;
@@ -178,6 +179,16 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             if (isset($function_call_info->function_storage->template_types)) {
                 $template_result->template_types += $function_call_info->function_storage->template_types ?: [];
             }
+            $function_defaults = $function_call_info->function_storage->template_type_defaults ?? null;
+            $function_templates = $function_call_info->function_storage->template_types ?? null;
+            if ($function_defaults !== null && $function_templates !== null) {
+                foreach ($function_defaults as $template_name => $default_type) {
+                    if (isset($function_templates[$template_name])) {
+                        $defining_key = array_key_first($function_templates[$template_name]);
+                        $template_result->template_type_defaults[$template_name][$defining_key] = $default_type;
+                    }
+                }
+            }
 
             ArgumentsAnalyzer::analyze(
                 $statements_analyzer,
@@ -215,6 +226,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         }
 
         $already_inferred_lower_bounds = $template_result->lower_bounds;
+        $already_inferred_defaults = $template_result->template_type_defaults;
 
         $template_result = new TemplateResult([], []);
 
@@ -241,6 +253,10 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         );
 
         $template_result->lower_bounds = [...$template_result->lower_bounds, ...$already_inferred_lower_bounds];
+        $template_result->template_type_defaults = [
+            ...$template_result->template_type_defaults,
+            ...$already_inferred_defaults,
+        ];
 
         if ($function_name instanceof PhpParser\Node\Name && $function_call_info->function_id) {
             $stmt_type = FunctionCallReturnTypeFetcher::fetch(

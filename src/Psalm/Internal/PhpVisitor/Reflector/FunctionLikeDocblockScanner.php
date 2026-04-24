@@ -1495,6 +1495,31 @@ final class FunctionLikeDocblockScanner
                 $storage->template_types[$template_name] = [
                     'fn-' . strtolower($cased_function_id) => $template_type,
                 ];
+
+                $default_type_string = $template_map[4] ?? null;
+                if ($default_type_string !== null) {
+                    $default_type_string = CommentAnalyzer::sanitizeDocblockType($default_type_string);
+                    try {
+                        $default_type = TypeParser::parseTokens(
+                            TypeTokenizer::getFullyQualifiedTokens(
+                                $default_type_string,
+                                $aliases,
+                                $storage->template_types + ($template_types ?? []),
+                                $type_aliases,
+                            ),
+                            null,
+                            $storage->template_types + ($template_types ?? []),
+                            $type_aliases,
+                        );
+
+                        $storage->template_type_defaults[$template_name] = $default_type;
+                    } catch (TypeParseTreeException $e) {
+                        $storage->docblock_issues[] = new InvalidDocblock(
+                            'Template ' . $template_name . ' has invalid default type - ' . $e->getMessage(),
+                            new CodeLocation($file_scanner, $stmt, null, true),
+                        );
+                    }
+                }
             }
         }
 
