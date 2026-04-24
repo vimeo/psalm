@@ -285,6 +285,15 @@ final class ClassLikeStringTest extends TestCase
                         use T;
                     }',
             ],
+            'literalClassStringOfTraitSatisfiesTraitString' => [
+                'code' => '<?php
+                    trait MyTrait {}
+
+                    /** @param trait-string $t */
+                    function takesTrait(string $t): void {}
+
+                    takesTrait(MyTrait::class);',
+            ],
             'refineStringToClassString' => [
                 'code' => '<?php
                     class A {}
