@@ -2710,6 +2710,38 @@ final class PropertyTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'nullsafePropertyFetchAssertsNotNull' => [
+                'code' => '<?php
+                    class Foo {
+                        public string $bar = "";
+                        public string $baz = "";
+                    }
+
+                    function test(?Foo $v): void {
+                        if ($v?->bar) {
+                            echo $v->baz;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafePropertyFetchNotNullAssertsNotNull' => [
+                'code' => '<?php
+                    class Foo {
+                        public string $bar = "";
+                        public string $baz = "";
+                    }
+
+                    function test(?Foo $v): void {
+                        if ($v?->bar !== null) {
+                            echo $v->baz;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'impossibleIntersection' => [
                 'code' => '<?php
                     class Foo {}
