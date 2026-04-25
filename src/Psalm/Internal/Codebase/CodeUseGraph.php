@@ -35,7 +35,7 @@ final class CodeUseGraph
     private array $locations = [];
 
     public function __construct(
-        private readonly Codebase $codebase,
+        public bool $collect_locations = false,
     )
     {
     }
@@ -148,8 +148,14 @@ final class CodeUseGraph
         } else if ($maybe) {
             return null;
         }
+        $funcNode = $this->getNodeForFunctionLike($func);
 
         $this->nodes[$id] = $node = new UseFlowNode($id);
+        $this->addPath(
+            $funcNode,
+            $node,
+            'return',
+        );
         return $node;
     }
 
@@ -252,7 +258,7 @@ final class CodeUseGraph
             'use',
         );
 
-        if ($this->codebase->collect_locations && $location !== null) {
+        if ($this->collect_locations && $location !== null) {
             $id = $location->getHash();
             $this->locations[$node->id][$id] = $location;
         }
@@ -318,7 +324,7 @@ final class CodeUseGraph
     }
 
     private function resolveInner(string $id, int $level): void {
-        foreach ($this->forward_edges[$id] as $to_id => $_) {
+        foreach ($this->forward_edges[$id] ?? [] as $to_id => $_) {
             $node = $this->nodes[$to_id];
             if (!$node->used || $node->mutation_level < $level) {
                 $node->used = true;
@@ -329,7 +335,7 @@ final class CodeUseGraph
     }
 
     private function resolveInnerMutations(string $id, int $level): void {
-        foreach ($this->forward_edges[$id] as $to_id => $_) {
+        foreach ($this->forward_edges[$id] ?? [] as $to_id => $_) {
             $node = $this->nodes[$to_id];
             if (($node->used || $node->visited_secondary) 
                 && $node->mutation_level >= $level
@@ -349,19 +355,7 @@ final class CodeUseGraph
         if ($node === null) {
             return false;
         }
-        $node_id = $node->id;
-
-        foreach ($this->forward_edges as $from_id => $to_nodes) {
-            if ($from_id === $node_id) {
-                continue;
-            }
-
-            if (isset($to_nodes[$node_id])) {
-                return true;
-            }
-        }
-
-        return false;
+        return $node->used;
     }
 
     /**

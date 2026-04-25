@@ -818,10 +818,36 @@ final class ClassLikes
             if ($classlike_storage->location
                 && $this->config->isInProjectDirs($classlike_storage->location->file_path)
             ) {
+                $classNode = $codebase->code_use_graph->getNodeForClass($fq_class_name_lc);
                 if ($classlike_storage->public_api) {
-                    $node = $codebase->code_use_graph->getNodeForClass($fq_class_name_lc);
-                    $codebase->code_use_graph->markAsPublicApi($node);
+                    $codebase->code_use_graph->markAsPublicApi($classNode);
                 }
+                foreach ($classlike_storage->methods as $method_name => $method_storage) {
+                    $node = $codebase->code_use_graph->getNodeForFunctionLike($method_name);
+                    $codebase->code_use_graph->addPath(
+                        $node,
+                        $classNode,
+                        'method'
+                    );
+                    $node->addMutationLevel($method_storage->allowed_mutations);
+                    if ($classlike_storage->public_api) {
+                        $codebase->code_use_graph->markAsPublicApi($node);
+                    }
+                }
+            }
+        }
+
+        $codebase->code_use_graph?->resolve();
+
+        foreach ($this->existing_classlikes_lc as $fq_class_name_lc => $_) {
+            try {
+                $classlike_storage = $this->classlike_storage_provider->get($fq_class_name_lc);
+            } catch (InvalidArgumentException) {
+                continue;
+            }
+            if ($classlike_storage->location
+                && $this->config->isInProjectDirs($classlike_storage->location->file_path)
+            ) {
                 if (!$classlike_storage->is_trait) {
                     if ($find_unused_code) {
                         $class_referenced = $codebase->code_use_graph?->isUsed(
