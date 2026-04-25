@@ -284,7 +284,7 @@ final class CodeUseGraph
     /**
      * @psalm-external-mutation-free
      */
-    public function addPath(
+    private function addPath(
         UseFlowNode $from,
         UseFlowNode $to,
         string $path_type,
