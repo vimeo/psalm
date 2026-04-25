@@ -36,6 +36,7 @@ use function array_splice;
 use function count;
 use function in_array;
 use function key;
+use function min;
 use function reset;
 use function strpos;
 use function strtolower;

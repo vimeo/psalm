@@ -278,6 +278,11 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
 
         $parent_fq_class_name = $this->parent_fq_class_name;
 
+        if (!$class_context) {
+            $class_context = new Context($this->fq_class_name);
+            $class_context->parent = $parent_fq_class_name;
+        }
+
         if ($class instanceof PhpParser\Node\Stmt\Class_ && $class->extends && $parent_fq_class_name) {
             $this->checkParentClass(
                 $class,
@@ -372,11 +377,6 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     );
                 }
             }
-        }
-
-        if (!$class_context) {
-            $class_context = new Context($this->fq_class_name);
-            $class_context->parent = $parent_fq_class_name;
         }
 
         if ($global_context) {
@@ -1129,9 +1129,15 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 );
             }
 
-            $codebase->file_reference_provider->addMethodReferenceToMissingClassMember(
-                $fq_class_name_lc . '::__construct',
-                strtolower($property_class_name) . '::$' . $property_name,
+            $constructor_context = new Context();
+            $constructor_context->calling_method_id = $fq_class_name_lc . '::__construct';
+            $constructor_context->self = $storage->name;
+            $codebase->addReferenceToProperty(
+                strtolower($property_class_name),
+                $property_name,
+                false,
+                $property->location,
+                $constructor_context,
             );
 
             if ($property->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE) {

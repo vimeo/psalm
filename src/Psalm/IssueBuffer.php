@@ -37,6 +37,7 @@ use Psalm\Report\PylintReport;
 use Psalm\Report\ReportOptions;
 use Psalm\Report\SarifReport;
 use Psalm\Report\SonarqubeReport;
+use Psalm\Report\TableReport;
 use Psalm\Report\TextReport;
 use Psalm\Report\XmlReport;
 use RuntimeException;
@@ -935,6 +936,11 @@ final class IssueBuffer
                 $report_options,
             ),
             Report::TYPE_EMACS => new EmacsReport(
+                $normalized_data,
+                self::$fixable_issue_counts,
+                $report_options,
+            ),
+            Report::TYPE_TABLE => new TableReport(
                 $normalized_data,
                 self::$fixable_issue_counts,
                 $report_options,

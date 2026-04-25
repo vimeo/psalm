@@ -30,10 +30,18 @@ final class TaintKind
     public const INPUT_XPATH = (1 << 13);
     public const INPUT_SLEEP = (1 << 14);
     public const INPUT_EXTRACT = (1 << 15);
-    public const USER_SECRET = (1 << 16);
-    public const SYSTEM_SECRET = (1 << 17);
+    public const INPUT_LLM_PROMPT = (1 << 16);
+    public const USER_SECRET = (1 << 17);
+    public const SYSTEM_SECRET = (1 << 18);
 
-    public const ALL_INPUT = (1 << 16) - 1;
+    /**
+     * Bitmask of all INPUT_* taint types. Used as the default taint for
+     * user-controlled sources (e.g. $_GET, $_POST) so they propagate to any
+     * input sink.
+     * Excludes USER_SECRET and SYSTEM_SECRET, which represent
+     * sensitive data leaking out rather than untrusted data flowing in.
+     */
+    public const ALL_INPUT = (1 << 17) - 1;
 
     /** @internal */
     public const NUMERIC_ONLY = self::INPUT_SLEEP;
@@ -41,7 +49,7 @@ final class TaintKind
     public const BOOL_ONLY = self::INPUT_SLEEP;
 
     /** @internal Keep this synced with the above */
-    public const BUILTIN_TAINT_COUNT = 18;
+    public const BUILTIN_TAINT_COUNT = 19;
 
 
     // Map of taint kind names to their bitmask values, used in taint annotations
@@ -64,6 +72,7 @@ final class TaintKind
         'extract' => self::INPUT_EXTRACT,
         'user_secret' => self::USER_SECRET,
         'system_secret' => self::SYSTEM_SECRET,
+        'llm_prompt' => self::INPUT_LLM_PROMPT,
 
         'input_except_sleep' => self::ALL_INPUT & ~self::INPUT_SLEEP,
 

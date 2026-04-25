@@ -16,7 +16,6 @@ use LanguageServerProtocol\Position;
 use LanguageServerProtocol\Range;
 use LanguageServerProtocol\SignatureInformation;
 use LanguageServerProtocol\TextEdit;
-use PHP_CodeSniffer\Reports\Code;
 use PhpParser;
 use PhpParser\Node\Arg;
 use Psalm\CodeLocation\Raw;
@@ -91,6 +90,7 @@ use function is_numeric;
 use function is_string;
 use function krsort;
 use function ksort;
+use function ltrim;
 use function preg_match;
 use function preg_replace;
 use function str_contains;
@@ -113,7 +113,10 @@ final class Codebase
 {
     /**
      * A map of fully-qualified use declarations to the files
-     * that reference them (keyed by filename)
+     * that reference them (keyed by filename).
+     *
+     * Separated from the CodeUseGraph because a use import does not
+     * automatically mean a class is actually used.
      *
      * @var array<lowercase-string, array<int, CodeLocation>>
      */
@@ -352,13 +355,9 @@ final class Codebase
         if ($this->code_use_graph === null) {
             return;
         }
-        $class = $this->code_use_graph->getNodeForClass($fq_class_name_lc);
 
-        $this->code_use_graph->addReferenceToNode(
-            $class,
-            $context,
-            $location,
-        );
+        $class = $this->code_use_graph->getNodeForClass($fq_class_name_lc);
+        $this->code_use_graph->addReferenceToNode($class, $context, $location);
     }
 
     /**
@@ -368,19 +367,16 @@ final class Codebase
     public function addReferenceToProperty(
         string $fq_class_name_lc,
         string $property_name_lc,
+        bool $reading,
         ?CodeLocation $location = null,
         ?Context $context = null,
     ): void {
         if ($this->code_use_graph === null) {
             return;
         }
-        $class = $this->code_use_graph->getNodeForProperty($fq_class_name_lc, $property_name_lc);
 
-        $this->code_use_graph->addReferenceToNode(
-            $class,
-            $context,
-            $location,
-        );
+        $property = $this->code_use_graph->getNodeForProperty($fq_class_name_lc, $property_name_lc, $reading);
+        $this->code_use_graph->addReferenceToNode($property, $context, $location);
     }
 
     /**
@@ -390,17 +386,69 @@ final class Codebase
         string $function_id,
         ?CodeLocation $location = null,
         ?Context $context = null,
+        bool $is_return_value_used = false,
     ): void {
         if ($this->code_use_graph === null) {
             return;
         }
-        $function = $this->code_use_graph->getNodeForFunctionLike($function_id);
 
-        $this->code_use_graph->addReferenceToNode(
-            $function,
-            $context,
-            $location,
-        );
+        $function = $is_return_value_used
+            ? $this->code_use_graph->getNodeForFunctionLikeReturn($function_id)
+            : $this->code_use_graph->getNodeForFunctionLike($function_id);
+
+        $this->code_use_graph->addReferenceToNode($function, $context, $location);
+    }
+
+    /**
+     * @param lowercase-string $method_id
+     */
+    public function addReferenceToMissingMethod(
+        string $method_id,
+        ?CodeLocation $location = null,
+        ?Context $context = null,
+    ): void {
+        if ($this->code_use_graph === null) {
+            return;
+        }
+
+        $method = $this->code_use_graph->getNodeForMissingMethod($method_id);
+        $this->code_use_graph->addReferenceToNode($method, $context, $location);
+    }
+
+    /**
+     * @param lowercase-string $fq_class_name_lc
+     * @param lowercase-string $property_name_lc
+     */
+    public function addReferenceToMissingProperty(
+        string $fq_class_name_lc,
+        string $property_name_lc,
+        ?CodeLocation $location = null,
+        ?Context $context = null,
+    ): void {
+        if ($this->code_use_graph === null) {
+            return;
+        }
+
+        $property = $this->code_use_graph->getNodeForMissingProperty($fq_class_name_lc, $property_name_lc);
+        $this->code_use_graph->addReferenceToNode($property, $context, $location);
+    }
+
+    /**
+     * @param lowercase-string $fq_class_name_lc
+     * @param lowercase-string $const_name_lc
+     */
+    public function addReferenceToClassConstant(
+        string $fq_class_name_lc,
+        string $const_name_lc,
+        ?CodeLocation $location = null,
+        ?Context $context = null,
+    ): void {
+        if ($this->code_use_graph === null) {
+            return;
+        }
+
+        $constant = $this->code_use_graph->getNodeForClassConstant($fq_class_name_lc, $const_name_lc);
+        $this->code_use_graph->addReferenceToNode($constant, $context, $location);
     }
 
 
@@ -561,6 +609,8 @@ final class Codebase
     public function collectLocations(): void
     {
         $this->collect_locations = true;
+        $this->code_use_graph ??= new CodeUseGraph($this->collect_locations);
+        $this->code_use_graph->collect_locations = true;
         $this->classlikes->collect_locations = true;
         $this->methods->collect_locations = true;
         $this->properties->collect_locations = true;
@@ -575,6 +625,7 @@ final class Codebase
         $this->classlikes->collect_references = true;
         $this->find_unused_code = $find_unused_code;
         $this->find_unused_variables = true;
+        $this->code_use_graph = new CodeUseGraph($this->collect_locations);
     }
 
     /**
@@ -684,7 +735,7 @@ final class Codebase
     }
 
     /**
-     * @return array<int, CodeLocation>
+     * @return array<string, CodeLocation>
      * @psalm-external-mutation-free
      */
     public function findReferencesToSymbol(string $symbol): array
@@ -698,23 +749,26 @@ final class Codebase
         }
 
         if (str_contains($symbol, '::')) {
-            return $this->findReferencesToMethod($symbol);
+            return $this->findReferencesToMethod($symbol)
+                + $this->findReferencesToClassConstant($symbol);
         }
 
         return $this->findReferencesToClassLike($symbol);
     }
 
     /**
-     * @return array<int, CodeLocation>
+     * @return array<string, CodeLocation>
      * @psalm-external-mutation-free
      */
     public function findReferencesToMethod(string $method_id): array
     {
-        return $this->file_reference_provider->getClassMethodLocations(strtolower($method_id));
+        return $this->code_use_graph?->getReferenceLocations(
+            $this->code_use_graph?->getNodeForFunctionLike(strtolower($method_id)),
+        ) ?? [];
     }
 
     /**
-     * @return array<int, CodeLocation>
+     * @return array<string, CodeLocation>
      * @psalm-external-mutation-free
      */
     public function findReferencesToProperty(string $property_id): array
@@ -722,26 +776,47 @@ final class Codebase
         /** @psalm-suppress PossiblyUndefinedIntArrayOffset */
         [$fq_class_name, $property_name] = explode('::', $property_id);
 
-        return $this->file_reference_provider->getClassPropertyLocations(
-            strtolower($fq_class_name) . '::' . $property_name,
-        );
+        return $this->code_use_graph?->getReferenceLocations(
+            $this->code_use_graph?->getNodeForProperty(
+                strtolower($fq_class_name),
+                ltrim($property_name, '$'),
+                true,
+                true,
+            ),
+        ) ?? [];
     }
 
     /**
      * @return CodeLocation[]
-     * @psalm-return array<int, CodeLocation>
+     * @psalm-return array<string, CodeLocation>
      * @psalm-external-mutation-free
      */
     public function findReferencesToClassLike(string $fq_class_name): array
     {
         $fq_class_name_lc = strtolower($fq_class_name);
-        $locations = $this->file_reference_provider->getClassLocations($fq_class_name_lc);
+        $refs = $this->code_use_graph?->getReferenceLocations(
+            $this->code_use_graph?->getNodeForClass($fq_class_name_lc),
+        ) ?? [];
 
         if (isset($this->use_referencing_locations[$fq_class_name_lc])) {
-            $locations = [...$locations, ...$this->use_referencing_locations[$fq_class_name_lc]];
+            $refs = [...$refs, ...$this->use_referencing_locations[$fq_class_name_lc]];
         }
 
-        return $locations;
+        return $refs;
+    }
+
+    public function findReferencesToClassConstant(string $const_id): array
+    {
+        /** @psalm-suppress PossiblyUndefinedIntArrayOffset */
+        [$fq_class_name, $const_name] = explode('::', $const_id);
+
+        return $this->code_use_graph?->getReferenceLocations(
+            $this->code_use_graph?->getNodeForClassConstant(
+                strtolower($fq_class_name),
+                strtolower($const_name),
+                true,
+            ),
+        ) ?? [];
     }
 
     /**
@@ -972,6 +1047,26 @@ final class Codebase
     }
 
     /**
+     * Whether or not a given property exists
+     */
+    public function propertyExists(
+        string $property_id,
+        bool $read_mode,
+        ?StatementsSource $source = null,
+        ?Context $context = null,
+        ?CodeLocation $code_location = null,
+    ): bool {
+        return $this->properties->propertyExists(
+            $this,
+            $property_id,
+            $read_mode,
+            $source,
+            $context,
+            $code_location,
+        );
+    }
+
+    /**
      * Whether or not a given method exists
      */
     public function methodExists(
@@ -981,7 +1076,7 @@ final class Codebase
         ?StatementsSource $source = null,
         ?string $source_file_path = null,
         bool $use_method_existence_provider = true,
-        bool $is_used = false,
+        bool $is_used = true,
         bool $with_pseudo = false,
     ): bool {
         return $this->methods->methodExists(

@@ -62,7 +62,7 @@
         "phpstan/phpdoc-parser": "^1.6",
         "phpunit/phpunit": "^9.6",
         "psalm/plugin-mockery": "^1.1",
-        "psalm/plugin-phpunit": "^0.19",
+        "psalm/plugin-phpunit": "^0.20.1",
         "slevomat/coding-standard": "^8.4",
         "squizlabs/php_codesniffer": "^3.6",
         "symfony/process": "^6.0 || ^7.0 || ^8.0"

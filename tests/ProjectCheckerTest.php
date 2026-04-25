@@ -65,7 +65,7 @@ final class ProjectCheckerTest extends TestCase
     private function getProjectAnalyzerWithConfig(Config $config): ProjectAnalyzer
     {
         $config->setIncludeCollector(new IncludeCollector());
-        return new ProjectAnalyzer(
+        $ret = new ProjectAnalyzer(
             $config,
             new Providers(
                 $this->file_provider,
@@ -77,6 +77,9 @@ final class ProjectCheckerTest extends TestCase
             ),
             new ReportOptions(),
         );
+        $ret->initProjectFiles();
+        $ret->initExtraFiles();
+        return $ret;
     }
 
     public function testCheck(): void
@@ -280,6 +283,8 @@ final class Bat
                 </psalm>',
             ),
         );
+        $this->project_analyzer->initExtraFiles();
+        $this->project_analyzer->initProjectFiles();
 
         $this->project_analyzer->setPhpVersion('8.1', 'tests');
 

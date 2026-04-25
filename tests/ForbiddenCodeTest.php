@@ -419,6 +419,8 @@ final class ForbiddenCodeTest extends TestCase
                 new FakeParserCacheProvider(),
             ),
         );
+        $p->initExtraFiles();
+        $p->initProjectFiles();
 
         $p->setPhpVersion('7.4', 'tests');
 

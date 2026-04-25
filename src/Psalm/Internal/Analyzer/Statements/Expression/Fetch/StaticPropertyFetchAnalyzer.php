@@ -33,7 +33,6 @@ use Psalm\Type\Union;
 use function count;
 use function explode;
 use function in_array;
-use function md5;
 use function strtolower;
 
 /**
@@ -78,20 +77,20 @@ final class StaticPropertyFetchAnalyzer
         } else {
             $aliases = $statements_analyzer->getAliases();
 
-            if ($context->calling_method_id
-                && !$stmt->class instanceof PhpParser\Node\Name\FullyQualified
-            ) {
-                $codebase->file_reference_provider->addMethodReferenceToClassMember(
-                    $context->calling_method_id,
-                    'use:' . $stmt->class->getFirst() . ':' . md5($statements_analyzer->getFilePath()),
-                    false,
-                );
-            }
-
             $fq_class_name = ClassLikeAnalyzer::getFQCLNFromNameObject(
                 $stmt->class,
                 $aliases,
             );
+
+            if ($context->calling_method_id
+                && !$stmt->class instanceof PhpParser\Node\Name\FullyQualified
+            ) {
+                $codebase->addReferenceToClass(
+                    $fq_class_name,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt->class),
+                    $context,
+                );
+            }
 
             if ($context->isPhantomClass($fq_class_name)) {
                 return true;
@@ -220,7 +219,7 @@ final class StaticPropertyFetchAnalyzer
 
             if ($codebase->collect_references) {
                 // log the appearance
-                $codebase->properties->propertyExists(
+                $codebase->propertyExists(
                     $property_id,
                     true,
                     $statements_analyzer,
@@ -245,7 +244,7 @@ final class StaticPropertyFetchAnalyzer
             return true;
         }
 
-        if (!$codebase->properties->propertyExists(
+        if (!$codebase->propertyExists(
             $property_id,
             true,
             $statements_analyzer,

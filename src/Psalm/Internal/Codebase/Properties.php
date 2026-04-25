@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Codebase;
 
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
@@ -50,6 +51,7 @@ final class Properties
      * Whether or not a given property exists
      */
     public function propertyExists(
+        Codebase $codebase,
         string $property_id,
         bool $read_mode,
         ?StatementsSource $source = null,
@@ -89,72 +91,29 @@ final class Properties
             && !$context->collect_initializations
             && !$context->collect_mutations
         ) {
-            if ($context->calling_method_id) {
-                $this->file_reference_provider->addMethodReferenceToClass(
-                    $context->calling_method_id,
-                    $fq_class_name_lc,
-                );
-            } else {
-                $this->file_reference_provider->addNonMethodReferenceToClass(
-                    $source->getFilePath(),
-                    $fq_class_name_lc,
-                );
-            }
+            $codebase->addReferenceToClass($fq_class_name_lc, $code_location, $context);
         }
 
         if (isset($class_storage->declaring_property_ids[$property_name])) {
             $declaring_property_class = strtolower($class_storage->declaring_property_ids[$property_name]);
 
-            if ($context && $context->calling_method_id) {
-                $this->file_reference_provider->addMethodReferenceToClassMember(
-                    $context->calling_method_id,
-                    $declaring_property_class . '::$' . $property_name,
-                    false,
-                );
-
-                if ($read_mode) {
-                    $this->file_reference_provider->addMethodReferenceToClassProperty(
-                        $context->calling_method_id,
-                        $declaring_property_class . '::$' . $property_name,
-                    );
-                }
-            } elseif ($source) {
-                $this->file_reference_provider->addFileReferenceToClassMember(
-                    $source->getFilePath(),
-                    $declaring_property_class . '::$' . $property_name,
-                    false,
-                );
-
-                if ($read_mode) {
-                    $this->file_reference_provider->addFileReferenceToClassProperty(
-                        $source->getFilePath(),
-                        $declaring_property_class . '::$' . $property_name,
-                    );
-                }
-            }
-
-            if ($this->collect_locations && $code_location) {
-                $this->file_reference_provider->addCallingLocationForClassProperty(
-                    $code_location,
-                    $declaring_property_class . '::$' . $property_name,
-                );
-            }
+            $codebase->addReferenceToProperty(
+                $declaring_property_class,
+                $property_name,
+                $read_mode,
+                $code_location,
+                $context,
+            );
 
             return true;
         }
 
-        if ($context && $context->calling_method_id) {
-            $this->file_reference_provider->addMethodReferenceToMissingClassMember(
-                $context->calling_method_id,
-                $fq_class_name_lc . '::$' . $property_name,
-            );
-        } elseif ($source) {
-            $this->file_reference_provider->addFileReferenceToMissingClassMember(
-                $source->getFilePath(),
-                $fq_class_name_lc . '::$' . $property_name,
-            );
-        }
-
+        $codebase->addReferenceToMissingProperty(
+            $fq_class_name_lc,
+            $property_name,
+            $code_location,
+            $context,
+        );
         return false;
     }
 
