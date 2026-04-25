@@ -5,18 +5,15 @@ declare(strict_types=1);
 namespace Psalm\Internal\Codebase;
 
 use LogicException;
-use Override;
-use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Internal\DataFlow\UseFlowNode;
 use Psalm\Internal\DataFlow\Path;
+use Psalm\Internal\DataFlow\UseFlowNode;
 use Psalm\Storage\Mutations;
-use SplQueue;
-use SplStack;
 
-use function abs;
 use function array_key_exists;
+use function max;
+use function strtolower;
 
 /**
  * @internal
@@ -29,6 +26,8 @@ final class CodeUseGraph
     /** @var array<string, array<string, Path>> */
     private array $forward_edges = [];
 
+    private bool $resolved = false;
+
     /**
      * @var array<string, array<string, Location>> maps from node id to location hash to location
      */
@@ -36,15 +35,12 @@ final class CodeUseGraph
 
     public function __construct(
         public bool $collect_locations = false,
-    )
-    {
+    ) {
     }
 
     /**
      * @param lowercase-string $class_id
-     * @param bool $maybe
      * @psalm-external-mutation-free
-     * 
      * @return $maybe ? UseFlowNode|null : UseFlowNode
      */
     public function getNodeForClass(
@@ -55,7 +51,7 @@ final class CodeUseGraph
         $id = 'class '.$class_id;
         if (array_key_exists($id, $this->nodes)) {
             return $this->nodes[$id];
-        } else if ($maybe) {
+        } elseif ($maybe) {
             return null;
         }
         $this->nodes[$id] = $node = new UseFlowNode($id);
@@ -64,9 +60,7 @@ final class CodeUseGraph
 
     /**
      * @param lowercase-string $class_id
-     * @param string $property_name
      * @psalm-external-mutation-free
-     * 
      * @return $maybe ? UseFlowNode|null : UseFlowNode
      */
     public function getNodeForProperty(
@@ -83,7 +77,7 @@ final class CodeUseGraph
         $id = 'property '.$class_id.'::'.$property_name;
         if (array_key_exists($id, $this->nodes)) {
             return $this->nodes[$id];
-        } else if ($maybe) {
+        } elseif ($maybe) {
             return null;
         }
         $this->nodes[$id] = $node = new UseFlowNode($id);
@@ -93,7 +87,6 @@ final class CodeUseGraph
     /**
      * @param lowercase-string $class_id
      * @psalm-external-mutation-free
-     * 
      * @return $maybe ? UseFlowNode|null : UseFlowNode
      */
     public function getNodeForClassConstant(
@@ -105,7 +98,7 @@ final class CodeUseGraph
         $id = 'const ' . $class_id . '::' . $const_name;
         if (array_key_exists($id, $this->nodes)) {
             return $this->nodes[$id];
-        } else if ($maybe) {
+        } elseif ($maybe) {
             return null;
         }
 
@@ -125,7 +118,7 @@ final class CodeUseGraph
         $key = 'func '.$func;
         if (array_key_exists($key, $this->nodes)) {
             return $this->nodes[$key];
-        } else if ($maybe) {
+        } elseif ($maybe) {
             return null;
         }
         $this->nodes[$key] = $node = new UseFlowNode($key);
@@ -145,7 +138,7 @@ final class CodeUseGraph
         $id = 'return ' . $func;
         if (array_key_exists($id, $this->nodes)) {
             return $this->nodes[$id];
-        } else if ($maybe) {
+        } elseif ($maybe) {
             return null;
         }
         $funcNode = $this->getNodeForFunctionLike($func);
@@ -172,7 +165,7 @@ final class CodeUseGraph
         $id = 'missing-method ' . $method_id;
         if (array_key_exists($id, $this->nodes)) {
             return $this->nodes[$id];
-        } else if ($maybe) {
+        } elseif ($maybe) {
             return null;
         }
 
@@ -194,7 +187,7 @@ final class CodeUseGraph
         $id = 'missing-property ' . $class_id . '::' . $property_name;
         if (array_key_exists($id, $this->nodes)) {
             return $this->nodes[$id];
-        } else if ($maybe) {
+        } elseif ($maybe) {
             return null;
         }
 
@@ -306,10 +299,12 @@ final class CodeUseGraph
         $this->forward_edges[$from_id][$to_id] = new Path($path_type, 0);
     }
 
-    public function resolve(): void {
-        if ($this->getForPublicApi()->used) {
-            return;
+    public function resolve(): void
+    {
+        if ($this->resolved) {
+            throw new LogicException('Already resolved');
         }
+        $this->getForPublicApi();
         $this->getForGenericUse();
 
         $this->resolveInner($this->getForPublicApi()->id, Mutations::LEVEL_NONE);
@@ -321,9 +316,11 @@ final class CodeUseGraph
                 $this->resolveInnerMutations($node->id, $node->mutation_level);
             }
         }
+        $this->resolved = true;
     }
 
-    private function resolveInner(string $id, int $level): void {
+    private function resolveInner(string $id, int $level): void
+    {
         foreach ($this->forward_edges[$id] ?? [] as $to_id => $_) {
             $node = $this->nodes[$to_id];
             if (!$node->used || $node->mutation_level < $level) {
@@ -334,10 +331,11 @@ final class CodeUseGraph
         }
     }
 
-    private function resolveInnerMutations(string $id, int $level): void {
+    private function resolveInnerMutations(string $id, int $level): void
+    {
         foreach ($this->forward_edges[$id] ?? [] as $to_id => $_) {
             $node = $this->nodes[$to_id];
-            if (($node->used || $node->visited_secondary) 
+            if (($node->used || $node->visited_secondary)
                 && $node->mutation_level >= $level
             ) {
                 continue;
@@ -352,6 +350,9 @@ final class CodeUseGraph
 
     public function isUsed(?UseFlowNode $node): bool
     {
+        if (!$this->resolved) {
+            throw new LogicException('Graph must be resolved before checking usage');
+        }
         if ($node === null) {
             return false;
         }

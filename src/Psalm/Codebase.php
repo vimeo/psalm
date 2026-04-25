@@ -90,6 +90,7 @@ use function is_numeric;
 use function is_string;
 use function krsort;
 use function ksort;
+use function ltrim;
 use function preg_match;
 use function preg_replace;
 use function str_contains;
@@ -113,8 +114,8 @@ final class Codebase
     /**
      * A map of fully-qualified use declarations to the files
      * that reference them (keyed by filename).
-     * 
-     * Separated from the CodeUseGraph because a use import does not 
+     *
+     * Separated from the CodeUseGraph because a use import does not
      * automatically mean a class is actually used.
      *
      * @var array<lowercase-string, array<int, CodeLocation>>
@@ -762,7 +763,7 @@ final class Codebase
     public function findReferencesToMethod(string $method_id): array
     {
         return $this->code_use_graph?->getReferenceLocations(
-            $this->code_use_graph?->getNodeForFunctionLike(strtolower($method_id))
+            $this->code_use_graph?->getNodeForFunctionLike(strtolower($method_id)),
         ) ?? [];
     }
 
@@ -780,8 +781,8 @@ final class Codebase
                 strtolower($fq_class_name),
                 ltrim($property_name, '$'),
                 true,
-                true
-            )
+                true,
+            ),
         ) ?? [];
     }
 
@@ -794,7 +795,7 @@ final class Codebase
     {
         $fq_class_name_lc = strtolower($fq_class_name);
         $refs = $this->code_use_graph?->getReferenceLocations(
-            $this->code_use_graph?->getNodeForClass($fq_class_name_lc)
+            $this->code_use_graph?->getNodeForClass($fq_class_name_lc),
         ) ?? [];
 
         if (isset($this->use_referencing_locations[$fq_class_name_lc])) {
@@ -814,7 +815,7 @@ final class Codebase
                 strtolower($fq_class_name),
                 strtolower($const_name),
                 true,
-            )
+            ),
         ) ?? [];
     }
 

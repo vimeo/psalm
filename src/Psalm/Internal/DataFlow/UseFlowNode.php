@@ -5,11 +5,8 @@ declare(strict_types=1);
 namespace Psalm\Internal\DataFlow;
 
 use Override;
-use Psalm\CodeLocation;
 use Psalm\Storage\Mutations;
 use Stringable;
-
-use function strtolower;
 
 /**
  * @psalm-consistent-constructor

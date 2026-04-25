@@ -7,18 +7,17 @@ namespace Psalm\Tests;
 use Override;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use Psalm\Internal\Codebase\CodeUseGraph;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
-use UnexpectedValueException;
 
+use function array_values;
+use function assert;
 use function count;
-use function str_contains;
-use function str_starts_with;
+use function is_array;
+use function ksort;
 use function strpos;
-use function substr;
 
 final class FileReferenceTest extends TestCase
 {

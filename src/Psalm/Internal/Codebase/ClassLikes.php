@@ -808,36 +808,33 @@ final class ClassLikes
         $project_analyzer = ProjectAnalyzer::getInstance();
         $codebase = $project_analyzer->getCodebase();
 
-        foreach ($this->existing_classlikes_lc as $fq_class_name_lc => $_) {
-            try {
-                $classlike_storage = $this->classlike_storage_provider->get($fq_class_name_lc);
-            } catch (InvalidArgumentException) {
-                continue;
-            }
-
-            if ($classlike_storage->location
-                && $this->config->isInProjectDirs($classlike_storage->location->file_path)
-            ) {
-                $classNode = $codebase->code_use_graph->getNodeForClass($fq_class_name_lc);
-                if ($classlike_storage->public_api) {
-                    $codebase->code_use_graph->markAsPublicApi($classNode);
+        if ($codebase->code_use_graph) {
+            foreach ($this->existing_classlikes_lc as $fq_class_name_lc => $_) {
+                try {
+                    $classlike_storage = $this->classlike_storage_provider->get($fq_class_name_lc);
+                } catch (InvalidArgumentException) {
+                    continue;
                 }
-                foreach ($classlike_storage->methods as $method_name => $method_storage) {
-                    $node = $codebase->code_use_graph->getNodeForFunctionLike($method_name);
-                    $codebase->code_use_graph->addPath(
-                        $node,
-                        $classNode,
-                        'method'
-                    );
-                    $node->addMutationLevel($method_storage->allowed_mutations);
+
+                if ($classlike_storage->location
+                    && $this->config->isInProjectDirs($classlike_storage->location->file_path)
+                ) {
+                    $classNode = $codebase->code_use_graph->getNodeForClass($fq_class_name_lc);
                     if ($classlike_storage->public_api) {
-                        $codebase->code_use_graph->markAsPublicApi($node);
+                        $codebase->code_use_graph->markAsPublicApi($classNode);
+                    }
+                    foreach ($classlike_storage->methods as $method_name => $method_storage) {
+                        $node = $codebase->code_use_graph->getNodeForFunctionLike($method_name);
+                        $node->addMutationLevel($method_storage->allowed_mutations);
+                        if ($classlike_storage->public_api || $method_storage->public_api) {
+                            $codebase->code_use_graph->markAsPublicApi($node);
+                        }
                     }
                 }
             }
-        }
 
-        $codebase->code_use_graph?->resolve();
+            $codebase->code_use_graph->resolve();
+        }
 
         foreach ($this->existing_classlikes_lc as $fq_class_name_lc => $_) {
             try {
@@ -851,7 +848,7 @@ final class ClassLikes
                 if (!$classlike_storage->is_trait) {
                     if ($find_unused_code) {
                         $class_referenced = $codebase->code_use_graph?->isUsed(
-                            $codebase->code_use_graph->getNodeForClass($fq_class_name_lc, true)
+                            $codebase->code_use_graph->getNodeForClass($fq_class_name_lc, true),
                         ) ?? false;
 
                         if ($classlike_storage->public_api || $class_referenced) {
@@ -1804,7 +1801,7 @@ final class ClassLikes
 
             $method_id_lc = strtolower((string) $method_id);
             $method_referenced = $codebase->code_use_graph?->isUsed(
-                $codebase->code_use_graph?->getNodeForFunctionLike($method_id_lc, true)
+                $codebase->code_use_graph?->getNodeForFunctionLike($method_id_lc, true),
             ) ?? false;
 
             if (!$method_referenced
@@ -1858,7 +1855,7 @@ final class ClassLikes
                                 }
 
                                 $parent_method_referenced = $codebase->code_use_graph?->isUsed(
-                                    $codebase->code_use_graph?->getNodeForFunctionLike(strtolower((string) $parent_method_id), true)
+                                    $codebase->code_use_graph?->getNodeForFunctionLike(strtolower((string) $parent_method_id), true),
                                 ) ?? false;
 
                                 if (!$parent_method_storage->abstract || $parent_method_referenced) {
@@ -1893,7 +1890,7 @@ final class ClassLikes
                             if (isset($interface_storage->methods[$method_name])) {
                                 $interface_method_id = $fq_interface_name_lc . '::' . $method_name;
                                 $interface_method_referenced = $codebase->code_use_graph?->isUsed(
-                                    $codebase->code_use_graph?->getNodeForFunctionLike($interface_method_id, true)
+                                    $codebase->code_use_graph?->getNodeForFunctionLike($interface_method_id, true),
                                 ) ?? false;
 
                                 if ($interface_method_referenced) {
@@ -1992,7 +1989,7 @@ final class ClassLikes
                     $method_return_id = strtolower((string) $method_id);
                     $method_return_referenced =
                         $codebase->code_use_graph?->isUsed(
-                            $codebase->code_use_graph?->getNodeForFunctionLikeReturn($method_return_id, true)
+                            $codebase->code_use_graph?->getNodeForFunctionLikeReturn($method_return_id, true),
                         ) ?? false;
 
                     if (!$method_return_referenced) {
@@ -2227,8 +2224,8 @@ final class ClassLikes
                     strtolower($classlike_storage->name),
                     $property_name,
                     true,
-                    true
-                )
+                    true,
+                ),
             ) ?? false;
 
             $property_constructor_referenced = false;
@@ -2238,7 +2235,7 @@ final class ClassLikes
                         strtolower($classlike_storage->name),
                         $property_name,
                         true,
-                    )
+                    ),
                 ) ?? [];
 
                 if (count($property_references) === 1) {
