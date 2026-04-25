@@ -826,6 +826,7 @@ final class ClassLikes
                     foreach ($classlike_storage->methods as $method_name => $method_storage) {
                         $node = $codebase->code_use_graph->getNodeForFunctionLike($method_name);
                         $node->addMutationLevel($method_storage->allowed_mutations);
+                        $codebase->code_use_graph->addPath($node, $classNode, 'method');
                         if ($classlike_storage->public_api || $method_storage->public_api) {
                             $codebase->code_use_graph->markAsPublicApi($node);
                         }
@@ -851,7 +852,7 @@ final class ClassLikes
                             $codebase->code_use_graph->getNodeForClass($fq_class_name_lc, true),
                         ) ?? false;
 
-                        if ($classlike_storage->public_api || $class_referenced) {
+                        if ($class_referenced) {
                             $this->checkMethodReferences($classlike_storage, $methods);
                             $this->checkPropertyReferences($classlike_storage);
                         } else {
