@@ -229,6 +229,38 @@ final class ConditionalReturnTypeTest extends TestCase
                         return true;
                     }',
             ],
+            'conditionalReturnTypeWithThisInElseBranch' => [
+                'code' => '<?php
+                    final class Fluent
+                    {
+                        /**
+                         * @psalm-mutation-free
+                         * @param array|string|null $middleware
+                         * @return ($middleware is null ? array<never, never> : $this)
+                         */
+                        public function middleware($middleware = null)
+                        {
+                            if ($middleware === null) {
+                                return [];
+                            }
+
+                            return $this;
+                        }
+
+                        /**
+                         * @psalm-mutation-free
+                         * @return static
+                         */
+                        public function name(string $name)
+                        {
+                            return $this;
+                        }
+                    }
+
+                    (new Fluent())
+                        ->middleware("throttle:6,1")
+                        ->name("user-password.update");',
+            ],
             'variableConditionalSyntaxWithNewlines' => [
                 'code' => '<?php
                     /**
