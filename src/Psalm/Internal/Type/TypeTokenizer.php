@@ -22,6 +22,7 @@ use function str_split;
 use function strlen;
 use function strpos;
 use function strtolower;
+use function substr;
 
 /**
  * @internal
@@ -159,8 +160,18 @@ final class TypeTokenizer
                         && ($chars[$i + 2] ?? null) === '.'
                         && ($chars[$i + 3] ?? null) === '$'))
             ) {
-                $type_tokens[++$rtc] = [' ', $i - 1];
-                $type_tokens[++$rtc] = ['', $i];
+                // "$this" in a type context is a type token (equivalent to "static"), not a parameter name
+                if ($char === '$'
+                    && substr($string_type, $i, 5) === '$this'
+                    && !preg_match('/[a-zA-Z0-9_\x7f-\xff]/', $chars[$i + 5] ?? '')
+                ) {
+                    if ($type_tokens[$rtc][0] !== '') {
+                        $type_tokens[++$rtc] = ['', $i];
+                    }
+                } else {
+                    $type_tokens[++$rtc] = [' ', $i - 1];
+                    $type_tokens[++$rtc] = ['', $i];
+                }
             } elseif ($was_space
                 && in_array(implode('', array_slice($chars, $i, 3)), ['as ', 'is ', 'of '])
             ) {
