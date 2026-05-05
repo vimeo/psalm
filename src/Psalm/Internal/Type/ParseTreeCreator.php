@@ -146,6 +146,15 @@ final class ParseTreeCreator
                     $this->handleIsOrAs($type_token);
                     break;
 
+                case 'covariant':
+                case 'contravariant':
+                    if ($this->t + 1 < $this->type_token_count
+                        && $this->type_tokens[$this->t + 1][0] === ' '
+                    ) {
+                        $this->t++;
+                    }
+                    break;
+
                 default:
                     $this->handleValue($type_token);
                     break;
