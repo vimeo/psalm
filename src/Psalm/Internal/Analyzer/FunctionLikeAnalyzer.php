@@ -46,6 +46,7 @@ use Psalm\Issue\MissingOverrideAttribute;
 use Psalm\Issue\MissingParamType;
 use Psalm\Issue\MissingPureAnnotation;
 use Psalm\Issue\MissingThrowsDocblock;
+use Psalm\Issue\ParadoxicalCondition;
 use Psalm\Issue\ReferenceConstraintViolation;
 use Psalm\Issue\ReservedWord;
 use Psalm\Issue\UnresolvableConstant;
@@ -1358,10 +1359,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             } else {
                 if ($param_type->isVoid()) {
                     IssueBuffer::maybeAdd(
-                        new ReservedWord(
+                        new ParadoxicalCondition(
                             'Parameter cannot be void',
                             $function_param->type_location,
-                            'void',
                         ),
                         $this->suppressed_issues,
                     );
@@ -1369,10 +1369,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
                 if ($param_type->isNever()) {
                     IssueBuffer::maybeAdd(
-                        new ReservedWord(
+                        new ParadoxicalCondition(
                             'Parameter cannot be never',
                             $function_param->type_location,
-                            'never',
                         ),
                         $this->suppressed_issues,
                     );

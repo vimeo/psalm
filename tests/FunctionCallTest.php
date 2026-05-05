@@ -3211,7 +3211,7 @@ final class FunctionCallTest extends TestCase
                         return;
                     }
                     ',
-                'error_message' => 'ReservedWord',
+                'error_message' => 'ParadoxicalCondition',
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],

@@ -914,7 +914,7 @@ final class Codebase
         ?StatementsSource $source = null,
         ?string $source_file_path = null,
         bool $use_method_existence_provider = true,
-        bool $is_used = false,
+        bool $is_used = true,
         bool $with_pseudo = false,
     ): bool {
         return $this->methods->methodExists(
