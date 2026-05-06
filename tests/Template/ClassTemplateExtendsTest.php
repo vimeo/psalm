@@ -4699,6 +4699,90 @@ final class ClassTemplateExtendsTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'selfAsTemplateArgInImplementsRespectsParentBound' => [
+                'code' => '<?php
+                    abstract class Base {}
+
+                    /** @template T of Base */
+                    interface Holder {}
+
+                    /** @implements Holder<self> */
+                    final class ConcreteSelf extends Base implements Holder {}',
+            ],
+            'staticAsTemplateArgInImplementsRespectsParentBound' => [
+                'code' => '<?php
+                    abstract class Base {}
+
+                    /** @template T of Base */
+                    interface Holder {}
+
+                    /** @implements Holder<static> */
+                    final class ConcreteStatic extends Base implements Holder {}',
+            ],
+            'selfAsTemplateArgInTemplateImplementsRespectsParentBound' => [
+                'code' => '<?php
+                    abstract class Base {}
+
+                    /** @template T of Base */
+                    interface Holder {}
+
+                    /** @template-implements Holder<self> */
+                    final class ConcreteSelf extends Base implements Holder {}',
+            ],
+            'selfAsTemplateArgInExtendsRespectsParentBound' => [
+                'code' => '<?php
+                    abstract class Base {}
+
+                    /** @template T of Base */
+                    abstract class ParentHolder extends Base {}
+
+                    /** @extends ParentHolder<self> */
+                    final class ConcreteSelf extends ParentHolder {}',
+            ],
+            'staticAsTemplateArgInExtendsRespectsParentBound' => [
+                'code' => '<?php
+                    abstract class Base {}
+
+                    /** @template T of Base */
+                    abstract class ParentHolder extends Base {}
+
+                    /** @extends ParentHolder<static> */
+                    final class ConcreteStatic extends ParentHolder {}',
+            ],
+            'selfAsTemplateArgInTemplateExtendsRespectsParentBound' => [
+                'code' => '<?php
+                    abstract class Base {}
+
+                    /** @template T of Base */
+                    abstract class ParentHolder extends Base {}
+
+                    /** @template-extends ParentHolder<self> */
+                    final class ConcreteSelf extends ParentHolder {}',
+            ],
+            'selfAsTemplateArgInTraitUseRespectsParentBound' => [
+                'code' => '<?php
+                    abstract class Base {}
+
+                    /** @template T of Base */
+                    trait HolderTrait {}
+
+                    final class ConcreteSelf extends Base {
+                        /** @use HolderTrait<self> */
+                        use HolderTrait;
+                    }',
+            ],
+            'staticAsTemplateArgInTraitUseRespectsParentBound' => [
+                'code' => '<?php
+                    abstract class Base {}
+
+                    /** @template T of Base */
+                    trait HolderTrait {}
+
+                    final class ConcreteStatic extends Base {
+                        /** @use HolderTrait<static> */
+                        use HolderTrait;
+                    }',
+            ],
         ];
     }
 
@@ -5144,6 +5228,30 @@ final class ClassTemplateExtendsTest extends TestCase
 
                     /** @template-extends Base<int> */
                     class SpecializedByInheritance extends Base {}',
+                'error_message' => 'InvalidTemplateParam',
+            ],
+            'selfAsTemplateArgInImplementsStillEnforcesBoundWhenViolated' => [
+                'code' => '<?php
+                    abstract class Base {}
+
+                    /** @template T of Base */
+                    interface Holder {}
+
+                    /** @implements Holder<self> */
+                    final class NotABase implements Holder {}',
+                'error_message' => 'InvalidTemplateParam',
+            ],
+            'selfAsTemplateArgInTraitUseStillEnforcesBoundWhenViolated' => [
+                'code' => '<?php
+                    abstract class Base {}
+
+                    /** @template T of Base */
+                    trait HolderTrait {}
+
+                    final class NotABase {
+                        /** @use HolderTrait<self> */
+                        use HolderTrait;
+                    }',
                 'error_message' => 'InvalidTemplateParam',
             ],
             'doInheritParamTemplatedTypeSameName' => [
