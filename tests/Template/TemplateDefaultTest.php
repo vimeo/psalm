@@ -256,6 +256,123 @@ final class TemplateDefaultTest extends TestCase
                         return $foo->get();
                     }',
             ],
+            'inferredNeverPreservedOverDefault' => [
+                'code' => '<?php
+                    /**
+                     * @template T = string
+                     * @param list<T> $items
+                     * @return list<T>
+                     */
+                    function passThrough(array $items): array {
+                        return $items;
+                    }
+
+                    /** @var list<never> $empty */
+                    $empty = [];
+                    $result = passThrough($empty);',
+                'assertions' => [
+                    '$result===' => 'list<never>',
+                ],
+            ],
+            'classTemplateDefaultEqualsBound' => [
+                'code' => '<?php
+                    /**
+                     * @template T of stdClass = stdClass
+                     */
+                    class Foo {
+                        /** @return T */
+                        public function get(): stdClass {
+                            throw new \RuntimeException();
+                        }
+                    }',
+            ],
+            'classTemplateDefaultReferencingClassNotYetLoaded' => [
+                'code' => '<?php
+                    /**
+                     * @template T of \DateTimeInterface = \DateTimeImmutable
+                     */
+                    class Foo {
+                        /** @return T */
+                        public function get(): \DateTimeInterface {
+                            throw new \RuntimeException();
+                        }
+                    }
+
+                    /** @param Foo $foo */
+                    function test(Foo $foo): \DateTimeInterface {
+                        return $foo->get();
+                    }',
+            ],
+            'classTemplateDefaultWithTemplateBound' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of array-key
+                     * @template T of TKey = string
+                     */
+                    class Foo {}',
+            ],
+            'classTemplateDefaultWithNestedTemplateInBound' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of string
+                     * @template T of array<TKey, mixed> = array<string, mixed>
+                     */
+                    class Foo {}',
+            ],
+            'classTemplateDefaultTransitiveInheritance' => [
+                'code' => '<?php
+                    class Z {}
+                    class A extends Z {}
+                    class Child extends A {}
+
+                    /**
+                     * @template T of Z = Child
+                     */
+                    class Foo {
+                        /** @return T */
+                        public function get(): Z {
+                            throw new \RuntimeException();
+                        }
+                    }
+
+                    /** @param Foo $foo */
+                    function test(Foo $foo): Z {
+                        return $foo->get();
+                    }',
+            ],
+            'classTemplateDefaultArrayWithTransitiveInheritance' => [
+                'code' => '<?php
+                    class Z {}
+                    class A extends Z {}
+                    class Child extends A {}
+
+                    /**
+                     * @template T of array<int, Z> = array<int, Child>
+                     */
+                    class Foo {}',
+            ],
+            'classTemplateDefaultClassStringWithTransitiveInheritance' => [
+                'code' => '<?php
+                    class Z {}
+                    class A extends Z {}
+                    class Child extends A {}
+
+                    /**
+                     * @template T of class-string<Z> = class-string<Child>
+                     */
+                    class Foo {}',
+            ],
+            'classTemplateDefaultIterableWithTransitiveInheritance' => [
+                'code' => '<?php
+                    class Z {}
+                    class A extends Z {}
+                    class Child extends A {}
+
+                    /**
+                     * @template T of iterable<Z> = array<Child>
+                     */
+                    class Foo {}',
+            ],
         ];
     }
 
@@ -280,6 +397,33 @@ final class TemplateDefaultTest extends TestCase
                         return $foo->get();
                     }',
                 'error_message' => 'InvalidReturnStatement',
+            ],
+            'classTemplateDefaultViolatesBound' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object = int
+                     */
+                    class Foo {}',
+                'error_message' => 'is not within bound',
+            ],
+            'classTemplateDefaultViolatesAsBound' => [
+                'code' => '<?php
+                    /**
+                     * @template T as string = 42
+                     */
+                    class Foo {}',
+                'error_message' => 'is not within bound',
+            ],
+            'functionTemplateDefaultViolatesBound' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object = int
+                     * @return T
+                     */
+                    function foo() {
+                        throw new \RuntimeException();
+                    }',
+                'error_message' => 'is not within bound',
             ],
         ];
     }

@@ -337,7 +337,6 @@ final class TemplateInferredTypeReplacer
 
         if ($template_type === null
             || ($template_type->isMixed() && $atomic_type->as->isMixed())
-            || $template_type->isNever()
         ) {
             $default_type = self::getTemplateDefault(
                 $atomic_type,

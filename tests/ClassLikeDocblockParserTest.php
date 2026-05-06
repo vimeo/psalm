@@ -49,7 +49,7 @@ final class ClassLikeDocblockParserTest extends TestCase
         $node = new Class_(null);
         $php_parser_doc = new Doc($doc);
         $class_docblock = ClassLikeDocblockParser::parse($node, $php_parser_doc, new Aliases());
-        $this->assertSame([['T', null, null, false, 15, 'string']], $class_docblock->templates);
+        $this->assertSame([['T', null, null, false, 17, 'string']], $class_docblock->templates);
     }
 
     public function testTemplateDefaultWithBound(): void
@@ -61,7 +61,7 @@ final class ClassLikeDocblockParserTest extends TestCase
         $node = new Class_(null);
         $php_parser_doc = new Doc($doc);
         $class_docblock = ClassLikeDocblockParser::parse($node, $php_parser_doc, new Aliases());
-        $this->assertSame([['T', 'of', 'object', false, 15, 'stdClass']], $class_docblock->templates);
+        $this->assertSame([['T', 'of', 'object', false, 17, 'stdClass']], $class_docblock->templates);
     }
 
     /**

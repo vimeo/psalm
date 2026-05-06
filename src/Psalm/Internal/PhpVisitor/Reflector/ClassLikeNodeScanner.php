@@ -35,12 +35,14 @@ use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scanner\ClassLikeDocblockComment;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeAlias\ClassTypeAlias;
 use Psalm\Internal\Type\TypeAlias\InlineTypeAlias;
 use Psalm\Internal\Type\TypeAlias\LinkableTypeAlias;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
+use Psalm\Internal\TypeVisitor\ContainsClassRefVisitor;
 use Psalm\Issue\ConstantDeclarationInTrait;
 use Psalm\Issue\DuplicateClass;
 use Psalm\Issue\DuplicateConstant;
@@ -80,6 +82,7 @@ use function array_values;
 use function assert;
 use function count;
 use function implode;
+use function in_array;
 use function ltrim;
 use function preg_match;
 use function preg_split;
@@ -481,7 +484,26 @@ final class ClassLikeNodeScanner
                                 $this->type_aliases,
                             );
 
-                            $storage->template_type_defaults[$template_name] = $default_type;
+                            $bound = $storage->template_types[$template_name][$fq_classlike_name];
+                            $modifier = $template_map[1] !== null ? strtolower($template_map[1]) : null;
+
+                            $default_violates_bound = self::defaultViolatesBound(
+                                $this->codebase,
+                                $modifier,
+                                $bound,
+                                $default_type,
+                            );
+
+                            if ($default_violates_bound) {
+                                $storage->docblock_issues[] = new InvalidDocblock(
+                                    'Template ' . $template_name . ' default type '
+                                    . $default_type->getId() . ' is not within bound '
+                                    . $bound->getId(),
+                                    $name_location ?? $class_location,
+                                );
+                            } else {
+                                $storage->template_type_defaults[$template_name] = $default_type;
+                            }
                         } catch (TypeParseTreeException $e) {
                             $storage->docblock_issues[] = new InvalidDocblock(
                                 'Template ' . $template_name . ' has invalid default type - ' . $e->getMessage(),
@@ -2082,5 +2104,63 @@ final class ClassLikeNodeScanner
         }
 
         return $type_alias_tokens;
+    }
+
+    /**
+     * Returns true if the default for an `as`/`of`-bounded template clearly violates the bound.
+     *
+     * Validation runs at scan time, before Populator resolves transitive inheritance, so this
+     * is intentionally conservative: it returns false (no diagnostic) whenever the comparison
+     * would need information that isn't yet available, to avoid spurious diagnostics. Cases
+     * skipped here are not silently accepted at runtime: the analyzer will still flag a real
+     * mismatch where it matters (return-type checks, argument-type checks).
+     */
+    public static function defaultViolatesBound(
+        Codebase $codebase,
+        ?string $modifier,
+        Union $bound,
+        Union $default_type,
+    ): bool {
+        // No subtype check for `super`: the parser accepts it but Psalm has no
+        // first-class supertype-bound semantics elsewhere, so validating here
+        // would be inconsistent with the rest of the type system.
+        if (!in_array($modifier, ['as', 'of'], true)) {
+            return false;
+        }
+
+        if ($bound->isMixed()) {
+            return false;
+        }
+
+        // Skip when either side contains a template parameter at any depth — the
+        // comparison can't be resolved until the outer template is instantiated.
+        if ($bound->getTemplateTypes() !== [] || $default_type->getTemplateTypes() !== []) {
+            return false;
+        }
+
+        // Skip when either side references a named class or interface (or
+        // iterable, which is internally Traversable) at any depth. Verifying
+        // such relationships requires walking inheritance, which Populator
+        // hasn't done yet at scan time, so the comparator would produce false
+        // positives on transitive ancestors. The analyzer will still flag a
+        // genuine mismatch when the default is applied at a usage site.
+        $bound_visitor = new ContainsClassRefVisitor();
+        $bound_visitor->traverse($bound);
+        if ($bound_visitor->matches()) {
+            return false;
+        }
+        $default_visitor = new ContainsClassRefVisitor();
+        $default_visitor->traverse($default_type);
+        if ($default_visitor->matches()) {
+            return false;
+        }
+
+        try {
+            return !UnionTypeComparator::isContainedBy($codebase, $default_type, $bound);
+        } catch (InvalidArgumentException) {
+            // Classes referenced by either side may not be in storage yet at scan time;
+            // skip rather than emit a flaky InvalidDocblock based on missing data.
+            return false;
+        }
     }
 }

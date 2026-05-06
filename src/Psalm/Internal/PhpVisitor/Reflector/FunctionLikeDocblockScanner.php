@@ -237,6 +237,7 @@ final class FunctionLikeDocblockScanner
                 $file_scanner,
                 $stmt,
                 $cased_function_id,
+                $codebase,
             );
         }
 
@@ -1438,6 +1439,7 @@ final class FunctionLikeDocblockScanner
         FileScanner $file_scanner,
         PhpParser\Node\FunctionLike $stmt,
         string $cased_function_id,
+        Codebase $codebase,
     ): array {
         $storage->template_types = [];
 
@@ -1512,7 +1514,25 @@ final class FunctionLikeDocblockScanner
                             $type_aliases,
                         );
 
-                        $storage->template_type_defaults[$template_name] = $default_type;
+                        $modifier = $template_map[1] !== null ? strtolower($template_map[1]) : null;
+
+                        $default_violates_bound = ClassLikeNodeScanner::defaultViolatesBound(
+                            $codebase,
+                            $modifier,
+                            $template_type,
+                            $default_type,
+                        );
+
+                        if ($default_violates_bound) {
+                            $storage->docblock_issues[] = new InvalidDocblock(
+                                'Template ' . $template_name . ' default type '
+                                . $default_type->getId() . ' is not within bound '
+                                . $template_type->getId(),
+                                new CodeLocation($file_scanner, $stmt, null, true),
+                            );
+                        } else {
+                            $storage->template_type_defaults[$template_name] = $default_type;
+                        }
                     } catch (TypeParseTreeException $e) {
                         $storage->docblock_issues[] = new InvalidDocblock(
                             'Template ' . $template_name . ' has invalid default type - ' . $e->getMessage(),
