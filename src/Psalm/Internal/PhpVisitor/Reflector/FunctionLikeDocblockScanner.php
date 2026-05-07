@@ -476,11 +476,34 @@ final class FunctionLikeDocblockScanner
                     if ('$' . $param_storage->name === $token_body) {
                         if (!isset($param_type_mapping[$token_body])) {
                             $template_name = 'TGeneratedFromParam' . $j;
-                            if (isset($storage->template_types[$template_name])) {
+
+                            $already_wrapped = false;
+                            if ($param_storage->type !== null) {
+                                foreach ($param_storage->type->getAtomicTypes() as $atomic) {
+                                    if ($atomic instanceof TTemplateParam
+                                        && $atomic->param_name === $template_name
+                                    ) {
+                                        $already_wrapped = true;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if ($already_wrapped) {
+                                // A prior handler in this scan (e.g. handleRemovedTaint vs
+                                // handleReturn) already wrapped this param. Re-wrapping would nest
+                                // TTemplateParam.as_type inside itself once per docblock annotation,
+                                // producing an exponentially-long type signature (filter_var carries
+                                // ~50 conditional taint-escape annotations on the same `$filter`).
                                 $function_template_types[$template_name]
                                     = $storage->template_types[$template_name];
                                 $param_type_mapping[$token_body] = $template_name;
                             } else {
+                                // First touch in this scan, or rescan after a stub override (params
+                                // were reset, template_types kept). Build the wrap from the fresh
+                                // param type, otherwise argument binding sets no lower bound at call
+                                // time and replaceConditional falls back to `never`, collapsing the
+                                // conditional return to its null branch.
                                 $template_as_type = $param_storage->type ?: Type::getMixed();
 
                                 $storage->template_types[$template_name] = [
