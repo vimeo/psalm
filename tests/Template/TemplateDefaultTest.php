@@ -430,6 +430,37 @@ final class TemplateDefaultTest extends TestCase
 
                     new Cycle();',
             ],
+            'functionTemplateDefaultAppliedWhenNoArguments' => [
+                'code' => '<?php
+                    /**
+                     * @template T = string
+                     * @return T
+                     */
+                    function defaultNoParam() {
+                        throw new \RuntimeException();
+                    }
+
+                    $r = defaultNoParam();',
+                'assertions' => [
+                    '$r===' => 'string',
+                ],
+            ],
+            'functionTemplateChainedDefaultsAppliedWhenNoArguments' => [
+                'code' => '<?php
+                    /**
+                     * @template T = string
+                     * @template U = T
+                     * @return U
+                     */
+                    function defaultChainNoParam() {
+                        throw new \RuntimeException();
+                    }
+
+                    $r = defaultChainNoParam();',
+                'assertions' => [
+                    '$r===' => 'string',
+                ],
+            ],
         ];
     }
 
