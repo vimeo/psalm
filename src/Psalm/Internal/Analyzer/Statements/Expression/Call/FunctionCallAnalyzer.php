@@ -179,13 +179,15 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             if (isset($function_call_info->function_storage->template_types)) {
                 $template_result->template_types += $function_call_info->function_storage->template_types ?: [];
             }
-            $function_defaults = $function_call_info->function_storage->template_type_defaults ?? null;
-            $function_templates = $function_call_info->function_storage->template_types ?? null;
-            if ($function_defaults !== null && $function_templates !== null) {
-                foreach ($function_defaults as $template_name => $default_type) {
-                    if (isset($function_templates[$template_name])) {
-                        $defining_key = array_key_first($function_templates[$template_name]);
-                        $template_result->template_type_defaults[$template_name][$defining_key] = $default_type;
+            if ($function_call_info->function_storage !== null) {
+                $function_defaults = $function_call_info->function_storage->template_type_defaults;
+                $function_templates = $function_call_info->function_storage->template_types;
+                if ($function_defaults !== null && $function_templates !== null) {
+                    foreach ($function_defaults as $template_name => $default_type) {
+                        if (isset($function_templates[$template_name])) {
+                            $defining_key = array_key_first($function_templates[$template_name]);
+                            $template_result->template_type_defaults[$template_name][$defining_key] = $default_type;
+                        }
                     }
                 }
             }
