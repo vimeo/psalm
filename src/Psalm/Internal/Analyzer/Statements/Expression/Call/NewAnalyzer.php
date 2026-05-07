@@ -623,9 +623,18 @@ final class NewAnalyzer extends CallAnalyzer
                 $statements_analyzer->getSuppressedIssues(),
             );
         } elseif ($storage->template_types) {
+            $template_result ??= new TemplateResult([], []);
             $type_params = [];
             foreach ($storage->template_types as $template_name => $type_map) {
-                $type_params[] = $storage->template_type_defaults[$template_name] ?? reset($type_map);
+                if (isset($storage->template_type_defaults[$template_name])) {
+                    $type_params[] = TemplateInferredTypeReplacer::replace(
+                        $storage->template_type_defaults[$template_name],
+                        $template_result,
+                        $codebase,
+                    );
+                } else {
+                    $type_params[] = reset($type_map);
+                }
             }
 
             $result_atomic_type = new TGenericObject(

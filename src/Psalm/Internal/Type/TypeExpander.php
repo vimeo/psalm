@@ -41,7 +41,6 @@ use ReflectionProperty;
 
 use function array_any;
 use function array_filter;
-use function array_map;
 use function array_merge;
 use function array_values;
 use function count;
@@ -601,20 +600,32 @@ final class TypeExpander
                 $value,
             );
 
+            $template_type_defaults = $container_class_storage->template_type_defaults ?? [];
+
             if ($container_class_storage->template_types
                 && array_any(
                     $container_class_storage->template_types,
-                    static fn($type_map): bool => !reset($type_map)->hasMixed(),
+                    static fn($type_map, $template_name): bool => isset($template_type_defaults[$template_name])
+                        || !reset($type_map)->hasMixed(),
                 )
             ) {
+                $template_result = new TemplateResult([], []);
+                $type_params = [];
+                foreach ($container_class_storage->template_types as $template_name => $type_map) {
+                    if (isset($template_type_defaults[$template_name])) {
+                        $type_params[] = TemplateInferredTypeReplacer::replace(
+                            $template_type_defaults[$template_name],
+                            $template_result,
+                            $codebase,
+                        );
+                    } else {
+                        $type_params[] = reset($type_map);
+                    }
+                }
+
                 $return_type = new TGenericObject(
                     $return_type->value,
-                    array_values(
-                        array_map(
-                            static fn($type_map) => reset($type_map),
-                            $container_class_storage->template_types,
-                        ),
-                    ),
+                    $type_params,
                 );
 
                 // we don't want to expand generic types recursively

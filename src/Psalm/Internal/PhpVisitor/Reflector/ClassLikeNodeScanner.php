@@ -2138,20 +2138,18 @@ final class ClassLikeNodeScanner
             return false;
         }
 
-        // Skip when either side references a named class or interface (or
-        // iterable, which is internally Traversable) at any depth. Verifying
-        // such relationships requires walking inheritance, which Populator
+        // Skip only when BOTH sides reference a named class or interface (or
+        // iterable, which is internally Traversable) at any depth. Comparing
+        // two named classes requires walking inheritance, which Populator
         // hasn't done yet at scan time, so the comparator would produce false
-        // positives on transitive ancestors. The analyzer will still flag a
-        // genuine mismatch when the default is applied at a usage site.
+        // positives on transitive ancestors. When only one side references a
+        // class, the comparator's verdict is purely a kind comparison
+        // (e.g. "is int an object?") and is reliable at scan time.
         $bound_visitor = new ContainsClassRefVisitor();
         $bound_visitor->traverse($bound);
-        if ($bound_visitor->matches()) {
-            return false;
-        }
         $default_visitor = new ContainsClassRefVisitor();
         $default_visitor->traverse($default_type);
-        if ($default_visitor->matches()) {
+        if ($bound_visitor->matches() && $default_visitor->matches()) {
             return false;
         }
 

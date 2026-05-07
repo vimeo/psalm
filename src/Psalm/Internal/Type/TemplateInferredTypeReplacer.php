@@ -56,6 +56,7 @@ final class TemplateInferredTypeReplacer
         TemplateResult $template_result,
         ?Codebase $codebase,
         bool $apply_defaults = true,
+        array $visiting_defaults = [],
     ): Union {
         $new_types = [];
 
@@ -76,6 +77,7 @@ final class TemplateInferredTypeReplacer
                     $inferred_lower_bounds,
                     $key,
                     $apply_defaults ? $template_result : null,
+                    $visiting_defaults,
                 );
 
                 if ($template_type) {
@@ -250,12 +252,16 @@ final class TemplateInferredTypeReplacer
     /**
      * @param array<string, array<string, non-empty-list<TemplateBound>>> $inferred_lower_bounds
      */
+    /**
+     * @param array<string, true> $visiting_defaults
+     */
     private static function replaceTemplateParam(
         ?Codebase $codebase,
         TTemplateParam $atomic_type,
         array $inferred_lower_bounds,
         string $key,
         ?TemplateResult $template_result = null,
+        array $visiting_defaults = [],
     ): ?Union {
         $template_type = null;
 
@@ -342,6 +348,7 @@ final class TemplateInferredTypeReplacer
                 $atomic_type,
                 $template_result,
                 $codebase,
+                $visiting_defaults,
             );
 
             if ($default_type !== null) {
@@ -579,10 +586,14 @@ final class TemplateInferredTypeReplacer
         return $class_template_type;
     }
 
+    /**
+     * @param array<string, true> $visiting_defaults
+     */
     private static function getTemplateDefault(
         TTemplateParam $atomic_type,
         ?TemplateResult $template_result,
         ?Codebase $codebase,
+        array $visiting_defaults = [],
     ): ?Union {
         if ($template_result === null) {
             return null;
@@ -590,6 +601,13 @@ final class TemplateInferredTypeReplacer
 
         $defining_class = $atomic_type->defining_class;
         $param_name = $atomic_type->param_name;
+
+        // Cycle guard: if we are already expanding this template's default,
+        // bail out instead of recursing (e.g. `@template T = U @template U = T`).
+        $visit_key = $param_name . '::' . $defining_class;
+        if (isset($visiting_defaults[$visit_key])) {
+            return null;
+        }
 
         // Check TemplateResult first (populated from method/class storage at call sites)
         $default = $template_result->template_type_defaults[$param_name][$defining_class] ?? null;
@@ -603,8 +621,11 @@ final class TemplateInferredTypeReplacer
             return null;
         }
 
-        // Resolve any template params in the default type using current inference
-        return self::replace($default, $template_result, $codebase, false);
+        // Resolve any template params in the default type using current inference,
+        // including their own defaults — `@template U = T` should expand U through T.
+        $visiting_defaults[$visit_key] = true;
+
+        return self::replace($default, $template_result, $codebase, true, $visiting_defaults);
     }
 
     private static function lookupDefaultFromStorage(
