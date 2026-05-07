@@ -731,6 +731,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                         $storage->name,
                         $storage->name,
                         $storage->parent_class,
+                        final: $storage->final,
                     );
 
                     if (isset($parent_storage->template_covariants[$i])
