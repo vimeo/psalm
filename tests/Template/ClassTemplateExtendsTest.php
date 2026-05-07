@@ -4783,6 +4783,65 @@ final class ClassTemplateExtendsTest extends TestCase
                         use HolderTrait;
                     }',
             ],
+            'nestedStaticInGenericTemplateArgFinalClass' => [
+                'code' => '<?php
+                    abstract class Base {}
+
+                    /** @template T */
+                    final class Box extends Base {}
+
+                    /** @template T of Base */
+                    interface Holder {}
+
+                    /** @implements Holder<Box<static>> */
+                    final class FinalNestedStatic extends Base implements Holder {}',
+            ],
+            'nestedStaticInGenericTemplateArgNonFinalClass' => [
+                'code' => '<?php
+                    abstract class Base {}
+
+                    /** @template T */
+                    class Box extends Base {}
+
+                    /** @template T of Base */
+                    interface Holder {}
+
+                    /** @implements Holder<Box<static>> */
+                    class NonFinalNestedStatic extends Base implements Holder {}',
+            ],
+            'nestedSelfInGenericTemplateArg' => [
+                'code' => '<?php
+                    abstract class Base {}
+
+                    /** @template T */
+                    final class Box extends Base {}
+
+                    /** @template T of Base */
+                    interface Holder {}
+
+                    /** @implements Holder<Box<self>> */
+                    final class NestedSelf extends Base implements Holder {}',
+            ],
+            'staticAsTemplateArgInTemplateImplementsRespectsParentBound' => [
+                'code' => '<?php
+                    abstract class Base {}
+
+                    /** @template T of Base */
+                    interface Holder {}
+
+                    /** @template-implements Holder<static> */
+                    final class TemplateImplementsStatic extends Base implements Holder {}',
+            ],
+            'staticAsTemplateArgInTemplateExtendsRespectsParentBound' => [
+                'code' => '<?php
+                    abstract class Base {}
+
+                    /** @template T of Base */
+                    abstract class ParentHolder extends Base {}
+
+                    /** @template-extends ParentHolder<static> */
+                    final class TemplateExtendsStatic extends ParentHolder {}',
+            ],
         ];
     }
 
