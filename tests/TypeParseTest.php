@@ -100,12 +100,12 @@ final class TypeParseTest extends TestCase
 
     public function testThisAsCallableReturnType(): void
     {
-        $this->assertSame('impure-Closure(Foo):static', (string) Type::parseString('Closure(Foo): $this'));
+        $this->assertSame('Closure(Foo):static', (string) Type::parseString('Closure(Foo): $this'));
     }
 
     public function testThisModelVariableNotTreatedAsThis(): void
     {
-        $this->assertSame('impure-Closure(string):void', (string) Type::parseString('Closure(string $thisModel): void'));
+        $this->assertSame('Closure(string):void', (string) Type::parseString('Closure(string $thisModel): void'));
     }
 
     public function testIntOrString(): void
@@ -189,6 +189,26 @@ final class TypeParseTest extends TestCase
     public function testGeneric(): void
     {
         $this->assertSame('B<int>', (string) Type::parseString('B<int>'));
+    }
+
+    public function testGenericWithInlineCovariant(): void
+    {
+        $this->assertSame('B<int>', (string) Type::parseString('B<covariant int>'));
+    }
+
+    public function testGenericWithInlineContravariant(): void
+    {
+        $this->assertSame('B<int>', (string) Type::parseString('B<contravariant int>'));
+    }
+
+    public function testGenericWithMultipleInlineVariance(): void
+    {
+        $this->assertSame('B<int, string>', (string) Type::parseString('B<covariant int, contravariant string>'));
+    }
+
+    public function testGenericWithInlineVarianceAndUnion(): void
+    {
+        $this->assertSame('B<int|string>', (string) Type::parseString('B<covariant int|string>'));
     }
 
     public function testIntersection(): void
