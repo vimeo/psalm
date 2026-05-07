@@ -1847,6 +1847,21 @@ return array (
         'allowable_tags=' => 'list<non-empty-string>|string',
       ),
     ),
+    'unserialize' => 
+    array (
+      'old' => 
+      array (
+        0 => 'mixed',
+        'variable_representation' => 'string',
+        'allowed_classes=' => 'array{allowed_classes?: array<array-key, class-string>|bool}',
+      ),
+      'new' => 
+      array (
+        0 => 'mixed',
+        'variable_representation' => 'string',
+        'allowed_classes=' => 'array{allowed_classes?: array<array-key, class-string>|bool, max_depth?: int}',
+      ),
+    ),
   ),
   'removed' => 
   array (
