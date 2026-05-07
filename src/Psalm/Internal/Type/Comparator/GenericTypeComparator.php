@@ -10,6 +10,7 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Union;
 
 /**
  * @internal
@@ -162,6 +163,19 @@ final class GenericTypeComparator
                                 && $input_param->isStaticObject()
                             ) {
                                 // do nothing
+                            } elseif (($container_param->hasStaticObject()
+                                    || $input_param->hasStaticObject())
+                                && self::isContainedByIgnoringStatic(
+                                    $codebase,
+                                    $container_param,
+                                    $input_param,
+                                    $allow_interface_equality,
+                                )
+                            ) {
+                                // LSB tracking via `&static` is meaningless inside an invariant
+                                // template arg. Accept when the only obstacle is `&static` on
+                                // either side (e.g. `Wrapper<Sub>` accepting `Wrapper<Sub&static>`).
+                                // do nothing
                             } else {
                                 $all_types_contain = false;
 
@@ -194,5 +208,53 @@ final class GenericTypeComparator
         }
 
         return false;
+    }
+
+    /**
+     * Runs `isContainedBy($input, $container)` after stripping `is_static` markers from both sides.
+     * Used inside generic type-param comparison so that `&static` (LSB tracking) is not treated as
+     * a meaningful difference when the underlying classes are compatible.
+     */
+    private static function isContainedByIgnoringStatic(
+        Codebase $codebase,
+        Union $input,
+        Union $container,
+        bool $allow_interface_equality,
+    ): bool {
+        $stripped_input = self::eraseStatic($input);
+        $stripped_container = self::eraseStatic($container);
+
+        $check_result = new TypeComparisonResult();
+
+        return UnionTypeComparator::isContainedBy(
+            $codebase,
+            $stripped_input,
+            $stripped_container,
+            $stripped_input->ignore_nullable_issues,
+            $stripped_input->ignore_falsable_issues,
+            $check_result,
+            $allow_interface_equality,
+        ) && !$check_result->type_coerced;
+    }
+
+    /**
+     * Returns a copy of `$param` where every top-level `TNamedObject` atomic has `is_static` cleared.
+     * `is_static` markers nested inside intersection (`extra_types`) or template bounds are not touched.
+     * Returns the original instance if nothing changed.
+     */
+    private static function eraseStatic(Union $param): Union
+    {
+        $changed = false;
+        $atomics = [];
+        foreach ($param->getAtomicTypes() as $key => $atomic) {
+            if ($atomic instanceof TNamedObject && $atomic->is_static) {
+                $atomics[$key] = $atomic->setIsStatic(false, false);
+                $changed = true;
+            } else {
+                $atomics[$key] = $atomic;
+            }
+        }
+
+        return $changed ? $param->setTypes($atomics) : $param;
     }
 }
