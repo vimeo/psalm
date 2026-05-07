@@ -373,6 +373,63 @@ final class TemplateDefaultTest extends TestCase
                      */
                     class Foo {}',
             ],
+            'classTemplateDefaultAppliedThroughFunctionReturn' => [
+                'code' => '<?php
+                    /**
+                     * @template T of string = "hello"
+                     */
+                    class Foo {
+                        /** @return T */
+                        public function get(): string { throw new \RuntimeException(); }
+                    }
+
+                    /** @return Foo */
+                    function makeFoo(): Foo { throw new \RuntimeException(); }
+
+                    $r = makeFoo()->get();',
+                'assertions' => [
+                    "\$r===" => "'hello'",
+                ],
+            ],
+            'classDefaultReferencingAnotherDefaultResolves' => [
+                'code' => '<?php
+                    /**
+                     * @template T = string
+                     * @template U = T
+                     */
+                    class Pair {}
+
+                    $p = new Pair();',
+                'assertions' => [
+                    '$p===' => 'Pair<string, string>',
+                ],
+            ],
+            'classChainedDefaultsAppliedThroughFunctionReturn' => [
+                'code' => '<?php
+                    /**
+                     * @template T = string
+                     * @template U = T
+                     */
+                    class Pair {}
+
+                    /** @return Pair */
+                    function makePair(): Pair { throw new \RuntimeException(); }
+
+                    $p = makePair();',
+                'assertions' => [
+                    '$p===' => 'Pair<string, string>',
+                ],
+            ],
+            'classCyclicDefaultsDoNotInfiniteLoop' => [
+                'code' => '<?php
+                    /**
+                     * @template T = U
+                     * @template U = T
+                     */
+                    class Cycle {}
+
+                    new Cycle();',
+            ],
         ];
     }
 
@@ -423,6 +480,14 @@ final class TemplateDefaultTest extends TestCase
                     function foo() {
                         throw new \RuntimeException();
                     }',
+                'error_message' => 'is not within bound',
+            ],
+            'classTemplateDefaultScalarViolatesNamedClassBound' => [
+                'code' => '<?php
+                    /**
+                     * @template T of \DateTimeInterface = int
+                     */
+                    class Foo {}',
                 'error_message' => 'is not within bound',
             ],
         ];
