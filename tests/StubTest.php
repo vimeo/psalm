@@ -127,6 +127,204 @@ final class StubTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testStubOverridingScannedConditionalReturnPreservesParamBinding(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm errorLevel="1">
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/conditional_return_with_this_overrides_extra.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        $extra_path = (string) getcwd() . '/extra/Route.php';
+        $this->addFile(
+            $extra_path,
+            '<?php
+                namespace Psalm\Tests\Fixtures\ConditionalThisOverride;
+
+                class Route
+                {
+                    /**
+                     * @param array|string|null $middleware
+                     * @return ($middleware is null ? array : $this)
+                     */
+                    public function middleware($middleware = null)
+                    {
+                        if ($middleware === null) {
+                            return [];
+                        }
+                        return $this;
+                    }
+                }',
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                use Psalm\Tests\Fixtures\ConditionalThisOverride\Route;
+
+                /** @return Route */
+                function returnsRouteFromNonNullArg(Route $route): Route {
+                    return $route->middleware(["x"]);
+                }
+
+                /** @return string[] */
+                function returnsArrayFromNullArg(Route $route): array {
+                    return $route->middleware(null);
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testStubOverridingScannedTraitConditionalReturnPreservesParamBinding(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm errorLevel="1">
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/conditional_return_scalar_trait_overrides_extra.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        $extra_trait_path = (string) getcwd() . '/extra/MyTrait.php';
+        $this->addFile(
+            $extra_trait_path,
+            '<?php
+                namespace Psalm\Tests\Fixtures\ConditionalScalarTraitOverride;
+
+                trait MyTrait
+                {
+                    /**
+                     * @param string|null $key
+                     * @return ($key is null ? array<string, int> : int|null)
+                     */
+                    public function get($key = null)
+                    {
+                        return $key === null ? [] : null;
+                    }
+                }',
+        );
+
+        $extra_class_path = (string) getcwd() . '/extra/MyClass.php';
+        $this->addFile(
+            $extra_class_path,
+            '<?php
+                namespace Psalm\Tests\Fixtures\ConditionalScalarTraitOverride;
+
+                class MyClass
+                {
+                    use MyTrait;
+                }',
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                use Psalm\Tests\Fixtures\ConditionalScalarTraitOverride\MyClass;
+
+                /** @return array<string, int> */
+                function returnsArrayFromNullArg(MyClass $c): array {
+                    return $c->get();
+                }
+
+                /** @return int|null */
+                function returnsIntOrNullFromNonNullArg(MyClass $c): ?int {
+                    return $c->get("x");
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testClassLevelStubOverridingTraitMethodResolvesConditional(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm errorLevel="1">
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/conditional_return_class_level_trait_override.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        $extra_trait_path = (string) getcwd() . '/extra/MyTrait.php';
+        $this->addFile(
+            $extra_trait_path,
+            '<?php
+                namespace Psalm\Tests\Fixtures\ConditionalClassLevelTraitOverride;
+
+                trait MyTrait
+                {
+                    /**
+                     * @param string|null $key
+                     * @return ($key is null ? array<string, int> : int|null)
+                     */
+                    public function get($key = null)
+                    {
+                        return $key === null ? [] : null;
+                    }
+                }',
+        );
+
+        $extra_class_path = (string) getcwd() . '/extra/MyClass.php';
+        $this->addFile(
+            $extra_class_path,
+            '<?php
+                namespace Psalm\Tests\Fixtures\ConditionalClassLevelTraitOverride;
+
+                class MyClass
+                {
+                    use MyTrait;
+                }',
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                use Psalm\Tests\Fixtures\ConditionalClassLevelTraitOverride\MyClass;
+
+                /** @return array<string, int> */
+                function returnsArrayFromNullArg(MyClass $c): array {
+                    return $c->get();
+                }
+
+                /** @return int|null */
+                function returnsIntOrNullFromNonNullArg(MyClass $c): ?int {
+                    return $c->get("x");
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     /**
      * @psalm-pure
      */
