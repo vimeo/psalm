@@ -7,6 +7,9 @@ namespace Psalm\Tests;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
+use Psalm\Internal\Analyzer\FileAnalyzer;
+use Psalm\IssueBuffer;
+use RuntimeException;
 
 final class ThrowsAnnotationTest extends TestCase
 {
@@ -697,5 +700,299 @@ final class ThrowsAnnotationTest extends TestCase
         $context = new Context();
 
         $this->analyzeFile('somefile.php', $context);
+    }
+
+    /**
+     * @see https://github.com/vimeo/psalm/issues/11842
+     */
+    public function testPseudoMethodThrowsPropagatedViaMagicCall(): void
+    {
+        $this->expectExceptionMessage('MissingThrowsDocblock');
+        $this->expectException(CodeException::class);
+        Config::getInstance()->check_for_throws_docblock = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * @method void doIt()
+                 */
+                class Foo {
+                    public function __call(string $name, array $args): void {}
+                }
+
+                class Caller {
+                    public function trigger(): void {
+                        (new Foo())->doIt();
+                    }
+                }',
+        );
+
+        $this->analyzeWithInjectedPseudoMethodThrows('somefile.php', 'foo', 'doit', false);
+    }
+
+    /**
+     * @see https://github.com/vimeo/psalm/issues/11842
+     */
+    public function testPseudoMethodThrowsPropagatedWithoutMagicCall(): void
+    {
+        $this->expectExceptionMessage('MissingThrowsDocblock');
+        $this->expectException(CodeException::class);
+        Config::getInstance()->check_for_throws_docblock = true;
+        Config::getInstance()->use_phpdoc_method_without_magic_or_parent = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * @method void doIt()
+                 */
+                class Foo {}
+
+                class Caller {
+                    public function trigger(): void {
+                        (new Foo())->doIt();
+                    }
+                }',
+        );
+
+        $this->analyzeWithInjectedPseudoMethodThrows('somefile.php', 'foo', 'doit', false);
+    }
+
+    /**
+     * @see https://github.com/vimeo/psalm/issues/11842
+     */
+    public function testPseudoStaticMethodThrowsPropagatedViaMagicCallStatic(): void
+    {
+        $this->expectExceptionMessage('MissingThrowsDocblock');
+        $this->expectException(CodeException::class);
+        Config::getInstance()->check_for_throws_docblock = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * @method static void doIt()
+                 */
+                class Foo {
+                    public static function __callStatic(string $name, array $args): void {}
+                }
+
+                class Caller {
+                    public function trigger(): void {
+                        Foo::doIt();
+                    }
+                }',
+        );
+
+        $this->analyzeWithInjectedPseudoMethodThrows('somefile.php', 'foo', 'doit', true);
+    }
+
+    /**
+     * @see https://github.com/vimeo/psalm/issues/11842
+     */
+    public function testPseudoStaticMethodThrowsPropagatedWithoutMagicCallStatic(): void
+    {
+        $this->expectExceptionMessage('MissingThrowsDocblock');
+        $this->expectException(CodeException::class);
+        Config::getInstance()->check_for_throws_docblock = true;
+        Config::getInstance()->use_phpdoc_method_without_magic_or_parent = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * @method static void doIt()
+                 */
+                class Foo {}
+
+                class Caller {
+                    public function trigger(): void {
+                        Foo::doIt();
+                    }
+                }',
+        );
+
+        $this->analyzeWithInjectedPseudoMethodThrows('somefile.php', 'foo', 'doit', true);
+    }
+
+    /**
+     * @see https://github.com/vimeo/psalm/issues/11842
+     */
+    public function testPseudoMethodThrowsSuppressedAtCallSite(): void
+    {
+        Config::getInstance()->check_for_throws_docblock = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * @method void doIt()
+                 */
+                class Foo {
+                    public function __call(string $name, array $args): void {}
+                }
+
+                class Caller {
+                    public function trigger(): void {
+                        /** @psalm-suppress MissingThrowsDocblock */
+                        (new Foo())->doIt();
+                    }
+                }',
+        );
+
+        $this->analyzeWithInjectedPseudoMethodThrows('somefile.php', 'foo', 'doit', false);
+    }
+
+    /**
+     * @see https://github.com/vimeo/psalm/issues/11842
+     */
+    public function testPseudoMethodThrowsDocumentedByCaller(): void
+    {
+        Config::getInstance()->check_for_throws_docblock = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * @method void doIt()
+                 */
+                class Foo {
+                    public function __call(string $name, array $args): void {}
+                }
+
+                class Caller {
+                    /**
+                     * @throws \RuntimeException
+                     */
+                    public function trigger(): void {
+                        (new Foo())->doIt();
+                    }
+                }',
+        );
+
+        $this->analyzeWithInjectedPseudoMethodThrows('somefile.php', 'foo', 'doit', false);
+    }
+
+    /**
+     * @see https://github.com/vimeo/psalm/issues/11842
+     *
+     * First-class callable creates a closure without invoking the method, so throws
+     * must not propagate at the creation site. Regression guard for the early-return
+     * before the merge in MissingMethodCallHandler::handleMagicMethod.
+     */
+    public function testPseudoMethodThrowsNotPropagatedForFirstClassCallable(): void
+    {
+        Config::getInstance()->check_for_throws_docblock = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * @method void doIt()
+                 */
+                class Foo {
+                    public function __call(string $name, array $args): void {}
+                }
+
+                class Caller {
+                    public function trigger(): Closure {
+                        return (new Foo())->doIt(...);
+                    }
+                }',
+        );
+
+        $this->analyzeWithInjectedPseudoMethodThrows('somefile.php', 'foo', 'doit', false);
+    }
+
+    /**
+     * @see https://github.com/vimeo/psalm/issues/11842
+     *
+     * Regression guard for the FCC early-return in
+     * MissingMethodCallHandler::handleMissingOrMagicMethod (use_phpdoc_method_without_magic_or_parent path).
+     */
+    public function testPseudoMethodThrowsNotPropagatedForFirstClassCallableWithoutMagicCall(): void
+    {
+        Config::getInstance()->check_for_throws_docblock = true;
+        Config::getInstance()->use_phpdoc_method_without_magic_or_parent = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * @method void doIt()
+                 */
+                class Foo {}
+
+                class Caller {
+                    public function trigger(): Closure {
+                        return (new Foo())->doIt(...);
+                    }
+                }',
+        );
+
+        $this->analyzeWithInjectedPseudoMethodThrows('somefile.php', 'foo', 'doit', false);
+    }
+
+    /**
+     * @see https://github.com/vimeo/psalm/issues/11842
+     */
+    public function testPseudoMethodThrowsCaughtByTryCatch(): void
+    {
+        Config::getInstance()->check_for_throws_docblock = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * @method void doIt()
+                 */
+                class Foo {
+                    public function __call(string $name, array $args): void {}
+                }
+
+                class Caller {
+                    public function trigger(): void {
+                        try {
+                            (new Foo())->doIt();
+                        } catch (\RuntimeException $e) {
+                        }
+                    }
+                }',
+        );
+
+        $this->analyzeWithInjectedPseudoMethodThrows('somefile.php', 'foo', 'doit', false);
+    }
+
+    /**
+     * @param lowercase-string $fq_class_name_lc
+     * @param lowercase-string $method_name_lc
+     */
+    private function analyzeWithInjectedPseudoMethodThrows(
+        string $file_path,
+        string $fq_class_name_lc,
+        string $method_name_lc,
+        bool $is_static,
+    ): void {
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->addFilesToAnalyze([$file_path => $file_path]);
+        $codebase->scanFiles();
+
+        $class_storage = $codebase->classlike_storage_provider->get($fq_class_name_lc);
+        $method_storage = $is_static
+            ? $class_storage->pseudo_static_methods[$method_name_lc]
+            : $class_storage->pseudo_methods[$method_name_lc];
+        $method_storage->throws[RuntimeException::class] = true;
+
+        $codebase->config->visitStubFiles($codebase);
+
+        $file_analyzer = new FileAnalyzer(
+            $this->project_analyzer,
+            $file_path,
+            $codebase->config->shortenFileName($file_path),
+        );
+        $file_analyzer->analyze(new Context());
+
+        IssueBuffer::processUnusedSuppressions($codebase->file_provider);
     }
 }
