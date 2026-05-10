@@ -58406,8 +58406,8 @@ return array (
   'zookeeperconfig::get' => 
   array (
     0 => 'mixed',
-    'watcher_cb' => 'mixed',
-    '&stat_info' => 'mixed',
+    'watcher_cb=' => 'mixed',
+    '&stat_info=' => 'mixed',
   ),
   'zookeeperconfig::remove' => 
   array (

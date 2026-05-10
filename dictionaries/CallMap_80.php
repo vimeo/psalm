@@ -98231,7 +98231,7 @@ return array (
   array (
     0 => 'mixed',
     'data' => 'string',
-    'options=' => 'array{allowed_classes?: array<array-key, class-string>|bool}',
+    'options=' => 'array{allowed_classes?: array<array-key, class-string>|bool, max_depth?: int}',
   ),
   'unset' => 
   array (
@@ -107931,8 +107931,8 @@ return array (
   'zookeeperconfig::get' => 
   array (
     0 => 'string',
-    'watcher_cb' => 'callable',
-    '&stat_info' => 'array<array-key, mixed>',
+    'watcher_cb=' => 'callable',
+    '&stat_info=' => 'array<array-key, mixed>',
   ),
   'zookeeperconfig::remove' => 
   array (

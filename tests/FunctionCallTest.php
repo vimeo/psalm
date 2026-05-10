@@ -2466,6 +2466,13 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '7.0',
             ],
+            'unserializeWithMaxDepthOption' => [
+                'code' => '<?php
+                    unserialize("", ["allowed_classes" => false, "max_depth" => 1]);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
         ];
     }
 
@@ -3211,6 +3218,13 @@ final class FunctionCallTest extends TestCase
                     extract($a);
                     takesInt($foo);',
                 'error_message' => 'InvalidScalarArgument',
+            ],
+            'unserializeWithInvalidMaxDepthType' => [
+                'code' => '<?php
+                    unserialize("", ["max_depth" => "foo"]);',
+                'error_message' => 'InvalidScalarArgument',
+                'ignored_issues' => [],
+                'php_version' => '7.4',
             ],
         ];
     }
