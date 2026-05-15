@@ -158,6 +158,14 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
         $member_stmts = [];
         foreach ($this->class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
+                $method_name_lc = strtolower($stmt->name->name);
+                if (!isset($class_storage->methods[$method_name_lc])) {
+                    // Storage was overwritten by a different class-like with the same FQCN
+                    // (e.g., project declares interface X while vendor has class X).
+                    // Skip analysis — DuplicateClass was already emitted during scanning.
+                    continue;
+                }
+
                 $method_analyzer = new MethodAnalyzer($stmt, $this);
 
                 $type_provider = new NodeDataProvider();
