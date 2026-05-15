@@ -762,18 +762,18 @@ final class MagicPropertyTest extends TestCase
             ],
             'propertyWithSelfWildcardConstantComparison' => [
                 'code' => '<?php
-                    /** @property self::SOURCE_* $source */
-                    final class Referral {
-                        public const SOURCE_REFER_A_FRIEND = "raf";
-                        public const SOURCE_EDUCATIONAL_PARTNER = "ep";
+                    /** @property self::STATUS_* $status */
+                    final class Thing {
+                        public const STATUS_A = "a";
+                        public const STATUS_B = "b";
 
                         public function __get(string $_prop): mixed { return null; }
                         /** @param mixed $_value */
                         public function __set(string $_prop, $_value): void {}
                     }
 
-                    function handle(Referral $r): void {
-                        if ($r->source === Referral::SOURCE_EDUCATIONAL_PARTNER) {}
+                    function handle(Thing $t): void {
+                        if ($t->status === Thing::STATUS_B) {}
                     }
                 ',
                 'assertions' => [],
@@ -948,18 +948,18 @@ final class MagicPropertyTest extends TestCase
             ],
             'propertyWithSelfWildcardConstantNonMatchingString' => [
                 'code' => '<?php
-                    /** @property self::SOURCE_* $source */
-                    final class Referral {
-                        public const SOURCE_A = "a";
-                        public const SOURCE_B = "b";
+                    /** @property self::STATUS_* $status */
+                    final class Thing {
+                        public const STATUS_A = "a";
+                        public const STATUS_B = "b";
 
                         public function __get(string $_prop): mixed { return null; }
                         /** @param mixed $_value */
                         public function __set(string $_prop, $_value): void {}
                     }
 
-                    function handle(Referral $r): void {
-                        if ($r->source === "not-a-source") {}
+                    function handle(Thing $t): void {
+                        if ($t->status === "not-a-status") {}
                     }
                 ',
                 'error_message' => 'DocblockTypeContradiction',
