@@ -963,6 +963,8 @@ final class MagicPropertyTest extends TestCase
                     }
                 ',
                 'error_message' => 'DocblockTypeContradiction',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'propertyDocblockInvalidAssignment' => [
                 'code' => '<?php
