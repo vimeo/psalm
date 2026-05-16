@@ -23,6 +23,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
@@ -48,7 +49,22 @@ final class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderI
     #[Override]
     public static function getFunctionIds(): array
     {
-        return ['array_filter'];
+        return ['array_filter', 'array_find'];
+    }
+
+    private static function elementOrNull(Union $value, StatementsAnalyzer $statements_source): Union
+    {
+        if ($value->isUnionEmpty() || $value->isNever()) {
+            return Type::getNull();
+        }
+
+        $value = $value->getBuilder()->addType(new TNull);
+
+        if ($statements_source->getCodebase()->config->ignore_internal_nullable_issues) {
+            $value->ignore_nullable_issues = true;
+        }
+
+        return $value->freeze();
     }
 
     #[Override]
@@ -58,6 +74,7 @@ final class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderI
         $call_args = $event->getCallArgs();
         $context = $event->getContext();
         $code_location = $event->getCodeLocation();
+        $is_find = $event->getFunctionId() === 'array_find';
         if (!$statements_source instanceof StatementsAnalyzer
             || !$call_args
         ) {
@@ -116,15 +133,25 @@ final class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderI
                 );
 
                 if (!$new_properties) {
-                    return Type::getEmptyArray();
+                    return $is_find ? Type::getNull() : Type::getEmptyArray();
                 }
 
-                return new Union([TKeyedArray::make(
+                $filtered = TKeyedArray::make(
                     $new_properties,
                     null,
                     $first_arg_array->fallback_params,
                     $first_arg_array->is_list && $had_one,
-                )]);
+                );
+
+                if ($is_find) {
+                    $filtered_value = $filtered instanceof TArray
+                        ? $filtered->type_params[1]
+                        : $filtered->getGenericValueType();
+
+                    return self::elementOrNull($filtered_value, $statements_source);
+                }
+
+                return new Union([$filtered]);
             }
         }
 
@@ -139,6 +166,10 @@ final class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderI
                 null,
                 $statements_source->getSuppressedIssues(),
             );
+
+            if ($is_find) {
+                return self::elementOrNull($inner_type, $statements_source);
+            }
 
             if ($first_arg_array instanceof TKeyedArray
                 && $first_arg_array->is_list
@@ -262,13 +293,14 @@ final class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderI
                 if ($closure_return_type->isVoid()) {
                     IssueBuffer::maybeAdd(
                         new InvalidReturnType(
-                            'No return type could be found in the closure passed to array_filter',
+                            'No return type could be found in the closure passed to '
+                                . $event->getFunctionId(),
                             $code_location,
                         ),
                         $statements_source->getSuppressedIssues(),
                     );
 
-                    return Type::getArray();
+                    return $is_find ? Type::getMixed() : Type::getArray();
                 }
 
                 /** @var list<PhpParser\Node\Stmt> */
@@ -332,12 +364,20 @@ final class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderI
                 }
             }
 
+            if ($is_find) {
+                return self::elementOrNull($inner_type, $statements_source);
+            }
+
             return new Union([
                 new TArray([
                     $key_type,
                     $inner_type,
                 ]),
             ]);
+        }
+
+        if ($is_find) {
+            return self::elementOrNull($inner_type, $statements_source);
         }
 
         if ($inner_type->isUnionEmpty()) {

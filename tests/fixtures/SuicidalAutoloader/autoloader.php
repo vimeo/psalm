@@ -18,7 +18,6 @@ spl_autoload_register(static function (string $className) {
         'PHPUnit\Framework\DOMElement',
         'Stringable',
         'AllowDynamicProperties',
-        'Override', // PHP 8.3+ built-in attribute, used by amphp/socket and others on PHP 8.1/8.2
 
         // https://github.com/symfony/symfony/pull/40203
         // these are actually functions, referenced as `if (!function_exists(u::class))`

@@ -100,12 +100,12 @@ final class TypeParseTest extends TestCase
 
     public function testThisAsCallableReturnType(): void
     {
-        $this->assertSame('Closure(Foo):static', (string) Type::parseString('Closure(Foo): $this'));
+        $this->assertSame('impure-Closure(Foo):static', (string) Type::parseString('Closure(Foo): $this'));
     }
 
     public function testThisModelVariableNotTreatedAsThis(): void
     {
-        $this->assertSame('Closure(string):void', (string) Type::parseString('Closure(string $thisModel): void'));
+        $this->assertSame('impure-Closure(string):void', (string) Type::parseString('Closure(string $thisModel): void'));
     }
 
     public function testIntOrString(): void
