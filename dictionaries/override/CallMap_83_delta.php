@@ -28,6 +28,19 @@ return array (
         'timezone' => 'DateTimeZone|IntlTimeZone|null|string',
       ),
     ),
+    'dateinterval::createfromdatestring' =>
+    array (
+      'old' =>
+      array (
+        0 => 'DateInterval|false',
+        'datetime' => 'string',
+      ),
+      'new' =>
+      array (
+        0 => 'DateInterval',
+        'datetime' => 'string',
+      ),
+    ),
     'gc_status' => 
     array (
       'old' => 

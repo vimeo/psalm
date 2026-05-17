@@ -107,6 +107,27 @@ final class CoreStubsTest extends TestCase
             'ignored_issues' => ['RedundantCondition'],
             'php_version' => '8.0',
         ];
+        yield 'DateInterval::createFromDateString returns DateInterval|false on PHP 8.2' => [
+            'code' => '<?php
+
+            $i = DateInterval::createFromDateString("42 days");',
+            'assertions' => [
+                '$i' => 'DateInterval|false',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.2',
+        ];
+        yield 'DateInterval::createFromDateString returns DateInterval on PHP 8.3' => [
+            'code' => '<?php
+
+            $i = DateInterval::createFromDateString("42 days");
+            echo $i->format("%d");',
+            'assertions' => [
+                '$i' => 'DateInterval',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.3',
+        ];
         yield 'sprintf yields a non-empty-string for non-empty-string value' => [
             'code' => '<?php
 
