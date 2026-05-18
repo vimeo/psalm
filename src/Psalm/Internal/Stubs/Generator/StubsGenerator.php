@@ -313,6 +313,9 @@ final class StubsGenerator
     {
         $nullable = $type->isNullable();
 
+        // just a stupid test
+        var_dump($type->getAtomicTypes());
+
         foreach ($type->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof TNull) {
                 continue;
