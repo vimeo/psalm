@@ -124,6 +124,42 @@ final class ParamClosureThisTest extends TestCase
                     });
                 ',
             ],
+            'parentResolvesToParentClass' => [
+                'code' => '<?php
+                    class A {
+                        public int $a_prop = 1;
+                    }
+
+                    class B extends A {
+                        /**
+                         * @param-closure-this parent $cb
+                         */
+                        public static function run(Closure $cb): void {
+                        }
+                    }
+
+                    B::run(function (): int {
+                        return $this->a_prop;
+                    });
+                ',
+            ],
+            'selfWithClassConstantInDocblockResolves' => [
+                'code' => '<?php
+                    class Holder {
+                        public int $value = 7;
+
+                        /**
+                         * @param-closure-this self $cb
+                         */
+                        public static function run(Closure $cb): void {
+                        }
+                    }
+
+                    Holder::run(function (): int {
+                        return $this->value;
+                    });
+                ',
+            ],
             'selfResolvesToDeclaringClassOnInheritedStatic' => [
                 'code' => '<?php
                     class Base {

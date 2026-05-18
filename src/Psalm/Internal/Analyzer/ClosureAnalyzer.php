@@ -88,24 +88,29 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
             return false;
         }
 
+        $codebase = $statements_analyzer->getCodebase();
+
         $bound_this_type = $stmt->getAttribute('psalm-closure-this-type');
         $bound_self = null;
 
         if ($bound_this_type instanceof Union) {
             foreach ($bound_this_type->getAtomicTypes() as $bound_atomic) {
-                if ($bound_atomic instanceof TNamedObject) {
+                if ($bound_atomic instanceof TNamedObject
+                    && $codebase->classlike_storage_provider->has($bound_atomic->value)
+                ) {
                     $bound_self = $bound_atomic->value;
                     break;
                 }
             }
 
-            $closure_analyzer->bound_this_class = $bound_self;
-            $use_context = new Context($bound_self ?? $context->self);
-        } else {
-            $use_context = new Context($context->self);
+            if ($bound_self === null) {
+                $bound_this_type = null;
+            } else {
+                $closure_analyzer->bound_this_class = $bound_self;
+            }
         }
 
-        $codebase = $statements_analyzer->getCodebase();
+        $use_context = new Context($bound_self ?? $context->self);
 
         if ($bound_this_type instanceof Union) {
             if (!$closure_analyzer->isStatic()) {
@@ -137,18 +142,22 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
         }
 
         $properties_class = $bound_this_type instanceof Union
-            ? ($bound_self ?? null)
+            ? $bound_self
             : $context->self;
 
         if ($properties_class !== null && $codebase->classlike_storage_provider->has($properties_class)) {
             $self_class_storage = $codebase->classlike_storage_provider->get($properties_class);
+
+            $parent_fqcln = $bound_this_type instanceof Union
+                ? $self_class_storage->parent_class
+                : $statements_analyzer->getParentFQCLN();
 
             ClassAnalyzer::addContextProperties(
                 $statements_analyzer,
                 $self_class_storage,
                 $use_context,
                 $properties_class,
-                $self_class_storage->parent_class,
+                $parent_fqcln,
             );
         }
 

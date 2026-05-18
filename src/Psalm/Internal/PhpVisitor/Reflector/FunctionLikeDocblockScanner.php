@@ -329,6 +329,7 @@ final class FunctionLikeDocblockScanner
                 $storage,
                 $codebase,
                 $file_storage,
+                $classlike_storage,
             );
         }
 
@@ -1458,6 +1459,7 @@ final class FunctionLikeDocblockScanner
         FunctionLikeStorage $storage,
         Codebase $codebase,
         FileStorage $file_storage,
+        ?ClassLikeStorage $classlike_storage,
     ): void {
         $param_name = substr($docblock_param_closure_this['name'], 1);
 
@@ -1468,6 +1470,8 @@ final class FunctionLikeDocblockScanner
                     $aliases,
                     $function_template_types + $class_template_types,
                     $type_aliases,
+                    $classlike_storage->name ?? null,
+                    $classlike_storage->parent_class ?? null,
                 ),
                 null,
                 $function_template_types + $class_template_types,

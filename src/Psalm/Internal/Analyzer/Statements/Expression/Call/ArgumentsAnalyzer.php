@@ -584,6 +584,8 @@ final class ArgumentsAnalyzer
 
         $self_fq_class_name = $context->self;
         $static_fq_class_name = null;
+        $parent_fq_class_name = null;
+        $static_class_is_final = false;
 
         if ($method_id !== null && str_contains($method_id, '::')) {
             [$called_class, $method_name] = explode('::', $method_id, 2);
@@ -593,13 +595,21 @@ final class ArgumentsAnalyzer
             $method_name_lc = strtolower($method_name);
 
             if ($codebase->classlike_storage_provider->has($called_class)) {
-                $class_storage = $codebase->classlike_storage_provider->get($called_class);
+                $called_class_storage = $codebase->classlike_storage_provider->get($called_class);
+                $static_class_is_final = $called_class_storage->final;
 
-                if (isset($class_storage->declaring_method_ids[$method_name_lc])) {
-                    $self_fq_class_name = $class_storage->declaring_method_ids[$method_name_lc]
+                if (isset($called_class_storage->declaring_method_ids[$method_name_lc])) {
+                    $self_fq_class_name = $called_class_storage->declaring_method_ids[$method_name_lc]
                         ->fq_class_name;
                 }
             }
+        }
+
+        if ($self_fq_class_name !== null
+            && $codebase->classlike_storage_provider->has($self_fq_class_name)
+        ) {
+            $parent_fq_class_name = $codebase->classlike_storage_provider->get($self_fq_class_name)
+                ->parent_class;
         }
 
         $closure_this_type = $param->closure_this_type;
@@ -612,7 +622,7 @@ final class ArgumentsAnalyzer
                 $statements_analyzer,
                 null,
                 null,
-                null,
+                $context->self,
                 $context->calling_method_id ?: $context->calling_function_id,
             );
 
@@ -624,7 +634,7 @@ final class ArgumentsAnalyzer
         }
 
         $static_type = $static_fq_class_name !== null
-            ? new TNamedObject($static_fq_class_name, true)
+            ? new TNamedObject($static_fq_class_name, true, $static_class_is_final)
             : null;
 
         $closure_this_type = TypeExpander::expandUnion(
@@ -632,10 +642,10 @@ final class ArgumentsAnalyzer
             $closure_this_type,
             $self_fq_class_name,
             $static_type,
-            null,
+            $parent_fq_class_name,
             true,
             false,
-            false,
+            $static_class_is_final,
             true,
         );
 
