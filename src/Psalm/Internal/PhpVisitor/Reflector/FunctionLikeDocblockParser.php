@@ -191,6 +191,56 @@ final class FunctionLikeDocblockParser
             }
         }
 
+        if (isset($parsed_docblock->combined_tags['param-closure-this'])) {
+            foreach ($parsed_docblock->combined_tags['param-closure-this'] as $offset => $param) {
+                $line_parts = CommentAnalyzer::splitDocLine($param);
+
+                if (count($line_parts) === 1 && isset($line_parts[0][0]) && $line_parts[0][0] === '$') {
+                    continue;
+                }
+
+                if (count($line_parts) > 1) {
+                    if (!preg_match('/\[[^\]]+\]/', $line_parts[0])
+                        && preg_match('/^(\.\.\.)?&?\$[A-Za-z0-9_]+,?$/', $line_parts[1])
+                        && $line_parts[0][0] !== '{'
+                    ) {
+                        if ($line_parts[1][0] === '&') {
+                            $line_parts[1] = substr($line_parts[1], 1);
+                        }
+
+                        $line_parts[0] = CommentAnalyzer::sanitizeDocblockType($line_parts[0]);
+
+                        if ($line_parts[0] === ''
+                            || ($line_parts[0][0] === '$'
+                                && !preg_match('/^\$this(\||$)/', $line_parts[0]))
+                        ) {
+                            throw new IncorrectDocblockException('Misplaced variable');
+                        }
+
+                        $line_parts[1] = (string) preg_replace('/,$/', '', $line_parts[1], 1);
+
+                        $info->params_closure_this[] = [
+                            'name' => trim($line_parts[1]),
+                            'type' => str_replace("\n", '', $line_parts[0]),
+                            'line_number' => $comment->getStartLine() + substr_count(
+                                $comment_text,
+                                "\n",
+                                0,
+                                $offset - $comment->getStartFilePos(),
+                            ),
+                        ];
+                    }
+                } else {
+                    IssueBuffer::maybeAdd(
+                        new InvalidDocblock(
+                            'Badly-formatted @param-closure-this in docblock for ' . $cased_function_id,
+                            $code_location,
+                        ),
+                    );
+                }
+            }
+        }
+
         foreach (['psalm-self-out', 'psalm-this-out', 'phpstan-self-out', 'phpstan-this-out'] as $alias) {
             if (isset($parsed_docblock->tags[$alias])) {
                 foreach ($parsed_docblock->tags[$alias] as $offset => $param) {

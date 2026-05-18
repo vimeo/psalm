@@ -59,6 +59,7 @@ use function array_slice;
 use function array_values;
 use function assert;
 use function count;
+use function explode;
 use function in_array;
 use function is_string;
 use function max;
@@ -231,6 +232,21 @@ final class ArgumentsAnalyzer
                     $context,
                     $template_result ?? new TemplateResult([], []),
                     $argument_offset,
+                    $arg,
+                    $param,
+                );
+            }
+
+            if (($arg->value instanceof PhpParser\Node\Expr\Closure
+                    || $arg->value instanceof PhpParser\Node\Expr\ArrowFunction)
+                && $param
+                && $param->closure_this_type
+            ) {
+                self::applyParamClosureThisHint(
+                    $statements_analyzer,
+                    $method_id,
+                    $context,
+                    $template_result ?? new TemplateResult([], []),
                     $arg,
                     $param,
                 );
@@ -545,6 +561,85 @@ final class ArgumentsAnalyzer
                 );
             }
         }
+    }
+
+    /**
+     * Resolves `@param-closure-this` against the call site and stamps the resolved type as
+     * a PHP-Parser node attribute on the Closure/ArrowFunction so ClosureAnalyzer can bind
+     * `$this` inside the closure body.
+     */
+    private static function applyParamClosureThisHint(
+        StatementsAnalyzer $statements_analyzer,
+        ?string $method_id,
+        Context $context,
+        TemplateResult $template_result,
+        PhpParser\Node\Arg $arg,
+        FunctionLikeParameter $param,
+    ): void {
+        if (!$param->closure_this_type) {
+            return;
+        }
+
+        $codebase = $statements_analyzer->getCodebase();
+
+        $self_fq_class_name = $context->self;
+        $static_fq_class_name = null;
+
+        if ($method_id !== null && str_contains($method_id, '::')) {
+            [$called_class, $method_name] = explode('::', $method_id, 2);
+            $static_fq_class_name = $called_class;
+            $self_fq_class_name = $called_class;
+
+            $method_name_lc = strtolower($method_name);
+
+            if ($codebase->classlike_storage_provider->has($called_class)) {
+                $class_storage = $codebase->classlike_storage_provider->get($called_class);
+
+                if (isset($class_storage->declaring_method_ids[$method_name_lc])) {
+                    $self_fq_class_name = $class_storage->declaring_method_ids[$method_name_lc]
+                        ->fq_class_name;
+                }
+            }
+        }
+
+        $closure_this_type = $param->closure_this_type;
+
+        if ($template_result->lower_bounds || $template_result->template_types) {
+            $closure_this_type = TemplateStandinTypeReplacer::replace(
+                $closure_this_type,
+                $template_result,
+                $codebase,
+                $statements_analyzer,
+                null,
+                null,
+                null,
+                $context->calling_method_id ?: $context->calling_function_id,
+            );
+
+            $closure_this_type = TemplateInferredTypeReplacer::replace(
+                $closure_this_type,
+                $template_result,
+                $codebase,
+            );
+        }
+
+        $static_type = $static_fq_class_name !== null
+            ? new TNamedObject($static_fq_class_name, true)
+            : null;
+
+        $closure_this_type = TypeExpander::expandUnion(
+            $codebase,
+            $closure_this_type,
+            $self_fq_class_name,
+            $static_type,
+            null,
+            true,
+            false,
+            false,
+            true,
+        );
+
+        $arg->value->setAttribute('psalm-closure-this-type', $closure_this_type);
     }
 
     /**

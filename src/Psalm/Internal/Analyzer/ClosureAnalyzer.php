@@ -33,6 +33,9 @@ use function strtolower;
 final class ClosureAnalyzer extends FunctionLikeAnalyzer
 {
     use UnserializeMemoryUsageSuppressionTrait;
+
+    public ?string $bound_this_class = null;
+
     /**
      * @param PhpParser\Node\Expr\Closure|PhpParser\Node\Expr\ArrowFunction $function
      */
@@ -85,11 +88,30 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
             return false;
         }
 
-        $use_context = new Context($context->self);
+        $bound_this_type = $stmt->getAttribute('psalm-closure-this-type');
+        $bound_self = null;
+
+        if ($bound_this_type instanceof Union) {
+            foreach ($bound_this_type->getAtomicTypes() as $bound_atomic) {
+                if ($bound_atomic instanceof TNamedObject) {
+                    $bound_self = $bound_atomic->value;
+                    break;
+                }
+            }
+
+            $closure_analyzer->bound_this_class = $bound_self;
+            $use_context = new Context($bound_self ?? $context->self);
+        } else {
+            $use_context = new Context($context->self);
+        }
 
         $codebase = $statements_analyzer->getCodebase();
 
-        if (!$statements_analyzer->isStatic() && !$closure_analyzer->isStatic()) {
+        if ($bound_this_type instanceof Union) {
+            if (!$closure_analyzer->isStatic()) {
+                $use_context->vars_in_scope['$this'] = $bound_this_type;
+            }
+        } elseif (!$statements_analyzer->isStatic() && !$closure_analyzer->isStatic()) {
             if ($context->collect_mutations &&
                 $context->self &&
                 $codebase->classExtends(
@@ -106,27 +128,35 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
             }
         }
 
-        foreach ($context->vars_in_scope as $var => $type) {
-            if (str_starts_with($var, '$this->')) {
-                $use_context->vars_in_scope[$var] = $type;
+        if ($bound_this_type === null) {
+            foreach ($context->vars_in_scope as $var => $type) {
+                if (str_starts_with($var, '$this->')) {
+                    $use_context->vars_in_scope[$var] = $type;
+                }
             }
         }
 
-        if ($context->self) {
-            $self_class_storage = $codebase->classlike_storage_provider->get($context->self);
+        $properties_class = $bound_this_type instanceof Union
+            ? ($bound_self ?? null)
+            : $context->self;
+
+        if ($properties_class !== null && $codebase->classlike_storage_provider->has($properties_class)) {
+            $self_class_storage = $codebase->classlike_storage_provider->get($properties_class);
 
             ClassAnalyzer::addContextProperties(
                 $statements_analyzer,
                 $self_class_storage,
                 $use_context,
-                $context->self,
-                $statements_analyzer->getParentFQCLN(),
+                $properties_class,
+                $self_class_storage->parent_class,
             );
         }
 
-        foreach ($context->vars_possibly_in_scope as $var => $_) {
-            if (str_starts_with($var, '$this->')) {
-                $use_context->vars_possibly_in_scope[$var] = true;
+        if ($bound_this_type === null) {
+            foreach ($context->vars_possibly_in_scope as $var => $_) {
+                if (str_starts_with($var, '$this->')) {
+                    $use_context->vars_possibly_in_scope[$var] = true;
+                }
             }
         }
 

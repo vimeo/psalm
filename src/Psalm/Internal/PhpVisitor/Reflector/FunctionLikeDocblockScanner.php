@@ -316,6 +316,22 @@ final class FunctionLikeDocblockScanner
             );
         }
 
+        foreach ($docblock_info->params_closure_this as $docblock_param_closure_this) {
+            self::handleParamClosureThis(
+                $docblock_param_closure_this,
+                $aliases,
+                $function_template_types,
+                $class_template_types,
+                $type_aliases,
+                $cased_function_id,
+                $file_scanner,
+                $stmt,
+                $storage,
+                $codebase,
+                $file_storage,
+            );
+        }
+
         if ($docblock_info->self_out
             && $storage instanceof MethodStorage) {
             $out_type = TypeParser::parseTokens(
@@ -1420,6 +1436,62 @@ final class FunctionLikeDocblockScanner
         foreach ($storage->params as $param_storage) {
             if ($param_storage->name === $param_name) {
                 $param_storage->out_type = $out_type;
+            }
+        }
+    }
+
+    /**
+     * @param array<string, TypeAlias> $type_aliases
+     * @param array<string, array<string, Union>> $function_template_types
+     * @param array<string, non-empty-array<string, Union>> $class_template_types
+     * @param  array{name:string, type:string, line_number: int} $docblock_param_closure_this
+     */
+    private static function handleParamClosureThis(
+        array $docblock_param_closure_this,
+        Aliases $aliases,
+        array $function_template_types,
+        array $class_template_types,
+        array $type_aliases,
+        string $cased_function_id,
+        FileScanner $file_scanner,
+        PhpParser\Node\FunctionLike $stmt,
+        FunctionLikeStorage $storage,
+        Codebase $codebase,
+        FileStorage $file_storage,
+    ): void {
+        $param_name = substr($docblock_param_closure_this['name'], 1);
+
+        try {
+            $closure_this_type = TypeParser::parseTokens(
+                TypeTokenizer::getFullyQualifiedTokens(
+                    $docblock_param_closure_this['type'],
+                    $aliases,
+                    $function_template_types + $class_template_types,
+                    $type_aliases,
+                ),
+                null,
+                $function_template_types + $class_template_types,
+                $type_aliases,
+            );
+        } catch (TypeParseTreeException $e) {
+            $storage->docblock_issues[] = new InvalidDocblock(
+                $e->getMessage() . ' in docblock for ' . $cased_function_id,
+                new CodeLocation($file_scanner, $stmt, null, true),
+            );
+
+            return;
+        }
+
+        /** @psalm-suppress UnusedMethodCall */
+        $closure_this_type->queueClassLikesForScanning(
+            $codebase,
+            $file_storage,
+            $storage->template_types ?: [],
+        );
+
+        foreach ($storage->params as $param_storage) {
+            if ($param_storage->name === $param_name) {
+                $param_storage->closure_this_type = $closure_this_type;
             }
         }
     }

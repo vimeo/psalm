@@ -121,6 +121,31 @@ function addFoo(?string &$s) : void {
 }
 ```
 
+### `@param-closure-this`, `@psalm-param-closure-this`
+
+This is used to bind `$this` inside a `Closure` or arrow-function argument to a specific class type. Use it when the receiving function or method runs the callback with `Closure::bind` / `Closure::call` so that `$this` resolves to a different object than the caller's `$this`. The bound type may be a class name, `$this`, `static`, `self`, or a template parameter.
+
+```php
+<?php
+class Macroable {
+    /**
+     * @param-closure-this static $macro
+     */
+    public static function macro(string $name, Closure $macro): void {
+        // store $macro and later run $macro->call($instance)
+    }
+}
+
+class Builder extends Macroable {
+    public int $value = 42;
+}
+
+Builder::macro('grab', function (): int {
+    // $this is Builder here, not the outer scope
+    return $this->value;
+});
+```
+
 ### `@psalm-var`, `@psalm-param`, `@psalm-return`, `@psalm-property`, `@psalm-property-read`, `@psalm-property-write`, `@psalm-method`
 
 When specifying types in a format not supported by phpDocumentor ([but supported by Psalm](#type-syntax)) you may wish to prepend `@psalm-` to the PHPDoc tag, so as to avoid confusing your IDE. If a `@psalm`-prefixed tag is given, Psalm will use it in place of its non-prefixed counterpart.

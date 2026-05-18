@@ -243,6 +243,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         $statements_analyzer = new StatementsAnalyzer($this, $type_provider);
 
+        if ($this instanceof ClosureAnalyzer && $this->bound_this_class !== null) {
+            $statements_analyzer->setFQCLN($this->bound_this_class);
+        }
+
         $byref_uses = [];
         if ($this instanceof ClosureAnalyzer && $this->function instanceof Closure) {
             foreach ($this->function->uses as $use) {
