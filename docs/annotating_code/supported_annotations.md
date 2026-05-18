@@ -121,9 +121,9 @@ function addFoo(?string &$s) : void {
 }
 ```
 
-### `@param-closure-this`, `@psalm-param-closure-this`
+### `@param-closure-this`, `@psalm-param-closure-this`, `@phpstan-param-closure-this`
 
-This is used to bind `$this` inside a `Closure` or arrow-function argument to a specific class type. Use it when the receiving function or method runs the callback with `Closure::bind` / `Closure::call` so that `$this` resolves to a different object than the caller's `$this`. The bound type may be a class name, `$this`, `static`, `self`, or a template parameter.
+This is used to bind `$this` inside a `Closure` or arrow-function argument to a specific class type. Use it when the receiving function or method runs the callback with `Closure::bind` / `Closure::call` so that `$this` resolves to a different object than the caller's `$this`. The bound type may be a class name, `$this`, `static`, `self`, `parent`, or a class-level template parameter.
 
 ```php
 <?php

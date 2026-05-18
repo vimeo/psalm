@@ -277,6 +277,24 @@ final class ParamClosureThisTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'closureNodeUnboundAfterPreviousBoundCallDoesNotLeak' => [
+                'code' => '<?php
+                    class Bound { public int $p = 1; }
+
+                    /** @param-closure-this Bound $cb */
+                    function bound(Closure $cb): void {
+                        $cb->call(new Bound());
+                    }
+
+                    function unbound(Closure $cb): void {
+                        $cb();
+                    }
+
+                    bound(function (): int { return $this->p; });
+                    unbound(function (): int { return $this->p; });
+                ',
+                'error_message' => 'InvalidScope',
+            ],
             'callerPropertyNotVisibleInsideBoundClosure' => [
                 'code' => '<?php
                     class Bound {

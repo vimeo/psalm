@@ -237,19 +237,21 @@ final class ArgumentsAnalyzer
                 );
             }
 
-            if (($arg->value instanceof PhpParser\Node\Expr\Closure
-                    || $arg->value instanceof PhpParser\Node\Expr\ArrowFunction)
-                && $param
-                && $param->closure_this_type
+            if ($arg->value instanceof PhpParser\Node\Expr\Closure
+                || $arg->value instanceof PhpParser\Node\Expr\ArrowFunction
             ) {
-                self::applyParamClosureThisHint(
-                    $statements_analyzer,
-                    $method_id,
-                    $context,
-                    $template_result ?? new TemplateResult([], []),
-                    $arg,
-                    $param,
-                );
+                $arg->value->setAttribute('psalm-closure-this-type', null);
+
+                if ($param && $param->closure_this_type) {
+                    self::applyParamClosureThisHint(
+                        $statements_analyzer,
+                        $method_id,
+                        $context,
+                        $template_result ?? new TemplateResult([], []),
+                        $arg,
+                        $param,
+                    );
+                }
             }
 
             $was_inside_call = $context->inside_call;
