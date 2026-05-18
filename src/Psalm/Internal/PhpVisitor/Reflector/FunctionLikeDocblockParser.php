@@ -208,6 +208,10 @@ final class FunctionLikeDocblockParser
                             $line_parts[1] = substr($line_parts[1], 1);
                         }
 
+                        if (str_starts_with($line_parts[1], '...')) {
+                            $line_parts[1] = substr($line_parts[1], 3);
+                        }
+
                         $line_parts[0] = CommentAnalyzer::sanitizeDocblockType($line_parts[0]);
 
                         if ($line_parts[0] === ''

@@ -200,6 +200,52 @@ final class ParamClosureThisTest extends TestCase
                     });
                 ',
             ],
+            'variadicClosureParamBindsEachClosure' => [
+                'code' => '<?php
+                    class Bound { public int $p = 99; }
+
+                    /** @param-closure-this Bound ...$cbs */
+                    function eachCallback(Closure ...$cbs): void {
+                        foreach ($cbs as $cb) {
+                            $cb->call(new Bound());
+                        }
+                    }
+
+                    eachCallback(function (): int {
+                        return $this->p;
+                    });
+                ',
+            ],
+            'classGenericTemplateBindsClosureThis' => [
+                'code' => '<?php
+                    class Container { public int $value = 42; }
+
+                    /**
+                     * @template T of object
+                     */
+                    class Tap {
+                        /** @var T */
+                        private object $obj;
+
+                        /** @param T $obj */
+                        public function __construct(object $obj) {
+                            $this->obj = $obj;
+                        }
+
+                        /**
+                         * @param-closure-this T $cb
+                         */
+                        public function with(Closure $cb): void {
+                            $cb->call($this->obj);
+                        }
+                    }
+
+                    $tap = new Tap(new Container());
+                    $tap->with(function (): int {
+                        return $this->value;
+                    });
+                ',
+            ],
             'bindInsideMethodOverridesCallerThis' => [
                 'code' => '<?php
                     class Bound {
