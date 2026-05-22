@@ -6,6 +6,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\BinaryOp;
 
 use PhpParser;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Node\Expr\VirtualIsset;
@@ -45,6 +46,12 @@ final class CoalesceAnalyzer
             || $root_expr instanceof PhpParser\Node\Expr\NullsafePropertyFetch
             || $root_expr instanceof PhpParser\Node\Expr\NullsafeMethodCall
             || $root_expr instanceof PhpParser\Node\Expr\Ternary
+            || ($left_expr instanceof PhpParser\Node\Expr\ArrayDimFetch
+                && ExpressionIdentifier::getExtendedVarId(
+                    $left_expr,
+                    $statements_analyzer->getFQCLN(),
+                    $statements_analyzer,
+                ) === null)
         ) {
             $left_var_id = '$<tmp coalesce var>' . (int) $left_expr->getAttribute('startFilePos');
 

@@ -1396,6 +1396,17 @@ final class ConditionalTest extends TestCase
                         return $arr["b"] ?? "bar";
                     }',
             ],
+            'nullCoalesceNullableArrayValueWithFunctionCallKey' => [
+                'code' => '<?php
+                    /** @param array<string, ?string> $foo */
+                    function foo(array $foo, string $key, string $default): string {
+                        return $foo[bar($key)] ?? $default;
+                    }
+
+                    function bar(string $key): string {
+                        return "aa$key";
+                    }',
+            ],
             'nullCoalesceTypedValue' => [
                 'code' => '<?php
                     function foo(?string $s) : string {
