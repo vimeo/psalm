@@ -45,5 +45,19 @@ final class ReflectionTest extends TestCase
                 PHP,
             'assertions' => ['$a===' => 'Iterator&stdClass'],
         ];
+        yield 'ReflectionClass template parameter stays covariant on PHP 8.4' => [
+            'code' => <<<'PHP'
+                <?php
+                /** @param ReflectionClass<object> $class */
+                function takesObjectReflection(ReflectionClass $class): string {
+                    return $class->getName();
+                }
+
+                echo takesObjectReflection(new ReflectionClass(stdClass::class));
+                PHP,
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.4',
+        ];
     }
 }
