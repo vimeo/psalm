@@ -185,6 +185,22 @@ final class AssertionFinder
             return $if_types ? [$if_types] : [];
         }
 
+        // `$a ??= b` evaluates to the new value of `$a`, so a truthy result means `$a` is truthy.
+        // The right-hand side is not asserted, because when `$a` was already set the result is the old value.
+        if ($conditional instanceof PhpParser\Node\Expr\AssignOp\Coalesce) {
+            $var_name = ExpressionIdentifier::getExtendedVarId(
+                $conditional->var,
+                $this_class_name,
+                $source,
+            );
+
+            if ($var_name) {
+                $if_types[$var_name] = [[new Truthy()]];
+            }
+
+            return $if_types ? [$if_types] : [];
+        }
+
         $var_name = ExpressionIdentifier::getExtendedVarId(
             $conditional,
             $this_class_name,
@@ -2077,13 +2093,17 @@ final class AssertionFinder
         }
 
         $var_name = ExpressionIdentifier::getExtendedVarId(
-            $base_conditional,
+            $base_conditional instanceof PhpParser\Node\Expr\AssignOp\Coalesce
+                ? $base_conditional->var
+                : $base_conditional,
             $this_class_name,
             $source,
         );
 
         if ($var_name) {
-            if ($base_conditional instanceof PhpParser\Node\Expr\Assign) {
+            if ($base_conditional instanceof PhpParser\Node\Expr\Assign
+                || $base_conditional instanceof PhpParser\Node\Expr\AssignOp\Coalesce
+            ) {
                 $var_name = '=' . $var_name;
             }
 
@@ -2799,12 +2819,17 @@ final class AssertionFinder
         }
 
         $var_name = ExpressionIdentifier::getExtendedVarId(
-            $base_conditional,
+            $base_conditional instanceof PhpParser\Node\Expr\AssignOp\Coalesce
+                ? $base_conditional->var
+                : $base_conditional,
             $this_class_name,
             $source,
         );
 
-        if ($var_name && $base_conditional instanceof PhpParser\Node\Expr\Assign) {
+        if ($var_name
+            && ($base_conditional instanceof PhpParser\Node\Expr\Assign
+                || $base_conditional instanceof PhpParser\Node\Expr\AssignOp\Coalesce)
+        ) {
             $var_name = '=' . $var_name;
         }
 
