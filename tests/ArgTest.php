@@ -448,6 +448,24 @@ final class ArgTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'classLevelNoNamedArgumentsWithOnlyNamedArgumentsOnConstructor' => [
+                'code' => '<?php
+                    /**
+                     * @no-named-arguments
+                     */
+                    class Foo {
+                        /** @only-named-arguments */
+                        public function __construct(public string $name, public int $age) {}
+
+                        public function bar(int $a, int $b): int { return $a + $b; }
+                    }
+
+                    $foo = new Foo(name: "Alice", age: 30);
+                    $foo->bar(1, 2);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -863,6 +881,33 @@ final class ArgTest extends TestCase
 
                     /** @param array<array-key, int> $arr */
                     function bar(array $arr): void { foo(...$arr); }
+                ',
+                'error_message' => 'PositionalArgumentNotAllowed',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'classLevelNoNamedArgumentsPositionalCall' => [
+                'code' => '<?php
+                    /** @no-named-arguments */
+                    class Foo {
+                        public function bar(int $a, int $b): int { return $a + $b; }
+                    }
+
+                    (new Foo())->bar(a: 1, b: 2);
+                ',
+                'error_message' => 'NamedArgumentNotAllowed',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'classLevelNoNamedArgumentsOnlyNamedArgumentsConstructorPositionalCall' => [
+                'code' => '<?php
+                    /** @no-named-arguments */
+                    class Foo {
+                        /** @only-named-arguments */
+                        public function __construct(public string $name, public int $age) {}
+                    }
+
+                    new Foo("Alice", 30);
                 ',
                 'error_message' => 'PositionalArgumentNotAllowed',
                 'ignored_issues' => [],
