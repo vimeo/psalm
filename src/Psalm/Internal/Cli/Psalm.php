@@ -16,6 +16,7 @@ use Psalm\Internal\CliUtils;
 use Psalm\Internal\Codebase\ReferenceMapGenerator;
 use Psalm\Internal\Composer;
 use Psalm\Internal\ErrorHandler;
+use Psalm\Internal\Fixme\FixmeAdder;
 use Psalm\Internal\Fork\PsalmRestarter;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Preloader;
@@ -150,6 +151,7 @@ final class Psalm
         'report-show-info:',
         'root:',
         'set-baseline::',
+        'add-fixmes',
         'show-info:',
         'show-snippet::',
         'stats',
@@ -400,6 +402,12 @@ final class Psalm
             $project_analyzer->check($current_dir, $is_diff);
         } elseif ($paths_to_check) {
             $project_analyzer->checkPaths($paths_to_check);
+        }
+
+        if (isset($options['add-fixmes'])) {
+            $added = FixmeAdder::add($project_analyzer);
+            fwrite(STDERR, $added . ' @psalm-fixme annotation(s) added' . PHP_EOL);
+            exit(0);
         }
 
         if ($find_references_to) {
