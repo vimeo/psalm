@@ -490,7 +490,21 @@ final class LoopAnalyzer
         }
 
         if ($always_enters_loop) {
-            self::setLoopVars($continue_context, $loop_parent_context, $loop_scope);
+            // Variables assigned before the loop body (e.g. a foreach key/value)
+            // that are never reassigned inside the body are guaranteed to hold
+            // their loop-assigned type after the loop, even if it breaks or
+            // continues, so they must not be merged back to their pre-loop type.
+            $always_assigned_unmodified_vars = array_values(array_filter(
+                $always_assigned_before_loop_body_vars,
+                static fn(string $var_id): bool => !isset($assignment_map[$var_id]),
+            ));
+
+            self::setLoopVars(
+                $continue_context,
+                $loop_parent_context,
+                $loop_scope,
+                $always_assigned_unmodified_vars,
+            );
         }
 
         if ($inner_do_context) {
@@ -589,14 +603,25 @@ final class LoopAnalyzer
         return null;
     }
 
-    public static function setLoopVars(Context $inner_context, Context $context, LoopScope $loop_scope): void
-    {
+    /**
+     * @param list<string> $always_assigned_before_loop_body_vars
+     */
+    public static function setLoopVars(
+        Context $inner_context,
+        Context $context,
+        LoopScope $loop_scope,
+        array $always_assigned_before_loop_body_vars = [],
+    ): void {
         foreach ($inner_context->vars_in_scope as $var_id => $type) {
             // if there are break statements in the loop it's not certain
             // that the loop has finished executing, so the assertions at the end
-            // the loop in the while conditional may not hold
-            if (in_array(ScopeAnalyzer::ACTION_BREAK, $loop_scope->final_actions, true)
-                || in_array(ScopeAnalyzer::ACTION_CONTINUE, $loop_scope->final_actions, true)
+            // the loop in the while conditional may not hold.
+            // This does not apply to variables assigned before the loop body
+            // (e.g. a foreach key/value), which are guaranteed to be assigned at
+            // the start of every iteration, even one that breaks or continues.
+            if ((in_array(ScopeAnalyzer::ACTION_BREAK, $loop_scope->final_actions, true)
+                    || in_array(ScopeAnalyzer::ACTION_CONTINUE, $loop_scope->final_actions, true))
+                && !in_array($var_id, $always_assigned_before_loop_body_vars, true)
             ) {
                 if (isset($loop_scope->possibly_defined_loop_parent_vars[$var_id])) {
                     $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
