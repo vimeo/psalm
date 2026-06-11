@@ -8,6 +8,7 @@ use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\Assertion\IsClassNotEqual;
@@ -236,6 +237,13 @@ final class NegatedAssertionReconciler extends Reconciler
                             continue;
                         }
 
+                        $forward_comparison_result = new TypeComparisonResult();
+                        $reverse_comparison_result = new TypeComparisonResult();
+
+                        // a containment that recorded type-variable bounds is
+                        // provisional (the variable's constraints reconcile at
+                        // the end of the function-like), so it cannot
+                        // definitively eliminate a type here
                         if (!$existing_var_type_part instanceof TTemplateParam
                             && AtomicTypeComparator::isContainedBy(
                                 $codebase,
@@ -243,16 +251,26 @@ final class NegatedAssertionReconciler extends Reconciler
                                 $assertion_type,
                                 false,
                                 false,
+                                $forward_comparison_result,
                             )) {
-                            $existing_var_type->removeType($part_name);
+                            if (!$forward_comparison_result->type_variable_lower_bounds
+                                && !$forward_comparison_result->type_variable_upper_bounds
+                            ) {
+                                $existing_var_type->removeType($part_name);
+                            }
                         } elseif (AtomicTypeComparator::isContainedBy(
                             $codebase,
                             $assertion_type,
                             $existing_var_type_part,
                             false,
                             false,
+                            $reverse_comparison_result,
                         )) {
-                            $existing_var_type->different = true;
+                            if (!$reverse_comparison_result->type_variable_lower_bounds
+                                && !$reverse_comparison_result->type_variable_upper_bounds
+                            ) {
+                                $existing_var_type->different = true;
+                            }
                         }
                     }
                 }
