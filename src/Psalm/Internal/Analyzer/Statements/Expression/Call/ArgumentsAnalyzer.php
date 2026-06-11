@@ -24,6 +24,7 @@ use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\TaintSink;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Stubs\Generator\StubsGenerator;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
@@ -506,13 +507,26 @@ final class ArgumentsAnalyzer
                             }
 
                             if ($param_storage->type && !$param_type_inferred) {
+                                $param_comparison_result = new TypeComparisonResult();
+
                                 $type_match_found = UnionTypeComparator::isContainedBy(
                                     $codebase,
                                     $replaced_param_type,
                                     $param_storage->type,
+                                    false,
+                                    false,
+                                    $param_comparison_result,
                                 );
 
                                 if (!$type_match_found) {
+                                    continue;
+                                }
+
+                                if ($param_comparison_result->type_variable_lower_bounds
+                                    || $param_comparison_result->type_variable_upper_bounds
+                                ) {
+                                    // a containment that recorded type-variable bounds is
+                                    // provisional, not definitive: keep the declared type
                                     continue;
                                 }
                             }
