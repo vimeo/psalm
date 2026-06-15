@@ -52,7 +52,7 @@ jobs:
           git config --global core.eol lf
 
       - name: Set up PHP
-        uses: shivammathur/setup-php@7c071dfe9dc99bdf297fa79cb49ea005b9fcadbc # v2
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
         with:
           php-version: '8.5'
           #ini-values: zend.assertions=1, assert.exception=1, opcache.enable_cli=1, opcache.jit=function, opcache.jit_buffer_size=512M
