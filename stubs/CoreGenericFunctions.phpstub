@@ -1856,3 +1856,13 @@ function register_tick_function(callable $callback, mixed ...$args): bool {}
  * @psalm-taint-sink extract $array
  */
 function extract(array &$array, int $flags = EXTR_OVERWRITE, string $prefix = ""): int {}
+
+/**
+ * @psalm-template T of object
+ *
+ * @param T $object
+ * @param array<string, mixed> $withProperties
+ *
+ * @return T
+ */
+function clone(object $object, array $withProperties = []): object {}
