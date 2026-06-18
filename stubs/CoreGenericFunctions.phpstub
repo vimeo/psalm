@@ -252,6 +252,7 @@ function array_last($array)
  *
  * @param array<TKey, TValue> $array
  * @param callable(TValue, TKey): bool $callback
+ * @psalm-pure
  */
 function array_any(array $array, callable $callback): bool
 {
@@ -263,6 +264,7 @@ function array_any(array $array, callable $callback): bool
  *
  * @param array<TKey, TValue> $array
  * @param callable(TValue, TKey): bool $callback
+ * @psalm-pure
  */
 function array_all(array $array, callable $callback): bool
 {
