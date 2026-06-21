@@ -512,6 +512,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         $statements_analyzer->analyze($function_stmts, $context, $global_context, true);
 
+        if ($statements_analyzer->owns_type_variable_tracker) {
+            $statements_analyzer->type_variable_tracker->reconcile(
+                $codebase,
+                $storage->location ?? new CodeLocation($this, $this->function),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
+
         if ($codebase->alter_code
             && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
             && !$this->inferred_impure

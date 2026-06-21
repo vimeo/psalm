@@ -23,9 +23,11 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\DataFlow\TaintSink;
 use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\Type\TypeVariableBounds;
 use Psalm\Issue\AbstractInstantiation;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\ImpureMethodCall;
@@ -41,6 +43,8 @@ use Psalm\Issue\UnsafeGenericInstantiation;
 use Psalm\Issue\UnsafeInstantiation;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\MethodStorage;
 use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TAnonymousClassInstance;
@@ -57,6 +61,7 @@ use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Atomic\TUnknownClassString;
 use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
@@ -516,12 +521,76 @@ final class NewAnalyzer extends CallAnalyzer
             $self_out_candidate = null;
 
             if ($storage->template_types) {
+                $unconstrainable_templates = null;
+
                 foreach ($storage->template_types as $template_name => $base_type) {
                     if (isset($template_result->lower_bounds[$template_name][$fq_class_name])) {
                         $generic_param_type = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
                             $template_result->lower_bounds[$template_name][$fq_class_name],
                             $codebase,
                         );
+
+                        // The constructor arguments bound this template, but PHP has no
+                        // constructor type arguments to pin it: later code may still widen
+                        // it within its declared constraint (Hack's `new Foo<_>(...)` local
+                        // inference). Mint a type variable seeded with the arg-inferred
+                        // bounds as lower bounds and the declared constraint as an upper
+                        // bound; the bounds reconcile when the surrounding function-like
+                        // has been analyzed.
+                        $constraint = array_values($base_type)[0];
+                        $unconstrainable_templates ??= self::getUnconstrainableTemplates($storage);
+
+                        if ($fq_class_name !== 'SplObjectStorage'
+                            && !isset($unconstrainable_templates[$template_name])
+                        ) {
+                            $new_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+
+                            $lower_bounds = [];
+
+                            foreach ($template_result->lower_bounds[$template_name][$fq_class_name] as $arg_bound) {
+                                // the appearance depth is normalized: the inference is
+                                // lifted onto the variable itself, where it competes with
+                                // the (depth-0) bounds later code records
+                                $lower_bounds[] = new TemplateBound(
+                                    $arg_bound->type,
+                                    0,
+                                    $arg_bound->arg_offset,
+                                    $arg_bound->equality_bound_classlike,
+                                    $new_location,
+                                );
+                            }
+
+                            $upper_bounds = [new TemplateBound($constraint, 0, null, null, $new_location)];
+
+                            // A constructor argument that binds this template through a
+                            // `class-string<T>` position names the type exactly
+                            // (`new ReflectionClass(Foo::class)` reflects Foo, nothing
+                            // wider): the inferred bounds pin the variable's upper bounds
+                            // too, so a later conflicting use fails reconciliation.
+                            if ($method_storage
+                                && self::templateBoundThroughClassString($method_storage, $template_name)
+                            ) {
+                                foreach ($lower_bounds as $lower_bound) {
+                                    $upper_bounds[] = new TemplateBound(
+                                        $lower_bound->type,
+                                        0,
+                                        $lower_bound->arg_offset,
+                                        null,
+                                        $new_location,
+                                    );
+                                }
+                            }
+
+                            $type_variable_bounds = new TypeVariableBounds($lower_bounds, $upper_bounds);
+
+                            $type_variable_name = $statements_analyzer->type_variable_tracker->addVariable(
+                                $type_variable_bounds,
+                            );
+
+                            $generic_param_type = new Union([
+                                new TTypeVariable($type_variable_name, $type_variable_bounds),
+                            ]);
+                        }
                     } elseif ($storage->template_extended_params && $template_result->lower_bounds) {
                         $generic_param_type = self::getGenericParamForOffset(
                             $fq_class_name,
@@ -541,9 +610,46 @@ final class NewAnalyzer extends CallAnalyzer
                         );
                     } else {
                         if ($fq_class_name === 'SplObjectStorage') {
+                            // SplObjectStorage's unbound templates resolve to `never` rather
+                            // than their bounds, so a later write on a bare `new SplObjectStorage()`
+                            // reports InvalidArgument. No type variable is minted for it.
                             $generic_param_type = Type::getNever();
                         } else {
                             $generic_param_type = array_values($base_type)[0];
+
+                            // The constructor arguments did not bind this template, but later
+                            // code may still constrain it (Hack's `new Foo<_>(...)` model):
+                            // mint a fresh type variable whose upper bound is the template's
+                            // declared constraint. Constraints recorded while the variable
+                            // flows through the rest of the body are reconciled when the
+                            // surrounding function-like has been analyzed.
+                            //
+                            // A template with no public mutation channel (named only in the
+                            // constructor) can never be constrained later, so no variable is
+                            // minted and the template resolves eagerly to its constraint.
+                            $unconstrainable_templates ??= self::getUnconstrainableTemplates($storage);
+
+                            if (!isset($unconstrainable_templates[$template_name])) {
+                                $type_variable_bounds = new TypeVariableBounds(
+                                    [],
+                                    [new TemplateBound(
+                                        $generic_param_type,
+                                        0,
+                                        null,
+                                        null,
+                                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                    ),
+                                    ],
+                                );
+
+                                $type_variable_name = $statements_analyzer->type_variable_tracker->addVariable(
+                                    $type_variable_bounds,
+                                );
+
+                                $generic_param_type = new Union([
+                                    new TTypeVariable($type_variable_name, $type_variable_bounds),
+                                ]);
+                            }
                         }
                     }
 
@@ -1008,5 +1114,90 @@ final class NewAnalyzer extends CallAnalyzer
             return Type::combineUnionTypeArray($new_types, $codebase);
         }
         return null;
+    }
+
+    /**
+     * Whether the constructor binds the given template through a `class-string<T>`
+     * (`T::class`) parameter position, which names the template's type exactly
+     * rather than providing a value of it.
+     */
+    private static function templateBoundThroughClassString(
+        MethodStorage $method_storage,
+        string $template_name,
+    ): bool {
+        foreach ($method_storage->params as $constructor_param) {
+            if (!$constructor_param->type) {
+                continue;
+            }
+
+            foreach ($constructor_param->type->getAtomicTypes() as $param_atomic_type) {
+                if ($param_atomic_type instanceof TTemplateParamClass
+                    && $param_atomic_type->param_name === $template_name
+                ) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Returns the set of class templates with no public mutation channel: a template
+     * named in a public non-constructor method parameter or a public non-readonly
+     * property type is one that later code can still constrain, anything else can
+     * only have been fixed at the construction site.
+     *
+     * @return array<string, true>
+     */
+    private static function getUnconstrainableTemplates(ClassLikeStorage $storage): array
+    {
+        $unconstrainable = [];
+
+        foreach ($storage->template_types ?? [] as $template_name => $_) {
+            $unconstrainable[$template_name] = true;
+        }
+
+        foreach ($storage->methods as $method_name => $method_storage) {
+            if (!$unconstrainable) {
+                break;
+            }
+
+            if ($method_name === '__construct'
+                || $method_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
+            ) {
+                continue;
+            }
+
+            foreach ($method_storage->params as $param) {
+                if ($param->type) {
+                    foreach ($param->type->getTemplateTypes() as $template_type) {
+                        unset($unconstrainable[$template_type->param_name]);
+                    }
+                }
+            }
+        }
+
+        foreach ($storage->properties as $property_storage) {
+            if (!$unconstrainable) {
+                break;
+            }
+
+            // A `readonly` property cannot be assigned after construction, so it
+            // is not a channel through which the template can be constrained.
+            if ($property_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
+                || $property_storage->readonly
+            ) {
+                continue;
+            }
+
+            if ($property_storage->type) {
+                foreach ($property_storage->type->getTemplateTypes() as $template_type) {
+                    unset($unconstrainable[$template_type->param_name]);
+                }
+            }
+        }
+
+        return $unconstrainable;
     }
 }
