@@ -658,14 +658,14 @@ final class NewAnalyzer extends CallAnalyzer
                 $method_source = DataFlowNode::getForMethodReturn(
                     (string)$method_id,
                     $fq_class_name . '::__construct',
-                    $storage->location,
+                    $method_storage,
                     $code_location,
                 );
             } else {
                 $method_source = DataFlowNode::getForMethodReturn(
                     (string)$method_id,
                     $fq_class_name . '::__construct',
-                    $storage->location,
+                    $method_storage,
                 );
             }
 
@@ -721,12 +721,12 @@ final class NewAnalyzer extends CallAnalyzer
                     'variable-call',
                     'variable-call',
                     0,
-                    $arg_location,
+                    null,
                     $arg_location,
                     TaintKind::INPUT_CALLABLE,
                 );
 
-                $statements_analyzer->taint_flow_graph->addSink($custom_call_sink);
+                $statements_analyzer->taint_flow_graph->addSink($custom_call_sink, $arg_location);
 
                 $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
 

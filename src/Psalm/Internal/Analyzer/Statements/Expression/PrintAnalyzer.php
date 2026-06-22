@@ -65,6 +65,7 @@ final class PrintAnalyzer
                 new CodeLocation($statements_analyzer->getSource(), $stmt->expr),
                 $stmt->expr,
                 $context,
+                null,
                 new FunctionLikeParameter('var', false),
                 false,
                 null,

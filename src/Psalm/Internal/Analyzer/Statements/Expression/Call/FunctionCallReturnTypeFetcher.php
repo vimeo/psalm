@@ -554,9 +554,7 @@ final class FunctionCallReturnTypeFetcher
         $function_call_node = DataFlowNode::getForMethodReturn(
             $function_id,
             $cased_function_id,
-            $taint_flow_graph
-                ? ($function_storage->signature_return_type_location ?: $function_storage->location)
-                : ($function_storage->return_type_location ?: $function_storage->location),
+            $function_storage,
             $function_storage->specialize_call ? $node_location : null,
         );
         $graph->addNode($function_call_node);
@@ -711,16 +709,11 @@ final class FunctionCallReturnTypeFetcher
             }
 
             foreach ($taintable_arg_index as $arg_index) {
-                $arg_location = new CodeLocation(
-                    $statements_analyzer,
-                    $args[$arg_index]->value,
-                );
-
                 $function_param_sink = DataFlowNode::getForMethodArgument(
                     $function_id,
                     $function_id,
                     $arg_index,
-                    $arg_location,
+                    $function_storage,
                     $function_storage->specialize_call ? $node_location : null,
                 );
 

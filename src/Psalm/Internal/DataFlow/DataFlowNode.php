@@ -6,8 +6,10 @@ namespace Psalm\Internal\DataFlow;
 
 use Override;
 use Psalm\CodeLocation;
+use Psalm\Storage\FunctionLikeStorage;
 use Stringable;
 
+use function count;
 use function strtolower;
 
 /**
@@ -77,8 +79,8 @@ final class DataFlowNode implements Stringable
         string $method_id,
         string $cased_method_id,
         int $argument_offset,
-        ?CodeLocation $arg_location,
-        ?CodeLocation $code_location = null,
+        ?FunctionLikeStorage $storage,
+        ?CodeLocation $specialization_location = null,
         int $taints = 0,
     ): self {
         $arg_id = strtolower($method_id) . '#' . ($argument_offset + 1);
@@ -87,14 +89,15 @@ final class DataFlowNode implements Stringable
 
         $specialization_key = null;
 
-        if ($code_location) {
-            $specialization_key = strtolower($code_location->file_name) . ':' . $code_location->raw_file_start;
+        if ($specialization_location) {
+            $specialization_key = strtolower($specialization_location->file_name)
+                . ':' . $specialization_location->raw_file_start;
         }
 
         return self::make(
             $arg_id,
             $label,
-            $arg_location,
+            self::getParameterLocation($storage, $argument_offset),
             $specialization_key,
             $taints,
         );
@@ -115,30 +118,69 @@ final class DataFlowNode implements Stringable
 
         return self::make($var_id, $label, $assignment_location, $specialization_key);
     }
-    
+
     /**
      * @psalm-pure
      */
     public static function getForMethodReturn(
         string $method_id,
         string $cased_method_id,
-        ?CodeLocation $code_location,
-        ?CodeLocation $function_location = null,
+        ?FunctionLikeStorage $storage,
+        ?CodeLocation $specialization_location = null,
         int $taints = 0,
+        ?string $specialization_key = null,
     ): self {
-        $specialization_key = null;
-
-        if ($function_location) {
-            $specialization_key = strtolower($function_location->file_name) . ':' . $function_location->raw_file_start;
+        if ($specialization_key === null && $specialization_location) {
+            $specialization_key = strtolower($specialization_location->file_name)
+                . ':' . $specialization_location->raw_file_start;
         }
 
         return self::make(
             strtolower($method_id),
             $cased_method_id,
-            $code_location,
+            self::getReturnLocation($storage),
             $specialization_key,
             $taints,
         );
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function getReturnLocation(?FunctionLikeStorage $storage): ?CodeLocation
+    {
+        if (!$storage) {
+            return null;
+        }
+
+        return $storage->signature_return_type_location
+            ?: $storage->return_type_location
+            ?: $storage->location;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function getParameterLocation(?FunctionLikeStorage $storage, int $argument_offset): ?CodeLocation
+    {
+        if (!$storage) {
+            return null;
+        }
+
+        $param = $storage->params[$argument_offset] ?? null;
+
+        if (!$param && $storage->params) {
+            $last_param = $storage->params[count($storage->params) - 1];
+            $param = $last_param->is_variadic ? $last_param : null;
+        }
+
+        if (!$param) {
+            return null;
+        }
+
+        return $param->signature_type_location
+            ?: $param->type_location
+            ?: $param->location;
     }
 
 

@@ -589,7 +589,7 @@ final class ReturnAnalyzer
         $method_node = DataFlowNode::getForMethodReturn(
             strtolower($cased_method_id),
             $cased_method_id,
-            $storage->signature_return_type_location ?: $storage->location,
+            $storage,
         );
 
         $statements_analyzer->taint_flow_graph->addNode($method_node);

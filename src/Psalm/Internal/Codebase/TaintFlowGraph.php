@@ -58,6 +58,9 @@ final class TaintFlowGraph extends DataFlowGraph
     /** @var array<string, DataFlowNode> */
     private array $sinks = [];
 
+    /** @var array<string, CodeLocation> */
+    private array $sink_issue_locations = [];
+
     /**
      * Unspecialized ID => (Specialization key => Specialized ID)
      *
@@ -98,11 +101,21 @@ final class TaintFlowGraph extends DataFlowGraph
     /**
      * @psalm-external-mutation-free
      */
-    public function addSink(DataFlowNode $node): void
+    public function addSink(DataFlowNode $node, ?CodeLocation $issue_location = null): void
     {
         $this->sinks[$node->id] = $node;
+        if ($issue_location) {
+            $this->sink_issue_locations[$node->id] = $issue_location;
+        }
+
         // in the rare case the sink is the _next_ node, this is necessary
         $this->nodes[$node->id] = $node;
+
+        if ($node->unspecialized_id !== null) {
+            /** @var string $node->specialization_key */
+            $this->specialized_calls[$node->specialization_key] = true;
+            $this->specializations[$node->unspecialized_id][$node->specialization_key] = $node->id;
+        }
     }
 
     /**
@@ -112,6 +125,7 @@ final class TaintFlowGraph extends DataFlowGraph
     {
         $this->sources += $other->sources;
         $this->sinks += $other->sinks;
+        $this->sink_issue_locations += $other->sink_issue_locations;
         $this->nodes += $other->nodes;
         $this->specialized_calls += $other->specialized_calls;
 
@@ -233,9 +247,11 @@ final class TaintFlowGraph extends DataFlowGraph
 
         $sources = $this->sources;
         $sinks = $this->sinks;
+        $sink_issue_locations = $this->sink_issue_locations;
 
         $this->sinks = [];
         $this->sources = [];
+        $this->sink_issue_locations = [];
 
         ksort($this->forward_edges);
         ksort($this->specializations);
@@ -280,6 +296,7 @@ final class TaintFlowGraph extends DataFlowGraph
                         $source,
                         $source_taints,
                         $sinks,
+                        $sink_issue_locations,
                         $visited_source_ids,
                         $config,
                         $project_analyzer,
@@ -317,6 +334,7 @@ final class TaintFlowGraph extends DataFlowGraph
                         $generated_source,
                         $source_taints,
                         $sinks,
+                        $sink_issue_locations,
                         $visited_source_ids,
                         $config,
                         $project_analyzer,
@@ -356,6 +374,7 @@ final class TaintFlowGraph extends DataFlowGraph
                                 $new_source,
                                 $source_taints,
                                 $sinks,
+                                $sink_issue_locations,
                                 $visited_source_ids,
                                 $config,
                                 $project_analyzer,
@@ -382,6 +401,7 @@ final class TaintFlowGraph extends DataFlowGraph
                                 $new_source,
                                 $source_taints,
                                 $sinks,
+                                $sink_issue_locations,
                                 $visited_source_ids,
                                 $config,
                                 $project_analyzer,
@@ -414,6 +434,7 @@ final class TaintFlowGraph extends DataFlowGraph
                                 $new_source,
                                 $source_taints,
                                 $sinks,
+                                $sink_issue_locations,
                                 $visited_source_ids,
                                 $config,
                                 $project_analyzer,
@@ -436,6 +457,7 @@ final class TaintFlowGraph extends DataFlowGraph
 
     /**
      * @param array<DataFlowNode> $sinks
+     * @param array<string, CodeLocation> $sink_issue_locations
      * @param array<string, DataFlowNode> $new_sources
      * @param-out array<string, DataFlowNode> $new_sources
      */
@@ -444,6 +466,7 @@ final class TaintFlowGraph extends DataFlowGraph
         DataFlowNode $generated_source,
         int $source_taints,
         array $sinks,
+        array $sink_issue_locations,
         array $visited_source_ids,
         Config $config,
         ProjectAnalyzer $project_analyzer,
@@ -483,15 +506,18 @@ final class TaintFlowGraph extends DataFlowGraph
 
             if (isset($sinks[$to_id])) {
                 $sink = $sinks[$to_id];
+                $sink_issue_location = $sink_issue_locations[$to_id] ?? $sink->code_location;
                 $matching_taints = $sink->taints & $new_taints;
 
-                if ($matching_taints && $generated_source->code_location) {
-                    if ($sink->code_location
-                    && $config->reportIssueInFile('TaintedInput', $sink->code_location->file_path)
+                if ($matching_taints && ($generated_source->code_location || $sink_issue_location)) {
+                    if ($sink_issue_location
+                    && $config->reportIssueInFile('TaintedInput', $sink_issue_location->file_path)
                     ) {
-                        $issue_location = $sink->code_location;
-                    } else {
+                        $issue_location = $sink_issue_location;
+                    } elseif ($generated_source->code_location) {
                         $issue_location = $generated_source->code_location;
+                    } else {
+                        continue;
                     }
 
                     $issue_trace = $this->getIssueTrace($generated_source);

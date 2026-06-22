@@ -871,7 +871,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $method_source = DataFlowNode::getForMethodReturn(
                 (string) $method_id,
                 $cased_method_id,
-                $storage->location,
+                $storage,
             );
 
             $codebase->taint_flow_graph->addNode($method_source);
@@ -893,7 +893,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $method_source = DataFlowNode::getForMethodReturn(
                 (string) $method_id,
                 $cased_method_id,
-                $storage->location,
+                $storage,
             );
 
             FunctionCallReturnTypeFetcher::taintUsingStorage(
@@ -1138,7 +1138,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         $cased_method_id,
                         $cased_method_id,
                         $offset,
-                        $function_param->location,
+                        $storage,
                         null,
                     );
 

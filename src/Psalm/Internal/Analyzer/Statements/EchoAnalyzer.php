@@ -83,6 +83,7 @@ final class EchoAnalyzer
                 new CodeLocation($statements_analyzer->getSource(), $expr),
                 $expr,
                 $context,
+                null,
                 $echo_param,
                 false,
                 null,

@@ -6,6 +6,7 @@ namespace Psalm\Internal\Codebase;
 
 use AssertionError;
 use Override;
+use Psalm\CodeLocation;
 use Psalm\Internal\DataFlow\DataFlowNode;
 
 /**
@@ -57,9 +58,9 @@ final class CombinedFlowGraph extends DataFlowGraph
     /**
      * @psalm-external-mutation-free
      */
-    public function addSink(DataFlowNode $node): void
+    public function addSink(DataFlowNode $node, ?CodeLocation $issue_location = null): void
     {
-        $this->taint_flow_graph->addSink($node);
+        $this->taint_flow_graph->addSink($node, $issue_location);
     }
 
     /**
