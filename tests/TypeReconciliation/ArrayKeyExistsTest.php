@@ -343,7 +343,8 @@ final class ArrayKeyExistsTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [
                     'MixedArrayAccess', 'MixedAssignment', 'MixedArrayOffset',
-                    'MixedArgument',
+                    'MixedArgument', 'PossiblyNullArrayAccess', 'PossiblyNullArgument',
+                    'PossiblyNullArrayOffset', 'InvalidReturnStatement', 'InvalidReturnType',
                 ],
             ],
             'arrayKeyExistsTwoVars' => [

@@ -31,6 +31,7 @@ use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\ArgumentTypeCoercion;
 use Psalm\Issue\DeprecatedConstant;
 use Psalm\Issue\ImplicitToStringCast;
@@ -56,12 +57,14 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
+use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -880,6 +883,14 @@ final class ArgumentAnalyzer
             $param_type = $param_type->setPossiblyUndefined(true);
         }
 
+        if ($param_type->hasCallableType()) {
+            // callable signature validation needs concrete parameter shapes:
+            // type variables nested in the expected callable resolve through
+            // their accumulated bounds (`callable(`_0 >: Foo):void` checks as
+            // `callable(Foo):void`)
+            $param_type = self::resolveTypeVariablesInCallables($param_type, $codebase);
+        }
+
         if ($param_type->hasCallableType() && $param_type->isSingle()) {
             // we do this replacement early because later we don't have access to the
             // $statements_analyzer, which is necessary to understand string function names
@@ -962,6 +973,27 @@ final class ArgumentAnalyzer
             !isset($param_type->getAtomicTypes()['true']),
             $union_comparison_results,
         );
+
+        if ($union_comparison_results->type_variable_lower_bounds
+            || $union_comparison_results->type_variable_upper_bounds
+        ) {
+            if ($cased_method_id === 'echo' || $cased_method_id === 'print') {
+                // echo and print coerce scalars to string: a type variable
+                // passed to them is constrained to array-key, not to the
+                // pseudo-param's declared string type
+                foreach ($union_comparison_results->type_variable_upper_bounds as [$_, $upper_bound]) {
+                    $upper_bound->type = Type::getArrayKey();
+                }
+            }
+
+            // transfer any type-variable bounds the containment comparison
+            // recorded, stamped with the argument's position
+            $statements_analyzer->type_variable_tracker->addBounds(
+                $union_comparison_results->type_variable_lower_bounds,
+                $union_comparison_results->type_variable_upper_bounds,
+                $arg_location,
+            );
+        }
 
         $replace_input_type = false;
 
@@ -1258,7 +1290,22 @@ final class ArgumentAnalyzer
             return null;
         }
 
-        if (!$param_type->isNullable() && $cased_method_id !== 'echo' && $cased_method_id !== 'print') {
+        $param_has_type_variable = false;
+
+        foreach ($param_type->getAtomicTypes() as $param_atomic_type) {
+            if ($param_atomic_type instanceof TTypeVariable) {
+                // a null argument against a type variable records a bound
+                // like any other value, rather than being rejected up front
+                $param_has_type_variable = true;
+                break;
+            }
+        }
+
+        if (!$param_type->isNullable()
+            && !$param_has_type_variable
+            && $cased_method_id !== 'echo'
+            && $cased_method_id !== 'print'
+        ) {
             if ($input_type->isNull()) {
                 IssueBuffer::maybeAdd(
                     new NullArgument(
@@ -1900,5 +1947,71 @@ final class ArgumentAnalyzer
             $taint_source->taints = $taints;
             $statements_analyzer->data_flow_graph->addSource($taint_source);
         }
+    }
+    /**
+     * Resolves type variables appearing inside callable/closure parameter and
+     * return positions through their accumulated bounds, leaving everything
+     * else untouched (callable signature validation compares shapes
+     * structurally and cannot defer a variable to bound reconciliation).
+     */
+    private static function resolveTypeVariablesInCallables(Union $param_type, Codebase $codebase): Union
+    {
+        $changed = false;
+        $resolved_atomic_types = [];
+
+        foreach ($param_type->getAtomicTypes() as $atomic_type) {
+            if (($atomic_type instanceof TCallable || $atomic_type instanceof TClosure)
+                && ($atomic_type->params !== null || $atomic_type->return_type !== null)
+            ) {
+                $new_params = $atomic_type->params;
+
+                if ($new_params !== null) {
+                    foreach ($new_params as $param_offset => $callable_param) {
+                        if ($callable_param->type) {
+                            $resolved_param_type = self::resolveTypeVariablesInUnion(
+                                $callable_param->type,
+                                $codebase,
+                                $changed,
+                            );
+
+                            if ($resolved_param_type !== $callable_param->type) {
+                                $new_params[$param_offset] = $callable_param->setType($resolved_param_type);
+                            }
+                        }
+                    }
+                }
+
+                $new_return_type = $atomic_type->return_type
+                    ? self::resolveTypeVariablesInUnion($atomic_type->return_type, $codebase, $changed)
+                    : null;
+
+                $resolved_atomic_types[] = $atomic_type->replace($new_params, $new_return_type);
+            } else {
+                $resolved_atomic_types[] = $atomic_type;
+            }
+        }
+
+        if (!$changed) {
+            return $param_type;
+        }
+
+        return new Union($resolved_atomic_types);
+    }
+
+    /**
+     * Resolves type variables in a union through the bounds inferred at their
+     * construction site (bounds recorded by later uses already reconcile on
+     * their own).
+     */
+    private static function resolveTypeVariablesInUnion(Union $type, Codebase $codebase, bool &$changed): Union
+    {
+        $resolver = new TypeVariableResolver($codebase);
+        $resolver->traverse($type);
+
+        if ($resolver->resolved_a_variable) {
+            $changed = true;
+        }
+
+        return $type;
     }
 }

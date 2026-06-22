@@ -1857,6 +1857,103 @@ final class FunctionTemplateTest extends TestCase
                         1,
                     );',
             ],
+            'instanceofNarrowsTemplateBound' => [
+                'code' => '<?php
+                    abstract class NodeB {}
+                    class NullableTypeB extends NodeB {
+                        public NodeB $type;
+                        public function __construct(NodeB $t) { $this->type = $t; }
+                    }
+
+                    class ResolverB {
+                        /**
+                         * @template T of NodeB|null
+                         * @param T $node
+                         * @return T
+                         */
+                        private function resolveType(?NodeB $node): ?NodeB
+                        {
+                            if ($node instanceof NullableTypeB) {
+                                $node->type = $node->type;
+                                return $node;
+                            }
+                            return $node;
+                        }
+                    }',
+            ],
+            'staticCallClosureTemplateBinding' => [
+                'code' => '<?php
+                    final class Runner {
+                        /**
+                         * @template T
+                         * @param callable():T $f
+                         * @return T
+                         */
+                        public static function run(callable $f) {
+                            try {
+                                return $f();
+                            } finally {
+                                error_reporting();
+                            }
+                        }
+                    }
+                    function compute(): string {
+                        return "x";
+                    }
+                    function g(): bool {
+                        $r = Runner::run(function (): ?string {
+                            try {
+                                return compute();
+                            } catch (Throwable $_e) {
+                                return null;
+                            }
+                        });
+
+                        if (null === $r) {
+                            return false;
+                        }
+
+                        return $r !== \'\';
+                    }',
+            ],
+            'templateBoundPropertyPathInBooleanChain' => [
+                'code' => '<?php
+                    interface TypeNode {}
+                    class ClassConstantNode implements TypeNode {
+                        public function __construct(public string $fq_classlike_name) {}
+                    }
+                    class ClassStringNode implements TypeNode {
+                        public function __construct(public string $as = "object") {}
+                    }
+
+                    abstract class NodeVisitor {
+                        /**
+                         * @template T as TypeNode
+                         * @param T $type
+                         */
+                        abstract protected function enterNode(TypeNode &$type): ?int;
+                    }
+
+                    final class ClasslikeReplacer extends NodeVisitor {
+                        private string $old = "x";
+
+                        protected function enterNode(TypeNode &$type): ?int {
+                            if ($type instanceof ClassConstantNode) {
+                                if (strtolower($type->fq_classlike_name) === $this->old) {
+                                    $type = new ClassConstantNode("y");
+                                }
+                            } elseif ($type instanceof ClassStringNode) {
+                                if ($type->as !== "object" && strtolower($type->as) === $this->old) {
+                                    $type = new ClassStringNode("y");
+                                }
+                            }
+                            return null;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
