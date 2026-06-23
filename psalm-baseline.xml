@@ -1676,7 +1676,6 @@
   </file>
   <file src="src/Psalm/Internal/ExecutionEnvironment/GitInfoCollector.php">
     <PossiblyUndefinedArrayOffset>
-      <code><![CDATA[$exploded[1]]]></code>
       <code><![CDATA[$url]]></code>
     </PossiblyUndefinedArrayOffset>
   </file>

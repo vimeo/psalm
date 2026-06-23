@@ -1644,8 +1644,7 @@ final class ArgumentsAnalyzer
                         }
 
                         if ($arg_value_type->isSingle()
-                            && ($atomic_arg_type = $arg_value_type->getSingleAtomic())
-                            && $atomic_arg_type instanceof TKeyedArray
+                            && ($atomic_arg_type = $arg_value_type->getSingleAtomic()) instanceof TKeyedArray
                             && !$atomic_arg_type->is_list
                         ) {
                             //if we have a single shape, we'll check param names

@@ -241,8 +241,7 @@ final class FilterUtils
                             ),
                             $statements_analyzer->getSuppressedIssues(),
                         );
-                    } elseif (($options_array = $atomic_type->properties['options']->getArray())
-                              && $options_array instanceof TKeyedArray) {
+                    } elseif (($options_array = $atomic_type->properties['options']->getArray()) instanceof TKeyedArray) {
                         $defaults['options'] = $options_array;
                     } else {
                         // cannot infer a 100% correct specific return type
