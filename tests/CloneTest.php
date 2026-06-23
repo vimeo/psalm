@@ -44,6 +44,21 @@ final class CloneTest extends TestCase
                         }
                     }',
             ],
+            'cloneFunctionPreservesType' => [
+                'code' => '<?php
+                    class A {
+                        public int $foo = 1;
+                    }
+                    function bar(A $a): A {
+                        return clone($a, ["foo" => 2]);
+                    }
+                    $b = bar(new A());',
+                'assertions' => [
+                    '$b' => 'A',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
         ];
     }
 

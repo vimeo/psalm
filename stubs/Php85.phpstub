@@ -24,4 +24,16 @@ namespace {
     final class CurlSharePersistentHandle
     {
     }
+
+    /**
+     * @psalm-template T of object
+     *
+     * @param T $object
+     * @param array<string, mixed> $withProperties
+     *
+     * @return T
+     *
+     * @since 8.5
+     */
+    function clone(object $object, array $withProperties = []): object {}
 }
