@@ -218,12 +218,16 @@ final class AtomicPropertyFetchAnalyzer
         if ($class_storage->is_enum || in_array('UnitEnum', $codebase->getParentInterfaces($fq_class_name))) {
             if ($prop_name === 'value' && !$class_storage->is_enum) {
                 $has_valid_fetch_type = true;
+                $stmt_type = $statements_analyzer->node_data->getType($stmt);
                 $statements_analyzer->node_data->setType(
                     $stmt,
-                    new Union([
-                        new TString(),
-                        new TInt(),
-                    ]),
+                    Type::combineUnionTypes(
+                        new Union([
+                            new TString(),
+                            new TInt(),
+                        ]),
+                        $stmt_type,
+                    ),
                 );
             } elseif ($prop_name === 'value' && $class_storage->enum_type !== null && $class_storage->enum_cases) {
                 $has_valid_fetch_type = true;
@@ -1024,14 +1028,18 @@ final class AtomicPropertyFetchAnalyzer
             $relevant_enum_case_names = array_keys($class_storage->enum_cases);
         }
 
+        $stmt_type = $statements_analyzer->node_data->getType($stmt);
         $statements_analyzer->node_data->setType(
             $stmt,
-            empty($relevant_enum_case_names)
-                ? Type::getNonEmptyString()
-                : new Union(array_map(
-                    static fn(string $name): TString => Type::getAtomicStringFromLiteral($name),
-                    $relevant_enum_case_names,
-                )),
+            Type::combineUnionTypes(
+                empty($relevant_enum_case_names)
+                    ? Type::getNonEmptyString()
+                    : new Union(array_map(
+                        static fn(string $name): TString => Type::getAtomicStringFromLiteral($name),
+                        $relevant_enum_case_names,
+                    )),
+                $stmt_type,
+            ),
         );
     }
 
@@ -1067,10 +1075,14 @@ final class AtomicPropertyFetchAnalyzer
             $case_values[] = $case_value ?? new TMixed();
         }
 
+        $stmt_type = $statements_analyzer->node_data->getType($stmt);
         /** @psalm-suppress ArgumentTypeCoercion */
         $statements_analyzer->node_data->setType(
             $stmt,
-            new Union($case_values),
+            Type::combineUnionTypes(
+                new Union($case_values),
+                $stmt_type,
+            ),
         );
     }
 
