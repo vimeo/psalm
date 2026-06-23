@@ -13,6 +13,7 @@ use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\CloneAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
@@ -106,6 +107,16 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             && !$stmt->getArgs()[0]->unpack
         ) {
             $original_function_id = implode('\\', $function_name->getParts());
+
+            // PHP 8.5 clone-with-properties: `clone($object, [...])` is parsed as a call
+            // to `clone`, not a Clone_ node, so it never reaches CloneAnalyzer via the
+            // usual path. Route it in to preserve the cloned type and run the clone-validity
+            // and withProperties checks. `clone` is a reserved keyword, so it is
+            // case-insensitive and can never be a user-defined or namespaced function.
+            // analyzeFuncCall reports the function form as unsupported below PHP 8.5.
+            if (strtolower($original_function_id) === 'clone') {
+                return CloneAnalyzer::analyzeFuncCall($statements_analyzer, $stmt, $context);
+            }
 
             if ($original_function_id === 'call_user_func') {
                 $other_args = array_slice($stmt->getArgs(), 1);
