@@ -21,6 +21,7 @@ use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\InvalidClone;
 use Psalm\Issue\InvalidPropertyAssignmentValue;
 use Psalm\Issue\MixedClone;
+use Psalm\Issue\ParseError;
 use Psalm\Issue\PossiblyInvalidClone;
 use Psalm\Issue\PossiblyInvalidPropertyAssignmentValue;
 use Psalm\Issue\UndefinedPropertyAssignment;
@@ -87,6 +88,18 @@ final class CloneAnalyzer
         Context $context,
     ): bool {
         $location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+
+        // The function form of clone only exists on PHP 8.5+. Below that it is a
+        // compile error, so report it while still analysing the call for tooling.
+        if ($statements_analyzer->getCodebase()->analysis_php_version_id < 8_05_00) {
+            IssueBuffer::maybeAdd(
+                new ParseError(
+                    'Calling clone() as a function with arguments requires PHP 8.5',
+                    $location,
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
 
         // Analyze every argument value up front so no sub-expression is skipped, even
         // for malformed calls (extra or unknown-named arguments).

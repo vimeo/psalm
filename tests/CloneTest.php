@@ -340,6 +340,17 @@ final class CloneTest extends TestCase
                     clone get();',
                 'error_message' => 'InvalidClone',
             ],
+            'cloneWithFunctionFormRequiresPhp85' => [
+                'code' => '<?php
+                    class Foo {
+                        public function __construct(public int $x) {}
+                    }
+                    $o = new Foo(1);
+                    $b = clone($o, ["x" => 2]);',
+                'error_message' => 'ParseError',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
             'cloneWithUnknownProperty' => [
                 'code' => '<?php
                     class Foo {

@@ -113,6 +113,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             // usual path. Route it in to preserve the cloned type and run the clone-validity
             // and withProperties checks. `clone` is a reserved keyword, so it is
             // case-insensitive and can never be a user-defined or namespaced function.
+            // analyzeFuncCall reports the function form as unsupported below PHP 8.5.
             if (strtolower($original_function_id) === 'clone') {
                 return CloneAnalyzer::analyzeFuncCall($statements_analyzer, $stmt, $context);
             }
