@@ -688,6 +688,24 @@ Incidentally, it will change the inferred type for the following code:
 ```
 The type of `$a` is `array<array-key, int>` without `@no-named-arguments` but becomes `list<int>` with it, because it excludes the case where the offset would be a string with the name of the parameter
 
+### `@only-named-arguments`
+
+This will prevent access to the function or method tagged with positional arguments (by emitting a `PositionalArgumentNotAllowed` issue).
+
+```php
+<?php
+
+/** @only-named-arguments */
+function foo(int $a, int $b): int {
+    return $a + $b;
+}
+
+foo(a: 0, b: 1); // ok
+foo(0, 1); // error: PositionalArgumentNotAllowed
+```
+
+Applying both `@no-named-arguments` and `@only-named-arguments` on the same function or method is an error.
+
 ### `@psalm-ignore-variable-property` and `@psalm-ignore-variable-method`
 
 Instructs Psalm to ignore variable property fetch / variable method call when looking for dead code.

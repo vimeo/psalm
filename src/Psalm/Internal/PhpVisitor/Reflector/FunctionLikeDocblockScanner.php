@@ -125,12 +125,25 @@ final class FunctionLikeDocblockScanner
             $storage->internal = [NamespaceAnalyzer::getNameSpaceRoot($aliases->namespace)];
         }
 
+        if ($docblock_info->no_named_args && $docblock_info->only_named_args) {
+            $storage->docblock_issues[] = new InvalidDocblock(
+                '@no-named-arguments and @only-named-arguments are mutually exclusive in docblock for '
+                    . $cased_function_id,
+                new CodeLocation($file_scanner, $stmt, null, true),
+            );
+        }
+
         if (($storage->internal || ($classlike_storage && $classlike_storage->internal))
             && !$config->allow_internal_named_arg_calls
+            && !$docblock_info->only_named_args
         ) {
             $storage->allow_named_arg_calls = false;
         } elseif ($docblock_info->no_named_args) {
             $storage->allow_named_arg_calls = false;
+        }
+
+        if ($docblock_info->only_named_args && !$docblock_info->no_named_args) {
+            $storage->require_named_arg_calls = true;
         }
 
         if ($docblock_info->variadic) {

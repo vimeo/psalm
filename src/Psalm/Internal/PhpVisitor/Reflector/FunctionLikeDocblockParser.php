@@ -594,6 +594,10 @@ final class FunctionLikeDocblockParser
             $info->no_named_args = true;
         }
 
+        if (isset($parsed_docblock->tags['only-named-arguments'])) {
+            $info->only_named_args = true;
+        }
+
         $info->ignore_nullable_return = isset($parsed_docblock->tags['psalm-ignore-nullable-return']);
         $info->ignore_falsable_return = isset($parsed_docblock->tags['psalm-ignore-falsable-return']);
         $info->stub_override = isset($parsed_docblock->tags['psalm-stub-override']);

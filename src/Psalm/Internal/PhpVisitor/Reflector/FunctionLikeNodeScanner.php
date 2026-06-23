@@ -484,6 +484,14 @@ final class FunctionLikeNodeScanner
             }
         }
 
+        if ($classlike_storage
+            && !$classlike_storage->allow_named_arg_calls
+            && $storage->allow_named_arg_calls
+            && !$storage->require_named_arg_calls
+        ) {
+            $storage->allow_named_arg_calls = false;
+        }
+
         // register the functionlike once the @since check has been completed
         if ($stmt instanceof PhpParser\Node\Stmt\Function_
             && $function_id
