@@ -300,10 +300,22 @@ final class CastAnalyzer
 
         if ($stmt instanceof PhpParser\Node\Expr\Cast\Void_) {
             // PHP 8.5's (void) cast evaluates its operand and explicitly discards the result.
-            // It is the documented escape hatch for #[\NoDiscard]: analysing the operand under
-            // inside_general_use marks it as used, so no discarded-return-value issue is raised.
-            // The parser only produces this node when targeting PHP 8.5+, so no version guard
-            // is needed here.
+            // It is only valid as a statement; consuming its result is a compile error in PHP
+            // (the parser nikic/php-parser accepts more leniently), so reject it in any
+            // value-consuming position. Otherwise it is the documented escape hatch for
+            // #[\NoDiscard]: analysing the operand under inside_general_use marks it as used, so
+            // no discarded-return-value issue is raised. The parser only produces this node when
+            // targeting PHP 8.5+, so no version guard is needed here.
+            if ($context->insideUse()) {
+                IssueBuffer::maybeAdd(
+                    new InvalidCast(
+                        'The (void) cast can only be used as a statement, not as an expression',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
+
             $expression_result = self::checkExprGeneralUse($statements_analyzer, $stmt, $context);
 
             $statements_analyzer->node_data->setType($stmt, Type::getVoid());

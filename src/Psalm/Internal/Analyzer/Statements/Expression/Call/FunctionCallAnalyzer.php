@@ -1163,8 +1163,9 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             return;
         }
 
-        // A void/never return has nothing to discard, so the attribute is a no-op there.
-        $return_type = $function_call_info->function_storage->return_type;
+        // A void/never native return has nothing to discard. PHP rejects such a declaration
+        // outright (reported as InvalidAttribute), so this is just a defensive call-site guard.
+        $return_type = $function_call_info->function_storage->signature_return_type;
 
         if ($return_type !== null && ($return_type->isVoid() || $return_type->isNever())) {
             return;

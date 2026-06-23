@@ -184,16 +184,34 @@ final class NoDiscardTest extends TestCase
             'php_version' => '8.5',
         ];
 
-        yield 'noDiscardVoidOrNeverReturnIsNoOp' => [
+        yield 'noDiscardOnInterfaceMethodNotInherited' => [
             'code' => '<?php
-                #[\NoDiscard]
-                function f(): void {}
+                interface I {
+                    #[\NoDiscard]
+                    public function bar(): int;
+                }
 
-                #[\NoDiscard]
-                function g(): never { exit; }
+                // PHP does not inherit #[\NoDiscard] onto implementations, so a call resolved
+                // to the interface declaration must not report.
+                function takesI(I $i): void {
+                    $i->bar();
+                }
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.5',
+        ];
 
-                f();
-                g();
+        yield 'noDiscardOnAbstractMethodNotInherited' => [
+            'code' => '<?php
+                abstract class A {
+                    #[\NoDiscard]
+                    abstract public function bar(): int;
+                }
+
+                function takesA(A $a): void {
+                    $a->bar();
+                }
             ',
             'assertions' => [],
             'ignored_issues' => [],
@@ -432,18 +450,34 @@ final class NoDiscardTest extends TestCase
             'php_version' => '8.5',
         ];
 
-        yield 'noDiscardInterfaceMethodReturnValueDiscarded' => [
+        yield 'noDiscardOnVoidReturnIsInvalidDeclaration' => [
             'code' => '<?php
-                interface I {
-                    #[\NoDiscard]
-                    public function bar(): int;
-                }
-
-                function takesI(I $i): void {
-                    $i->bar();
-                }
+                #[\NoDiscard]
+                function f(): void {}
             ',
-            'error_message' => 'UnusedMethodCall',
+            'error_message' => 'InvalidAttribute',
+            'ignored_issues' => [],
+            'php_version' => '8.5',
+        ];
+
+        yield 'noDiscardOnNeverReturnIsInvalidDeclaration' => [
+            'code' => '<?php
+                #[\NoDiscard]
+                function f(): never { exit; }
+            ',
+            'error_message' => 'InvalidAttribute',
+            'ignored_issues' => [],
+            'php_version' => '8.5',
+        ];
+
+        yield 'voidCastInValuePositionIsInvalid' => [
+            'code' => '<?php
+                #[\NoDiscard]
+                function f(): int { return 1; }
+
+                $x = (void) f();
+            ',
+            'error_message' => 'InvalidCast',
             'ignored_issues' => [],
             'php_version' => '8.5',
         ];

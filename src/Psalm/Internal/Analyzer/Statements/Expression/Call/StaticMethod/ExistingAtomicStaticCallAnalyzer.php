@@ -321,8 +321,12 @@ final class ExistingAtomicStaticCallAnalyzer
             // PHP 8.5's #[\NoDiscard] requires the return value to be used, including for
             // static calls. Runs regardless of purity and the find-unused-variables setting,
             // but is gated on PHP 8.5 (where the attribute is enforced and the (void) escape
-            // hatch exists); a void/never return has nothing to discard.
+            // hatch exists). PHP does not inherit the attribute onto an implementation, so an
+            // abstract declaration alone never fires; a void/never native return has nothing
+            // to discard.
             if ($method_storage->no_discard
+                && !$method_storage->abstract
+                && !$class_storage->is_interface
                 && $codebase->analysis_php_version_id >= 8_05_00
                 && !$context->collect_initializations
                 && !$context->collect_mutations
@@ -330,8 +334,9 @@ final class ExistingAtomicStaticCallAnalyzer
                 && !$context->inside_unset
                 && !$context->insideUse()
                 && !(
-                    $method_storage->return_type
-                    && ($method_storage->return_type->isVoid() || $method_storage->return_type->isNever())
+                    $method_storage->signature_return_type
+                    && ($method_storage->signature_return_type->isVoid()
+                        || $method_storage->signature_return_type->isNever())
                 )
             ) {
                 IssueBuffer::maybeAdd(
