@@ -459,6 +459,43 @@ final class CloneTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.5',
             ],
+            'cloneWithUnknownNamedArgument' => [
+                'code' => '<?php
+                    class Foo {}
+                    $o = new Foo();
+                    clone(foo: $o);',
+                'error_message' => 'InvalidNamedArgument',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'cloneWithExtraPositionalArgument' => [
+                'code' => '<?php
+                    class Foo {}
+                    $o = new Foo();
+                    clone($o, [], []);',
+                'error_message' => 'TooManyArguments',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'cloneWithPropertyWriteAnnotationInvalidValue' => [
+                'code' => '<?php
+                    /** @property-write string $dynamic */
+                    class Foo {}
+                    $o = new Foo();
+                    clone($o, ["dynamic" => 1]);',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'cloneWithObjectPassedByPositionAndName' => [
+                'code' => '<?php
+                    class Foo {}
+                    $o = new Foo();
+                    clone($o, object: $o);',
+                'error_message' => 'InvalidNamedArgument',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
         ];
     }
 }

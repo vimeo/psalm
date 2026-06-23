@@ -17,13 +17,16 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\InvalidClone;
+use Psalm\Issue\InvalidNamedArgument;
 use Psalm\Issue\InvalidPropertyAssignmentValue;
 use Psalm\Issue\MixedClone;
 use Psalm\Issue\ParseError;
 use Psalm\Issue\PossiblyInvalidClone;
 use Psalm\Issue\PossiblyInvalidPropertyAssignmentValue;
+use Psalm\Issue\TooManyArguments;
 use Psalm\Issue\UndefinedPropertyAssignment;
 use Psalm\IssueBuffer;
 use Psalm\Storage\ClassLikeStorage;
@@ -39,6 +42,7 @@ use UnexpectedValueException;
 
 use function array_merge;
 use function array_pop;
+use function count;
 
 /**
  * @internal
@@ -109,16 +113,58 @@ final class CloneAnalyzer
             }
         }
 
+        // Resolve the object/withProperties arguments by position or name, and report
+        // argument-count and unknown-named-argument errors the normal call path would
+        // otherwise raise (it is skipped because clone is intercepted before it runs).
         $object_arg = null;
         $with_properties_arg = null;
+        $positional_count = 0;
 
-        foreach ($stmt->getArgs() as $i => $arg) {
+        foreach ($stmt->getArgs() as $arg) {
             $arg_name = $arg->name?->name;
 
-            if ($arg_name === 'object' || ($arg_name === null && $i === 0)) {
+            if ($arg_name === null) {
+                if ($positional_count === 0) {
+                    $object_arg = $arg;
+                } elseif ($positional_count === 1) {
+                    $with_properties_arg = $arg;
+                } else {
+                    IssueBuffer::maybeAdd(
+                        new TooManyArguments(
+                            'Too many arguments for clone - expecting 2 but saw ' . count($stmt->getArgs()),
+                            new CodeLocation($statements_analyzer->getSource(), $arg),
+                            'clone',
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+                }
+
+                ++$positional_count;
+            } elseif (($arg_name === 'object' && $object_arg !== null)
+                || ($arg_name === 'withProperties' && $with_properties_arg !== null)
+            ) {
+                // Named argument overwrites one already passed by position.
+                IssueBuffer::maybeAdd(
+                    new InvalidNamedArgument(
+                        'Parameter $' . $arg_name . ' of function clone is already passed by position',
+                        new CodeLocation($statements_analyzer->getSource(), $arg),
+                        'clone',
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            } elseif ($arg_name === 'object') {
                 $object_arg = $arg;
-            } elseif ($arg_name === 'withProperties' || ($arg_name === null && $i === 1)) {
+            } elseif ($arg_name === 'withProperties') {
                 $with_properties_arg = $arg;
+            } else {
+                IssueBuffer::maybeAdd(
+                    new InvalidNamedArgument(
+                        'Parameter $' . $arg_name . ' does not exist on function clone',
+                        new CodeLocation($statements_analyzer->getSource(), $arg),
+                        'clone',
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
             }
         }
 
@@ -377,14 +423,31 @@ final class CloneAnalyzer
         $property_id = $fq_class_name . '::$' . $prop_name;
 
         if (!$codebase->properties->propertyExists($property_id, false, $statements_analyzer, $context)) {
-            $has_magic_setter = $codebase->methods->methodExists(
-                new MethodIdentifier($fq_class_name, '__set'),
-            );
+            // A declared @property-write key is accepted, and its write type is checked.
+            $pseudo_set_type = $class_storage->pseudo_property_set_types['$' . $prop_name] ?? null;
 
-            // A magic __set (or a declared @property-write) can accept an unknown key.
-            if (!$has_magic_setter
-                && !isset($class_storage->pseudo_property_set_types['$' . $prop_name])
-            ) {
+            if ($pseudo_set_type !== null) {
+                if ($class_storage->template_types === null) {
+                    self::validatePropertyValueType(
+                        $statements_analyzer,
+                        $value_type,
+                        TypeExpander::expandUnion(
+                            $codebase,
+                            $pseudo_set_type,
+                            $fq_class_name,
+                            $fq_class_name,
+                            $class_storage->parent_class,
+                        ),
+                        $property_id,
+                        $location,
+                    );
+                }
+
+                return;
+            }
+
+            // Otherwise only a magic __set can accept the unknown key.
+            if (!$codebase->methods->methodExists(new MethodIdentifier($fq_class_name, '__set'))) {
                 IssueBuffer::maybeAdd(
                     new UndefinedPropertyAssignment(
                         'Instance property ' . $property_id . ' is not defined',
@@ -421,26 +484,46 @@ final class CloneAnalyzer
             return;
         }
 
-        // The value comparison is skipped when it cannot be performed faithfully:
-        //  - a generic cloned class, whose property types may reference template
-        //    parameters that are not resolved here (the type arguments are not threaded
-        //    into getExpandedPropertyType, so they stay as `T as ...`), or
-        //  - a null/mixed declared or value type.
-        // Skipping avoids false positives at the cost of not validating these values.
-        if ($class_property_type === null
-            || $class_storage->template_types !== null
-            || $class_property_type->hasMixed()
-            || $value_type->hasMixed()
-        ) {
+        // The value comparison is skipped for a generic cloned class, whose property
+        // types may reference template parameters that are not resolved here (the type
+        // arguments are not threaded into getExpandedPropertyType, so they stay as
+        // `T as ...`). Skipping avoids false positives at the cost of not validating.
+        if ($class_property_type === null || $class_storage->template_types !== null) {
             return;
         }
 
+        self::validatePropertyValueType(
+            $statements_analyzer,
+            $value_type,
+            $class_property_type,
+            $property_id,
+            $location,
+        );
+    }
+
+    /**
+     * Reports InvalidPropertyAssignmentValue / PossiblyInvalidPropertyAssignmentValue
+     * when the assigned value is not (possibly) assignable to the property's declared
+     * type, mirroring InstancePropertyAssignmentAnalyzer's value check.
+     */
+    private static function validatePropertyValueType(
+        StatementsAnalyzer $statements_analyzer,
+        Union $value_type,
+        Union $declared_type,
+        string $property_id,
+        CodeLocation $location,
+    ): void {
+        if ($declared_type->hasMixed() || $value_type->hasMixed()) {
+            return;
+        }
+
+        $codebase = $statements_analyzer->getCodebase();
         $comparison_result = new TypeComparisonResult();
 
         $type_match_found = UnionTypeComparator::isContainedBy(
             $codebase,
             $value_type,
-            $class_property_type,
+            $declared_type,
             true,
             true,
             $comparison_result,
@@ -450,10 +533,10 @@ final class CloneAnalyzer
             return;
         }
 
-        if (UnionTypeComparator::canBeContainedBy($codebase, $value_type, $class_property_type, true, true)) {
+        if (UnionTypeComparator::canBeContainedBy($codebase, $value_type, $declared_type, true, true)) {
             IssueBuffer::maybeAdd(
                 new PossiblyInvalidPropertyAssignmentValue(
-                    $property_id . ' with declared type \'' . $class_property_type->getId()
+                    $property_id . ' with declared type \'' . $declared_type->getId()
                         . '\' cannot be assigned possibly different type \'' . $value_type->getId() . '\'',
                     $location,
                     $property_id,
@@ -466,7 +549,7 @@ final class CloneAnalyzer
 
         IssueBuffer::maybeAdd(
             new InvalidPropertyAssignmentValue(
-                $property_id . ' with declared type \'' . $class_property_type->getId()
+                $property_id . ' with declared type \'' . $declared_type->getId()
                     . '\' cannot be assigned type \'' . $value_type->getId() . '\'',
                 $location,
                 $property_id,
