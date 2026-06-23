@@ -471,6 +471,17 @@ final class FunctionLikeDocblockScanner
         foreach ($fixed_type_tokens as $i => $type_token) {
             $token_body = $type_token[0];
 
+            if ($token_body === '$this') {
+                if ($i > 0
+                    && isset($fixed_type_tokens[$i - 1])
+                    && $fixed_type_tokens[$i - 1][0] === ' '
+                ) {
+                    unset($fixed_type_tokens[$i - 1]);
+                }
+
+                continue;
+            }
+
             if ($token_body[0] === '$') {
                 foreach ($storage->params as $j => $param_storage) {
                     if ('$' . $param_storage->name === $token_body) {
