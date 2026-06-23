@@ -250,6 +250,23 @@ final class AssertionFinder
             return $if_types ? [$if_types] : [];
         }
 
+        //A nullsafe property fetch also adds an assertion !null for the checked variable
+        if ($conditional instanceof PhpParser\Node\Expr\NullsafePropertyFetch) {
+            $if_types = [];
+
+            $var_name = ExpressionIdentifier::getExtendedVarId(
+                $conditional->var,
+                $this_class_name,
+                $source,
+            );
+
+            if ($var_name) {
+                $if_types[$var_name] = [[new IsNotType(new TNull())]];
+            }
+
+            return $if_types ? [$if_types] : [];
+        }
+
         if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater
             || $conditional instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual
         ) {
@@ -2091,6 +2108,20 @@ final class AssertionFinder
                 $if_types[$var_name] = [[new IsNotType(new TNull())]];
             } else {
                 $if_types[$var_name] = [[new Truthy()]];
+            }
+        } elseif ($base_conditional instanceof PhpParser\Node\Expr\NullsafePropertyFetch) {
+            $nullsafe_var_name = ExpressionIdentifier::getExtendedVarId(
+                $base_conditional->var,
+                $this_class_name,
+                $source,
+            );
+
+            if ($nullsafe_var_name) {
+                if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
+                    $if_types[$nullsafe_var_name] = [[new IsNotType(new TNull())]];
+                } else {
+                    $if_types[$nullsafe_var_name] = [[new Truthy()]];
+                }
             }
         }
 
