@@ -124,7 +124,7 @@ final class IncludeAnalyzer
                 TaintKind::INPUT_INCLUDE,
             );
 
-            $statements_analyzer->taint_flow_graph->addSink($include_param_sink, $arg_location);
+            $statements_analyzer->taint_flow_graph->addSink($include_param_sink);
 
             $codebase = $statements_analyzer->getCodebase();
             $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);

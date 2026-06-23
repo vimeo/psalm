@@ -97,7 +97,7 @@ final class DataFlowNode implements Stringable
         return self::make(
             $arg_id,
             $label,
-            self::getParameterLocation($storage, $argument_offset),
+            self::getParameterLocation($storage, $argument_offset) ?: ($storage ? null : $specialization_location),
             $specialization_key,
             $taints,
         );
@@ -138,7 +138,7 @@ final class DataFlowNode implements Stringable
         return self::make(
             strtolower($method_id),
             $cased_method_id,
-            self::getReturnLocation($storage),
+            self::getReturnLocation($storage) ?: ($storage ? null : $specialization_location),
             $specialization_key,
             $taints,
         );

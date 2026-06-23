@@ -845,12 +845,12 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     'variable-call',
                     'variable-call',
                     0,
-                    null,
+                    $function_call_info->function_storage,
                     $arg_location,
                     TaintKind::INPUT_CALLABLE,
                 );
 
-                $statements_analyzer->taint_flow_graph->addSink($custom_call_sink, $arg_location);
+                $statements_analyzer->taint_flow_graph->addSink($custom_call_sink);
 
                 $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
 

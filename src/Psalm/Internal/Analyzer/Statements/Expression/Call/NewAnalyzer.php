@@ -726,7 +726,7 @@ final class NewAnalyzer extends CallAnalyzer
                     TaintKind::INPUT_CALLABLE,
                 );
 
-                $statements_analyzer->taint_flow_graph->addSink($custom_call_sink, $arg_location);
+                $statements_analyzer->taint_flow_graph->addSink($custom_call_sink);
 
                 $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
 

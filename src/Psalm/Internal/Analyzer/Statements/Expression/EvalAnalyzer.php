@@ -52,7 +52,7 @@ final class EvalAnalyzer
                     TaintKind::INPUT_EVAL,
                 );
 
-                $statements_analyzer->taint_flow_graph->addSink($eval_param_sink, $arg_location);
+                $statements_analyzer->taint_flow_graph->addSink($eval_param_sink);
 
                 $codebase = $statements_analyzer->getCodebase();
                 $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);

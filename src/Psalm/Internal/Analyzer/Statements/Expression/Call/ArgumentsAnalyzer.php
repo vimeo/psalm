@@ -919,10 +919,7 @@ final class ArgumentsAnalyzer
                             );
                         }
 
-                        $statements_analyzer->taint_flow_graph->addSink(
-                            $sink,
-                            $function_storage ? null : $function_param->location,
-                        );
+                        $statements_analyzer->taint_flow_graph->addSink($sink);
                     }
                 }
             }

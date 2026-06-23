@@ -914,7 +914,7 @@ final class TaintTest extends TestCase
                     }
 
                     echo getName();',
-                'error_message' => 'TaintedHtml - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:26 - Detected tainted HTML in path: $_GET -> $_GET[\'name\'] (src' . DIRECTORY_SEPARATOR . 'somefile.php:3:32) -> coalesce (src' . DIRECTORY_SEPARATOR . 'somefile.php:3:32) -> getName (src' . DIRECTORY_SEPARATOR . 'somefile.php:2:42) -> call to echo (src' . DIRECTORY_SEPARATOR . 'somefile.php:6:26) -> echo#1',
+                'error_message' => 'TaintedHtml - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:21 - Detected tainted HTML in path: $_GET -> $_GET[\'name\'] (src' . DIRECTORY_SEPARATOR . 'somefile.php:3:32) -> coalesce (src' . DIRECTORY_SEPARATOR . 'somefile.php:3:32) -> getName (src' . DIRECTORY_SEPARATOR . 'somefile.php:2:42) -> call to echo (src' . DIRECTORY_SEPARATOR . 'somefile.php:6:26) -> echo#1',
             ],
             'taintedInputFromExplicitTaintSource' => [
                 'code' => '<?php
@@ -1759,7 +1759,7 @@ final class TaintTest extends TestCase
             'print' => [
                 'code' => '<?php
                     print($_GET["name"]);',
-                'error_message' => 'TaintedHtml - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:27 - Detected tainted HTML in path: $_GET -> $_GET[\'name\'] (src' . DIRECTORY_SEPARATOR . 'somefile.php:2:27) -> call to print (src' . DIRECTORY_SEPARATOR . 'somefile.php:2:27) -> print#1',
+                'error_message' => 'TaintedHtml - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:21 - Detected tainted HTML in path: $_GET -> $_GET[\'name\'] (src' . DIRECTORY_SEPARATOR . 'somefile.php:2:27) -> call to print (src' . DIRECTORY_SEPARATOR . 'somefile.php:2:27) -> print#1',
             ],
             'printf' => [
                 'code' => '<?php
