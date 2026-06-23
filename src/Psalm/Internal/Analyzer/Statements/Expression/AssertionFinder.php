@@ -83,6 +83,7 @@ use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosedResource;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
@@ -1709,6 +1710,21 @@ final class AssertionFinder
             return self::ASSIGNMENT_TO_RIGHT;
         }
 
+        // If the right operand is a variable with an int range type,
+        // extract its min_bound to narrow the left operand.
+        // e.g. $max >= $min where $min: int<5, max> → $max >= 5
+        if ($source instanceof StatementsAnalyzer
+            && ($type = $source->node_data->getType($conditional->right))
+        ) {
+            foreach ($type->getAtomicTypes() as $atomic_type) {
+                if ($atomic_type instanceof TIntRange && $atomic_type->min_bound !== null) {
+                    $literal_value_comparison = $atomic_type->min_bound;
+
+                    return self::ASSIGNMENT_TO_RIGHT;
+                }
+            }
+        }
+
         $left_assignment = false;
         $value_left = null;
         if ($source instanceof StatementsAnalyzer
@@ -1731,6 +1747,21 @@ final class AssertionFinder
             $literal_value_comparison = $value_left;
 
             return self::ASSIGNMENT_TO_LEFT;
+        }
+
+        // If the left operand is a variable with an int range type,
+        // extract its max_bound to narrow the right operand.
+        // e.g. $min <= $max where $min: int<min, 5> → $max <= 5
+        if ($source instanceof StatementsAnalyzer
+            && ($type = $source->node_data->getType($conditional->left))
+        ) {
+            foreach ($type->getAtomicTypes() as $atomic_type) {
+                if ($atomic_type instanceof TIntRange && $atomic_type->max_bound !== null) {
+                    $literal_value_comparison = $atomic_type->max_bound;
+
+                    return self::ASSIGNMENT_TO_LEFT;
+                }
+            }
         }
 
         return false;
@@ -1791,6 +1822,36 @@ final class AssertionFinder
             $literal_value_comparison = $value_left;
 
             return self::ASSIGNMENT_TO_LEFT;
+        }
+
+        // If the right operand is a variable with an int range type,
+        // extract its max_bound to narrow the left operand.
+        // e.g. $a < $b where $b: int<min, 5> → $a < 5
+        if ($source instanceof StatementsAnalyzer
+            && ($type = $source->node_data->getType($conditional->right))
+        ) {
+            foreach ($type->getAtomicTypes() as $atomic_type) {
+                if ($atomic_type instanceof TIntRange && $atomic_type->max_bound !== null) {
+                    $literal_value_comparison = $atomic_type->max_bound;
+
+                    return self::ASSIGNMENT_TO_RIGHT;
+                }
+            }
+        }
+
+        // If the left operand is a variable with an int range type,
+        // extract its min_bound to narrow the right operand.
+        // e.g. $a < $b where $a: int<5, max> → $b > 5
+        if ($source instanceof StatementsAnalyzer
+            && ($type = $source->node_data->getType($conditional->left))
+        ) {
+            foreach ($type->getAtomicTypes() as $atomic_type) {
+                if ($atomic_type instanceof TIntRange && $atomic_type->min_bound !== null) {
+                    $literal_value_comparison = $atomic_type->min_bound;
+
+                    return self::ASSIGNMENT_TO_LEFT;
+                }
+            }
         }
 
         return false;
