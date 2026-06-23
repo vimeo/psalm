@@ -1034,6 +1034,48 @@ final class IntRangeTest extends TestCase
                     '$z' => 'int<min, 9223372036854775807>|null',
                 ],
             ],
+            'intRangeInGenericWidensToInt' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array-key
+                     */
+                    class Box {
+                        /** @var T */
+                        private $value;
+                        /** @param T $value */
+                        public function __construct($value) { $this->value = $value; }
+                        /** @return T */
+                        public function get() { return $this->value; }
+                    }
+
+                    /** @return Box<int> */
+                    function makeBox(): Box {
+                        /** @var Box<int<0, 5>> */
+                        $box = new Box(3);
+                        return $box;
+                    }',
+            ],
+            'intRangeNegativeInGenericWidensToInt' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array-key
+                     */
+                    class Box {
+                        /** @var T */
+                        private $value;
+                        /** @param T $value */
+                        public function __construct($value) { $this->value = $value; }
+                        /** @return T */
+                        public function get() { return $this->value; }
+                    }
+
+                    /** @return Box<int> */
+                    function makeBox(): Box {
+                        /** @var Box<int<min, -1>> */
+                        $box = new Box(-5);
+                        return $box;
+                    }',
+            ],
         ];
     }
 
