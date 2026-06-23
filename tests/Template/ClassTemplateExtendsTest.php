@@ -4699,6 +4699,32 @@ final class ClassTemplateExtendsTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'invariantTemplateArgWithThisAcceptsConcreteEquivalent' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Wrapper {
+                        /** @var T */
+                        public $value;
+                        /** @param T $v */
+                        public function __construct($v) { $this->value = $v; }
+                    }
+
+                    class Foo {
+                        /** @return Wrapper<$this> */
+                        public function rel(): Wrapper {
+                            return new Wrapper($this);
+                        }
+                    }
+
+                    class Sub extends Foo {}
+
+                    final class Caller {
+                        /** @return Wrapper<Sub> */
+                        public function callIt(Sub $s): Wrapper {
+                            return $s->rel();
+                        }
+                    }',
+            ],
         ];
     }
 
