@@ -36,7 +36,7 @@ final class DocComment
         'taint-unescape', 'self-out', 'consistent-constructor', 'stub-override',
         'require-extends', 'require-implements', 'param-out', 'ignore-var',
         'consistent-templates', 'if-this-is', 'this-out', 'check-type', 'check-type-exact',
-        'api', 'inheritors',
+        'api', 'inheritors', 'fixme',
     ];
 
     /**
@@ -48,6 +48,13 @@ final class DocComment
             $docblock->getText(),
             $docblock->getStartFilePos(),
         );
+
+        // @psalm-fixme suppresses exactly like @psalm-suppress, but marks the
+        // issue as a known problem to fix (e.g. migrated from a baseline).
+        if (isset($parsed_docblock->tags['psalm-fixme'])) {
+            $parsed_docblock->tags['psalm-suppress'] =
+                ($parsed_docblock->tags['psalm-suppress'] ?? []) + $parsed_docblock->tags['psalm-fixme'];
+        }
 
         if ($no_psalm_error) {
             return $parsed_docblock;
