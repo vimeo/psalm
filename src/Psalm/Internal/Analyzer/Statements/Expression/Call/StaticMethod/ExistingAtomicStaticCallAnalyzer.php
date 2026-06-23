@@ -28,6 +28,7 @@ use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\ContainsStaticVisitor;
 use Psalm\Issue\AbstractMethodCall;
 use Psalm\Issue\ImpureMethodCall;
+use Psalm\Issue\UnusedMethodCall;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AfterMethodCallAnalysisEvent;
 use Psalm\Storage\ClassLikeStorage;
@@ -315,6 +316,37 @@ final class ExistingAtomicStaticCallAnalyzer
 
                     $statements_analyzer->getSource()->inferred_impure = true;
                 }
+            }
+
+            // PHP 8.5's #[\NoDiscard] requires the return value to be used, including for
+            // static calls. Runs regardless of purity and the find-unused-variables setting,
+            // but is gated on PHP 8.5 (where the attribute is enforced and the (void) escape
+            // hatch exists). PHP does not inherit the attribute onto an implementation, so an
+            // abstract declaration alone never fires; a void/never native return has nothing
+            // to discard.
+            if ($method_storage->no_discard
+                && !$method_storage->abstract
+                && !$class_storage->is_interface
+                && $codebase->analysis_php_version_id >= 8_05_00
+                && !$context->collect_initializations
+                && !$context->collect_mutations
+                && !$stmt->isFirstClassCallable()
+                && !$context->inside_unset
+                && !$context->insideUse()
+                && !(
+                    $method_storage->signature_return_type
+                    && ($method_storage->signature_return_type->isVoid()
+                        || $method_storage->signature_return_type->isNever())
+                )
+            ) {
+                IssueBuffer::maybeAdd(
+                    new UnusedMethodCall(
+                        'The call to ' . $cased_method_id . ' is not used',
+                        new CodeLocation($statements_analyzer, $stmt_name),
+                        (string) $method_id,
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
             }
 
             $assertionsResolver = new AssertionsFromInheritanceResolver($codebase);

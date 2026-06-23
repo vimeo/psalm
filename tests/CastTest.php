@@ -14,6 +14,17 @@ final class CastTest extends TestCase
     #[Override]
     public function providerValidCodeParse(): iterable
     {
+        yield 'voidCastDiscardsValueWithoutError' => [
+            'code' => '<?php
+                $x = strlen("hello");
+                (void) $x;
+                (void) strlen("world");
+                echo "reachable";
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.5',
+        ];
         yield 'SKIPPED-castFalseOrIntToInt' => [
             'code' => '<?php
                 /** @var false|int<10, 20> */

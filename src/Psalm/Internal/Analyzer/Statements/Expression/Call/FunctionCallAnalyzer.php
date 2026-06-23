@@ -357,6 +357,14 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             $context,
         );
 
+        self::checkFunctionNoDiscard(
+            $statements_analyzer,
+            $stmt,
+            $function_name,
+            $function_call_info,
+            $context,
+        );
+
         if ($function_call_info->function_storage) {
             if ($function_call_info->function_storage->assertions && $function_name instanceof PhpParser\Node\Name) {
                 self::applyAssertionsToContext(
@@ -1119,6 +1127,58 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 }
             }
         }
+    }
+
+    /**
+     * Reports the return value of a `#[\NoDiscard]` function being discarded at a call site.
+     *
+     * Unlike the pure-call check in {@see self::checkFunctionCallPurity()}, this runs
+     * regardless of purity and the find-unused-variables setting, matching PHP 8.5's
+     * runtime behaviour. A `(void)` cast is the documented escape hatch: it analyses its
+     * operand with `inside_general_use`, so `$context->insideUse()` is already true there.
+     *
+     * `#[\NoDiscard]` is only enforced by PHP from 8.5, where the `(void)` escape hatch also
+     * becomes available, so the report is gated on the analysis PHP version. Below 8.5 the
+     * attribute is inert at runtime and `@psalm-suppress` remains the only way to silence it.
+     */
+    private static function checkFunctionNoDiscard(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\FuncCall $stmt,
+        PhpParser\Node $function_name,
+        FunctionCallInfo $function_call_info,
+        Context $context,
+    ): void {
+        if ($context->collect_initializations
+            || $context->collect_mutations
+            || $stmt->isFirstClassCallable()
+            || $statements_analyzer->getCodebase()->analysis_php_version_id < 8_05_00
+            || $function_call_info->function_id === null
+            || $function_call_info->function_storage === null
+            || !$function_call_info->function_storage->no_discard
+        ) {
+            return;
+        }
+
+        if ($context->inside_unset || $context->insideUse()) {
+            return;
+        }
+
+        // A void/never native return has nothing to discard. PHP rejects such a declaration
+        // outright (reported as InvalidAttribute), so this is just a defensive call-site guard.
+        $return_type = $function_call_info->function_storage->signature_return_type;
+
+        if ($return_type !== null && ($return_type->isVoid() || $return_type->isNever())) {
+            return;
+        }
+
+        IssueBuffer::maybeAdd(
+            new UnusedFunctionCall(
+                'The call to ' . $function_call_info->function_id . ' is not used',
+                new CodeLocation($statements_analyzer, $function_name),
+                $function_call_info->function_id,
+            ),
+            $statements_analyzer->getSuppressedIssues(),
+        );
     }
 
     private static function callUsesByReferenceArguments(
