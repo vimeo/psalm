@@ -1978,7 +1978,6 @@ final class SimpleAssertionReconciler extends Reconciler
             if ($atomic_type instanceof TIntRange) {
                 if ($atomic_type->contains($assertion_value)) {
                     // if the range contains the assertion, the range must be adapted
-                    $redundant = false;
                     $existing_var_type->removeType($atomic_type->getKey());
                     $min_bound = $atomic_type->min_bound;
                     if ($min_bound === null) {
@@ -1988,6 +1987,9 @@ final class SimpleAssertionReconciler extends Reconciler
                             $assertion_value,
                             $min_bound,
                         );
+                    }
+                    if ($min_bound !== $atomic_type->min_bound) {
+                        $redundant = false;
                     }
                     $existing_var_type->addType(new TIntRange(
                         $min_bound,
@@ -2087,13 +2089,15 @@ final class SimpleAssertionReconciler extends Reconciler
             if ($atomic_type instanceof TIntRange) {
                 if ($atomic_type->contains($assertion_value)) {
                     // if the range contains the assertion, the range must be adapted
-                    $redundant = false;
                     $existing_var_type->removeType($atomic_type->getKey());
                     $max_bound = $atomic_type->max_bound;
                     if ($max_bound === null) {
                         $max_bound = $assertion_value;
                     } else {
                         $max_bound = min($max_bound, $assertion_value);
+                    }
+                    if ($max_bound !== $atomic_type->max_bound) {
+                        $redundant = false;
                     }
                     $existing_var_type->addType(new TIntRange(
                         $atomic_type->min_bound,

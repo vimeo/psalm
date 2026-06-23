@@ -1034,6 +1034,26 @@ final class IntRangeTest extends TestCase
                     '$z' => 'int<min, 9223372036854775807>|null',
                 ],
             ],
+            'positiveIntGreaterThan1IsNotRedundant' => [
+                'code' => '<?php
+                    /**
+                     * @param positive-int $a
+                     */
+                    function scope(int $a): int{
+                        assert($a > 1);
+                        return $a;
+                    }',
+            ],
+            'boundedRangeGreaterThanMinIsNotRedundant' => [
+                'code' => '<?php
+                    /**
+                     * @param int<5, 10> $a
+                     */
+                    function scope(int $a): int{
+                        assert($a > 5);
+                        return $a;
+                    }',
+            ],
         ];
     }
 
@@ -1062,6 +1082,36 @@ final class IntRangeTest extends TestCase
                         assert($a === 0);
                     }',
                 'error_message' => 'DocblockTypeContradiction',
+            ],
+            'positiveIntGreaterThanZeroIsRedundant' => [
+                'code' => '<?php
+                    /**
+                     * @param positive-int $a
+                     */
+                    function scope(int $a): void{
+                        assert($a > 0);
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
+            ],
+            'negativeIntLessThanZeroIsRedundant' => [
+                'code' => '<?php
+                    /**
+                     * @param negative-int $a
+                     */
+                    function scope(int $a): void{
+                        assert($a < 0);
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
+            ],
+            'boundedRangeGreaterThanBelowMinIsRedundant' => [
+                'code' => '<?php
+                    /**
+                     * @param int<5, 10> $a
+                     */
+                    function scope(int $a): void{
+                        assert($a > 4);
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
             ],
             'assertRedundantInferior' => [
                 'code' => '<?php
