@@ -35,6 +35,31 @@ final class ClassLikeStringTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testAllowBuiltinClassStringStandInForNewClass(): void
+    {
+        $this->expectNotToPerformAssertions();
+
+        // Reproduces a crash present since 3.4.0@99e6cd819f829babf50c5852d6f62d40b1fec9d9 (2019-06-03).
+        Config::getInstance()->allow_string_standin_for_class = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace Foo;
+
+                class UsesBuiltinClassString
+                {
+                    public function run(): void
+                    {
+                        $throwable_class = "\\AssertionError";
+                        throw new $throwable_class("failed");
+                    }
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testDontAllowStringStandInForStaticMethodCall(): void
     {
         $this->expectExceptionMessage('InvalidStringClass');
