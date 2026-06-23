@@ -206,6 +206,10 @@ final class Reflection
         foreach ($reflection_methods as $reflection_method) {
             $method_reflection_class = $reflection_method->getDeclaringClass();
 
+            if (!InternalCallMapHandler::allowReflection($method_reflection_class->name . '::' . $reflection_method->getName())) {
+                continue;
+            }
+
             $this->registerClass($method_reflection_class);
 
             $this->extractReflectionMethodInfo($reflection_method);
@@ -247,6 +251,11 @@ final class Reflection
             return;
         }
 
+        $declaring_class = $method->getDeclaringClass();
+        if (!InternalCallMapHandler::allowReflection($declaring_class->name . '::' . $method_name_lc)) {
+            return;
+        }
+
         $method_id = $method->class . '::' . $method_name_lc;
 
         $storage = $class_storage->methods[$method_name_lc] = new MethodStorage();
@@ -268,8 +277,6 @@ final class Reflection
                 $method_name_lc,
             );
         }
-
-        $declaring_class = $method->getDeclaringClass();
 
         $storage->is_static = $method->isStatic();
         $storage->abstract = $method->isAbstract();
@@ -358,25 +365,22 @@ final class Reflection
      */
     public function registerFunction(string $function_id): ?bool
     {
+        if (isset(self::$builtin_functions[$function_id])) {
+            return null;
+        }
+
+        $callmap_callable = null;
+        if (InternalCallMapHandler::inCallMap($function_id)) {
+            $callmap_callable = InternalCallMapHandler::getCallableFromCallMapById(
+                $this->codebase,
+                $function_id,
+                [],
+                null,
+            );
+        }
+
         try {
-            $reflection_function = new ReflectionFunction($function_id);
-
-            $callmap_callable = null;
-
-            if (isset(self::$builtin_functions[$function_id])) {
-                return null;
-            }
-
             $storage = self::$builtin_functions[$function_id] = new FunctionStorage();
-
-            if (InternalCallMapHandler::inCallMap($function_id)) {
-                $callmap_callable = InternalCallMapHandler::getCallableFromCallMapById(
-                    $this->codebase,
-                    $function_id,
-                    [],
-                    null,
-                );
-            }
 
             if ($callmap_callable !== null
                 && $callmap_callable->params !== null
@@ -384,7 +388,18 @@ final class Reflection
             ) {
                 $storage->setParams($callmap_callable->params);
                 $storage->return_type = $callmap_callable->return_type;
-            } else {
+
+                // nested, since want to use the callmap anyway, even if we cannot get the cased name
+                try {
+                    // just the cased name can be reflected in all cases
+                    $reflection_function = new ReflectionFunction($function_id);
+                    $storage->cased_name = $reflection_function->getName();
+                } catch (ReflectionException) {
+                    // doesn't exist yet/anymore in the current PHP runtime
+                }
+            } elseif (InternalCallMapHandler::allowReflection($function_id)) {
+                $reflection_function = new ReflectionFunction($function_id);
+
                 $reflection_params = $reflection_function->getParameters();
 
                 foreach ($reflection_params as $param) {
@@ -399,9 +414,21 @@ final class Reflection
                 ) : $reflection_function->getReturnType())) {
                     $storage->return_type = self::getPsalmTypeFromReflectionType($reflection_return_type);
                 }
+
+                $storage->cased_name = $reflection_function->getName();
+            } else {
+                unset(self::$builtin_functions[$function_id]);
+                return false;
             }
 
-            $storage->pure = true;
+            $must_use = true;
+            $storage->pure = $this->codebase->functions->isCallMapFunctionPure(
+                $this->codebase,
+                null,
+                $function_id,
+                [],
+                $must_use
+            );
 
             $storage->required_param_count = 0;
 
@@ -410,9 +437,8 @@ final class Reflection
                     $storage->required_param_count = $i + 1;
                 }
             }
-
-            $storage->cased_name = $reflection_function->getName();
         } catch (ReflectionException) {
+            unset(self::$builtin_functions[$function_id]);
             return false;
         }
 

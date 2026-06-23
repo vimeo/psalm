@@ -98,6 +98,13 @@ class DateTimeImmutable implements DateTimeInterface
      * @return static
      */
     public static function createFromMutable(DateTime $object) {}
+
+    /**
+     * @psalm-mutation-free
+     * @return static
+     * @since 8.4.0
+     */
+    public function setMicrosecond(int $microsecond) {}
 }
 
 /**

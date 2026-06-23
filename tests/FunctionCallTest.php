@@ -2473,6 +2473,37 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '7.4',
             ],
+            'functionStubbedAddedBeforeAnalyzedVersion' => [
+                'code' => '<?php
+                    $array = array(rand(10, 20) => "bar");
+                    echo array_key_first($array);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'functionAddedBeforeAnalyzedVersion' => [
+                'code' => '<?php
+                    json_validate("asdf");',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'functionReturnTypeChangedAnalyzedVersion' => [
+                'code' => '<?php
+                    $array = array("b", "a");
+                    $x = natsort($array);',
+                'assertions' => ['$x===' => 'bool'],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'functionReturnTypeChangedAnalyzedVersionNew' => [
+                'code' => '<?php
+                    $array = array("b", "a");
+                    $x = natsort($array);',
+                'assertions' => ['$x===' => 'true'],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
         ];
     }
 
@@ -3225,6 +3256,21 @@ final class FunctionCallTest extends TestCase
                 'error_message' => 'InvalidScalarArgument',
                 'ignored_issues' => [],
                 'php_version' => '7.4',
+            ],
+            'functionStubbedDoesNotExistYetInAnalyzedVersion' => [
+                'code' => '<?php
+                    $array = array(rand(10, 20) => "bar");
+                    echo array_key_first($array);',
+                'error_message' => 'UndefinedFunction',
+                'ignored_issues' => [],
+                'php_version' => '7.2',
+            ],
+            'functionDoesNotExistYetInAnalyzedVersion' => [
+                'code' => '<?php
+                    json_validate("asdf");',
+                'error_message' => 'UndefinedFunction',
+                'ignored_issues' => [],
+                'php_version' => '8.2',
             ],
         ];
     }
