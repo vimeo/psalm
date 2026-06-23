@@ -62,9 +62,7 @@ final class InArrayReturnTypeProvider implements FunctionReturnTypeProviderInter
         /**
          * @var TKeyedArray|TArray|null
          */
-        $array_arg_type = isset($types['array'])
-            ? $types['array']
-            : null;
+        $array_arg_type = $types['array'] ?? null;
 
         if ($array_arg_type instanceof TKeyedArray) {
             $array_arg_type = $array_arg_type->getGenericArrayType();
