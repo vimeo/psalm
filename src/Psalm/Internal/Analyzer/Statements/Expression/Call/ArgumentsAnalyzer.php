@@ -60,6 +60,7 @@ use function array_slice;
 use function array_values;
 use function assert;
 use function count;
+use function explode;
 use function in_array;
 use function is_string;
 use function max;
@@ -235,6 +236,23 @@ final class ArgumentsAnalyzer
                     $arg,
                     $param,
                 );
+            }
+
+            if ($arg->value instanceof PhpParser\Node\Expr\Closure
+                || $arg->value instanceof PhpParser\Node\Expr\ArrowFunction
+            ) {
+                $arg->value->setAttribute('psalm-closure-this-type', null);
+
+                if ($param && $param->closure_this_type) {
+                    self::applyParamClosureThisHint(
+                        $statements_analyzer,
+                        $method_id,
+                        $context,
+                        $template_result ?? new TemplateResult([], []),
+                        $arg,
+                        $param,
+                    );
+                }
             }
 
             $was_inside_call = $context->inside_call;
@@ -559,6 +577,95 @@ final class ArgumentsAnalyzer
                 );
             }
         }
+    }
+
+    /**
+     * Resolves `@param-closure-this` against the call site and stamps the resolved type as
+     * a PHP-Parser node attribute on the Closure/ArrowFunction so ClosureAnalyzer can bind
+     * `$this` inside the closure body.
+     */
+    private static function applyParamClosureThisHint(
+        StatementsAnalyzer $statements_analyzer,
+        ?string $method_id,
+        Context $context,
+        TemplateResult $template_result,
+        PhpParser\Node\Arg $arg,
+        FunctionLikeParameter $param,
+    ): void {
+        if (!$param->closure_this_type) {
+            return;
+        }
+
+        $codebase = $statements_analyzer->getCodebase();
+
+        $self_fq_class_name = $context->self;
+        $static_fq_class_name = null;
+        $parent_fq_class_name = null;
+        $static_class_is_final = false;
+
+        if ($method_id !== null && str_contains($method_id, '::')) {
+            [$called_class, $method_name] = explode('::', $method_id, 2);
+            $static_fq_class_name = $called_class;
+            $self_fq_class_name = $called_class;
+
+            $method_name_lc = strtolower($method_name);
+
+            if ($codebase->classlike_storage_provider->has($called_class)) {
+                $called_class_storage = $codebase->classlike_storage_provider->get($called_class);
+                $static_class_is_final = $called_class_storage->final;
+
+                if (isset($called_class_storage->declaring_method_ids[$method_name_lc])) {
+                    $self_fq_class_name = $called_class_storage->declaring_method_ids[$method_name_lc]
+                        ->fq_class_name;
+                }
+            }
+        }
+
+        if ($self_fq_class_name !== null
+            && $codebase->classlike_storage_provider->has($self_fq_class_name)
+        ) {
+            $parent_fq_class_name = $codebase->classlike_storage_provider->get($self_fq_class_name)
+                ->parent_class;
+        }
+
+        $closure_this_type = $param->closure_this_type;
+
+        if ($template_result->lower_bounds || $template_result->template_types) {
+            $closure_this_type = TemplateStandinTypeReplacer::replace(
+                $closure_this_type,
+                $template_result,
+                $codebase,
+                $statements_analyzer,
+                null,
+                null,
+                $context->self,
+                $context->calling_method_id ?: $context->calling_function_id,
+            );
+
+            $closure_this_type = TemplateInferredTypeReplacer::replace(
+                $closure_this_type,
+                $template_result,
+                $codebase,
+            );
+        }
+
+        $static_type = $static_fq_class_name !== null
+            ? new TNamedObject($static_fq_class_name, true, $static_class_is_final)
+            : null;
+
+        $closure_this_type = TypeExpander::expandUnion(
+            $codebase,
+            $closure_this_type,
+            $self_fq_class_name,
+            $static_type,
+            $parent_fq_class_name,
+            true,
+            false,
+            $static_class_is_final,
+            true,
+        );
+
+        $arg->value->setAttribute('psalm-closure-this-type', $closure_this_type);
     }
 
     /**

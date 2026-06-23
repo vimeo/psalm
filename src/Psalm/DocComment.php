@@ -34,7 +34,7 @@ final class DocComment
         'allow-private-mutation', 'readonly-allow-private-mutation',
         'yield', 'trace', 'import-type', 'flow', 'taint-specialize', 'taint-escape',
         'taint-unescape', 'self-out', 'consistent-constructor', 'stub-override',
-        'require-extends', 'require-implements', 'param-out', 'ignore-var',
+        'require-extends', 'require-implements', 'param-out', 'param-closure-this', 'ignore-var',
         'consistent-templates', 'if-this-is', 'this-out', 'check-type', 'check-type-exact',
         'api', 'inheritors',
     ];
