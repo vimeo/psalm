@@ -298,6 +298,19 @@ final class CastAnalyzer
             return true;
         }
 
+        if ($stmt instanceof PhpParser\Node\Expr\Cast\Void_) {
+            // PHP 8.5's (void) cast evaluates its operand and explicitly discards the result.
+            // It is the documented escape hatch for #[\NoDiscard]: analysing the operand under
+            // inside_general_use marks it as used, so no discarded-return-value issue is raised.
+            // The parser only produces this node when targeting PHP 8.5+, so no version guard
+            // is needed here.
+            $expression_result = self::checkExprGeneralUse($statements_analyzer, $stmt, $context);
+
+            $statements_analyzer->node_data->setType($stmt, Type::getVoid());
+
+            return $expression_result;
+        }
+
         IssueBuffer::maybeAdd(
             new UnrecognizedExpression(
                 'Psalm does not understand the cast ' . $stmt::class,
