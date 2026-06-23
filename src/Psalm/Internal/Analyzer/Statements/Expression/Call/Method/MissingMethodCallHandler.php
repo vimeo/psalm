@@ -116,6 +116,13 @@ final class MissingMethodCallHandler
 
             [$pseudo_method_storage, $defining_class_storage] = $found_method_and_class_storage;
 
+            if (!$context->isSuppressingExceptions($statements_analyzer)) {
+                $context->mergeFunctionExceptions(
+                    $pseudo_method_storage,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                );
+            }
+
             $found_generic_params = ClassTemplateParamCollector::collect(
                 $codebase,
                 $defining_class_storage,
@@ -276,6 +283,13 @@ final class MissingMethodCallHandler
             if ($stmt->isFirstClassCallable()) {
                 $result->return_type = self::createFirstClassCallableReturnType($pseudo_method_storage);
                 return;
+            }
+
+            if (!$context->isSuppressingExceptions($statements_analyzer)) {
+                $context->mergeFunctionExceptions(
+                    $pseudo_method_storage,
+                    new CodeLocation($statements_analyzer, $stmt->name),
+                );
             }
 
             $found_generic_params = ClassTemplateParamCollector::collect(
