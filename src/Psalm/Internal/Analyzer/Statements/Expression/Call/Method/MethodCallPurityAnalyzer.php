@@ -133,6 +133,33 @@ final class MethodCallPurityAnalyzer
             }
         }
 
+        // PHP 8.5's #[\NoDiscard] requires the return value to be used. Unlike the
+        // pure/mutation-free check above, this runs regardless of purity and the
+        // find-unused-variables setting. It is gated on PHP 8.5 (where the attribute is
+        // enforced and the (void) escape hatch exists). A void/never return has nothing
+        // to discard.
+        if ($method_storage->no_discard
+            && $codebase->analysis_php_version_id >= 8_05_00
+            && !$context->collect_initializations
+            && !$context->collect_mutations
+            && !$stmt->isFirstClassCallable()
+            && !$context->inside_unset
+            && !$context->insideUse()
+            && !(
+                $method_storage->return_type
+                && ($method_storage->return_type->isVoid() || $method_storage->return_type->isNever())
+            )
+        ) {
+            IssueBuffer::maybeAdd(
+                new UnusedMethodCall(
+                    'The call to ' . $cased_method_id . ' is not used',
+                    new CodeLocation($statements_analyzer, $stmt->name),
+                    (string) $method_id,
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
+
         if ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
             && $statements_analyzer->getSource()->track_mutations
             && !$method_storage->mutation_free

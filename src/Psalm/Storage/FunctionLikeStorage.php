@@ -144,6 +144,15 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
     public bool $pure = false;
 
     /**
+     * Whether the return value of this function/method must be used by callers.
+     *
+     * Set when the function-like is annotated with PHP 8.5's `#[\NoDiscard]` attribute.
+     * When true, Psalm reports the return value being discarded at a call site
+     * independently of purity and the find-unused-variables setting.
+     */
+    public bool $no_discard = false;
+
+    /**
      * Whether or not the function output is dependent solely on input - a function can be
      * impure but still have this property (e.g. var_export). Useful for taint analysis.
      */
