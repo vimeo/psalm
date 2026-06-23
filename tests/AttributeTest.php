@@ -43,6 +43,32 @@ final class AttributeTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'overrideAttributeOnOverriddenMethod' => [
+                'code' => '<?php
+                    class A
+                    {
+                        public function f(): void {}
+                    }
+
+                    class B extends A
+                    {
+                        #[\Override]
+                        public function f(): void {}
+                    }',
+            ],
+            'overrideAttributeOnOverriddenProperty' => [
+                'code' => '<?php
+                    class A
+                    {
+                        protected int $x = 1;
+                    }
+
+                    class B extends A
+                    {
+                        #[\Override]
+                        protected int $x = 2;
+                    }',
+            ],
             'classAndPropertyAttributesExists' => [
                 'code' => '<?php
                     namespace Foo;
@@ -737,6 +763,18 @@ final class AttributeTest extends TestCase
                     $r->getAttributes(Attr::class);
                 ',
                 'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:39 - Attribute Attr cannot be used on a class constant',
+            ],
+            'getAttributesOnClassConstantWithOverrideAttribute' => [
+                'code' => '<?php
+                    class Foo
+                    {
+                        public const BAR = "baz";
+                    }
+
+                    $r = new ReflectionClassConstant(Foo::class, "BAR");
+                    $r->getAttributes(\Override::class);
+                ',
+                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:39 - Attribute Override cannot be used on a class constant',
             ],
             'getAttributesOnParameterWithNonParameterAttribute' => [
                 'code' => '<?php
