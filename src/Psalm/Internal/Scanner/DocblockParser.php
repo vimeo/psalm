@@ -279,6 +279,16 @@ final class DocblockParser
                 + ($docblock->tags['phpstan-param-out'] ?? [])
                 + ($docblock->tags['psalm-param-out'] ?? []);
         }
+
+        if (isset($docblock->tags['psalm-inheritors'])
+            || isset($docblock->tags['phpstan-sealed'])
+        ) {
+            if (isset($docblock->tags['psalm-inheritors'])) {
+                $docblock->combined_tags['psalm-inheritors'] = $docblock->tags['psalm-inheritors'];
+            } else {
+                $docblock->combined_tags['psalm-inheritors'] = $docblock->tags['phpstan-sealed'];
+            }
+        }
     }
 
     /**
