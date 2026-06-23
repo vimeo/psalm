@@ -650,14 +650,26 @@ final class Psalm
             ? $options['show-info'] === 'true' || $options['show-info'] === '1'
             : false;
 
+        // CI takes precedence over AI detection: persistent CI logs still want
+        // per-phase breadcrumbs for humans reviewing the build. Agents that
+        // need the CI log quieted can pass --no-progress explicitly.
+        $no_progress = isset($options['no-progress'])
+            || (!$in_ci
+                && !isset($options['long-progress'])
+                && CliUtils::runningUnderAiAgent());
+
         if ($debug) {
             $progress = new DebugProgress();
-        } elseif (isset($options['no-progress'])) {
+        } elseif ($no_progress) {
             $progress = new VoidProgress();
         } else {
             $show_errors = !$config->error_baseline || isset($options['ignore-baseline']);
-            if (isset($options['long-progress'])) {
-                $progress = new LongProgress($show_errors, $show_info, $in_ci);
+            // A `\r`-based progress bar on a piped stderr just floods the log
+            // with every intermediate update. Fall back to the CI-style output,
+            // which emits one line per phase transition.
+            $quiet_progress = $in_ci || !CliUtils::streamIsInteractive(STDERR);
+            if (isset($options['long-progress']) || $quiet_progress) {
+                $progress = new LongProgress($show_errors, $show_info, $quiet_progress);
             } else {
                 $progress = new DefaultProgress($show_errors, $show_info, $in_ci);
             }
@@ -865,7 +877,9 @@ final class Psalm
         bool $in_ci,
     ): ReportOptions {
         $stdout_report_options = new ReportOptions();
-        $stdout_report_options->use_color = !array_key_exists('m', $options);
+        $stdout_report_options->use_color = !array_key_exists('m', $options)
+            && !CliUtils::noColorRequested()
+            && !CliUtils::runningUnderAiAgent();
         $stdout_report_options->show_info = $show_info;
         $stdout_report_options->show_suggestions = !array_key_exists('no-suggestions', $options);
         /**
@@ -1468,7 +1482,9 @@ final class Psalm
 
         Output:
             -m, --monochrome
-                Enable monochrome output
+                Enable monochrome output.
+                Auto-enabled when NO_COLOR is set to a non-empty value or when
+                an AI coding agent is driving the shell.
 
             --output-format=console
                 Changes the output format.
@@ -1476,10 +1492,13 @@ final class Psalm
                     $outputFormats
 
             --no-progress
-                Disable the progress indicator
+                Disable the progress indicator.
+                Auto-enabled when an AI coding agent is driving the shell
+                (CI always keeps its phase breadcrumbs).
 
             --long-progress
-                Use a progress indicator suitable for Continuous Integration logs
+                Use a progress indicator suitable for Continuous Integration logs.
+                Auto-enabled in CI and when stderr is not attached to a terminal.
 
             --stats
                 Shows a breakdown of Psalm’s ability to infer types in the codebase
