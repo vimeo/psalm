@@ -44,19 +44,6 @@ return array (
         'strength' => 'int',
       ),
     ),
-    'dateinterval::createfromdatestring' => 
-    array (
-      'old' => 
-      array (
-        0 => 'DateInterval|false',
-        'datetime' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'DateInterval',
-        'datetime' => 'string',
-      ),
-    ),
     'domdocument::registernodeclass' => 
     array (
       'old' => 

@@ -2360,6 +2360,10 @@ final class Config
             $this->php_extensions['random'] = true; // random is a part of the PHP core starting from PHP 8.2
         }
 
+        if ($codebase->analysis_php_version_id >= 8_03_00) {
+            $this->internal_stubs[] = $stubsDir . 'Php83.phpstub';
+        }
+
         if ($codebase->analysis_php_version_id >= 8_04_00) {
             $this->internal_stubs[] = $stubsDir . 'Php84.phpstub';
         }

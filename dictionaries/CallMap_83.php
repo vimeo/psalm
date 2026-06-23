@@ -13170,7 +13170,7 @@ return array (
   ),
   'dateinterval::createfromdatestring' => 
   array (
-    0 => 'DateInterval|false',
+    0 => 'DateInterval',
     'datetime' => 'string',
   ),
   'dateinterval::format' => 
