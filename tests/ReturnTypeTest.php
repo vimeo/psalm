@@ -1343,6 +1343,56 @@ final class ReturnTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'nonEmptyStringLowercaseStringIntersection' => [
+                'code' => '<?php
+                    /**
+                     * @return non-empty-string&lowercase-string
+                     */
+                    function lower(): string {
+                        return "abc";
+                    }
+
+                    $a = lower();
+                ',
+                'assertions' => [
+                    '$a===' => 'non-empty-lowercase-string',
+                ],
+            ],
+            'nonEmptyStringLiteralStringIntersection' => [
+                'code' => '<?php
+                    /**
+                     * @return non-empty-string&literal-string
+                     */
+                    function lit(): string {
+                        return "abc";
+                    }
+
+                    $a = lit();
+                ',
+                'assertions' => [
+                    '$a===' => 'non-empty-literal-string',
+                ],
+            ],
+            'laravelStyleStrLowerConditionalReturnType' => [
+                'code' => '<?php
+                    /**
+                     * @param string $value
+                     * @return ($value is "" ? "" : non-empty-string&lowercase-string)
+                     */
+                    function lower(string $value): string {
+                        return strtolower($value);
+                    }
+
+                    $a = lower("FOO");
+                    /** @var "" $empty */
+                    $empty = "";
+                    $b = lower($empty);
+                ',
+                'assertions' => [
+                    '$a===' => 'non-empty-lowercase-string',
+                    '$b===' => "''",
+                ],
+            ],
         ];
     }
 
