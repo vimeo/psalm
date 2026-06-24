@@ -49,8 +49,6 @@ use const DIRECTORY_SEPARATOR;
 
 final class ConfigTest extends TestCase
 {
-    protected static TestConfig $config;
-
     protected ProjectAnalyzer $project_analyzer;
 
     /** @var callable(int, string, string=, int=, array=):bool|null */
@@ -65,7 +63,7 @@ final class ConfigTest extends TestCase
         global $argv;
         $argv = [];
 
-        self::$config = new TestConfig();
+        new TestConfig();
     }
 
     #[Override]

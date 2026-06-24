@@ -6,6 +6,7 @@ namespace Psalm\Internal\Analyzer;
 
 use Override;
 use PhpParser;
+use Psalm\CodeLocation;
 use Psalm\CodeLocation\DocblockTypeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
@@ -175,6 +176,14 @@ class FileAnalyzer extends SourceAnalyzer
         // in turn causing the classes/interfaces be evaluated
         if ($leftover_stmts) {
             $statements_analyzer->analyze($leftover_stmts, $this->context, $global_context);
+
+            if ($statements_analyzer->owns_type_variable_tracker) {
+                $statements_analyzer->type_variable_tracker->reconcile(
+                    $this->codebase,
+                    new CodeLocation($this, $leftover_stmts[0]),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
 
             foreach ($leftover_stmts as $leftover_stmt) {
                 if ($leftover_stmt instanceof PhpParser\Node\Stmt\Return_) {

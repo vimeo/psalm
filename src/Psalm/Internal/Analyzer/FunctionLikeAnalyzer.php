@@ -504,6 +504,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         $statements_analyzer->analyze($function_stmts, $context, $global_context);
 
+        if ($statements_analyzer->owns_type_variable_tracker) {
+            $statements_analyzer->type_variable_tracker->reconcile(
+                $codebase,
+                $storage->location ?? new CodeLocation($this, $this->function),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
+
         if (!$this->function instanceof VirtualNode
             && ($this->function instanceof Function_
                 || $this->function instanceof ClassMethod

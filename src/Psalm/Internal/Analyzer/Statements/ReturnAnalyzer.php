@@ -417,15 +417,37 @@ final class ReturnAnalyzer
 
                     $union_comparison_results = new TypeComparisonResult();
 
-                    if (!UnionTypeComparator::isContainedBy(
+                    $is_contained_by = UnionTypeComparator::isContainedBy(
                         $codebase,
                         $inferred_type,
                         $local_return_type,
                         true,
                         true,
                         $union_comparison_results,
-                    )
+                    );
+
+                    if ($is_contained_by
+                        && ($union_comparison_results->type_variable_lower_bounds
+                            || $union_comparison_results->type_variable_upper_bounds)
                     ) {
+                        // transfer recorded type-variable bounds, upgrading
+                        // plain upper bounds to equality bounds: the declared
+                        // return type names the type parameter exactly, so a
+                        // conflicting use elsewhere must fail reconciliation
+                        foreach ($union_comparison_results->type_variable_upper_bounds as [$_, $upper_bound]) {
+                            if ($upper_bound->equality_bound_classlike === null) {
+                                $upper_bound->equality_bound_classlike = '';
+                            }
+                        }
+
+                        $statements_analyzer->type_variable_tracker->addBounds(
+                            $union_comparison_results->type_variable_lower_bounds,
+                            $union_comparison_results->type_variable_upper_bounds,
+                            new CodeLocation($source, $stmt->expr),
+                        );
+                    }
+
+                    if (!$is_contained_by) {
                         // is the declared return type more specific than the inferred one?
                         if ($union_comparison_results->type_coerced) {
                             if ($union_comparison_results->type_coerced_from_mixed) {

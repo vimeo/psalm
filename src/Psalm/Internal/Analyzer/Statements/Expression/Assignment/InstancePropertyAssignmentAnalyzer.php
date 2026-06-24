@@ -210,6 +210,23 @@ final class InstancePropertyAssignmentAnalyzer
                 }
             }
 
+            if ($type_match_found
+                && ($union_comparison_results->type_variable_lower_bounds
+                    || $union_comparison_results->type_variable_upper_bounds)
+            ) {
+                // transfer any type-variable bounds recorded while checking
+                // the assignment
+                $statements_analyzer->type_variable_tracker->addBounds(
+                    $union_comparison_results->type_variable_lower_bounds,
+                    $union_comparison_results->type_variable_upper_bounds,
+                    new CodeLocation(
+                        $statements_analyzer->getSource(),
+                        $assignment_value ?? $stmt,
+                        $context->include_location,
+                    ),
+                );
+            }
+
             if ($union_comparison_results->type_coerced) {
                 if ($union_comparison_results->type_coerced_from_mixed) {
                     IssueBuffer::maybeAdd(

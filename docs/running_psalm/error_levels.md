@@ -120,6 +120,7 @@ These issues have very low false-positive rates and indicate definite problems. 
 At the default level (2), these are reported as info. Set `errorLevel="1"` to treat them as errors.
 
  - [ImmutableDependency](issues/ImmutableDependency.md)
+ - [IncompatibleTypeParameters](issues/IncompatibleTypeParameters.md)
  - [InvalidClassConstantType](issues/InvalidClassConstantType.md)
  - [LessSpecificClassConstantType](issues/LessSpecificClassConstantType.md)
  - [LessSpecificReturnType](issues/LessSpecificReturnType.md)

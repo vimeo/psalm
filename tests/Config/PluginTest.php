@@ -40,8 +40,6 @@ use const DIRECTORY_SEPARATOR;
 
 final class PluginTest extends TestCase
 {
-    protected static TestConfig $config;
-
     #[Override]
     public static function setUpBeforeClass(): void
     {
@@ -51,7 +49,7 @@ final class PluginTest extends TestCase
         global $argv;
         $argv = [];
 
-        self::$config = new TestConfig();
+        new TestConfig();
     }
 
     /**
