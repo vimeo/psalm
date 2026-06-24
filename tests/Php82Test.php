@@ -15,6 +15,34 @@ final class Php82Test extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'iterableListConditional' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param iterable<mixed, mixed> $i
+                     * @return ($i is list ? 'list' : 'iter')
+                     */
+                    function describe(iterable $i) {
+                        return is_array($i) && array_is_list($i) ? 'list' : 'iter';
+                    }
+
+                    /**
+                     * @return iterable<mixed, mixed>
+                     */
+                    function getIterable(): iterable {
+                       return new ArrayObject(['x' => 23]);
+                    }
+
+                    $value = describe(getIterable()); // Should be 'list' | 'iter'
+
+                    echo $value === 'iter'
+                        ? 'Iterable!'
+                        : 'List!';
+                PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
             'anyIterableConvert' => [
                 'code' => '<?php
                     function castToArray(iterable $arr): array {
