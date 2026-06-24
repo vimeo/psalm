@@ -51,6 +51,8 @@ final class MethodSignatureTest extends TestCase
 
     public function testExtendSoapClientWithNoDocblockTypes(): void
     {
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+
         $this->addFile(
             'somefile.php',
             '<?php
@@ -58,7 +60,7 @@ final class MethodSignatureTest extends TestCase
                 {
                     public function __soapCall(
                         string $function_name,
-                        $arguments,
+                        array $arguments,
                         $options = [],
                         $input_headers = [],
                         &$output_headers = []
@@ -73,6 +75,8 @@ final class MethodSignatureTest extends TestCase
 
     public function testExtendSoapClientWithParamType(): void
     {
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+
         $this->addFile(
             'somefile.php',
             '<?php
@@ -80,11 +84,11 @@ final class MethodSignatureTest extends TestCase
                 {
                     public function __soapCall(
                         string $function_name,
-                        $arguments,
+                        array $arguments,
                         $options = [],
                         $input_headers = [],
                         &$output_headers = []
-                    ) {
+                    ): mixed {
                         return $_GET["foo"];
                     }
                 }',
@@ -238,6 +242,9 @@ final class MethodSignatureTest extends TestCase
 
     public function testExtendDocblockParamTypeWithWrongDocblockParam(): void
     {
+        // from PHP 8 this will also report a MethodSignatureMismatch error
+        $this->project_analyzer->setPhpVersion('7.4', 'tests');
+
         $this->expectExceptionMessage('ImplementedParamTypeMismatch');
         $this->expectException(CodeException::class);
 
@@ -289,6 +296,40 @@ final class MethodSignatureTest extends TestCase
 
                     }
                 }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testStubsUseTypeHintForTypeHintsNotDocblock(): void
+    {
+        $this->addStubFile(
+            'stubOne.phpstub',
+            '<?php
+                abstract class A {
+                    /**
+                     * @param array{hello: string, world: array} $arg
+                     * @return array{hello: string, world: array}
+                     */
+                    abstract public function run( array $arg ): array;
+                }
+            ',
+        );
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                final class B extends A {
+                    /**
+                     * @param array{hello: string, world: array} $arg
+                     * @return array{hello: string, world: array}
+                     */
+                    #[Override]
+                    public function run( array $arg ): array {
+                        return $arg;
+                    }
+                }
+            ',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -622,6 +663,62 @@ final class MethodSignatureTest extends TestCase
                     class C implements IteratorAggregate {
                         public function getIterator(): Iterator {
                             return new ArrayIterator([]);
+                        }
+                    }',
+            ],
+            'ensureCorrectHandlingOfBuiltInsTypeHintUsingTemplate' => [
+                'code' => '<?php
+                    final class Event {}
+
+                    /**
+                     * @template-implements Iterator<int<0, max>, Event>
+                     *
+                     * @no-named-arguments
+                     */
+                    final class EventCollectionIterator implements Iterator {
+                        /**
+                         * @var list<Event>
+                         */
+                        private array $events;
+
+                        /**
+                         * @var int<0, max>
+                         */
+                        private int $position = 0;
+
+                        /**
+                         * @param list<Event> $events
+                         */
+                        public function __construct( array $events ) {
+                            $this->events = $events;
+                        }
+
+                        #[Override]
+                        public function rewind(): void {
+                            $this->position = 0;
+                        }
+
+                        #[Override]
+                        public function valid(): bool {
+                            return isset( $this->events[ $this->position ] );
+                        }
+
+                        /**
+                         * @return int<0, max>
+                         */
+                        #[Override]
+                        public function key(): int {
+                            return $this->position;
+                        }
+
+                        #[Override]
+                        public function current(): Event {
+                            return $this->events[ $this->position ];
+                        }
+
+                        #[Override]
+                        public function next(): void {
+                            $this->position++;
                         }
                     }',
             ],
@@ -992,6 +1089,9 @@ final class MethodSignatureTest extends TestCase
                         }
                     }
                 PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
         ];
     }
@@ -1059,8 +1159,8 @@ final class MethodSignatureTest extends TestCase
 
                         }
                     }',
-                'error_message' => 'Argument 2 of B::fooFoo has wrong type \'int\', expecting \'bool\' as defined ' .
-                    'by A::fooFoo',
+                'error_message' => 'Argument 2 of B::fooFoo has wrong type \'int\', not contravariant to type \'bool\' ' .
+                    'as defined by A::fooFoo',
             ],
             'differentArgumentNames' => [
                 'code' => '<?php
@@ -1105,7 +1205,8 @@ final class MethodSignatureTest extends TestCase
                             return $s;
                         }
                     }',
-                'error_message' => 'Argument 1 of B::foo has wrong type \'string\', expecting \'null|string\' as',
+                'error_message' => 'Argument 1 of B::foo has wrong type \'string\', not contravariant to '
+                    . 'type \'null|string\' as',
             ],
             'misplacedRequiredParam' => [
                 'code' => '<?php
@@ -1665,6 +1766,139 @@ final class MethodSignatureTest extends TestCase
                 'error_message' => 'MethodSignatureMustProvideReturnType',
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'callmapInheritedMethodParamsDoNotHavePrefixesBeforePHP8' => [
+                'code' => <<<'PHP'
+                    <?php
+
+                    class NoopFilter extends \php_user_filter
+                    {
+                        /**
+                         * @param resource $in
+                         * @param resource $out
+                         * @param int $consumed   -- this is called &rw_consumed in the callmap
+                         */
+                        public function filter($in, $out, &$consumed, bool $closing): int
+                        {
+                            return PSFS_PASS_ON;
+                        }
+                    }
+                PHP,
+                'error_message' => 'MethodSignatureMismatch',
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
+            'notContravariantParamArrayNativeTypeInErrorMessageNotDocblockArrayType' => [
+                'code' => '<?php
+                    class X {
+                        /**
+                         * @psalm-pure
+                         * @return array|string
+                         */
+                        public function run( array|string $arg ) {
+                            return $arg;
+                        }
+                    }
+
+                    final class Y extends X {
+                        /**
+                         * @psalm-pure
+                         * @return array
+                         */
+                        #[Override]
+                        public function run( array $arg ) {
+                            return $arg;
+                        }
+                    }
+                ',
+                'error_message' => 'has wrong type \'array\', not contravariant to type \'array|string\' as defined by',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'missingMismatchingNotContravariantParamAbstract' => [
+                'code' => '<?php
+                    abstract class X {
+                        /**
+                         * @psalm-pure
+                         * @param array $arg
+                         * @return array
+                         */
+                        abstract public function run( $arg );
+                    }
+
+                    final class Y extends X {
+                        /**
+                         * @psalm-pure
+                         * @param array $arg
+                         * @return array
+                         */
+                        #[Override]
+                        public function run( array $arg ) {
+                            return $arg;
+                        }
+                    }
+                ',
+                'error_message' => 'MethodSignatureMismatch',
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
+            'missingMismatchingNotContravariantParam' => [
+                'code' => '<?php
+                    class X {
+                        /**
+                         * @psalm-pure
+                         * @param array $arg
+                         * @return array
+                         */
+                        public function run( $arg ) {
+                            return $arg;
+                        }
+                    }
+
+                    final class Y extends X {
+                        /**
+                         * @psalm-pure
+                         * @param array $arg
+                         * @return array
+                         */
+                        #[Override]
+                        public function run( array $arg ) {
+                            return $arg;
+                        }
+                    }
+                ',
+                'error_message' => 'MethodSignatureMismatch',
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
+            'missingImplementedContravariantParam' => [
+                'code' => '<?php
+                    class X {
+                        /**
+                         * @psalm-pure
+                         * @param array $arg
+                         * @return array
+                         */
+                        public function run( array $arg ) {
+                            return $arg;
+                        }
+                    }
+
+                    final class Y extends X {
+                        /**
+                         * @psalm-pure
+                         * @param array $arg
+                         * @return array
+                         */
+                        #[Override]
+                        public function run( $arg ) {
+                            return $arg;
+                        }
+                    }
+                ',
+                'error_message' => 'Argument 1 of Y::run does not have a type hint, expecting \'array\' as defined by X::run or a type contravariant to it',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'absentByRefReturnInDescendant' => [
                 'code' => '<?php

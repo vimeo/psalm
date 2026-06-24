@@ -21,6 +21,7 @@ use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\ConstructorSignatureMismatch;
 use Psalm\Issue\ImplementedParamTypeMismatch;
 use Psalm\Issue\ImplementedReturnTypeMismatch;
+use Psalm\Issue\InvalidAttribute;
 use Psalm\Issue\LessSpecificImplementedReturnType;
 use Psalm\Issue\MethodSignatureMismatch;
 use Psalm\Issue\MethodSignatureMustProvideReturnType;
@@ -37,7 +38,6 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
-use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
@@ -105,41 +105,76 @@ final class MethodComparator
             $suppressed_issues,
         );
 
-        if ($guide_method_storage->signature_return_type && $prevent_method_signature_mismatch) {
-            self::compareMethodSignatureReturnTypes(
-                $codebase,
-                $guide_classlike_storage,
-                $implementer_classlike_storage,
-                $guide_method_storage,
-                $implementer_method_storage,
-                $guide_method_storage->signature_return_type,
-                $cased_guide_method_id,
-                $implementer_called_class_name,
-                $cased_implementer_method_id,
-                $code_location,
-                $suppressed_issues,
-            );
+        if ($prevent_method_signature_mismatch) {
+            $guide_signature_return_type = $guide_method_storage->signature_return_type;
+
+            // CallMapHandler needed due to https://github.com/vimeo/psalm/issues/10378
+            if (!$guide_signature_return_type
+                && $codebase->analysis_php_version_id >= 8_01_00
+                && $guide_method_storage->return_type
+                && InternalCallMapHandler::inCallMap($cased_guide_method_id)
+            ) {
+                $guide_signature_return_type = TypeExpander::expandUnion(
+                    $codebase,
+                    $guide_method_storage->return_type,
+                    $guide_classlike_storage->is_trait && $guide_method_storage->abstract
+                        ? $implementer_classlike_storage->name
+                        : $guide_classlike_storage->name,
+                    $guide_classlike_storage->is_trait && $guide_method_storage->abstract
+                        ? $implementer_classlike_storage->name
+                        : $guide_classlike_storage->name,
+                    $guide_classlike_storage->is_trait && $guide_method_storage->abstract
+                        ? $implementer_classlike_storage->parent_class
+                        : $guide_classlike_storage->parent_class,
+                    true,
+                    true,
+                    false,
+                    true,
+                    true,
+                );
+
+                if ($guide_signature_return_type->hasMixed() && !$guide_signature_return_type->isSingle()) {
+                    // cannot be a type hint, since "mixed" is a standalone type
+                    $guide_signature_return_type = null;
+                }
+            }
+
+            if ($guide_signature_return_type) {
+                self::compareMethodSignatureReturnTypes(
+                    $codebase,
+                    $guide_classlike_storage,
+                    $implementer_classlike_storage,
+                    $guide_method_storage,
+                    $implementer_method_storage,
+                    $guide_signature_return_type,
+                    $cased_guide_method_id,
+                    $implementer_called_class_name,
+                    $cased_implementer_method_id,
+                    $code_location,
+                    $suppressed_issues,
+                );
+            }
         }
 
-        // CallMapHandler needed due to https://github.com/vimeo/psalm/issues/10378
-        if (!$guide_classlike_storage->user_defined
-            && $implementer_classlike_storage->user_defined
-            && $codebase->analysis_php_version_id >= 8_01_00
-            && (($guide_method_storage->return_type && InternalCallMapHandler::inCallMap($cased_guide_method_id))
-                || $guide_method_storage->signature_return_type
-            ) && !$implementer_method_storage->signature_return_type
-            && !array_any(
-                $implementer_method_storage->attributes,
-                static fn(AttributeStorage $s): bool => $s->fq_class_name === 'ReturnTypeWillChange',
-            )
-        ) {
-            IssueBuffer::maybeAdd(
-                new MethodSignatureMustProvideReturnType(
-                    'Method ' . $cased_implementer_method_id . ' must have a return type signature',
-                    $implementer_method_storage->location ?: $code_location,
-                ),
-                $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
-            );
+        // if the implementer does not have a signature, we already report MethodSignatureMustProvideReturnType
+        // and we don't want duplicate errors for potentially the same thing
+        if ($implementer_method_storage->signature_return_type
+            && !InternalCallMapHandler::inCallMap($cased_guide_method_id)) {
+            foreach ($implementer_method_storage->attributes as $attribute) {
+                if ($attribute->fq_class_name !== 'ReturnTypeWillChange') {
+                    continue;
+                }
+
+                IssueBuffer::maybeAdd(
+                    new InvalidAttribute(
+                        'Attribute ReturnTypeWillChange can only be used when overriding PHP built-in methods',
+                        $attribute->name_location,
+                    ),
+                    $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
+                );
+
+                break;
+            }
         }
 
         if ($guide_method_storage->return_type
@@ -427,82 +462,8 @@ final class MethodComparator
         }
 
         if ($prevent_method_signature_mismatch) {
-            if (!$guide_classlike_storage->user_defined
-                && $guide_param->type) {
-                $implementer_param_type = $implementer_param->signature_type;
-
-                $guide_param_signature_type = $guide_param->type;
-
-                $or_null_guide_param_signature_type = $guide_param->signature_type
-                    ? $guide_param->signature_type->getBuilder()
-                    : null;
-
-                if ($or_null_guide_param_signature_type) {
-                    $or_null_guide_param_signature_type->addType(new TNull);
-                }
-
-                if ($cased_guide_method_id === 'Serializable::unserialize') {
-                    $guide_param_signature_type = null;
-                    $or_null_guide_param_signature_type = null;
-                }
-
-                if (!$guide_param->type->hasMixed()
-                    && !$guide_param->type->from_docblock
-                    && ($implementer_param_type || $guide_param_signature_type)
-                ) {
-                    if ($implementer_param_type
-                        && (!$guide_param_signature_type
-                            || strtolower($implementer_param_type->getId())
-                                !== strtolower($guide_param_signature_type->getId()))
-                        && (!$or_null_guide_param_signature_type
-                            || strtolower($implementer_param_type->getId())
-                                !== strtolower($or_null_guide_param_signature_type->getId()))
-                    ) {
-                        if ($implementer_method_storage->cased_name === '__construct') {
-                            IssueBuffer::maybeAdd(
-                                new ConstructorSignatureMismatch(
-                                    'Argument ' . ($i + 1) . ' of '
-                                        . $cased_implementer_method_id . ' has wrong type \''
-                                        . $implementer_param_type . '\', expecting \''
-                                        . $guide_param_signature_type . '\' as defined by '
-                                        . $cased_guide_method_id,
-                                    $implementer_param->location
-                                        && $config->isInProjectDirs(
-                                            $implementer_param->location->file_path,
-                                        )
-                                        ? $implementer_param->location
-                                        : $code_location,
-                                ),
-                                $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
-                            );
-                        } else {
-                            IssueBuffer::maybeAdd(
-                                new MethodSignatureMismatch(
-                                    'Argument ' . ($i + 1) . ' of '
-                                        . $cased_implementer_method_id . ' has wrong type \''
-                                        . $implementer_param_type . '\', expecting \''
-                                        . $guide_param_signature_type . '\' as defined by '
-                                        . $cased_guide_method_id,
-                                    $implementer_param->location
-                                        && $config->isInProjectDirs(
-                                            $implementer_param->location->file_path,
-                                        )
-                                        ? $implementer_param->location
-                                        : $code_location,
-                                ),
-                                $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
-                            );
-                        }
-
-
-                        return;
-                    }
-                }
-            }
-
             if ($guide_param->name !== $implementer_param->name
                 && $guide_method_storage->allow_named_arg_calls
-                && $implementer_classlike_storage->user_defined
                 && $implementer_param->location
                 && $guide_method_storage->cased_name
                 && (!str_starts_with($guide_method_storage->cased_name, '__')
@@ -518,7 +479,7 @@ final class MethodComparator
                         && !$config->isInProjectDirs($guide_classlike_storage->location->file_path)
                     )
                 ) {
-                    if ($codebase->alter_code) {
+                    if ($codebase->alter_code && $implementer_classlike_storage->user_defined) {
                         $project_analyzer = ProjectAnalyzer::getInstance();
 
                         if ($stmt && isset($project_analyzer->getIssuesToFix()['ParamNameMismatch'])) {
@@ -553,25 +514,22 @@ final class MethodComparator
                 }
             }
 
-            if ($guide_classlike_storage->user_defined
-                && $implementer_param->signature_type
-                && $guide_param->signature_type
-            ) {
-                self::compareMethodSignatureParams(
-                    $codebase,
-                    $i,
-                    $guide_classlike_storage,
-                    $implementer_classlike_storage,
-                    $guide_method_storage,
-                    $implementer_method_storage,
-                    $guide_param,
-                    $implementer_param->signature_type,
-                    $cased_guide_method_id,
-                    $cased_implementer_method_id,
-                    $code_location,
-                    $suppressed_issues,
-                );
-            }
+            // because of contravariance, we also need to compare if the guide does not have a signature
+            // since this will result in a fatal error if the implementer has a non-mixed hint
+            self::compareMethodSignatureParams(
+                $codebase,
+                $i,
+                $guide_classlike_storage,
+                $implementer_classlike_storage,
+                $guide_method_storage,
+                $implementer_method_storage,
+                $guide_param,
+                $implementer_param->signature_type,
+                $cased_guide_method_id,
+                $cased_implementer_method_id,
+                $code_location,
+                $suppressed_issues,
+            );
         }
 
         if ($implementer_param->type
@@ -624,7 +582,7 @@ final class MethodComparator
         MethodStorage $guide_method_storage,
         MethodStorage $implementer_method_storage,
         FunctionLikeParameter $guide_param,
-        Union $implementer_param_signature_type,
+        ?Union $implementer_param_signature_type,
         string $cased_guide_method_id,
         string $cased_implementer_method_id,
         CodeLocation $code_location,
@@ -662,32 +620,128 @@ final class MethodComparator
                 $guide_classlike_storage->is_trait && $guide_method_storage->abstract
                     ? $implementer_classlike_storage->parent_class
                     : $guide_classlike_storage->parent_class,
+                true,
+                true,
+                false,
+                true,
+                true,
             );
 
-            $builder = $guide_method_storage_param_type->getBuilder();
-            foreach ($builder->getAtomicTypes() as $k => $t) {
-                if ($t instanceof TTemplateParam) {
-                    $builder->removeType($k);
-
-                    foreach ($t->as->getAtomicTypes() as $as_t) {
-                        $builder->addType($as_t);
-                    }
-                }
-            }
-
-            if ($builder->hasMixed()) {
+            if ($guide_method_storage_param_type->hasMixed() && !$guide_method_storage_param_type->isSingle()) {
+                $builder = $guide_method_storage_param_type->getBuilder();
                 foreach ($builder->getAtomicTypes() as $k => $_) {
                     if ($k !== 'mixed') {
                         $builder->removeType($k);
                     }
                 }
+
+                $guide_method_storage_param_type = $builder->freeze();
+                unset($builder);
             }
-            $guide_method_storage_param_type = $builder->freeze();
-            unset($builder);
 
             if (!$guide_method_storage_param_type->hasMixed() || $codebase->analysis_php_version_id >= 8_00_00) {
                 $guide_param_signature_type = $guide_method_storage_param_type;
             }
+        }
+
+        if ($codebase->analysis_php_version_id < 8_00_00
+            && $guide_param_signature_type
+            && (!$guide_param_signature_type->hasNamedObjectType()
+                || !$guide_param_signature_type->isSingleAndMaybeNullable())
+        ) {
+            if (!$implementer_param_signature_type) {
+                // "mixed" and union type hints are only available from PHP 8+
+                // don't report an error, as it is impossible for the user to allow a wider, contravariant type
+                // except for named objects
+                return;
+            }
+
+            // before most PHP 8 built-ins did not have type hints at all
+            // generally only some interface methods that accept object params had
+            // but the stubs/callmap does not distinguish that, leading to false positive errors
+            if (InternalCallMapHandler::inCallMap($cased_guide_method_id)) {
+                $guide_param_signature_type = null;
+            }
+        }
+
+        // built-in by-ref types don't seem to have a type hint in many cases
+        // e.g. php_user_filter::filter "&$consumed"
+        // similar to some params with default types for built-ins, e.g. __soapCall $inputHeaders
+        // if the implementer has one already
+        // keep the (possibly incorrect) parent one to prevent false positive errors
+        // at the cost of false negative/not reporting a fatal error
+        if (!$implementer_param_signature_type
+            && ($guide_param->by_ref || $guide_param->is_optional)
+            && InternalCallMapHandler::inCallMap($cased_guide_method_id)
+        ) {
+            $guide_param_signature_type = null;
+        }
+
+        // unlike for the return hint, the child param does not need a mixed hint if the parent is mixed
+        if (!$implementer_param_signature_type
+            && (!$guide_param_signature_type || $guide_param_signature_type->hasMixed())) {
+            return;
+        }
+
+        if (!$implementer_param_signature_type
+            && !$guide_classlike_storage->preserve_constructor_signature
+            && $guide_method_storage->cased_name === '__construct') {
+            return;
+        }
+
+        // invalid/impossible type hint, that sometimes is documented for internal functions
+        // since docblock and signature is not differentiated https://github.com/vimeo/psalm/issues/10378
+        if ($guide_param_signature_type
+            && $guide_param_signature_type->hasType('resource')
+            && InternalCallMapHandler::inCallMap($cased_guide_method_id)
+        ) {
+            return;
+        }
+
+        // if the parent has a non-mixed type hint, the child should too
+        // to ensure it was not accidentally forgotten
+        // at least an explicit 'mixed' to indicate intention
+        if (!$implementer_param_signature_type) {
+            $config = Config::getInstance();
+            if ($implementer_method_storage->cased_name === '__construct') {
+                IssueBuffer::maybeAdd(
+                    new ConstructorSignatureMismatch(
+                        'Argument ' . ($i + 1) . ' of '
+                        . $cased_implementer_method_id
+                        . ' does not have a type hint, expecting \''
+                        . $guide_param_signature_type->getKey() . '\' as defined by '
+                        . $cased_guide_method_id
+                        . ' or a type contravariant to it',
+                        $implementer_method_storage->params[$i]->location
+                        && $config->isInProjectDirs(
+                            $implementer_method_storage->params[$i]->location->file_path,
+                        )
+                            ? $implementer_method_storage->params[$i]->location
+                            : $code_location,
+                    ),
+                    $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
+                );
+            } else {
+                IssueBuffer::maybeAdd(
+                    new MethodSignatureMismatch(
+                        'Argument ' . ($i + 1) . ' of '
+                        . $cased_implementer_method_id
+                        . ' does not have a type hint, expecting \''
+                        . $guide_param_signature_type->getKey() . '\' as defined by '
+                        . $cased_guide_method_id
+                        . ' or a type contravariant to it',
+                        $implementer_method_storage->params[$i]->location
+                        && $config->isInProjectDirs(
+                            $implementer_method_storage->params[$i]->location->file_path,
+                        )
+                            ? $implementer_method_storage->params[$i]->location
+                            : $code_location,
+                    ),
+                    $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
+                );
+            }
+
+            return;
         }
 
         $implementer_param_signature_type = TypeExpander::expandUnion(
@@ -712,6 +766,8 @@ final class MethodComparator
         if (!$is_contained_by) {
             $config = Config::getInstance();
 
+            $guide_param_signature_type ??= Type::getMixed();
+
             if ($codebase->analysis_php_version_id >= 8_00_00
                 || $guide_classlike_storage->is_trait === $implementer_classlike_storage->is_trait
                 || !in_array($guide_classlike_storage->name, $implementer_classlike_storage->used_traits)
@@ -725,8 +781,8 @@ final class MethodComparator
                             'Argument ' . ($i + 1) . ' of '
                                 . $cased_implementer_method_id
                                 . ' has wrong type \''
-                                . $implementer_param_signature_type . '\', expecting \''
-                                . $guide_param_signature_type . '\' as defined by '
+                                . $implementer_param_signature_type->getKey() . '\', not contravariant to type \''
+                                . $guide_param_signature_type->getKey() . '\' as defined by '
                                 . $cased_guide_method_id,
                             $implementer_method_storage->params[$i]->location
                                 && $config->isInProjectDirs(
@@ -743,8 +799,8 @@ final class MethodComparator
                             'Argument ' . ($i + 1) . ' of '
                                 . $cased_implementer_method_id
                                 . ' has wrong type \''
-                                . $implementer_param_signature_type . '\', expecting \''
-                                . $guide_param_signature_type . '\' as defined by '
+                                . $implementer_param_signature_type->getKey() . '\', not contravariant to type \''
+                                . $guide_param_signature_type->getKey() . '\' as defined by '
                                 . $cased_guide_method_id,
                             $implementer_method_storage->params[$i]->location
                                 && $config->isInProjectDirs(
@@ -760,8 +816,8 @@ final class MethodComparator
                 IssueBuffer::maybeAdd(
                     new TraitMethodSignatureMismatch(
                         'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id . ' has wrong type \'' .
-                            $implementer_param_signature_type . '\', expecting \'' .
-                            $guide_param_signature_type . '\' as defined by ' .
+                            $implementer_param_signature_type->getKey() . '\', not contravariant to type \'' .
+                            $guide_param_signature_type->getKey() . '\' as defined by ' .
                             $cased_guide_method_id,
                         $implementer_method_storage->params[$i]->location
                             && $config->isInProjectDirs(
@@ -979,7 +1035,7 @@ final class MethodComparator
                 ? $implementer_classlike_storage->name
                 : $guide_classlike_storage->name,
             ($guide_classlike_storage->is_trait && $guide_method_storage->abstract)
-                || $guide_classlike_storage->final
+            || $guide_classlike_storage->final
                 ? $implementer_classlike_storage->name
                 : $guide_classlike_storage->name,
             $guide_classlike_storage->is_trait && $guide_method_storage->abstract
@@ -990,21 +1046,59 @@ final class MethodComparator
             $implementer_method_storage->final,
         );
 
-        $implementer_signature_return_type = $implementer_method_storage->signature_return_type
-            ? TypeExpander::expandUnion(
-                $codebase,
-                $implementer_method_storage->signature_return_type,
-                $implementer_classlike_storage->is_trait
-                    ? $implementer_called_class_name
-                    : $implementer_classlike_storage->name,
-                $implementer_classlike_storage->is_trait
-                    ? $implementer_called_class_name
-                    : $implementer_classlike_storage->name,
-                $implementer_classlike_storage->parent_class,
-            ) : null;
+        // invalid/impossible type hint, that sometimes is documented for internal functions
+        // since docblock and signature is not differentiated https://github.com/vimeo/psalm/issues/10378
+        if ($guide_signature_return_type->hasType('resource')
+            && InternalCallMapHandler::inCallMap($cased_guide_method_id)
+        ) {
+            return;
+        }
+
+        if (!$implementer_method_storage->signature_return_type) {
+            if (!$guide_classlike_storage->user_defined
+               // must be built-in, not just stubbed
+               && InternalCallMapHandler::inCallMap($cased_guide_method_id)
+               && $codebase->analysis_php_version_id < 9_00_00
+               && ($codebase->analysis_php_version_id < 8_01_00
+                   || array_any(
+                       $implementer_method_storage->attributes,
+                       static fn(AttributeStorage $s): bool => $s->fq_class_name === 'ReturnTypeWillChange',
+                   )
+               )
+            ) {
+                // no error if return type will change for built-ins and no signature set at all
+                return;
+            }
+
+            // lack of a return type declaration is also considered a return type mismatch fatal error
+            // even if parent type hint is mixed!
+            IssueBuffer::maybeAdd(
+                new MethodSignatureMustProvideReturnType(
+                    'Method ' . $cased_implementer_method_id . ' must have a return type hint '
+                     . 'that is covariant to return type \''
+                     . $guide_signature_return_type->getKey() . '\' of inherited method '
+                     . $cased_guide_method_id,
+                    $implementer_method_storage->location ?: $code_location,
+                ),
+                $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
+            );
+
+            return;
+        }
+
+        $implementer_signature_return_type = TypeExpander::expandUnion(
+            $codebase,
+            $implementer_method_storage->signature_return_type,
+            $implementer_classlike_storage->is_trait
+                ? $implementer_called_class_name
+                : $implementer_classlike_storage->name,
+            $implementer_classlike_storage->is_trait
+                ? $implementer_called_class_name
+                : $implementer_classlike_storage->name,
+            $implementer_classlike_storage->parent_class,
+        );
 
         $is_contained_by = $codebase->analysis_php_version_id >= 7_04_00
-            && $implementer_signature_return_type
             ? UnionTypeComparator::isContainedBy(
                 $codebase,
                 $implementer_signature_return_type,
@@ -1013,13 +1107,7 @@ final class MethodComparator
             : UnionTypeComparator::isContainedByInPhp($implementer_signature_return_type, $guide_signature_return_type);
 
         if (!$is_contained_by) {
-            if ($implementer_signature_return_type === null
-                && array_any(
-                    $implementer_method_storage->attributes,
-                    static fn(AttributeStorage $s): bool => $s->fq_class_name === 'ReturnTypeWillChange',
-                )) {
-                // no error if return type will change and no signature set at all
-            } elseif ($codebase->analysis_php_version_id >= 8_00_00
+            if ($codebase->analysis_php_version_id >= 8_00_00
                       || $guide_classlike_storage->is_trait === $implementer_classlike_storage->is_trait
                       || !in_array($guide_classlike_storage->name, $implementer_classlike_storage->used_traits)
                       || $implementer_method_storage->defining_fqcln !== $implementer_classlike_storage->name
@@ -1029,8 +1117,9 @@ final class MethodComparator
                 IssueBuffer::maybeAdd(
                     new MethodSignatureMismatch(
                         'Method ' . $cased_implementer_method_id . ' with return type \''
-                            . $implementer_signature_return_type . '\' is different to return type \''
-                            . $guide_signature_return_type . '\' of inherited method ' . $cased_guide_method_id,
+                            . $implementer_signature_return_type->getKey() . '\', not covariant to return type \''
+                            . $guide_signature_return_type->getKey() . '\' of inherited method '
+                            . $cased_guide_method_id,
                         $code_location,
                     ),
                     $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
@@ -1039,8 +1128,9 @@ final class MethodComparator
                 IssueBuffer::maybeAdd(
                     new TraitMethodSignatureMismatch(
                         'Method ' . $cased_implementer_method_id . ' with return type \''
-                            . $implementer_signature_return_type . '\' is different to return type \''
-                            . $guide_signature_return_type . '\' of inherited method ' . $cased_guide_method_id,
+                            . $implementer_signature_return_type->getKey() . '\', not covariant to return type \''
+                            . $guide_signature_return_type->getKey() . '\' of inherited method '
+                            . $cased_guide_method_id,
                         $code_location,
                     ),
                     $suppressed_issues + $implementer_classlike_storage->suppressed_issues,

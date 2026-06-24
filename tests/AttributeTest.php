@@ -10,6 +10,8 @@ use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use const DIRECTORY_SEPARATOR;
+use const PHP_MAJOR_VERSION;
+use const PHP_MINOR_VERSION;
 
 final class AttributeTest extends TestCase
 {
@@ -250,32 +252,6 @@ final class AttributeTest extends TestCase
                         public function getIterator()
                         {
                             return new EmptyIterator();
-                        }
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.1',
-            ],
-            'returnTypeWillChangeNoSignatureType' => [
-                'code' => '<?php
-                    class Foo {
-                        /**
-                         * @param array<string> $arg
-                         * @return string
-                         */
-                        public function run($arg) : string {
-                            return implode("s", $arg);
-                        }
-                    }
-
-                    class Bar extends Foo {
-                        /**
-                         * @param array<string> $arg
-                         * @return string
-                         */
-                        #[ReturnTypeWillChange]
-                        public function run($arg) {
-                            return implode(" ", $arg);
                         }
                     }',
                 'assertions' => [],
@@ -840,6 +816,58 @@ final class AttributeTest extends TestCase
                 'error_message' => 'Attribute SensitiveParameter cannot be used on a method',
                 'ignored_issues' => [],
                 'php_version' => '8.2',
+            ],
+            'returnTypeWillChangeNotBuiltIn' => [
+                'code' => '<?php
+                    class Foo {
+                        /**
+                         * @param array<string> $arg
+                         * @return array|string
+                         */
+                        public function run($arg) : array|string {
+                            return rand(0, 1) ? implode("s", $arg) : $arg;
+                        }
+                    }
+
+                    class Bar extends Foo {
+                        /**
+                         * @param array<string> $arg
+                         * @return string
+                         */
+                        #[ReturnTypeWillChange]
+                        public function run($arg) : string {
+                            return implode(" ", $arg);
+                        }
+                    }',
+                'error_message' => 'Attribute ReturnTypeWillChange can only be used when overriding PHP built-in',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'returnTypeWillChangeNoSignatureTypeNotBuiltIn' => [
+                'code' => '<?php
+                    class Foo {
+                        /**
+                         * @param array<string> $arg
+                         * @return string
+                         */
+                        public function run($arg) : string {
+                            return implode("s", $arg);
+                        }
+                    }
+
+                    class Bar extends Foo {
+                        /**
+                         * @param array<string> $arg
+                         * @return string
+                         */
+                        #[ReturnTypeWillChange]
+                        public function run($arg) {
+                            return implode(" ", $arg);
+                        }
+                    }',
+                'error_message' => 'MethodSignatureMustProvideReturnType',
+                'ignored_issues' => [],
+                'php_version' => PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION,
             ],
         ];
     }
