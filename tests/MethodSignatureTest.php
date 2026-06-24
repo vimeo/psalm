@@ -505,6 +505,30 @@ final class MethodSignatureTest extends TestCase
                         use T;
                     }',
             ],
+            'abstractConstructImplementerMismatchIsFatal' => [
+                'code' => '<?php
+                    trait B {
+                        abstract public function __construct();
+                    }
+
+                    final class A {
+                        use B;
+
+                        public function __construct(string $foo) {}
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+            ],
+            'abstractConstructTraitImplementerMismatchIsFatalFrom8' => [
+                'code' => '<?php
+                    abstract class B {
+                        abstract public function __construct();
+                    }
+
+                    final class A {
+                        public function __construct(string $foo) {}
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+            ],
             'inheritsSplClasses' => [
                 'code' => '<?php
                     namespace App;

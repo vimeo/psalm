@@ -1088,6 +1088,10 @@ final class FunctionLikeNodeScanner
             $storage->is_static = $stmt->isStatic();
             $storage->abstract = $stmt->isAbstract();
 
+            if ($storage->abstract && $method_name_lc === '__construct') {
+                $classlike_storage->preserve_constructor_signature = true;
+            }
+
             if ($stmt->isPrivate() && $stmt->isFinal() && $method_name_lc !== '__construct') {
                 IssueBuffer::maybeAdd(
                     new PrivateFinalMethod(
