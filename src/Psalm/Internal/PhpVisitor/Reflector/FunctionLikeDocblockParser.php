@@ -415,7 +415,7 @@ final class FunctionLikeDocblockParser
                 } else {
                     IssueBuffer::maybeAdd(
                         new InvalidDocblock(
-                            'Badly-formatted @param in docblock for ' . $cased_function_id,
+                            'Badly-formatted @global in docblock for ' . $cased_function_id,
                             $code_location,
                         ),
                     );
