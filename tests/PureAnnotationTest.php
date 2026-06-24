@@ -189,6 +189,8 @@ final class PureAnnotationTest extends TestCase
                         exit;
                     }
                 ',
+                'assertions' => [],
+                'ignored_issues' => ['InvalidDocblock'],
             ],
             'exitFunctionWithIntegerArgumentIsPure' => [
                 'code' => '<?php
@@ -197,6 +199,8 @@ final class PureAnnotationTest extends TestCase
                         exit(0);
                     }
                 ',
+                'assertions' => [],
+                'ignored_issues' => ['InvalidDocblock'],
             ],
             'dieFunctionWithNoArgumentIsPure' => [
                 'code' => '<?php
@@ -205,6 +209,8 @@ final class PureAnnotationTest extends TestCase
                         die;
                     }
                 ',
+                'assertions' => [],
+                'ignored_issues' => ['InvalidDocblock'],
             ],
             'dieFunctionWithIntegerArgumentIsPure' => [
                 'code' => '<?php
@@ -213,6 +219,8 @@ final class PureAnnotationTest extends TestCase
                         die(0);
                     }
                 ',
+                'assertions' => [],
+                'ignored_issues' => ['InvalidDocblock'],
             ],
             'allowPureToString' => [
                 'code' => '<?php
@@ -611,6 +619,7 @@ final class PureAnnotationTest extends TestCase
                         impure();
                     }',
                 'error_message' => 'ImpureFunctionCall',
+                'ignored_issues' => ['InvalidDocblock'],
             ],
             'impureConstructorCall' => [
                 'code' => '<?php
@@ -703,8 +712,9 @@ final class PureAnnotationTest extends TestCase
             'printFunctionIsImpure' => [
                 'code' => '<?php
                     /** @psalm-pure */
-                    function foo(): void {
+                    function foo(): int {
                         print("x");
+                        return 15;
                     }
                 ',
                 'error_message' => 'ImpureFunctionCall',
@@ -717,6 +727,7 @@ final class PureAnnotationTest extends TestCase
                     }
                 ',
                 'error_message' => 'ImpureFunctionCall',
+                'ignored_issues' => ['InvalidDocblock'],
             ],
             'dieFunctionWithNonIntegerArgumentIsImpure' => [
                 'code' => '<?php
@@ -726,6 +737,7 @@ final class PureAnnotationTest extends TestCase
                     }
                 ',
                 'error_message' => 'ImpureFunctionCall',
+                'ignored_issues' => ['InvalidDocblock'],
             ],
             'impureByRef' => [
                 'code' => '<?php
@@ -952,6 +964,7 @@ final class PureAnnotationTest extends TestCase
                     }
                     ',
                 'error_message' => 'ImpureMethodCall',
+                'ignored_issues' => ['InvalidDocblock'],
             ],
             'impureCallableInImmutableContext' => [
                 'code' => '<?php

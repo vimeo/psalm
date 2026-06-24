@@ -95,6 +95,7 @@ final class MethodCallPurityAnalyzer
                 if ($context->inside_conditional
                     && !$method_storage->assertions
                     && !$method_storage->if_true_assertions
+                    && !$method_storage->if_false_assertions
                 ) {
                     $stmt->setAttribute('memoizable', true);
 
@@ -115,9 +116,13 @@ final class MethodCallPurityAnalyzer
                     && !$context->inside_call
                     && !$context->inside_return
                     && !$method_storage->assertions
-                    && !$method_storage->if_true_assertions
-                    && !$method_storage->if_false_assertions
-                    && !$method_storage->throws
+                    && (!$method_storage->throws
+                        || !$context->inside_try)
+                    && (($stmt->var instanceof PhpParser\Node\Expr\New_
+                         && $stmt->var->getAttribute('external_mutation_free') === true)
+                         || !($method_storage->return_type
+                            && ($method_storage->return_type->isVoid() || $method_storage->return_type->isNever()))
+                    )
                 ) {
                     IssueBuffer::maybeAdd(
                         new UnusedMethodCall(
@@ -131,6 +136,34 @@ final class MethodCallPurityAnalyzer
                     $stmt->setAttribute('pure', true);
                 }
             }
+        }
+
+        // the PHP native NoDiscard attribute reports an error even for void and never
+        if (!$context->inside_unset
+            && !$context->insideUse()
+            && ($method_storage->no_discard
+                || ($codebase->find_unused_variables
+                    && !$method_storage->assertions
+                    && (!$method_storage->throws
+                        || !$context->inside_try)
+                    && !(
+                        $method_storage->return_type &&
+                        ($method_storage->return_type->isVoid()
+                         || $method_storage->return_type->isNever())
+                    )
+                    && ($method_storage->removed_taints
+                        || $method_storage->conditionally_removed_taints)
+                )
+            )
+        ) {
+            IssueBuffer::maybeAdd(
+                new UnusedMethodCall(
+                    'The call to ' . $cased_method_id . ' is not used',
+                    new CodeLocation($statements_analyzer, $stmt->name),
+                    (string) $method_id,
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
         }
 
         if ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer

@@ -119,7 +119,6 @@ final class ExpressionScanner
 
                 foreach ($callable->params as $function_param) {
                     if ($function_param->type) {
-                        /** @psalm-suppress UnusedMethodCall */
                         $function_param->type->queueClassLikesForScanning(
                             $codebase,
                             $file_storage,
@@ -128,7 +127,6 @@ final class ExpressionScanner
                 }
 
                 if ($callable->return_type && !$callable->return_type->hasMixed()) {
-                    /** @psalm-suppress UnusedMethodCall */
                     $callable->return_type->queueClassLikesForScanning($codebase, $file_storage);
                 }
             }

@@ -86,7 +86,6 @@ final class Json
         array_walk_recursive(
             $data,
             /**
-             * @psalm-pure
              * @param mixed $value
              */
             function (mixed &$value): void {

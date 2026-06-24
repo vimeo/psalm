@@ -1481,6 +1481,68 @@ final class AnnotationTest extends TestCase
                     function foo($arg) {}',
                 'error_message' => 'InvalidDocblock',
             ],
+            'invalidVoidPure' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @param array<int, string> $arg
+                     * @return void
+                     */
+                    function foo($arg) {}',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'invalidVoidNoDiscard' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-no-discard
+                     * @param array<int, string> $arg
+                     * @return void
+                     */
+                    function foo($arg) {}',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'invalidVoidNoDiscardAttribute' => [
+                'code' => '<?php
+                    /**
+                     * @param array<int, string> $arg
+                     * @return void
+                     */
+                     #[NoDiscard]
+                    function foo($arg) {}',
+                'error_message' => 'InvalidAttribute',
+            ],
+            'invalidNeverNoDiscard' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-no-discard
+                     * @return never
+                     */
+                    function foo() {
+                        exit;
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'invalidNeverNoDiscardAttribute' => [
+                'code' => '<?php
+                    /**
+                     * @return never
+                     */
+                    #[NoDiscard]
+                    function foo() {
+                        exit;
+                    }',
+                'error_message' => 'InvalidAttribute',
+            ],
+            'invalidVoidTaintEscape' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-taint-escape html
+                     * @param array<int, string> $arg
+                     * @return void
+                     */
+                    function foo($arg) {}',
+                'error_message' => 'InvalidDocblock',
+            ],
             'invalidClassMethodReturnBrackets' => [
                 'code' => '<?php
                     class C {

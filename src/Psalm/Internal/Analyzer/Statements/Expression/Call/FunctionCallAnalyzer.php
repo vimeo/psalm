@@ -357,6 +357,14 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             $context,
         );
 
+        self::checkFunctionUnused(
+            $statements_analyzer,
+            $codebase,
+            $function_name,
+            $function_call_info,
+            $context,
+        );
+
         if ($function_call_info->function_storage) {
             if ($function_call_info->function_storage->assertions && $function_name instanceof PhpParser\Node\Name) {
                 self::applyAssertionsToContext(
@@ -1118,6 +1126,48 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     $stmt->setAttribute('pure', true);
                 }
             }
+        }
+    }
+
+    private static function checkFunctionUnused(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        PhpParser\Node $function_name,
+        FunctionCallInfo $function_call_info,
+        Context $context,
+    ): void {
+        if ($context->collect_initializations
+            || $context->collect_mutations
+            || $function_call_info->function_id === null
+            || !$function_call_info->function_storage) {
+            return;
+        }
+
+        if ($context->inside_unset || $context->insideUse()) {
+            return;
+        }
+
+        // the PHP native NoDiscard attribute reports an error even for void and never
+        if ($function_call_info->function_storage->no_discard
+            || (!$function_call_info->function_storage->assertions
+                && $codebase->find_unused_variables
+                && ($function_call_info->function_storage->removed_taints
+                    || $function_call_info->function_storage->conditionally_removed_taints)
+                && !(
+                    $function_call_info->function_storage->return_type &&
+                    ($function_call_info->function_storage->return_type->isVoid()
+                     || $function_call_info->function_storage->return_type->isNever())
+                )
+            )
+        ) {
+            IssueBuffer::maybeAdd(
+                new UnusedFunctionCall(
+                    'The call to ' . $function_call_info->function_id . ' is not used',
+                    new CodeLocation($statements_analyzer, $function_name),
+                    $function_call_info->function_id,
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
         }
     }
 
