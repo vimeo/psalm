@@ -47,7 +47,7 @@ final class EvalAnalyzer
                     'eval',
                     'eval',
                     0,
-                    $arg_location,
+                    null,
                     $arg_location,
                     TaintKind::INPUT_EVAL,
                 );

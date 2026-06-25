@@ -282,14 +282,14 @@ final class StaticCallAnalyzer extends CallAnalyzer
             $method_source = DataFlowNode::getForMethodReturn(
                 (string) $method_id,
                 $cased_method_id,
-                $method_location,
+                $method_storage,
                 $node_location,
             );
         } else {
             $method_source = DataFlowNode::getForMethodReturn(
                 (string) $method_id,
                 $cased_method_id,
-                $method_location,
+                $method_storage,
             );
         }
 
@@ -367,7 +367,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
             $method_node = DataFlowNode::getForMethodReturn(
                 (string) $method_id,
                 $cased_method_id,
-                $method_storage->signature_return_type_location ?: $method_storage->location,
+                $method_storage,
                 null,
                 $method_storage->taint_source_types,
             );
@@ -377,7 +377,6 @@ final class StaticCallAnalyzer extends CallAnalyzer
 
         if ($method_storage) {
             FunctionCallReturnTypeFetcher::taintUsingFlows(
-                $statements_analyzer,
                 $method_storage,
                 $taint_flow_graph,
                 (string) $method_id,

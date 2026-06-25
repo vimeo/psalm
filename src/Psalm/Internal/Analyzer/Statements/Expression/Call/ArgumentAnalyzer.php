@@ -48,6 +48,7 @@ use Psalm\IssueBuffer;
 use Psalm\Node\VirtualArg;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\FunctionLikeParameter;
+use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
@@ -141,6 +142,7 @@ final class ArgumentAnalyzer
         ?string $self_fq_class_name,
         ?string $static_fq_class_name,
         CodeLocation $function_call_location,
+        ?FunctionLikeStorage $function_storage,
         ?FunctionLikeParameter $function_param,
         int $argument_offset,
         int $unpacked_argument_offset,
@@ -249,6 +251,7 @@ final class ArgumentAnalyzer
             $self_fq_class_name,
             $static_fq_class_name,
             $function_call_location,
+            $function_storage,
             $function_param,
             $allow_named_args,
             $arg_value_type,
@@ -279,6 +282,7 @@ final class ArgumentAnalyzer
         ?string $self_fq_class_name,
         ?string $static_fq_class_name,
         CodeLocation $function_call_location,
+        ?FunctionLikeStorage $function_storage,
         FunctionLikeParameter $function_param,
         bool $allow_named_args,
         Union $arg_value_type,
@@ -506,6 +510,7 @@ final class ArgumentAnalyzer
                         $argument_offset,
                         $arg_location,
                         $function_call_location,
+                        $function_storage,
                         $function_param,
                         $arg_value_type,
                         $arg->value,
@@ -688,6 +693,7 @@ final class ArgumentAnalyzer
             new CodeLocation($statements_analyzer->getSource(), $arg->value),
             $arg->value,
             $context,
+            $function_storage,
             $function_param,
             $arg->unpack,
             $unpacked_atomic_array,
@@ -716,6 +722,7 @@ final class ArgumentAnalyzer
         CodeLocation $arg_location,
         PhpParser\Node\Expr $input_expr,
         Context $context,
+        ?FunctionLikeStorage $function_storage,
         FunctionLikeParameter $function_param,
         bool $unpack,
         ?Atomic $unpacked_atomic_array,
@@ -754,6 +761,7 @@ final class ArgumentAnalyzer
                     $argument_offset,
                     $arg_location,
                     $function_call_location,
+                    $function_storage,
                     $function_param,
                     $input_type,
                     $input_expr,
@@ -836,6 +844,7 @@ final class ArgumentAnalyzer
                     $argument_offset,
                     $arg_location,
                     $function_call_location,
+                    $function_storage,
                     $function_param,
                     $input_type,
                     $input_expr,
@@ -1007,6 +1016,7 @@ final class ArgumentAnalyzer
                 $argument_offset,
                 $arg_location,
                 $function_call_location,
+                $function_storage,
                 $function_param,
                 $input_type,
                 $input_expr,
@@ -1788,6 +1798,7 @@ final class ArgumentAnalyzer
         int $argument_offset,
         CodeLocation $arg_location,
         CodeLocation $function_call_location,
+        ?FunctionLikeStorage $function_storage,
         FunctionLikeParameter $function_param,
         Union $input_type,
         PhpParser\Node\Expr $expr,
@@ -1823,9 +1834,7 @@ final class ArgumentAnalyzer
                 $cased_method_id,
                 $cased_method_id,
                 $argument_offset,
-                $taint_flow_graph
-                    ? $function_param->location
-                    : null,
+                $taint_flow_graph ? $function_storage : null,
                 $function_call_location,
             );
         } else {
@@ -1833,9 +1842,7 @@ final class ArgumentAnalyzer
                 $cased_method_id,
                 $cased_method_id,
                 $argument_offset,
-                $taint_flow_graph
-                    ? $function_param->location
-                    : null,
+                $taint_flow_graph ? $function_storage : null,
             );
 
             if ($taint_flow_graph
@@ -1852,11 +1859,15 @@ final class ArgumentAnalyzer
                     $dependent_classlike_storage = $codebase->classlike_storage_provider->get(
                         $dependent_classlike_lc,
                     );
+                    $dependent_method_id = new MethodIdentifier($dependent_classlike_lc, $method_name);
+                    $dependent_method_storage = $codebase->methods->hasStorage($dependent_method_id)
+                        ? $codebase->methods->getStorage($dependent_method_id)
+                        : null;
                     $new_sink = DataFlowNode::getForMethodArgument(
-                        $dependent_classlike_lc . '::' . $method_name,
+                        (string) $dependent_method_id,
                         $dependent_classlike_storage->name . '::' . $cased_method_name,
                         $argument_offset,
-                        $arg_location,
+                        $dependent_method_storage,
                         null,
                     );
 
@@ -1880,7 +1891,7 @@ final class ArgumentAnalyzer
                     (string) $declaring_method_id,
                     $codebase->methods->getCasedMethodId($declaring_method_id),
                     $argument_offset,
-                    $arg_location,
+                    $codebase->methods->getStorage($declaring_method_id),
                     null,
                 );
 

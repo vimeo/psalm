@@ -100,6 +100,7 @@ final class ExitAnalyzer
                     new CodeLocation($statements_analyzer->getSource(), $stmt->expr),
                     $stmt->expr,
                     $context,
+                    null,
                     $exit_param,
                     false,
                     null,

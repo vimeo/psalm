@@ -764,14 +764,14 @@ final class NewAnalyzer extends CallAnalyzer
                 $method_source = DataFlowNode::getForMethodReturn(
                     (string)$method_id,
                     $fq_class_name . '::__construct',
-                    $storage->location,
+                    $method_storage,
                     $code_location,
                 );
             } else {
                 $method_source = DataFlowNode::getForMethodReturn(
                     (string)$method_id,
                     $fq_class_name . '::__construct',
-                    $storage->location,
+                    $method_storage,
                 );
             }
 
@@ -827,7 +827,7 @@ final class NewAnalyzer extends CallAnalyzer
                     'variable-call',
                     'variable-call',
                     0,
-                    $arg_location,
+                    null,
                     $arg_location,
                     TaintKind::INPUT_CALLABLE,
                 );

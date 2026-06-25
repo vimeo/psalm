@@ -702,6 +702,7 @@ final class ArgumentsAnalyzer
                             $self_fq_class_name,
                             $static_fq_class_name,
                             $code_location,
+                            $function_storage,
                             $function_params[$i],
                             $i,
                             $i,
@@ -884,6 +885,7 @@ final class ArgumentsAnalyzer
                     $self_fq_class_name,
                     $static_fq_class_name,
                     $code_location,
+                    $function_storage,
                     $function_param,
                     $argument_offset + $i,
                     $i,
@@ -916,7 +918,7 @@ final class ArgumentsAnalyzer
                                 $cased_method_id,
                                 $cased_method_id,
                                 $argument_offset,
-                                $function_param->location,
+                                $function_storage,
                                 $code_location,
                                 $function_param->sinks,
                             );
@@ -925,7 +927,7 @@ final class ArgumentsAnalyzer
                                 $cased_method_id,
                                 $cased_method_id,
                                 $argument_offset,
-                                $function_param->location,
+                                $function_storage,
                                 null,
                                 $function_param->sinks,
                             );

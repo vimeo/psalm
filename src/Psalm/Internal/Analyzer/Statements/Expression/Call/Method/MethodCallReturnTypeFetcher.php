@@ -15,7 +15,6 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFet
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
-use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateBound;
@@ -36,7 +35,6 @@ use Throwable;
 use UnexpectedValueException;
 
 use function count;
-use function strtolower;
 
 /**
  * @internal
@@ -362,8 +360,7 @@ final class MethodCallReturnTypeFetcher
                     $method_call_node = DataFlowNode::getForMethodReturn(
                         (string) $method_id,
                         $cased_method_id,
-                        $is_declaring ? ($method_storage->signature_return_type_location
-                            ?: $method_storage->location) : null,
+                        $is_declaring ? $method_storage : null,
                         $node_location,
                     );
 
@@ -378,16 +375,16 @@ final class MethodCallReturnTypeFetcher
                     $universal_method_call_node = DataFlowNode::getForMethodReturn(
                         (string) $method_id,
                         $cased_method_id,
-                        $is_declaring ? ($method_storage->signature_return_type_location
-                            ?: $method_storage->location) : null,
+                        $is_declaring ? $method_storage : null,
                         null,
                     );
 
-                    $method_call_node = DataFlowNode::make(
-                        strtolower((string) $method_id),
+                    $method_call_node = DataFlowNode::getForMethodReturn(
+                        (string) $method_id,
                         $cased_method_id,
-                        $is_declaring ? ($method_storage->signature_return_type_location
-                            ?: $method_storage->location) : null,
+                        $is_declaring ? $method_storage : null,
+                        null,
+                        0,
                         $parent_node->specialization_key,
                     );
 
@@ -420,10 +417,12 @@ final class MethodCallReturnTypeFetcher
                     if (!$is_declaring) {
                         $cased_declaring_method_id = $codebase->methods->getCasedMethodId($declaring_method_id);
 
-                        $declaring_method_call_node = DataFlowNode::make(
-                            strtolower((string) $declaring_method_id),
+                        $declaring_method_call_node = DataFlowNode::getForMethodReturn(
+                            (string) $declaring_method_id,
                             $cased_declaring_method_id,
-                            $method_storage->signature_return_type_location ?: $method_storage->location,
+                            $method_storage,
+                            null,
+                            0,
                             $method_call_node->specialization_key,
                         );
 
@@ -449,9 +448,7 @@ final class MethodCallReturnTypeFetcher
                 $method_call_node = DataFlowNode::getForMethodReturn(
                     (string) $method_id,
                     $cased_method_id,
-                    $is_declaring
-                        ? ($method_storage->signature_return_type_location ?: $method_storage->location)
-                        : null,
+                    $is_declaring ? $method_storage : null,
                     $node_location,
                 );
 
@@ -461,7 +458,7 @@ final class MethodCallReturnTypeFetcher
                     $declaring_method_call_node = DataFlowNode::getForMethodReturn(
                         (string) $declaring_method_id,
                         $cased_declaring_method_id,
-                        $method_storage->signature_return_type_location ?: $method_storage->location,
+                        $method_storage,
                         $node_location,
                     );
 
@@ -489,11 +486,7 @@ final class MethodCallReturnTypeFetcher
             $method_call_node = DataFlowNode::getForMethodReturn(
                 (string) $method_id,
                 $cased_method_id,
-                $is_declaring
-                    ? ($graph instanceof VariableUseGraph
-                        ? ($method_storage->return_type_location ?: $method_storage->location)
-                        : ($method_storage->signature_return_type_location ?: $method_storage->location))
-                    : null,
+                $is_declaring ? $method_storage : null,
                 null,
             );
 
@@ -503,7 +496,7 @@ final class MethodCallReturnTypeFetcher
                 $declaring_method_call_node = DataFlowNode::getForMethodReturn(
                     (string) $declaring_method_id,
                     $cased_declaring_method_id,
-                    $method_storage->signature_return_type_location ?: $method_storage->location,
+                    $method_storage,
                     null,
                 );
 
@@ -529,7 +522,6 @@ final class MethodCallReturnTypeFetcher
         }
 
         FunctionCallReturnTypeFetcher::taintUsingFlows(
-            $statements_analyzer,
             $method_storage,
             $taint_flow_graph,
             (string) $method_id,
