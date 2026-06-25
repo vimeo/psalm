@@ -1,0 +1,35 @@
+<?php
+
+namespace Foo {
+    class Bar {
+        /**
+         * @var string
+         */
+        public $hello;
+
+        /**
+         * @var string
+         */
+        private $world;
+
+        /**
+         * @var string
+         */
+        private $abc;
+
+        public function __construct(string $a) {
+        }
+    }
+}
+
+namespace {
+    final class Xyz extends \Foo\Bar {
+        /**
+         * @var string
+         */
+        private $world;
+
+        public function __construct() {
+        }
+    }
+}

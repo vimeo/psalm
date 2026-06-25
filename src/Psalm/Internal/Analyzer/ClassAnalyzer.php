@@ -817,7 +817,8 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                         // therefore invariance is not a problem, if the parent type contains the child type
                     } elseif ($property_storage->location
                         && !$property_type->equals($guide_property_type, false)
-                        && $guide_class_storage->user_defined
+                        // do not check $guide_class_storage->user_defined here
+                        // otherwise all stubbed won't report an error
                     ) {
                         IssueBuffer::maybeAdd(
                             new NonInvariantDocblockPropertyType(
@@ -834,16 +835,40 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 }
             }
 
+            $is_promoted = $property_storage->is_promoted;
+
+            // handle if the current class does not have a constructor
+            // but overwrites the property declaration #11261
+            if (!$is_promoted
+                && !isset($storage->methods['__construct'])
+                && isset($storage->declaring_method_ids['__construct'])
+            ) {
+                $construct_fq_class_name = $storage->declaring_method_ids['__construct']->fq_class_name;
+                $construct_class_storage = $codebase->classlike_storage_provider->get($construct_fq_class_name);
+                if (isset($construct_class_storage->properties[$property_name])) {
+                    $is_promoted = $construct_class_storage->properties[$property_name]->is_promoted;
+                }
+            } elseif ($is_promoted
+                && !isset($storage->declaring_method_ids['__construct'])
+            ) {
+                // impossible unless someone created a bug
+                $is_promoted = false;
+            } elseif ($is_promoted) {
+                // handle if class that contains the __construct in use does not declare the property #10786
+                $construct_fq_class_name = $storage->declaring_method_ids['__construct']->fq_class_name;
+                $construct_class_storage = $codebase->classlike_storage_provider->get($construct_fq_class_name);
+                if (!isset($construct_class_storage->properties[$property_name])
+                    || !$construct_class_storage->properties[$property_name]->is_promoted
+                ) {
+                    $is_promoted = false;
+                }
+            }
+
             if ($property_storage->type) {
                 $property_type = $property_storage->type;
 
                 if (!$property_type->isMixed()
-                    && (!$property_storage->is_promoted
-                        || (strtolower($fq_class_name) !== strtolower($property_class_name)
-                            && isset($storage->declaring_method_ids['__construct'])
-                            && strtolower(
-                                $storage->declaring_method_ids['__construct']->fq_class_name,
-                            ) === strtolower($fq_class_name)))
+                    && !$is_promoted
                     && !$property_storage->has_default
                     && !($property_type->isNullable() && $property_type->from_docblock)
                 ) {
@@ -855,12 +880,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 }
             } else {
                 if (!$property_storage->has_default
-                    && (!$property_storage->is_promoted
-                        || (strtolower($fq_class_name) !== strtolower($property_class_name)
-                            && isset($storage->declaring_method_ids['__construct'])
-                            && strtolower(
-                                $storage->declaring_method_ids['__construct']->fq_class_name,
-                            ) === strtolower($fq_class_name)))) {
+                    && !$is_promoted) {
                     $property_type = new Union([new TMixed()], [
                         'initialized' => false,
                         'from_property' => true,
@@ -1070,24 +1090,50 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
 
             $property = $property_class_storage->properties[$property_name];
 
-            $property_is_initialized = isset($property_class_storage->initialized_properties[$property_name]);
-
             if ($property->is_static) {
                 continue;
             }
 
-            if ($property->is_promoted
-                && strtolower($property_class_name) !== $fq_class_name_lc
-                && isset($storage->declaring_method_ids['__construct'])
-                && strtolower($storage->declaring_method_ids['__construct']->fq_class_name) === $fq_class_name_lc) {
-                $property_is_initialized = false;
-            }
-
-            if ($property->has_default || $property_is_initialized) {
+            if ($property->has_default) {
                 continue;
             }
 
             if ($property->type && $property->type->from_docblock && $property->type->isNullable()) {
+                continue;
+            }
+
+            $property_is_initialized = isset($property_class_storage->initialized_properties[$property_name]);
+
+            // handle if the current class does not have a constructor
+            // but overwrites the property declaration #11261
+            if (!$property_is_initialized
+                && !$property->is_promoted
+                && !isset($storage->methods['__construct'])
+                && isset($storage->declaring_method_ids['__construct'])
+            ) {
+                $construct_fq_class_name = $storage->declaring_method_ids['__construct']->fq_class_name;
+                $construct_class_storage = $codebase->classlike_storage_provider->get($construct_fq_class_name);
+                if (isset($construct_class_storage->properties[$property_name])) {
+                    $property_is_initialized = $construct_class_storage->properties[$property_name]->is_promoted;
+                }
+            } elseif ($property_is_initialized
+                && $property->is_promoted
+                && !isset($storage->declaring_method_ids['__construct'])
+            ) {
+                // impossible unless someone created a bug
+                $property_is_initialized = false;
+            } elseif ($property_is_initialized && $property->is_promoted) {
+                // handle if class that contains the __construct in use does not declare the property #10786
+                $construct_fq_class_name = $storage->declaring_method_ids['__construct']->fq_class_name;
+                $construct_class_storage = $codebase->classlike_storage_provider->get($construct_fq_class_name);
+                if (!isset($construct_class_storage->properties[$property_name])
+                    || !$construct_class_storage->properties[$property_name]->is_promoted
+                ) {
+                    $property_is_initialized = false;
+                }
+            }
+
+            if ($property_is_initialized) {
                 continue;
             }
 
