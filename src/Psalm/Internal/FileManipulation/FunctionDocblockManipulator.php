@@ -244,7 +244,9 @@ final class FunctionDocblockManipulator
                     $this->return_typehint_start = $i + $end_bracket_position + 1;
                 }
 
-                if ($chars[$i + 1] !== '\\' && !preg_match('/[\w]/', $chars[$i + 1])) {
+                if (!isset($chars[$i + 1])
+                    || ($chars[$i + 1] !== '\\' && !preg_match('/[\w]/', $chars[$i + 1]))
+                ) {
                     $this->return_typehint_end = $i + $end_bracket_position + 2;
                     break;
                 }
