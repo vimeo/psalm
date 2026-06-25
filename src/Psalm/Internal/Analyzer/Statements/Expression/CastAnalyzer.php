@@ -745,45 +745,41 @@ final class CastAnalyzer
                 continue;
             }
 
-            if ($atomic_type instanceof TNull
-                || $atomic_type instanceof TFalse
-            ) {
+            if ($atomic_type instanceof TArray || $atomic_type instanceof TKeyedArray) {
+                $valid_strings[] = Type::getAtomicStringFromLiteral('Array');
+                continue;
+            }
+
+
+            if ($atomic_type instanceof TNull  || $atomic_type instanceof TFalse) {
                 $valid_strings[] = Type::getAtomicStringFromLiteral('');
                 continue;
             }
 
-            if ($atomic_type instanceof TTrue
-            ) {
+            if ($atomic_type instanceof TTrue) {
                 $valid_strings[] = Type::getAtomicStringFromLiteral('1');
                 continue;
             }
 
-            if ($atomic_type instanceof TBool
-            ) {
+            if ($atomic_type instanceof TBool) {
                 $valid_strings[] = Type::getAtomicStringFromLiteral('1');
                 $valid_strings[] = Type::getAtomicStringFromLiteral('');
                 continue;
             }
 
-            if ($atomic_type instanceof TClosedResource
-               || $atomic_type instanceof TResource
-            ) {
+            if ($atomic_type instanceof TClosedResource || $atomic_type instanceof TResource) {
                 $castable_types[] = new TNonEmptyString();
 
                 continue;
             }
 
-            if ($atomic_type instanceof TMixed
-                || $atomic_type instanceof Scalar
-            ) {
+            if ($atomic_type instanceof TMixed || $atomic_type instanceof Scalar) {
                 $castable_types[] = new TString();
 
                 continue;
             }
 
-            if ($atomic_type instanceof TNamedObject
-                || $atomic_type instanceof TObjectWithProperties
-            ) {
+            if ($atomic_type instanceof TNamedObject  || $atomic_type instanceof TObjectWithProperties) {
                 $intersection_types = [$atomic_type];
 
                 if ($atomic_type->extra_types) {
