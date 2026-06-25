@@ -15,7 +15,6 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFet
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
-use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateBound;
@@ -520,7 +519,6 @@ final class MethodCallReturnTypeFetcher
         }
 
         FunctionCallReturnTypeFetcher::taintUsingFlows(
-            $statements_analyzer,
             $method_storage,
             $taint_flow_graph,
             (string) $method_id,

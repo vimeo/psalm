@@ -73,7 +73,7 @@ final class DataFlowNode implements Stringable
     }
 
     /**
-     * @psalm-pure
+     * @psalm-mutation-free
      */
     public static function getForMethodArgument(
         string $method_id,
@@ -120,7 +120,7 @@ final class DataFlowNode implements Stringable
     }
 
     /**
-     * @psalm-pure
+     * @psalm-mutation-free
      */
     public static function getForMethodReturn(
         string $method_id,
@@ -145,7 +145,7 @@ final class DataFlowNode implements Stringable
     }
 
     /**
-     * @psalm-pure
+     * @psalm-mutation-free
      */
     private static function getReturnLocation(?FunctionLikeStorage $storage): ?CodeLocation
     {
@@ -153,13 +153,13 @@ final class DataFlowNode implements Stringable
             return null;
         }
 
-        return $storage->signature_return_type_location
-            ?: $storage->return_type_location
+        return $storage->return_type_location
+            ?: $storage->signature_return_type_location
             ?: $storage->location;
     }
 
     /**
-     * @psalm-pure
+     * @psalm-mutation-free
      */
     private static function getParameterLocation(?FunctionLikeStorage $storage, int $argument_offset): ?CodeLocation
     {

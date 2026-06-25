@@ -661,7 +661,6 @@ final class FunctionCallReturnTypeFetcher
 
             if (!$stmt->isFirstClassCallable()) {
                 self::taintUsingFlows(
-                    $statements_analyzer,
                     $function_storage,
                     $taint_flow_graph,
                     $function_id,
@@ -684,7 +683,6 @@ final class FunctionCallReturnTypeFetcher
      * @psalm-external-mutation-free
      */
     public static function taintUsingFlows(
-        StatementsAnalyzer $statements_analyzer,
         FunctionLikeStorage $function_storage,
         TaintFlowGraph $graph,
         string $function_id,

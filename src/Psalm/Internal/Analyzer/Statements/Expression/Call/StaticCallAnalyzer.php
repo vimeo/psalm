@@ -377,7 +377,6 @@ final class StaticCallAnalyzer extends CallAnalyzer
 
         if ($method_storage) {
             FunctionCallReturnTypeFetcher::taintUsingFlows(
-                $statements_analyzer,
                 $method_storage,
                 $taint_flow_graph,
                 (string) $method_id,
