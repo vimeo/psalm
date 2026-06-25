@@ -1034,6 +1034,29 @@ final class IntRangeTest extends TestCase
                     '$z' => 'int<min, 9223372036854775807>|null',
                 ],
             ],
+            'noInternalErrorOnGreaterThanPhpIntMax' => [
+                'code' => '<?php
+                    function packInteger(int $value): void {
+                        if ($value >= 0) {
+                        } elseif ($value <= 9223372036854775807) {
+                        }
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCondition'],
+            ],
+            // Psalm does not currently emit RedundantCondition for the >= direction at PHP_INT_MIN,
+            // so no ignored_issues entry is needed here (unlike the <= PHP_INT_MAX case above).
+            'noInternalErrorOnLessThanPhpIntMin' => [
+                'code' => '<?php
+                    function checkBound(int $value): void {
+                        if ($value <= 0) {
+                        } elseif ($value >= -9223372036854775808) {
+                        }
+                    }
+                ',
+                'assertions' => [],
+            ],
         ];
     }
 
