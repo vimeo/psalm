@@ -1,6 +1,6 @@
 # UnusedProperty
 
-Emitted when `--find-dead-code` is turned on and Psalm cannot find any uses of a
+Emitted when `--find-unused-code` is turned on and Psalm cannot find any uses of a
 private property.
 
 Properties used in constructor only are considered unused. Use normal variables instead.

@@ -1,6 +1,6 @@
 # UnusedDocblockParam
 
-Emitted when `--find-dead-code` is turned on and a parameter specified in docblock does not have a corresponding parameter in function / method signature.
+Emitted when `--find-unused-code` is turned on and a parameter specified in docblock does not have a corresponding parameter in function / method signature.
 
 ```php
 <?php
