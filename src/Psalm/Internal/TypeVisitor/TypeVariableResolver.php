@@ -29,6 +29,9 @@ final class TypeVariableResolver extends MutableTypeVisitor
 {
     public bool $resolved_a_variable = false;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         private readonly ?Codebase $codebase,
     ) {

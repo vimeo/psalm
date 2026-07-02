@@ -1110,6 +1110,8 @@ final class NewAnalyzer extends CallAnalyzer
      * Whether the constructor binds the given template through a `class-string<T>`
      * (`T::class`) parameter position, which names the template's type exactly
      * rather than providing a value of it.
+     *
+     * @psalm-mutation-free
      */
     private static function templateBoundThroughClassString(
         MethodStorage $method_storage,
@@ -1139,6 +1141,7 @@ final class NewAnalyzer extends CallAnalyzer
      * only have been fixed at the construction site.
      *
      * @return array<string, true>
+     * @psalm-mutation-free
      */
     private static function getUnconstrainableTemplates(ClassLikeStorage $storage): array
     {

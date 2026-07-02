@@ -40,6 +40,8 @@ final class TypeVariableTracker
 
     /**
      * Mints a fresh type variable name, registering its bound storage.
+     *
+     * @psalm-external-mutation-free
      */
     public function addVariable(TypeVariableBounds $bounds): string
     {
@@ -80,6 +82,8 @@ final class TypeVariableTracker
      * below. Used where a concrete shape is required (property reads, method
      * call returns); the variable itself stays in the object's type params,
      * so later uses still constrain it.
+     *
+     * @psalm-external-mutation-free
      */
     public static function resolveTypeVariables(Union $type, ?Codebase $codebase): Union
     {
@@ -327,6 +331,7 @@ final class TypeVariableTracker
      *
      * @param list<TemplateBound> $lower_bounds
      * @return list<TemplateBound>
+     * @psalm-mutation-free
      */
     private static function getRelevantBounds(array $lower_bounds): array
     {
