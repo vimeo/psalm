@@ -12,6 +12,7 @@ use Psalm\Report;
 
 use function file_exists;
 use function file_get_contents;
+use function max;
 use function str_starts_with;
 
 /**
@@ -82,10 +83,10 @@ final class SarifReport extends Report
                                 'uri' => $issue_data->file_name,
                             ],
                             'region' => [
-                                'startLine' => $issue_data->line_from,
-                                'endLine' => $issue_data->line_to,
-                                'startColumn' => $issue_data->column_from,
-                                'endColumn' => $issue_data->column_to,
+                                'startLine' => max(1, $issue_data->line_from),
+                                'endLine' => max(1, $issue_data->line_to),
+                                'startColumn' => max(1, $issue_data->column_from),
+                                'endColumn' => max(1, $issue_data->column_to),
                             ],
                         ],
                     ],
