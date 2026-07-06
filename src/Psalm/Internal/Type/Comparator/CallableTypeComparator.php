@@ -448,7 +448,10 @@ final class CallableTypeComparator
                         'callable',
                         $method_storage->params,
                         $converted_return_type,
-                        $method_storage->pure,
+                        $method_storage->pure
+                            || $method_storage->immutable
+                            || $method_storage->mutation_free
+                            || $method_storage->mutation_free_inferred,
                     );
                 } catch (UnexpectedValueException) {
                     // do nothing
@@ -516,7 +519,10 @@ final class CallableTypeComparator
                         'callable',
                         $method_storage->params,
                         $converted_return_type,
-                        $method_storage->pure,
+                        $method_storage->pure
+                            || $method_storage->immutable
+                            || $method_storage->mutation_free
+                            || $method_storage->mutation_free_inferred,
                     );
 
                     if ($template_result) {
