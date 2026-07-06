@@ -139,7 +139,7 @@ final class AttributesAnalyzer
             $source,
             $fq_attribute_name,
             $attribute_name_location,
-            null,
+            $context,
             $suppressed_issues,
             new ClassLikeNameOptions(
                 false,

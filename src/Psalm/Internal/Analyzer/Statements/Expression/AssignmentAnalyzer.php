@@ -742,7 +742,7 @@ final class AssignmentAnalyzer
                 false,
                 false,
                 false,
-                $context->calling_method_id,
+                $context,
             );
 
             $type_location = null;
