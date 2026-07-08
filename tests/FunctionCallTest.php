@@ -1164,6 +1164,27 @@ final class FunctionCallTest extends TestCase
                     }
 
                     /**
+                     * @param string $s
+                     * @return null|non-empty-string
+                     */
+                    function filterNullOrNonEmptyStringFlagEmptyStringNull(string $s): ?string {
+                        return filter_var($s, FILTER_DEFAULT, FILTER_FLAG_EMPTY_STRING_NULL);
+                    }
+                    /**
+                     * @return null
+                     */
+                    function filterNullFlagEmptyStringNull(): null {
+                        return filter_var("", FILTER_DEFAULT, FILTER_FLAG_EMPTY_STRING_NULL);
+                    }
+                    /**
+                     * @param non-empty-string $s
+                     * @return non-empty-string
+                     */
+                    function filterNonEmptyStringFlagEmptyStringNull(string $s): string {
+                        return filter_var($s);
+                    }
+
+                    /**
                      * @param mixed $c
                      * @return int<1, 100>|stdClass|array<never, never>
                      */
