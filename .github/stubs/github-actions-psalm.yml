@@ -1,0 +1,27 @@
+name: Psalm
+
+on:
+  pull_request: null
+# Run on push to the main branch as well:
+# push:
+#  branches:
+#   - main
+
+jobs:
+  psalm:
+    name: Psalm
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/danog/psalm:__PSALM_VERSION__
+    steps:
+      - uses: actions/checkout@v4
+
+      # --output-format=github annotates pull requests inline with Psalm issues.
+      # --threads=4: Psalm defaults to 1 thread in CI; standard GitHub runners have 4 cores.
+      #
+      # Tips for enhancing this step:
+      #  - respect baseline: --use-baseline=psalm-baseline.xml
+      #  - report results to Shepherd (https://shepherd.dev) for historical type coverage tracking: --shepherd
+      #  - specify a path to the config: -c psalm.xml
+      - name: Run Psalm
+        run: psalm --output-format=github --threads=4 --no-progress --no-suggestions

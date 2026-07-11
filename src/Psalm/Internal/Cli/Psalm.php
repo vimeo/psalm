@@ -7,6 +7,7 @@ namespace Psalm\Internal\Cli;
 use Composer\Autoload\ClassLoader;
 use Fidry\CpuCoreCounter\CpuCoreCounter;
 use Psalm\Config;
+use Psalm\Config\CiCreator;
 use Psalm\Config\Creator;
 use Psalm\ErrorBaseline;
 use Psalm\Exception\ConfigCreationException;
@@ -68,11 +69,13 @@ use function implode;
 use function in_array;
 use function ini_get;
 use function is_array;
+use function is_dir;
 use function is_numeric;
 use function is_string;
 use function json_encode;
 use function max;
 use function microtime;
+use function mkdir;
 use function opcache_get_status;
 use function parse_url;
 use function preg_match;
@@ -137,6 +140,7 @@ final class Psalm
         'help',
         'ignore-baseline',
         'init',
+        'init-ci',
         'memory-limit:',
         'monochrome',
         'no-diff',
@@ -234,6 +238,11 @@ final class Psalm
         }
 
         $current_dir = self::getCurrentDir($options);
+
+        if (array_key_exists('init-ci', $options)) {
+            self::generateCiConfig($current_dir);
+            exit;
+        }
 
         $path_to_config = CliUtils::getPathToConfig($options);
 
@@ -620,6 +629,34 @@ final class Psalm
 
             exit('Config file created successfully. Please re-run psalm.' . PHP_EOL);
         }
+    }
+
+    private static function generateCiConfig(string $current_dir): void
+    {
+        require_once __DIR__ . '/../../Config/CiCreator.php';
+        $workflow_dir = $current_dir . DIRECTORY_SEPARATOR . '.github'
+            . DIRECTORY_SEPARATOR . 'workflows';
+        $workflow_file = $workflow_dir . DIRECTORY_SEPARATOR . 'psalm.yml';
+
+        if (file_exists($workflow_file)) {
+            fwrite(STDERR, 'A CI workflow already exists at ' . $workflow_file . PHP_EOL);
+            exit(1);
+        }
+
+        $contents = CiCreator::getContents($current_dir);
+
+        if (!is_dir($workflow_dir) && !mkdir($workflow_dir, 0777, true)) {
+            fwrite(STDERR, 'Could not create directory ' . $workflow_dir . PHP_EOL);
+            exit(1);
+        }
+
+        if (file_put_contents($workflow_file, $contents) === false) {
+            fwrite(STDERR, 'Could not write to ' . $workflow_file . PHP_EOL);
+            exit(1);
+        }
+
+        echo 'GitHub Actions workflow created at .github/workflows/psalm.yml' . PHP_EOL
+            . 'Review the file for tips on enabling taint analysis, baselines, and more.' . PHP_EOL;
     }
 
     /** @param list<ClassLoader> $autoloaders */
@@ -1546,6 +1583,10 @@ final class Psalm
             -i, --init [source_dir=src] [level=3]
                 Create a psalm config file in the current directory that points to [source_dir]
                 at the required level, from 1, most strict, to 8, most permissive.
+
+            --init-ci
+                Create a GitHub Actions workflow file at .github/workflows/psalm.yml.
+                Uses the official Psalm Docker image, pinned to the major version from composer.lock.
 
             --debug
                 Debug information
