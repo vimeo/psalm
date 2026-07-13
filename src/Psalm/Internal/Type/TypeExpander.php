@@ -690,6 +690,16 @@ final class TypeExpander
                 $static_class_type,
                 false,
             );
+        } elseif ($return_type->is_static
+            && !$final
+            && is_string($static_class_type)
+            && $return_type->value !== $static_class_type
+            && $codebase->classExtendsOrImplements($static_class_type, $return_type->value)
+        ) {
+            // `static` is stored bound to the class that declared it (`A` for
+            // `A::test(): static`). Rebind it to the more derived static context
+            // of a `parent::`/`static::` call, keeping it polymorphic.
+            $return_type = $return_type->setValueIsStatic($static_class_type, true);
         } elseif ($self_class && $return_type_lc === 'self') {
             $return_type = $return_type->setValue($self_class);
         } elseif ($parent_class && $return_type_lc === 'parent') {
