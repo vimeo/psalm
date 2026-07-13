@@ -635,7 +635,8 @@ is not being used to suppress an issue.
 ## Project settings
 
 #### &lt;projectFiles&gt;
-Contains a list of all the directories that Psalm should inspect. You can also specify a set of files and folders to ignore with the `<ignoreFiles>` directive.  By default, ignored files/folders are required to exist.  An `allowMissingFiles` attribute can be added for ignored files/folders than may or may not exist.
+Contains a list of all the directories that Psalm should inspect. You can also specify a set of files and folders to ignore with the `<ignoreFiles>` directive. By default, all files/folders including ignored ones are required to exist. An `allowMissingFiles` attribute can be added on `projectFiles` or `ignoreFiles` to suppress errors if any of the paths do not exist.
+Additionally PHP glob patterns are supported for all file and directory paths everywhere in the config.
 ```xml
 <projectFiles>
   <directory name="src" />
@@ -643,7 +644,8 @@ Contains a list of all the directories that Psalm should inspect. You can also s
     <directory name="src/Stubs" />
   </ignoreFiles>
   <ignoreFiles allowMissingFiles="true">
-    <directory name="path-that-may-not-exist" />
+    <directory name="path-that/**/may-not-exist" />
+    <directory name="**/foo" />
   </ignoreFiles>
 </projectFiles>
 ```
