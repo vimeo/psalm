@@ -529,6 +529,29 @@ final class SimpleTypeInferer
             ]);
         }
 
+        if ($stmt instanceof PhpParser\Node\Expr\Ternary) {
+            return Type::combineUnionTypes(
+                self::infer(
+                    $codebase,
+                    $nodes,
+                    $stmt->if ?? $stmt->cond,
+                    $aliases,
+                    $file_source,
+                    $existing_class_constants,
+                    $fq_classlike_name,
+                ),
+                self::infer(
+                    $codebase,
+                    $nodes,
+                    $stmt->else,
+                    $aliases,
+                    $file_source,
+                    $existing_class_constants,
+                    $fq_classlike_name,
+                ),
+            );
+        }
+
         return null;
     }
 
