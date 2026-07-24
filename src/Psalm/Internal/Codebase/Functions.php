@@ -6,7 +6,7 @@ namespace Psalm\Internal\Codebase;
 
 use Exception;
 use PhpParser\Node\Arg;
-use PhpParser\Node\Expr\Closure as ClosureNode;
+use PhpParser\Node\Scalar\String_;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
@@ -401,6 +401,7 @@ final class Functions
         bool &$must_use = true,
     ): bool {
         if (ImpureFunctionsList::isImpure($function_id)) {
+            $must_use = false;
             return false;
         }
 
@@ -421,6 +422,7 @@ final class Functions
         }
 
         if (($function_id === 'var_export' || $function_id === 'print_r') && !isset($args[1])) {
+            $must_use = false;
             return false;
         }
 
@@ -463,29 +465,44 @@ final class Functions
 
         if (!isset($function_callable->params)
             || ($args !== null && count($args) === 0)
-            || ($function_callable->return_type && $function_callable->return_type->isVoid())
         ) {
+            $must_use = false;
             return false;
         }
 
-        $must_use = $function_id !== 'array_map'
-            || (isset($args[0]) && !$args[0]->value instanceof ClosureNode);
+        if ($function_callable->return_type
+            && ($function_callable->return_type->isVoid()
+               || $function_callable->return_type->isNever()
+            )
+        ) {
+            $must_use = false;
+            return false;
+        }
+
 
         foreach ($function_callable->params as $i => $param) {
-            if ($type_provider && $param->type && $param->type->hasCallableType() && isset($args[$i])) {
-                $arg_type = $type_provider->getType($args[$i]->value);
+            if ($param->type && $param->type->hasCallableType() && isset($args[$i])) {
+                if ($type_provider) {
+                    $arg_type = $type_provider->getType($args[$i]->value);
 
-                if ($arg_type) {
-                    foreach ($arg_type->getAtomicTypes() as $possible_callable) {
-                        $possible_callable = CallableTypeComparator::getCallableFromAtomic(
-                            $codebase,
-                            $possible_callable,
-                        );
+                    if ($arg_type) {
+                        foreach ($arg_type->getAtomicTypes() as $possible_callable) {
+                            $possible_callable = CallableTypeComparator::getCallableFromAtomic(
+                                $codebase,
+                                $possible_callable,
+                            );
 
-                        if ($possible_callable && !$possible_callable->is_pure) {
-                            return false;
+                            if ($possible_callable && !$possible_callable->is_pure) {
+                                $must_use = false;
+                                return false;
+                            }
                         }
                     }
+                } elseif ($args[$i]->value instanceof String_
+                    && ImpureFunctionsList::isImpure($args[$i]->value->value)
+                ) {
+                    $must_use = false;
+                    return false;
                 }
             }
 
