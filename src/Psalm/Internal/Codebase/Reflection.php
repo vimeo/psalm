@@ -428,6 +428,9 @@ final class Reflection
 
         if ($reflection_type instanceof ReflectionNamedType) {
             $type = $reflection_type->getName();
+            if ($reflection_type->allowsNull() && strtolower($type) !== 'null') {
+                $type .= '|null';
+            }
         } elseif ($reflection_type instanceof ReflectionUnionType) {
             $type = implode(
                 '|',
@@ -438,10 +441,6 @@ final class Reflection
             );
         } else {
             throw new LogicException('Unexpected reflection class ' . $reflection_type::class . ' found.');
-        }
-
-        if ($reflection_type->allowsNull()) {
-            $type .= '|null';
         }
 
         return Type::parseString($type);

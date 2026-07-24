@@ -14,6 +14,7 @@ use Psalm\Aliases;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Issue\MethodSignatureMismatch;
 use Psalm\Issue\ParseError;
 use Psalm\IssueBuffer;
 use Psalm\Storage\ClassLikeStorage;
@@ -58,6 +59,7 @@ final class TypeHintResolver
                 );
             }
 
+            $existing_ids = [];
             foreach ($hint->types as $atomic_typehint) {
                 $resolved_type = self::resolve(
                     $atomic_typehint,
@@ -68,6 +70,21 @@ final class TypeHintResolver
                     $aliases,
                     $analysis_php_version_id,
                 );
+
+                foreach ($resolved_type->getAtomicTypes() as $atomic) {
+                    if (isset($existing_ids[$atomic->getKey()])) {
+                        IssueBuffer::maybeAdd(
+                            new MethodSignatureMismatch(
+                                'Duplicate type ' . $atomic->getKey() . ' in union type',
+                                $code_location,
+                            ),
+                        );
+
+                        continue;
+                    }
+
+                    $existing_ids[$atomic->getKey()] = true;
+                }
 
                 $type = Type::combineUnionTypes($resolved_type, $type);
             }
