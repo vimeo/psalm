@@ -100,6 +100,7 @@ final class TValueOf extends Atomic
                 && !$type instanceof TClassConstant
                 && !$type instanceof TKeyedArray
                 && !$type instanceof TPropertiesOf
+                && !$type instanceof TRecursivePropertiesOf
                 && !$type instanceof TNamedObject
             ) {
                 return false;
