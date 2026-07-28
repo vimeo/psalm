@@ -58,7 +58,13 @@ final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
         public Union|UnresolvedConstantComponent|null $default_type = null,
         public ?Union $out_type = null,
     ) {
+
+		// variadic parameters are always optional by default
+        // except some native PHP params in certain versions, e.g. array_intersect
+        // which is why we cannot do $this->is_optional = $is_optional || $is_variadic;
         $this->signature_type_location = $type_location;
+		$this->default_type = $is_variadic ? null : $default_type;
+        $this->out_type = $by_ref ? $out_type : null;
     }
 
     /** @psalm-mutation-free */
@@ -66,7 +72,7 @@ final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
     {
         return ($this->type ? $this->type->getId() : 'mixed')
             . ($this->is_variadic ? '...' : '')
-            . ($this->is_optional ? '=' : '');
+            . ($this->is_optional && !$this->is_variadic ? '=' : '');
     }
 
     /** @psalm-mutation-free */

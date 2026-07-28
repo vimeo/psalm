@@ -111,7 +111,7 @@ final class CallableTest extends TestCase
                     '$a' => 'int',
                 ],
                 'ignored_issues' => [],
-                'php_version' => '7.4',
+                'php_version' => '8.0',
             ],
             'inferArgFromClassContextInGenericContext' => [
                 'code' => '<?php

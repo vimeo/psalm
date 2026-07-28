@@ -319,7 +319,9 @@ final class ClassTemplateCovarianceTest extends TestCase
                          */
                         public function add($a) : Collection
                         {
-                          return new Collection(...$this->arr, $a);
+                          $data = $this->arr;
+                          $data[] = $a;
+                          return new Collection(...$data);
                         }
                     }
 
