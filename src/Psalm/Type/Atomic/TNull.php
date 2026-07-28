@@ -32,12 +32,12 @@ final class TNull extends Atomic
         ?string $this_class,
         int $analysis_php_version_id,
     ): ?string {
-        return null;
+        return $analysis_php_version_id >= 8_02_00 ? $this->getKey() : null;
     }
 
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
-        return false;
+        return $analysis_php_version_id >= 8_02_00;
     }
 }
