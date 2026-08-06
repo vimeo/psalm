@@ -399,7 +399,7 @@ final class TypeParser
         }
 
         if (!$parse_tree instanceof Value) {
-            throw new InvalidArgumentException('Unrecognised parse tree type ' . $parse_tree::class);
+            throw new TypeParseTreeException('Unrecognised parse tree type ' . $parse_tree::class);
         }
 
         if ($parse_tree->value[0] === '"' || $parse_tree->value[0] === '\'') {
