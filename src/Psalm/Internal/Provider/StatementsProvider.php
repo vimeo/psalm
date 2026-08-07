@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Provider;
 
+use Amp\Serialization\NativeSerializer;
+use Amp\Serialization\Serializer;
 use PhpParser;
 use PhpParser\ErrorHandler\Collecting;
 use PhpParser\Node\Stmt;
@@ -14,6 +16,7 @@ use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Internal\Diff\FileDiffer;
 use Psalm\Internal\Diff\FileStatementsDiffer;
+use Psalm\Internal\Fork\IgbinarySerializer;
 use Psalm\Internal\PhpTraverser\CustomTraverser;
 use Psalm\Internal\PhpVisitor\CloningVisitor;
 use Psalm\Internal\PhpVisitor\PartialParserVisitor;
@@ -30,6 +33,8 @@ use function array_intersect_key;
 use function array_map;
 use function array_merge;
 use function count;
+use function extension_loaded;
+use function hash;
 use function md5;
 use function str_starts_with;
 use function strlen;
@@ -70,7 +75,17 @@ final class StatementsProvider
      */
     private array $deletion_ranges = [];
 
+    /**
+     * Statements of vendor files, which the parser cache provider refuses to store, kept serialized so that
+     * repeated requests unserialize instead of re-parsing.
+     *
+     * @var array<string, array{string, string}> file path => [content hash, serialized statements]
+     */
+    private array $vendor_statements = [];
+
     private static ?Parser $parser = null;
+
+    private static ?Serializer $serializer = null;
 
     public function __construct(
         private readonly FileProvider $file_provider,
@@ -100,11 +115,36 @@ final class StatementsProvider
         if (!$this->parser_cache_provider
             || (!$config->isInProjectDirs($file_path) && strpos($file_path, 'vendor'))
         ) {
+            // Vendor files reach this branch on every request, and ProjectAnalyzer::getMethodMutations() asks
+            // for the same vendor base classes and traits over and over, so they get re-parsed dozens of times.
+            // Keeping their statements serialized turns those repeats into an unserialize, which yields the same
+            // fresh node graph a re-parse would, for a fraction of the cost.
+            //
+            // Files that land here only because there is no parser cache provider at all (--no-cache) are
+            // deliberately left alone: that path also carries every project file, and holding all of them is what
+            // made the former StatementsVolatileCache use 8GB+ (#9899, removed in da8c1da8b).
+            $vendor_hash = $this->parser_cache_provider === null
+                ? null
+                : hash('xxh128', $analysis_php_version_id . "\0" . $file_contents);
+
+            $memoised = $this->vendor_statements[$file_path] ?? null;
+
+            if ($memoised !== null && $memoised[0] === $vendor_hash) {
+                /** @var list<Stmt> */
+                return self::getSerializer()->unserialize($memoised[1]);
+            }
+
             $progress->debug('Parsing ' . $file_path . " because we cannot use cache\n");
 
             $has_errors = false;
 
-            return self::parseStatements($file_contents, $analysis_php_version_id, $has_errors, $file_path);
+            $stmts = self::parseStatements($file_contents, $analysis_php_version_id, $has_errors, $file_path);
+
+            if ($vendor_hash !== null && !$has_errors) {
+                $this->vendor_statements[$file_path] = [$vendor_hash, self::getSerializer()->serialize($stmts)];
+            }
+
+            return $stmts;
         }
 
         $stmts = $this->parser_cache_provider->loadStatementsFromCache(
@@ -434,6 +474,17 @@ final class StatementsProvider
         $resolving_traverser->traverse($stmts);
 
         return $stmts;
+    }
+
+    /**
+     * The parser cache serializer is not reused here: it wraps the payload in the configured compressor, and
+     * compressing a value that never leaves the process only buys memory at the price of the CPU this is saving.
+     */
+    private static function getSerializer(): Serializer
+    {
+        return self::$serializer ??= extension_loaded('igbinary')
+            ? new IgbinarySerializer
+            : new NativeSerializer;
     }
 
     public static function clearParser(): void
