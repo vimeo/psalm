@@ -49,6 +49,9 @@ use const LOCK_UN;
  */
 final class Cache
 {
+    /** Width of the little-endian hash length prefixed to every ".hash" file by saveItem(). */
+    private const HASH_LENGTH_BYTES = 4;
+
     /** @psalm-suppress PropertyNotSetInConstructor intentional */
     private readonly string $dir;
     private readonly Serializer $serializer;
@@ -150,22 +153,38 @@ final class Cache
             return null;
         }
 
-        $path = $this->dir . hash('xxh128', $key) . '.hash';
+        $path = $this->dir . hash('xxh128', $key);
 
-        if (!file_exists($path)) {
+        // Both siblings, as getItem() requires: the header is written before the payload,
+        // so an interrupted write can leave an orphan header describing nothing.
+        if (!file_exists("$path.hash") || !file_exists($path)) {
             return null;
         }
 
-        $header = Providers::safeFileGetContents($path);
+        $header = Providers::safeFileGetContents("$path.hash");
 
-        if ($header === '') {
+        if (strlen($header) < self::HASH_LENGTH_BYTES) {
             return null;
         }
 
-        $hash_length = unpack('V', $header)[1];
-        assert(is_int($hash_length));
+        $hash_length = unpack('V', substr($header, 0, self::HASH_LENGTH_BYTES));
 
-        return substr($header, 4, $hash_length);
+        if ($hash_length === false || !isset($hash_length[1]) || !is_int($hash_length[1])) {
+            return null;
+        }
+
+        // A header that does not describe exactly "<length><hash><key>" is structurally
+        // corrupt, and a trailing key that is not ours means an xxh128 collision.
+        // getItem() throws on the latter; here a miss is enough, and safer: callers read
+        // a null as "unknown, treat the file as changed", which reanalyses rather than
+        // trusting a wrong hash.
+        if (strlen($header) !== self::HASH_LENGTH_BYTES + $hash_length[1] + strlen($key)
+            || substr_compare($header, $key, self::HASH_LENGTH_BYTES + $hash_length[1]) !== 0
+        ) {
+            return null;
+        }
+
+        return substr($header, self::HASH_LENGTH_BYTES, $hash_length[1]);
     }
 
     /** @return T */
