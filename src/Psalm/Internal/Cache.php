@@ -150,13 +150,22 @@ final class Cache
             return null;
         }
 
-        $path = $this->dir . hash('xxh128', $key);
+        $path = $this->dir . hash('xxh128', $key) . '.hash';
 
         if (!file_exists($path)) {
             return null;
         }
 
-        return Providers::safeFileGetContents($path);
+        $header = Providers::safeFileGetContents($path);
+
+        if ($header === '') {
+            return null;
+        }
+
+        $hash_length = unpack('V', $header)[1];
+        assert(is_int($hash_length));
+
+        return substr($header, 4, $hash_length);
     }
 
     /** @return T */
