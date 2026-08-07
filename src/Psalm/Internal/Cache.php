@@ -49,6 +49,9 @@ use const LOCK_UN;
  */
 final class Cache
 {
+    /** Width of the little-endian hash length prefixed to every ".hash" file by saveItem(). */
+    private const HASH_LENGTH_BYTES = 4;
+
     /** @psalm-suppress PropertyNotSetInConstructor intentional */
     private readonly string $dir;
     private readonly Serializer $serializer;
@@ -126,8 +129,8 @@ final class Cache
                 Assert::notFalse($key);
                 /** @var int */
                 $hashLen = unpack('V', $key)[1];
-                $hash = substr($key, 4, $hashLen);
-                $key = substr($key, 4+$hashLen);
+                $hash = substr($key, self::HASH_LENGTH_BYTES, $hashLen);
+                $key = substr($key, self::HASH_LENGTH_BYTES + $hashLen);
                 Assert::notNull($this->getItem($key, $hash));
                 unlink($f->getPathname());
                 unlink(substr($f->getPathname(), 0, -5));
@@ -140,6 +143,17 @@ final class Cache
         flock($this->lock, LOCK_SH);
     }
 
+    /**
+     * Returns the hash stored alongside an item, or null when there is nothing usable to
+     * report: no entry, or a header too damaged to trust.
+     *
+     * Callers should know that null does not mean "changed". ProjectAnalyzer::getDiffFiles()
+     * and Codebase::reloadFiles() both add a file to the diff set only when the hash is
+     * non-null and differs, so a null leaves the file out and it is treated as unchanged.
+     * StatementsProvider is the exception: there a null causes a full reparse. Reporting a
+     * damaged header as a miss is still the right trade, because a miss is indistinguishable
+     * from an evicted or never-written entry, which is an ordinary state.
+     */
     public function getHash(string $key): ?string
     {
         if (isset($this->cache[$key])) {
@@ -152,11 +166,46 @@ final class Cache
 
         $path = $this->dir . hash('xxh128', $key);
 
-        if (!file_exists($path)) {
+        // Both siblings, as getItem() requires: the header is written before the payload,
+        // so an interrupted write can leave an orphan header describing nothing.
+        if (!file_exists("$path.hash") || !file_exists($path)) {
             return null;
         }
 
-        return Providers::safeFileGetContents($path);
+        $header = Providers::safeFileGetContents("$path.hash");
+
+        if (strlen($header) < self::HASH_LENGTH_BYTES) {
+            return null;
+        }
+
+        $unpacked = unpack('V', substr($header, 0, self::HASH_LENGTH_BYTES));
+
+        // 'V' is unsigned, but on a 32-bit build a value above PHP_INT_MAX decodes negative,
+        // and a negative length would make the substr() below return a fabricated hash.
+        // Psalm supports 32-bit PHP, so reject it rather than relying on the platform.
+        if ($unpacked === false || !isset($unpacked[1]) || !is_int($unpacked[1]) || $unpacked[1] < 0) {
+            return null;
+        }
+
+        $hash_length = $unpacked[1];
+
+        // Anything that is not exactly "<length><hash><key>" is structurally corrupt. That
+        // includes a torn read: saveItem() truncates the file before taking its lock, so a
+        // concurrent reader can legitimately see a partial header. Report those as a miss.
+        if (strlen($header) !== self::HASH_LENGTH_BYTES + $hash_length + strlen($key)) {
+            return null;
+        }
+
+        // A structurally sound header whose trailing key is not ours is an xxh128 collision,
+        // which is an invariant violation rather than a cache miss. getItem() throws here
+        // and so do we: reporting it as a miss would hide real corruption, and callers
+        // cannot act on it either way. Note getItem() would throw moments later regardless,
+        // since StatementsProvider follows a getHash() with getItem($key, null).
+        if (substr_compare($header, $key, self::HASH_LENGTH_BYTES + $hash_length) !== 0) {
+            throw new AssertionError("Hash collision on key $key");
+        }
+
+        return substr($header, self::HASH_LENGTH_BYTES, $hash_length);
     }
 
     /** @return T */
@@ -210,13 +259,13 @@ final class Cache
             assert($fileHash !== false);
             $hashLen = unpack('V', $fileHash)[1];
             assert(is_int($hashLen));
-            $hash = substr($fileHash, 4, $hashLen);
-            if (substr_compare($fileHash, $key, 4+$hashLen) !== 0) {
+            $hash = substr($fileHash, self::HASH_LENGTH_BYTES, $hashLen);
+            if (substr_compare($fileHash, $key, self::HASH_LENGTH_BYTES + $hashLen) !== 0) {
                 throw new AssertionError("Hash collision on key $key");
             }
-        } elseif (substr_compare($fileHash, $hash, 4, strlen($hash)) !== 0
-            || substr_compare($fileHash, $key, strlen($hash)+4) !== 0
-            || strlen($fileHash) !== strlen($key)+strlen($hash)+4
+        } elseif (substr_compare($fileHash, $hash, self::HASH_LENGTH_BYTES, strlen($hash)) !== 0
+            || substr_compare($fileHash, $key, strlen($hash) + self::HASH_LENGTH_BYTES) !== 0
+            || strlen($fileHash) !== strlen($key) + strlen($hash) + self::HASH_LENGTH_BYTES
         ) {
             fclose($fp);
             return null;
@@ -251,7 +300,7 @@ final class Cache
             Assert::notFalse($f);
             flock($f, LOCK_EX);
             ftruncate($f, 0);
-            Assert::eq(fwrite($f, pack('V', strlen($hash))), 4);
+            Assert::eq(fwrite($f, pack('V', strlen($hash))), self::HASH_LENGTH_BYTES);
             Assert::eq(fwrite($f, $hash), strlen($hash));
             Assert::eq(fwrite($f, $key), strlen($key));
             file_put_contents($path, $this->serializer->serialize($item));
