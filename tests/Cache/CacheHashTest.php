@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\Cache;
 
+use AssertionError;
 use Override;
 use Psalm\Config;
 use Psalm\Internal\Cache;
@@ -13,6 +14,7 @@ use Psalm\Tests\TestCase;
 use function file_put_contents;
 use function glob;
 use function pack;
+use function strlen;
 use function substr;
 use function sys_get_temp_dir;
 use function uniqid;
@@ -143,9 +145,59 @@ final class CacheHashTest extends TestCase
         yield 'shorter than the length prefix' => ["\x01\x02"];
         yield 'length prefix only' => [pack('V', 8)];
         yield 'declared length overruns the header' => [pack('V', 4096) . 'the hash' . $key];
-        yield 'trailing key belongs to another entry' => [
-            pack('V', 8) . 'the hash' . 'some/other/key.php',
-        ];
+        yield 'total length one byte short' => [pack('V', 8) . 'the hash' . substr($key, 1)];
+        yield 'total length one byte long' => [pack('V', 8) . 'the hash' . $key . 'x'];
+        // 'V' is unsigned, but on a 32-bit build this decodes to -1. Left unguarded, the
+        // negative length would make substr() hand back a fabricated hash.
+        yield 'length prefix decodes negative on 32-bit' => ["\xff\xff\xff\xff" . 'the hash' . $key];
+    }
+
+    /**
+     * A structurally sound header whose trailing key is not ours means two different keys
+     * hashed to the same xxh128. That is an invariant violation, not a cache miss, and
+     * getItem() throws on it too.
+     */
+    public function testGetHashThrowsOnAKeyCollision(): void
+    {
+        $key = 'corrupt/header.php';
+
+        $writer = $this->newCache();
+        $writer->saveItem($key, ['payload'], 'the hash');
+
+        // Same length as $key, so it clears the total-length check and fails only on identity.
+        $other = 'some/other/key.php';
+        self::assertSame(strlen($key), strlen($other));
+
+        file_put_contents($this->itemPath($key) . '.hash', pack('V', 8) . 'the hash' . $other);
+
+        $this->expectException(AssertionError::class);
+        $this->newCache()->getHash($key);
+    }
+
+    /** The mirror of the orphan-header case: payload present, header gone. */
+    public function testGetHashReturnsNullWhenTheHeaderIsMissing(): void
+    {
+        $key = 'orphan/payload.php';
+
+        $writer = $this->newCache();
+        $writer->saveItem($key, ['payload'], 'the hash');
+
+        $path = $this->itemPath($key);
+        unlink($path . '.hash');
+
+        $this->assertNull($this->newCache()->getHash($key));
+    }
+
+    /** Keys and hashes are handled bytewise, so binary content must round-trip intact. */
+    public function testGetHashRoundTripsBinaryContent(): void
+    {
+        $key = "binary/\x00\xff/key.php";
+        $hash = "\x00\x01\xfe\xff binary hash \x00";
+
+        $writer = $this->newCache();
+        $writer->saveItem($key, ['payload'], $hash);
+
+        $this->assertSame($hash, $this->newCache()->getHash($key));
     }
 
     private function itemPath(string $key): string
