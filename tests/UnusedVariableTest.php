@@ -1854,10 +1854,7 @@ final class UnusedVariableTest extends TestCase
                             $hue = "goodbye";
                         }
 
-                        /**
-                         * @psalm-suppress PossiblyUndefinedVariable
-                         * @psalm-suppress MixedArgument
-                         */
+                        /** @psalm-suppress PossiblyUndefinedVariable */
                         echo $hue;
                     }',
             ],
@@ -1932,7 +1929,6 @@ final class UnusedVariableTest extends TestCase
                         }
 
                         if (isset($j)) {
-                            /** @psalm-suppress MixedArgument */
                             echo $j;
                         }
                     }',
@@ -2138,7 +2134,6 @@ final class UnusedVariableTest extends TestCase
                             $maybe_undefined = $arr;
                         }
 
-                        /** @psalm-suppress MixedAssignment */
                         $maybe_undefined = $maybe_undefined ?? [0];
 
                         print_r($maybe_undefined);
