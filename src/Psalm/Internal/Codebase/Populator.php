@@ -1012,8 +1012,16 @@ final class Populator
                     );
                     $declaring_method_storage = $declaring_class_storage->methods[$method_name_lc] ?? null;
 
+                    // A `use T { f as public; }` adaptation does not rewrite the copied method's own
+                    // visibility -- Psalm keeps it in trait_visibility_map on the using class and every
+                    // consumer overlays it (see MethodVisibilityAnalyzer). Reading only
+                    // $declaring_method_storage->visibility would therefore still see `private` for a
+                    // method the parent exposes publicly, and would wrongly drop a real override.
+                    $declaring_visibility = $parent_storage->trait_visibility_map[$method_name_lc]
+                        ?? $declaring_method_storage?->visibility;
+
                     if ($declaring_method_storage === null
-                        || $declaring_method_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
+                        || $declaring_visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
                     ) {
                         $storage->overridden_method_ids[$method_name_lc][$declaring_method_id->fq_class_name]
                             = $declaring_method_id;

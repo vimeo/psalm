@@ -118,6 +118,21 @@ final class OverrideTest extends TestCase
                     }
                 ',
             ],
+            'traitPublicMethodDemotedToPrivateIsNotAnOverride' => [
+                'code' => '<?php
+                    trait T {
+                        public function f(): void {}
+                    }
+
+                    class A {
+                        use T { f as private; }
+                    }
+
+                    class B extends A {
+                        public function f(): void {}
+                    }
+                ',
+            ],
             'traitPrivateMethodRedeclaredByChildIsNotAnOverride' => [
                 'code' => '<?php
                     trait T {
@@ -158,6 +173,42 @@ final class OverrideTest extends TestCase
                     }
                 ',
                 'error_message' => 'InvalidOverride',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'traitPrivateMethodPromotedToPublicIsStillAnOverride' => [
+                'code' => '<?php
+                    trait T {
+                        private function f(): void {}
+                    }
+
+                    class A {
+                        use T { f as public; }
+                    }
+
+                    class B extends A {
+                        public function f(): void {}
+                    }
+                ',
+                'error_message' => 'MissingOverrideAttribute',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'traitPrivateMethodPromotedToProtectedIsStillAnOverride' => [
+                'code' => '<?php
+                    trait T {
+                        private function f(): void {}
+                    }
+
+                    class A {
+                        use T { f as protected; }
+                    }
+
+                    class B extends A {
+                        protected function f(): void {}
+                    }
+                ',
+                'error_message' => 'MissingOverrideAttribute',
                 'error_levels' => [],
                 'php_version' => '8.3',
             ],
