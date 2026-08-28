@@ -118,6 +118,31 @@ final class OverrideTest extends TestCase
                     }
                 ',
             ],
+            'traitPrivateMethodRedeclaredByChildIsNotAnOverride' => [
+                'code' => '<?php
+                    trait T {
+                        private function f(): void {}
+                    }
+
+                    class A {
+                        use T;
+
+                        public function bar(): void {
+                            $this->f();
+                        }
+                    }
+
+                    class B extends A {
+                        use T;
+
+                        public function baz(): void {
+                            $this->f();
+                        }
+
+                        private function f(): void {}
+                    }
+                ',
+            ],
         ];
     }
 
