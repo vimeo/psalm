@@ -1618,6 +1618,7 @@ final class PreloaderList {
         \Psalm\Report\ReportOptions::class,
         \Psalm\Report\SarifReport::class,
         \Psalm\Report\SonarqubeReport::class,
+        \Psalm\Report\TableReport::class,
         \Psalm\Report\TextReport::class,
         \Psalm\Report\XmlReport::class,
         \Psalm\SourceControl\Git\CommitInfo::class,

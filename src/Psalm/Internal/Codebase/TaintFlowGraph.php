@@ -20,6 +20,7 @@ use Psalm\Issue\TaintedHeader;
 use Psalm\Issue\TaintedHtml;
 use Psalm\Issue\TaintedInclude;
 use Psalm\Issue\TaintedLdap;
+use Psalm\Issue\TaintedLlmPrompt;
 use Psalm\Issue\TaintedSSRF;
 use Psalm\Issue\TaintedShell;
 use Psalm\Issue\TaintedSleep;
@@ -608,6 +609,12 @@ final class TaintFlowGraph extends DataFlowGraph
                             ),
                             TaintKind::INPUT_EXTRACT => new TaintedExtract(
                                 'Detected tainted extract',
+                                $issue_location,
+                                $issue_trace,
+                                $path,
+                            ),
+                            TaintKind::INPUT_LLM_PROMPT => new TaintedLlmPrompt(
+                                'Detected tainted LLM prompt',
                                 $issue_location,
                                 $issue_trace,
                                 $path,

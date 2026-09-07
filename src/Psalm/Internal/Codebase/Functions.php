@@ -68,6 +68,34 @@ final class Functions
         self::$stubbed_functions = [];
     }
 
+    public function consolidateAnalyzedData(Codebase $codebase): void
+    {
+        if (!$codebase->code_use_graph) {
+            return;
+        }
+        $code_use_graph = $codebase->code_use_graph;
+        foreach (self::$stubbed_functions as $function_id => $storage) {
+            if ($storage->public_api || $storage->allowed_mutations !== Mutations::LEVEL_NONE) {
+                $node = $code_use_graph->getNodeForFunctionLike($function_id);
+                $node->addMutationLevel($storage->allowed_mutations);
+                if ($storage->public_api) {
+                    $code_use_graph->markAsPublicApi($node);
+                }
+            }
+        }
+        foreach ($this->file_storage_provider->getAll() as $file_storage) {
+            foreach ($file_storage->functions as $function_id => $storage) {
+                if ($storage->public_api || $storage->allowed_mutations !== Mutations::LEVEL_NONE) {
+                    $node = $code_use_graph->getNodeForFunctionLike($function_id);
+                    $node->addMutationLevel($storage->allowed_mutations);
+                    if ($storage->public_api) {
+                        $code_use_graph->markAsPublicApi($node);
+                    }
+                }
+            }
+        }
+    }
+
     /**
      * @param non-empty-lowercase-string $function_id
      * @psalm-external-mutation-free

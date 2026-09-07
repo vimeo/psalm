@@ -517,13 +517,13 @@ final class ReportOutputTest extends TestCase
         );
     }
 
-    public function testCompactReport(): void
+    public function testTableReport(): void
     {
         $this->analyzeFileForReport();
 
-        $compact_report_options = new ReportOptions();
-        $compact_report_options->format = Report::TYPE_COMPACT;
-        $compact_report_options->use_color = false;
+        $table_report_options = new ReportOptions();
+        $table_report_options->format = Report::TYPE_TABLE;
+        $table_report_options->use_color = false;
 
         $this->assertSame(
             <<<'EOF'
@@ -538,6 +538,26 @@ final class ReportOutputTest extends TestCase
             |          |      |                                 | al config option if scanning legacy codebases                          |
             | INFO     | 18   | PossiblyUndefinedGlobalVariable | Possibly undefined global variable $a, first seen on line 12           |
             +----------+------+---------------------------------+------------------------------------------------------------------------+
+
+            EOF,
+            $this->toUnixLineEndings(IssueBuffer::getOutput(IssueBuffer::getIssuesData(), $table_report_options)),
+        );
+    }
+
+    public function testCompactReport(): void
+    {
+        $this->analyzeFileForReport();
+
+        $compact_report_options = new ReportOptions();
+        $compact_report_options->format = Report::TYPE_COMPACT;
+        $compact_report_options->use_color = false;
+
+        $this->assertSame(
+            <<<'EOF'
+            ERROR somefile.php:4:10 UndefinedVariable: Cannot find referenced variable $as_you_____type
+            ERROR somefile.php:4:10 MixedReturnStatement: Could not infer a return type
+            ERROR somefile.php:9:6 UndefinedConstant: Const CHANGE_ME is not defined, consider enabling the allConstantsGlobal config option if scanning legacy codebases
+            INFO somefile.php:18:6 PossiblyUndefinedGlobalVariable: Possibly undefined global variable $a, first seen on line 12
 
             EOF,
             $this->toUnixLineEndings(IssueBuffer::getOutput(IssueBuffer::getIssuesData(), $compact_report_options)),

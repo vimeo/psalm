@@ -2792,7 +2792,7 @@
       <code><![CDATA[ini_get('xdebug.file_link_format') ?: get_cfg_var('xdebug.file_link_format')]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
-  <file src="src/Psalm/Report/CompactReport.php">
+  <file src="src/Psalm/Report/TableReport.php">
     <ImmutableDependency>
       <code><![CDATA[#[Override]]]></code>
       <code><![CDATA[Report]]></code>

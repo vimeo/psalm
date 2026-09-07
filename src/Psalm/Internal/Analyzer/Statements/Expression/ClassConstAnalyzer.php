@@ -326,10 +326,11 @@ final class ClassConstAnalyzer
             }
 
             if ($context->calling_method_id) {
-                $codebase->file_reference_provider->addMethodReferenceToClassMember(
-                    $context->calling_method_id,
-                    $fq_class_name_lc . '::' . $stmt->name->name,
-                    false,
+                $codebase->addReferenceToClassConstant(
+                    $fq_class_name_lc,
+                    strtolower($stmt->name->name),
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    $context,
                 );
             }
 
@@ -630,10 +631,11 @@ final class ClassConstAnalyzer
             }
 
             if ($context->calling_method_id) {
-                $codebase->file_reference_provider->addMethodReferenceToClassMember(
-                    $context->calling_method_id,
-                    strtolower($fq_class_name) . '::' . $stmt->name->name,
-                    false,
+                $codebase->addReferenceToClassConstant(
+                    strtolower($fq_class_name),
+                    strtolower($stmt->name->name),
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    $context,
                 );
             }
 

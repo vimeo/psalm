@@ -46,7 +46,7 @@ final class RemoveTaintsInterfaceTest extends TestCase
     private function getProjectAnalyzerWithConfig(Config $config): ProjectAnalyzer
     {
         $config->setIncludeCollector(new IncludeCollector());
-        return new ProjectAnalyzer(
+        $p = new ProjectAnalyzer(
             $config,
             new Providers(
                 $this->file_provider,
@@ -54,6 +54,9 @@ final class RemoveTaintsInterfaceTest extends TestCase
             ),
             new ReportOptions(),
         );
+        $p->initExtraFiles();
+        $p->initProjectFiles();
+        return $p;
     }
 
     /**

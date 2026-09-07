@@ -1048,7 +1048,7 @@ final class InstancePropertyAssignmentAnalyzer
 
         $set_method_id = new MethodIdentifier($fq_class_name, '__set');
 
-        if ((!$codebase->properties->propertyExists($property_id, false, $statements_analyzer, $context)
+        if ((!$codebase->propertyExists($property_id, false, $statements_analyzer, $context)
                 || ($lhs_var_id !== '$this'
                     && $fq_class_name !== $context->self
                     && ClassLikeAnalyzer::checkPropertyVisibility(
@@ -1162,7 +1162,7 @@ final class InstancePropertyAssignmentAnalyzer
             $self_property_id = $context->self . '::$' . $prop_name;
 
             if ($self_property_id !== $property_id
-                && $codebase->properties->propertyExists(
+                && $codebase->propertyExists(
                     $self_property_id,
                     false,
                     $statements_analyzer,
@@ -1189,7 +1189,7 @@ final class InstancePropertyAssignmentAnalyzer
             );
         }
 
-        if (!$codebase->properties->propertyExists(
+        if (!$codebase->propertyExists(
             $property_id,
             false,
             $statements_analyzer,

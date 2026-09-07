@@ -42,7 +42,6 @@ use ReflectionProperty;
 use function array_keys;
 use function array_search;
 use function count;
-use function md5;
 use function str_contains;
 use function str_starts_with;
 use function strtolower;
@@ -127,10 +126,10 @@ final class TypeChecker extends TypeVisitor
         if ($this->context?->calling_method_id
             && $atomic->text !== null
         ) {
-            $codebase->file_reference_provider->addMethodReferenceToClassMember(
-                $this->context->calling_method_id,
-                'use:' . $atomic->text . ':' . md5($this->source->getFilePath()),
-                false,
+            $codebase->addReferenceToClass(
+                $atomic->value,
+                $this->code_location,
+                $this->context,
             );
         }
 
