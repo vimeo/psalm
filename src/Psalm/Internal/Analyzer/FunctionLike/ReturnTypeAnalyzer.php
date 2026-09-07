@@ -71,6 +71,7 @@ final class ReturnTypeAnalyzer
      * @param PhpParser\Node\Stmt[] $function_stmts
      * @param string[]            $compatible_method_ids
      * @return  false|null
+     * @psalm-suppress PossiblyUnusedReturnValue unused but seems important
      * @psalm-suppress ComplexMethod Unavoidably complex method
      */
     public static function verifyReturnType(

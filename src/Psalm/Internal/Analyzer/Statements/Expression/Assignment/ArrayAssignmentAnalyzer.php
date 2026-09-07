@@ -85,6 +85,7 @@ final class ArrayAssignmentAnalyzer
 
     /**
      * @return false|null
+     * @psalm-suppress PossiblyUnusedReturnValue not used but seems important
      */
     public static function updateArrayType(
         StatementsAnalyzer $statements_analyzer,
