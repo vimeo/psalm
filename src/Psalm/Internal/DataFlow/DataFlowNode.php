@@ -7,7 +7,9 @@ namespace Psalm\Internal\DataFlow;
 use Override;
 use Psalm\CodeLocation;
 use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Storage\PropertyStorage;
 use Stringable;
+use UnexpectedValueException;
 
 use function count;
 use function strtolower;
@@ -49,7 +51,7 @@ final class DataFlowNode implements Stringable
     /**
      * @psalm-pure
      */
-    public static function make(
+    private static function make(
         string $id,
         string $label,
         ?CodeLocation $code_location,
@@ -72,6 +74,72 @@ final class DataFlowNode implements Stringable
         );
     }
 
+    public static function getForPropertyFetch(
+        string $property_id,
+        ?CodeLocation $specialization_location = null,
+    ): self {
+        $specialization_key = $specialization_location
+            ? strtolower($specialization_location->file_name) . ':' . $specialization_location->raw_file_start
+            : null;
+
+        return self::make($property_id, $property_id, null, $specialization_key);
+    }
+
+    /**
+     * @psalm-pure
+     */
+    public static function getForTaintSink(
+        string $taint_id,
+        CodeLocation $code_location,
+        int $taints,
+        ?CodeLocation $specialization_location = null,
+    ): self {
+        $specialization_key = $specialization_location
+            ? strtolower($specialization_location->file_name) . ':' . $specialization_location->raw_file_start
+            : null;
+
+        return self::make($taint_id, $taint_id, $code_location, $specialization_key, $taints);
+    }
+
+    public static function getForBuiltinArg(
+        string $function_id,
+        int $argument_offset,
+        int $taints,
+        ?CodeLocation $specialization_location = null,
+    ): self {
+        $function_id = 'builtin ' . $function_id;
+
+        $arg_id = strtolower($function_id) . '#' . ($argument_offset + 1);
+
+        $label = $function_id . '#' . ($argument_offset + 1);
+
+        $specialization_key = null;
+
+        if ($specialization_location) {
+            $specialization_key = strtolower($specialization_location->file_name)
+                . ':' . $specialization_location->raw_file_start;
+        }
+
+        return self::make($arg_id, $label, null, $specialization_key, $taints);
+    }
+
+    public static function getForBuiltinReturn(
+        string $function_id,
+        int $taints,
+        ?CodeLocation $specialization_location = null,
+    ): self {
+        $function_id = 'builtin ' . $function_id;
+        return self::make(
+            strtolower($function_id),
+            $function_id,
+            null,
+            $specialization_location
+                ? strtolower($specialization_location->file_name) . ':' . $specialization_location->raw_file_start
+                : null,
+            $taints,
+        );
+    }
+
     /**
      * @psalm-mutation-free
      */
@@ -79,7 +147,7 @@ final class DataFlowNode implements Stringable
         string $method_id,
         string $cased_method_id,
         int $argument_offset,
-        ?FunctionLikeStorage $storage,
+        FunctionLikeStorage $storage,
         ?CodeLocation $specialization_location = null,
         int $taints = 0,
     ): self {
@@ -97,7 +165,7 @@ final class DataFlowNode implements Stringable
         return self::make(
             $arg_id,
             $label,
-            self::getParameterLocation($storage, $argument_offset) ?: ($storage ? null : $specialization_location),
+            self::getParameterLocation($storage, $argument_offset),
             $specialization_key,
             $taints,
         );
@@ -125,7 +193,7 @@ final class DataFlowNode implements Stringable
     public static function getForMethodReturn(
         string $method_id,
         string $cased_method_id,
-        ?FunctionLikeStorage $storage,
+        FunctionLikeStorage $storage,
         ?CodeLocation $specialization_location = null,
         int $taints = 0,
         ?string $specialization_key = null,
@@ -138,7 +206,7 @@ final class DataFlowNode implements Stringable
         return self::make(
             strtolower($method_id),
             $cased_method_id,
-            self::getReturnLocation($storage) ?: ($storage ? null : $specialization_location),
+            self::getReturnLocation($storage),
             $specialization_key,
             $taints,
         );
@@ -147,26 +215,24 @@ final class DataFlowNode implements Stringable
     /**
      * @psalm-mutation-free
      */
-    private static function getReturnLocation(?FunctionLikeStorage $storage): ?CodeLocation
+    private static function getReturnLocation(FunctionLikeStorage $storage): CodeLocation
     {
-        if (!$storage) {
-            return null;
-        }
-
-        return $storage->return_type_location
+        $loc = $storage->return_type_location
             ?: $storage->signature_return_type_location
             ?: $storage->location;
+
+        if (!$loc) {
+            throw new UnexpectedValueException('No location for return type of ' . $storage->cased_name);
+        }
+
+        return $loc;
     }
 
     /**
      * @psalm-mutation-free
      */
-    private static function getParameterLocation(?FunctionLikeStorage $storage, int $argument_offset): ?CodeLocation
+    private static function getParameterLocation(FunctionLikeStorage $storage, int $argument_offset): CodeLocation
     {
-        if (!$storage) {
-            return null;
-        }
-
         $param = $storage->params[$argument_offset] ?? null;
 
         if (!$param && $storage->params) {
@@ -175,12 +241,22 @@ final class DataFlowNode implements Stringable
         }
 
         if (!$param) {
-            return null;
+            throw new UnexpectedValueException(
+                'No parameter at offset ' . $argument_offset . ' for ' . $storage->cased_name,
+            );
         }
 
-        return $param->signature_type_location
+        $loc = $param->signature_type_location
             ?: $param->type_location
             ?: $param->location;
+
+        if (!$loc) {
+            throw new UnexpectedValueException(
+                'No location for parameter at offset ' . $argument_offset . ' for ' . $storage->cased_name,
+            );
+        }
+
+        return $loc;
     }
 
 

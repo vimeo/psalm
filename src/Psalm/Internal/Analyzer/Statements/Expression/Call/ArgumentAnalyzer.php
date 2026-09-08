@@ -1787,7 +1787,7 @@ final class ArgumentAnalyzer
                 $cased_method_id,
                 $cased_method_id,
                 $argument_offset,
-                $taint_flow_graph ? $function_storage : null,
+                $function_storage,
                 $function_call_location,
             );
         } else {
@@ -1795,7 +1795,7 @@ final class ArgumentAnalyzer
                 $cased_method_id,
                 $cased_method_id,
                 $argument_offset,
-                $taint_flow_graph ? $function_storage : null,
+                $function_storage,
             );
 
             if ($taint_flow_graph
@@ -1816,12 +1816,12 @@ final class ArgumentAnalyzer
                     $dependent_method_storage = $codebase->methods->hasStorage($dependent_method_id)
                         ? $codebase->methods->getStorage($dependent_method_id)
                         : null;
+
                     $new_sink = DataFlowNode::getForMethodArgument(
                         (string) $dependent_method_id,
                         $dependent_classlike_storage->name . '::' . $cased_method_name,
                         $argument_offset,
                         $dependent_method_storage,
-                        null,
                     );
 
                     $taint_flow_graph->addNode($new_sink);

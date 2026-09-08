@@ -357,7 +357,7 @@ final class MethodCallReturnTypeFetcher
                     $method_call_node = DataFlowNode::getForMethodReturn(
                         (string) $method_id,
                         $cased_method_id,
-                        $is_declaring ? $method_storage : null,
+                        $method_storage,
                         $node_location,
                     );
 
@@ -372,14 +372,14 @@ final class MethodCallReturnTypeFetcher
                     $universal_method_call_node = DataFlowNode::getForMethodReturn(
                         (string) $method_id,
                         $cased_method_id,
-                        $is_declaring ? $method_storage : null,
+                        $method_storage,
                         null,
                     );
 
                     $method_call_node = DataFlowNode::getForMethodReturn(
                         (string) $method_id,
                         $cased_method_id,
-                        $is_declaring ? $method_storage : null,
+                        $method_storage,
                         null,
                         0,
                         $parent_node->specialization_key,
@@ -445,7 +445,7 @@ final class MethodCallReturnTypeFetcher
                 $method_call_node = DataFlowNode::getForMethodReturn(
                     (string) $method_id,
                     $cased_method_id,
-                    $is_declaring ? $method_storage : null,
+                    $method_storage,
                     $node_location,
                 );
 
@@ -483,7 +483,7 @@ final class MethodCallReturnTypeFetcher
             $method_call_node = DataFlowNode::getForMethodReturn(
                 (string) $method_id,
                 $cased_method_id,
-                $is_declaring ? $method_storage : null,
+                $method_storage,
                 null,
             );
 

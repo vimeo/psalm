@@ -954,10 +954,8 @@ final class AtomicPropertyFetchAnalyzer
 
         $data_flow_graph->addNode($localized_property_node);
 
-        $property_node = DataFlowNode::make(
+        $property_node = DataFlowNode::getForPropertyFetch(
             $property_id,
-            $property_id,
-            null,
             null,
         );
 

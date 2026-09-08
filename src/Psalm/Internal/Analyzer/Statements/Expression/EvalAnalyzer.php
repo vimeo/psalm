@@ -43,13 +43,11 @@ final class EvalAnalyzer
             ) {
                 $arg_location = new CodeLocation($statements_analyzer->getSource(), $stmt->expr);
 
-                $eval_param_sink = DataFlowNode::getForMethodArgument(
-                    'eval',
+                $eval_param_sink = DataFlowNode::getForBuiltinArg(
                     'eval',
                     0,
-                    null,
-                    $arg_location,
                     TaintKind::INPUT_EVAL,
+                    $arg_location,
                 );
 
                 $statements_analyzer->taint_flow_graph->addSink($eval_param_sink);

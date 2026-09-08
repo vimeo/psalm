@@ -56,16 +56,14 @@ final class EchoAnalyzer
 
                 $call_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
-                $echo_param_sink = DataFlowNode::getForMethodArgument(
+                $echo_param_sink = DataFlowNode::getForBuiltinArg(
                     'echo',
-                    'echo',
-                    (int) $i,
-                    null,
-                    $call_location,
+                    $i,
                     TaintKind::INPUT_HTML
                         | TaintKind::INPUT_HAS_QUOTES
                         | TaintKind::USER_SECRET
                         | TaintKind::SYSTEM_SECRET,
+                    $call_location,
                 );
 
 
