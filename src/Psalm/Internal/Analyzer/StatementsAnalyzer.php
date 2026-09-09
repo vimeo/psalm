@@ -170,6 +170,9 @@ final class StatementsAnalyzer extends SourceAnalyzer
 
     private int $depth = 0;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         protected SourceAnalyzer $source,
         public NodeDataProvider $node_data,

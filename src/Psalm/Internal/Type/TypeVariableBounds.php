@@ -12,6 +12,7 @@ use function count;
  * when the surrounding function-like has been analyzed.
  *
  * @internal
+ * @psalm-mutable
  */
 final class TypeVariableBounds
 {
@@ -24,6 +25,7 @@ final class TypeVariableBounds
     /**
      * @param list<TemplateBound> $lower_bounds
      * @param list<TemplateBound> $upper_bounds
+     * @psalm-mutation-free
      */
     public function __construct(
         public array $lower_bounds = [],

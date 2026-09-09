@@ -33,11 +33,13 @@ use function strlen;
 use function var_export;
 
 use const CURLINFO_HEADER_OUT;
+use const CURLOPT_CONNECTTIMEOUT;
 use const CURLOPT_FOLLOWLOCATION;
 use const CURLOPT_HTTPHEADER;
 use const CURLOPT_POST;
 use const CURLOPT_POSTFIELDS;
 use const CURLOPT_RETURNTRANSFER;
+use const CURLOPT_TIMEOUT;
 use const JSON_THROW_ON_ERROR;
 use const PHP_EOL;
 use const PHP_URL_HOST;
@@ -130,6 +132,9 @@ final class Shepherd implements AfterAnalysisInterface
         // Prepare new cURL resource
         $ch = curl_init($endpoint);
         assert($ch !== false);
+        // Reporting is best-effort and must not stall the analysis result.
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
         curl_setopt($ch, CURLINFO_HEADER_OUT, true);
