@@ -9,7 +9,7 @@ jobs:
       - name: Set up PHP
         uses: shivammathur/setup-php@7c071dfe9dc99bdf297fa79cb49ea005b9fcadbc # v2
         with:
-          php-version: '8.1'
+          php-version: '8.5'
           tools: composer:v2
           coverage: none
         env:
@@ -50,4 +50,3 @@ jobs:
         run: vendor/bin/roave-backward-compatibility-check --from="origin/$GITHUB_BASE_REF" --format=github-actions
         env:
           COMPOSER_ROOT_VERSION: dev-master
-
