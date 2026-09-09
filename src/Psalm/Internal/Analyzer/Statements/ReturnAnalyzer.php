@@ -587,7 +587,6 @@ final class ReturnAnalyzer
         }
 
         $method_node = DataFlowNode::getForMethodReturn(
-            strtolower($cased_method_id),
             $cased_method_id,
             $storage,
         );

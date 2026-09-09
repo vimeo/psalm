@@ -656,14 +656,12 @@ final class NewAnalyzer extends CallAnalyzer
                 || ($method_storage && $method_storage->specialize_call)
             ) {
                 $method_source = DataFlowNode::getForMethodReturn(
-                    (string)$method_id,
                     $fq_class_name . '::__construct',
                     $method_storage,
                     $code_location,
                 );
             } else {
                 $method_source = DataFlowNode::getForMethodReturn(
-                    (string)$method_id,
                     $fq_class_name . '::__construct',
                     $method_storage,
                 );
@@ -718,7 +716,6 @@ final class NewAnalyzer extends CallAnalyzer
                 $arg_location = new CodeLocation($statements_analyzer->getSource(), $stmt_class);
 
                 $custom_call_sink = DataFlowNode::getForMethodArgument(
-                    'variable-call',
                     'variable-call',
                     0,
                     null,

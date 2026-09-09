@@ -1499,7 +1499,6 @@ final class FilterUtils
         if ($statements_analyzer->data_flow_graph) {
             $function_return_sink = DataFlowNode::getForMethodReturn(
                 $function_id,
-                $function_id,
                 null,
                 $code_location,
             );
@@ -1507,7 +1506,6 @@ final class FilterUtils
             $statements_analyzer->data_flow_graph->addNode($function_return_sink);
 
             $function_param_sink = DataFlowNode::getForMethodArgument(
-                $function_id,
                 $function_id,
                 0,
                 null,

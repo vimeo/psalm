@@ -552,7 +552,6 @@ final class FunctionCallReturnTypeFetcher
         $node_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
         $function_call_node = DataFlowNode::getForMethodReturn(
-            $function_id,
             $cased_function_id,
             $function_storage,
             $function_storage->specialize_call ? $node_location : null,
@@ -708,7 +707,6 @@ final class FunctionCallReturnTypeFetcher
 
             foreach ($taintable_arg_index as $arg_index) {
                 $function_param_sink = DataFlowNode::getForMethodArgument(
-                    $function_id,
                     $function_id,
                     $arg_index,
                     $function_storage,

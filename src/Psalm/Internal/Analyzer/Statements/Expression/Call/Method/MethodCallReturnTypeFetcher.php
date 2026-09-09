@@ -355,7 +355,6 @@ final class MethodCallReturnTypeFetcher
 
                 if ($unspecialized_parent_nodes) {
                     $method_call_node = DataFlowNode::getForMethodReturn(
-                        (string) $method_id,
                         $cased_method_id,
                         $method_storage,
                         $node_location,
@@ -370,14 +369,12 @@ final class MethodCallReturnTypeFetcher
                     }
 
                     $universal_method_call_node = DataFlowNode::getForMethodReturn(
-                        (string) $method_id,
                         $cased_method_id,
                         $method_storage,
                         null,
                     );
 
                     $method_call_node = DataFlowNode::getForMethodReturn(
-                        (string) $method_id,
                         $cased_method_id,
                         $method_storage,
                         null,
@@ -415,7 +412,6 @@ final class MethodCallReturnTypeFetcher
                         $cased_declaring_method_id = $codebase->methods->getCasedMethodId($declaring_method_id);
 
                         $declaring_method_call_node = DataFlowNode::getForMethodReturn(
-                            (string) $declaring_method_id,
                             $cased_declaring_method_id,
                             $method_storage,
                             null,
@@ -443,7 +439,6 @@ final class MethodCallReturnTypeFetcher
                 $context->vars_in_scope[$var_id] = $stmt_var_type;
             } else {
                 $method_call_node = DataFlowNode::getForMethodReturn(
-                    (string) $method_id,
                     $cased_method_id,
                     $method_storage,
                     $node_location,
@@ -453,7 +448,6 @@ final class MethodCallReturnTypeFetcher
                     $cased_declaring_method_id = $codebase->methods->getCasedMethodId($declaring_method_id);
 
                     $declaring_method_call_node = DataFlowNode::getForMethodReturn(
-                        (string) $declaring_method_id,
                         $cased_declaring_method_id,
                         $method_storage,
                         $node_location,
@@ -481,7 +475,6 @@ final class MethodCallReturnTypeFetcher
         }
         if ($graph) {
             $method_call_node = DataFlowNode::getForMethodReturn(
-                (string) $method_id,
                 $cased_method_id,
                 $method_storage,
                 null,
@@ -491,7 +484,6 @@ final class MethodCallReturnTypeFetcher
                 $cased_declaring_method_id = $codebase->methods->getCasedMethodId($declaring_method_id);
 
                 $declaring_method_call_node = DataFlowNode::getForMethodReturn(
-                    (string) $declaring_method_id,
                     $cased_declaring_method_id,
                     $method_storage,
                     null,

@@ -1785,14 +1785,12 @@ final class ArgumentAnalyzer
         if ($specialize_taint) {
             $method_node = DataFlowNode::getForMethodArgument(
                 $cased_method_id,
-                $cased_method_id,
                 $argument_offset,
                 $function_storage,
                 $function_call_location,
             );
         } else {
             $method_node = DataFlowNode::getForMethodArgument(
-                $cased_method_id,
                 $cased_method_id,
                 $argument_offset,
                 $function_storage,
@@ -1818,7 +1816,6 @@ final class ArgumentAnalyzer
                         : null;
 
                     $new_sink = DataFlowNode::getForMethodArgument(
-                        (string) $dependent_method_id,
                         $dependent_classlike_storage->name . '::' . $cased_method_name,
                         $argument_offset,
                         $dependent_method_storage,
@@ -1841,7 +1838,6 @@ final class ArgumentAnalyzer
 
             if ($declaring_method_id && (string) $declaring_method_id !== (string) $method_id) {
                 $new_sink = DataFlowNode::getForMethodArgument(
-                    (string) $declaring_method_id,
                     $codebase->methods->getCasedMethodId($declaring_method_id),
                     $argument_offset,
                     $codebase->methods->getStorage($declaring_method_id),

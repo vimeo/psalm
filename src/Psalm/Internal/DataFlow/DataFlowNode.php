@@ -144,14 +144,13 @@ final class DataFlowNode implements Stringable
      * @psalm-mutation-free
      */
     public static function getForMethodArgument(
-        string $method_id,
         string $cased_method_id,
         int $argument_offset,
-        FunctionLikeStorage $storage,
+        ?FunctionLikeStorage $storage,
         ?CodeLocation $specialization_location = null,
         int $taints = 0,
     ): self {
-        $arg_id = strtolower($method_id) . '#' . ($argument_offset + 1);
+        $arg_id = strtolower($cased_method_id) . '#' . ($argument_offset + 1);
 
         $label = $cased_method_id . '#' . ($argument_offset + 1);
 
@@ -191,9 +190,8 @@ final class DataFlowNode implements Stringable
      * @psalm-mutation-free
      */
     public static function getForMethodReturn(
-        string $method_id,
         string $cased_method_id,
-        FunctionLikeStorage $storage,
+        ?FunctionLikeStorage $storage,
         ?CodeLocation $specialization_location = null,
         int $taints = 0,
         ?string $specialization_key = null,
@@ -204,7 +202,7 @@ final class DataFlowNode implements Stringable
         }
 
         return self::make(
-            strtolower($method_id),
+            strtolower($cased_method_id),
             $cased_method_id,
             self::getReturnLocation($storage),
             $specialization_key,
@@ -215,15 +213,14 @@ final class DataFlowNode implements Stringable
     /**
      * @psalm-mutation-free
      */
-    private static function getReturnLocation(FunctionLikeStorage $storage): CodeLocation
+    private static function getReturnLocation(?FunctionLikeStorage $storage): ?CodeLocation
     {
+        if (!$storage) {
+            return null;
+        }
         $loc = $storage->return_type_location
             ?: $storage->signature_return_type_location
             ?: $storage->location;
-
-        if (!$loc) {
-            throw new UnexpectedValueException('No location for return type of ' . $storage->cased_name);
-        }
 
         return $loc;
     }
@@ -231,8 +228,11 @@ final class DataFlowNode implements Stringable
     /**
      * @psalm-mutation-free
      */
-    private static function getParameterLocation(FunctionLikeStorage $storage, int $argument_offset): CodeLocation
+    private static function getParameterLocation(?FunctionLikeStorage $storage, int $argument_offset): ?CodeLocation
     {
+        if (!$storage) {
+            return null;
+        }
         $param = $storage->params[$argument_offset] ?? null;
 
         if (!$param && $storage->params) {
@@ -249,12 +249,6 @@ final class DataFlowNode implements Stringable
         $loc = $param->signature_type_location
             ?: $param->type_location
             ?: $param->location;
-
-        if (!$loc) {
-            throw new UnexpectedValueException(
-                'No location for parameter at offset ' . $argument_offset . ' for ' . $storage->cased_name,
-            );
-        }
 
         return $loc;
     }

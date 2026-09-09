@@ -843,7 +843,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
                 $custom_call_sink = DataFlowNode::getForMethodArgument(
                     'variable-call',
-                    'variable-call',
                     0,
                     $function_call_info->function_storage,
                     $arg_location,

@@ -37,6 +37,7 @@ final class EchoAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         foreach ($stmt->exprs as $i => $expr) {
+            assert(is_int($i));
             $context->inside_call = true;
             ExpressionAnalyzer::analyze($statements_analyzer, $expr, $context);
             $context->inside_call = false;
