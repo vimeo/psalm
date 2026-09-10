@@ -356,7 +356,7 @@ final class MethodCallReturnTypeFetcher
                 if ($unspecialized_parent_nodes) {
                     $method_call_node = DataFlowNode::getForMethodReturn(
                         $cased_method_id,
-                        $method_storage,
+                        $is_declaring ? $method_storage : null,
                         $node_location,
                     );
 
@@ -370,13 +370,13 @@ final class MethodCallReturnTypeFetcher
 
                     $universal_method_call_node = DataFlowNode::getForMethodReturn(
                         $cased_method_id,
-                        $method_storage,
+                        $is_declaring ? $method_storage : null,
                         null,
                     );
 
                     $method_call_node = DataFlowNode::getForMethodReturn(
                         $cased_method_id,
-                        $method_storage,
+                        $is_declaring ? $method_storage : null,
                         null,
                         0,
                         $parent_node->specialization_key,
@@ -440,7 +440,7 @@ final class MethodCallReturnTypeFetcher
             } else {
                 $method_call_node = DataFlowNode::getForMethodReturn(
                     $cased_method_id,
-                    $method_storage,
+                    $is_declaring ? $method_storage : null,
                     $node_location,
                 );
 
@@ -476,7 +476,7 @@ final class MethodCallReturnTypeFetcher
         if ($graph) {
             $method_call_node = DataFlowNode::getForMethodReturn(
                 $cased_method_id,
-                $method_storage,
+                $is_declaring ? $method_storage : null,
                 null,
             );
 
