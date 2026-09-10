@@ -53,8 +53,12 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
         parent::__construct($function, $source, $storage);
     }
 
+    /** @var lowercase-string */
     private readonly string $closure_id;
 
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public function getMutationNodeId(): string
     {
@@ -67,6 +71,7 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
      */
     public function getRecursiveVarId(): ?string
     {
+        /** @var mixed $var_id */
         $var_id = $this->function->getAttribute('recursive_var_id');
 
         return is_string($var_id) ? $var_id : null;

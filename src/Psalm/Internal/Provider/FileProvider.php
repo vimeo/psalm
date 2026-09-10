@@ -14,7 +14,6 @@ use UnexpectedValueException;
 use function file_exists;
 use function file_get_contents;
 use function file_put_contents;
-use function filemtime;
 use function in_array;
 use function is_dir;
 
@@ -95,15 +94,6 @@ class FileProvider
         if (isset(self::$open_files[$file_path])) {
             self::$open_files[$file_path] = $file_contents ?? $this->getContents($file_path, true);
         }
-    }
-
-    public function getModifiedTime(string $file_path): int
-    {
-        if (!file_exists($file_path)) {
-            throw new UnexpectedValueException('File should exist to get modified time');
-        }
-
-        return (int) filemtime($file_path);
     }
 
     /**

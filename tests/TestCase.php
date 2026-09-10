@@ -115,12 +115,18 @@ class TestCase extends BaseTestCase
         RuntimeCaches::clearAll();
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addFile(string $file_path, string $contents): void
     {
         $this->file_provider->registerFile($file_path, $contents);
         $this->project_analyzer->getCodebase()->scanner->addFileToShallowScan($file_path);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addStubFile(string $file_path, string $contents): void
     {
         $this->file_provider->registerFile($file_path, $contents);

@@ -242,7 +242,7 @@ final class CodeUseGraph
      * The function-like node of a method or named function, from its storage.
      * Closures have no name: their node is derived from their closure id.
      *
-     * @psalm-pure
+     * @psalm-mutation-free
      */
     public static function functionLikeNodeForStorage(FunctionLikeStorage $storage): ?string
     {

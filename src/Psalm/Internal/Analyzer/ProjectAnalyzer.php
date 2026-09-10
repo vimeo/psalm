@@ -951,6 +951,11 @@ final class ProjectAnalyzer
 
         $this->progress->debug('Checking ' . $file_path . PHP_EOL);
 
+        if (!$this->project_files_initialized) {
+            // issues raised while scanning need to know which files are being checked
+            $this->project_files = [$file_path => $file_path];
+        }
+
         $this->config->visitPreloadedStubFiles($this->codebase, $this->progress);
 
         $this->config->hide_external_errors = $this->config->isInProjectDirs($file_path);

@@ -6,7 +6,6 @@ namespace Psalm\Internal\Provider;
 
 use Override;
 
-use function microtime;
 use function str_starts_with;
 
 /**
@@ -19,10 +18,6 @@ final class FakeFileProvider extends FileProvider
      */
     public array $fake_files = [];
 
-    /**
-     * @var array<string, int>
-     */
-    public array $fake_file_times = [];
 
     /**
      * @var array<string, true>
@@ -72,16 +67,12 @@ final class FakeFileProvider extends FileProvider
         }
     }
 
-    #[Override]
-    public function getModifiedTime(string $file_path): int
-    {
-        return $this->fake_file_times[$file_path] ?? parent::getModifiedTime($file_path);
-    }
-
+    /**
+     * @psalm-external-mutation-free
+     */
     public function registerFile(string $file_path, string $file_contents): void
     {
         $this->fake_files[$file_path] = $file_contents;
-        $this->fake_file_times[$file_path] = (int)microtime(true);
     }
 
     /**
@@ -90,7 +81,6 @@ final class FakeFileProvider extends FileProvider
     public function deleteFile(string $file_path): void
     {
         unset($this->fake_files[$file_path]);
-        unset($this->fake_file_times[$file_path]);
     }
 
     /**

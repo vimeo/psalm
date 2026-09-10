@@ -9,6 +9,8 @@ use PhpParser\Node\Expr\ArrowFunction;
 use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\FunctionLike;
 use PhpParser\Node\Stmt;
+use PhpParser\Node\Stmt\ClassMethod;
+use PhpParser\Node\Stmt\Function_;
 use PhpParser\NodeFinder;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
@@ -173,7 +175,7 @@ final class MutationLevelResolver
      * Finds the function-like starting at the given offset, along with the
      * statement its docblock belongs to for closures (`$f = function () {}`).
      *
-     * @return array{?FunctionLike, ?Stmt}
+     * @return array{Closure|Function_|ClassMethod|ArrowFunction|null, ?Stmt}
      */
     private static function findFunctionLike(
         Codebase $codebase,
@@ -194,12 +196,12 @@ final class MutationLevelResolver
                 && (int) $node->getAttribute('startFilePos') === $start_pos,
         );
 
-        if (!$node instanceof FunctionLike) {
-            return [null, null];
+        if ($node instanceof Function_ || $node instanceof ClassMethod) {
+            return [$node, null];
         }
 
         if (!$node instanceof Closure && !$node instanceof ArrowFunction) {
-            return [$node, null];
+            return [null, null];
         }
 
         // the innermost statement containing the closure

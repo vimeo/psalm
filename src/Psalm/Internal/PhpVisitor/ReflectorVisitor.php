@@ -173,7 +173,10 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
         } elseif ($node instanceof PhpParser\Node\FunctionLike
                   || $node instanceof PhpParser\Node\Stmt\Expression
                      && ($node->expr instanceof PhpParser\Node\Expr\ArrowFunction
-                         || $node->expr instanceof PhpParser\Node\Expr\Closure)
+                         || $node->expr instanceof PhpParser\Node\Expr\Closure
+                         || ($node->expr instanceof PhpParser\Node\Expr\Assign
+                             && ($node->expr->expr instanceof PhpParser\Node\Expr\ArrowFunction
+                                 || $node->expr->expr instanceof PhpParser\Node\Expr\Closure)))
                   || $node instanceof PhpParser\Node\Arg
                      && ($node->value instanceof PhpParser\Node\Expr\ArrowFunction
                          || $node->value instanceof PhpParser\Node\Expr\Closure)
@@ -189,17 +192,22 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                     return null;
                 }
             } elseif ($node instanceof PhpParser\Node\Stmt\Expression) {
+                // the docblock of `$f = function () {}` describes the closure
                 $doc_comment = $node->getDocComment();
                 /** @var PhpParser\Node\FunctionLike */
-                $node = $node->expr;
+                $node = $node->expr instanceof PhpParser\Node\Expr\Assign ? $node->expr->expr : $node->expr;
                 $this->closure_statements->offsetSet($node);
             } elseif ($node instanceof PhpParser\Node\Arg || $node instanceof PhpParser\Node\ArrayItem) {
                 $doc_comment = $node->getDocComment();
                 /** @var PhpParser\Node\FunctionLike */
                 $node = $node->value;
                 $this->closure_statements->offsetSet($node);
-            } elseif ($this->closure_statements->offsetExists($node)) {
+            } elseif ($node instanceof PhpParser\Node\FunctionLike && $this->closure_statements->offsetExists($node)) {
                 // This is a closure that was already processed at the statement level.
+                return null;
+            }
+
+            if (!$node instanceof PhpParser\Node\FunctionLike) {
                 return null;
             }
 

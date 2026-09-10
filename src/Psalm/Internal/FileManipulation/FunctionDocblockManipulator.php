@@ -8,7 +8,6 @@ use PhpParser;
 use PhpParser\Node;
 use PhpParser\Node\Expr\ArrowFunction;
 use PhpParser\Node\Expr\Closure;
-use PhpParser\Node\FunctionLike;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Function_;
 use Psalm\DocComment;
@@ -101,15 +100,15 @@ final class FunctionDocblockManipulator
     public static function getForFunction(
         ProjectAnalyzer $project_analyzer,
         string $file_path,
-        FunctionLike $stmt,
+        Closure|Function_|ClassMethod|ArrowFunction $stmt,
         ?Node $docblock_anchor = null,
     ): FunctionDocblockManipulator {
-        if (isset(self::$manipulators[$file_path][$stmt->getLine()])) {
-            return self::$manipulators[$file_path][$stmt->getLine()];
+        if (isset(self::$manipulators[$file_path][$stmt->getStartLine()])) {
+            return self::$manipulators[$file_path][$stmt->getStartLine()];
         }
 
         $manipulator
-            = self::$manipulators[$file_path][$stmt->getLine()]
+            = self::$manipulators[$file_path][$stmt->getStartLine()]
             = new self($file_path, $stmt, $project_analyzer, $docblock_anchor);
 
         return $manipulator;

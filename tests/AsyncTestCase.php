@@ -95,6 +95,9 @@ abstract class AsyncTestCase extends BaseAsyncTestCase
         RuntimeCaches::clearAll();
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addFile(string $file_path, string $contents): void
     {
         $this->file_provider->registerFile($file_path, $contents);

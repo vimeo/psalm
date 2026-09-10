@@ -7,12 +7,14 @@ namespace Psalm\Internal\Provider;
 use Psalm\Config;
 use Psalm\Internal\Cache;
 use Psalm\Internal\Codebase\Analyzer;
+use Psalm\Internal\Codebase\MutationLevelResolver;
 
 /**
  * Used to determine which files reference other files, necessary for using the --diff
  * option from the command line.
  *
  * @psalm-import-type FileMapType from Analyzer
+ * @psalm-import-type MutationInfo from MutationLevelResolver
  * @internal
  */
 final class FileReferenceCacheProvider
@@ -71,11 +73,21 @@ final class FileReferenceCacheProvider
     }
 
     /**
-     * @return array{edges: array<string, array<string, string>>, node_files: array<string, string>}|null
+     * @return array{
+     *     edges: array<string, array<string, string>>,
+     *     node_files: array<string, string>,
+     *     mutation_info: array<string, MutationInfo>
+     * }|null
      */
     public function getCachedCodeUseGraph(): ?array
     {
-        /** @var array{edges: array<string, array<string, string>>, node_files: array<string, string>}|null */
+        /**
+         * @var array{
+         *     edges: array<string, array<string, string>>,
+         *     node_files: array<string, string>,
+         *     mutation_info: array<string, MutationInfo>
+         * }|null
+         */
         return $this->cache->getItem(self::CODE_USE_GRAPH_CACHE_NAME);
     }
 
@@ -110,7 +122,11 @@ final class FileReferenceCacheProvider
     }
 
     /**
-     * @param array{edges: array<string, array<string, string>>, node_files: array<string, string>} $data
+     * @param array{
+     *     edges: array<string, array<string, string>>,
+     *     node_files: array<string, string>,
+     *     mutation_info: array<string, MutationInfo>
+     * } $data
      */
     public function setCachedCodeUseGraph(array $data): void
     {

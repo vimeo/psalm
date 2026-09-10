@@ -96,7 +96,10 @@ final class FileReferenceTest extends TestCase
 
         $graph = $this->project_analyzer->getCodebase()->code_use_graph;
 
-        /** @psalm-suppress MixedAssignment */
+        /**
+         * @psalm-suppress MixedAssignment
+         * @psalm-mutation-free
+         */
         $ksort_recursive = function (array &$arr) use (&$ksort_recursive): void {
             ksort($arr);
             foreach ($arr as &$value) {

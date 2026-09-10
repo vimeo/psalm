@@ -24,6 +24,7 @@ final class TypeVariableBounds
     /**
      * @param list<TemplateBound> $lower_bounds
      * @param list<TemplateBound> $upper_bounds
+     * @psalm-mutation-free
      */
     public function __construct(
         public array $lower_bounds = [],

@@ -1837,17 +1837,19 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * @psalm-mutation-free
-     * @return array<string, array<string, Union>>|null
-     */
-    /**
      * The graph node used to resolve the mutation level of this function-like.
+     *
+     * @psalm-mutation-free
      */
     public function getMutationNodeId(): ?string
     {
         return CodeUseGraph::functionLikeNodeForStorage($this->storage);
     }
 
+    /**
+     * @psalm-mutation-free
+     * @return array<string, array<string, Union>>|null
+     */
     #[Override]
     public function getTemplateTypeMap(): ?array
     {

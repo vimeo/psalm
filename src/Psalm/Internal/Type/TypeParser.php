@@ -1019,6 +1019,7 @@ final class TypeParser
             }
             assert(count($parse_tree->children) === 2);
 
+            /** @psalm-mutation-free */
             $get_int_range_bound = static function (
                 ParseTree $parse_tree,
                 Union $generic_param,

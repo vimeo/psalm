@@ -447,6 +447,12 @@ final class InstancePropertyAssignmentAnalyzer
                 $declaring_class_storage->name,
                 $mut,
             );
+        } else {
+            // e.g. the property of an array element: the class is still being mutated from outside
+            $codebase->analyzer->addMutableClass(
+                $declaring_class_storage->name,
+                Mutations::LEVEL_EXTERNAL,
+            );
         }
     }
 

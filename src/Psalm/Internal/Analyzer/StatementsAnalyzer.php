@@ -154,6 +154,8 @@ final class StatementsAnalyzer extends SourceAnalyzer
      */
     public array $foreach_var_locations = [];
 
+    private int $depth = 0;
+
     /**
      * Tracks bounds for the type variables minted while these statements are
      * analyzed. Shared with the enclosing function-like's statements analyzer
@@ -168,8 +170,14 @@ final class StatementsAnalyzer extends SourceAnalyzer
      */
     public readonly bool $owns_type_variable_tracker;
 
-    public function __construct(protected SourceAnalyzer $source, public NodeDataProvider $node_data)
-    {
+    /**
+     * @psalm-mutation-free
+     */
+    public function __construct(
+        protected SourceAnalyzer $source,
+        public NodeDataProvider $node_data,
+        private readonly bool $root_scope,
+    ) {
         $this->file_analyzer = $source->getFileAnalyzer();
         $this->codebase = $source->getCodebase();
 
@@ -185,10 +193,17 @@ final class StatementsAnalyzer extends SourceAnalyzer
             $this->owns_type_variable_tracker = true;
         }
 
-        if ($this->codebase->taint_flow_graph) {
-            $this->data_flow_graph = new TaintFlowGraph();
-        } elseif ($this->codebase->find_unused_variables) {
-            $this->data_flow_graph = new VariableUseGraph();
+        if ($this->codebase->taint_flow_graph
+            && $root_scope
+            && $this->codebase->config->trackTaintsInPath($this->getFilePath())
+        ) {
+            $this->data_flow_graph = $this->taint_flow_graph = $this->codebase->taint_flow_graph;
+        }
+        if ($this->codebase->find_unused_variables) {
+            $this->data_flow_graph = $this->variable_use_graph = new VariableUseGraph();
+        }
+        if ($this->taint_flow_graph && $this->variable_use_graph) {
+            $this->data_flow_graph = new CombinedFlowGraph($this->variable_use_graph, $this->taint_flow_graph);
         }
     }
 
