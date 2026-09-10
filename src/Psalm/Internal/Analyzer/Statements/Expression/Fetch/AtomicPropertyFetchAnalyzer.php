@@ -28,6 +28,7 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\Issue\DeprecatedProperty;
 use Psalm\Issue\ImpurePropertyAssignment;
 use Psalm\Issue\ImpurePropertyFetch;
@@ -497,6 +498,13 @@ final class AtomicPropertyFetchAnalyzer
             $lhs_type_part,
         );
 
+        if (!$in_assignment) {
+            // reading a property through a type variable resolves it via its
+            // accumulated bounds (a concrete shape is required here); writes
+            // keep the variable so they record bounds instead
+            $class_property_type = TypeVariableTracker::resolveTypeVariables($class_property_type, $codebase);
+        }
+
         if (!($class_storage->isExternalMutationFree()
             && $class_property_type->allow_mutations)
         ) {
@@ -647,6 +655,11 @@ final class AtomicPropertyFetchAnalyzer
                                 $declaring_property_class,
                             ) : $class_storage,
                     );
+
+                    // reading a property through a type variable resolves it
+                    // via its accumulated bounds (a concrete shape is required
+                    // here)
+                    $stmt_type = TypeVariableTracker::resolveTypeVariables($stmt_type, $codebase);
                 }
 
                 self::processTaints(
@@ -1249,6 +1262,8 @@ final class AtomicPropertyFetchAnalyzer
                             $declaring_property_class,
                         ) : $class_storage,
                 );
+
+                $stmt_type = TypeVariableTracker::resolveTypeVariables($stmt_type, $codebase);
             }
 
             self::processTaints(

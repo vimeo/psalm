@@ -22,6 +22,7 @@ use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -257,6 +258,8 @@ final class MethodCallReturnTypeFetcher
         if (!$return_type_candidate) {
             $return_type_candidate = $method_name === '__tostring' ? Type::getString() : Type::getMixed();
         }
+
+        $return_type_candidate = TypeVariableTracker::resolveTypeVariables($return_type_candidate, $codebase);
 
         self::taintMethodCallResult(
             $statements_analyzer,

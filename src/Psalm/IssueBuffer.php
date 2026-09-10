@@ -92,11 +92,6 @@ final class IssueBuffer
     private static array $issues_data = [];
 
     /**
-     * @var array<int, array>
-     */
-    private static array $console_issues = [];
-
-    /**
      * @var array<string, int>
      */
     private static array $fixable_issue_counts = [];
@@ -1053,7 +1048,6 @@ final class IssueBuffer
         self::$error_count = 0;
         self::$recording_level = 0;
         self::$recorded_issues = [];
-        self::$console_issues = [];
         self::$unused_suppressions = [];
         self::$used_suppressions = [];
     }

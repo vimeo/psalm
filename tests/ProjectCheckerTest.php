@@ -36,8 +36,6 @@ use const DIRECTORY_SEPARATOR;
 
 final class ProjectCheckerTest extends TestCase
 {
-    protected static TestConfig $config;
-
     protected ProjectAnalyzer $project_analyzer;
 
     #[Override]
@@ -49,7 +47,7 @@ final class ProjectCheckerTest extends TestCase
         global $argv;
         $argv = [];
 
-        self::$config = new TestConfig();
+        new TestConfig();
     }
 
     /**
