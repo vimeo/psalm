@@ -13,6 +13,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
 use Psalm\Type\Atomic\TCallable;
@@ -67,6 +68,12 @@ final class HighOrderFunctionArgHandler
             $inferred_template_result,
             $statements_analyzer->getCodebase(),
         );
+
+        // type variables in the container signature resolve to their
+        // construction-site inference before they bind the input function's
+        // own templates
+        $container_type_resolver = new TypeVariableResolver($statements_analyzer->getCodebase());
+        $container_type_resolver->traverse($container_type);
 
         $input_function_type = $input_function->getFunctionType();
         $input_function_template_result = $input_function->getTemplates();

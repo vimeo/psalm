@@ -20,7 +20,6 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
-use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
@@ -194,10 +193,11 @@ final class FilterUtils
                 }
 
                 if (isset($atomic_type->properties['options'])) {
+                    $options_type = $atomic_type->properties['options'];
                     if ($filter_int_used === FILTER_CALLBACK) {
                         $only_callables = true;
-                        foreach ($atomic_type->properties['options']->getAtomicTypes() as $option_atomic) {
-                            if ($option_atomic->isCallableType() && !$option_atomic instanceof TClosure) {
+                        foreach ($options_type->getAtomicTypes() as $option_atomic) {
+                            if ($option_atomic->isCallableType()) {
                                 continue;
                             }
 
@@ -213,7 +213,7 @@ final class FilterUtils
 
                             $only_callables = false;
                         }
-                        if ($atomic_type->properties['options']->possibly_undefined) {
+                        if ($options_type->possibly_undefined) {
                             $only_callables = false;
                         }
 
@@ -238,7 +238,7 @@ final class FilterUtils
                         );
                     }
 
-                    if (! $atomic_type->properties['options']->isArray()) {
+                    if (! $options_type->isArray()) {
                         // silently ignored by the function, but this usually indicates a bug
                         IssueBuffer::maybeAdd(
                             new InvalidArgument(
@@ -248,8 +248,7 @@ final class FilterUtils
                             ),
                             $statements_analyzer->getSuppressedIssues(),
                         );
-                    } elseif (($options_array = $atomic_type->properties['options']->getArray())
-                              && $options_array instanceof TKeyedArray) {
+                    } elseif (($options_array = $options_type->getArray()) instanceof TKeyedArray) {
                         $defaults['options'] = $options_array;
                     } else {
                         // cannot infer a 100% correct specific return type

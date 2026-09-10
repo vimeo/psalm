@@ -16,6 +16,8 @@ fi
 
 which gsed > /dev/null && sed=gsed || sed=sed
 
+which gsed > /dev/null && sed=gsed || sed=sed
+
 rm -Rf /tmp/testing-with-real-projects
 mkdir -p /tmp/testing-with-real-projects
 cd /tmp/testing-with-real-projects
