@@ -709,7 +709,6 @@
       <code><![CDATA[$lhs_type]]></code>
       <code><![CDATA[$stmt->name]]></code>
       <code><![CDATA[$stmt->name]]></code>
-      <code><![CDATA[$stmt->name]]></code>
     </ImplicitToStringCast>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$context->self]]></code>

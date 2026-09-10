@@ -623,10 +623,8 @@ final class InstancePropertyAssignmentAnalyzer
 
         $graph->addNode($localized_property_node);
 
-        $property_node = DataFlowNode::make(
+        $property_node = DataFlowNode::getForPropertyFetch(
             $property_id,
-            $property_id,
-            null,
             null,
         );
 
@@ -676,10 +674,8 @@ final class InstancePropertyAssignmentAnalyzer
                 || $stmt instanceof PhpParser\Node\Expr\StaticPropertyFetch)
             && $stmt->name instanceof PhpParser\Node\Identifier
         ) {
-            $declaring_property_node = DataFlowNode::make(
+            $declaring_property_node = DataFlowNode::getForPropertyFetch(
                 $declaring_property_class . '::$' . $stmt->name,
-                $declaring_property_class . '::$' . $stmt->name,
-                null,
                 null,
             );
 

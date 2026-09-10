@@ -2322,18 +2322,16 @@ final class Codebase
     public function addTaintSource(
         Union $expr_type,
         string $taint_id,
+        CodeLocation $code_location,
         int $taints = TaintKind::ALL_INPUT,
-        ?CodeLocation $code_location = null,
     ): Union {
         if (!$this->taint_flow_graph) {
             return $expr_type;
         }
 
-        $source = DataFlowNode::make(
-            $taint_id,
+        $source = DataFlowNode::getForTaintSink(
             $taint_id,
             $code_location,
-            null,
             $taints,
         );
 
@@ -2347,18 +2345,16 @@ final class Codebase
      */
     public function addTaintSink(
         string $taint_id,
+        CodeLocation $code_location,
         int $taints = TaintKind::ALL_INPUT,
-        ?CodeLocation $code_location = null,
     ): void {
         if (!$this->taint_flow_graph) {
             return;
         }
 
-        $sink = DataFlowNode::make(
-            $taint_id,
+        $sink = DataFlowNode::getForTaintSink(
             $taint_id,
             $code_location,
-            null,
             $taints,
         );
 
