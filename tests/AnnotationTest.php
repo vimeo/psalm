@@ -2047,6 +2047,17 @@ final class AnnotationTest extends TestCase
                 ",
                 'error_message' => 'InvalidDocblock',
             ],
+            'parenthesizedConditionalCondition' => [
+                'code' => '<?php
+                    /** @return ($n is int) ? int : float */
+                    function double(int|float $n): int|float {
+                        return $n * 2;
+                    }
+                ',
+                'error_message' => 'InvalidDocblock',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'promotedPropertiesDocumentationFailsWhenSendingBadTypeAgainstParam' => [
                 'code' => '<?php
                     final class UserRole
