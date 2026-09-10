@@ -68,11 +68,11 @@ final class ExitAnalyzer
             if ($statements_analyzer->taint_flow_graph) {
                 $call_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
-                $echo_param_sink = DataFlowNode::getForMethodArgument(
-                    'exit',
+                $echo_param_sink = DataFlowNode::getForCallableArg(
+                    'builtin',
                     'exit',
                     0,
-                    null,
+                    $call_location,
                     $call_location,
                     TaintKind::INPUT_HTML
                         | TaintKind::INPUT_HAS_QUOTES
@@ -100,6 +100,7 @@ final class ExitAnalyzer
                     new CodeLocation($statements_analyzer->getSource(), $stmt->expr),
                     $stmt->expr,
                     $context,
+                    null,
                     $exit_param,
                     false,
                     null,

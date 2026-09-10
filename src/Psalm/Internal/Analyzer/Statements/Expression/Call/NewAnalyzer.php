@@ -759,20 +759,23 @@ final class NewAnalyzer extends CallAnalyzer
                 $method_storage = $codebase->methods->getStorage($declaring_method_id);
             }
 
-            if ($storage->isExternalMutationFree()
-                || ($method_storage && $method_storage->specialize_call)
-            ) {
-                $method_source = DataFlowNode::getForMethodReturn(
-                    (string)$method_id,
+            if (!$method_storage) {
+                $method_source = DataFlowNode::getForCallableReturn(
+                    'builtin',
                     $fq_class_name . '::__construct',
                     $storage->location,
+                    $storage->isExternalMutationFree() ? $code_location : null,
+                );
+            } elseif ($storage->isExternalMutationFree() || $method_storage->specialize_call) {
+                $method_source = DataFlowNode::getForMethodReturn(
+                    $fq_class_name . '::__construct',
+                    $method_storage,
                     $code_location,
                 );
             } else {
                 $method_source = DataFlowNode::getForMethodReturn(
-                    (string)$method_id,
                     $fq_class_name . '::__construct',
-                    $storage->location,
+                    $method_storage,
                 );
             }
 
@@ -824,8 +827,8 @@ final class NewAnalyzer extends CallAnalyzer
             ) {
                 $arg_location = new CodeLocation($statements_analyzer->getSource(), $stmt_class);
 
-                $custom_call_sink = DataFlowNode::getForMethodArgument(
-                    'variable-call',
+                $custom_call_sink = DataFlowNode::getForCallableArg(
+                    'dynamic-instantiation',
                     'variable-call',
                     0,
                     $arg_location,

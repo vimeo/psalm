@@ -19,6 +19,9 @@ use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\TaintKind;
 
+use function assert;
+use function is_int;
+
 /**
  * @internal
  */
@@ -37,6 +40,7 @@ final class EchoAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         foreach ($stmt->exprs as $i => $expr) {
+            assert(is_int($i));
             $context->inside_call = true;
             ExpressionAnalyzer::analyze($statements_analyzer, $expr, $context);
             $context->inside_call = false;
@@ -56,11 +60,11 @@ final class EchoAnalyzer
 
                 $call_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
-                $echo_param_sink = DataFlowNode::getForMethodArgument(
+                $echo_param_sink = DataFlowNode::getForCallableArg(
+                    'builtin',
                     'echo',
-                    'echo',
-                    (int) $i,
-                    null,
+                    $i,
+                    $call_location,
                     $call_location,
                     TaintKind::INPUT_HTML
                         | TaintKind::INPUT_HAS_QUOTES
@@ -79,10 +83,11 @@ final class EchoAnalyzer
                 null,
                 'echo',
                 null,
-                (int)$i,
+                $i,
                 new CodeLocation($statements_analyzer->getSource(), $expr),
                 $expr,
                 $context,
+                null,
                 $echo_param,
                 false,
                 null,

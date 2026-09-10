@@ -262,7 +262,7 @@ final class FunctionCallReturnTypeFetcher
             $statements_analyzer,
             $stmt,
             $function_id,
-            $function_name->toCodeString(),
+            $function_storage->cased_name ?? $function_id,
             $function_storage,
             $stmt_type,
             $template_result,
@@ -552,11 +552,8 @@ final class FunctionCallReturnTypeFetcher
         $node_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
         $function_call_node = DataFlowNode::getForMethodReturn(
-            $function_id,
             $cased_function_id,
-            $taint_flow_graph
-                ? ($function_storage->signature_return_type_location ?: $function_storage->location)
-                : ($function_storage->return_type_location ?: $function_storage->location),
+            $function_storage,
             $function_storage->specialize_call ? $node_location : null,
         );
         $graph->addNode($function_call_node);
@@ -664,7 +661,6 @@ final class FunctionCallReturnTypeFetcher
 
             if (!$stmt->isFirstClassCallable()) {
                 self::taintUsingFlows(
-                    $statements_analyzer,
                     $function_storage,
                     $taint_flow_graph,
                     $function_id,
@@ -687,7 +683,6 @@ final class FunctionCallReturnTypeFetcher
      * @psalm-external-mutation-free
      */
     public static function taintUsingFlows(
-        StatementsAnalyzer $statements_analyzer,
         FunctionLikeStorage $function_storage,
         TaintFlowGraph $graph,
         string $function_id,
@@ -712,16 +707,10 @@ final class FunctionCallReturnTypeFetcher
             }
 
             foreach ($taintable_arg_index as $arg_index) {
-                $arg_location = new CodeLocation(
-                    $statements_analyzer,
-                    $args[$arg_index]->value,
-                );
-
                 $function_param_sink = DataFlowNode::getForMethodArgument(
                     $function_id,
-                    $function_id,
                     $arg_index,
-                    $arg_location,
+                    $function_storage,
                     $function_storage->specialize_call ? $node_location : null,
                 );
 

@@ -160,8 +160,8 @@
                                 "region": {
                                     "startLine": 12,
                                     "endLine": 12,
-                                    "startColumn": 12,
-                                    "endColumn": 25
+                                    "startColumn": 1,
+                                    "endColumn": 26
                                 }
                             }
                         }
@@ -174,6 +174,21 @@
                             "threadFlows": [
                                 {
                                     "locations": [
+                                        {
+                                            "location": {
+                                                "physicalLocation": {
+                                                    "artifactLocation": {
+                                                        "uri": "taintflow-test\/vulnerable.php"
+                                                    },
+                                                    "region": {
+                                                        "startLine": 10,
+                                                        "endLine": 10,
+                                                        "startColumn": 56,
+                                                        "endColumn": 62
+                                                    }
+                                                }
+                                            }
+                                        },
                                         {
                                             "location": {
                                                 "physicalLocation": {
@@ -228,8 +243,8 @@
                                                     "region": {
                                                         "startLine": 6,
                                                         "endLine": 6,
-                                                        "startColumn": 50,
-                                                        "endColumn": 56
+                                                        "startColumn": 43,
+                                                        "endColumn": 49
                                                     }
                                                 }
                                             }
@@ -331,8 +346,8 @@
                                 "region": {
                                     "startLine": 14,
                                     "endLine": 14,
-                                    "startColumn": 6,
-                                    "endColumn": 59
+                                    "startColumn": 1,
+                                    "endColumn": 60
                                 }
                             }
                         }
@@ -345,6 +360,21 @@
                             "threadFlows": [
                                 {
                                     "locations": [
+                                        {
+                                            "location": {
+                                                "physicalLocation": {
+                                                    "artifactLocation": {
+                                                        "uri": "taintflow-test\/vulnerable.php"
+                                                    },
+                                                    "region": {
+                                                        "startLine": 10,
+                                                        "endLine": 10,
+                                                        "startColumn": 56,
+                                                        "endColumn": 62
+                                                    }
+                                                }
+                                            }
+                                        },
                                         {
                                             "location": {
                                                 "physicalLocation": {
@@ -399,8 +429,8 @@
                                                     "region": {
                                                         "startLine": 6,
                                                         "endLine": 6,
-                                                        "startColumn": 50,
-                                                        "endColumn": 56
+                                                        "startColumn": 43,
+                                                        "endColumn": 49
                                                     }
                                                 }
                                             }
@@ -517,8 +547,8 @@
                                 "region": {
                                     "startLine": 14,
                                     "endLine": 14,
-                                    "startColumn": 6,
-                                    "endColumn": 59
+                                    "startColumn": 1,
+                                    "endColumn": 60
                                 }
                             }
                         }
@@ -531,6 +561,21 @@
                             "threadFlows": [
                                 {
                                     "locations": [
+                                        {
+                                            "location": {
+                                                "physicalLocation": {
+                                                    "artifactLocation": {
+                                                        "uri": "taintflow-test\/vulnerable.php"
+                                                    },
+                                                    "region": {
+                                                        "startLine": 10,
+                                                        "endLine": 10,
+                                                        "startColumn": 56,
+                                                        "endColumn": 62
+                                                    }
+                                                }
+                                            }
+                                        },
                                         {
                                             "location": {
                                                 "physicalLocation": {
@@ -585,8 +630,8 @@
                                                     "region": {
                                                         "startLine": 6,
                                                         "endLine": 6,
-                                                        "startColumn": 50,
-                                                        "endColumn": 56
+                                                        "startColumn": 43,
+                                                        "endColumn": 49
                                                     }
                                                 }
                                             }

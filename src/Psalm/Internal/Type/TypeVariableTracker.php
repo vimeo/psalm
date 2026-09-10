@@ -331,6 +331,7 @@ final class TypeVariableTracker
      *
      * @param list<TemplateBound> $lower_bounds
      * @return list<TemplateBound>
+     * @psalm-mutation-free
      */
     private static function getRelevantBounds(array $lower_bounds): array
     {

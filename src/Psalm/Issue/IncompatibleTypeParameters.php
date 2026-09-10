@@ -7,5 +7,5 @@ namespace Psalm\Issue;
 final class IncompatibleTypeParameters extends CodeIssue
 {
     public const ERROR_LEVEL = 1;
-    public const SHORTCODE = 362;
+    public const SHORTCODE = 368;
 }

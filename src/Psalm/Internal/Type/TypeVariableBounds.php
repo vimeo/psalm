@@ -12,6 +12,7 @@ use function count;
  * when the surrounding function-like has been analyzed.
  *
  * @internal
+ * @psalm-mutable
  */
 final class TypeVariableBounds
 {

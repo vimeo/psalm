@@ -1048,7 +1048,7 @@ final class TaintTest extends TestCase
                     }
 
                     echo getName();',
-                'error_message' => 'TaintedHtml - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:26 - Detected tainted HTML in path: $_GET -> $_GET[\'name\'] (src' . DIRECTORY_SEPARATOR . 'somefile.php:3:32) -> coalesce (src' . DIRECTORY_SEPARATOR . 'somefile.php:3:32) -> getName (src' . DIRECTORY_SEPARATOR . 'somefile.php:2:42) -> call to echo (src' . DIRECTORY_SEPARATOR . 'somefile.php:6:26) -> echo#1',
+                'error_message' => 'TaintedHtml - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:21 - Detected tainted HTML in path: $_GET (src' . DIRECTORY_SEPARATOR . 'somefile.php:3:32) -> $_GET[\'name\'] (src' . DIRECTORY_SEPARATOR . 'somefile.php:3:32) -> coalesce (src' . DIRECTORY_SEPARATOR . 'somefile.php:3:32) -> getName (src' . DIRECTORY_SEPARATOR . 'somefile.php:2:42) -> call to echo (src' . DIRECTORY_SEPARATOR . 'somefile.php:6:26) -> builtin echo#1',
             ],
             'taintedInputFromExplicitTaintSource' => [
                 'code' => '<?php
@@ -1219,7 +1219,7 @@ final class TaintTest extends TestCase
                             $pdo->exec("delete from users where user_id = " . $userId);
                         }
                     }',
-                'error_message' => 'TaintedSql - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:40 - Detected tainted SQL in path: $_GET -> $_GET[\'user_id\'] (src' . DIRECTORY_SEPARATOR . 'somefile.php:4:45) -> A::getUserId (src' . DIRECTORY_SEPARATOR . 'somefile.php:3:55) -> concat (src' . DIRECTORY_SEPARATOR . 'somefile.php:8:36) -> A::getAppendedUserId (src' . DIRECTORY_SEPARATOR . 'somefile.php:7:63) -> $userId (src' . DIRECTORY_SEPARATOR . 'somefile.php:12:29) -> call to A::deleteUser (src' . DIRECTORY_SEPARATOR . 'somefile.php:13:53) -> $userId (src' . DIRECTORY_SEPARATOR . 'somefile.php:16:69) -> call to PDO::exec (src' . DIRECTORY_SEPARATOR . 'somefile.php:17:40) -> PDO::exec#1',
+                'error_message' => 'TaintedSql - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:40 - Detected tainted SQL in path: $_GET (src' . DIRECTORY_SEPARATOR . 'somefile.php:4:45) -> $_GET[\'user_id\'] (src' . DIRECTORY_SEPARATOR . 'somefile.php:4:45) -> A::getUserId (src' . DIRECTORY_SEPARATOR . 'somefile.php:3:55) -> concat (src' . DIRECTORY_SEPARATOR . 'somefile.php:8:36) -> A::getAppendedUserId (src' . DIRECTORY_SEPARATOR . 'somefile.php:7:63) -> $userId (src' . DIRECTORY_SEPARATOR . 'somefile.php:12:29) -> call to A::deleteUser (src' . DIRECTORY_SEPARATOR . 'somefile.php:13:53) -> A::deleteUser#2 (src' . DIRECTORY_SEPARATOR . 'somefile.php:16:62) -> $userId (src' . DIRECTORY_SEPARATOR . 'somefile.php:16:69) -> call to PDO::exec (src' . DIRECTORY_SEPARATOR . 'somefile.php:17:40) -> PDO::exec#1',
             ],
             'taintedInputToParam' => [
                 'code' => '<?php
@@ -1289,7 +1289,7 @@ final class TaintTest extends TestCase
                             }
                         }
                     }',
-                'error_message' => 'TaintedSql - src' . DIRECTORY_SEPARATOR . 'somefile.php:23:44 - Detected tainted SQL in path: $_GET -> $_GET[\'user_id\'] (src' . DIRECTORY_SEPARATOR . 'somefile.php:7:67) -> call to A::getAppendedUserId (src' . DIRECTORY_SEPARATOR . 'somefile.php:7:58) -> $user_id (src' . DIRECTORY_SEPARATOR . 'somefile.php:11:66) -> concat (src' . DIRECTORY_SEPARATOR . 'somefile.php:12:36) -> A::getAppendedUserId (src' . DIRECTORY_SEPARATOR . 'somefile.php:11:78) -> call to A::deleteUser (src' . DIRECTORY_SEPARATOR . 'somefile.php:7:33) -> $userId2 (src' . DIRECTORY_SEPARATOR . 'somefile.php:19:85) -> call to PDO::exec (src' . DIRECTORY_SEPARATOR . 'somefile.php:23:44) -> PDO::exec#1',
+                'error_message' => 'TaintedSql - src' . DIRECTORY_SEPARATOR . 'somefile.php:23:44 - Detected tainted SQL in path: $_GET (src' . DIRECTORY_SEPARATOR . 'somefile.php:7:67) -> $_GET[\'user_id\'] (src' . DIRECTORY_SEPARATOR . 'somefile.php:7:67) -> call to A::getAppendedUserId (src' . DIRECTORY_SEPARATOR . 'somefile.php:7:58) -> A::getAppendedUserId#1 (src' . DIRECTORY_SEPARATOR . 'somefile.php:11:59) -> $user_id (src' . DIRECTORY_SEPARATOR . 'somefile.php:11:66) -> concat (src' . DIRECTORY_SEPARATOR . 'somefile.php:12:36) -> A::getAppendedUserId (src' . DIRECTORY_SEPARATOR . 'somefile.php:11:78) -> call to A::deleteUser (src' . DIRECTORY_SEPARATOR . 'somefile.php:7:33) -> A::deleteUser#3 (src' . DIRECTORY_SEPARATOR . 'somefile.php:19:78) -> $userId2 (src' . DIRECTORY_SEPARATOR . 'somefile.php:19:85) -> call to PDO::exec (src' . DIRECTORY_SEPARATOR . 'somefile.php:23:44) -> PDO::exec#1',
             ],
             'taintedInParentLoader' => [
                 'code' => '<?php
@@ -1320,7 +1320,7 @@ final class TaintTest extends TestCase
                     }
 
                     (new C)->foo((string) $_GET["user_id"]);',
-                'error_message' => 'TaintedSql - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:44 - Detected tainted SQL in path: $_GET -> $_GET[\'user_id\'] (src' . DIRECTORY_SEPARATOR . 'somefile.php:28:43) -> call to C::foo (src' . DIRECTORY_SEPARATOR . 'somefile.php:28:34) -> $user_id (src' . DIRECTORY_SEPARATOR . 'somefile.php:23:52) -> call to AGrandChild::loadFull (src' . DIRECTORY_SEPARATOR . 'somefile.php:24:51) -> AGrandChild::loadFull#1 (src' . DIRECTORY_SEPARATOR . 'somefile.php:5:64) -> A::loadFull#1 (src' . DIRECTORY_SEPARATOR . 'somefile.php:24:51) -> $sink (src' . DIRECTORY_SEPARATOR . 'somefile.php:5:64) -> call to A::loadPartial (src' . DIRECTORY_SEPARATOR . 'somefile.php:6:49) -> A::loadPartial#1 (src' . DIRECTORY_SEPARATOR . 'somefile.php:3:76) -> AChild::loadPartial#1 (src' . DIRECTORY_SEPARATOR . 'somefile.php:6:49) -> $sink (src' . DIRECTORY_SEPARATOR . 'somefile.php:15:67) -> call to PDO::exec (src' . DIRECTORY_SEPARATOR . 'somefile.php:16:44) -> PDO::exec#1',
+                'error_message' => 'TaintedSql - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:44 - Detected tainted SQL in path: $_GET (src' . DIRECTORY_SEPARATOR . 'somefile.php:28:43) -> $_GET[\'user_id\'] (src' . DIRECTORY_SEPARATOR . 'somefile.php:28:43) -> call to C::foo (src' . DIRECTORY_SEPARATOR . 'somefile.php:28:34) -> C::foo#1 (src' . DIRECTORY_SEPARATOR . 'somefile.php:23:45) -> $user_id (src' . DIRECTORY_SEPARATOR . 'somefile.php:23:52) -> call to AGrandChild::loadFull (src' . DIRECTORY_SEPARATOR . 'somefile.php:24:51) -> A::loadFull#1 (src' . DIRECTORY_SEPARATOR . 'somefile.php:5:57) -> $sink (src' . DIRECTORY_SEPARATOR . 'somefile.php:5:64) -> call to A::loadPartial (src' . DIRECTORY_SEPARATOR . 'somefile.php:6:49) -> A::loadPartial#1 (src' . DIRECTORY_SEPARATOR . 'somefile.php:3:69) -> AChild::loadPartial#1 (src' . DIRECTORY_SEPARATOR . 'somefile.php:15:60) -> $sink (src' . DIRECTORY_SEPARATOR . 'somefile.php:15:67) -> call to PDO::exec (src' . DIRECTORY_SEPARATOR . 'somefile.php:16:44) -> PDO::exec#1',
             ],
             'taintedInputFromProperty' => [
                 'code' => '<?php
@@ -1893,27 +1893,27 @@ final class TaintTest extends TestCase
             'print' => [
                 'code' => '<?php
                     print($_GET["name"]);',
-                'error_message' => 'TaintedHtml - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:27 - Detected tainted HTML in path: $_GET -> $_GET[\'name\'] (src' . DIRECTORY_SEPARATOR . 'somefile.php:2:27) -> call to print (src' . DIRECTORY_SEPARATOR . 'somefile.php:2:27) -> print#1',
+                'error_message' => 'TaintedHtml - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:21 - Detected tainted HTML in path: $_GET (src' . DIRECTORY_SEPARATOR . 'somefile.php:2:27) -> $_GET[\'name\'] (src' . DIRECTORY_SEPARATOR . 'somefile.php:2:27) -> call to print (src' . DIRECTORY_SEPARATOR . 'somefile.php:2:27) -> builtin print#1',
             ],
             'printf' => [
                 'code' => '<?php
                     printf($_GET["name"]);',
-                'error_message' => 'TaintedHtml - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:28 - Detected tainted HTML in path: $_GET -> $_GET[\'name\'] (src' . DIRECTORY_SEPARATOR . 'somefile.php:2:28) -> call to printf (src' . DIRECTORY_SEPARATOR . 'somefile.php:2:28) -> printf#1',
+                'error_message' => 'TaintedHtml - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:28 - Detected tainted HTML in path: $_GET (src' . DIRECTORY_SEPARATOR . 'somefile.php:2:28) -> $_GET[\'name\'] (src' . DIRECTORY_SEPARATOR . 'somefile.php:2:28) -> call to printf (src' . DIRECTORY_SEPARATOR . 'somefile.php:2:28) -> printf#1',
             ],
             'print_r' => [
                 'code' => '<?php
                     print_r($_GET["name"]);',
-                'error_message' => 'TaintedHtml - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:29 - Detected tainted HTML in path: $_GET -> $_GET[\'name\'] (src' . DIRECTORY_SEPARATOR . 'somefile.php:2:29) -> call to print_r (src' . DIRECTORY_SEPARATOR . 'somefile.php:2:29) -> print_r#1',
+                'error_message' => 'TaintedHtml - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:29 - Detected tainted HTML in path: $_GET (src' . DIRECTORY_SEPARATOR . 'somefile.php:2:29) -> $_GET[\'name\'] (src' . DIRECTORY_SEPARATOR . 'somefile.php:2:29) -> call to print_r (src' . DIRECTORY_SEPARATOR . 'somefile.php:2:29) -> print_r#1',
             ],
             'var_dump' => [
                 'code' => '<?php
                     var_dump($_GET["name"]);',
-                'error_message' => 'TaintedHtml - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:30 - Detected tainted HTML in path: $_GET -> $_GET[\'name\'] (src' . DIRECTORY_SEPARATOR . 'somefile.php:2:30) -> call to var_dump (src' . DIRECTORY_SEPARATOR . 'somefile.php:2:30) -> var_dump#1',
+                'error_message' => 'TaintedHtml - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:30 - Detected tainted HTML in path: $_GET (src' . DIRECTORY_SEPARATOR . 'somefile.php:2:30) -> $_GET[\'name\'] (src' . DIRECTORY_SEPARATOR . 'somefile.php:2:30) -> call to var_dump (src' . DIRECTORY_SEPARATOR . 'somefile.php:2:30) -> var_dump#1',
             ],
             'var_export' => [
                 'code' => '<?php
                     var_export($_GET["name"]);',
-                'error_message' => 'TaintedHtml - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:32 - Detected tainted HTML in path: $_GET -> $_GET[\'name\'] (src' . DIRECTORY_SEPARATOR . 'somefile.php:2:32) -> call to var_export (src' . DIRECTORY_SEPARATOR . 'somefile.php:2:32) -> var_export#1',
+                'error_message' => 'TaintedHtml - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:32 - Detected tainted HTML in path: $_GET (src' . DIRECTORY_SEPARATOR . 'somefile.php:2:32) -> $_GET[\'name\'] (src' . DIRECTORY_SEPARATOR . 'somefile.php:2:32) -> call to var_export (src' . DIRECTORY_SEPARATOR . 'somefile.php:2:32) -> var_export#1',
             ],
             'unpackArgs' => [
                 'code' => '<?php
