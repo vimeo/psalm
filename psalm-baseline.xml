@@ -1536,12 +1536,6 @@
       <code><![CDATA[$calling_fq_class_name]]></code>
       <code><![CDATA[$calling_fq_class_name]]></code>
       <code><![CDATA[$calling_fq_class_name]]></code>
-      <code><![CDATA[$calling_fq_class_name]]></code>
-      <code><![CDATA[$calling_fq_class_name]]></code>
-      <code><![CDATA[$calling_fq_class_name]]></code>
-      <code><![CDATA[$calling_method_id]]></code>
-      <code><![CDATA[$calling_method_id]]></code>
-      <code><![CDATA[$calling_method_id]]></code>
       <code><![CDATA[$calling_method_id]]></code>
       <code><![CDATA[$calling_method_id]]></code>
       <code><![CDATA[$file_path]]></code>
@@ -1603,23 +1597,8 @@
       <code><![CDATA[!$calling_class_name]]></code>
       <code><![CDATA[!$extends]]></code>
       <code><![CDATA[$calling_method_id]]></code>
-      <code><![CDATA[$calling_method_id]]></code>
-      <code><![CDATA[$calling_method_id]]></code>
-      <code><![CDATA[$calling_method_id]]></code>
-      <code><![CDATA[$calling_method_id]]></code>
-      <code><![CDATA[$calling_method_id]]></code>
-      <code><![CDATA[$calling_method_id]]></code>
-      <code><![CDATA[$calling_method_id]]></code>
-      <code><![CDATA[$calling_method_id]]></code>
       <code><![CDATA[$found_generic_params]]></code>
       <code><![CDATA[$old_method_id]]></code>
-      <code><![CDATA[$source_file_path]]></code>
-      <code><![CDATA[$source_file_path]]></code>
-      <code><![CDATA[$source_file_path]]></code>
-      <code><![CDATA[$source_file_path]]></code>
-      <code><![CDATA[$source_file_path]]></code>
-      <code><![CDATA[$source_file_path]]></code>
-      <code><![CDATA[$source_file_path]]></code>
       <code><![CDATA[$source_file_path]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
@@ -2762,12 +2741,6 @@
       <code><![CDATA[ini_get('xdebug.file_link_format') ?: get_cfg_var('xdebug.file_link_format')]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
-  <file src="src/Psalm/Report/TableReport.php">
-    <ImmutableDependency>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[Report]]></code>
-    </ImmutableDependency>
-  </file>
   <file src="src/Psalm/Report/ConsoleReport.php">
     <PossiblyInvalidArgument>
       <code><![CDATA[$this->link_format]]></code>
@@ -2799,6 +2772,12 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Report/SarifReport.php">
+    <ImmutableDependency>
+      <code><![CDATA[#[Override]]]></code>
+      <code><![CDATA[Report]]></code>
+    </ImmutableDependency>
+  </file>
+  <file src="src/Psalm/Report/TableReport.php">
     <ImmutableDependency>
       <code><![CDATA[#[Override]]]></code>
       <code><![CDATA[Report]]></code>

@@ -98,7 +98,7 @@ final class FileReferenceTest extends TestCase
 
         /**
          * @psalm-suppress MixedAssignment
-         * @psalm-mutation-free
+         * @psalm-pure
          */
         $ksort_recursive = function (array &$arr) use (&$ksort_recursive): void {
             ksort($arr);
@@ -452,6 +452,9 @@ final class FileReferenceTest extends TestCase
                         'class ns\\c' => true,
                     ],
                     'func ns\\a::foo' => [
+                        'func ns\\c::bar' => true,
+                    ],
+                    'use-alias use:A:d7863b8594fe57f85cb8183fe55a6c15' => [
                         'func ns\\c::bar' => true,
                     ],
                 ],
