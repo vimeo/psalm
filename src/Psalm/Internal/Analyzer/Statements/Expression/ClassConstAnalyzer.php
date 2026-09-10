@@ -328,7 +328,7 @@ final class ClassConstAnalyzer
             if ($context->calling_method_id) {
                 $codebase->addReferenceToClassConstant(
                     $fq_class_name_lc,
-                    strtolower($stmt->name->name),
+                    $stmt->name->name,
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                     $context,
                 );
@@ -633,7 +633,7 @@ final class ClassConstAnalyzer
             if ($context->calling_method_id) {
                 $codebase->addReferenceToClassConstant(
                     strtolower($fq_class_name),
-                    strtolower($stmt->name->name),
+                    $stmt->name->name,
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                     $context,
                 );

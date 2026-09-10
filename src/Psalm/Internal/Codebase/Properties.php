@@ -8,7 +8,6 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
-use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\PropertyExistenceProvider;
 use Psalm\Internal\Provider\PropertyTypeProvider;
 use Psalm\Internal\Provider\PropertyVisibilityProvider;
@@ -28,8 +27,6 @@ use function strtolower;
  */
 final class Properties
 {
-    public bool $collect_locations = false;
-
     public PropertyExistenceProvider $property_existence_provider;
 
     public PropertyTypeProvider $property_type_provider;
@@ -39,7 +36,6 @@ final class Properties
 
     public function __construct(
         private readonly ClassLikeStorageProvider $classlike_storage_provider,
-        public FileReferenceProvider $file_reference_provider,
         private readonly ClassLikes $classlikes,
     ) {
         $this->property_existence_provider = new PropertyExistenceProvider();
@@ -91,7 +87,7 @@ final class Properties
             && !$context->collect_initializations
             && !$context->collect_mutations
         ) {
-            $codebase->addReferenceToClass($fq_class_name_lc, $code_location, $context);
+            $codebase->addReferenceToClass($fq_class_name_lc, $code_location, $context, $source->getFilePath());
         }
 
         if (isset($class_storage->declaring_property_ids[$property_name])) {
@@ -103,6 +99,7 @@ final class Properties
                 $read_mode,
                 $code_location,
                 $context,
+                $source?->getFilePath(),
             );
 
             return true;
@@ -113,6 +110,7 @@ final class Properties
             $property_name,
             $code_location,
             $context,
+            $source?->getFilePath(),
         );
         return false;
     }

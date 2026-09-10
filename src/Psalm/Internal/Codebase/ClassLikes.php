@@ -45,6 +45,7 @@ use Psalm\Progress\VoidProgress;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassConstantStorage;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\MethodStorage;
 use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\Atomic\TEnumCase;
@@ -139,10 +140,6 @@ final class ClassLikes
      * @var array<string, PhpParser\Node\Stmt\Trait_>
      */
     private array $trait_nodes = [];
-
-    public bool $collect_references = false;
-
-    public bool $collect_locations = false;
 
     public function __construct(
         private readonly Config $config,
@@ -360,10 +357,10 @@ final class ClassLikes
             return false;
         }
 
-        ProjectAnalyzer::getInstance()->getCodebase()->addReferenceToClass(
-            $fq_class_name_lc,
-            $location,
+        $this->file_reference_provider->code_use_graph->addReference(
+            CodeUseGraph::classNode($fq_class_name_lc),
             $context,
+            $location,
         );
 
         return true;
@@ -377,8 +374,6 @@ final class ClassLikes
         ?CodeLocation $location = null,
         ?Context $context = null,
     ): bool {
-        $calling_fq_class_name = $context?->self;
-        $calling_method_id = $context?->calling_method_id;
         $fq_class_name_lc = strtolower($this->getUnAliasedName($fq_class_name));
 
         // fixme: this looks like a crazy caching hack
@@ -404,10 +399,10 @@ final class ClassLikes
             return false;
         }
 
-        ProjectAnalyzer::getInstance()->getCodebase()->addReferenceToClass(
-            $fq_class_name_lc,
-            $location,
+        $this->file_reference_provider->code_use_graph->addReference(
+            CodeUseGraph::classNode($fq_class_name_lc),
             $context,
+            $location,
         );
 
         return true;
@@ -421,8 +416,6 @@ final class ClassLikes
         ?CodeLocation $location = null,
         ?Context $context = null,
     ): bool {
-        $calling_fq_class_name = $context?->self;
-        $calling_method_id = $context?->calling_method_id;
         $fq_class_name_lc = strtolower($this->getUnAliasedName($fq_class_name));
 
         // fixme: this looks like a crazy caching hack
@@ -448,10 +441,10 @@ final class ClassLikes
             return false;
         }
 
-        ProjectAnalyzer::getInstance()->getCodebase()->addReferenceToClass(
-            $fq_class_name_lc,
-            $location,
+        $this->file_reference_provider->code_use_graph->addReference(
+            CodeUseGraph::classNode($fq_class_name_lc),
             $context,
+            $location,
         );
 
         return true;
@@ -473,10 +466,10 @@ final class ClassLikes
             return false;
         }
 
-        ProjectAnalyzer::getInstance()->getCodebase()->addReferenceToClass(
-            $fq_class_name_lc,
-            $location,
+        $this->file_reference_provider->code_use_graph->addReference(
+            CodeUseGraph::classNode($fq_class_name_lc),
             $context,
+            $location,
         );
 
         return true;
@@ -808,34 +801,144 @@ final class ClassLikes
         $project_analyzer = ProjectAnalyzer::getInstance();
         $codebase = $project_analyzer->getCodebase();
 
-        if ($codebase->code_use_graph) {
-            foreach ($this->existing_classlikes_lc as $fq_class_name_lc => $_) {
-                try {
-                    $classlike_storage = $this->classlike_storage_provider->get($fq_class_name_lc);
-                } catch (InvalidArgumentException) {
-                    continue;
+        $code_use_graph = $codebase->code_use_graph;
+
+        // the class hierarchy and the public API may have changed since the graph was cached
+        $code_use_graph->removeEdgesOfTypes(CodeUseGraph::STRUCTURAL_EDGES);
+
+        foreach ($this->existing_classlikes_lc as $fq_class_name_lc => $_) {
+            try {
+                $classlike_storage = $this->classlike_storage_provider->get($fq_class_name_lc);
+            } catch (InvalidArgumentException) {
+                continue;
+            }
+
+            if (!$classlike_storage->location
+                || !$this->config->isInProjectDirs($classlike_storage->location->file_path)
+            ) {
+                continue;
+            }
+
+            $class_node = CodeUseGraph::classNode($fq_class_name_lc);
+
+            if ($classlike_storage->public_api
+                || (!$classlike_storage->is_trait && self::isUnusedClassIssueSuppressed($classlike_storage))
+            ) {
+                $code_use_graph->markAsPublicApi($class_node);
+            }
+
+            foreach ($classlike_storage->methods as $method_name => $method_storage) {
+                $method_node = CodeUseGraph::functionLikeNode($fq_class_name_lc . '::' . $method_name);
+
+                // a used method means its class is used
+                $code_use_graph->addEdge($method_node, $class_node, CodeUseGraph::EDGE_METHOD);
+
+                if ($method_storage->public_api
+                    || ($classlike_storage->public_api
+                        && ($method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC
+                            || ($method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PROTECTED
+                                && !$classlike_storage->final)))
+                    || $this->isUnusedMethodIssueSuppressed($classlike_storage, $method_name, $method_storage)
+                ) {
+                    $code_use_graph->markAsPublicApi($method_node);
+                }
+            }
+        }
+
+        foreach ($this->existing_classlikes_lc as $fq_class_name_lc => $_) {
+            try {
+                $classlike_storage = $this->classlike_storage_provider->get($fq_class_name_lc);
+            } catch (InvalidArgumentException) {
+                continue;
+            }
+
+            if (!$classlike_storage->location
+                || !$this->config->isInProjectDirs($classlike_storage->location->file_path)
+            ) {
+                continue;
+            }
+
+            $class_node = CodeUseGraph::classNode($fq_class_name_lc);
+
+            // calls to an overridden parent or interface method may end up in the overriding method
+            foreach ($classlike_storage->declaring_method_ids as $method_name => $declaring_method_id) {
+                $method_id_lc = strtolower((string) $declaring_method_id);
+                $method_node = CodeUseGraph::functionLikeNode($method_id_lc);
+                $return_node = CodeUseGraph::functionLikeReturnNode($method_id_lc);
+
+                $code_use_graph->addEdge($return_node, $method_node, CodeUseGraph::EDGE_RETURN);
+
+                $appearing_method_id = $classlike_storage->appearing_method_ids[$method_name] ?? null;
+
+                if ($appearing_method_id !== null
+                    && strtolower($appearing_method_id->fq_class_name) === $fq_class_name_lc
+                    && strtolower($declaring_method_id->fq_class_name) !== $fq_class_name_lc
+                ) {
+                    // a trait method is analysed (and records its references) once per using class,
+                    // as `UsingClass::method`, while calls resolve to the declaring `Trait::method`
+                    $appearing_method_id_lc = $fq_class_name_lc . '::' . $method_name;
+                    $appearing_method_node = CodeUseGraph::functionLikeNode($appearing_method_id_lc);
+                    $appearing_return_node = CodeUseGraph::functionLikeReturnNode($appearing_method_id_lc);
+
+                    $code_use_graph->addEdge($appearing_return_node, $appearing_method_node, CodeUseGraph::EDGE_RETURN);
+                    $code_use_graph->addEdge($appearing_method_node, $class_node, CodeUseGraph::EDGE_METHOD);
+                    $code_use_graph->addEdge($method_node, $appearing_method_node, CodeUseGraph::EDGE_OVERRIDE);
+                    $code_use_graph->addEdge($return_node, $appearing_return_node, CodeUseGraph::EDGE_OVERRIDE);
                 }
 
-                if ($classlike_storage->location
-                    && $this->config->isInProjectDirs($classlike_storage->location->file_path)
-                ) {
-                    $classNode = $codebase->code_use_graph->getNodeForClass($fq_class_name_lc);
-                    if ($classlike_storage->public_api) {
-                        $codebase->code_use_graph->markAsPublicApi($classNode);
-                    }
-                    foreach ($classlike_storage->methods as $method_name => $method_storage) {
-                        $node = $codebase->code_use_graph->getNodeForFunctionLike($method_name);
-                        $node->addMutationLevel($method_storage->allowed_mutations);
-                        $codebase->code_use_graph->addPath($node, $classNode, 'method');
-                        if ($classlike_storage->public_api || $method_storage->public_api) {
-                            $codebase->code_use_graph->markAsPublicApi($node);
+                $parent_method_ids = $classlike_storage->overridden_method_ids[$method_name] ?? [];
+
+                foreach ($classlike_storage->class_implements as $fq_interface_name_lc => $_) {
+                    if (!isset($parent_method_ids[$fq_interface_name_lc])) {
+                        try {
+                            $interface_storage = $this->classlike_storage_provider->get($fq_interface_name_lc);
+                        } catch (InvalidArgumentException) {
+                            continue;
+                        }
+
+                        if (isset($interface_storage->methods[$method_name])) {
+                            $parent_method_ids[$fq_interface_name_lc] = new MethodIdentifier(
+                                $interface_storage->name,
+                                $method_name,
+                            );
                         }
                     }
                 }
+
+                foreach ($parent_method_ids as $parent_method_id) {
+                    $parent_method_id_lc = strtolower((string) $parent_method_id);
+
+                    $code_use_graph->addEdge(
+                        CodeUseGraph::functionLikeNode($parent_method_id_lc),
+                        $method_node,
+                        CodeUseGraph::EDGE_OVERRIDE,
+                    );
+                    $code_use_graph->addEdge(
+                        CodeUseGraph::functionLikeReturnNode($parent_method_id_lc),
+                        $return_node,
+                        CodeUseGraph::EDGE_OVERRIDE,
+                    );
+                }
+            }
+        }
+
+        $code_use_graph->resolve(function (string $node_id): bool {
+            $owner_class = CodeUseGraph::getOwnerClass($node_id);
+
+            if ($owner_class === null) {
+                return false;
             }
 
-            $codebase->code_use_graph->resolve();
-        }
+            try {
+                $owner_storage = $this->classlike_storage_provider->get($owner_class);
+            } catch (InvalidArgumentException) {
+                // unknown class, e.g. a caller made up by a plugin
+                return true;
+            }
+
+            return !$owner_storage->location
+                || !$this->config->isInProjectDirs($owner_storage->location->file_path);
+        });
 
         foreach ($this->existing_classlikes_lc as $fq_class_name_lc => $_) {
             try {
@@ -848,11 +951,13 @@ final class ClassLikes
             ) {
                 if (!$classlike_storage->is_trait) {
                     if ($find_unused_code) {
-                        $class_referenced = $codebase->code_use_graph?->isUsed(
-                            $codebase->code_use_graph->getNodeForClass($fq_class_name_lc, true),
-                        ) ?? false;
+                        $class_node = CodeUseGraph::classNode($fq_class_name_lc);
 
-                        if ($class_referenced) {
+                        // a class that is only alive because it can't be reported as unused
+                        // (or because of its own methods) still has its members unchecked
+                        if ($code_use_graph->isUsed($class_node)
+                            && ($classlike_storage->public_api || $code_use_graph->isReferenced($class_node))
+                        ) {
                             $this->checkMethodReferences($classlike_storage, $methods);
                             $this->checkPropertyReferences($classlike_storage);
                         } else {
@@ -954,6 +1059,61 @@ final class ClassLikes
     }
 
     /**
+     * Whether a class could never be reported as unused, because the
+     * corresponding issue is suppressed for it (in the config or with a
+     * docblock): such a class is an entry point of the program as far as
+     * unused code detection is concerned.
+     *
+     * The suppression is marked as used, as it would be if the issue were reported.
+     */
+    private static function isUnusedClassIssueSuppressed(ClassLikeStorage $classlike_storage): bool
+    {
+        if ($classlike_storage->location === null) {
+            return false;
+        }
+
+        return IssueBuffer::isSuppressed(
+            new UnusedClass(
+                'Class ' . $classlike_storage->name . ' is never used',
+                $classlike_storage->location,
+                $classlike_storage->name,
+            ),
+            $classlike_storage->suppressed_issues,
+        );
+    }
+
+    /**
+     * Whether a method could never be reported as unused, because the
+     * corresponding issue is suppressed for it (in the config or with a
+     * docblock): such a method is an entry point of the program as far as
+     * unused code detection is concerned, e.g. a plugin API only called by
+     * third-party code.
+     *
+     * The suppression is marked as used, as it would be if the issue were reported.
+     */
+    private static function isUnusedMethodIssueSuppressed(
+        ClassLikeStorage $classlike_storage,
+        string $method_name,
+        MethodStorage $method_storage,
+    ): bool {
+        if ($method_storage->location === null) {
+            return false;
+        }
+
+        $method_id = $classlike_storage->name . '::' . $method_storage->cased_name;
+
+        if ($method_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE) {
+            $issue = new PossiblyUnusedMethod('Unused method ' . $method_id, $method_storage->location, $method_id);
+        } elseif ($method_name === '__construct') {
+            $issue = new UnusedConstructor('Unused constructor ' . $method_id, $method_storage->location, $method_id);
+        } else {
+            $issue = new UnusedMethod('Unused method ' . $method_id, $method_storage->location, $method_id);
+        }
+
+        return IssueBuffer::isSuppressed($issue, $method_storage->suppressed_issues);
+    }
+
+    /**
      * @param Mutations::LEVEL_* $allowed_mutations
      */
     private static function makeImmutable(
@@ -974,7 +1134,8 @@ final class ClassLikes
             IssueBuffer::maybeAdd(
                 new MissingInterfaceImmutableAnnotation(
                     $storage->name
-                    . ' must be marked with either @psalm-pure, @psalm-immutable, @psalm-mutation-free, @psalm-external-mutation-free or @psalm-mutable to aid security analysis',
+                    . ' must be marked with either @psalm-pure, @psalm-immutable, @psalm-mutation-free,'
+                    . ' @psalm-external-mutation-free or @psalm-mutable to aid security analysis',
                     $storage->location,
                 ),
                 $storage->suppressed_issues,
@@ -1800,10 +1961,9 @@ final class ClassLikes
                 continue;
             }
 
-            $method_id_lc = strtolower((string) $method_id);
-            $method_referenced = $codebase->code_use_graph?->isUsed(
-                $codebase->code_use_graph?->getNodeForFunctionLike($method_id_lc, true),
-            ) ?? false;
+            $method_referenced = $codebase->code_use_graph->isUsed(
+                CodeUseGraph::functionLikeNode(strtolower((string) $method_id)),
+            );
 
             if (!$method_referenced
                 && $method_storage->location
@@ -1855,9 +2015,9 @@ final class ClassLikes
                                     break;
                                 }
 
-                                $parent_method_referenced = $codebase->code_use_graph?->isUsed(
-                                    $codebase->code_use_graph?->getNodeForFunctionLike(strtolower((string) $parent_method_id), true),
-                                ) ?? false;
+                                $parent_method_referenced = $codebase->code_use_graph->isUsed(
+                                    CodeUseGraph::functionLikeNode(strtolower((string) $parent_method_id)),
+                                );
 
                                 if (!$parent_method_storage->abstract || $parent_method_referenced) {
                                     $has_parent_references = true;
@@ -1889,10 +2049,9 @@ final class ClassLikes
                             }
 
                             if (isset($interface_storage->methods[$method_name])) {
-                                $interface_method_id = $fq_interface_name_lc . '::' . $method_name;
-                                $interface_method_referenced = $codebase->code_use_graph?->isUsed(
-                                    $codebase->code_use_graph?->getNodeForFunctionLike($interface_method_id, true),
-                                ) ?? false;
+                                $interface_method_referenced = $codebase->code_use_graph->isUsed(
+                                    CodeUseGraph::functionLikeNode($fq_interface_name_lc . '::' . $method_name),
+                                );
 
                                 if ($interface_method_referenced) {
                                     $has_parent_references = true;
@@ -1980,18 +2139,25 @@ final class ClassLikes
                     }
                 }
             } else {
-                if ($method_storage->return_type
+                // methods only reached through an overridden parent or interface method
+                // are called by code that doesn't know about them, so their return value
+                // is only checked when they're called directly
+                $directly_referenced = $codebase->code_use_graph->getReferencingNodes(
+                    CodeUseGraph::functionLikeNode(strtolower((string) $method_id)),
+                    CodeUseGraph::EDGE_USE,
+                ) !== [];
+
+                if ($directly_referenced
+                    && $method_storage->return_type
                     && $method_storage->return_type_location
                     && !$method_storage->return_type->isVoid()
                     && !$method_storage->return_type->isNever()
                     && $method_id->method_name !== '__tostring'
                     && ($method_storage->is_static || !$method_storage->probably_fluent)
                 ) {
-                    $method_return_id = strtolower((string) $method_id);
-                    $method_return_referenced =
-                        $codebase->code_use_graph?->isUsed(
-                            $codebase->code_use_graph?->getNodeForFunctionLikeReturn($method_return_id, true),
-                        ) ?? false;
+                    $method_return_referenced = $codebase->code_use_graph->isUsed(
+                        CodeUseGraph::functionLikeReturnNode(strtolower((string) $method_id)),
+                    );
 
                     if (!$method_return_referenced) {
                         if ($method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE) {
@@ -2219,32 +2385,22 @@ final class ClassLikes
                 continue;
             }
 
-            $referenced_property_name = strtolower($classlike_storage->name) . '::$' . $property_name;
-            $property_referenced = $codebase->code_use_graph?->isUsed(
-                $codebase->code_use_graph?->getNodeForProperty(
-                    strtolower($classlike_storage->name),
-                    $property_name,
-                    true,
-                    true,
-                ),
-            ) ?? false;
+            $property_node = CodeUseGraph::propertyNode(strtolower($classlike_storage->name), $property_name);
+            $property_referenced = $codebase->code_use_graph->isUsed($property_node);
 
             $property_constructor_referenced = false;
             if ($property_referenced && $property_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE) {
-                $property_references = $codebase->code_use_graph?->getReferences(
-                    $codebase->code_use_graph?->getNodeForProperty(
-                        strtolower($classlike_storage->name),
-                        $property_name,
-                        true,
-                    ),
-                ) ?? [];
+                $property_references = $codebase->code_use_graph->getReferencingNodes(
+                    $property_node,
+                    CodeUseGraph::EDGE_USE,
+                );
 
                 if (count($property_references) === 1) {
-                    $constructor_name = strtolower($classlike_storage->name) . '::__construct';
-                    $constructor_reference_id = 'func ' . $constructor_name;
+                    $constructor_node = CodeUseGraph::functionLikeNode(
+                        strtolower($classlike_storage->name) . '::__construct',
+                    );
 
-                    $property_constructor_referenced = (isset($property_references[$constructor_name])
-                            || isset($property_references[$constructor_reference_id]))
+                    $property_constructor_referenced = isset($property_references[$constructor_node])
                         && !$property_storage->is_static;
                 }
             }

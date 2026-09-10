@@ -113,6 +113,38 @@ final class TaintTest extends TestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'untaintedRecursiveFunction' => [
+                'code' => '<?php
+                    function f(string $s, int $depth): string {
+                        if ($depth > 0) {
+                            return f($s, $depth - 1);
+                        }
+
+                        return $s;
+                    }
+
+                    echo f("safe", (int) $_GET["depth"]);',
+            ],
+            'untaintedMutualRecursionWithSanitizer' => [
+                'code' => '<?php
+                    function a(string $s): string {
+                        if (rand(0, 1)) {
+                            return b($s);
+                        }
+
+                        return (string) (int) $s;
+                    }
+
+                    function b(string $s): string {
+                        if (rand(0, 1)) {
+                            return a($s);
+                        }
+
+                        return (string) (int) $s;
+                    }
+
+                    echo a((string) $_GET["a"]);',
+            ],
             'taintedInputInCreatedArrayNotEchoed' => [
                 'code' => '<?php
                     $name = $_GET["name"] ?? "unknown";
@@ -846,6 +878,108 @@ final class TaintTest extends TestCase
     public function providerInvalidCodeParse(): array
     {
         return [
+            'taintedInputThroughRecursiveFunction' => [
+                'code' => '<?php
+                    function f(string $s, int $depth): string {
+                        if ($depth > 0) {
+                            return f($s, $depth - 1);
+                        }
+
+                        return $s;
+                    }
+
+                    echo f((string) $_GET["a"], 3);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputThroughMutualRecursion' => [
+                'code' => '<?php
+                    function a(string $s): string {
+                        if (rand(0, 1)) {
+                            return b($s);
+                        }
+
+                        return $s;
+                    }
+
+                    function b(string $s): string {
+                        if (rand(0, 1)) {
+                            return a($s);
+                        }
+
+                        return $s;
+                    }
+
+                    echo a((string) $_GET["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputThroughRecursiveMethod' => [
+                'code' => '<?php
+                    final class A {
+                        public function f(string $s, int $depth): string {
+                            if ($depth > 0) {
+                                return $this->f($s, $depth - 1);
+                            }
+
+                            return $s;
+                        }
+                    }
+
+                    echo (new A)->f((string) $_GET["a"], 3);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputThroughRecursiveSpecializedMethod' => [
+                'code' => '<?php
+                    final class A {
+                        /** @psalm-taint-specialize */
+                        public function f(string $s, int $depth): string {
+                            if ($depth > 0) {
+                                return $this->f($s, $depth - 1);
+                            }
+
+                            return $s;
+                        }
+                    }
+
+                    echo (new A)->f((string) $_GET["a"], 3);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputThroughLoopReassignment' => [
+                'code' => '<?php
+                    function wrap(string $s): string {
+                        return "<" . $s . ">";
+                    }
+
+                    $s = (string) $_GET["a"];
+
+                    for ($i = 0; $i < 10; $i++) {
+                        $s = wrap($s);
+                    }
+
+                    echo $s;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputThroughRecursivePropertyCycle' => [
+                'code' => '<?php
+                    final class Node {
+                        public ?Node $next = null;
+                        public string $value = "";
+                    }
+
+                    $first = new Node();
+                    $first->value = (string) $_GET["a"];
+                    $second = new Node();
+                    $second->next = $first;
+                    $first->next = $second;
+
+                    $node = $first;
+
+                    while (rand(0, 1)) {
+                        $node = $node->next ?? $node;
+                    }
+
+                    echo $node->value;',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintedLlmPromptFromUserInput' => [
                 'code' => '<?php
                     class LlmAgent {

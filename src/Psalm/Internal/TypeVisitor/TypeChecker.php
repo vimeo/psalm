@@ -56,7 +56,6 @@ final class TypeChecker extends TypeVisitor
     /**
      * @param array<string>    $suppressed_issues
      * @param array<string, bool> $phantom_classes
-     * @param lowercase-string|null $calling_method_id
      * @psalm-mutation-free
      */
     public function __construct(
@@ -123,11 +122,11 @@ final class TypeChecker extends TypeVisitor
             );
         }
 
-        if ($this->context?->calling_method_id
+        if ($this->context?->calling_method_id !== null
             && $atomic->text !== null
         ) {
             $codebase->addReferenceToClass(
-                $atomic->value,
+                strtolower($atomic->value),
                 $this->code_location,
                 $this->context,
             );

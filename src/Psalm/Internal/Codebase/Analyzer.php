@@ -80,7 +80,7 @@ use const PHP_INT_MAX;
  *      analyzed_methods: array<string, array<string, int>>,
  *      file_maps: array<string, FileMapType>,
  *      possible_method_param_types: array<string, array<int, Union>>,
- *      code_use_data: ?CodeUseGraph,
+ *      code_use_data: CodeUseGraph,
  *      taint_data: ?TaintFlowGraph,
  *      unused_suppressions: array<string, array<int, int>>,
  *      used_suppressions: array<string, array<int, bool>>,
@@ -251,6 +251,8 @@ final class Analyzer
             $codebase->taint_flow_graph->connectSinksAndSources($codebase->progress);
         }
 
+        MutationLevelResolver::resolve($project_analyzer);
+
         $this->progress->finish();
 
         if ($consolidate_analyzed_data) {
@@ -344,9 +346,7 @@ final class Analyzer
                     $codebase->taint_flow_graph->addGraph($pool_data['taint_data']);
                 }
 
-                if ($pool_data['code_use_data']) {
-                    $codebase->code_use_graph?->addGraph($pool_data['code_use_data']);
-                }
+                $codebase->code_use_graph->addGraph($pool_data['code_use_data']);
 
                 $codebase->file_reference_provider->addMethodDependencies(
                     $pool_data['method_dependencies'],
@@ -418,9 +418,6 @@ final class Analyzer
         }
     }
 
-    /**
-     * @psalm-suppress ComplexMethod
-     */
     public function loadCachedResults(ProjectAnalyzer $project_analyzer): void
     {
         $codebase = $project_analyzer->getCodebase();
@@ -441,9 +438,15 @@ final class Analyzer
             }
         }
 
+        $code_use_graph = $codebase->code_use_graph;
+
         $method_dependencies = $file_reference_provider->getAllMethodDependencies();
 
         $all_referencing_methods = $method_dependencies;
+
+        foreach ($code_use_graph->getFunctionLikeReferencesToMembers() as $member_id => $referencing_methods) {
+            $all_referencing_methods[$member_id] = ($all_referencing_methods[$member_id] ?? []) + $referencing_methods;
+        }
 
         $method_param_uses = $file_reference_provider->getAllMethodParamUses();
 
@@ -550,9 +553,13 @@ final class Analyzer
                     $newly_invalidated_methods[$method_referencing_deleted] = true;
                 }
             }
+
+            $code_use_graph->removeReferencesFromFile($deleted_file);
         }
 
         foreach ($newly_invalidated_methods as $method_id => $_) {
+            $code_use_graph->removeReferencesFrom(CodeUseGraph::functionLikeNode(strtolower($method_id)));
+
             foreach ($method_dependencies as $i => $_) {
                 unset($method_dependencies[$i][$method_id]);
             }
@@ -601,6 +608,8 @@ final class Analyzer
             foreach ($references_to_mixed_member_names as $i => $_) {
                 unset($references_to_mixed_member_names[$i][$file_path]);
             }
+
+            $this->removeCodeUseReferencesForFile($codebase, $file_path);
         }
 
         foreach ($this->existing_issues as $file_path => $issues) {
@@ -637,6 +646,58 @@ final class Analyzer
         $file_reference_provider->setMethodParamUses(
             $method_param_uses,
         );
+    }
+
+    /**
+     * Drops the references recorded by the code of a file that is about to be
+     * (re-)analysed, except the references of methods whose cached analysis
+     * is still valid and which will therefore be skipped.
+     *
+     * @psalm-external-mutation-free
+     */
+    private function removeCodeUseReferencesForFile(Codebase $codebase, string $file_path): void
+    {
+        $code_use_graph = $codebase->code_use_graph;
+
+        $keep_nodes = [];
+
+        foreach ($this->analyzed_methods[$file_path] ?? [] as $trait_safe_method_id => $_) {
+            $keep_nodes[CodeUseGraph::functionLikeNode(strtolower(explode('&', $trait_safe_method_id)[0]))] = true;
+        }
+
+        $code_use_graph->removeReferencesFromFile($file_path, $keep_nodes);
+
+        try {
+            $file_storage = $codebase->file_storage_provider->get($file_path);
+        } catch (InvalidArgumentException) {
+            return;
+        }
+
+        foreach ($file_storage->classlikes_in_file as $fq_class_name_lc => $_) {
+            $code_use_graph->removeReferencesFrom(CodeUseGraph::classNode($fq_class_name_lc));
+
+            try {
+                $classlike_storage = $codebase->classlike_storage_provider->get($fq_class_name_lc);
+            } catch (InvalidArgumentException) {
+                continue;
+            }
+
+            foreach ($classlike_storage->appearing_method_ids as $appearing_method_id) {
+                if (strtolower($appearing_method_id->fq_class_name) !== $fq_class_name_lc) {
+                    continue;
+                }
+
+                $method_node = CodeUseGraph::functionLikeNode(strtolower((string) $appearing_method_id));
+
+                if (!isset($keep_nodes[$method_node])) {
+                    $code_use_graph->removeReferencesFrom($method_node);
+                }
+            }
+        }
+
+        foreach ($file_storage->functions as $function_id => $_) {
+            $code_use_graph->removeReferencesFrom(CodeUseGraph::functionLikeNode(strtolower($function_id)));
+        }
     }
 
     public function shiftFileOffsets(StatementsProvider $statements_provider): void

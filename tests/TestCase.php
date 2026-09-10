@@ -10,6 +10,7 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Codebase\MutationLevelResolver;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
@@ -158,6 +159,8 @@ class TestCase extends BaseTestCase
         if ($codebase->taint_flow_graph) {
             $codebase->taint_flow_graph->connectSinksAndSources($codebase->progress);
         }
+
+        MutationLevelResolver::resolve($this->project_analyzer);
 
         if ($track_unused_suppressions) {
             IssueBuffer::processUnusedSuppressions($codebase->file_provider);

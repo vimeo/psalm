@@ -185,6 +185,100 @@ final class UnusedCodeTest extends TestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'usedMethodsCallingEachOther' => [
+                'code' => '<?php
+                    final class A {
+                        public function foo(): void {
+                            $this->bar();
+                        }
+
+                        public function bar(): void {
+                            $this->foo();
+                        }
+                    }
+
+                    (new A)->foo();',
+            ],
+            'usedClassesReferencingEachOther' => [
+                'code' => '<?php
+                    final class A {
+                        public function foo(): B {
+                            return new B();
+                        }
+                    }
+
+                    final class B {
+                        public function bar(): A {
+                            return new A();
+                        }
+                    }
+
+                    (new A)->foo()->bar()->foo();',
+            ],
+            'traitMethodReferencesAreAttributedToUsingClass' => [
+                'code' => '<?php
+                    final class Helper {
+                        public function help(): void {}
+                    }
+
+                    trait T {
+                        public function run(): void {
+                            (new Helper)->help();
+                        }
+                    }
+
+                    final class A {
+                        use T;
+                    }
+
+                    (new A)->run();',
+            ],
+            'suppressedUnusedClassIsAnEntryPoint' => [
+                'code' => '<?php
+                    interface Entry {
+                        public function __invoke(): void;
+                    }
+
+                    final class Hook {
+                        public function fire(): void {}
+                    }
+
+                    /** @psalm-suppress UnusedClass */
+                    final class Plugin implements Entry {
+                        public function __invoke(): void {
+                            (new Hook)->fire();
+                        }
+                    }
+
+                    function load(Entry $entry): void {
+                        $entry();
+                    }',
+            ],
+            'suppressedUnusedMethodIsAnEntryPoint' => [
+                'code' => '<?php
+                    final class Hook {
+                        public function fire(): void {}
+                    }
+
+                    final class A {
+                        /** @psalm-suppress PossiblyUnusedMethod */
+                        public function api(): void {
+                            (new Hook)->fire();
+                        }
+                    }
+
+                    new A();',
+            ],
+            'usedMethodCalledFromFunction' => [
+                'code' => '<?php
+                    final class A {
+                        public function foo(): void {}
+                    }
+
+                    function bar(): void {
+                        (new A)->foo();
+                    }',
+            ],
             'nonFinalClassWithChildren' => [
                 'code' => '<?php
                     class a {}
@@ -1412,6 +1506,89 @@ final class UnusedCodeTest extends TestCase
                     final class A { }',
                 'error_message' => 'UnusedClass',
             ],
+            'unusedClassesReferencingEachOther' => [
+                'code' => '<?php
+                    final class A {
+                        public function foo(): B {
+                            return new B();
+                        }
+                    }
+
+                    final class B {
+                        public function bar(): A {
+                            return new A();
+                        }
+                    }',
+                'error_message' => 'UnusedClass',
+            ],
+            'unusedMethodsCallingEachOther' => [
+                'code' => '<?php
+                    final class A {
+                        public function foo(): void {
+                            $this->bar();
+                        }
+
+                        public function bar(): void {
+                            $this->foo();
+                        }
+                    }
+
+                    new A();',
+                'error_message' => 'PossiblyUnusedMethod',
+            ],
+            'unusedPrivateMethodsCallingEachOther' => [
+                'code' => '<?php
+                    final class A {
+                        private function foo(): void {
+                            $this->bar();
+                        }
+
+                        private function bar(): void {
+                            $this->foo();
+                        }
+                    }
+
+                    new A();',
+                'error_message' => 'UnusedMethod',
+            ],
+            'unusedMethodOnlyReachedThroughUnusedImplementation' => [
+                'code' => '<?php
+                    interface Entry {
+                        public function __invoke(): void;
+                    }
+
+                    final class Hook {
+                        public function fire(): void {}
+                    }
+
+                    final class Plugin implements Entry {
+                        public function __invoke(): void {
+                            (new Hook)->fire();
+                        }
+                    }
+
+                    function load(Entry $entry): void {
+                        $entry();
+                    }
+
+                    new Hook();',
+                'error_message' => 'PossiblyUnusedMethod - src/somefile.php:7:41',
+            ],
+            'unusedMethodCalledOnlyFromUnusedClass' => [
+                'code' => '<?php
+                    final class A {
+                        public function foo(): void {}
+                    }
+
+                    final class B {
+                        public function __construct() {
+                            (new A)->foo();
+                        }
+                    }
+
+                    new A();',
+                'error_message' => 'PossiblyUnusedMethod - src/somefile.php:3:41',
+            ],
             'publicUnusedMethod' => [
                 'code' => '<?php
                     final class A {
@@ -1523,7 +1700,7 @@ final class UnusedCodeTest extends TestCase
                     takesA(new B);',
                 'error_message' => 'PossiblyUnusedMethod',
             ],
-            'SKIPPED-unusedRecursivelyUsedMethodIndirect' => [
+            'unusedRecursivelyUsedMethodIndirect' => [
                 'code' => '<?php
                     final class C {
                         public function foo(int $v) : void {

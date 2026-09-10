@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="dev-master@cf404b51daf81d79198a029f7b2c7f64d28ae68e">
+<files psalm-version="dev-master@dc8d0201ba3543d2a1ee059fcf5591ce3bfa9477">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$comment_block->tags['variablesfrom'][0]]]></code>
@@ -1527,7 +1527,6 @@
       <code><![CDATA[$stub]]></code>
     </PossiblyUndefinedIntArrayOffset>
     <RiskyTruthyFalsyComparison>
-      <code><![CDATA[!$calling_fq_class_name]]></code>
       <code><![CDATA[!$insert_pos]]></code>
       <code><![CDATA[!$insert_pos]]></code>
       <code><![CDATA[!$insert_pos]]></code>
@@ -1645,11 +1644,6 @@
       <code><![CDATA[$property_name]]></code>
       <code><![CDATA[$property_name]]></code>
     </PossiblyUndefinedIntArrayOffset>
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[$context->calling_method_id]]></code>
-      <code><![CDATA[$context->calling_method_id]]></code>
-      <code><![CDATA[$context->calling_method_id]]></code>
-    </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Codebase/Scanner.php">
     <RiskyTruthyFalsyComparison>
@@ -2121,13 +2115,7 @@
   <file src="src/Psalm/Internal/Provider/FileReferenceProvider.php">
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$this->cache->getFileMapCache()]]></code>
-      <code><![CDATA[empty(self::$file_references_to_class_members[$method_id])]]></code>
-      <code><![CDATA[empty(self::$file_references_to_class_properties[$property_id])]]></code>
-      <code><![CDATA[empty(self::$file_references_to_method_returns[$method_id])]]></code>
       <code><![CDATA[empty(self::$method_param_uses[$method_id][$offset])]]></code>
-      <code><![CDATA[empty(self::$method_references_to_class_members[$method_id])]]></code>
-      <code><![CDATA[empty(self::$method_references_to_class_properties[$property_id])]]></code>
-      <code><![CDATA[empty(self::$method_references_to_method_returns[$method_id])]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Provider/FileStorageCacheProvider.php">
@@ -2527,7 +2515,6 @@
       <code><![CDATA[!$fq_classlike_name]]></code>
       <code><![CDATA[$class_storage->template_types]]></code>
       <code><![CDATA[$class_storage->template_types]]></code>
-      <code><![CDATA[$this->calling_method_id]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/TypeVisitor/TypeScanner.php">

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\FileManipulation;
 
 use PhpParser;
+use PhpParser\Node;
 use PhpParser\Node\Expr\ArrowFunction;
 use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\FunctionLike;
@@ -93,10 +94,15 @@ final class FunctionDocblockManipulator
     /**
      * @param  Closure|Function_|ClassMethod|ArrowFunction $stmt
      */
+    /**
+     * @param ?Node $docblock_anchor the node the docblock belongs to, when it's not the
+     *        function-like itself (e.g. the statement a closure is assigned in)
+     */
     public static function getForFunction(
         ProjectAnalyzer $project_analyzer,
         string $file_path,
         FunctionLike $stmt,
+        ?Node $docblock_anchor = null,
     ): FunctionDocblockManipulator {
         if (isset(self::$manipulators[$file_path][$stmt->getLine()])) {
             return self::$manipulators[$file_path][$stmt->getLine()];
@@ -104,7 +110,7 @@ final class FunctionDocblockManipulator
 
         $manipulator
             = self::$manipulators[$file_path][$stmt->getLine()]
-            = new self($file_path, $stmt, $project_analyzer);
+            = new self($file_path, $stmt, $project_analyzer, $docblock_anchor);
 
         return $manipulator;
     }
@@ -113,10 +119,15 @@ final class FunctionDocblockManipulator
         string $file_path,
         private readonly Closure|Function_|ClassMethod|ArrowFunction $stmt,
         ProjectAnalyzer $project_analyzer,
+        ?Node $docblock_anchor = null,
     ) {
-        $docblock = $stmt->getDocComment();
-        $this->docblock_start = $docblock ? $docblock->getStartFilePos() : (int)$stmt->getAttribute('startFilePos');
-        $this->docblock_end = $function_start = (int)$stmt->getAttribute('startFilePos');
+        $docblock_anchor ??= $stmt;
+        $docblock = $docblock_anchor->getDocComment();
+        $this->docblock_start = $docblock
+            ? $docblock->getStartFilePos()
+            : (int)$docblock_anchor->getAttribute('startFilePos');
+        $this->docblock_end = (int)$docblock_anchor->getAttribute('startFilePos');
+        $function_start = (int)$stmt->getAttribute('startFilePos');
         $function_end = (int)$stmt->getAttribute('endFilePos');
 
         $attributes = $stmt->getAttrGroups();
