@@ -44,6 +44,7 @@ use function end;
 use function explode;
 use function in_array;
 use function is_string;
+use function preg_match;
 use function reset;
 use function spl_object_id;
 use function strpos;
@@ -192,10 +193,22 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                     return null;
                 }
             } elseif ($node instanceof PhpParser\Node\Stmt\Expression) {
-                // the docblock of `$f = function () {}` describes the closure
                 $doc_comment = $node->getDocComment();
-                /** @var PhpParser\Node\FunctionLike */
-                $node = $node->expr instanceof PhpParser\Node\Expr\Assign ? $node->expr->expr : $node->expr;
+
+                if ($node->expr instanceof PhpParser\Node\Expr\Assign) {
+                    // the docblock of `$f = function () {}` describes the closure,
+                    // unless it types the assigned variable
+                    if ($doc_comment !== null && preg_match('/@(?:psalm-)?var\b/', $doc_comment->getText())) {
+                        $doc_comment = null;
+                    }
+
+                    /** @var PhpParser\Node\FunctionLike */
+                    $node = $node->expr->expr;
+                } else {
+                    /** @var PhpParser\Node\FunctionLike */
+                    $node = $node->expr;
+                }
+
                 $this->closure_statements->offsetSet($node);
             } elseif ($node instanceof PhpParser\Node\Arg || $node instanceof PhpParser\Node\ArrayItem) {
                 $doc_comment = $node->getDocComment();

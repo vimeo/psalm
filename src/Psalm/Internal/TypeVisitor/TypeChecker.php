@@ -130,6 +130,12 @@ final class TypeChecker extends TypeVisitor
                 $this->code_location,
                 $this->context,
             );
+            // the type was written using an import alias: re-analyse if the import changes
+            $codebase->addReferenceToUseAlias(
+                $atomic->text,
+                $this->source->getFilePath(),
+                $this->context,
+            );
         }
 
         if (!isset($this->phantom_classes[strtolower($atomic->value)])) {

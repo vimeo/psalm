@@ -579,6 +579,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $isVoid = $inferred_return->isVoid();
             }
             if ($isVoid
+                && !$this->function instanceof Closure
                 && !(
                     $storage->throw_locations
                     || $storage->throws
