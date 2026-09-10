@@ -844,7 +844,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 $custom_call_sink = DataFlowNode::getForMethodArgument(
                     'variable-call',
                     0,
-                    $function_call_info->function_storage,
+                    null,
                     $arg_location,
                     TaintKind::INPUT_CALLABLE,
                 );
