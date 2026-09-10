@@ -1496,7 +1496,8 @@ final class FilterUtils
         string $function_id,
     ): Union {
         if ($statements_analyzer->data_flow_graph) {
-            $function_return_sink = DataFlowNode::getForMethodReturn(
+            $function_return_sink = DataFlowNode::getForCallableReturn(
+                'builtin',
                 $function_id,
                 null,
                 $code_location,
@@ -1504,7 +1505,8 @@ final class FilterUtils
 
             $statements_analyzer->data_flow_graph->addNode($function_return_sink);
 
-            $function_param_sink = DataFlowNode::getForMethodArgument(
+            $function_param_sink = DataFlowNode::getForCallableArg(
+                'builtin',
                 $function_id,
                 0,
                 null,

@@ -516,6 +516,7 @@ final class ArgumentAnalyzer
                         $arg->value,
                         $context,
                         $specialize_taint,
+                        $in_call_map,
                     );
                 }
 
@@ -767,6 +768,7 @@ final class ArgumentAnalyzer
                     $input_expr,
                     $context,
                     $specialize_taint,
+                    $in_call_map,
                 );
             }
 
@@ -850,6 +852,7 @@ final class ArgumentAnalyzer
                     $input_expr,
                     $context,
                     $specialize_taint,
+                    $in_call_map,
                 );
             }
 
@@ -1022,6 +1025,7 @@ final class ArgumentAnalyzer
                 $input_expr,
                 $context,
                 $specialize_taint,
+                $in_call_map,
             );
 
             if ($function_param->assert_untainted) {
@@ -1804,6 +1808,7 @@ final class ArgumentAnalyzer
         PhpParser\Node\Expr $expr,
         Context $context,
         bool $specialize_taint,
+        bool $in_call_map,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -1829,19 +1834,36 @@ final class ArgumentAnalyzer
             );
         }
 
+        $callable_kind = $in_call_map ? 'builtin' : ($method_id ? 'magic-method' : 'callable-object');
+
         if ($specialize_taint) {
-            $method_node = DataFlowNode::getForMethodArgument(
-                $cased_method_id,
-                $argument_offset,
-                $function_storage,
-                $function_call_location,
-            );
+            $method_node = $function_storage
+                ? DataFlowNode::getForMethodArgument(
+                    $cased_method_id,
+                    $argument_offset,
+                    $function_storage,
+                    $function_call_location,
+                )
+                : DataFlowNode::getForCallableArg(
+                    $callable_kind,
+                    $cased_method_id,
+                    $argument_offset,
+                    $taint_flow_graph ? $function_param->location : null,
+                    $function_call_location,
+                );
         } else {
-            $method_node = DataFlowNode::getForMethodArgument(
-                $cased_method_id,
-                $argument_offset,
-                $function_storage,
-            );
+            $method_node = $function_storage
+                ? DataFlowNode::getForMethodArgument(
+                    $cased_method_id,
+                    $argument_offset,
+                    $function_storage,
+                )
+                : DataFlowNode::getForCallableArg(
+                    $callable_kind,
+                    $cased_method_id,
+                    $argument_offset,
+                    $taint_flow_graph ? $function_param->location : null,
+                );
 
             if ($taint_flow_graph
                 && $method_id
@@ -1858,15 +1880,19 @@ final class ArgumentAnalyzer
                         $dependent_classlike_lc,
                     );
                     $dependent_method_id = new MethodIdentifier($dependent_classlike_lc, $method_name);
-                    $dependent_method_storage = $codebase->methods->hasStorage($dependent_method_id)
-                        ? $codebase->methods->getStorage($dependent_method_id)
-                        : null;
 
-                    $new_sink = DataFlowNode::getForMethodArgument(
-                        $dependent_classlike_storage->name . '::' . $cased_method_name,
-                        $argument_offset,
-                        $dependent_method_storage,
-                    );
+                    $new_sink = $codebase->methods->hasStorage($dependent_method_id)
+                        ? DataFlowNode::getForMethodArgument(
+                            $dependent_classlike_storage->name . '::' . $cased_method_name,
+                            $argument_offset,
+                            $codebase->methods->getStorage($dependent_method_id),
+                        )
+                        : DataFlowNode::getForCallableArg(
+                            'inherited-method',
+                            $dependent_classlike_storage->name . '::' . $cased_method_name,
+                            $argument_offset,
+                            $arg_location,
+                        );
 
                     $taint_flow_graph->addNode($new_sink);
                     $taint_flow_graph->addPath(

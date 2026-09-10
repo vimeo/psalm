@@ -913,7 +913,18 @@ final class ArgumentsAnalyzer
 
                 foreach ($arg_function_params[$argument_offset] as $function_param) {
                     if ($function_param->sinks) {
-                        if (!$function_storage || $function_storage->specialize_call) {
+                        if (!$function_storage) {
+                            $sink = DataFlowNode::getForCallableArg(
+                                $in_call_map
+                                    ? 'builtin'
+                                    : ($method_id instanceof MethodIdentifier ? 'magic-method' : 'callable-object'),
+                                $cased_method_id,
+                                $argument_offset,
+                                $function_param->location,
+                                $code_location,
+                                $function_param->sinks,
+                            );
+                        } elseif ($function_storage->specialize_call) {
                             $sink = DataFlowNode::getForMethodArgument(
                                 $cased_method_id,
                                 $argument_offset,

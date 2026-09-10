@@ -19,6 +19,9 @@ use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\TaintKind;
 
+use function assert;
+use function is_int;
+
 /**
  * @internal
  */
@@ -57,14 +60,16 @@ final class EchoAnalyzer
 
                 $call_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
-                $echo_param_sink = DataFlowNode::getForBuiltinArg(
+                $echo_param_sink = DataFlowNode::getForCallableArg(
+                    'builtin',
                     'echo',
                     $i,
+                    $call_location,
+                    $call_location,
                     TaintKind::INPUT_HTML
                         | TaintKind::INPUT_HAS_QUOTES
                         | TaintKind::USER_SECRET
                         | TaintKind::SYSTEM_SECRET,
-                    $call_location,
                 );
 
 
@@ -78,7 +83,7 @@ final class EchoAnalyzer
                 null,
                 'echo',
                 null,
-                (int)$i,
+                $i,
                 new CodeLocation($statements_analyzer->getSource(), $expr),
                 $expr,
                 $context,

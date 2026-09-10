@@ -7,7 +7,6 @@ namespace Psalm\Internal\DataFlow;
 use Override;
 use Psalm\CodeLocation;
 use Psalm\Storage\FunctionLikeStorage;
-use Psalm\Storage\PropertyStorage;
 use Stringable;
 use UnexpectedValueException;
 
@@ -18,6 +17,7 @@ use function strtolower;
  * @psalm-consistent-constructor
  * @internal
  * @psalm-external-mutation-free
+ * @psalm-type CallableKind = 'builtin'|'inherited-method'|'magic-method'|'dynamic-function-call'|'dynamic-instantiation'|'callable-object'
  */
 final class DataFlowNode implements Stringable
 {
@@ -74,6 +74,9 @@ final class DataFlowNode implements Stringable
         );
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getForPropertyFetch(
         string $property_id,
         ?CodeLocation $specialization_location = null,
@@ -101,17 +104,21 @@ final class DataFlowNode implements Stringable
         return self::make($taint_id, $taint_id, $code_location, $specialization_key, $taints);
     }
 
-    public static function getForBuiltinArg(
-        string $function_id,
+    /**
+     * @psalm-pure
+     * @param CallableKind $kind
+     */
+    public static function getForCallableArg(
+        string $kind,
+        string $cased_function_id,
         int $argument_offset,
-        int $taints,
+        ?CodeLocation $location,
         ?CodeLocation $specialization_location = null,
+        int $taints = 0,
     ): self {
-        $function_id = 'builtin ' . $function_id;
+        $arg_id = strtolower($cased_function_id) . '#' . ($argument_offset + 1);
 
-        $arg_id = strtolower($function_id) . '#' . ($argument_offset + 1);
-
-        $label = $function_id . '#' . ($argument_offset + 1);
+        $label = $kind . ' ' . $cased_function_id . '#' . ($argument_offset + 1);
 
         $specialization_key = null;
 
@@ -120,22 +127,31 @@ final class DataFlowNode implements Stringable
                 . ':' . $specialization_location->raw_file_start;
         }
 
-        return self::make($arg_id, $label, null, $specialization_key, $taints);
+        return self::make($arg_id, $label, $location, $specialization_key, $taints);
     }
 
-    public static function getForBuiltinReturn(
-        string $function_id,
-        int $taints,
+    /**
+     * @psalm-pure
+     * @param CallableKind $kind
+     */
+    public static function getForCallableReturn(
+        string $kind,
+        string $cased_function_id,
+        ?CodeLocation $location,
         ?CodeLocation $specialization_location = null,
+        int $taints = 0,
+        ?string $specialization_key = null,
     ): self {
-        $function_id = 'builtin ' . $function_id;
+        if ($specialization_key === null && $specialization_location) {
+            $specialization_key = strtolower($specialization_location->file_name)
+                . ':' . $specialization_location->raw_file_start;
+        }
+
         return self::make(
-            strtolower($function_id),
-            $function_id,
-            null,
-            $specialization_location
-                ? strtolower($specialization_location->file_name) . ':' . $specialization_location->raw_file_start
-                : null,
+            strtolower($cased_function_id),
+            $kind . ' ' . $cased_function_id,
+            $location,
+            $specialization_key,
             $taints,
         );
     }
@@ -146,7 +162,7 @@ final class DataFlowNode implements Stringable
     public static function getForMethodArgument(
         string $cased_method_id,
         int $argument_offset,
-        ?FunctionLikeStorage $storage,
+        FunctionLikeStorage $storage,
         ?CodeLocation $specialization_location = null,
         int $taints = 0,
     ): self {
@@ -191,7 +207,7 @@ final class DataFlowNode implements Stringable
      */
     public static function getForMethodReturn(
         string $cased_method_id,
-        ?FunctionLikeStorage $storage,
+        FunctionLikeStorage $storage,
         ?CodeLocation $specialization_location = null,
         int $taints = 0,
         ?string $specialization_key = null,
@@ -213,11 +229,8 @@ final class DataFlowNode implements Stringable
     /**
      * @psalm-mutation-free
      */
-    private static function getReturnLocation(?FunctionLikeStorage $storage): ?CodeLocation
+    private static function getReturnLocation(FunctionLikeStorage $storage): ?CodeLocation
     {
-        if (!$storage) {
-            return null;
-        }
         $loc = $storage->return_type_location
             ?: $storage->signature_return_type_location
             ?: $storage->location;
@@ -228,11 +241,8 @@ final class DataFlowNode implements Stringable
     /**
      * @psalm-mutation-free
      */
-    private static function getParameterLocation(?FunctionLikeStorage $storage, int $argument_offset): ?CodeLocation
+    private static function getParameterLocation(FunctionLikeStorage $storage, int $argument_offset): ?CodeLocation
     {
-        if (!$storage) {
-            return null;
-        }
         $param = $storage->params[$argument_offset] ?? null;
 
         if (!$param && $storage->params) {

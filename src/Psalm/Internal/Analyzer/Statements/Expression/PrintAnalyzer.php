@@ -38,14 +38,16 @@ final class PrintAnalyzer
         if ($statements_analyzer->taint_flow_graph) {
             $call_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
-            $print_param_sink = DataFlowNode::getForBuiltinArg(
+            $print_param_sink = DataFlowNode::getForCallableArg(
+                'builtin',
                 'print',
                 0,
+                $call_location,
+                $call_location,
                 TaintKind::INPUT_HTML
                     | TaintKind::INPUT_HAS_QUOTES
                     | TaintKind::USER_SECRET
                     | TaintKind::SYSTEM_SECRET,
-                $call_location,
             );
 
             $statements_analyzer->taint_flow_graph->addSink($print_param_sink);

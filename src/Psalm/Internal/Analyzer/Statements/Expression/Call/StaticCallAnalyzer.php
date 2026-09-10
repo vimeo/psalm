@@ -278,7 +278,13 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 : ($method_storage->signature_return_type_location ?: $method_storage->location))
             : null;
 
-        if ($method_storage && $method_storage->specialize_call) {
+        if (!$method_storage) {
+            $method_source = DataFlowNode::getForCallableReturn(
+                'builtin',
+                $cased_method_id,
+                null,
+            );
+        } elseif ($method_storage->specialize_call) {
             $method_source = DataFlowNode::getForMethodReturn(
                 $cased_method_id,
                 $method_storage,

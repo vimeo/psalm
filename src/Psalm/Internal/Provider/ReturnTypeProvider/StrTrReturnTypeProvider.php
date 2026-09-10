@@ -44,7 +44,8 @@ final class StrTrReturnTypeProvider implements FunctionReturnTypeProviderInterfa
         $type = Type::getString();
 
         if ($statements_source->data_flow_graph) {
-            $function_return_sink = DataFlowNode::getForMethodReturn(
+            $function_return_sink = DataFlowNode::getForCallableReturn(
+                'builtin',
                 $function_id,
                 null,
                 $code_location,
@@ -52,7 +53,8 @@ final class StrTrReturnTypeProvider implements FunctionReturnTypeProviderInterfa
 
             $statements_source->data_flow_graph->addNode($function_return_sink);
             foreach ($call_args as $i => $_) {
-                $function_param_sink = DataFlowNode::getForMethodArgument(
+                $function_param_sink = DataFlowNode::getForCallableArg(
+                    'builtin',
                     $function_id,
                     $i,
                     null,

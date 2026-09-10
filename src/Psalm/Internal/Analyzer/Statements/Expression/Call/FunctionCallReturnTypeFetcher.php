@@ -262,7 +262,7 @@ final class FunctionCallReturnTypeFetcher
             $statements_analyzer,
             $stmt,
             $function_id,
-            $function_name->toCodeString(),
+            $function_storage->cased_name ?? $function_id,
             $function_storage,
             $stmt_type,
             $template_result,
