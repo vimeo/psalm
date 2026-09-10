@@ -920,7 +920,7 @@ final class ArgumentsAnalyzer
                                     : ($method_id instanceof MethodIdentifier ? 'magic-method' : 'callable-object'),
                                 $cased_method_id,
                                 $argument_offset,
-                                $function_param->location,
+                                $function_param->location ?? $code_location,
                                 $code_location,
                                 $function_param->sinks,
                             );

@@ -199,6 +199,21 @@
                                                         "startLine": 10,
                                                         "endLine": 10,
                                                         "startColumn": 56,
+                                                        "endColumn": 62
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "location": {
+                                                "physicalLocation": {
+                                                    "artifactLocation": {
+                                                        "uri": "taintflow-test\/vulnerable.php"
+                                                    },
+                                                    "region": {
+                                                        "startLine": 10,
+                                                        "endLine": 10,
+                                                        "startColumn": 56,
                                                         "endColumn": 75
                                                     }
                                                 }
@@ -345,6 +360,21 @@
                             "threadFlows": [
                                 {
                                     "locations": [
+                                        {
+                                            "location": {
+                                                "physicalLocation": {
+                                                    "artifactLocation": {
+                                                        "uri": "taintflow-test\/vulnerable.php"
+                                                    },
+                                                    "region": {
+                                                        "startLine": 10,
+                                                        "endLine": 10,
+                                                        "startColumn": 56,
+                                                        "endColumn": 62
+                                                    }
+                                                }
+                                            }
+                                        },
                                         {
                                             "location": {
                                                 "physicalLocation": {
@@ -531,6 +561,21 @@
                             "threadFlows": [
                                 {
                                     "locations": [
+                                        {
+                                            "location": {
+                                                "physicalLocation": {
+                                                    "artifactLocation": {
+                                                        "uri": "taintflow-test\/vulnerable.php"
+                                                    },
+                                                    "region": {
+                                                        "startLine": 10,
+                                                        "endLine": 10,
+                                                        "startColumn": 56,
+                                                        "endColumn": 62
+                                                    }
+                                                }
+                                            }
+                                        },
                                         {
                                             "location": {
                                                 "physicalLocation": {
