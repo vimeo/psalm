@@ -39,7 +39,7 @@ use function substr;
 final class FunctionDocblockManipulator
 {
     /**
-     * Manipulators ordered by line number
+     * Manipulators keyed by function-like start offset
      *
      * @var array<string, array<int, FunctionDocblockManipulator>>
      */
@@ -103,12 +103,14 @@ final class FunctionDocblockManipulator
         Closure|Function_|ClassMethod|ArrowFunction $stmt,
         ?Node $docblock_anchor = null,
     ): FunctionDocblockManipulator {
-        if (isset(self::$manipulators[$file_path][$stmt->getStartLine()])) {
-            return self::$manipulators[$file_path][$stmt->getStartLine()];
+        $function_start = (int) $stmt->getAttribute('startFilePos');
+
+        if (isset(self::$manipulators[$file_path][$function_start])) {
+            return self::$manipulators[$file_path][$function_start];
         }
 
         $manipulator
-            = self::$manipulators[$file_path][$stmt->getStartLine()]
+            = self::$manipulators[$file_path][$function_start]
             = new self($file_path, $stmt, $project_analyzer, $docblock_anchor);
 
         return $manipulator;

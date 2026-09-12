@@ -343,6 +343,21 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingPureAnnotation'],
                 'safe_types' => true,
             ],
+            'closuresOnTheSameLineAreBothAnnotated' => [
+                'input' => '<?php
+                    $a = function(): int { return 1; }; $b = function(): int { return 2; };',
+                'output' => '<?php
+                    /**
+                     * @psalm-pure
+                     */
+                    $a = function(): int { return 1; }; /**
+                     * @psalm-pure
+                     */
+                    $b = function(): int { return 2; };',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
             'selfCallIndirect' => [
                 'input' => '<?php
                     function foo(string $s, int $v): string {

@@ -9,12 +9,14 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Codebase\CodeUseGraph;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\IssueBuffer;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 
+use function array_column;
 use function getcwd;
 use function preg_quote;
 use function strpos;
@@ -144,6 +146,89 @@ final class UnusedCodeTest extends TestCase
         $issue = IssueBuffer::getIssuesDataForFile($file_path)[0];
         $this->assertSame('UnevaluatedCode', $issue->type);
         $this->assertSame(4, $issue->line_from);
+    }
+
+    public function testDeadDirectCallDoesNotTriggerUnusedReturnOnLiveOverride(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->getConfig()->setCustomErrorLevel(
+            'PossiblyUnusedMethod',
+            Config::REPORT_INFO,
+        );
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                interface I {
+                    /** @psalm-suppress PossiblyUnusedReturnValue */
+                    public function value(): int;
+                }
+
+                final class A implements I {
+                    public function value(): int {
+                        return 1;
+                    }
+                }
+
+                final class B {
+                    public function dead(A $a): void {
+                        $a->value();
+                    }
+                }
+
+                function consume(I $i): void {
+                    $i->value();
+                }
+
+                consume(new A());
+                new B();',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        self::assertSame(
+            [],
+            $this->project_analyzer->getCodebase()->code_use_graph->getUsedReferencingNodes(
+                CodeUseGraph::functionLikeNode('a::value'),
+                CodeUseGraph::EDGE_USE,
+            ),
+        );
+        self::assertSame(
+            ['PossiblyUnusedMethod'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
+    public function testDeadReadDoesNotMakeConstructorOnlyPropertyUsed(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class A {
+                    private int $value = 1;
+
+                    public function __construct() {
+                        echo $this->value;
+                    }
+
+                    private function dead(): void {
+                        echo $this->value;
+                    }
+                }
+
+                new A();',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        self::assertSame(
+            ['UnusedMethod', 'UnusedProperty'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
     }
 
     public function testSeesUnusedClassReferencedByUnevaluatedCode(): void

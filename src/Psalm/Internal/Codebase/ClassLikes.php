@@ -2142,7 +2142,7 @@ final class ClassLikes
                 // methods only reached through an overridden parent or interface method
                 // are called by code that doesn't know about them, so their return value
                 // is only checked when they're called directly
-                $directly_referenced = $codebase->code_use_graph->getReferencingNodes(
+                $directly_referenced = $codebase->code_use_graph->getUsedReferencingNodes(
                     CodeUseGraph::functionLikeNode(strtolower((string) $method_id)),
                     CodeUseGraph::EDGE_USE,
                 ) !== [];
@@ -2390,7 +2390,7 @@ final class ClassLikes
 
             $property_constructor_referenced = false;
             if ($property_referenced && $property_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE) {
-                $property_references = $codebase->code_use_graph->getReferencingNodes(
+                $property_references = $codebase->code_use_graph->getUsedReferencingNodes(
                     $property_node,
                     CodeUseGraph::EDGE_USE,
                 );

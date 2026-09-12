@@ -11,6 +11,7 @@ use Psalm\Context;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 
+use function array_intersect_key;
 use function array_pop;
 use function md5;
 use function str_contains;
@@ -132,6 +133,23 @@ final class CodeUseGraph
      * @var array<string, array<string, CodeLocation>>
      */
     private array $locations = [];
+
+    /**
+     * Source node => target node => location hash => true. This lets references
+     * and their locations be removed together when a source is invalidated.
+     *
+     * @var array<string, array<string, array<string, true>>>
+     */
+    private array $source_locations = [];
+
+    /**
+     * Target node => location hash => source node => true. A source location
+     * can be shared by trait analyses, so it is retained until every source
+     * that recorded it has been invalidated.
+     *
+     * @var array<string, array<string, array<string, true>>>
+     */
+    private array $location_sources = [];
 
     /**
      * Set of used node ids, null until resolved.
@@ -447,7 +465,10 @@ final class CodeUseGraph
         }
 
         if ($location !== null && $this->collect_locations) {
-            $this->locations[$target_node][$location->getHash()] = $location;
+            $location_hash = $location->getHash();
+            $this->locations[$target_node][$location_hash] = $location;
+            $this->source_locations[$source_node][$target_node][$location_hash] = true;
+            $this->location_sources[$target_node][$location_hash][$source_node] = true;
         }
     }
 
@@ -479,11 +500,19 @@ final class CodeUseGraph
             }
         }
 
-        foreach ($other->locations as $node_id => $locations) {
-            if (!isset($this->locations[$node_id])) {
-                $this->locations[$node_id] = $locations;
-            } else {
-                $this->locations[$node_id] += $locations;
+        foreach ($other->source_locations as $source_node => $targets) {
+            foreach ($targets as $target_node => $location_hashes) {
+                foreach ($location_hashes as $location_hash => $_) {
+                    $location = $other->locations[$target_node][$location_hash] ?? null;
+
+                    if ($location === null) {
+                        continue;
+                    }
+
+                    $this->locations[$target_node][$location_hash] = $location;
+                    $this->source_locations[$source_node][$target_node][$location_hash] = true;
+                    $this->location_sources[$target_node][$location_hash][$source_node] = true;
+                }
             }
         }
 
@@ -499,6 +528,8 @@ final class CodeUseGraph
         $this->backward_edges = [];
         $this->node_files = [];
         $this->locations = [];
+        $this->source_locations = [];
+        $this->location_sources = [];
         $this->mutation_info = [];
         $this->used = null;
         $this->file_nodes = null;
@@ -671,6 +702,21 @@ final class CodeUseGraph
     }
 
     /**
+     * Returns only references made by code that is reachable from an entry point.
+     *
+     * @return array<string, true>
+     * @psalm-mutation-free
+     */
+    public function getUsedReferencingNodes(string $node_id, ?string $type = null): array
+    {
+        if ($this->used === null) {
+            throw new LogicException('The graph must be resolved before checking usage');
+        }
+
+        return array_intersect_key($this->getReferencingNodes($node_id, $type), $this->used);
+    }
+
+    /**
      * @return array<string, CodeLocation>
      * @psalm-mutation-free
      */
@@ -783,11 +829,26 @@ final class CodeUseGraph
      */
     public function removeReferencesFrom(string $node_id): void
     {
-        if (!isset($this->forward_edges[$node_id])) {
-            return;
+        foreach ($this->source_locations[$node_id] ?? [] as $target_node => $location_hashes) {
+            foreach ($location_hashes as $location_hash => $_) {
+                unset($this->location_sources[$target_node][$location_hash][$node_id]);
+
+                if (!$this->location_sources[$target_node][$location_hash]) {
+                    unset(
+                        $this->location_sources[$target_node][$location_hash],
+                        $this->locations[$target_node][$location_hash],
+                    );
+                }
+            }
+
+            if (!$this->location_sources[$target_node]) {
+                unset($this->location_sources[$target_node], $this->locations[$target_node]);
+            }
         }
 
-        foreach ($this->forward_edges[$node_id] as $target_node => $_) {
+        unset($this->source_locations[$node_id]);
+
+        foreach ($this->forward_edges[$node_id] ?? [] as $target_node => $_) {
             unset($this->backward_edges[$target_node][$node_id]);
 
             if (!$this->backward_edges[$target_node]) {
@@ -795,8 +856,13 @@ final class CodeUseGraph
             }
         }
 
-        unset($this->forward_edges[$node_id], $this->mutation_info[$node_id]);
+        unset(
+            $this->forward_edges[$node_id],
+            $this->node_files[$node_id],
+            $this->mutation_info[$node_id],
+        );
         $this->used = null;
+        $this->file_nodes = null;
         $this->class_referencing_nodes = null;
     }
 

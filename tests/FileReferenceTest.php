@@ -7,6 +7,7 @@ namespace Psalm\Tests;
 use Override;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Codebase\CodeUseGraph;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
@@ -71,6 +72,64 @@ final class FileReferenceTest extends TestCase
         } unset($loc);
 
         $this->assertEquals($expected_locations, $found_references);
+    }
+
+    public function testReferenceLocationsAreRemovedWithTheirSourceNode(): void
+    {
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->diff_methods = true;
+
+        $this->file_provider->registerFile(
+            $file_path,
+            '<?php
+                class A {}
+                final class B {
+                    public function useA(): void {
+                        new A();
+                    }
+                }
+                (new B())->useA();',
+        );
+        $codebase->reloadFiles($this->project_analyzer, [$file_path]);
+        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
+
+        self::assertNotSame([], $codebase->findReferencesToClassLike('A'));
+        $codebase->code_use_graph->removeReferencesFrom(CodeUseGraph::functionLikeNode('b::usea'));
+        self::assertSame([], $codebase->findReferencesToClassLike('A'));
+    }
+
+    public function testRemovedSourceNodeCanBeReassignedToAnotherFile(): void
+    {
+        $graph = new CodeUseGraph();
+        $source_node = CodeUseGraph::functionLikeNode('a::foo');
+        $target_node = CodeUseGraph::classNode('b');
+        $context = new Context();
+        $context->calling_method_id = 'a::foo';
+
+        $graph->addReference($target_node, $context, null, CodeUseGraph::EDGE_USE, '/old.php');
+        self::assertSame('/old.php', $graph->getNodeFile($source_node));
+
+        $graph->removeReferencesFrom($source_node);
+        self::assertNull($graph->getNodeFile($source_node));
+
+        $graph->addReference($target_node, $context, null, CodeUseGraph::EDGE_USE, '/new.php');
+        self::assertSame('/new.php', $graph->getNodeFile($source_node));
+    }
+
+    public function testUsedReferencesExcludeDeadSources(): void
+    {
+        $graph = new CodeUseGraph();
+        $used_source = CodeUseGraph::functionLikeNode('a::used');
+        $dead_source = CodeUseGraph::functionLikeNode('a::dead');
+        $target = CodeUseGraph::functionLikeNode('a::target');
+
+        $graph->markAsPublicApi($used_source);
+        $graph->addEdge($used_source, $target);
+        $graph->addEdge($dead_source, $target);
+        $graph->resolve(static fn(string $_): bool => false);
+
+        self::assertSame([$used_source => true], $graph->getUsedReferencingNodes($target));
     }
 
     /**
