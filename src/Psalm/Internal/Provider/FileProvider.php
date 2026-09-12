@@ -145,6 +145,7 @@ class FileProvider
     }
 
     /**
+     * @psalm-suppress PossiblyUnusedMethod called from the reflection-invoked LSP didClose handler
      * @psalm-external-mutation-free
      */
     public function closeFile(string $file_path): void

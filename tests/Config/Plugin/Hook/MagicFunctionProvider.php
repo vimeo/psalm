@@ -15,6 +15,9 @@ use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
 use Psalm\Type\Union;
 
+/**
+ * @psalm-suppress UnusedClass registered as a plugin via test config, instantiated by reflection
+ */
 final class MagicFunctionProvider implements
     FunctionExistenceProviderInterface,
     FunctionParamsProviderInterface,

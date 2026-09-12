@@ -270,7 +270,6 @@ abstract class Type
     }
 
     /**
-     * @psalm-suppress PossiblyUnusedMethod
      * @return TLiteralString|TLiteralInt
      * @psalm-pure
      */

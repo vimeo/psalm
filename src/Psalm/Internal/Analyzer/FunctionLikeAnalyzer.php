@@ -1910,16 +1910,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * Adds a suppressed issue, useful when creating a method checker from scratch
-     *
-     * @psalm-external-mutation-free
-     */
-    public function addSuppressedIssue(string $issue_name): void
-    {
-        $this->suppressed_issues[] = $issue_name;
-    }
-
-    /**
      * @psalm-external-mutation-free
      */
     public static function clearCache(): void

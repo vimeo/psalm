@@ -30,6 +30,9 @@ trait MixedIssueTrait
         $this->origin_location = $origin_location;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public function getMixedOriginMessage(): string
     {

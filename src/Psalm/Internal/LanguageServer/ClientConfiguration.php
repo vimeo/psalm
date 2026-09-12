@@ -8,6 +8,7 @@ use LanguageServerProtocol\MessageType;
 
 /**
  * @internal
+ * @psalm-suppress PossiblyUnusedProperty flags read only from reflection-invoked LSP handlers
  */
 final class ClientConfiguration
 {
