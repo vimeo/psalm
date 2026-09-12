@@ -7,8 +7,8 @@ namespace Psalm\Issue;
 use Override;
 use Psalm\CodeLocation;
 
-/** @psalm-immutable */
 /**
+ * @psalm-immutable
  * @api
  */
 trait MixedIssueTrait
@@ -30,9 +30,6 @@ trait MixedIssueTrait
         $this->origin_location = $origin_location;
     }
 
-    /**
-     * @psalm-mutation-free
-     */
     #[Override]
     public function getMixedOriginMessage(): string
     {

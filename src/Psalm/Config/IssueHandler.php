@@ -20,9 +20,6 @@ use function substr;
 use const SCANDIR_SORT_NONE;
 
 /** @internal */
-/**
- * @api
- */
 final class IssueHandler
 {
     private string $error_level = Config::REPORT_ERROR;
