@@ -14,6 +14,7 @@ use Psalm\Storage\FunctionLikeStorage;
 
 /**
  * @psalm-external-mutation-free
+ * @api
  */
 final class AfterFunctionLikeAnalysisEvent
 {
