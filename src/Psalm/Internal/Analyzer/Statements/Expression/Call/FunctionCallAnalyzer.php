@@ -11,6 +11,7 @@ use Psalm\Context;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\AlgebraAnalyzer;
+use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -71,6 +72,7 @@ use function count;
 use function explode;
 use function implode;
 use function in_array;
+use function is_string;
 use function max;
 use function preg_replace;
 use function reset;
@@ -665,7 +667,15 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
 
                 if ($var_type_part instanceof TClosure || $var_type_part instanceof TCallable) {
-                    if ($statements_analyzer->signalMutation(
+                    $source = $statements_analyzer->getSource();
+
+                    if ($function_name instanceof PhpParser\Node\Expr\Variable
+                        && is_string($function_name->name)
+                        && $source instanceof ClosureAnalyzer
+                        && $source->getRecursiveVarId() === '$' . $function_name->name
+                    ) {
+                        // a recursive call of the closure being analysed: not a mutation of its own
+                    } elseif ($statements_analyzer->signalMutation(
                         $var_type_part->allowed_mutations,
                         $context,
                         'function call on ' . $var_type_part->getId(),
