@@ -318,42 +318,6 @@ final class UnusedCodeTest extends TestCase
 
                     (new A)->run();',
             ],
-            'suppressedUnusedClassIsAnEntryPoint' => [
-                'code' => '<?php
-                    interface Entry {
-                        public function __invoke(): void;
-                    }
-
-                    final class Hook {
-                        public function fire(): void {}
-                    }
-
-                    /** @psalm-suppress UnusedClass */
-                    final class Plugin implements Entry {
-                        public function __invoke(): void {
-                            (new Hook)->fire();
-                        }
-                    }
-
-                    function load(Entry $entry): void {
-                        $entry();
-                    }',
-            ],
-            'suppressedUnusedMethodIsAnEntryPoint' => [
-                'code' => '<?php
-                    final class Hook {
-                        public function fire(): void {}
-                    }
-
-                    final class A {
-                        /** @psalm-suppress PossiblyUnusedMethod */
-                        public function api(): void {
-                            (new Hook)->fire();
-                        }
-                    }
-
-                    new A();',
-            ],
             'usedMethodCalledFromFunction' => [
                 'code' => '<?php
                     final class A {
@@ -1589,6 +1553,48 @@ final class UnusedCodeTest extends TestCase
             'unusedClass' => [
                 'code' => '<?php
                     final class A { }',
+                'error_message' => 'UnusedClass',
+            ],
+            'suppressedUnusedClassIsNotAnEntryPoint' => [
+                'code' => '<?php
+                    interface Entry {
+                        public function __invoke(): void;
+                    }
+
+                    final class Hook {
+                        public function fire(): void {}
+                    }
+
+                    // suppressing UnusedClass only silences Plugin: it does not make
+                    // Plugin an entry point that keeps the code it references alive
+                    /** @psalm-suppress UnusedClass */
+                    final class Plugin implements Entry {
+                        public function __invoke(): void {
+                            (new Hook)->fire();
+                        }
+                    }
+
+                    function load(Entry $entry): void {
+                        $entry();
+                    }',
+                'error_message' => 'UnusedClass',
+            ],
+            'suppressedUnusedMethodIsNotAnEntryPoint' => [
+                'code' => '<?php
+                    final class Hook {
+                        public function fire(): void {}
+                    }
+
+                    final class A {
+                        // suppressing the unused-method issue does not make api() an
+                        // entry point: Hook, reachable only from it, is still unused
+                        /** @psalm-suppress PossiblyUnusedMethod */
+                        public function api(): void {
+                            (new Hook)->fire();
+                        }
+                    }
+
+                    new A();',
                 'error_message' => 'UnusedClass',
             ],
             'unusedClassesReferencingEachOther' => [

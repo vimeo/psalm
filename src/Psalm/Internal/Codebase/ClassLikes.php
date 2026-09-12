@@ -821,9 +821,7 @@ final class ClassLikes
 
             $class_node = CodeUseGraph::classNode($fq_class_name_lc);
 
-            if ($classlike_storage->public_api
-                || (!$classlike_storage->is_trait && self::isUnusedClassIssueSuppressed($classlike_storage))
-            ) {
+            if ($classlike_storage->public_api) {
                 $code_use_graph->markAsPublicApi($class_node);
             }
 
@@ -838,7 +836,6 @@ final class ClassLikes
                         && ($method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC
                             || ($method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PROTECTED
                                 && !$classlike_storage->final)))
-                    || $this->isUnusedMethodIssueSuppressed($classlike_storage, $method_name, $method_storage)
                 ) {
                     $code_use_graph->markAsPublicApi($method_node);
                 }
@@ -953,8 +950,8 @@ final class ClassLikes
                     if ($find_unused_code) {
                         $class_node = CodeUseGraph::classNode($fq_class_name_lc);
 
-                        // a class that is only alive because it can't be reported as unused
-                        // (or because of its own methods) still has its members unchecked
+                        // a class that is only alive because of its own methods
+                        // still has its members unchecked
                         if ($code_use_graph->isUsed($class_node)
                             && ($classlike_storage->public_api || $code_use_graph->isReferenced($class_node))
                         ) {
@@ -1056,61 +1053,6 @@ final class ClassLikes
                 }
             }
         }
-    }
-
-    /**
-     * Whether a class could never be reported as unused, because the
-     * corresponding issue is suppressed for it (in the config or with a
-     * docblock): such a class is an entry point of the program as far as
-     * unused code detection is concerned.
-     *
-     * The suppression is marked as used, as it would be if the issue were reported.
-     */
-    private static function isUnusedClassIssueSuppressed(ClassLikeStorage $classlike_storage): bool
-    {
-        if ($classlike_storage->location === null) {
-            return false;
-        }
-
-        return IssueBuffer::isSuppressed(
-            new UnusedClass(
-                'Class ' . $classlike_storage->name . ' is never used',
-                $classlike_storage->location,
-                $classlike_storage->name,
-            ),
-            $classlike_storage->suppressed_issues,
-        );
-    }
-
-    /**
-     * Whether a method could never be reported as unused, because the
-     * corresponding issue is suppressed for it (in the config or with a
-     * docblock): such a method is an entry point of the program as far as
-     * unused code detection is concerned, e.g. a plugin API only called by
-     * third-party code.
-     *
-     * The suppression is marked as used, as it would be if the issue were reported.
-     */
-    private static function isUnusedMethodIssueSuppressed(
-        ClassLikeStorage $classlike_storage,
-        string $method_name,
-        MethodStorage $method_storage,
-    ): bool {
-        if ($method_storage->location === null) {
-            return false;
-        }
-
-        $method_id = $classlike_storage->name . '::' . $method_storage->cased_name;
-
-        if ($method_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE) {
-            $issue = new PossiblyUnusedMethod('Unused method ' . $method_id, $method_storage->location, $method_id);
-        } elseif ($method_name === '__construct') {
-            $issue = new UnusedConstructor('Unused constructor ' . $method_id, $method_storage->location, $method_id);
-        } else {
-            $issue = new UnusedMethod('Unused method ' . $method_id, $method_storage->location, $method_id);
-        }
-
-        return IssueBuffer::isSuppressed($issue, $method_storage->suppressed_issues);
     }
 
     /**
