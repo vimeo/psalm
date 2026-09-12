@@ -204,7 +204,10 @@ final class AttributesAnalyzer
             new NodeDataProvider(),
             false,
         );
-        $statements_analyzer->addSuppressedIssues(array_values($suppressed_issues));
+        // keep the char-offset keys so --find-unused-psalm-suppress can mark
+        // these suppressions as used (array_values would turn them into a list,
+        // which addSuppressedIssues re-keys by issue name, defeating the check)
+        $statements_analyzer->addSuppressedIssues($suppressed_issues);
 
         $had_returned = $context->has_returned;
         $context->has_returned = false;
