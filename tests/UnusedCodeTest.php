@@ -1663,7 +1663,7 @@ final class UnusedCodeTest extends TestCase
                     }
 
                     new Hook();',
-                'error_message' => 'PossiblyUnusedMethod - src/somefile.php:7:41',
+                'error_message' => 'Cannot find any calls to method Hook::fire',
             ],
             'unusedMethodCalledOnlyFromUnusedClass' => [
                 'code' => '<?php
@@ -1678,7 +1678,7 @@ final class UnusedCodeTest extends TestCase
                     }
 
                     new A();',
-                'error_message' => 'PossiblyUnusedMethod - src/somefile.php:3:41',
+                'error_message' => 'Cannot find any calls to method A::foo',
             ],
             'publicUnusedMethod' => [
                 'code' => '<?php

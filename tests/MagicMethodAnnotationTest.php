@@ -810,7 +810,6 @@ final class MagicMethodAnnotationTest extends TestCase
                     }
 
                     /**
-                     * @psalm-suppress MixedReturnTypeCoercion
                      * @method \IteratorAggregate<int, FooInterface> getAll():\IteratorAggregate
                      */
                     class Bar

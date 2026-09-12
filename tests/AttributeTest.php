@@ -451,7 +451,6 @@ final class AttributeTest extends TestCase
             ],
             'invalidAttributeDoesntCrash' => [
                 'code' => '<?php
-                    /** @psalm-suppress InvalidScalarArgument */
                     #[Attribute("foobar")]
                     class Foo {}
 

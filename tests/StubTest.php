@@ -1264,9 +1264,6 @@ final class StubTest extends TestCase
                     }
                 }
 
-                /**
-                 * @psalm-suppress MissingTemplateParam
-                 */
                 class B extends A {}
 
                 class Obj {}
