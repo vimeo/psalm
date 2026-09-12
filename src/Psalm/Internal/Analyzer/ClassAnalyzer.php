@@ -1129,16 +1129,9 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 );
             }
 
-            $constructor_context = new Context();
-            $constructor_context->calling_method_id = $fq_class_name_lc . '::__construct';
-            $constructor_context->self = $storage->name;
-            $codebase->addReferenceToProperty(
-                strtolower($property_class_name),
-                $property_name,
-                false,
-                $property->location,
-                $constructor_context,
-            );
+            // no reference is recorded from the constructor to the property: this check
+            // runs again whenever the class is re-analysed, so the constructor's own
+            // analysis needn't be invalidated when the property changes
 
             if ($property->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE) {
                 $uninitialized_private_properties = true;
