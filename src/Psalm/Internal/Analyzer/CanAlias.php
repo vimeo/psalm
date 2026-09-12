@@ -51,7 +51,6 @@ trait CanAlias
 
     public function visitUse(PhpParser\Node\Stmt\Use_ $stmt): void
     {
-        /** @var Codebase $codebase */
         $codebase = $this->getCodebase();
 
         foreach ($stmt->uses as $use) {
