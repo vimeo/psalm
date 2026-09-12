@@ -9,12 +9,14 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Codebase\CodeUseGraph;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\IssueBuffer;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 
+use function array_column;
 use function getcwd;
 use function preg_quote;
 use function strpos;
@@ -146,6 +148,89 @@ final class UnusedCodeTest extends TestCase
         $this->assertSame(4, $issue->line_from);
     }
 
+    public function testDeadDirectCallDoesNotTriggerUnusedReturnOnLiveOverride(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->getConfig()->setCustomErrorLevel(
+            'PossiblyUnusedMethod',
+            Config::REPORT_INFO,
+        );
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                interface I {
+                    /** @psalm-suppress PossiblyUnusedReturnValue */
+                    public function value(): int;
+                }
+
+                final class A implements I {
+                    public function value(): int {
+                        return 1;
+                    }
+                }
+
+                final class B {
+                    public function dead(A $a): void {
+                        $a->value();
+                    }
+                }
+
+                function consume(I $i): void {
+                    $i->value();
+                }
+
+                consume(new A());
+                new B();',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        self::assertSame(
+            [],
+            $this->project_analyzer->getCodebase()->code_use_graph->getUsedReferencingNodes(
+                CodeUseGraph::functionLikeNode('a::value'),
+                CodeUseGraph::EDGE_USE,
+            ),
+        );
+        self::assertSame(
+            ['PossiblyUnusedMethod'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
+    public function testDeadReadDoesNotMakeConstructorOnlyPropertyUsed(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class A {
+                    private int $value = 1;
+
+                    public function __construct() {
+                        echo $this->value;
+                    }
+
+                    private function dead(): void {
+                        echo $this->value;
+                    }
+                }
+
+                new A();',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        self::assertSame(
+            ['UnusedMethod', 'UnusedProperty'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
     public function testSeesUnusedClassReferencedByUnevaluatedCode(): void
     {
         $this->project_analyzer->getConfig()->throw_exception = false;
@@ -185,6 +270,100 @@ final class UnusedCodeTest extends TestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'usedMethodsCallingEachOther' => [
+                'code' => '<?php
+                    final class A {
+                        public function foo(): void {
+                            $this->bar();
+                        }
+
+                        public function bar(): void {
+                            $this->foo();
+                        }
+                    }
+
+                    (new A)->foo();',
+            ],
+            'usedClassesReferencingEachOther' => [
+                'code' => '<?php
+                    final class A {
+                        public function foo(): B {
+                            return new B();
+                        }
+                    }
+
+                    final class B {
+                        public function bar(): A {
+                            return new A();
+                        }
+                    }
+
+                    (new A)->foo()->bar()->foo();',
+            ],
+            'traitMethodReferencesAreAttributedToUsingClass' => [
+                'code' => '<?php
+                    final class Helper {
+                        public function help(): void {}
+                    }
+
+                    trait T {
+                        public function run(): void {
+                            (new Helper)->help();
+                        }
+                    }
+
+                    final class A {
+                        use T;
+                    }
+
+                    (new A)->run();',
+            ],
+            'suppressedUnusedClassIsAnEntryPoint' => [
+                'code' => '<?php
+                    interface Entry {
+                        public function __invoke(): void;
+                    }
+
+                    final class Hook {
+                        public function fire(): void {}
+                    }
+
+                    /** @psalm-suppress UnusedClass */
+                    final class Plugin implements Entry {
+                        public function __invoke(): void {
+                            (new Hook)->fire();
+                        }
+                    }
+
+                    function load(Entry $entry): void {
+                        $entry();
+                    }',
+            ],
+            'suppressedUnusedMethodIsAnEntryPoint' => [
+                'code' => '<?php
+                    final class Hook {
+                        public function fire(): void {}
+                    }
+
+                    final class A {
+                        /** @psalm-suppress PossiblyUnusedMethod */
+                        public function api(): void {
+                            (new Hook)->fire();
+                        }
+                    }
+
+                    new A();',
+            ],
+            'usedMethodCalledFromFunction' => [
+                'code' => '<?php
+                    final class A {
+                        public function foo(): void {}
+                    }
+
+                    function bar(): void {
+                        (new A)->foo();
+                    }',
+            ],
             'nonFinalClassWithChildren' => [
                 'code' => '<?php
                     class a {}
@@ -1412,6 +1591,89 @@ final class UnusedCodeTest extends TestCase
                     final class A { }',
                 'error_message' => 'UnusedClass',
             ],
+            'unusedClassesReferencingEachOther' => [
+                'code' => '<?php
+                    final class A {
+                        public function foo(): B {
+                            return new B();
+                        }
+                    }
+
+                    final class B {
+                        public function bar(): A {
+                            return new A();
+                        }
+                    }',
+                'error_message' => 'UnusedClass',
+            ],
+            'unusedMethodsCallingEachOther' => [
+                'code' => '<?php
+                    final class A {
+                        public function foo(): void {
+                            $this->bar();
+                        }
+
+                        public function bar(): void {
+                            $this->foo();
+                        }
+                    }
+
+                    new A();',
+                'error_message' => 'PossiblyUnusedMethod',
+            ],
+            'unusedPrivateMethodsCallingEachOther' => [
+                'code' => '<?php
+                    final class A {
+                        private function foo(): void {
+                            $this->bar();
+                        }
+
+                        private function bar(): void {
+                            $this->foo();
+                        }
+                    }
+
+                    new A();',
+                'error_message' => 'UnusedMethod',
+            ],
+            'unusedMethodOnlyReachedThroughUnusedImplementation' => [
+                'code' => '<?php
+                    interface Entry {
+                        public function __invoke(): void;
+                    }
+
+                    final class Hook {
+                        public function fire(): void {}
+                    }
+
+                    final class Plugin implements Entry {
+                        public function __invoke(): void {
+                            (new Hook)->fire();
+                        }
+                    }
+
+                    function load(Entry $entry): void {
+                        $entry();
+                    }
+
+                    new Hook();',
+                'error_message' => 'PossiblyUnusedMethod - src/somefile.php:7:41',
+            ],
+            'unusedMethodCalledOnlyFromUnusedClass' => [
+                'code' => '<?php
+                    final class A {
+                        public function foo(): void {}
+                    }
+
+                    final class B {
+                        public function __construct() {
+                            (new A)->foo();
+                        }
+                    }
+
+                    new A();',
+                'error_message' => 'PossiblyUnusedMethod - src/somefile.php:3:41',
+            ],
             'publicUnusedMethod' => [
                 'code' => '<?php
                     final class A {
@@ -1523,7 +1785,7 @@ final class UnusedCodeTest extends TestCase
                     takesA(new B);',
                 'error_message' => 'PossiblyUnusedMethod',
             ],
-            'SKIPPED-unusedRecursivelyUsedMethodIndirect' => [
+            'unusedRecursivelyUsedMethodIndirect' => [
                 'code' => '<?php
                     final class C {
                         public function foo(int $v) : void {

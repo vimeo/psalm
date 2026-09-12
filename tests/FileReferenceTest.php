@@ -7,13 +7,13 @@ namespace Psalm\Tests;
 use Override;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Codebase\CodeUseGraph;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 
 use function array_values;
-use function assert;
 use function count;
 use function is_array;
 use function ksort;
@@ -39,7 +39,6 @@ final class FileReferenceTest extends TestCase
         );
 
         $this->project_analyzer->getCodebase()->collectLocations();
-        //$this->project_analyzer->getCodebase()->code_use_graph->collect_locations = false;
         $this->project_analyzer->setPhpVersion('7.3', 'tests');
     }
 
@@ -75,6 +74,64 @@ final class FileReferenceTest extends TestCase
         $this->assertEquals($expected_locations, $found_references);
     }
 
+    public function testReferenceLocationsAreRemovedWithTheirSourceNode(): void
+    {
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->diff_methods = true;
+
+        $this->file_provider->registerFile(
+            $file_path,
+            '<?php
+                class A {}
+                final class B {
+                    public function useA(): void {
+                        new A();
+                    }
+                }
+                (new B())->useA();',
+        );
+        $codebase->reloadFiles($this->project_analyzer, [$file_path]);
+        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
+
+        self::assertNotSame([], $codebase->findReferencesToClassLike('A'));
+        $codebase->code_use_graph->removeReferencesFrom(CodeUseGraph::functionLikeNode('b::usea'));
+        self::assertSame([], $codebase->findReferencesToClassLike('A'));
+    }
+
+    public function testRemovedSourceNodeCanBeReassignedToAnotherFile(): void
+    {
+        $graph = new CodeUseGraph();
+        $source_node = CodeUseGraph::functionLikeNode('a::foo');
+        $target_node = CodeUseGraph::classNode('b');
+        $context = new Context();
+        $context->calling_method_id = 'a::foo';
+
+        $graph->addReference($target_node, $context, null, CodeUseGraph::EDGE_USE, '/old.php');
+        self::assertSame('/old.php', $graph->getNodeFile($source_node));
+
+        $graph->removeReferencesFrom($source_node);
+        self::assertNull($graph->getNodeFile($source_node));
+
+        $graph->addReference($target_node, $context, null, CodeUseGraph::EDGE_USE, '/new.php');
+        self::assertSame('/new.php', $graph->getNodeFile($source_node));
+    }
+
+    public function testUsedReferencesExcludeDeadSources(): void
+    {
+        $graph = new CodeUseGraph();
+        $used_source = CodeUseGraph::functionLikeNode('a::used');
+        $dead_source = CodeUseGraph::functionLikeNode('a::dead');
+        $target = CodeUseGraph::functionLikeNode('a::target');
+
+        $graph->markAsPublicApi($used_source);
+        $graph->addEdge($used_source, $target);
+        $graph->addEdge($dead_source, $target);
+        $graph->resolve(static fn(string $_): bool => false);
+
+        self::assertSame([$used_source => true], $graph->getUsedReferencingNodes($target));
+    }
+
     /**
      * @dataProvider providerReferencedMethods
      * @param array<string,array<string,bool>> $expected_references
@@ -97,8 +154,11 @@ final class FileReferenceTest extends TestCase
         $this->analyzeFile($file_path, $context);
 
         $graph = $this->project_analyzer->getCodebase()->code_use_graph;
-        assert($graph !== null);
 
+        /**
+         * @psalm-suppress MixedAssignment
+         * @psalm-pure
+         */
         $ksort_recursive = function (array &$arr) use (&$ksort_recursive): void {
             ksort($arr);
             foreach ($arr as &$value) {
@@ -208,33 +268,50 @@ final class FileReferenceTest extends TestCase
 
                     $a = new A();',
                 [
-                    'class foo\a' => [
-                        'func foo\b::__construct' => true,
-                        'func foo\c::foo' => true,
-                        'generic-use' => true,
+                    'class foo\\a' => [
+                        'file /var/www/somefile.php' => true,
+                        'func foo\\b::__construct' => true,
+                        'func foo\\c::foo' => true,
                     ],
-                    'class foo\c' => [
-                        'func foo\b::bar' => true,
+                    'class foo\\c' => [
+                        'func foo\\b::bar' => true,
                     ],
-                    'class foo\d' => [
-                        'generic-use' => true,
+                    'class foo\\d' => [
+                        'file /var/www/somefile.php' => true,
                     ],
-                    'func foo\a::bat' => [
-                        'func foo\b::__construct' => true,
+                    'func foo\\a::bat' => [
+                        'func foo\\b::__construct' => true,
+                        'return foo\\a::bat' => true,
                     ],
-                    'func foo\c::foo' => [
-                        'func foo\b::bar' => true,
+                    'func foo\\c::foo' => [
+                        'func foo\\b::bar' => true,
                     ],
-                    'func foo\d::__construct' => [
-                        'generic-use' => true,
+                    'func foo\\d::__construct' => [
+                        'return foo\\d::__construct' => true,
                     ],
-                    'missing-method foo\a::__construct' => [
-                        'func foo\b::__construct' => true,
-                        'func foo\c::foo' => true,
-                        'generic-use' => true,
+                    'missing-method foo\\a::__construct' => [
+                        'file /var/www/somefile.php' => true,
+                        'func foo\\b::__construct' => true,
+                        'func foo\\c::foo' => true,
                     ],
-                    'missing-method foo\c::__construct' => [
-                        'func foo\b::bar' => true,
+                    'missing-method foo\\c::__construct' => [
+                        'func foo\\b::bar' => true,
+                    ],
+                    'property foo\\d::$foo' => [
+                        'file /var/www/somefile.php' => true,
+                    ],
+                    'return foo\\a::bat' => [
+                        'func foo\\b::__construct' => true,
+                    ],
+                    'return foo\\d::__construct' => [
+                        'file /var/www/somefile.php' => true,
+                    ],
+                    'use-alias use:A:d7863b8594fe57f85cb8183fe55a6c15' => [
+                        'func foo\\b::__construct' => true,
+                        'func foo\\c::foo' => true,
+                    ],
+                    'use-alias use:C:d7863b8594fe57f85cb8183fe55a6c15' => [
+                        'func foo\\b::bar' => true,
                     ],
                 ],
             ],
@@ -261,33 +338,45 @@ final class FileReferenceTest extends TestCase
                         }
                     }',
                 [
-                    'class foo\a' => [
-                        'class foo\b' => true,
-                        'func foo\d::bat' => true,
+                    'class foo\\a' => [
+                        'class foo\\b' => true,
+                        'func foo\\d::bat' => true,
                     ],
-                    'class foo\b' => [
-                        'class foo\c' => true,
+                    'class foo\\b' => [
+                        'class foo\\c' => true,
                     ],
-                    'class foo\c' => [
-                        'func foo\d::bat' => true,
+                    'class foo\\c' => [
+                        'func foo\\d::bat' => true,
                     ],
-                    'func foo\a::__construct' => [
-                        'func foo\d::bat' => true,
+                    'func foo\\a::__construct' => [
+                        'return foo\\a::__construct' => true,
                     ],
-                    'func foo\a::bar' => [
-                        'func foo\d::bat' => true,
+                    'func foo\\a::bar' => [
+                        'func foo\\d::bat' => true,
                     ],
-                    'func foo\b::__construct' => [
-                        'func foo\d::bat' => true,
+                    'func foo\\b::__construct' => [
+                        'return foo\\b::__construct' => true,
                     ],
-                    'func foo\b::bar' => [
-                        'func foo\d::bat' => true,
+                    'func foo\\b::bar' => [
+                        'func foo\\d::bat' => true,
                     ],
-                    'func foo\c::__construct' => [
-                        'func foo\d::bat' => true,
+                    'func foo\\c::__construct' => [
+                        'return foo\\c::__construct' => true,
                     ],
-                    'func foo\c::bar' => [
-                        'func foo\d::bat' => true,
+                    'func foo\\c::bar' => [
+                        'func foo\\d::bat' => true,
+                    ],
+                    'return foo\\a::__construct' => [
+                        'func foo\\d::bat' => true,
+                    ],
+                    'return foo\\b::__construct' => [
+                        'func foo\\d::bat' => true,
+                    ],
+                    'return foo\\c::__construct' => [
+                        'func foo\\d::bat' => true,
+                    ],
+                    'use-alias use:C:d7863b8594fe57f85cb8183fe55a6c15' => [
+                        'func foo\\d::bat' => true,
                     ],
                 ],
             ],
@@ -311,13 +400,13 @@ final class FileReferenceTest extends TestCase
                         }
                     }',
                 [
-                    'class foo\a' => [
-                        'func foo\b::__construct' => true,
-                        'func foo\c::foo' => true,
+                    'class foo\\a' => [
+                        'func foo\\b::__construct' => true,
+                        'func foo\\c::foo' => true,
                     ],
-                    'const foo\a::c' => [
-                        'func foo\b::__construct' => true,
-                        'func foo\c::foo' => true,
+                    'const foo\\a::C' => [
+                        'func foo\\b::__construct' => true,
+                        'func foo\\c::foo' => true,
                     ],
                 ],
             ],
@@ -342,13 +431,17 @@ final class FileReferenceTest extends TestCase
                         }
                     }',
                 [
-                    'class foo\a' => [
-                        'func foo\b::__construct' => true,
-                        'func foo\c::foo' => true,
+                    'class foo\\a' => [
+                        'func foo\\b::__construct' => true,
+                        'func foo\\c::foo' => true,
                     ],
-                    'property foo\a::fooBar' => [
-                        'func foo\b::__construct' => true,
-                        'func foo\c::foo' => true,
+                    'property foo\\a::$fooBar' => [
+                        'func foo\\b::__construct' => true,
+                        'func foo\\c::foo' => true,
+                    ],
+                    'use-alias use:A:d7863b8594fe57f85cb8183fe55a6c15' => [
+                        'func foo\\b::__construct' => true,
+                        'func foo\\c::foo' => true,
                     ],
                 ],
             ],
@@ -373,17 +466,21 @@ final class FileReferenceTest extends TestCase
                         }
                     }',
                 [
-                    'class foo\a' => [
-                        'func foo\b::__construct' => true,
-                        'func foo\c::foo' => true,
+                    'class foo\\a' => [
+                        'func foo\\b::__construct' => true,
+                        'func foo\\c::foo' => true,
                     ],
-                    'missing-method foo\a::__construct' => [
-                        'func foo\b::__construct' => true,
-                        'func foo\c::foo' => true,
+                    'missing-method foo\\a::__construct' => [
+                        'func foo\\b::__construct' => true,
+                        'func foo\\c::foo' => true,
                     ],
-                    'property foo\a::fooBar' => [
-                        'func foo\b::__construct' => true,
-                        'func foo\c::foo' => true,
+                    'property foo\\a::$fooBar' => [
+                        'func foo\\b::__construct' => true,
+                        'func foo\\c::foo' => true,
+                    ],
+                    'use-alias use:A:d7863b8594fe57f85cb8183fe55a6c15' => [
+                        'func foo\\b::__construct' => true,
+                        'func foo\\c::foo' => true,
                     ],
                 ],
             ],
@@ -407,14 +504,17 @@ final class FileReferenceTest extends TestCase
                         use T;
                     }',
                 [
-                    'class ns\a' => [
-                        'func ns\c::bar' => true,
+                    'class ns\\a' => [
+                        'func ns\\c::bar' => true,
                     ],
-                    'class ns\t' => [
-                        'class ns\c' => true,
+                    'class ns\\t' => [
+                        'class ns\\c' => true,
                     ],
-                    'func ns\a::foo' => [
-                        'func ns\c::bar' => true,
+                    'func ns\\a::foo' => [
+                        'func ns\\c::bar' => true,
+                    ],
+                    'use-alias use:A:d7863b8594fe57f85cb8183fe55a6c15' => [
+                        'func ns\\c::bar' => true,
                     ],
                 ],
             ],
