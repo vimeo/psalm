@@ -12,6 +12,7 @@ use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TNamedObject;
 
 use function array_merge;
+use function count;
 
 /**
  * @internal
@@ -149,8 +150,10 @@ final class GenericTypeComparator
                     if (!($container_type_params_covariant[$i] ?? false)
                         && !$container_param->had_template
                     ) {
+                        $lower_bounds_before = count($param_comparison_result->type_variable_lower_bounds);
+
                         // Make sure types are basically the same
-                        if (!UnionTypeComparator::isContainedBy(
+                        $reverse_contained = UnionTypeComparator::isContainedBy(
                             $codebase,
                             $container_param,
                             $input_param,
@@ -158,8 +161,18 @@ final class GenericTypeComparator
                             $container_param->ignore_falsable_issues,
                             $param_comparison_result,
                             $allow_interface_equality,
-                        ) || $param_comparison_result->type_coerced
-                        ) {
+                        );
+
+                        // lower bounds this reverse check recorded are mirrors
+                        // of the container param, not values the variable holds
+                        $lower_bounds_count = count($param_comparison_result->type_variable_lower_bounds);
+                        for ($mirror_i = $lower_bounds_before; $mirror_i < $lower_bounds_count; $mirror_i++) {
+                            $param_comparison_result
+                                ->type_variable_lower_bounds[$mirror_i][1]
+                                ->from_invariant_argument_mirror = true;
+                        }
+
+                        if (!$reverse_contained || $param_comparison_result->type_coerced) {
                             if ($container_param->hasStaticObject()
                                 && $input_param->isStaticObject()
                             ) {
