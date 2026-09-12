@@ -112,7 +112,6 @@ final class MutableUnion implements TypeNode
     /**
      * whether this type had never set explicitly
      * since it's the bottom type, it's combined into everything else and lost
-     *
      */
     public bool $explicit_never = false;
 

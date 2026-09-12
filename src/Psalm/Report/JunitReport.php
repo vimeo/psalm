@@ -19,6 +19,7 @@ use function trim;
  * Copyright (c) Marisa Clardy marisa@clardy.eu
  *
  * with a few modifications
+ *
  * @api
  */
 final class JunitReport extends Report

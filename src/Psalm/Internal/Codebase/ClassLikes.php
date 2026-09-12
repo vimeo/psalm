@@ -45,7 +45,6 @@ use Psalm\Progress\VoidProgress;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassConstantStorage;
 use Psalm\Storage\ClassLikeStorage;
-use Psalm\Storage\MethodStorage;
 use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\Atomic\TEnumCase;

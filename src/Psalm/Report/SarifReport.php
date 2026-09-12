@@ -18,6 +18,7 @@ use function str_starts_with;
  * SARIF report format suitable for import into any SARIF compatible solution
  *
  * https://docs.oasis-open.org/sarif/sarif/v2.1.0/cs01/sarif-v2.1.0-cs01.html
+ *
  * @api
  */
 final class SarifReport extends Report

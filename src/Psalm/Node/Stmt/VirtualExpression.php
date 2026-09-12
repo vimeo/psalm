@@ -9,6 +9,7 @@ use Psalm\Node\VirtualNode;
 
 /**
  * Represents statements of type "expr;"
+ *
  * @api
  */
 final class VirtualExpression extends Expression implements VirtualNode
