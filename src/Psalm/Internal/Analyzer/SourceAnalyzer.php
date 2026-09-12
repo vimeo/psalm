@@ -165,7 +165,7 @@ abstract class SourceAnalyzer implements StatementsSource
     }
 
     /**
-     * @param array<int, string> $new_issues
+     * @param array<array-key, string> $new_issues
      * @psalm-external-mutation-free
      */
     #[Override]
@@ -175,7 +175,7 @@ abstract class SourceAnalyzer implements StatementsSource
     }
 
     /**
-     * @param array<int, string> $new_issues
+     * @param array<array-key, string> $new_issues
      * @psalm-external-mutation-free
      */
     #[Override]

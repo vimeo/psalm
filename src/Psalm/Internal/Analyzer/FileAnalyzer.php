@@ -611,7 +611,7 @@ class FileAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * @param array<int, string> $new_issues
+     * @param array<array-key, string> $new_issues
      * @psalm-external-mutation-free
      */
     #[Override]
@@ -625,7 +625,7 @@ class FileAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * @param array<int, string> $new_issues
+     * @param array<array-key, string> $new_issues
      * @psalm-external-mutation-free
      */
     #[Override]

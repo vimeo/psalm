@@ -28,7 +28,6 @@ use Psalm\Type\Union;
 
 use function array_key_first;
 use function array_shift;
-use function array_values;
 use function assert;
 use function count;
 use function strtolower;
