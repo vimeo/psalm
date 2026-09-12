@@ -21,6 +21,7 @@ use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Codebase\CodeUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\FileManipulation\FunctionDocblockManipulator;
@@ -44,7 +45,6 @@ use Psalm\Issue\MissingAbstractPureAnnotation;
 use Psalm\Issue\MissingClosureParamType;
 use Psalm\Issue\MissingOverrideAttribute;
 use Psalm\Issue\MissingParamType;
-use Psalm\Issue\MissingPureAnnotation;
 use Psalm\Issue\MissingThrowsDocblock;
 use Psalm\Issue\ParadoxicalCondition;
 use Psalm\Issue\ReferenceConstraintViolation;
@@ -136,6 +136,23 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
     /** @var Mutations::LEVEL_* */
     public int $inferred_mutations = Mutations::LEVEL_NONE;
+
+    /**
+     * The mutations performed by this function-like itself, excluding those of
+     * the unannotated callees in $deferred_callees.
+     *
+     * @var Mutations::LEVEL_*
+     */
+    public int $intrinsic_mutations = Mutations::LEVEL_NONE;
+
+    /**
+     * The unannotated project function-likes called by this function-like
+     * (graph node => whether mutations of the callee's own instance are fine),
+     * whose levels are only known after analysis.
+     *
+     * @var array<string, bool>
+     */
+    public array $deferred_callees = [];
 
     /**
      * Holds param nodes for functions with func_get_args calls
@@ -515,6 +532,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         if (!$this->function instanceof VirtualNode
             && ($this->function instanceof Function_
                 || $this->function instanceof ClassMethod
+                || $this->function instanceof Closure
             )
             && !$context->collect_initializations
             && !$context->collect_mutations
@@ -561,6 +579,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $isVoid = $inferred_return->isVoid();
             }
             if ($isVoid
+                && !$this->function instanceof Closure
                 && !(
                     $storage->throw_locations
                     || $storage->throws
@@ -578,45 +597,36 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 );
             }
 
-            if ($this->function->stmts === null
-                ? !$storage->has_mutations_annotation
-                : $this->inferred_mutations < $storage->allowed_mutations
-            ) {
-                if ($storage->location) {
-                    if ($this->function->stmts === null) {
-                        IssueBuffer::maybeAdd(
-                            new MissingAbstractPureAnnotation(
-                                $storage->cased_name . ' must be marked with one of @'
-                                .implode(', @', Mutations::TO_ATTRIBUTE_FUNCTIONLIKE)
-                                .' to aid security analysis',
-                                $storage->location,
-                            ),
-                            $storage->suppressed_issues,
-                        );
-                    } else {
-                        IssueBuffer::maybeAdd(
-                            new MissingPureAnnotation(
-                                $storage->cased_name . ' must be marked @'.Mutations::TO_ATTRIBUTE_FUNCTIONLIKE[
-                                $this->inferred_mutations
-                                ].' to aid security analysis'
-                                .', run with --alter --issues=MissingPureAnnotation to fix this',
-                                $storage->location,
-                            ),
-                            $storage->suppressed_issues,
-                        );
-                    }
-                }
-                if ($codebase->alter_code
-                    && $this->function->stmts !== null
-                    && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
-                ) {
-                    $manipulator = FunctionDocblockManipulator::getForFunction(
-                        $project_analyzer,
-                        $this->source->getFilePath(),
-                        $this->function,
+            if ($this->function->stmts === null) {
+                if (!$storage->has_mutations_annotation && $storage->location) {
+                    IssueBuffer::maybeAdd(
+                        new MissingAbstractPureAnnotation(
+                            $storage->cased_name . ' must be marked with one of @'
+                            .implode(', @', Mutations::TO_ATTRIBUTE_FUNCTIONLIKE)
+                            .' to aid security analysis',
+                            $storage->location,
+                        ),
+                        $storage->suppressed_issues,
                     );
-                    $manipulator->setAllowedMutations($this->inferred_mutations);
                 }
+            } elseif ($storage->location && ($node_id = $this->getMutationNodeId()) !== null) {
+                // the final level depends on the callees' levels: resolved after analysis,
+                // which reports MissingPureAnnotation and queues the fix (see MutationLevelResolver)
+                $codebase->code_use_graph->addMutationInfo($node_id, [
+                    'intrinsic' => $this->intrinsic_mutations,
+                    'allowed' => $storage->allowed_mutations,
+                    'callees' => $this->deferred_callees,
+                    'location' => $storage->location,
+                    'cased_name' => $storage->cased_name ?? '{closure}',
+                    'suppressed_issues' => $storage->suppressed_issues,
+                    'class' => $storage instanceof MethodStorage ? $storage->defining_fqcln : null,
+                    'file_path' => $this->source->getFilePath(),
+                    'start' => (int) $this->function->getAttribute('startFilePos'),
+                    'fresh' => true,
+                    // inline callbacks are not worth annotating, closures assigned to a variable are
+                    'report' => !$this->function instanceof Closure
+                        || $this->function->getAttribute('assigned_var_id') !== null,
+                ]);
             }
         }
 
@@ -1822,6 +1832,16 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         }
 
         return [];
+    }
+
+    /**
+     * The graph node used to resolve the mutation level of this function-like.
+     *
+     * @psalm-mutation-free
+     */
+    public function getMutationNodeId(): ?string
+    {
+        return CodeUseGraph::functionLikeNodeForStorage($this->storage);
     }
 
     /**

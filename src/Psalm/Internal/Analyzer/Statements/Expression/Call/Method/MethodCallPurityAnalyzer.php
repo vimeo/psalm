@@ -108,7 +108,15 @@ final class MethodCallPurityAnalyzer
             $stmt,
             $method_storage->allowed_mutations,
             false,
-            $lhs_var_id === '$this' ? $method_storage : null,
+            // the level of an unannotated method is inferred from its body, which only
+            // describes the method actually called if it can't be overridden elsewhere
+            $lhs_var_id === '$this'
+                || $method_storage->final
+                || $class_storage->final
+                || $method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
+                ? $method_storage
+                : null,
+            self::receiverAllowsInternalMutations($statements_analyzer, $stmt->var, $method_id, $context),
         );
         
         if (!$context->inside_unset
