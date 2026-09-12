@@ -65,6 +65,24 @@ final class TypeVariableTest extends TestCase
                         return $box;
                     }',
             ],
+            'earlierInvariantArgumentPinStaysSilent' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(public mixed $value) {}
+                    }
+
+                    /** @param Box<int> $box */
+                    function takesIntBox(Box $box): int {
+                        return $box->value;
+                    }
+
+                    function inspect(): void {
+                        $box = new Box(1);
+                        takesIntBox($box);
+                    }',
+            ],
             'boundViolationSuppressed' => [
                 'code' => '<?php
                     /** @template T of int */
@@ -148,6 +166,58 @@ final class TypeVariableTest extends TestCase
                     }',
                 'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
                     . "somefile.php:16:35 - Type DateTime should be a subtype of int|string",
+            ],
+            'laterInvariantArgumentPinDoesNotBlameEarlierValidCall' => [
+                // vimeo/psalm#11937: the invalid takesStringBox call is reported
+                // at its call site; the valid takesIntBox call stays silent.
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(public mixed $value) {}
+                    }
+
+                    /** @param Box<int> $box */
+                    function takesIntBox(Box $box): int {
+                        return $box->value;
+                    }
+
+                    /** @param Box<string> $box */
+                    function takesStringBox(Box $box): string {
+                        return $box->value;
+                    }
+
+                    function inspect(): void {
+                        $box = new Box(1);
+                        takesIntBox($box);
+                        takesStringBox($box);
+                    }',
+                'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:21:40 - Type 1 should be a subtype of string',
+            ],
+            'unboundVariablePassedToConflictingInvariantParams' => [
+                // with no content, two incompatible invariant requirements are
+                // still caught (mirror bounds stand in).
+                'code' => '<?php
+                    /** @template T */
+                    class Box {
+                        public function __construct() {}
+                        /** @param T $v */
+                        public function set($v): void {}
+                    }
+
+                    /** @param Box<int> $b */
+                    function takesInt(Box $b): void {}
+
+                    /** @param Box<string> $b */
+                    function takesStr(Box $b): void {}
+
+                    function f(): void {
+                        $box = new Box();
+                        takesInt($box);
+                        takesStr($box);
+                    }',
+                'error_message' => 'IncompatibleTypeParameters',
             ],
             'globalScopeBoundViolation' => [
                 'code' => '<?php

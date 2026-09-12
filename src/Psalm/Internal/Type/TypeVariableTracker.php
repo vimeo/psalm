@@ -179,9 +179,21 @@ final class TypeVariableTracker
     ): void {
         $relevant_lower_bounds = self::getRelevantBounds($lower_bounds);
 
+        // Check the variable's content (constructor args, covariant mutations)
+        // against each requirement; ignore mirror bounds, so a later invalid
+        // call is not checked against an earlier valid call's requirement
+        // (vimeo/psalm#11937). With no content, mirror bounds stand in so
+        // mutually unsatisfiable requirements are still caught.
+        $content_lower_bounds = array_values(array_filter(
+            $relevant_lower_bounds,
+            static fn(TemplateBound $bound): bool => !$bound->from_invariant_argument_mirror,
+        ));
+
+        $lower_bounds_to_check = $content_lower_bounds ?: $relevant_lower_bounds;
+
         $has_issue = false;
 
-        foreach ($relevant_lower_bounds as $relevant_lower_bound) {
+        foreach ($lower_bounds_to_check as $relevant_lower_bound) {
             foreach ($upper_bounds as $upper_bound) {
                 $union_comparison_result = new TypeComparisonResult();
 
@@ -201,11 +213,18 @@ final class TypeVariableTracker
                     }
 
                     $has_issue = true;
+
+                    // argument requirements point at the call site; return
+                    // types and constraints point at where the value entered
+                    $pos = $upper_bound->from_argument_requirement
+                        ? ($upper_bound->pos ?? $relevant_lower_bound->pos ?? $fallback_location)
+                        : ($relevant_lower_bound->pos ?? $upper_bound->pos ?? $fallback_location);
+
                     IssueBuffer::maybeAdd(
                         new IncompatibleTypeParameters(
                             'Type ' . $relevant_lower_bound->type->getId()
                                 . ' should be a subtype of ' . $upper_bound->type->getId(),
-                            $relevant_lower_bound->pos ?? $upper_bound->pos ?? $fallback_location,
+                            $pos,
                         ),
                         $suppressed_issues,
                     );
