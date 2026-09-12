@@ -45,7 +45,6 @@ use function max;
  *     cased_name: string,
  *     suppressed_issues: array<int, string>,
  *     class: ?string,
- *     file_path: string,
  *     start: int,
  *     fresh: bool,
  *     report: bool
@@ -157,12 +156,14 @@ final class MutationLevelResolver
             );
 
             if ($fix) {
-                [$stmt, $docblock_anchor] = self::findFunctionLike($codebase, $info['file_path'], $info['start']);
+                $file_path = $info['location']->file_path;
+
+                [$stmt, $docblock_anchor] = self::findFunctionLike($codebase, $file_path, $info['start']);
 
                 if ($stmt !== null) {
                     FunctionDocblockManipulator::getForFunction(
                         $project_analyzer,
-                        $info['file_path'],
+                        $file_path,
                         $stmt,
                         $docblock_anchor,
                     )->setAllowedMutations($level);

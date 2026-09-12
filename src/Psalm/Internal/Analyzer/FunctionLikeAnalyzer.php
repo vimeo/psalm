@@ -620,7 +620,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     'cased_name' => $storage->cased_name ?? '{closure}',
                     'suppressed_issues' => $storage->suppressed_issues,
                     'class' => $storage instanceof MethodStorage ? $storage->defining_fqcln : null,
-                    'file_path' => $this->source->getFilePath(),
                     'start' => (int) $this->function->getAttribute('startFilePos'),
                     'fresh' => true,
                     // inline callbacks are not worth annotating, closures assigned to a variable are
