@@ -179,15 +179,12 @@ final class TypeVariableTracker
     ): void {
         $relevant_lower_bounds = self::getRelevantBounds($lower_bounds);
 
-        // Check the variable's content (constructor args, covariant mutations)
-        // against each requirement; ignore mirror bounds, so a later invalid
-        // call is not checked against an earlier valid call's requirement
-        // (vimeo/psalm#11937). With no content, mirror bounds stand in so
-        // mutually unsatisfiable requirements are still caught.
-        $content_lower_bounds = array_values(array_filter(
-            $relevant_lower_bounds,
-            static fn(TemplateBound $bound): bool => !$bound->from_invariant_argument_mirror,
-        ));
+        $content_lower_bounds = [];
+        foreach ($relevant_lower_bounds as $bound) {
+            if (!$bound->from_invariant_argument_mirror) {
+                $content_lower_bounds[] = $bound;
+            }
+        }
 
         $lower_bounds_to_check = $content_lower_bounds ?: $relevant_lower_bounds;
 
