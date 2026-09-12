@@ -1654,9 +1654,6 @@ final class Codebase
             return null;
         }
 
-        $start_pos = null;
-        $end_pos = null;
-
         ksort($argument_map);
 
         foreach ($argument_map as $start_pos => [$end_pos, $possible_reference, $possible_argument_number]) {
@@ -1672,7 +1669,7 @@ final class Codebase
             $argument_number = $possible_argument_number;
         }
 
-        if ($reference === null || $start_pos === null || $end_pos === null || $argument_number === null) {
+        if ($reference === null || $argument_number === null) {
             return null;
         }
 
@@ -2487,18 +2484,16 @@ final class Codebase
     public function addTaintSource(
         Union $expr_type,
         string $taint_id,
+        CodeLocation $code_location,
         int $taints = TaintKind::ALL_INPUT,
-        ?CodeLocation $code_location = null,
     ): Union {
         if (!$this->taint_flow_graph) {
             return $expr_type;
         }
 
-        $source = DataFlowNode::make(
-            $taint_id,
+        $source = DataFlowNode::getForTaintSink(
             $taint_id,
             $code_location,
-            null,
             $taints,
         );
 
@@ -2512,18 +2507,16 @@ final class Codebase
      */
     public function addTaintSink(
         string $taint_id,
+        CodeLocation $code_location,
         int $taints = TaintKind::ALL_INPUT,
-        ?CodeLocation $code_location = null,
     ): void {
         if (!$this->taint_flow_graph) {
             return;
         }
 
-        $sink = DataFlowNode::make(
-            $taint_id,
+        $sink = DataFlowNode::getForTaintSink(
             $taint_id,
             $code_location,
-            null,
             $taints,
         );
 

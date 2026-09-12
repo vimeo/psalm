@@ -841,8 +841,8 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 assert($statements_analyzer->data_flow_graph !== null);
                 $arg_location = new CodeLocation($statements_analyzer->getSource(), $function_name);
 
-                $custom_call_sink = DataFlowNode::getForMethodArgument(
-                    'variable-call',
+                $custom_call_sink = DataFlowNode::getForCallableArg(
+                    'dynamic-function-call',
                     'variable-call',
                     0,
                     $arg_location,

@@ -504,6 +504,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         $statements_analyzer->analyze($function_stmts, $context, $global_context);
 
+        if ($statements_analyzer->owns_type_variable_tracker) {
+            $statements_analyzer->type_variable_tracker->reconcile(
+                $codebase,
+                $storage->location ?? new CodeLocation($this, $this->function),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
+
         if (!$this->function instanceof VirtualNode
             && ($this->function instanceof Function_
                 || $this->function instanceof ClassMethod
@@ -869,9 +877,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             && $context->vars_in_scope['$this']->parent_nodes
         ) {
             $method_source = DataFlowNode::getForMethodReturn(
-                (string) $method_id,
                 $cased_method_id,
-                $storage->location,
+                $storage,
             );
 
             $codebase->taint_flow_graph->addNode($method_source);
@@ -891,9 +898,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             && $this->function instanceof ClassMethod
             && $cased_method_id) {
             $method_source = DataFlowNode::getForMethodReturn(
-                (string) $method_id,
                 $cased_method_id,
-                $storage->location,
+                $storage,
             );
 
             FunctionCallReturnTypeFetcher::taintUsingStorage(
@@ -1136,9 +1142,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 if ($cased_method_id !== null) {
                     $type_source = DataFlowNode::getForMethodArgument(
                         $cased_method_id,
-                        $cased_method_id,
                         $offset,
-                        $function_param->location,
+                        $storage,
                         null,
                     );
 

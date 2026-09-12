@@ -1,7 +1,7 @@
 digraph Taints {
-	"$_GET specialized in src/FileWithErrors.php:509" -> "$_GET['abc'] from src/filewitherrors.php:509-513"
-	"$_GET specialized in src/FileWithErrors.php:536" -> "$_GET['abc'] from src/filewitherrors.php:536-540"
-	"$_GET specialized in src/FileWithErrors.php:552" -> "$_GET['abc'] from src/filewitherrors.php:552-556"
+	"$_GET specialized in src/filewitherrors.php:509" -> "$_GET['abc'] from src/filewitherrors.php:509-513"
+	"$_GET specialized in src/filewitherrors.php:536" -> "$_GET['abc'] from src/filewitherrors.php:536-540"
+	"$_GET specialized in src/filewitherrors.php:552" -> "$_GET['abc'] from src/filewitherrors.php:552-556"
 	"$_GET['abc'] from src/filewitherrors.php:536-540" -> "call to is_string from src/filewitherrors.php:536-547"
 	"$_GET['abc'] from src/filewitherrors.php:552-556" -> "call to echo from src/filewitherrors.php:503-569"
 	"$s from src/filewitherrors.php:148-149" -> "variable-use" -> "acme\sampleproject\bar"

@@ -32,8 +32,6 @@ use const DIRECTORY_SEPARATOR;
 
 final class StubTest extends TestCase
 {
-    protected static TestConfig $config;
-
     #[Override]
     public static function setUpBeforeClass(): void
     {
@@ -43,7 +41,7 @@ final class StubTest extends TestCase
         global $argv;
         $argv = [];
 
-        self::$config = new TestConfig();
+        new TestConfig();
     }
 
     /**
