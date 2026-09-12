@@ -13,7 +13,6 @@ use function array_values;
 use function property_exists;
 
 /**
- * @psalm-suppress PossiblyUnusedProperty
  * @psalm-immutable
  * @api
  */

@@ -51,6 +51,8 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
         $codebase = $project_analyzer->getCodebase();
         $config = $project_analyzer->getConfig();
 
+        self::registerDocblockSuppressions($this->storage, $this->getFilePath(), $codebase);
+
         $fq_interface_name = $this->getFQCLN();
 
         if (!$fq_interface_name) {

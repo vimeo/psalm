@@ -224,6 +224,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                             : $this->getFilePath(),
                         $offset,
                         $issue_name,
+                        $codebase->taint_flow_graph !== null,
                     );
                 }
             }

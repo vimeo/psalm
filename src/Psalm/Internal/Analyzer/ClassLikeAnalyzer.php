@@ -107,6 +107,43 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
+     * Registers a class-like's own docblock `@psalm-suppress` annotations for the
+     * unused-suppression check, so redundant ones are reported (UnusedPsalmSuppress)
+     * like member-level suppressions already are.
+     *
+     * Uses the suppressed_issues already parsed from the docblock during scanning;
+     * these are keyed by the char offset of the issue name, unlike suppressions
+     * added programmatically by plugins (which are appended as a plain list and,
+     * having no source location, must not be reported).
+     *
+     * @psalm-external-mutation-free
+     */
+    public static function registerDocblockSuppressions(
+        ClassLikeStorage $storage,
+        string $file_path,
+        Codebase $codebase,
+    ): void {
+        // isset($suppressed_issues[0]) => the list was appended to programmatically
+        if (!$codebase->track_unused_suppressions || isset($storage->suppressed_issues[0])) {
+            return;
+        }
+
+        // a lone UnusedPsalmSuppress should still be reported as unused
+        if (count($storage->suppressed_issues) > 1
+            && in_array('UnusedPsalmSuppress', $storage->suppressed_issues, true)
+        ) {
+            return;
+        }
+
+        $file_path = $storage->location !== null ? $storage->location->file_path : $file_path;
+        $taint_analysis = $codebase->taint_flow_graph !== null;
+
+        foreach ($storage->suppressed_issues as $offset => $issue_type) {
+            IssueBuffer::addUnusedSuppression($file_path, $offset, $issue_type, $taint_analysis);
+        }
+    }
+
+    /**
      * @psalm-external-mutation-free
      */
     #[Override]

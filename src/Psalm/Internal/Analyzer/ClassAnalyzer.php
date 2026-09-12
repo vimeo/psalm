@@ -210,6 +210,8 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         $project_analyzer = $this->file_analyzer->project_analyzer;
         $codebase = $this->getCodebase();
 
+        self::registerDocblockSuppressions($storage, $this->getFilePath(), $codebase);
+
         if ($codebase->alter_code && $class->name && $codebase->classes_to_move) {
             if (isset($codebase->classes_to_move[strtolower($this->fq_class_name)])) {
                 $destination_class = $codebase->classes_to_move[strtolower($this->fq_class_name)];

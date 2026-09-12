@@ -483,6 +483,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                                 $statements_analyzer->getFilePath(),
                                 $offset,
                                 $issue_type,
+                                $codebase->taint_flow_graph !== null,
                             );
                         }
                     }
