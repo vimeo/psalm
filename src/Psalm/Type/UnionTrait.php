@@ -60,6 +60,7 @@ use function strpos;
 /**
  * @psalm-immutable
  * @psalm-import-type TProperties from Union
+ * @api
  */
 trait UnionTrait
 {

@@ -17,6 +17,7 @@ use function strlen;
  * Denotes a string whose value is known.
  *
  * @psalm-immutable
+ * @api
  */
 class TLiteralString extends TString
 {

@@ -11,6 +11,7 @@ use Psalm\Type\Atomic;
 
 /**
  * @psalm-immutable
+ * @api
  */
 final class IsLooselyEqual extends Assertion
 {

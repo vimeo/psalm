@@ -8,6 +8,9 @@ use Psalm\CodeLocation;
 
 use function strtolower;
 
+/**
+ * @api
+ */
 abstract class FunctionIssue extends CodeIssue
 {
     public string $function_id;

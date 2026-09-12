@@ -10,6 +10,7 @@ use Stringable;
 
 /**
  * @psalm-immutable
+ * @api
  */
 abstract class Assertion implements Stringable
 {

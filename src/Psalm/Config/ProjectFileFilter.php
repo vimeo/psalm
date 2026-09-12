@@ -12,6 +12,9 @@ use function str_starts_with;
 use function stripos;
 
 /** @internal */
+/**
+ * @api
+ */
 final class ProjectFileFilter extends FileFilter
 {
     private ?ProjectFileFilter $file_filter = null;

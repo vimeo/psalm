@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Psalm\Type;
 
+/**
+ * @api
+ */
 abstract class MutableTypeVisitor
 {
     public const STOP_TRAVERSAL = 1;

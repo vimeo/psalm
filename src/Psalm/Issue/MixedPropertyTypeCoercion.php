@@ -6,6 +6,9 @@ namespace Psalm\Issue;
 
 use Psalm\CodeLocation;
 
+/**
+ * @api
+ */
 final class MixedPropertyTypeCoercion extends PropertyIssue implements MixedIssue
 {
     public const ERROR_LEVEL = 1;

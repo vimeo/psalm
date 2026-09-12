@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Psalm\Type;
 
+/**
+ * @api
+ */
 interface TypeNode
 {
     /** @internal Should only be used by the TypeVisitor */

@@ -71,6 +71,9 @@ use function strpos;
 use function strtolower;
 use function substr;
 
+/**
+ * @api
+ */
 abstract class Type
 {
     /**

@@ -11,6 +11,7 @@ use UnexpectedValueException;
 
 /**
  * @psalm-immutable
+ * @api
  */
 final class HasIntOrStringArrayAccess extends Assertion
 {

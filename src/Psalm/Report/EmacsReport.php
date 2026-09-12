@@ -12,6 +12,7 @@ use function sprintf;
 
 /**
  * @psalm-external-mutation-free
+ * @api
  */
 final class EmacsReport extends Report
 {

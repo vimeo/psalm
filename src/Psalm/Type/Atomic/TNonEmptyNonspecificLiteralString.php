@@ -11,6 +11,7 @@ use Override;
  * we know that the string is not from user input
  *
  * @psalm-immutable
+ * @api
  */
 final class TNonEmptyNonspecificLiteralString extends TNonspecificLiteralString
 {

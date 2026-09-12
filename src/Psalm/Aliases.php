@@ -6,6 +6,9 @@ namespace Psalm;
 
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 
+/**
+ * @api
+ */
 final class Aliases
 {
     use UnserializeMemoryUsageSuppressionTrait;

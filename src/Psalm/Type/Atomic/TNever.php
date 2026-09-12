@@ -13,6 +13,7 @@ use Psalm\Type\Atomic;
  * terminating (like the builtin `exit()`).
  *
  * @psalm-immutable
+ * @api
  */
 final class TNever extends Atomic
 {

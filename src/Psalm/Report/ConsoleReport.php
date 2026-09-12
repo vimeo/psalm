@@ -19,6 +19,7 @@ use function substr;
 
 /**
  * @psalm-external-mutation-free
+ * @api
  */
 final class ConsoleReport extends Report
 {

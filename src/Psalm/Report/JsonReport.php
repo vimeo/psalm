@@ -14,6 +14,7 @@ use function array_values;
 
 /**
  * @psalm-external-mutation-free
+ * @api
  */
 final class JsonReport extends Report
 {

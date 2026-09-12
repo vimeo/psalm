@@ -17,6 +17,7 @@ use Psalm\Type\Union;
  * Represents a closure where we know the return type and params
  *
  * @psalm-immutable
+ * @api
  */
 final class TClosure extends TNamedObject
 {

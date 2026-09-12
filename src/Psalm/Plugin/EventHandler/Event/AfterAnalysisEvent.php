@@ -10,6 +10,7 @@ use Psalm\SourceControl\SourceControlInfo;
 
 /**
  * @psalm-immutable
+ * @api
  */
 final class AfterAnalysisEvent
 {

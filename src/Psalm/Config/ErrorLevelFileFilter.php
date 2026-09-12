@@ -12,6 +12,9 @@ use SimpleXMLElement;
 use function in_array;
 
 /** @internal */
+/**
+ * @api
+ */
 final class ErrorLevelFileFilter extends FileFilter
 {
     private string $error_level = '';

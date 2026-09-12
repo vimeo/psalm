@@ -10,6 +10,7 @@ use Override;
  * Denotes an object that is also `callable` (i.e. it has `__invoke` defined).
  *
  * @psalm-immutable
+ * @api
  */
 final class TCallableObject extends TObject
 {

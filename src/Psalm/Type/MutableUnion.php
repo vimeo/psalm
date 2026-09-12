@@ -30,6 +30,9 @@ use function count;
 use function get_object_vars;
 use function strpos;
 
+/**
+ * @api
+ */
 final class MutableUnion implements TypeNode
 {
     use UnionTrait;

@@ -81,6 +81,9 @@ use function strpos;
 use function strtolower;
 use function substr;
 
+/**
+ * @api
+ */
 class Reconciler
 {
     public const RECONCILIATION_OK = 0;

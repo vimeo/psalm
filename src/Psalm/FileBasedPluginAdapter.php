@@ -21,6 +21,9 @@ use function str_replace;
 use const DIRECTORY_SEPARATOR;
 
 /** @internal */
+/**
+ * @api
+ */
 final class FileBasedPluginAdapter implements PluginEntryPointInterface
 {
     private readonly string $path;

@@ -11,6 +11,7 @@ namespace Psalm\Type;
  * and extracting it with ->value every time is a pain.
  *
  * @psalm-immutable
+ * @api
  */
 final class TaintKind
 {

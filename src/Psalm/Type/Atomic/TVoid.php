@@ -12,6 +12,7 @@ use Psalm\Type\Atomic;
  * Denotes the `void` type, normally just used to annotate a function/method that returns nothing
  *
  * @psalm-immutable
+ * @api
  */
 final class TVoid extends Atomic
 {

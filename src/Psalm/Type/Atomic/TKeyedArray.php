@@ -34,6 +34,7 @@ use function str_replace;
  *
  * @psalm-api
  * @psalm-immutable
+ * @api
  */
 final class TKeyedArray extends Atomic
 {

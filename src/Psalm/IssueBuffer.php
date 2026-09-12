@@ -84,6 +84,9 @@ use const PHP_EOL;
 use const PSALM_VERSION;
 use const STDERR;
 
+/**
+ * @api
+ */
 final class IssueBuffer
 {
     /**

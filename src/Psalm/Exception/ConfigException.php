@@ -6,6 +6,9 @@ namespace Psalm\Exception;
 
 use Exception;
 
+/**
+ * @api
+ */
 class ConfigException extends Exception
 {
 }

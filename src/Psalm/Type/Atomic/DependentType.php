@@ -8,6 +8,7 @@ use Psalm\Type\Atomic;
 
 /**
  * @psalm-immutable
+ * @api
  */
 interface DependentType
 {

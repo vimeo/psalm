@@ -12,6 +12,7 @@ use Psalm\Type\Atomic;
  * Denotes the `null` type
  *
  * @psalm-immutable
+ * @api
  */
 final class TNull extends Atomic
 {

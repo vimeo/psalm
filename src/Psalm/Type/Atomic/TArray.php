@@ -18,6 +18,7 @@ use function count;
  * Denotes a simple array of the form `array<TKey, TValue>`. It expects an array with two elements, both union types.
  *
  * @psalm-immutable
+ * @api
  */
 class TArray extends Atomic
 {

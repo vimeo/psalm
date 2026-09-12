@@ -18,6 +18,7 @@ use function max;
  * https://docs.sonarqube.org/latest/analysis/generic-issue/
  *
  * @psalm-external-mutation-free
+ * @api
  */
 final class SonarqubeReport extends Report
 {

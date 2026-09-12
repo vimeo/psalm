@@ -40,6 +40,9 @@ use const GLOB_NOSORT;
 use const JSON_THROW_ON_ERROR;
 
 /** @internal */
+/**
+ * @api
+ */
 final class Creator
 {
     private const TEMPLATE = '<?xml version="1.0"?>

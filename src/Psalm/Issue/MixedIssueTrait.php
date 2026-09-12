@@ -8,6 +8,9 @@ use Override;
 use Psalm\CodeLocation;
 
 /** @psalm-immutable */
+/**
+ * @api
+ */
 trait MixedIssueTrait
 {
     /**

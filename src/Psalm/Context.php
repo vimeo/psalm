@@ -37,6 +37,9 @@ use function strtolower;
 
 use const JSON_THROW_ON_ERROR;
 
+/**
+ * @api
+ */
 final class Context
 {
     /**

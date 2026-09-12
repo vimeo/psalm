@@ -14,6 +14,7 @@ use function substr;
 
 /**
  * @psalm-external-mutation-free
+ * @api
  */
 final class PhpStormReport extends Report
 {

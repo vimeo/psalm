@@ -10,6 +10,9 @@ use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\Mutations;
 use Psalm\Type\Union;
 
+/**
+ * @api
+ */
 interface StatementsSource extends FileSource
 {
     public function getNamespace(): ?string;

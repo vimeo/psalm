@@ -9,6 +9,9 @@ use Psalm\Internal\Type\TypeAlias;
 use Psalm\Issue\CodeIssue;
 use Psalm\Type\Union;
 
+/**
+ * @api
+ */
 final class FileStorage
 {
     use CustomMetadataTrait;

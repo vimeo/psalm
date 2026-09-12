@@ -10,6 +10,7 @@ use Override;
  * Represents a string whose value is that of a type found by gettype($var)
  *
  * @psalm-immutable
+ * @api
  */
 final class TDependentGetType extends TString
 {

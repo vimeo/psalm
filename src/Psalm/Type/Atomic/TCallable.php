@@ -18,6 +18,7 @@ use Psalm\Type\Union;
  * Denotes the `callable` type. Can result from an `is_callable` check.
  *
  * @psalm-immutable
+ * @api
  */
 final class TCallable extends Atomic
 {

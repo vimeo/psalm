@@ -18,6 +18,7 @@ use Psalm\Type\Atomic;
  * function-like has been analyzed.
  *
  * @psalm-immutable
+ * @api
  */
 final class TTypeVariable extends Atomic
 {

@@ -16,6 +16,7 @@ use Psalm\Type\Union;
  * Internal representation of a conditional return type in phpdoc. For example ($param1 is int ? int : string)
  *
  * @psalm-immutable
+ * @api
  */
 final class TConditional extends Atomic
 {

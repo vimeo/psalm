@@ -6,6 +6,7 @@ namespace Psalm\SourceControl;
 
 /**
  * @psalm-immutable
+ * @api
  */
 abstract class SourceControlInfo
 {

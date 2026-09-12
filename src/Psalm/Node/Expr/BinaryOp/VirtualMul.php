@@ -7,6 +7,9 @@ namespace Psalm\Node\Expr\BinaryOp;
 use PhpParser\Node\Expr\BinaryOp\Mul;
 use Psalm\Node\VirtualNode;
 
+/**
+ * @api
+ */
 final class VirtualMul extends Mul implements VirtualNode
 {
 
