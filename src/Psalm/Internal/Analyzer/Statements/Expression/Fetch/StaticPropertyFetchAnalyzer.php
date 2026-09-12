@@ -85,9 +85,9 @@ final class StaticPropertyFetchAnalyzer
             if ($context->calling_method_id
                 && !$stmt->class instanceof PhpParser\Node\Name\FullyQualified
             ) {
-                $codebase->addReferenceToClass(
-                    $fq_class_name,
-                    new CodeLocation($statements_analyzer->getSource(), $stmt->class),
+                $codebase->addReferenceToUseAlias(
+                    $stmt->class->getFirst(),
+                    $statements_analyzer->getFilePath(),
                     $context,
                 );
             }

@@ -42,6 +42,7 @@ use ReflectionProperty;
 use function array_keys;
 use function array_search;
 use function count;
+use function explode;
 use function str_contains;
 use function str_starts_with;
 use function strtolower;
@@ -122,12 +123,18 @@ final class TypeChecker extends TypeVisitor
             );
         }
 
-        if ($this->context?->calling_method_id
+        if ($this->context?->calling_method_id !== null
             && $atomic->text !== null
         ) {
             $codebase->addReferenceToClass(
-                $atomic->value,
+                strtolower($atomic->value),
                 $this->code_location,
+                $this->context,
+            );
+            // the type was written using an import alias: re-analyse if the import changes
+            $codebase->addReferenceToUseAlias(
+                explode('\\', $atomic->text, 2)[0],
+                $this->source->getFilePath(),
                 $this->context,
             );
         }

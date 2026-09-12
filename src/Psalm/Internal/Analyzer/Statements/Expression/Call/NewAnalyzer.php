@@ -113,9 +113,9 @@ final class NewAnalyzer extends CallAnalyzer
                 if ($context->calling_method_id
                     && !$stmt->class instanceof PhpParser\Node\Name\FullyQualified
                 ) {
-                    $codebase->addReferenceToClass(
-                        $fq_class_name,
-                        new CodeLocation($statements_analyzer->getSource(), $stmt->class),
+                    $codebase->addReferenceToUseAlias(
+                        $stmt->class->getFirst(),
+                        $statements_analyzer->getFilePath(),
                         $context,
                     );
                 }
@@ -470,6 +470,8 @@ final class NewAnalyzer extends CallAnalyzer
                         null,
                         false,
                         $method_storage,
+                        // the constructor only mutates the new object
+                        true,
                     );
                 }
 
