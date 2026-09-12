@@ -60,7 +60,7 @@ final class ProjectCheckerTest extends TestCase
         $this->file_provider = new FakeFileProvider();
     }
 
-    private function getProjectAnalyzerWithConfig(Config $config): ProjectAnalyzer
+    private function getProjectAnalyzerWithConfig(Config $config, bool $init_files = true): ProjectAnalyzer
     {
         $config->setIncludeCollector(new IncludeCollector());
         $ret = new ProjectAnalyzer(
@@ -75,9 +75,56 @@ final class ProjectCheckerTest extends TestCase
             ),
             new ReportOptions(),
         );
-        $ret->initProjectFiles();
-        $ret->initExtraFiles();
+        if ($init_files) {
+            $ret->initProjectFiles();
+            $ret->initExtraFiles();
+        }
         return $ret;
+    }
+
+    public function testCheckFileReportsIssueWithoutInitialisedProjectFiles(): void
+    {
+        // Regression test: checkFile() is a single-file entry point that may run
+        // without initProjectFiles() having populated $project_files. An issue
+        // raised during the run reads $project_files (via canReportIssues), which
+        // used to crash with "must not be accessed before initialization".
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                (string)getcwd(),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="tests/fixtures/DummyProject" />
+                    </projectFiles>
+                </psalm>',
+            ),
+            false,
+        );
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+
+        $file_path = (string) getcwd()
+            . DIRECTORY_SEPARATOR . 'tests'
+            . DIRECTORY_SEPARATOR . 'fixtures'
+            . DIRECTORY_SEPARATOR . 'DummyProject'
+            . DIRECTORY_SEPARATOR . 'CheckFileRegression.php';
+
+        $this->file_provider->registerFile(
+            $file_path,
+            '<?php
+
+namespace Vimeo\Test\DummyProject;
+
+function checkFileRegression(): int
+{
+    return "not an int";
+}
+',
+        );
+
+        // Must not throw; the issue in the file must still be reported.
+        $this->project_analyzer->checkFile($file_path);
+
+        $this->assertGreaterThan(0, IssueBuffer::getErrorCount());
     }
 
     public function testCheck(): void
