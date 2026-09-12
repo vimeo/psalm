@@ -7,12 +7,14 @@ namespace Psalm\Internal\Provider;
 use Psalm\Config;
 use Psalm\Internal\Cache;
 use Psalm\Internal\Codebase\Analyzer;
+use Psalm\Internal\Codebase\MutationLevelResolver;
 
 /**
  * Used to determine which files reference other files, necessary for using the --diff
  * option from the command line.
  *
  * @psalm-import-type FileMapType from Analyzer
+ * @psalm-import-type MutationInfo from MutationLevelResolver
  * @internal
  */
 final class FileReferenceCacheProvider
@@ -26,6 +28,7 @@ final class FileReferenceCacheProvider
     private const TYPE_COVERAGE_CACHE_NAME = 'type_coverage';
     private const UNKNOWN_MEMBER_CACHE_NAME = 'unknown_member_references';
     private const METHOD_PARAM_USE_CACHE_NAME = 'method_param_uses';
+    private const CODE_USE_GRAPH_CACHE_NAME = 'code_use_graph';
     /** @var Cache<array> */
     private readonly Cache $cache;
 
@@ -69,6 +72,25 @@ final class FileReferenceCacheProvider
         return $this->cache->getItem(self::ISSUES_CACHE_NAME);
     }
 
+    /**
+     * @return array{
+     *     edges: array<string, array<string, string>>,
+     *     node_files: array<string, string>,
+     *     mutation_info: array<string, MutationInfo>
+     * }|null
+     */
+    public function getCachedCodeUseGraph(): ?array
+    {
+        /**
+         * @var array{
+         *     edges: array<string, array<string, string>>,
+         *     node_files: array<string, string>,
+         *     mutation_info: array<string, MutationInfo>
+         * }|null
+         */
+        return $this->cache->getItem(self::CODE_USE_GRAPH_CACHE_NAME);
+    }
+
     public function setCachedFileReferences(array $file_references): void
     {
         $this->cache->saveItem(self::REFERENCE_CACHE_NAME, $file_references);
@@ -97,6 +119,18 @@ final class FileReferenceCacheProvider
     public function setCachedIssues(array $issues): void
     {
         $this->cache->saveItem(self::ISSUES_CACHE_NAME, $issues);
+    }
+
+    /**
+     * @param array{
+     *     edges: array<string, array<string, string>>,
+     *     node_files: array<string, string>,
+     *     mutation_info: array<string, MutationInfo>
+     * } $data
+     */
+    public function setCachedCodeUseGraph(array $data): void
+    {
+        $this->cache->saveItem(self::CODE_USE_GRAPH_CACHE_NAME, $data);
     }
 
     /**

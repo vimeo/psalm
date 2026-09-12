@@ -9,7 +9,6 @@ use Amp\Parallel\Worker\Task;
 use Amp\Sync\Channel;
 use Override;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use Psalm\Internal\Codebase\CodeUseGraph;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 
 /**
@@ -30,9 +29,8 @@ final class InitAnalyzerTask implements Task
             $codebase->taint_flow_graph = new TaintFlowGraph();
         }
 
-        if ($codebase->code_use_graph) {
-            $codebase->code_use_graph = new CodeUseGraph($codebase->collect_locations);
-        }
+        // workers only report the references they found themselves
+        $codebase->code_use_graph->clear();
 
         $file_reference_provider->setReferencesToMixedMemberNames([]);
         $file_reference_provider->setMethodParamUses([]);

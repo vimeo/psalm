@@ -8,11 +8,14 @@ use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Codebase\Analyzer;
+use Psalm\Internal\Codebase\CodeUseGraph;
+use UnexpectedValueException;
 
 use function array_filter;
 use function array_keys;
 use function array_merge;
 use function array_unique;
+use function strtolower;
 
 /**
  * Used to determine which files reference other files, necessary for using the --diff
@@ -85,12 +88,18 @@ final class FileReferenceProvider
     private static array $method_param_uses = [];
 
     /**
+     * The graph of references between code elements, shared with the Codebase.
+     */
+    public CodeUseGraph $code_use_graph;
+
+    /**
      * @psalm-mutation-free
      */
     public function __construct(
         private readonly FileProvider $file_provider,
         public ?FileReferenceCacheProvider $cache = null,
     ) {
+        $this->code_use_graph = new CodeUseGraph();
     }
 
     /**
@@ -139,7 +148,43 @@ final class FileReferenceProvider
      */
     private function calculateFilesReferencingFile(Codebase $codebase, string $file): array
     {
-        return [];
+        $file_classes = ClassLikeAnalyzer::getClassesForFile($codebase, $file);
+
+        if (!$file_classes) {
+            return [];
+        }
+
+        $referenced_files = [];
+
+        foreach ($file_classes as $fq_class_name_lc => $_) {
+            foreach ($this->code_use_graph->getNodesReferencingClass(strtolower($fq_class_name_lc)) as $node_id => $_) {
+                $node_file = $this->code_use_graph->getNodeFile($node_id);
+
+                if ($node_file === null) {
+                    $owner_class = CodeUseGraph::getOwnerClass($node_id);
+
+                    if ($owner_class === null) {
+                        continue;
+                    }
+
+                    try {
+                        $node_file = $codebase->scanner->getClassLikeFilePath($owner_class);
+                    } catch (UnexpectedValueException) {
+                        $node_file = self::$classlike_files[$owner_class] ?? null;
+                    }
+
+                    if ($node_file === null) {
+                        continue;
+                    }
+                }
+
+                if ($node_file !== $file) {
+                    $referenced_files[$node_file] = true;
+                }
+            }
+        }
+
+        return array_keys($referenced_files);
     }
 
     /**
@@ -296,6 +341,14 @@ final class FileReferenceProvider
 
             self::$classlike_files = $classlike_files;
 
+            $code_use_graph_data = $this->cache->getCachedCodeUseGraph();
+
+            if ($code_use_graph_data === null) {
+                return false;
+            }
+
+            $this->code_use_graph->loadCacheData($code_use_graph_data);
+
             self::$file_maps = $this->cache->getFileMapCache() ?: [];
 
             return true;
@@ -337,6 +390,7 @@ final class FileReferenceProvider
             $this->cache->setCachedMethodParamUses(self::$method_param_uses);
             $this->cache->setCachedIssues(self::$issues);
             $this->cache->setCachedClassLikeFiles(self::$classlike_files);
+            $this->cache->setCachedCodeUseGraph($this->code_use_graph->getCacheData());
             $this->cache->setFileMapCache(self::$file_maps);
             $this->cache->setTypeCoverage(self::$mixed_counts);
             $this->cache->setAnalyzedMethodCache(self::$analyzed_methods);
