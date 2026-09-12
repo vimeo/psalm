@@ -10,6 +10,7 @@ use Override;
  * Denotes the `false` value type
  *
  * @psalm-immutable
+ * @api
  */
 final class TFalse extends TBool
 {

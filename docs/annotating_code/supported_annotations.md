@@ -177,6 +177,8 @@ function addString(?string $s) {
 
 `@psalm-suppress all` can be used to suppress all issues instead of listing them individually.
 
+Suppressing an unused-code issue (such as `UnusedClass` or `PossiblyUnusedMethod`) only silences the report for that symbol — it does not mark the symbol as used, so code that is only referenced from it is still reported as unused. Redundant `@psalm-suppress` annotations, in any docblock (including on classes, interfaces, traits and enums), are reported by [`--find-unused-psalm-suppress`](../running_psalm/issues/UnusedPsalmSuppress.md).
+
 ### `@psalm-assert`, `@psalm-assert-if-true`, `@psalm-assert-if-false`, `@psalm-if-this-is` and `@psalm-this-out`
 
 See [Adding assertions](adding_assertions.md).

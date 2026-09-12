@@ -12,6 +12,7 @@ use Override;
  * `int-mask-of<MyClass::CLASS_CONSTANT_*>` will corresponds to `0|1|2|3|4|5|6|7` if there are three constant 1, 2 and 4
  *
  * @psalm-immutable
+ * @api
  */
 final class TIntMaskOf extends TInt
 {

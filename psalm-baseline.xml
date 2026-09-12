@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="dev-master@cf404b51daf81d79198a029f7b2c7f64d28ae68e">
+<files psalm-version="dev-master@19367d51b05d890f9fe34e5477cdb677a89549bb">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$comment_block->tags['variablesfrom'][0]]]></code>
@@ -1526,7 +1526,6 @@
       <code><![CDATA[$stub]]></code>
     </PossiblyUndefinedIntArrayOffset>
     <RiskyTruthyFalsyComparison>
-      <code><![CDATA[!$calling_fq_class_name]]></code>
       <code><![CDATA[!$insert_pos]]></code>
       <code><![CDATA[!$insert_pos]]></code>
       <code><![CDATA[!$insert_pos]]></code>
@@ -1537,12 +1536,6 @@
       <code><![CDATA[$calling_fq_class_name]]></code>
       <code><![CDATA[$calling_fq_class_name]]></code>
       <code><![CDATA[$calling_fq_class_name]]></code>
-      <code><![CDATA[$calling_fq_class_name]]></code>
-      <code><![CDATA[$calling_fq_class_name]]></code>
-      <code><![CDATA[$calling_fq_class_name]]></code>
-      <code><![CDATA[$calling_method_id]]></code>
-      <code><![CDATA[$calling_method_id]]></code>
-      <code><![CDATA[$calling_method_id]]></code>
       <code><![CDATA[$calling_method_id]]></code>
       <code><![CDATA[$calling_method_id]]></code>
       <code><![CDATA[$file_path]]></code>
@@ -1604,23 +1597,8 @@
       <code><![CDATA[!$calling_class_name]]></code>
       <code><![CDATA[!$extends]]></code>
       <code><![CDATA[$calling_method_id]]></code>
-      <code><![CDATA[$calling_method_id]]></code>
-      <code><![CDATA[$calling_method_id]]></code>
-      <code><![CDATA[$calling_method_id]]></code>
-      <code><![CDATA[$calling_method_id]]></code>
-      <code><![CDATA[$calling_method_id]]></code>
-      <code><![CDATA[$calling_method_id]]></code>
-      <code><![CDATA[$calling_method_id]]></code>
-      <code><![CDATA[$calling_method_id]]></code>
       <code><![CDATA[$found_generic_params]]></code>
       <code><![CDATA[$old_method_id]]></code>
-      <code><![CDATA[$source_file_path]]></code>
-      <code><![CDATA[$source_file_path]]></code>
-      <code><![CDATA[$source_file_path]]></code>
-      <code><![CDATA[$source_file_path]]></code>
-      <code><![CDATA[$source_file_path]]></code>
-      <code><![CDATA[$source_file_path]]></code>
-      <code><![CDATA[$source_file_path]]></code>
       <code><![CDATA[$source_file_path]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
@@ -1644,11 +1622,6 @@
       <code><![CDATA[$property_name]]></code>
       <code><![CDATA[$property_name]]></code>
     </PossiblyUndefinedIntArrayOffset>
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[$context->calling_method_id]]></code>
-      <code><![CDATA[$context->calling_method_id]]></code>
-      <code><![CDATA[$context->calling_method_id]]></code>
-    </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Codebase/Scanner.php">
     <RiskyTruthyFalsyComparison>
@@ -1839,11 +1812,6 @@
     <MissingInterfaceImmutableAnnotation>
       <code><![CDATA[ProgressInterface]]></code>
     </MissingInterfaceImmutableAnnotation>
-  </file>
-  <file src="src/Psalm/Internal/LanguageServer/ClientConfiguration.php">
-    <PossiblyUnusedProperty>
-      <code><![CDATA[$findUnusedVariables]]></code>
-    </PossiblyUnusedProperty>
   </file>
   <file src="src/Psalm/Internal/LanguageServer/EmitterInterface.php">
     <MissingInterfaceImmutableAnnotation>
@@ -2109,13 +2077,7 @@
   <file src="src/Psalm/Internal/Provider/FileReferenceProvider.php">
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$this->cache->getFileMapCache()]]></code>
-      <code><![CDATA[empty(self::$file_references_to_class_members[$method_id])]]></code>
-      <code><![CDATA[empty(self::$file_references_to_class_properties[$property_id])]]></code>
-      <code><![CDATA[empty(self::$file_references_to_method_returns[$method_id])]]></code>
       <code><![CDATA[empty(self::$method_param_uses[$method_id][$offset])]]></code>
-      <code><![CDATA[empty(self::$method_references_to_class_members[$method_id])]]></code>
-      <code><![CDATA[empty(self::$method_references_to_class_properties[$property_id])]]></code>
-      <code><![CDATA[empty(self::$method_references_to_method_returns[$method_id])]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Provider/FileStorageCacheProvider.php">
@@ -2510,7 +2472,6 @@
       <code><![CDATA[!$fq_classlike_name]]></code>
       <code><![CDATA[$class_storage->template_types]]></code>
       <code><![CDATA[$class_storage->template_types]]></code>
-      <code><![CDATA[$this->calling_method_id]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/TypeVisitor/TypeScanner.php">
@@ -2543,9 +2504,6 @@
       <code><![CDATA[1_000 * $time]]></code>
       <code><![CDATA[round(1_000 * $time, 2)]]></code>
     </InvalidOperand>
-    <PossiblyUnusedMethod>
-      <code><![CDATA[getServer]]></code>
-    </PossiblyUnusedMethod>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$report_options->output_path]]></code>
       <code><![CDATA[$parent_issue_type]]></code>
@@ -2775,12 +2733,6 @@
       <code><![CDATA[ini_get('xdebug.file_link_format') ?: get_cfg_var('xdebug.file_link_format')]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
-  <file src="src/Psalm/Report/TableReport.php">
-    <ImmutableDependency>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[Report]]></code>
-    </ImmutableDependency>
-  </file>
   <file src="src/Psalm/Report/ConsoleReport.php">
     <PossiblyInvalidArgument>
       <code><![CDATA[$this->link_format]]></code>
@@ -2812,6 +2764,12 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Report/SarifReport.php">
+    <ImmutableDependency>
+      <code><![CDATA[#[Override]]]></code>
+      <code><![CDATA[Report]]></code>
+    </ImmutableDependency>
+  </file>
+  <file src="src/Psalm/Report/TableReport.php">
     <ImmutableDependency>
       <code><![CDATA[#[Override]]]></code>
       <code><![CDATA[Report]]></code>
@@ -2871,13 +2829,6 @@
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$this_var_id]]></code>
     </RiskyTruthyFalsyComparison>
-  </file>
-  <file src="src/Psalm/Storage/PropertyHookStorage.php">
-    <PossiblyUnusedProperty>
-      <code><![CDATA[$by_ref]]></code>
-      <code><![CDATA[$is_final]]></code>
-      <code><![CDATA[$location]]></code>
-    </PossiblyUnusedProperty>
   </file>
   <file src="src/Psalm/Storage/UnserializeMemoryUsageSuppressionTrait.php">
     <ImpureFunctionCall>
@@ -3298,15 +3249,6 @@
     </ImplicitToStringCast>
   </file>
   <file src="src/Psalm/Type/MutableUnion.php">
-    <PossiblyUnusedProperty>
-      <code><![CDATA[$allow_mutations]]></code>
-      <code><![CDATA[$by_ref]]></code>
-      <code><![CDATA[$failed_reconciliation]]></code>
-      <code><![CDATA[$from_template_default]]></code>
-      <code><![CDATA[$has_mutations]]></code>
-      <code><![CDATA[$initialized_class]]></code>
-      <code><![CDATA[$reference_free]]></code>
-    </PossiblyUnusedProperty>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[strpos($type_string, '(')]]></code>
     </RiskyTruthyFalsyComparison>
@@ -3353,9 +3295,6 @@
     <ImpureMethodCall>
       <code><![CDATA[$visitor->traverse($type)]]></code>
     </ImpureMethodCall>
-    <PossiblyUnusedProperty>
-      <code><![CDATA[$ignore_isset]]></code>
-    </PossiblyUnusedProperty>
   </file>
   <file src="src/Psalm/Type/UnionTrait.php">
     <ImpureMethodCall>
@@ -3373,12 +3312,6 @@
     <PossiblyUndefinedStringArrayOffset>
       <code><![CDATA[$this->types['array']]]></code>
     </PossiblyUndefinedStringArrayOffset>
-    <PossiblyUnusedMethod>
-      <code><![CDATA[allFloatLiterals]]></code>
-      <code><![CDATA[allFloatLiterals]]></code>
-      <code><![CDATA[hasLowercaseString]]></code>
-      <code><![CDATA[hasLowercaseString]]></code>
-    </PossiblyUnusedMethod>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$php_type]]></code>
       <code><![CDATA[$other_type->exact_id]]></code>

@@ -13,6 +13,7 @@ use function strtr;
 
 /**
  * @psalm-external-mutation-free
+ * @api
  */
 final class GithubActionsReport extends Report
 {

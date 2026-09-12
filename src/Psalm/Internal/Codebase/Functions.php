@@ -486,6 +486,12 @@ final class Functions
                         $statements_analyzer->signalMutationOnlyInferred(
                             $storage->allowed_mutations,
                             $storage,
+                            MethodCallPurityAnalyzer::receiverAllowsInternalMutations(
+                                $statements_analyzer,
+                                $var,
+                                $count_method_id,
+                                $context,
+                            ),
                         );
                     }
                 }

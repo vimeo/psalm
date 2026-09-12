@@ -375,21 +375,14 @@ final class IssueSuppressionTest extends TestCase
             'methodSignatureMismatchSuppressedAtClassLevel' => [
                 'code' => '<?php
                     class ParentClass {
-                        /**
-                         * @psalm-suppress MissingParamType
-                         * @return mixed
-                         */
-                        public function func($var) {
-                            return $var;
+                        public function func(): ?string {
+                            return null;
                         }
                     }
 
                     /** @psalm-suppress MethodSignatureMismatch */
                     class MismatchMethod extends ParentClass {
-                        /** @return mixed */
-                        public function func(string $var) {
-                            return $var;
-                        }
+                        public function func(): void {}
                     }
                 ',
             ],

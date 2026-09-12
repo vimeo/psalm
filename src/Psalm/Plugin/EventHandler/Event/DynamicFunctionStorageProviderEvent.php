@@ -12,6 +12,9 @@ use Psalm\Plugin\ArgTypeInferer;
 use Psalm\Plugin\DynamicTemplateProvider;
 use Psalm\StatementsSource;
 
+/**
+ * @api
+ */
 final class DynamicFunctionStorageProviderEvent
 {
     /**

@@ -45,6 +45,9 @@ use const PHP_EOL;
 use const PHP_URL_HOST;
 use const STDERR;
 
+/**
+ * @api
+ */
 final class Shepherd implements AfterAnalysisInterface
 {
     /**

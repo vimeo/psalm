@@ -51,6 +51,8 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
         $codebase = $project_analyzer->getCodebase();
         $config = $project_analyzer->getConfig();
 
+        self::registerDocblockSuppressions($this->storage, $this->getFilePath(), $codebase);
+
         $fq_interface_name = $this->getFQCLN();
 
         if (!$fq_interface_name) {
@@ -58,6 +60,8 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
         }
 
         $class_storage = $codebase->classlike_storage_provider->get($fq_interface_name);
+
+        $class_context = new Context($fq_interface_name);
 
         if ($this->class->extends) {
             foreach ($this->class->extends as $extended_interface) {
@@ -71,6 +75,7 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
                 if (!$codebase->classOrInterfaceExists(
                     $extended_interface_name,
                     $parent_reference_location,
+                    $class_context,
                 )) {
                     // we should not normally get here
                     return;
@@ -191,7 +196,7 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
                         $fq_interface_name,
                         $actual_method_id,
                         $actual_method_id,
-                        false,
+                        $class_context,
                     );
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Property) {

@@ -10,6 +10,7 @@ use Override;
  * Denotes the `bool` type where the exact value is unknown.
  *
  * @psalm-immutable
+ * @api
  */
 class TBool extends Scalar
 {

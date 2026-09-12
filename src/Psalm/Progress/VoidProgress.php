@@ -6,6 +6,9 @@ namespace Psalm\Progress;
 
 use Override;
 
+/**
+ * @api
+ */
 final class VoidProgress extends Progress
 {
     /**

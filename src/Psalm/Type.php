@@ -71,6 +71,9 @@ use function strpos;
 use function strtolower;
 use function substr;
 
+/**
+ * @api
+ */
 abstract class Type
 {
     /**
@@ -267,7 +270,6 @@ abstract class Type
     }
 
     /**
-     * @psalm-suppress PossiblyUnusedMethod
      * @return TLiteralString|TLiteralInt
      * @psalm-pure
      */

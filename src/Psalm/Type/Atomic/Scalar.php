@@ -10,6 +10,7 @@ use Psalm\Type\Atomic;
 
 /**
  * @psalm-immutable
+ * @api
  */
 abstract class Scalar extends Atomic
 {

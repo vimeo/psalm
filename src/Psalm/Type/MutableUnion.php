@@ -30,6 +30,9 @@ use function count;
 use function get_object_vars;
 use function strpos;
 
+/**
+ * @api
+ */
 final class MutableUnion implements TypeNode
 {
     use UnionTrait;
@@ -109,8 +112,6 @@ final class MutableUnion implements TypeNode
     /**
      * whether this type had never set explicitly
      * since it's the bottom type, it's combined into everything else and lost
-     *
-     * @psalm-suppress PossiblyUnusedProperty used in setTypes and addType
      */
     public bool $explicit_never = false;
 
@@ -175,7 +176,6 @@ final class MutableUnion implements TypeNode
 
     public bool $different = false;
 
-    /** @psalm-suppress PossiblyUnusedProperty */
     public bool $propagate_parent_nodes = false;
 
     /**

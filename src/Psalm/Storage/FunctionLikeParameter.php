@@ -12,6 +12,9 @@ use Psalm\Type\TypeNode;
 use Psalm\Type\TypeVisitor;
 use Psalm\Type\Union;
 
+/**
+ * @api
+ */
 final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
 {
     use CustomMetadataTrait;

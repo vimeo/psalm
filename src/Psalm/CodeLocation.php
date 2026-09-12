@@ -30,6 +30,7 @@ use const PREG_OFFSET_CAPTURE;
 
 /**
  * @psalm-immutable
+ * @api
  */
 class CodeLocation
 {
@@ -167,7 +168,6 @@ class CodeLocation
     }
 
     /**
-     * @psalm-suppress PossiblyUnusedMethod Part of public API
      * @return static
      */
     public function setCommentLine(?int $line): self

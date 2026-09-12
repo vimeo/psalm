@@ -8,6 +8,7 @@ use Override;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Codebase\CodeUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\PhpVisitor\ShortClosureVisitor;
 use Psalm\Issue\DuplicateParam;
@@ -45,9 +46,35 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
             . ':' . (int)$function->getAttribute('startFilePos')
             . ':-:closure';
 
+        $this->closure_id = $function_id;
+
         $storage = $codebase->getClosureStorage($source->getFilePath(), $function_id);
 
         parent::__construct($function, $source, $storage);
+    }
+
+    /** @var lowercase-string */
+    private readonly string $closure_id;
+
+    /**
+     * @psalm-mutation-free
+     */
+    #[Override]
+    public function getMutationNodeId(): string
+    {
+        return CodeUseGraph::functionLikeNode($this->closure_id);
+    }
+
+    /**
+     * The variable this closure is assigned to and captures by reference, if
+     * any: calls through it from the closure body are recursive calls.
+     */
+    public function getRecursiveVarId(): ?string
+    {
+        /** @var mixed $var_id */
+        $var_id = $this->function->getAttribute('recursive_var_id');
+
+        return is_string($var_id) ? $var_id : null;
     }
 
 
@@ -202,6 +229,7 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
         }
 
         $use_context->calling_method_id = $context->calling_method_id;
+        $use_context->calling_function_id = $context->calling_function_id;
         $use_context->phantom_classes = $context->phantom_classes;
 
         $byref_vars = [];
@@ -217,6 +245,11 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
             'closure',
             ImpureFunctionCall::class,
             $stmt,
+            null,
+            false,
+            $closure_analyzer->storage,
+            false,
+            $closure_analyzer->getMutationNodeId(),
         );
 
         if (!$statements_analyzer->node_data->getType($stmt)) {

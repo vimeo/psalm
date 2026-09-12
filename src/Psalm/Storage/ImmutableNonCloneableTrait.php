@@ -6,6 +6,7 @@ namespace Psalm\Storage;
 
 /**
  * @psalm-immutable
+ * @api
  */
 trait ImmutableNonCloneableTrait
 {

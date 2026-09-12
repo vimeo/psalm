@@ -30,7 +30,6 @@ use Psalm\Type\Union;
 
 use function count;
 use function in_array;
-use function md5;
 use function strtolower;
 
 /**
@@ -126,20 +125,20 @@ final class StaticCallAnalyzer extends CallAnalyzer
             } else {
                 $aliases = $statements_analyzer->getAliases();
 
-                if ($context->calling_method_id
-                    && !$stmt->class instanceof PhpParser\Node\Name\FullyQualified
-                ) {
-                    $codebase->file_reference_provider->addMethodReferenceToClassMember(
-                        $context->calling_method_id,
-                        'use:' . $stmt->class->getFirst() . ':' . md5($statements_analyzer->getFilePath()),
-                        false,
-                    );
-                }
-
                 $fq_class_name = ClassLikeAnalyzer::getFQCLNFromNameObject(
                     $stmt->class,
                     $aliases,
                 );
+
+                if ($context->calling_method_id
+                    && !$stmt->class instanceof PhpParser\Node\Name\FullyQualified
+                ) {
+                    $codebase->addReferenceToUseAlias(
+                        $stmt->class->getFirst(),
+                        $statements_analyzer->getFilePath(),
+                        $context,
+                    );
+                }
 
                 if ($context->isPhantomClass($fq_class_name)) {
                     return true;

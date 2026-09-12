@@ -7,7 +7,10 @@ namespace Psalm\Issue;
 use Override;
 use Psalm\CodeLocation;
 
-/** @psalm-immutable */
+/**
+ * @psalm-immutable
+ * @api
+ */
 trait MixedIssueTrait
 {
     /**

@@ -31,6 +31,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\Analyzer;
 use Psalm\Internal\Codebase\ClassLikes;
+use Psalm\Internal\Codebase\CodeUseGraph;
 use Psalm\Internal\Codebase\Functions;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\Methods;
@@ -89,6 +90,7 @@ use function is_numeric;
 use function is_string;
 use function krsort;
 use function ksort;
+use function ltrim;
 use function preg_match;
 use function preg_replace;
 use function str_contains;
@@ -111,7 +113,10 @@ final class Codebase
 {
     /**
      * A map of fully-qualified use declarations to the files
-     * that reference them (keyed by filename)
+     * that reference them (keyed by filename).
+     *
+     * Separated from the CodeUseGraph because a use import does not
+     * automatically mean a class is actually used.
      *
      * @var array<lowercase-string, array<int, CodeLocation>>
      */
@@ -172,6 +177,8 @@ final class Codebase
     public Properties $properties;
 
     public Populator $populator;
+
+    public CodeUseGraph $code_use_graph;
 
     public ?TaintFlowGraph $taint_flow_graph = null;
 
@@ -288,6 +295,7 @@ final class Codebase
         $this->file_provider = $providers->file_provider;
         $this->file_reference_provider = $providers->file_reference_provider;
         $this->statements_provider = $providers->statements_provider;
+        $this->code_use_graph = $providers->file_reference_provider->code_use_graph;
 
         self::$stubbed_constants = [];
 
@@ -316,7 +324,6 @@ final class Codebase
 
         $this->properties = new Properties(
             $providers->classlike_storage_provider,
-            $providers->file_reference_provider,
             $this->classlikes,
         );
 
@@ -335,6 +342,185 @@ final class Codebase
         );
 
         $this->loadAnalyzer();
+    }
+
+    /**
+     * Records a reference to a class from the code described by $context
+     * (or the top-level code of the file of $location).
+     *
+     * @param lowercase-string $fq_class_name_lc
+     * @psalm-external-mutation-free
+     */
+    public function addReferenceToClass(
+        string $fq_class_name_lc,
+        ?CodeLocation $location = null,
+        ?Context $context = null,
+        ?string $file_path = null,
+    ): void {
+        $this->code_use_graph->addReference(
+            CodeUseGraph::classNode($fq_class_name_lc),
+            $context,
+            $location,
+            CodeUseGraph::EDGE_USE,
+            $file_path,
+        );
+    }
+
+    /**
+     * Records a reference to a property. Only reads make the property used,
+     * but writes are still recorded for reference lookups and cache invalidation.
+     *
+     * @param lowercase-string $fq_class_name_lc
+     * @param string $property_name without the leading `$`
+     * @psalm-external-mutation-free
+     */
+    public function addReferenceToProperty(
+        string $fq_class_name_lc,
+        string $property_name,
+        bool $reading,
+        ?CodeLocation $location = null,
+        ?Context $context = null,
+        ?string $file_path = null,
+    ): void {
+        $this->code_use_graph->addReference(
+            CodeUseGraph::propertyNode($fq_class_name_lc, $property_name),
+            $context,
+            $location,
+            $reading ? CodeUseGraph::EDGE_USE : CodeUseGraph::EDGE_WRITE,
+            $file_path,
+        );
+
+        if (!$reading) {
+            // writing to a property of a class still uses the class
+            $this->code_use_graph->addReference(
+                CodeUseGraph::classNode($fq_class_name_lc),
+                $context,
+                $location,
+            );
+        }
+    }
+
+    /**
+     * Records a reference to a function or method, optionally marking its
+     * return value as used too.
+     *
+     * @param lowercase-string $function_id
+     * @psalm-external-mutation-free
+     */
+    public function addReferenceToFunctionLike(
+        string $function_id,
+        ?CodeLocation $location = null,
+        ?Context $context = null,
+        bool $is_return_value_used = false,
+        ?string $file_path = null,
+    ): void {
+        $function_node = CodeUseGraph::functionLikeNode($function_id);
+
+        if ($is_return_value_used) {
+            $return_node = CodeUseGraph::functionLikeReturnNode($function_id);
+            // using the return value implies calling the function
+            $this->code_use_graph->addEdge($return_node, $function_node, CodeUseGraph::EDGE_RETURN);
+            $this->code_use_graph->addReference(
+                $return_node,
+                $context,
+                $location,
+                CodeUseGraph::EDGE_USE,
+                $file_path,
+            );
+        } else {
+            $this->code_use_graph->addReference(
+                $function_node,
+                $context,
+                $location,
+                CodeUseGraph::EDGE_USE,
+                $file_path,
+            );
+        }
+    }
+
+    /**
+     * Records a reference to a method that does not exist (yet), so that the
+     * referencing code is re-analysed if the method gets added.
+     *
+     * @param lowercase-string $method_id
+     * @psalm-external-mutation-free
+     */
+    public function addReferenceToMissingMethod(
+        string $method_id,
+        ?CodeLocation $location = null,
+        ?Context $context = null,
+        ?string $file_path = null,
+    ): void {
+        $this->code_use_graph->addReference(
+            CodeUseGraph::missingMethodNode($method_id),
+            $context,
+            $location,
+            CodeUseGraph::EDGE_USE,
+            $file_path,
+        );
+    }
+
+    /**
+     * Records a reference to a property that does not exist (yet), so that the
+     * referencing code is re-analysed if the property gets added.
+     *
+     * @param lowercase-string $fq_class_name_lc
+     * @param string $property_name without the leading `$`
+     * @psalm-external-mutation-free
+     */
+    public function addReferenceToMissingProperty(
+        string $fq_class_name_lc,
+        string $property_name,
+        ?CodeLocation $location = null,
+        ?Context $context = null,
+        ?string $file_path = null,
+    ): void {
+        $this->code_use_graph->addReference(
+            CodeUseGraph::missingPropertyNode($fq_class_name_lc, $property_name),
+            $context,
+            $location,
+            CodeUseGraph::EDGE_USE,
+            $file_path,
+        );
+    }
+
+    /**
+     * @param lowercase-string $fq_class_name_lc
+     * @param string $const_name case-sensitive constant name
+     * @psalm-external-mutation-free
+     */
+    public function addReferenceToClassConstant(
+        string $fq_class_name_lc,
+        string $const_name,
+        ?CodeLocation $location = null,
+        ?Context $context = null,
+        ?string $file_path = null,
+    ): void {
+        $this->code_use_graph->addReference(
+            CodeUseGraph::classConstantNode($fq_class_name_lc, $const_name),
+            $context,
+            $location,
+            CodeUseGraph::EDGE_USE,
+            $file_path,
+        );
+    }
+
+    /**
+     * Records that the code described by $context resolves a class name
+     * through a `use` import alias of the given file, so that it gets
+     * re-analysed when the import changes.
+     *
+     * @psalm-external-mutation-free
+     */
+    public function addReferenceToUseAlias(
+        string $alias,
+        string $file_path,
+        ?Context $context = null,
+    ): void {
+        $this->code_use_graph->addReference(
+            CodeUseGraph::useAliasNode($alias, $file_path),
+            $context,
+        );
     }
 
     /**
@@ -494,18 +680,16 @@ final class Codebase
     public function collectLocations(): void
     {
         $this->collect_locations = true;
-        $this->classlikes->collect_locations = true;
-        $this->methods->collect_locations = true;
-        $this->properties->collect_locations = true;
+        $this->code_use_graph->collect_locations = true;
     }
 
     /**
      * @param 'always'|'auto' $find_unused_code
+     * @psalm-external-mutation-free
      */
     public function reportUnusedCode(string $find_unused_code = 'auto'): void
     {
         $this->collect_references = true;
-        $this->classlikes->collect_references = true;
         $this->find_unused_code = $find_unused_code;
         $this->find_unused_variables = true;
     }
@@ -617,8 +801,8 @@ final class Codebase
     }
 
     /**
-     * @return array<int, CodeLocation>
-     * @psalm-external-mutation-free
+     * @return array<string, CodeLocation>
+     * @psalm-mutation-free
      */
     public function findReferencesToSymbol(string $symbol): array
     {
@@ -631,50 +815,69 @@ final class Codebase
         }
 
         if (str_contains($symbol, '::')) {
-            return $this->findReferencesToMethod($symbol);
+            return $this->findReferencesToMethod($symbol)
+                + $this->findReferencesToClassConstant($symbol);
         }
 
         return $this->findReferencesToClassLike($symbol);
     }
 
     /**
-     * @return array<int, CodeLocation>
-     * @psalm-external-mutation-free
+     * @return array<string, CodeLocation>
+     * @psalm-mutation-free
      */
     public function findReferencesToMethod(string $method_id): array
     {
-        return $this->file_reference_provider->getClassMethodLocations(strtolower($method_id));
+        return $this->code_use_graph->getReferenceLocations(
+            CodeUseGraph::functionLikeNode(strtolower($method_id)),
+        );
     }
 
     /**
-     * @return array<int, CodeLocation>
-     * @psalm-external-mutation-free
+     * @return array<string, CodeLocation>
+     * @psalm-mutation-free
      */
     public function findReferencesToProperty(string $property_id): array
     {
         /** @psalm-suppress PossiblyUndefinedIntArrayOffset */
         [$fq_class_name, $property_name] = explode('::', $property_id);
 
-        return $this->file_reference_provider->getClassPropertyLocations(
-            strtolower($fq_class_name) . '::' . $property_name,
+        return $this->code_use_graph->getReferenceLocations(
+            CodeUseGraph::propertyNode(strtolower($fq_class_name), ltrim($property_name, '$')),
         );
     }
 
     /**
      * @return CodeLocation[]
-     * @psalm-return array<int, CodeLocation>
-     * @psalm-external-mutation-free
+     * @psalm-return array<string, CodeLocation>
+     * @psalm-mutation-free
      */
     public function findReferencesToClassLike(string $fq_class_name): array
     {
         $fq_class_name_lc = strtolower($fq_class_name);
-        $locations = $this->file_reference_provider->getClassLocations($fq_class_name_lc);
+        $refs = $this->code_use_graph->getReferenceLocations(
+            CodeUseGraph::classNode($fq_class_name_lc),
+        );
 
-        if (isset($this->use_referencing_locations[$fq_class_name_lc])) {
-            $locations = [...$locations, ...$this->use_referencing_locations[$fq_class_name_lc]];
+        foreach ($this->use_referencing_locations[$fq_class_name_lc] ?? [] as $location) {
+            $refs[$location->getHash()] = $location;
         }
 
-        return $locations;
+        return $refs;
+    }
+
+    /**
+     * @return array<string, CodeLocation>
+     * @psalm-mutation-free
+     */
+    public function findReferencesToClassConstant(string $const_id): array
+    {
+        /** @psalm-suppress PossiblyUndefinedIntArrayOffset */
+        [$fq_class_name, $const_name] = explode('::', $const_id);
+
+        return $this->code_use_graph->getReferenceLocations(
+            CodeUseGraph::classConstantNode(strtolower($fq_class_name), $const_name),
+        );
     }
 
     /**
@@ -902,6 +1105,26 @@ final class Codebase
         }
 
         return $this->functions->getStorage($statements_analyzer, strtolower($function_id));
+    }
+
+    /**
+     * Whether or not a given property exists
+     */
+    public function propertyExists(
+        string $property_id,
+        bool $read_mode,
+        ?StatementsSource $source = null,
+        ?Context $context = null,
+        ?CodeLocation $code_location = null,
+    ): bool {
+        return $this->properties->propertyExists(
+            $this,
+            $property_id,
+            $read_mode,
+            $source,
+            $context,
+            $code_location,
+        );
     }
 
     /**

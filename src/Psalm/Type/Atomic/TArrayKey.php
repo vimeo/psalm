@@ -10,6 +10,7 @@ use Override;
  * Denotes the `array-key` type, used for something that could be the offset of an `array`.
  *
  * @psalm-immutable
+ * @api
  */
 class TArrayKey extends Scalar
 {

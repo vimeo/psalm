@@ -20,6 +20,7 @@ use Psalm\Type\Union;
  * is a function of its string key value
  *
  * @psalm-immutable
+ * @api
  */
 final class TClassStringMap extends Atomic
 {

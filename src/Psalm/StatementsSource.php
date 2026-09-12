@@ -10,6 +10,9 @@ use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\Mutations;
 use Psalm\Type\Union;
 
+/**
+ * @api
+ */
 interface StatementsSource extends FileSource
 {
     public function getNamespace(): ?string;
@@ -72,11 +75,24 @@ interface StatementsSource extends FileSource
     public function getNodeTypeProvider(): NodeTypeProvider;
 
     /**
+     * Records that the current function-like performs a mutation of the given
+     * level, for purity inference.
+     *
+     * When $storage is the storage of an unannotated callee of the project, the
+     * callee's level is only known once it has been analysed itself, so the
+     * dependency is recorded and resolved after analysis instead (see
+     * \Psalm\Internal\Codebase\MutationLevelResolver).
+     *
      * @param Mutations::LEVEL_* $mutation_level
+     * @param bool $callee_internal_mutations_ok whether mutations of the callee's own instance
+     *        (e.g. of a freshly constructed object) are fine for the caller
+     * @param ?string $callee_id the graph node of the callee, when it can't be derived from its storage (closures)
      */
     public function signalMutationOnlyInferred(
         int $mutation_level,
         ?FunctionLikeStorage $storage = null,
+        bool $callee_internal_mutations_ok = false,
+        ?string $callee_id = null,
     ): void;
 
     /**
@@ -94,5 +110,7 @@ interface StatementsSource extends FileSource
         ?int $inferred_mutation_level = null,
         bool $overrideMsg = false,
         ?FunctionLikeStorage $storage = null,
+        bool $callee_internal_mutations_ok = false,
+        ?string $callee_id = null,
     ): void;
 }

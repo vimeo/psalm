@@ -17,6 +17,9 @@ use function array_map;
 use function count;
 use function implode;
 
+/**
+ * @api
+ */
 abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
 {
     use CustomMetadataTrait;

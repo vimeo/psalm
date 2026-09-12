@@ -8,6 +8,9 @@ use Psalm\CodeLocation;
 
 use function strtolower;
 
+/**
+ * @api
+ */
 final class PossiblyUnusedMethod extends MethodIssue
 {
     public const ERROR_LEVEL = -2;

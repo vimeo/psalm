@@ -21,6 +21,7 @@ use function substr;
  * denotes the `iterable` type(which can also result from an `is_iterable` check).
  *
  * @psalm-immutable
+ * @api
  */
 final class TIterable extends Atomic
 {

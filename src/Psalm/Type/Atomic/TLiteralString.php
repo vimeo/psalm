@@ -17,6 +17,7 @@ use function strlen;
  * Denotes a string whose value is known.
  *
  * @psalm-immutable
+ * @api
  */
 class TLiteralString extends TString
 {
@@ -61,7 +62,6 @@ class TLiteralString extends TString
     }
 
     /**
-     * @psalm-suppress PossiblyUnusedMethod
      * @return static
      */
     public function setValue(string $value): self

@@ -6,6 +6,9 @@ namespace Psalm\Issue;
 
 use Psalm\CodeLocation;
 
+/**
+ * @api
+ */
 final class TypeDoesNotContainNull extends CodeIssue
 {
     public const ERROR_LEVEL = 4;

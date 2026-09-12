@@ -42,7 +42,7 @@ use ReflectionProperty;
 use function array_keys;
 use function array_search;
 use function count;
-use function md5;
+use function explode;
 use function str_contains;
 use function str_starts_with;
 use function strtolower;
@@ -57,7 +57,6 @@ final class TypeChecker extends TypeVisitor
     /**
      * @param array<string>    $suppressed_issues
      * @param array<string, bool> $phantom_classes
-     * @param lowercase-string|null $calling_method_id
      * @psalm-mutation-free
      */
     public function __construct(
@@ -68,7 +67,7 @@ final class TypeChecker extends TypeVisitor
         private readonly bool $inferred = true,
         private readonly bool $inherited = false,
         private bool $prevent_template_covariance = false,
-        private readonly ?string $calling_method_id = null,
+        private readonly ?Context $context = null,
     ) {
     }
 
@@ -124,25 +123,28 @@ final class TypeChecker extends TypeVisitor
             );
         }
 
-        if ($this->calling_method_id
+        if ($this->context?->calling_method_id !== null
             && $atomic->text !== null
         ) {
-            $codebase->file_reference_provider->addMethodReferenceToClassMember(
-                $this->calling_method_id,
-                'use:' . $atomic->text . ':' . md5($this->source->getFilePath()),
-                false,
+            $codebase->addReferenceToClass(
+                strtolower($atomic->value),
+                $this->code_location,
+                $this->context,
+            );
+            // the type was written using an import alias: re-analyse if the import changes
+            $codebase->addReferenceToUseAlias(
+                explode('\\', $atomic->text, 2)[0],
+                $this->source->getFilePath(),
+                $this->context,
             );
         }
 
         if (!isset($this->phantom_classes[strtolower($atomic->value)])) {
-            $ctxTmp = new Context();
-            $ctxTmp->self = $this->source->getFQCLN();
-            $ctxTmp->calling_method_id = $this->calling_method_id;
             if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                 $this->source,
                 $atomic->value,
                 $this->code_location,
-                $ctxTmp,
+                $this->context,
                 $this->suppressed_issues,
                 new ClassLikeNameOptions($this->inferred, false, true, true, $atomic->from_docblock),
             ) === false) {
@@ -290,7 +292,7 @@ final class TypeChecker extends TypeVisitor
             $this->source,
             $fq_classlike_name,
             $this->code_location,
-            null,
+            $this->context,
             $this->suppressed_issues,
             new ClassLikeNameOptions($this->inferred, false, true, true, $atomic->from_docblock),
         ) === false

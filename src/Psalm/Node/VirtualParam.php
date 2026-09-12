@@ -6,6 +6,9 @@ namespace Psalm\Node;
 
 use PhpParser\Node\Param;
 
+/**
+ * @api
+ */
 final class VirtualParam extends Param implements VirtualNode
 {
 

@@ -14,7 +14,6 @@ use UnexpectedValueException;
 use function file_exists;
 use function file_get_contents;
 use function file_put_contents;
-use function filemtime;
 use function in_array;
 use function is_dir;
 
@@ -97,15 +96,6 @@ class FileProvider
         }
     }
 
-    public function getModifiedTime(string $file_path): int
-    {
-        if (!file_exists($file_path)) {
-            throw new UnexpectedValueException('File should exist to get modified time');
-        }
-
-        return (int) filemtime($file_path);
-    }
-
     /**
      * @psalm-external-mutation-free
      */
@@ -155,6 +145,7 @@ class FileProvider
     }
 
     /**
+     * @psalm-suppress PossiblyUnusedMethod called from the reflection-invoked LSP didClose handler
      * @psalm-external-mutation-free
      */
     public function closeFile(string $file_path): void

@@ -10,6 +10,9 @@ use Psalm\Storage\Mutations;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
+/**
+ * @api
+ */
 final class DynamicFunctionStorage
 {
     /**

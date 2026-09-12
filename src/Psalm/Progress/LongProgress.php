@@ -16,6 +16,9 @@ use function strlen;
 
 use const PHP_EOL;
 
+/**
+ * @api
+ */
 class LongProgress extends Progress
 {
     final public const NUMBER_OF_COLUMNS = 60;

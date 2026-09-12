@@ -19,6 +19,7 @@ use function assert;
  * Represents a value of an array or enum.
  *
  * @psalm-immutable
+ * @api
  */
 final class TValueOf extends Atomic
 {

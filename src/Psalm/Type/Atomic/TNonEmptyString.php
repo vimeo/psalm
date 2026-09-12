@@ -10,6 +10,7 @@ use Override;
  * Denotes a string, that is also non-empty (every string except '')
  *
  * @psalm-immutable
+ * @api
  */
 class TNonEmptyString extends TString
 {

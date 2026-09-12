@@ -12,6 +12,7 @@ use function strtoupper;
 
 /**
  * @psalm-external-mutation-free
+ * @api
  */
 final class CompactReport extends Report
 {

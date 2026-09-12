@@ -8,6 +8,9 @@ use Psalm\CodeLocation;
 
 use function strtolower;
 
+/**
+ * @api
+ */
 final class MixedArgument extends ArgumentIssue implements MixedIssue
 {
     public const ERROR_LEVEL = 1;

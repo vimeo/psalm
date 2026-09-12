@@ -11,6 +11,7 @@ use Override;
  * Generated for `$x` inside the `if` statement `if ($x) {...}` when `$x` is `mixed` outside.
  *
  * @psalm-immutable
+ * @api
  */
 final class TNonEmptyMixed extends TMixed
 {

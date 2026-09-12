@@ -14,6 +14,7 @@ use function array_values;
  * Represents an offset of an array.
  *
  * @psalm-immutable
+ * @api
  */
 final class TKeyOf extends TArrayKey
 {

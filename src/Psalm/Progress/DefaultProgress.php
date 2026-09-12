@@ -11,6 +11,9 @@ use function max;
 use function str_repeat;
 use function strlen;
 
+/**
+ * @api
+ */
 class DefaultProgress extends LongProgress
 {
     private const TOO_MANY_FILES = 1_500;

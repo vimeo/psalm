@@ -7,6 +7,9 @@ namespace Psalm\Node\Scalar;
 use PhpParser\Node\InterpolatedStringPart;
 use Psalm\Node\VirtualNode;
 
+/**
+ * @api
+ */
 final class VirtualInterpolatedStringPart extends InterpolatedStringPart implements VirtualNode
 {
 

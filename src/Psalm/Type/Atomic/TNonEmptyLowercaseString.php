@@ -10,6 +10,7 @@ use Override;
  * Denotes a non-empty-string where every character is lowercased. (which can also result from a `strtolower` call).
  *
  * @psalm-immutable
+ * @api
  */
 final class TNonEmptyLowercaseString extends TNonEmptyString
 {

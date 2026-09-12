@@ -13,6 +13,7 @@ use function sprintf;
 
 /**
  * @psalm-external-mutation-free
+ * @api
  */
 final class PylintReport extends Report
 {

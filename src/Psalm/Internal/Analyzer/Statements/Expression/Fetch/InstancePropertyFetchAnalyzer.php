@@ -442,7 +442,7 @@ final class InstancePropertyFetchAnalyzer
                         );
                     }
 
-                    $codebase->properties->propertyExists(
+                    $codebase->propertyExists(
                         $property_id,
                         true,
                         $statements_analyzer,

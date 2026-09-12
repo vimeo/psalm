@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use Override;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
+use Psalm\Context;
 use Psalm\Internal\TypeVisitor\CanContainObjectTypeVisitor;
 use Psalm\Internal\TypeVisitor\ClasslikeReplacer;
 use Psalm\Internal\TypeVisitor\ContainsClassLikeVisitor;
@@ -59,6 +60,7 @@ use function strpos;
 /**
  * @psalm-immutable
  * @psalm-import-type TProperties from Union
+ * @api
  */
 trait UnionTrait
 {
@@ -1340,7 +1342,6 @@ trait UnionTrait
     /**
      * @param  array<string>    $suppressed_issues
      * @param  array<string, bool> $phantom_classes
-     * @param  ?lowercase-string $calling_method_id
      */
     public function check(
         StatementsSource $source,
@@ -1350,7 +1351,7 @@ trait UnionTrait
         bool $inferred = true,
         bool $inherited = false,
         bool $prevent_template_covariance = false,
-        ?string $calling_method_id = null,
+        ?Context $context = null,
     ): bool {
         if ($this->checked) {
             return true;
@@ -1364,7 +1365,7 @@ trait UnionTrait
             $inferred,
             $inherited,
             $prevent_template_covariance,
-            $calling_method_id,
+            $context,
         );
 
         $checker->traverseArray($this->types);

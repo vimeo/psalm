@@ -7,6 +7,9 @@ namespace Psalm\Node\Expr\Cast;
 use PhpParser\Node\Expr\Cast\Double;
 use Psalm\Node\VirtualNode;
 
+/**
+ * @api
+ */
 final class VirtualDouble extends Double implements VirtualNode
 {
 

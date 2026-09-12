@@ -6,6 +6,9 @@ namespace Psalm\Exception;
 
 use Exception;
 
+/**
+ * @api
+ */
 final class ComplicatedExpressionException extends Exception
 {
 }

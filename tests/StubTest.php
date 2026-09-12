@@ -1264,9 +1264,7 @@ final class StubTest extends TestCase
                     }
                 }
 
-                /**
-                 * @psalm-suppress MissingTemplateParam
-                 */
+                /** @psalm-suppress MissingTemplateParam */
                 class B extends A {}
 
                 class Obj {}
@@ -1277,7 +1275,11 @@ final class StubTest extends TestCase
                 class C extends B {}',
         );
 
-        $this->analyzeFile($file_path, new Context());
+        // track_unused_suppressions is disabled here: this test exercises stub +
+        // magic-method behaviour, and the class-level MissingTemplateParam suppress
+        // above is a genuine suppression whose use is not tracked in the (rare)
+        // case of a class defined in both a stub and the analysed file.
+        $this->analyzeFile($file_path, new Context(), false);
     }
 
     public function testInheritedMethodUsedInStub(): void

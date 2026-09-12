@@ -44,6 +44,7 @@ use const GLOB_ONLYDIR;
 
 /**
  * @psalm-consistent-constructor
+ * @api
  */
 class FileFilter
 {

@@ -6,6 +6,9 @@ namespace Psalm\Plugin\EventHandler;
 
 use Psalm\Plugin\EventHandler\Event\FunctionExistenceProviderEvent;
 
+/**
+ * @api
+ */
 interface FunctionExistenceProviderInterface
 {
     /**

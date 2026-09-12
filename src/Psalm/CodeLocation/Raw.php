@@ -11,6 +11,7 @@ use function substr_count;
 
 /**
  * @psalm-immutable
+ * @api
  */
 final class Raw extends CodeLocation
 {

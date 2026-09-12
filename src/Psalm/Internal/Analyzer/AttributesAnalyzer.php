@@ -28,7 +28,6 @@ use Psalm\Type\Union;
 
 use function array_key_first;
 use function array_shift;
-use function array_values;
 use function assert;
 use function count;
 use function strtolower;
@@ -139,7 +138,7 @@ final class AttributesAnalyzer
             $source,
             $fq_attribute_name,
             $attribute_name_location,
-            null,
+            $context,
             $suppressed_issues,
             new ClassLikeNameOptions(
                 false,
@@ -204,7 +203,10 @@ final class AttributesAnalyzer
             new NodeDataProvider(),
             false,
         );
-        $statements_analyzer->addSuppressedIssues(array_values($suppressed_issues));
+        // keep the char-offset keys so --find-unused-psalm-suppress can mark
+        // these suppressions as used (array_values would turn them into a list,
+        // which addSuppressedIssues re-keys by issue name, defeating the check)
+        $statements_analyzer->addSuppressedIssues($suppressed_issues);
 
         $had_returned = $context->has_returned;
         $context->has_returned = false;

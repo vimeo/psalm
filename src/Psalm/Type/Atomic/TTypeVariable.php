@@ -18,6 +18,7 @@ use Psalm\Type\Atomic;
  * function-like has been analyzed.
  *
  * @psalm-immutable
+ * @api
  */
 final class TTypeVariable extends Atomic
 {
@@ -66,7 +67,7 @@ final class TTypeVariable extends Atomic
     }
 
     /**
-     * @param  array<lowercase-string, string> $aliased_classes
+     * @param array<lowercase-string, string> $aliased_classes
      * @psalm-pure
      */
     #[Override]

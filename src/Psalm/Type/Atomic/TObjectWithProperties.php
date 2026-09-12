@@ -22,6 +22,7 @@ use function implode;
  * Denotes an object with specified member variables e.g. `object{foo:int, bar:string}`.
  *
  * @psalm-immutable
+ * @api
  */
 final class TObjectWithProperties extends TObject
 {

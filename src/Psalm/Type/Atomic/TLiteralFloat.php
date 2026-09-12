@@ -12,6 +12,7 @@ use function is_nan;
  * Denotes a floating point value where the exact numeric value is known.
  *
  * @psalm-immutable
+ * @api
  */
 final class TLiteralFloat extends TFloat
 {

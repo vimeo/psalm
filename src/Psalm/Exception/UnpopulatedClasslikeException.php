@@ -6,6 +6,9 @@ namespace Psalm\Exception;
 
 use LogicException;
 
+/**
+ * @api
+ */
 final class UnpopulatedClasslikeException extends LogicException
 {
     /**

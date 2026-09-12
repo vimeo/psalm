@@ -661,13 +661,13 @@ final class ProjectAnalyzer
                     );
                 }
 
-                if (!$this->codebase->properties->propertyExists($source, true)) {
+                if (!$this->codebase->propertyExists($source, true)) {
                     throw new RefactorException(
                         'Property ' . $source . ' does not exist',
                     );
                 }
 
-                if ($this->codebase->properties->propertyExists($destination, true)) {
+                if ($this->codebase->propertyExists($destination, true)) {
                     throw new RefactorException(
                         'Destination property ' . $destination . ' already exists',
                     );
@@ -950,6 +950,11 @@ final class ProjectAnalyzer
         $this->progress->startPhase(Phase::SCAN, $this->scanThreads);
 
         $this->progress->debug('Checking ' . $file_path . PHP_EOL);
+
+        if (!$this->project_files_initialized) {
+            // issues raised while scanning need to know which files are being checked
+            $this->project_files = [$file_path => $file_path];
+        }
 
         $this->config->visitPreloadedStubFiles($this->codebase, $this->progress);
 

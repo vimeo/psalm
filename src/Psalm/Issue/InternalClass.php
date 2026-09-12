@@ -10,6 +10,9 @@ use function count;
 use function implode;
 use function reset;
 
+/**
+ * @api
+ */
 final class InternalClass extends ClassIssue
 {
     public const ERROR_LEVEL = 4;

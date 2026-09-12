@@ -8,6 +8,7 @@ use Psalm\Codebase;
 
 /**
  * @psalm-immutable
+ * @api
  */
 final class AfterCodebasePopulatedEvent
 {

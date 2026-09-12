@@ -84,6 +84,9 @@ use const PHP_EOL;
 use const PSALM_VERSION;
 use const STDERR;
 
+/**
+ * @api
+ */
 final class IssueBuffer
 {
     /**
@@ -158,9 +161,15 @@ final class IssueBuffer
      *
      * @psalm-external-mutation-free
      */
-    public static function addUnusedSuppression(string $file_path, int $offset, string $issue_type): void
-    {
-        if (str_starts_with($issue_type, 'Tainted')) {
+    public static function addUnusedSuppression(
+        string $file_path,
+        int $offset,
+        string $issue_type,
+        bool $taint_analysis,
+    ): void {
+        // Taint issues are only computed when running taint analysis, so outside
+        // of it their suppressions can never be observed as used - don't report them.
+        if (!$taint_analysis && str_starts_with($issue_type, 'Tainted')) {
             return;
         }
 

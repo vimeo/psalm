@@ -30,6 +30,7 @@ use Psalm\SourceControl\SourceControlInfo;
  *
  * @author Kitamura Satoshi <with.no.parachute@gmail.com>
  * @psalm-immutable
+ * @api
  */
 final class GitInfo extends SourceControlInfo
 {

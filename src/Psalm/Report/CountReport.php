@@ -12,6 +12,7 @@ use function uksort;
 
 /**
  * @psalm-external-mutation-free
+ * @api
  */
 final class CountReport extends Report
 {
