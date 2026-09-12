@@ -1446,7 +1446,9 @@ final class Psalm
                 Look for unused code. Options are 'auto' or 'always'. If no value is specified, default is 'auto'
 
             --find-unused-psalm-suppress
-                Finds all @psalm-suppress annotations that aren’t used
+                Finds all @psalm-suppress annotations that aren’t used, including those on
+                classes, interfaces, traits and enums. @psalm-suppress of Tainted* issues is
+                only checked under --taint-analysis.
 
             --find-references-to=[class|method|property]
                 Searches the codebase for references to the given fully-qualified class or method,
