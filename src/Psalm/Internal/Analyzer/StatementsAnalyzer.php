@@ -154,6 +154,8 @@ final class StatementsAnalyzer extends SourceAnalyzer
      */
     public array $foreach_var_locations = [];
 
+    private int $depth = 0;
+
     /**
      * Tracks bounds for the type variables minted while these statements are
      * analyzed. Shared with the enclosing function-like's statements analyzer
@@ -167,8 +169,6 @@ final class StatementsAnalyzer extends SourceAnalyzer
      * reconciling it) rather than sharing an enclosing analyzer's.
      */
     public readonly bool $owns_type_variable_tracker;
-
-    private int $depth = 0;
 
     /**
      * @psalm-mutation-free

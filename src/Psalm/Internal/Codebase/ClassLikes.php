@@ -140,10 +140,6 @@ final class ClassLikes
      */
     private array $trait_nodes = [];
 
-    public bool $collect_references = false;
-
-    public bool $collect_locations = false;
-
     public function __construct(
         private readonly Config $config,
         private readonly ClassLikeStorageProvider $classlike_storage_provider,

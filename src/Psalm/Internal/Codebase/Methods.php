@@ -57,8 +57,6 @@ use function strtolower;
  */
 final class Methods
 {
-    public bool $collect_locations = false;
-
     public MethodReturnTypeProvider $return_type_provider;
 
     public MethodParamsProvider $params_provider;

@@ -28,8 +28,6 @@ use function strtolower;
  */
 final class Properties
 {
-    public bool $collect_locations = false;
-
     public PropertyExistenceProvider $property_existence_provider;
 
     public PropertyTypeProvider $property_type_provider;
