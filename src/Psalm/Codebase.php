@@ -1328,9 +1328,6 @@ final class Codebase
             return null;
         }
 
-        $start_pos = null;
-        $end_pos = null;
-
         ksort($argument_map);
 
         foreach ($argument_map as $start_pos => [$end_pos, $possible_reference, $possible_argument_number]) {
@@ -1346,7 +1343,7 @@ final class Codebase
             $argument_number = $possible_argument_number;
         }
 
-        if ($reference === null || $start_pos === null || $end_pos === null || $argument_number === null) {
+        if ($reference === null || $argument_number === null) {
             return null;
         }
 

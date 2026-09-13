@@ -26588,6 +26588,12 @@ return array (
     0 => 'void',
     'data' => 'array<array-key, mixed>',
   ),
+  'mongodb\\bson\\binary::fromvector' => 
+  array (
+    0 => 'MongoDB\\BSON\\Binary',
+    'vector' => 'array<array-key, mixed>',
+    'vectorType' => 'MongoDB\\BSON\\VectorType',
+  ),
   'mongodb\\bson\\binary::getdata' => 
   array (
     0 => 'string',
@@ -26596,9 +26602,17 @@ return array (
   array (
     0 => 'int',
   ),
+  'mongodb\\bson\\binary::getvectortype' => 
+  array (
+    0 => 'MongoDB\\BSON\\VectorType',
+  ),
   'mongodb\\bson\\binary::jsonserialize' => 
   array (
     0 => 'mixed',
+  ),
+  'mongodb\\bson\\binary::toarray' => 
+  array (
+    0 => 'array<array-key, mixed>',
   ),
   'mongodb\\bson\\dbpointer::__construct' => 
   array (
@@ -27130,6 +27144,10 @@ return array (
   'mongodb\\bson\\utcdatetime::todatetimeimmutable' => 
   array (
     0 => 'DateTimeImmutable',
+  ),
+  'mongodb\\bson\\vectortype::cases' => 
+  array (
+    0 => 'array<array-key, mixed>',
   ),
   'mongodb\\driver\\bulkwrite::__construct' => 
   array (
@@ -55431,8 +55449,8 @@ return array (
   'zookeeperconfig::get' => 
   array (
     0 => 'mixed',
-    'watcher_cb' => 'mixed',
-    '&stat_info' => 'mixed',
+    'watcher_cb=' => 'mixed',
+    '&stat_info=' => 'mixed',
   ),
   'zookeeperconfig::remove' => 
   array (

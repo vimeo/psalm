@@ -105520,8 +105520,8 @@ return array (
   'zookeeperconfig::get' => 
   array (
     0 => 'string',
-    'watcher_cb' => 'callable',
-    '&stat_info' => 'array<array-key, mixed>',
+    'watcher_cb=' => 'callable',
+    '&stat_info=' => 'array<array-key, mixed>',
   ),
   'zookeeperconfig::remove' => 
   array (

@@ -16,6 +16,7 @@ use function explode;
 use function range;
 use function str_contains;
 use function str_starts_with;
+use function substr;
 use function trim;
 
 /**
@@ -64,9 +65,7 @@ final class GitInfoCollector
 
         foreach ($branchesResult as $result) {
             if (str_starts_with($result, '* ')) {
-                $exploded = explode('* ', $result, 2);
-
-                return $exploded[1];
+                return substr($result, 2);
             }
         }
 

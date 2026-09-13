@@ -106,6 +106,7 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
  - [UnusedMethodCall](issues/UnusedMethodCall.md)
 ## Errors that only appear at level 1
 
+ - [IncompatibleTypeParameters](issues/IncompatibleTypeParameters.md)
  - [InvalidClassConstantType](issues/InvalidClassConstantType.md)
  - [LessSpecificClassConstantType](issues/LessSpecificClassConstantType.md)
  - [LessSpecificReturnType](issues/LessSpecificReturnType.md)
