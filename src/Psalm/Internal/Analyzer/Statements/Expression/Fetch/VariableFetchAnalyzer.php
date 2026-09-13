@@ -154,7 +154,7 @@ final class VariableFetchAnalyzer
         }
 
         if (is_string($stmt->name) && self::isSuperGlobal('$' . $stmt->name)) {
-            if ($context->mutation_free) {
+            if ($context->allowed_mutations < Mutations::LEVEL_EXTERNAL) {
                 IssueBuffer::maybeAdd(
                     new ImpureGlobalVariable(
                         'Cannot use a global variable in a mutation-free context',

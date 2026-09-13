@@ -41,7 +41,7 @@ final class GlobalAnalyzer
             );
         }
 
-        if ($context->mutation_free) {
+        if ($context->allowed_mutations < Mutations::LEVEL_EXTERNAL) {
             IssueBuffer::maybeAdd(
                 new ImpureGlobalVariable(
                     'Cannot use a global variable in a mutation-free context',
@@ -64,7 +64,7 @@ final class GlobalAnalyzer
             ImpureGlobalVariable::class,
             $stmt,
         );
-        if ($context->isMutationFree()) {
+        if ($context->allowed_mutations < Mutations::LEVEL_EXTERNAL) {
             IssueBuffer::maybeAdd(
                 new ImpureGlobalVariable(
                     'Cannot use a global variable in a mutation-free context',

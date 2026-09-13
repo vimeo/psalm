@@ -238,7 +238,7 @@ final class AssignmentAnalyzer
                 $context->inside_general_use = true;
             } elseif ($root_is_superglobal) {
                 $context->inside_general_use = true;
-                if ($context->mutation_free) {
+                if ($context->allowed_mutations < Mutations::LEVEL_EXTERNAL) {
                     IssueBuffer::maybeAdd(
                         new ImpureGlobalVariable(
                             'Cannot use a global variable in a mutation-free context',
