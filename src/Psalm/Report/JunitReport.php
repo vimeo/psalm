@@ -19,6 +19,8 @@ use function trim;
  * Copyright (c) Marisa Clardy marisa@clardy.eu
  *
  * with a few modifications
+ *
+ * @api
  */
 final class JunitReport extends Report
 {
@@ -149,8 +151,9 @@ final class JunitReport extends Report
     }
 
     /**
-     * @param  list<IssueData> $failures
+     * @param list<IssueData> $failures
      * @return array<string, non-empty-list<IssueData>>
+     * @psalm-mutation-free
      */
     private function groupByType(array $failures): array
     {
@@ -163,6 +166,9 @@ final class JunitReport extends Report
         return $nfailures;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     private function dataToOutput(IssueData $data): string
     {
         $ret = 'message: ' . $this->xmlEncode(trim($data->message)) . "\n";

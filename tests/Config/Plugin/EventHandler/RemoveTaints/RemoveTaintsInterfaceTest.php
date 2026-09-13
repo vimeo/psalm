@@ -27,12 +27,10 @@ use const DIRECTORY_SEPARATOR;
 
 final class RemoveTaintsInterfaceTest extends TestCase
 {
-    protected static TestConfig $config;
-
     #[Override]
     public static function setUpBeforeClass(): void
     {
-        self::$config = new TestConfig();
+        new TestConfig();
 
         if (!defined('PSALM_VERSION')) {
             define('PSALM_VERSION', '4.0.0');
@@ -46,7 +44,7 @@ final class RemoveTaintsInterfaceTest extends TestCase
     private function getProjectAnalyzerWithConfig(Config $config): ProjectAnalyzer
     {
         $config->setIncludeCollector(new IncludeCollector());
-        return new ProjectAnalyzer(
+        $p = new ProjectAnalyzer(
             $config,
             new Providers(
                 $this->file_provider,
@@ -54,8 +52,14 @@ final class RemoveTaintsInterfaceTest extends TestCase
             ),
             new ReportOptions(),
         );
+        $p->initExtraFiles();
+        $p->initProjectFiles();
+        return $p;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function setUp(): void
     {
@@ -93,6 +97,7 @@ final class RemoveTaintsInterfaceTest extends TestCase
             '<?php // --taint-analysis
 
             /**
+             * @psalm-mutation-free
              * @psalm-taint-sink html $string
              */
             function output($string) {}
@@ -134,6 +139,8 @@ final class RemoveTaintsInterfaceTest extends TestCase
             '<?php // --taint-analysis
 
             /**
+             * @psalm-mutation-free
+             * 
              * @psalm-taint-sink html $build
              */
             function output(array $build) {}
@@ -155,6 +162,7 @@ final class RemoveTaintsInterfaceTest extends TestCase
             '<?php // --taint-analysis
 
             /**
+             * @psalm-mutation-free
              * @psalm-taint-sink html $build
              */
             function output(array $build) {}

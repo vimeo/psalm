@@ -14,6 +14,7 @@ use const JSON_THROW_ON_ERROR;
 
 /**
  * @psalm-immutable
+ * @api
  */
 final class NotNestedAssertions extends Assertion
 {
@@ -23,6 +24,9 @@ final class NotNestedAssertions extends Assertion
     {
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function isNegation(): bool
     {
@@ -40,6 +44,9 @@ final class NotNestedAssertions extends Assertion
         return '!@' . json_encode($this->assertions, JSON_THROW_ON_ERROR);
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function isNegationOf(Assertion $assertion): bool
     {

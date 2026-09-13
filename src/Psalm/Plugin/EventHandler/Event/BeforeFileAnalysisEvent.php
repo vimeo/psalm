@@ -10,6 +10,10 @@ use Psalm\Context;
 use Psalm\StatementsSource;
 use Psalm\Storage\FileStorage;
 
+/**
+ * @psalm-immutable
+ * @api
+ */
 final class BeforeFileAnalysisEvent
 {
     /**
@@ -17,6 +21,7 @@ final class BeforeFileAnalysisEvent
      *
      * @param list<Stmt> $stmts
      * @internal
+     * @psalm-mutation-free
      */
     public function __construct(
         private readonly StatementsSource $statements_source,

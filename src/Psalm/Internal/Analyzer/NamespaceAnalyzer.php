@@ -38,6 +38,9 @@ final class NamespaceAnalyzer extends SourceAnalyzer
      */
     private static array $public_namespace_constants = [];
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         private readonly Namespace_ $namespace,
         /**
@@ -119,6 +122,9 @@ final class NamespaceAnalyzer extends SourceAnalyzer
         return $this->namespace_name;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function setConstType(string $const_name, Union $const_type): void
     {
         self::$public_namespace_constants[$this->namespace_name][$const_name] = $const_type;
@@ -126,6 +132,7 @@ final class NamespaceAnalyzer extends SourceAnalyzer
 
     /**
      * @return array<string, Union>
+     * @psalm-external-mutation-free
      */
     public static function getConstantsForNamespace(string $namespace_name, int $visibility): array
     {

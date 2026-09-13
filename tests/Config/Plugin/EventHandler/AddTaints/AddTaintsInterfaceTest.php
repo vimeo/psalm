@@ -27,12 +27,10 @@ use const DIRECTORY_SEPARATOR;
 
 final class AddTaintsInterfaceTest extends TestCase
 {
-    protected static TestConfig $config;
-
     #[Override]
     public static function setUpBeforeClass(): void
     {
-        self::$config = new TestConfig();
+        new TestConfig();
 
         if (!defined('PSALM_VERSION')) {
             define('PSALM_VERSION', '4.0.0');
@@ -46,7 +44,7 @@ final class AddTaintsInterfaceTest extends TestCase
     private function getProjectAnalyzerWithConfig(Config $config): ProjectAnalyzer
     {
         $config->setIncludeCollector(new IncludeCollector());
-        return new ProjectAnalyzer(
+        $p = new ProjectAnalyzer(
             $config,
             new Providers(
                 $this->file_provider,
@@ -54,6 +52,9 @@ final class AddTaintsInterfaceTest extends TestCase
             ),
             new ReportOptions(),
         );
+        $p->initExtraFiles();
+        $p->initProjectFiles();
+        return $p;
     }
 
     private function setupProjectAnalyzerWithTaintBadDataPlugin(): void
@@ -75,6 +76,8 @@ final class AddTaintsInterfaceTest extends TestCase
                     <issueHandlers>
                         <UndefinedGlobalVariable errorLevel="suppress"/>
                         <UndefinedVariable errorLevel="suppress"/>
+                        <MissingPureAnnotation errorLevel="suppress"/>
+                        <ImpureFunctionCall errorLevel="suppress"/>
                     </issueHandlers>
                 </psalm>',
             ),
@@ -98,6 +101,10 @@ final class AddTaintsInterfaceTest extends TestCase
                     <plugins>
                         <plugin filename="examples/plugins/TaintActiveRecords.php" />
                     </plugins>
+                    <issueHandlers>
+                        <MissingPureAnnotation errorLevel="suppress"/>
+                        <ImpureFunctionCall errorLevel="suppress"/>
+                    </issueHandlers>
                 </psalm>',
             ),
         );
@@ -112,6 +119,9 @@ final class AddTaintsInterfaceTest extends TestCase
         $this->expectExceptionMessage('TaintedHtml');
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function setUp(): void
     {
@@ -190,6 +200,7 @@ final class AddTaintsInterfaceTest extends TestCase
             $file_path,
             '<?php // --taint-analysis
 
+            /** @psalm-pure */
             function genBadData() {
                 return $bad_html;
             }
@@ -214,6 +225,7 @@ final class AddTaintsInterfaceTest extends TestCase
             $file_path,
             '<?php // --taint-analysis
 
+            /** @psalm-mutation-free */
             function genBadData(bool $html) {
                 if ($html) {
                     return $bad_html;
@@ -242,6 +254,7 @@ final class AddTaintsInterfaceTest extends TestCase
             '<?php // --taint-analysis
 
             class Foo {
+                /** @psalm-mutation-free */
                 public function genBadData() {
                     return $bad_html;
                 }
@@ -268,6 +281,7 @@ final class AddTaintsInterfaceTest extends TestCase
             '<?php // --taint-analysis
 
             class Foo {
+                /** @psalm-mutation-free */
                 public static function genBadData() {
                     return $bad_html;
                 }

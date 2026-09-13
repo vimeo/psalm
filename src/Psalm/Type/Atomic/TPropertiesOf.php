@@ -14,6 +14,7 @@ use Psalm\Type\Atomic;
  *
  * @psalm-type TokenName = 'properties-of'|'public-properties-of'|'protected-properties-of'|'private-properties-of'
  * @psalm-immutable
+ * @api
  */
 final class TPropertiesOf extends Atomic
 {
@@ -27,6 +28,7 @@ final class TPropertiesOf extends Atomic
 
     /**
      * @return list<TokenName>
+     * @psalm-pure
      */
     public static function tokenNames(): array
     {
@@ -51,6 +53,7 @@ final class TPropertiesOf extends Atomic
 
     /**
      * @return self::VISIBILITY_*|null
+     * @psalm-pure
      */
     public static function filterForTokenName(string $token_name): ?int
     {
@@ -76,6 +79,9 @@ final class TPropertiesOf extends Atomic
         };
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     protected function getChildNodeKeys(): array
     {
@@ -101,6 +107,9 @@ final class TPropertiesOf extends Atomic
         return $this->getKey();
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {

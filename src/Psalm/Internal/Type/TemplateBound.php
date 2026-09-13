@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Type;
 
+use Psalm\CodeLocation;
 use Psalm\Type\Union;
 
 /**
@@ -11,6 +12,9 @@ use Psalm\Type\Union;
  */
 final class TemplateBound
 {
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         public Union $type,
         /**
@@ -31,6 +35,10 @@ final class TemplateBound
          * When non-null, indicates an equality template bound (vs a lower or upper bound)
          */
         public ?string $equality_bound_classlike = null,
+        /**
+         * Where the bound was recorded, when it constrains a type variable
+         */
+        public ?CodeLocation $pos = null,
     ) {
     }
 }

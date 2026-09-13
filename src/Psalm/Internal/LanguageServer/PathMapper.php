@@ -9,18 +9,27 @@ use function str_starts_with;
 use function strlen;
 use function substr;
 
-/** @internal */
+/**
+ * @internal
+ * @psalm-external-mutation-free
+ */
 final class PathMapper
 {
     private readonly string $server_root;
     private ?string $client_root;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(string $server_root, ?string $client_root = null)
     {
         $this->server_root = $this->sanitizeFolderPath($server_root);
         $this->client_root = $this->sanitizeFolderPath($client_root);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function configureClientRoot(string $client_root): void
     {
         // ignore if preconfigured
@@ -29,6 +38,9 @@ final class PathMapper
         }
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function mapClientToServer(string $client_path): string
     {
         if ($this->client_root === null) {
@@ -42,6 +54,9 @@ final class PathMapper
         return $client_path;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function mapServerToClient(string $server_path): string
     {
         if ($this->client_root === null) {
@@ -53,7 +68,10 @@ final class PathMapper
         return $server_path;
     }
 
-    /** @return ($path is null ? null : string) */
+    /**
+     * @return ($path is null ? null : string)
+     * @psalm-pure
+     */
     private function sanitizeFolderPath(?string $path): ?string
     {
         if ($path === null) {

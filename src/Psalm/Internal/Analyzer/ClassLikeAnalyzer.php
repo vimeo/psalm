@@ -92,6 +92,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
 
     protected ClassLikeStorage $storage;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         protected PhpParser\Node\Stmt\ClassLike $class,
         SourceAnalyzer $source,
@@ -103,6 +106,46 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         $this->storage = $codebase->classlike_storage_provider->get($fq_class_name);
     }
 
+    /**
+     * Registers a class-like's own docblock `@psalm-suppress` annotations for the
+     * unused-suppression check, so redundant ones are reported (UnusedPsalmSuppress)
+     * like member-level suppressions already are.
+     *
+     * Uses the suppressed_issues already parsed from the docblock during scanning;
+     * these are keyed by the char offset of the issue name, unlike suppressions
+     * added programmatically by plugins (which are appended as a plain list and,
+     * having no source location, must not be reported).
+     *
+     * @psalm-external-mutation-free
+     */
+    public static function registerDocblockSuppressions(
+        ClassLikeStorage $storage,
+        string $file_path,
+        Codebase $codebase,
+    ): void {
+        // isset($suppressed_issues[0]) => the list was appended to programmatically
+        if (!$codebase->track_unused_suppressions || isset($storage->suppressed_issues[0])) {
+            return;
+        }
+
+        // a lone UnusedPsalmSuppress should still be reported as unused
+        if (count($storage->suppressed_issues) > 1
+            && in_array('UnusedPsalmSuppress', $storage->suppressed_issues, true)
+        ) {
+            return;
+        }
+
+        $file_path = $storage->location !== null ? $storage->location->file_path : $file_path;
+        $taint_analysis = $codebase->taint_flow_graph !== null;
+
+        foreach ($storage->suppressed_issues as $offset => $issue_type) {
+            IssueBuffer::addUnusedSuppression($file_path, $offset, $issue_type, $taint_analysis);
+        }
+    }
+
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function __destruct()
     {
@@ -181,6 +224,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         }
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getFunctionLikeAnalyzer(string $method_name): ?MethodAnalyzer
     {
         foreach ($this->class->stmts as $stmt) {
@@ -201,8 +247,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         StatementsSource $statements_source,
         string $fq_class_name,
         CodeLocation $code_location,
-        ?string $calling_fq_class_name,
-        ?string $calling_method_id,
+        ?Context $context,
         array $suppressed_issues,
         ?ClassLikeNameOptions $options = null,
         bool $check_classes = true,
@@ -256,22 +301,19 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         $class_exists = $codebase->classlikes->classExists(
             $fq_class_name,
             !$options->inferred ? $code_location : null,
-            $calling_fq_class_name,
-            $calling_method_id,
+            $context,
         );
 
         $interface_exists = $codebase->classlikes->interfaceExists(
             $fq_class_name,
             !$options->inferred ? $code_location : null,
-            $calling_fq_class_name,
-            $calling_method_id,
+            $context,
         );
 
         $enum_exists = $codebase->classlikes->enumExists(
             $fq_class_name,
             !$options->inferred ? $code_location : null,
-            $calling_fq_class_name,
-            $calling_method_id,
+            $context,
         );
 
         if (!$class_exists
@@ -281,7 +323,13 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             if (!$check_classes) {
                 return null;
             }
-            if (!$options->allow_trait || !$codebase->classlikes->traitExists($fq_class_name, $code_location)) {
+            if (!$options->allow_trait
+                || !$codebase->classlikes->traitExists(
+                    $fq_class_name,
+                    !$options->inferred ? $code_location : null,
+                    $context,
+                )
+            ) {
                 if ($options->from_docblock) {
                     if (IssueBuffer::accepts(
                         new UndefinedDocblockClass(
@@ -478,7 +526,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         return $this->parent_fq_class_name;
     }
 
-    /** @psalm-mutation-free */
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function isStatic(): bool
     {
@@ -806,7 +856,8 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * @return  array<string, string>
+     * @return array<string, string>
+     * @psalm-external-mutation-free
      */
     public static function getClassesForFile(Codebase $codebase, string $file_path): array
     {

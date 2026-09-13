@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Psalm\Issue;
 
+/**
+ * @api
+ */
 final class UnsupportedReferenceUsage extends CodeIssue
 {
     public const ERROR_LEVEL = 2;

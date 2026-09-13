@@ -16,6 +16,9 @@ use function strlen;
 
 use const PHP_EOL;
 
+/**
+ * @api
+ */
 class LongProgress extends Progress
 {
     final public const NUMBER_OF_COLUMNS = 60;
@@ -29,6 +32,9 @@ class LongProgress extends Progress
     protected ?Phase $prevPhase = null;
     protected float $started = 0.0;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         protected bool $print_errors = true,
         protected bool $print_infos = true,
@@ -36,6 +42,9 @@ class LongProgress extends Progress
     ) {
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public function debug(string $message): void
     {
@@ -92,6 +101,9 @@ class LongProgress extends Progress
         $this->write('Altered ' . $file_name . "\n");
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function expand(int $number_of_tasks): void
     {
@@ -149,6 +161,9 @@ class LongProgress extends Progress
         $this->reportPhaseDuration(null);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     protected function getOverview(): string
     {
         if ($this->number_of_tasks === null) {

@@ -242,6 +242,7 @@ final class ArrayAnalyzer
 
     /**
      * @psalm-assert-if-false !numeric $literal_array_key
+     * @psalm-pure
      */
     public static function getLiteralArrayKeyInt(
         string|int $literal_array_key,

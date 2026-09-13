@@ -2,6 +2,48 @@
 
 ## Changed
 
+- Backwards compatibility for the plugin API is now covered by a separate metapackage, [psalm/psalm-plugin-api](https://packagist.org/packages/psalm/psalm-plugin-api).  
+
+  This is a separate, empty metapackage: its major version will be bumped every time a breaking change occurs within Psalm's plugin API; minors will also be bumped when adding new features to Psalm's plugin API.  
+
+  Plugins, starting from the first stable release of v7, need to explicitly require a caret range (i.e. ^1, NOT 1.0.0) that package in order to avoid breaking changes during Psalm upgrades.  
+
+  Plugins that support v7 betas can already require `0.x` versions of the package.  
+
+  **All further breaking changes will only be listed in the readme of [psalm/psalm-plugin-api](https://packagist.org/packages/psalm/psalm-plugin-api)**. 
+
+- [BC] The signature of `Psalm\Codebase#methodExists` changed.
+- [BC] Unused code detection is now based on a graph of references between code elements (`Psalm\Internal\Codebase\CodeUseGraph`), like taint analysis: a class, method, property or class constant is only considered used if it is reachable from an entry point (the public API, top-level code, free functions or code outside of the project). Code that is only referenced by other unused code, including cycles of otherwise unreferenced code, is now reported as unused.
+- [BC] Suppressing an unused-code issue (e.g. `@psalm-suppress UnusedClass` or `PossiblyUnusedMethod`) no longer makes the symbol an entry point: the suppression only silences the report for that symbol, and code that is only referenced from it is still reported as unused.
+- [BC] All non-internal classes and interfaces (everything under `Psalm\` outside `Psalm\Internal`, except symbols marked `@internal`) are now marked `@api`. They are the supported public API and are treated as entry points by unused-code detection.
+- [BC] `--find-unused-psalm-suppress` now also reports redundant `@psalm-suppress` annotations on classes, interfaces, traits and enums, and — when running with `--taint-analysis` — redundant `@psalm-suppress` of `Tainted*` issues. `Psalm\IssueBuffer::addUnusedSuppression()` gained a mandatory `$taint_analysis` parameter, and `Psalm\Internal\Analyzer\FunctionLikeAnalyzer::addSuppressedIssue()` (a redundant single-issue helper) was removed in favour of `addSuppressedIssues()`.
+- [BC] Plugins that want to mark code as used must reference it from a context that is itself alive (e.g. by passing a `Psalm\Context` with a `$calling_method_id` of a used method, or of a method outside of the project, to `Psalm\Codebase#methodExists`, `Psalm\Codebase#classExists` and similar methods): references made from unused project code no longer count.
+- [BC] The reference-tracking methods of `Psalm\Internal\Provider\FileReferenceProvider` (`addMethodReferenceToClass`, `addNonMethodReferenceToClass`, `addMethodReferenceToClassMember`, `addFileReferenceToClassMember`, `isClassReferenced`, `isClassMethodReferenced`, `isClassPropertyReferenced`, `isMethodReturnReferenced`, `getClassLocations`, `getClassMethodLocations`, `getClassPropertyLocations` and their `getAll*`/`set*`/`add*` bulk variants) were removed: use `Psalm\Codebase#addReferenceToClass`, `Psalm\Codebase#addReferenceToFunctionLike`, `Psalm\Codebase#addReferenceToProperty`, `Psalm\Codebase#addReferenceToClassConstant` and `Psalm\Codebase#findReferencesTo*` instead.
+- [BC] The `Psalm\Codebase#findReferencesToSymbol`, `findReferencesToMethod`, `findReferencesToProperty` and `findReferencesToClassLike` methods now return arrays keyed by location hash instead of lists.
+- [BC] Method `Psalm\Internal\Codebase\Properties#propertyExists` now takes a `Psalm\Codebase` as its first parameter; use the new `Psalm\Codebase#propertyExists` wrapper instead.
+- [BC] Method `Psalm\Internal\Codebase\ClassLikes#makeImmutable` was made private.
+- [BC] `MissingPureAnnotation` is now reported after the whole codebase has been analysed, by `Psalm\Internal\Codebase\MutationLevelResolver`: the purity of a function-like calling unannotated functions or methods is inferred from the callees' inferred purity as a fixpoint over the call graph, so call chains in any order and recursive cycles (mutual recursion, recursive closures) are handled. Closures assigned to a variable are now reported too.
+- [BC] `Psalm\StatementsSource#signalMutation()` and `Psalm\StatementsSource#signalMutationOnlyInferred()` (and their implementations in `Psalm\Internal\Analyzer\SourceAnalyzer`) take two additional parameters, `$callee_internal_mutations_ok` and `$callee_id`.
+- [BC] `Psalm\Internal\FileManipulation\FunctionDocblockManipulator::getForFunction()` takes an additional optional `$docblock_anchor` parameter.
+- [BC] The parameters $calling_fq_class_name and $calling_method_id of Psalm\Codebase#classOrInterfaceExists() were removed and replaced with a single Psalm\Context|null parameter
+- [BC] The parameters $calling_fq_class_name and $calling_method_id of Psalm\Codebase#classOrInterfaceOrEnumExists() were removed and replaced with a single Psalm\Context|null parameter
+- [BC] The parameters $calling_fq_class_name and $calling_method_id of Psalm\Codebase#classExists() were removed and replaced with a single Psalm\Context|null parameter
+- [BC] The parameters $calling_fq_class_name and $calling_method_id of Psalm\Codebase#interfaceExists() were removed and replaced with a single Psalm\Context|null parameter
+- [BC] Property Psalm\Type\Atomic\TCallable#$is_pure was removed and replaced with an `$allowed_mutations` property
+- [BC] Property Psalm\Type\Atomic\TClosure#$is_pure was removed and replaced with an `$allowed_mutations` property
+- [BC] Property Psalm\Type\Atomic\CallableTrait#$is_pure was removed and replaced with an `$allowed_mutations` property
+- [BC] Method Psalm\Type\Atomic\TCallable#setIsPure() was removed and replaced with a `setAllowedMutations` method 
+- [BC] Method Psalm\Type\Atomic\TClosure#setIsPure() was removed and replaced with a `setAllowedMutations` method 
+- [BC] Method Psalm\Type\Atomic\CallableTrait#setIsPure() was removed and replaced with a `setAllowedMutations` method 
+- [BC] Property Psalm\Type\Atomic\TCallable#$value changed default value from NULL to 'callable'
+- [BC] The $value parameter of Psalm\Type\Atomic\TCallable#__construct() was removed
+- [BC] The $value parameter of Psalm\Type\Atomic\TClosure#__construct() was removed
+- [BC] Property $pure of `Psalm\Context`, `Psalm\Storage\FunctionLikeStorage` was removed and replaced with an `isPure()` method, reading from the new `$allowed_mutations` property.
+- [BC] Property $mutation_free of `Psalm\Context`, `Psalm\Storage\FunctionLikeStorage`, `Psalm\Storage\ClassLikeStorage` was removed and replaced with an `isMutationFree()` method, reading from the new `$allowed_mutations` property.
+- [BC] Property $external_mutation_free of of `Psalm\Context`, `Psalm\Storage\FunctionLikeStorage`, `Psalm\Storage\ClassLikeStorage` was removed and replaced with an `isExternalMutationFree()` method, reading from the new `$allowed_mutations` property.
+- [BC] Method signalMutationOnlyInferred() was added to interface Psalm\StatementsSource
+- [BC] Method signalMutation() was added to interface Psalm\StatementsSource
+
 - [BC] Taints are now *internally* represented by a bitmap (an integer), instead of an array of strings. Users can still use the usual string taint identifiers (including custom ones, which will be automatically registered by Psalm), but internally, the type of `Psalm\Type\TaintKind` taint types is now an integer.
 
 - [BC] The maximum number of usable taint *types* (including both native taints and custom taints) is now equal to 32 on 32-bit systems and 64 on 64-bit systems: this should be enough for the vast majority of usecases, if more taint types are needed, consider merging some taint types or using some native taint types.  
@@ -9,6 +51,14 @@
 - [BC] `Psalm\Plugin\EventHandler\AddTaintsInterface::addTaints` and `Psalm\Plugin\EventHandler\RemoveTaintsInterface::removeTaints` now must return an integer taint instead of an array of strings (see the new [taint documentation](https://psalm.dev/docs/security_analysis/custom_taint_sources/) for more info).  
 
 - [BC] The type of the `$taints` parameter of `Psalm\Codebase::addTaintSource` and  `Psalm\Codebase::addTaintSink` was changed to an integer
+
+- [BC] The `$code_location` parameter of `Psalm\Codebase::addTaintSource` and `Psalm\Codebase::addTaintSink` is now mandatory and was moved before the `$taints` parameter: the new signatures are `addTaintSource(Union $expr_type, string $taint_id, CodeLocation $code_location, int $taints = TaintKind::ALL_INPUT)` and `addTaintSink(string $taint_id, CodeLocation $code_location, int $taints = TaintKind::ALL_INPUT)`.
+
+- [BC] Method `Psalm\Internal\DataFlow\DataFlowNode::make` is now private: use one of the `getFor*` factory methods instead.
+
+- [BC] The signatures of `Psalm\Internal\DataFlow\DataFlowNode::getForMethodArgument` and `Psalm\Internal\DataFlow\DataFlowNode::getForMethodReturn` changed: the `$method_id` parameter was removed (the ID is now derived from the cased method ID), and the code location parameters were replaced with a mandatory `Psalm\Storage\FunctionLikeStorage $storage` parameter, from which the parameter/return type location is derived. For callables without a storage (builtin functions and language constructs, dynamic function calls and instantiations, callable objects, inherited or magic methods), use the new `getForCallableArg`/`getForCallableReturn` methods, which take a `$kind` and an explicit `?CodeLocation $location`.
+
+- The `Psalm\Internal\DataFlow\DataFlowNode::getForTaintSink`, `Psalm\Internal\DataFlow\DataFlowNode::getForPropertyFetch`, `Psalm\Internal\DataFlow\DataFlowNode::getForCallableArg` and `Psalm\Internal\DataFlow\DataFlowNode::getForCallableReturn` factory methods were added.
 
 - [BC] Type of property `Psalm\Storage\FunctionLikeParameter::$sinks` changed from `array|null` to `int`
 

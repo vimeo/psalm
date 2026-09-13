@@ -112,6 +112,9 @@ final class Clause implements Stringable
         $this->creating_object_id = $creating_object_id;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function contains(Clause $other_clause): bool
     {
         if (count($other_clause->possibilities) > count($this->possibilities)) {

@@ -11,6 +11,7 @@ use Psalm\Type\Union;
 
 /**
  * @psalm-immutable
+ * @api
  */
 final class InArray extends Assertion
 {

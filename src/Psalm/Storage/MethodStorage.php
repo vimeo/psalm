@@ -6,6 +6,9 @@ namespace Psalm\Storage;
 
 use Psalm\Type\Union;
 
+/**
+ * @api
+ */
 final class MethodStorage extends FunctionLikeStorage
 {
     use UnserializeMemoryUsageSuppressionTrait;
@@ -33,11 +36,14 @@ final class MethodStorage extends FunctionLikeStorage
 
     public bool $has_docblock_return_type = false;
 
-    public bool $external_mutation_free = false;
-
-    public bool $immutable = false;
-
-    public bool $mutation_free_inferred = false;
+    /**
+     * If true, we *assumed* this method is mutation free
+     * by looking at its statements, NOT by looking at its docblock/annotations.
+     */
+    public bool $mutation_free_assumed = false;
+    
+    /** @var Mutations::LEVEL_* */
+    public int $containing_class_allowed_mutations = Mutations::LEVEL_ALL;
 
     /**
      * @var ?array<string, bool>

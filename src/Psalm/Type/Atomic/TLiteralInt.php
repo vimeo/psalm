@@ -10,6 +10,7 @@ use Override;
  * Denotes an integer value where the exact numeric value is known.
  *
  * @psalm-immutable
+ * @api
  */
 final class TLiteralInt extends TInt
 {

@@ -41,6 +41,7 @@ use Psalm\Issue\CodeIssue;
 use Psalm\Issue\ConfigIssue;
 use Psalm\Issue\FunctionIssue;
 use Psalm\Issue\MethodIssue;
+use Psalm\Issue\PluginIssue;
 use Psalm\Issue\PropertyIssue;
 use Psalm\Issue\VariableIssue;
 use Psalm\Plugin\PluginEntryPointInterface;
@@ -133,11 +134,17 @@ use const PSALM_VERSION;
 use const SCANDIR_SORT_NONE;
 
 /**
+ * @api
  * @psalm-suppress PropertyNotSetInConstructor
  * @psalm-consistent-constructor
  */
 final class Config
 {
+    /**
+     * @var bool
+     */
+    public const INIT_PROJECT_FILES_NOW = false;
+
     final public const DEFAULT_BASELINE_NAME = 'psalm-baseline.xml';
     private const DEFAULT_FILE_NAMES = [
         'psalm.xml',
@@ -613,7 +620,10 @@ final class Config
     /** @var list<string> */
     public array $config_warnings = [];
 
-    /** @internal */
+    /**
+     * @internal
+     * @psalm-mutation-free
+     */
     protected function __construct()
     {
         self::$instance = $this;
@@ -702,6 +712,8 @@ final class Config
 
     /**
      * Computes the hash to use for a cache folder from CLI flags and from the config file's xml contents
+     *
+     * @psalm-mutation-free
      */
     public function computeHash(): string
     {
@@ -805,6 +817,7 @@ final class Config
      * @param positive-int $line_number 1-based line number
      * @return int 0-based byte offset
      * @throws OutOfBoundsException
+     * @psalm-pure
      */
     private static function lineNumberToByteOffset(string $string, int $line_number): int
     {
@@ -1467,6 +1480,9 @@ final class Config
         return $config;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public static function getInstance(): Config
     {
         if (self::$instance) {
@@ -1476,7 +1492,10 @@ final class Config
         throw new UnexpectedValueException('No config initialized');
     }
 
-    /** @param list<ClassLoader> $autoloaders */
+    /**
+     * @param list<ClassLoader> $autoloaders
+     * @psalm-external-mutation-free
+     */
     public function setComposerClassLoader(array $autoloaders): void
     {
         $this->autoloaders = $autoloaders;
@@ -1507,12 +1526,18 @@ final class Config
         }
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function setCustomErrorLevel(string $issue_key, string $error_level): void
     {
         $this->issue_handlers[$issue_key] = new IssueHandler();
         $this->issue_handlers[$issue_key]->setErrorLevel($error_level);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function safeSetCustomErrorLevel(string $issue_key, string $error_level): void
     {
         if (!isset($this->issue_handlers[$issue_key])) {
@@ -1560,6 +1585,9 @@ final class Config
         $this->plugin_paths[] = $path;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addPluginClass(string $class_name, ?SimpleXMLElement $plugin_config = null): void
     {
         $this->plugin_classes[] = ['class' => $class_name, 'config' => $plugin_config];
@@ -1709,6 +1737,9 @@ final class Config
         }
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     private static function requirePath(string $path): void
     {
         /** @psalm-suppress UnresolvableInclude */
@@ -1857,21 +1888,33 @@ final class Config
         return true;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isInProjectDirs(string $file_path): bool
     {
         return $this->project_files && $this->project_files->allows($file_path);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isInExtraDirs(string $file_path): bool
     {
         return $this->extra_files && $this->extra_files->allows($file_path);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function mustBeIgnored(string $file_path): bool
     {
         return $this->project_files && $this->project_files->forbids($file_path);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function trackTaintsInPath(string $file_path): bool
     {
         return !$this->taint_analysis_ignored_files
@@ -1903,6 +1946,21 @@ final class Config
 
         if ($reporting_level === null) {
             $reporting_level = $this->getReportingLevelForFile($issue_type, $e->getFilePath());
+        }
+
+        // For plugin issues outside the Psalm\Issue\ namespace, getReportingLevelForFile()
+        // cannot resolve the class to check ERROR_LEVEL, so we check it here directly.
+        // Skip when an explicit issue handler is configured, as user config takes priority.
+        if ($reporting_level === self::REPORT_ERROR
+            && $e instanceof PluginIssue
+            && !isset($this->issue_handlers[$issue_type])
+        ) {
+            /** @var int */
+            $issue_level = $e::ERROR_LEVEL;
+
+            if ($issue_level > 0 && $issue_level < $this->level) {
+                $reporting_level = self::REPORT_INFO;
+            }
         }
 
         if (!$this->report_info && $reporting_level === self::REPORT_INFO) {
@@ -2038,7 +2096,10 @@ final class Config
         return null;
     }
 
-    /** @return array{type: string, index: int, count: int}[] */
+    /**
+     * @return array{type: string, index: int, count: int}[]
+     * @psalm-mutation-free
+     */
     public function getIssueHandlerSuppressions(): array
     {
         $suppressions = [];
@@ -2103,6 +2164,9 @@ final class Config
         return null;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getReportingLevelForFunction(string $issue_type, string $function_id): ?string
     {
         $level = null;
@@ -2161,6 +2225,7 @@ final class Config
 
     /**
      * @return array<string>
+     * @psalm-mutation-free
      */
     public function getProjectDirectories(): array
     {
@@ -2173,6 +2238,7 @@ final class Config
 
     /**
      * @return array<string>
+     * @psalm-mutation-free
      */
     public function getProjectFiles(): array
     {
@@ -2185,6 +2251,7 @@ final class Config
 
     /**
      * @return array<string>
+     * @psalm-mutation-free
      */
     public function getExtraDirectories(): array
     {
@@ -2195,6 +2262,9 @@ final class Config
         return $this->extra_files->getDirectories();
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function reportTypeStatsForFile(string $file_path): bool
     {
         return $this->project_files
@@ -2202,6 +2272,9 @@ final class Config
             && $this->project_files->reportTypeStats($file_path);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function useStrictTypesForFile(string $file_path): bool
     {
         return $this->project_files && $this->project_files->useStrictTypes($file_path);
@@ -2498,6 +2571,9 @@ final class Config
         }
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function setIncludeCollector(IncludeCollector $include_collector): void
     {
         $this->include_collector = $include_collector;
@@ -2685,6 +2761,9 @@ final class Config
         }
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function setServerMode(): void
     {
         if ($this->cache_directory !== null) {
@@ -2692,11 +2771,17 @@ final class Config
         }
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addStubFile(string $stub_file): void
     {
         $this->stub_files[$stub_file] = $stub_file;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function hasStubFile(string $stub_file): bool
     {
         return isset($this->stub_files[$stub_file]);
@@ -2710,6 +2795,9 @@ final class Config
         return $this->stub_files;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addPreloadedStubFile(string $stub_file): void
     {
         $this->preloaded_stub_files[$stub_file] = $stub_file;
@@ -2725,6 +2813,9 @@ final class Config
         return $this->configured_php_version;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     private function setBooleanAttribute(string $name, bool $value): void
     {
         $this->$name = $value;
@@ -2769,6 +2860,8 @@ final class Config
                     '8.1',
                     '8.2',
                     '8.3',
+                    '8.4',
+                    '8.5',
                 ];
 
                 foreach ($php_versions as $candidate) {
@@ -2811,7 +2904,10 @@ final class Config
         };
     }
 
-    /** @internal */
+    /**
+     * @internal
+     * @psalm-mutation-free
+     */
     public function requireAutoloader(): void
     {
         /** @psalm-suppress UnresolvableInclude */

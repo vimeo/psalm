@@ -9,9 +9,16 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\StatementsSource;
 
+/**
+ * @psalm-immutable
+ * @api
+ */
 final class AfterEveryFunctionCallAnalysisEvent
 {
-    /** @internal */
+    /**
+     * @internal
+     * @psalm-mutation-free
+     */
     public function __construct(
         private readonly FuncCall $expr,
         private readonly string $function_id,

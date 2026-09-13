@@ -52,7 +52,9 @@ final class MethodAnalyzer extends FunctionLikeAnalyzer
         '__set_state',
     ];
 
-    /** @psalm-external-mutation-free */
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         PhpParser\Node\Stmt\ClassMethod $function,
         SourceAnalyzer $source,
@@ -174,18 +176,15 @@ final class MethodAnalyzer extends FunctionLikeAnalyzer
         ?string $calling_method_id = null,
         bool $with_pseudo = false,
     ): ?bool {
-        if ($codebase->methods->methodExists(
-            $method_id,
-            $calling_method_id,
-            !$calling_method_id
+        if ($codebase->methodExists(
+            method_id: $method_id,
+            calling_method_id: $calling_method_id,
+            code_location: !$calling_method_id
                 || $calling_method_id !== strtolower((string) $method_id)
                 ? $code_location
                 : null,
-            null,
-            $code_location->file_path,
-            true,
-            false,
-            $with_pseudo,
+            source_file_path: $code_location->file_path,
+            with_pseudo: $with_pseudo,
         )) {
             return true;
         }
@@ -324,6 +323,9 @@ final class MethodAnalyzer extends FunctionLikeAnalyzer
         }
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getMethodId(?string $context_self = null): MethodIdentifier
     {
         $function_name = (string)$this->function->name;

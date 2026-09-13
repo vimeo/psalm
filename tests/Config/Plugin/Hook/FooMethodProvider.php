@@ -16,6 +16,9 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
+/**
+ * @psalm-suppress UnusedClass registered as a plugin via test config, instantiated by reflection
+ */
 final class FooMethodProvider implements
     MethodExistenceProviderInterface,
     MethodParamsProviderInterface,
@@ -23,6 +26,7 @@ final class FooMethodProvider implements
 {
     /**
      * @return array<string>
+     * @psalm-pure
      */
     #[Override]
     public static function getClassLikeNames(): array
@@ -30,6 +34,9 @@ final class FooMethodProvider implements
         return ['Ns\Foo'];
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public static function doesMethodExist(MethodExistenceProviderEvent $event): ?bool
     {

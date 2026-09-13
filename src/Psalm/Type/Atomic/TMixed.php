@@ -12,6 +12,7 @@ use Psalm\Type\Atomic;
  * Denotes the `mixed` type, used when you don’t know the type of an expression.
  *
  * @psalm-immutable
+ * @api
  */
 class TMixed extends Atomic
 {
@@ -21,6 +22,9 @@ class TMixed extends Atomic
         parent::__construct($from_docblock);
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getKey(bool $include_extra = true): string
     {
@@ -28,7 +32,8 @@ class TMixed extends Atomic
     }
 
     /**
-     * @param  array<lowercase-string, string> $aliased_classes
+     * @param array<lowercase-string, string> $aliased_classes
+     * @psalm-pure
      */
     #[Override]
     public function toPhpString(
@@ -40,12 +45,18 @@ class TMixed extends Atomic
         return $analysis_php_version_id >= 8_00_00 ? 'mixed' : null;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return $analysis_php_version_id >= 8_00_00;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getAssertionString(): string
     {

@@ -8,8 +8,15 @@ use Override;
 use Psalm\Internal\Json\Json;
 use Psalm\Report;
 
+/**
+ * @psalm-external-mutation-free
+ * @api
+ */
 final class JsonSummaryReport extends Report
 {
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public function create(): string
     {

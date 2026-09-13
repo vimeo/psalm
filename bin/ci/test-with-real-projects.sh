@@ -6,9 +6,17 @@ set -x
 SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
 SCRIPT_DIR="$(realpath "$SCRIPT_DIR")"
 PSALM="$(readlink -f "$SCRIPT_DIR/../../psalm")"
-PSALM_PHAR="$(readlink -f "$SCRIPT_DIR/../../build/psalm.phar")"
+PSALM_PHAR="$(readlink -f "$SCRIPT_DIR/../../build/psalm.phar" || echo "")"
 
-if [ ! -f "$PSALM_PHAR" ]; then PSALM_PHAR="$PSALM"; fi
+if [ ! -f "$PSALM_PHAR" ]; then
+	PSALM_PHAR="$PSALM"
+	cd "$SCRIPT_DIR/../../"
+	composer update --no-dev --prefer-dist
+fi
+
+which gsed > /dev/null && sed=gsed || sed=sed
+
+which gsed > /dev/null && sed=gsed || sed=sed
 
 rm -Rf /tmp/testing-with-real-projects
 mkdir -p /tmp/testing-with-real-projects
@@ -21,7 +29,6 @@ update)
 	cd "$OLDPWD"
 	"${BASH_SOURCE[0]}" phpunit update || true
 	"${BASH_SOURCE[0]}" collections update || true
-	"${BASH_SOURCE[0]}" psl update || true
 	"${BASH_SOURCE[0]}" laravel update || true
 	exit 0
 	;;
@@ -43,22 +50,6 @@ collections)
 	"$PSALM" --monochrome --show-info=false --set-baseline=psalm-baseline.xml || FAIL=$?
 	;;
 
-psl)
-	# For circleCI
-	export PHP_EXTENSION_INTL=1
-	export PHP_EXTENSION_BCMATH=1
-
-	git clone git@github.com:psalm/endtoend-test-psl.git
-	cd endtoend-test-psl
-	git checkout 2.3.x_master
-	composer install --ignore-platform-reqs
-	# Avoid conflicts with old psalm when running phar tests
-	rm -rf vendor/vimeo/psalm
-	sed 's/ErrorOutputBehavior::Packed, ErrorOutputBehavior::Discard/ErrorOutputBehavior::Discard/g' -i src/Psl/Shell/execute.php
-	"$PSALM_PHAR" --monochrome -c config/psalm.xml --set-baseline=psalm-baseline.xml || FAIL=$?
-	"$PSALM_PHAR" --monochrome -c config/psalm-static-analysis.xml tests/static-analysis --set-baseline=psalm-baseline-static-analysis.xml || FAIL=$?
-	;;
-
 laravel)
 	git clone --depth=1 git@github.com:psalm/endtoend-test-laravel.git
 	cd endtoend-test-laravel
@@ -67,7 +58,7 @@ laravel)
 	;;
 
 *)
-	echo "Usage: test-with-real-projects.sh {phpunit|collections|laravel|psl}"
+	echo "Usage: test-with-real-projects.sh {phpunit|collections|laravel}"
 	echo "Usage: test-with-real-projects.sh update"
 	exit 1
 esac

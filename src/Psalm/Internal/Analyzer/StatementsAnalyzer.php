@@ -50,6 +50,7 @@ use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
+use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\Issue\CheckType;
 use Psalm\Issue\ComplexFunction;
 use Psalm\Issue\ComplexMethod;
@@ -155,6 +156,23 @@ final class StatementsAnalyzer extends SourceAnalyzer
 
     private int $depth = 0;
 
+    /**
+     * Tracks bounds for the type variables minted while these statements are
+     * analyzed. Shared with the enclosing function-like's statements analyzer
+     * (when there is one) so that constraints recorded in nested
+     * function-likes reconcile with the outermost function-like's variables.
+     */
+    public TypeVariableTracker $type_variable_tracker;
+
+    /**
+     * Whether this analyzer minted its own tracker (and so is responsible for
+     * reconciling it) rather than sharing an enclosing analyzer's.
+     */
+    public readonly bool $owns_type_variable_tracker;
+
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         protected SourceAnalyzer $source,
         public NodeDataProvider $node_data,
@@ -162,6 +180,18 @@ final class StatementsAnalyzer extends SourceAnalyzer
     ) {
         $this->file_analyzer = $source->getFileAnalyzer();
         $this->codebase = $source->getCodebase();
+
+        $parent_statements_analyzer = $source instanceof FunctionLikeAnalyzer
+            ? $source->getSource()
+            : null;
+
+        if ($parent_statements_analyzer instanceof self) {
+            $this->type_variable_tracker = $parent_statements_analyzer->type_variable_tracker;
+            $this->owns_type_variable_tracker = false;
+        } else {
+            $this->type_variable_tracker = new TypeVariableTracker();
+            $this->owns_type_variable_tracker = true;
+        }
 
         if ($this->codebase->taint_flow_graph
             && $root_scope
@@ -177,6 +207,9 @@ final class StatementsAnalyzer extends SourceAnalyzer
         }
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getDataFlowGraphWithSuppressed(): TaintFlowGraph|CombinedFlowGraph|VariableUseGraph|null
     {
         if ($this->taint_flow_graph && in_array('TaintedInput', $this->getSuppressedIssues())) {
@@ -184,6 +217,9 @@ final class StatementsAnalyzer extends SourceAnalyzer
         }
         return $this->data_flow_graph;
     }
+    /**
+     * @psalm-mutation-free
+     */
     public function getTaintFlowGraphWithSuppressed(): ?TaintFlowGraph
     {
         if ($this->taint_flow_graph && in_array('TaintedInput', $this->getSuppressedIssues())) {
@@ -447,6 +483,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                                 $statements_analyzer->getFilePath(),
                                 $offset,
                                 $issue_type,
+                                $codebase->taint_flow_graph !== null,
                             );
                         }
                     }
@@ -509,7 +546,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
 
                     if ($var_comment->var_id === '$this'
                         && $var_comment->type
-                        && $codebase->classExists((string)$var_comment->type)
+                        && $codebase->classExists((string)$var_comment->type, null, $context)
                     ) {
                         $statements_analyzer->setFQCLN((string)$var_comment->type);
                     }
@@ -850,7 +887,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
             $trimmed = trim(reset($comments->tags['psalm-scope-this']));
             $scope_fqcn = Type::getFQCLNFromString($trimmed, $this->getAliases());
 
-            if (!$codebase->classExists($scope_fqcn)) {
+            if (!$codebase->classExists($scope_fqcn, null, $context)) {
                 IssueBuffer::maybeAdd(
                     new UndefinedDocblockClass(
                         'Scope class ' . $scope_fqcn . ' does not exist',
@@ -993,11 +1030,17 @@ final class StatementsAnalyzer extends SourceAnalyzer
         }
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function hasVariable(string $var_name): bool
     {
         return isset($this->all_vars[$var_name]);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function registerVariable(string $var_id, CodeLocation $location, ?int $branch_point): void
     {
         $this->all_vars[$var_id] = $location;
@@ -1009,6 +1052,9 @@ final class StatementsAnalyzer extends SourceAnalyzer
         $this->registerVariableAssignment($var_id, $location);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function registerVariableAssignment(string $var_id, CodeLocation $location): void
     {
         $this->unused_var_locations[$location->getHash()] = [$var_id, $location];
@@ -1051,6 +1097,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
 
     /**
      * @return array<string, DataFlowNode>
+     * @psalm-mutation-free
      */
     public function getParentNodesForPossiblyUndefinedVariable(string $undefined_var_id): array
     {
@@ -1072,17 +1119,25 @@ final class StatementsAnalyzer extends SourceAnalyzer
 
     /**
      * The first appearance of the variable in this set of statements being evaluated
+     *
+     * @psalm-mutation-free
      */
     public function getFirstAppearance(string $var_id): ?CodeLocation
     {
         return $this->all_vars[$var_id] ?? null;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getBranchPoint(string $var_id): ?int
     {
         return $this->var_branch_points[$var_id] ?? null;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addVariableInitialization(string $var_id, int $branch_point): void
     {
         $this->vars_to_initialize[$var_id] = $branch_point;
@@ -1110,6 +1165,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
 
     /**
      * @param array<string, true> $byref_uses
+     * @psalm-external-mutation-free
      */
     public function setByRefUses(array $byref_uses): void
     {
@@ -1118,6 +1174,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
 
     /**
      * @return array<string, array<array-key, CodeLocation>>
+     * @psalm-mutation-free
      */
     public function getUncaughtThrows(Context $context): array
     {
@@ -1169,6 +1226,9 @@ final class StatementsAnalyzer extends SourceAnalyzer
         return $uncaught_throws;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getFunctionAnalyzer(string $function_id): ?FunctionAnalyzer
     {
         return $this->function_analyzers[$function_id] ?? null;
@@ -1190,6 +1250,9 @@ final class StatementsAnalyzer extends SourceAnalyzer
         return parent::getFQCLN();
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function setFQCLN(string $fake_this_class): void
     {
         $this->fake_this_class = $fake_this_class;

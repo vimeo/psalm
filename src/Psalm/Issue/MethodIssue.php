@@ -8,10 +8,16 @@ use Psalm\CodeLocation;
 
 use function strtolower;
 
+/**
+ * @api
+ */
 abstract class MethodIssue extends CodeIssue
 {
     public string $method_id;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         string $message,
         CodeLocation $code_location,

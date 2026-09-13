@@ -22,10 +22,14 @@ use Psalm\Plugin\RegistrationInterface;
 use function class_exists;
 use function is_subclass_of;
 
+/**
+ * @api
+ */
 final class PluginRegistrationSocket implements RegistrationInterface
 {
     /**
      * @internal
+     * @psalm-mutation-free
      */
     public function __construct(
         public readonly Config $config,
@@ -33,6 +37,9 @@ final class PluginRegistrationSocket implements RegistrationInterface
     ) {
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function addStubFile(string $file_name): void
     {

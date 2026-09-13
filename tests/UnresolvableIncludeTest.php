@@ -25,6 +25,7 @@ final class UnresolvableIncludeTest extends TestCase
 
     /**
      * @return array<string,array{code:string,expectedExceptionLine:int}>
+     * @psalm-pure
      */
     public function providerUnresolvableInclude(): array
     {
@@ -54,6 +55,7 @@ final class UnresolvableIncludeTest extends TestCase
 
     /**
      * @return array<string,array{code:string}>
+     * @psalm-pure
      */
     public function providerNoUnresolvableInclude(): array
     {

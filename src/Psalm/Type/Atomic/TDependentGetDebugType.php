@@ -10,6 +10,7 @@ use Override;
  * Represents a string whose value is that of a type found by get_debug_type($var)
  *
  * @psalm-immutable
+ * @api
  */
 final class TDependentGetDebugType extends TString implements DependentType
 {
@@ -33,12 +34,18 @@ final class TDependentGetDebugType extends TString implements DependentType
         return $this->typeof;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getReplacement(): TString
     {
         return new TString();
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {

@@ -15,6 +15,9 @@ final class MixinAnnotationTest extends TestCase
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerValidCodeParse(): iterable
     {
@@ -286,7 +289,6 @@ final class MixinAnnotationTest extends TestCase
                     abstract class FooChild extends Foo{}
 
                     /**
-                     * @psalm-suppress MissingConstructor
                      * @psalm-suppress PropertyNotSetInConstructor
                      */
                     final class FooGrandChild extends FooChild {}
@@ -520,7 +522,6 @@ final class MixinAnnotationTest extends TestCase
                     abstract class FooChild extends Foo{}
 
                     /**
-                     * @psalm-suppress MissingConstructor
                      * @psalm-suppress PropertyNotSetInConstructor
                      */
                     final class FooGrandChild extends FooChild {}
@@ -625,6 +626,9 @@ final class MixinAnnotationTest extends TestCase
         ];
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerInvalidCodeParse(): iterable
     {

@@ -4,8 +4,15 @@ declare(strict_types=1);
 
 namespace Psalm;
 
+use PhpParser\Node;
+use Psalm\Issue\CodeIssue;
+use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Storage\Mutations;
 use Psalm\Type\Union;
 
+/**
+ * @api
+ */
 interface StatementsSource extends FileSource
 {
     public function getNamespace(): ?string;
@@ -31,6 +38,9 @@ interface StatementsSource extends FileSource
      */
     public function getTemplateTypeMap(): ?array;
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function setRootFilePath(string $file_path, string $file_name): void;
 
     public function hasParentFilePath(string $file_path): bool;
@@ -63,4 +73,44 @@ interface StatementsSource extends FileSource
     public function removeSuppressedIssues(array $new_issues): void;
 
     public function getNodeTypeProvider(): NodeTypeProvider;
+
+    /**
+     * Records that the current function-like performs a mutation of the given
+     * level, for purity inference.
+     *
+     * When $storage is the storage of an unannotated callee of the project, the
+     * callee's level is only known once it has been analysed itself, so the
+     * dependency is recorded and resolved after analysis instead (see
+     * \Psalm\Internal\Codebase\MutationLevelResolver).
+     *
+     * @param Mutations::LEVEL_* $mutation_level
+     * @param bool $callee_internal_mutations_ok whether mutations of the callee's own instance
+     *        (e.g. of a freshly constructed object) are fine for the caller
+     * @param ?string $callee_id the graph node of the callee, when it can't be derived from its storage (closures)
+     */
+    public function signalMutationOnlyInferred(
+        int $mutation_level,
+        ?FunctionLikeStorage $storage = null,
+        bool $callee_internal_mutations_ok = false,
+        ?string $callee_id = null,
+    ): void;
+
+    /**
+     * @param Mutations::LEVEL_* $mutation_level
+     * @param non-empty-string $msg
+     * @param class-string<CodeIssue> $class
+     * @param ?Mutations::LEVEL_* $inferred_mutation_level
+     */
+    public function signalMutation(
+        int $mutation_level,
+        Context $context,
+        string $msg,
+        string $class,
+        Node $node,
+        ?int $inferred_mutation_level = null,
+        bool $overrideMsg = false,
+        ?FunctionLikeStorage $storage = null,
+        bool $callee_internal_mutations_ok = false,
+        ?string $callee_id = null,
+    ): void;
 }

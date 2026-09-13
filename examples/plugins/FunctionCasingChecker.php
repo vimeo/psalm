@@ -101,6 +101,9 @@ final class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface,
     }
 }
 
+/**
+ * 
+ */
 final class IncorrectFunctionCasing extends PluginIssue
 {
 }

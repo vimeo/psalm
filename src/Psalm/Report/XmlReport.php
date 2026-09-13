@@ -13,6 +13,9 @@ use Spatie\ArrayToXml\ArrayToXml;
 use function array_map;
 use function get_object_vars;
 
+/**
+ * @api
+ */
 final class XmlReport extends Report
 {
     #[Override]

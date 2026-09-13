@@ -10,6 +10,7 @@ use Psalm\Type\Atomic;
 
 /**
  * @psalm-immutable
+ * @api
  */
 final class TTypeAlias extends Atomic
 {
@@ -34,7 +35,8 @@ final class TTypeAlias extends Atomic
     }
 
     /**
-     * @param  array<lowercase-string, string> $aliased_classes
+     * @param array<lowercase-string, string> $aliased_classes
+     * @psalm-pure
      */
     #[Override]
     public function toPhpString(
@@ -46,12 +48,18 @@ final class TTypeAlias extends Atomic
         return null;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getAssertionString(): string
     {

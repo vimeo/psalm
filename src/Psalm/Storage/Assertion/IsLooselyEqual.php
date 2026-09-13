@@ -11,6 +11,7 @@ use Psalm\Type\Atomic;
 
 /**
  * @psalm-immutable
+ * @api
  */
 final class IsLooselyEqual extends Assertion
 {
@@ -36,6 +37,9 @@ final class IsLooselyEqual extends Assertion
         return $this->type;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function hasEquality(): bool
     {
@@ -44,6 +48,7 @@ final class IsLooselyEqual extends Assertion
 
     /**
      * @return static
+     * @psalm-pure
      */
     #[Override]
     public function setAtomicType(Atomic $type): self

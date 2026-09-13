@@ -7,6 +7,9 @@ namespace Psalm\Plugin\EventHandler;
 use Psalm\Plugin\EventHandler\Event\PropertyTypeProviderEvent;
 use Psalm\Type\Union;
 
+/**
+ * @api
+ */
 interface PropertyTypeProviderInterface
 {
     /**

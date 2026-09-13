@@ -9,8 +9,15 @@ use Psalm\Report;
 
 use function sprintf;
 
+/**
+ * @psalm-external-mutation-free
+ * @api
+ */
 final class CheckstyleReport extends Report
 {
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public function create(): string
     {

@@ -7,6 +7,9 @@ namespace Psalm\Node\Stmt;
 use PhpParser\Node\Stmt\Continue_;
 use Psalm\Node\VirtualNode;
 
+/**
+ * @api
+ */
 final class VirtualContinue extends Continue_ implements VirtualNode
 {
 

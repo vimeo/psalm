@@ -9,7 +9,6 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
-use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -24,6 +23,7 @@ use Psalm\Node\Expr\VirtualPropertyFetch;
 use Psalm\Node\Expr\VirtualStaticPropertyFetch;
 use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Node\Name\VirtualFullyQualified;
+use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TLiteralString;
@@ -33,7 +33,6 @@ use Psalm\Type\Union;
 use function count;
 use function explode;
 use function in_array;
-use function md5;
 use function strtolower;
 
 /**
@@ -78,20 +77,20 @@ final class StaticPropertyFetchAnalyzer
         } else {
             $aliases = $statements_analyzer->getAliases();
 
-            if ($context->calling_method_id
-                && !$stmt->class instanceof PhpParser\Node\Name\FullyQualified
-            ) {
-                $codebase->file_reference_provider->addMethodReferenceToClassMember(
-                    $context->calling_method_id,
-                    'use:' . $stmt->class->getFirst() . ':' . md5($statements_analyzer->getFilePath()),
-                    false,
-                );
-            }
-
             $fq_class_name = ClassLikeAnalyzer::getFQCLNFromNameObject(
                 $stmt->class,
                 $aliases,
             );
+
+            if ($context->calling_method_id
+                && !$stmt->class instanceof PhpParser\Node\Name\FullyQualified
+            ) {
+                $codebase->addReferenceToUseAlias(
+                    $stmt->class->getFirst(),
+                    $statements_analyzer->getFilePath(),
+                    $context,
+                );
+            }
 
             if ($context->isPhantomClass($fq_class_name)) {
                 return true;
@@ -102,8 +101,7 @@ final class StaticPropertyFetchAnalyzer
                     $statements_analyzer,
                     $fq_class_name,
                     new CodeLocation($statements_analyzer->getSource(), $stmt->class),
-                    $context->self,
-                    $context->calling_method_id,
+                    $context,
                     $statements_analyzer->getSuppressedIssues(),
                 ) !== true) {
                     return false;
@@ -195,21 +193,13 @@ final class StaticPropertyFetchAnalyzer
             );
         }
 
-        if ($context->mutation_free) {
-            IssueBuffer::maybeAdd(
-                new ImpureStaticProperty(
-                    'Cannot use a static property in a mutation-free context',
-                    new CodeLocation($statements_analyzer, $stmt),
-                ),
-                $statements_analyzer->getSuppressedIssues(),
-            );
-        } elseif ($statements_analyzer->getSource()
-                instanceof FunctionLikeAnalyzer
-            && $statements_analyzer->getSource()->track_mutations
-        ) {
-            $statements_analyzer->getSource()->inferred_has_mutation = true;
-            $statements_analyzer->getSource()->inferred_impure = true;
-        }
+        $statements_analyzer->signalMutation(
+            Mutations::LEVEL_INTERNAL_READ_WRITE,
+            $context,
+            'static property',
+            ImpureStaticProperty::class,
+            $stmt,
+        );
 
         if ($var_id && $context->hasVariable($var_id)) {
             $stmt_type = $context->vars_in_scope[$var_id];
@@ -229,7 +219,7 @@ final class StaticPropertyFetchAnalyzer
 
             if ($codebase->collect_references) {
                 // log the appearance
-                $codebase->properties->propertyExists(
+                $codebase->propertyExists(
                     $property_id,
                     true,
                     $statements_analyzer,
@@ -254,7 +244,7 @@ final class StaticPropertyFetchAnalyzer
             return true;
         }
 
-        if (!$codebase->properties->propertyExists(
+        if (!$codebase->propertyExists(
             $property_id,
             true,
             $statements_analyzer,
@@ -346,7 +336,7 @@ final class StaticPropertyFetchAnalyzer
                 $statements_analyzer,
                 $stmt->class,
                 $fq_class_name,
-                $context->calling_method_id,
+                $context,
             );
 
             if (!$moved_class) {

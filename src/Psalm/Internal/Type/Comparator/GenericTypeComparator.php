@@ -11,6 +11,8 @@ use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TNamedObject;
 
+use function array_merge;
+
 /**
  * @internal
  */
@@ -172,6 +174,25 @@ final class GenericTypeComparator
                         }
                     }
                 }
+            }
+
+            if ($atomic_comparison_result
+                && ($param_comparison_result->type_variable_lower_bounds
+                    || $param_comparison_result->type_variable_upper_bounds)
+            ) {
+                // generic params constrain a type variable appearing in them:
+                // an invariant param's reverse ("basically the same") check
+                // has already recorded the container param as a lower bound,
+                // so the bounds can be passed up as they were recorded
+                $atomic_comparison_result->type_variable_lower_bounds = array_merge(
+                    $atomic_comparison_result->type_variable_lower_bounds,
+                    $param_comparison_result->type_variable_lower_bounds,
+                );
+
+                $atomic_comparison_result->type_variable_upper_bounds = array_merge(
+                    $atomic_comparison_result->type_variable_upper_bounds,
+                    $param_comparison_result->type_variable_upper_bounds,
+                );
             }
         }
 

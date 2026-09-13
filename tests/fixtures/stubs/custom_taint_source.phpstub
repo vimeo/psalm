@@ -2,5 +2,6 @@
 
 /**
  * @psalm-taint-source input
+ * @psalm-mutation-free
  */
 function custom_taint_source(): string { return ""; }

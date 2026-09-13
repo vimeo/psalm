@@ -32,6 +32,9 @@ use function usort;
 use const LIBXML_NOBLANKS;
 use const PHP_VERSION;
 
+/**
+ * @api
+ */
 final class ErrorBaseline
 {
     /**
@@ -176,6 +179,7 @@ final class ErrorBaseline
     /**
      * @param array<string, list<IssueData>> $issues
      * @return array<string,array<string,array{o:int, s:array<int, string>}>>
+     * @psalm-mutation-free
      */
     private static function countIssueTypesByFile(array $issues): array
     {

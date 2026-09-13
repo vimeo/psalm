@@ -1,23 +1,28 @@
 <?php
 namespace Acme\SampleProject;
 
+/** @psalm-pure */
 function foo(string $_s): int
 {
     return 'bar';
 }
 
+/** @psalm-pure */
 function bar(string $s) : string {
     return $s;
 }
 
+/** @psalm-pure */
 function baz(string $s) : string {
     return $s;
 }
 
+/** @psalm-pure */
 function bat(string $s) : string {
     return $s;
 }
 
+/** @psalm-pure */
 function bang(string $s) : string {
     return $s;
 }

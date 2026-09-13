@@ -10,9 +10,13 @@ use Override;
  * Denotes the `bool` type where the exact value is unknown.
  *
  * @psalm-immutable
+ * @api
  */
 class TBool extends Scalar
 {
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getKey(bool $include_extra = true): string
     {
@@ -20,7 +24,8 @@ class TBool extends Scalar
     }
 
     /**
-     * @param  array<lowercase-string, string> $aliased_classes
+     * @param array<lowercase-string, string> $aliased_classes
+     * @psalm-pure
      */
     #[Override]
     public function toPhpString(

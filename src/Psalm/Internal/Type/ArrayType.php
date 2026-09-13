@@ -14,9 +14,13 @@ use function count;
 
 /**
  * @internal
+ * @psalm-immutable
  */
 final class ArrayType
 {
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(public Union $key, public Union $value, public bool $is_list, public ?int $count)
     {
     }
@@ -29,6 +33,7 @@ final class ArrayType
      *         )
      *     )
      * )
+     * @psalm-mutation-free
      */
     public static function infer(Atomic $type): ?self
     {

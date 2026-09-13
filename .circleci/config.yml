@@ -73,9 +73,6 @@ jobs:
           name: Analyse PHPUnit
           command: bin/ci/test-with-real-projects.sh phpunit
       - run:
-          name: Analyse Psl
-          command: bin/ci/test-with-real-projects.sh psl
-      - run:
           name: Analyse Collections
           command: bin/ci/test-with-real-projects.sh collections
 

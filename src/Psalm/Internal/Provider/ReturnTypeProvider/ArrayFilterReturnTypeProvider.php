@@ -43,6 +43,7 @@ final class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderI
 {
     /**
      * @return array<lowercase-string>
+     * @psalm-pure
      */
     #[Override]
     public static function getFunctionIds(): array
@@ -73,8 +74,7 @@ final class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderI
                 $first_arg_array = $fallback;
             } else {
                 $first_arg_array = $first_arg_type->hasType('array')
-                                   && ($array_atomic_type = $first_arg_type->getArray())
-                                   && ($array_atomic_type instanceof TArray
+                                   && (($array_atomic_type = $first_arg_type->getArray()) instanceof TArray
                                        || $array_atomic_type instanceof TKeyedArray)
                     ? $array_atomic_type
                     : $fallback;

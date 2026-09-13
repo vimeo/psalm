@@ -23,6 +23,7 @@ final class PowReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>
+     * @psalm-pure
      */
     #[Override]
     public static function getFunctionIds(): array

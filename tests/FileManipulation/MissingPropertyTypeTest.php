@@ -6,8 +6,14 @@ namespace Psalm\Tests\FileManipulation;
 
 use Override;
 
+/**
+ * @psalm-immutable
+ */
 final class MissingPropertyTypeTest extends FileManipulationTestCase
 {
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerValidCodeParse(): array
     {
@@ -317,11 +323,15 @@ final class MissingPropertyTypeTest extends FileManipulationTestCase
                     class A {
                         /**
                          * @var callable|null
+                         *
+                         * @psalm-var impure-callable|null
                          */
                         public $u;
 
                         /**
                          * @var callable
+                         *
+                         * @psalm-var impure-callable
                          */
                         public $v;
 

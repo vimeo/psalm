@@ -11,6 +11,7 @@ use Psalm\Type\Atomic;
 
 /**
  * @psalm-immutable
+ * @api
  */
 final class IsType extends Assertion
 {
@@ -38,6 +39,7 @@ final class IsType extends Assertion
 
     /**
      * @return static
+     * @psalm-pure
      */
     #[Override]
     public function setAtomicType(Atomic $type): self

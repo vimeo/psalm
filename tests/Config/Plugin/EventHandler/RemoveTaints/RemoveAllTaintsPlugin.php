@@ -11,11 +11,14 @@ use Psalm\Type\TaintKind;
 
 /**
  * @psalm-suppress UnusedClass
+ * @psalm-immutable
  */
 final class RemoveAllTaintsPlugin implements RemoveTaintsInterface
 {
     /**
      * Called to see what taints should be removed
+     *
+     * @psalm-pure
      */
     #[Override]
     public static function removeTaints(AddRemoveTaintsEvent $event): int

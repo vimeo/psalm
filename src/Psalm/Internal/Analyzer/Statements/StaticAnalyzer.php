@@ -14,6 +14,7 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\ImpureStaticVariable;
 use Psalm\Issue\ReferenceConstraintViolation;
 use Psalm\IssueBuffer;
+use Psalm\Storage\Mutations;
 use Psalm\Type;
 
 use function is_string;
@@ -30,15 +31,13 @@ final class StaticAnalyzer
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
-        if ($context->mutation_free) {
-            IssueBuffer::maybeAdd(
-                new ImpureStaticVariable(
-                    'Cannot use a static variable in a mutation-free context',
-                    new CodeLocation($statements_analyzer, $stmt),
-                ),
-                $statements_analyzer->getSuppressedIssues(),
-            );
-        }
+        $statements_analyzer->signalMutation(
+            Mutations::LEVEL_INTERNAL_READ_WRITE,
+            $context,
+            'static variable',
+            ImpureStaticVariable::class,
+            $stmt,
+        );
 
         foreach ($stmt->vars as $var) {
             if (!is_string($var->var->name)) {

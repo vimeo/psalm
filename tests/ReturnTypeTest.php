@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use Composer\InstalledVersions;
 use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function version_compare;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -15,6 +18,19 @@ final class ReturnTypeTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    public function testVoidParameterType(): void
+    {
+        // PHP-Parser 5.8 rejects void parameters before Psalm analyzes the body.
+        $parser_version = InstalledVersions::getVersion('nikic/php-parser') ?? '5.0.0';
+        $this->testInvalidCode(
+            '<?php function f(void $p): void {}',
+            version_compare($parser_version, '5.8.0', '>=') ? 'ParseError' : 'ParadoxicalCondition',
+        );
+    }
+
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerValidCodeParse(): iterable
     {
@@ -824,7 +840,7 @@ final class ReturnTypeTest extends TestCase
                     $res = reflexive(fn(int $a, int $b): bool => $a === $b);
                 ',
                 'assertions' => [
-                    '$res' => 'Closure(int):bool',
+                    '$res' => 'impure-Closure(int):bool',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '7.4',
@@ -1346,6 +1362,9 @@ final class ReturnTypeTest extends TestCase
         ];
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerInvalidCodeParse(): iterable
     {
@@ -1438,11 +1457,6 @@ final class ReturnTypeTest extends TestCase
                 'code' => '<?php
                     function doSomething(resource $res): void {
                     }',
-                'error_message' => 'ReservedWord',
-            ],
-            'voidParamType' => [
-                'code' => '<?php
-                    function f(void $p): void {}',
                 'error_message' => 'ReservedWord',
             ],
             'voidClass' => [
@@ -1552,7 +1566,8 @@ final class ReturnTypeTest extends TestCase
                         $obj = new ArrayObject([1, 2, 3, 4]);
                         return $obj->getIterator();
                     }',
-                'error_message' => 'InvalidReturnStatement',
+                'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:4:32 - Type 1|2|3|4 should be a subtype of string',
             ],
             'objectLikeArrayOptionalKeyWithNonOptionalReturn' => [
                 'code' => '<?php
@@ -1704,7 +1719,7 @@ final class ReturnTypeTest extends TestCase
                         return 1;
                     };
                 }',
-                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:28 - The inferred type \'pure-Closure(iterable<int, T:fn-map as mixed>):1\' does not match the declared return type \'callable(iterable<int, T:fn-map as mixed>):iterable<int, U:fn-map as mixed>\' for map',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:28 - The inferred type \'pure-Closure(iterable<int, T:fn-map as mixed>):1\' does not match the declared return type \'impure-callable(iterable<int, T:fn-map as mixed>):iterable<int, U:fn-map as mixed>\' for map',
             ],
             'cannotInferReturnClosureWithDifferentTypes' => [
                 'code' => '<?php
@@ -1716,7 +1731,7 @@ final class ReturnTypeTest extends TestCase
                 function map(): callable {
                     return function(B $v): void {};
                 }',
-                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:28 - The inferred type \'pure-Closure(B):void\' does not match the declared return type \'callable(A):void\' for map',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:28 - The inferred type \'pure-Closure(B):void\' does not match the declared return type \'impure-callable(A):void\' for map',
             ],
             'compareTKeyedArrayToAlwaysFilledArray' => [
                 'code' => '<?php

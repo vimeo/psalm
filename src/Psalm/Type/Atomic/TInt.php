@@ -10,9 +10,13 @@ use Override;
  * Denotes the `int` type, where the exact value is unknown.
  *
  * @psalm-immutable
+ * @api
  */
 class TInt extends Scalar
 {
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getKey(bool $include_extra = true): string
     {
@@ -20,7 +24,8 @@ class TInt extends Scalar
     }
 
     /**
-     * @param  array<lowercase-string, string> $aliased_classes
+     * @param array<lowercase-string, string> $aliased_classes
+     * @psalm-pure
      */
     #[Override]
     public function toPhpString(

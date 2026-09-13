@@ -182,6 +182,9 @@ final class ClassTemplateParamCollector
         return $class_template_params;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     private static function resolveTemplateParam(
         Codebase $codebase,
         Union $input_type_extends,

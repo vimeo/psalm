@@ -133,6 +133,9 @@ final class PropertyDocblockManipulator
         $this->indentation = str_replace(ltrim($first_line), '', $first_line);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function setType(
         ?string $php_type,
         string $new_type,
@@ -259,6 +262,9 @@ final class PropertyDocblockManipulator
         return $file_manipulations;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public static function clearCache(): void
     {
         self::$manipulators = [];

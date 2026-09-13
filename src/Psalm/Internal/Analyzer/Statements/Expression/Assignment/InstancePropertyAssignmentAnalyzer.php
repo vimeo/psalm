@@ -66,6 +66,7 @@ use Psalm\Node\VirtualArg;
 use Psalm\Node\VirtualIdentifier;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\Mutations;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -83,7 +84,7 @@ use function array_pop;
 use function count;
 use function in_array;
 use function reset;
-use function strpos;
+use function str_ends_with;
 use function strtolower;
 
 /**
@@ -207,6 +208,23 @@ final class InstancePropertyAssignmentAnalyzer
                 if ($var_id) {
                     $context->vars_in_scope[$var_id] = $union_comparison_results->replacement_union_type;
                 }
+            }
+
+            if ($type_match_found
+                && ($union_comparison_results->type_variable_lower_bounds
+                    || $union_comparison_results->type_variable_upper_bounds)
+            ) {
+                // transfer any type-variable bounds recorded while checking
+                // the assignment
+                $statements_analyzer->type_variable_tracker->addBounds(
+                    $union_comparison_results->type_variable_lower_bounds,
+                    $union_comparison_results->type_variable_upper_bounds,
+                    new CodeLocation(
+                        $statements_analyzer->getSource(),
+                        $assignment_value ?? $stmt,
+                        $context->include_location,
+                    ),
+                );
             }
 
             if ($union_comparison_results->type_coerced) {
@@ -363,6 +381,7 @@ final class InstancePropertyAssignmentAnalyzer
         PropertyStorage $property_storage,
         ClassLikeStorage $declaring_class_storage,
         Context $context,
+        ?string $lhs_var_id,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -377,37 +396,63 @@ final class InstancePropertyAssignmentAnalyzer
             true,
         );
 
-        $project_analyzer = $statements_analyzer->getProjectAnalyzer();
-
-        if ($appearing_property_class && ($property_storage->readonly || $codebase->alter_code)) {
+        $can_set_readonly_property = true;
+        if ($appearing_property_class) {
             $can_set_readonly_property = $context->self
                 && $context->calling_method_id
                 && ($appearing_property_class === $context->self
                     || $codebase->classExtends($context->self, $appearing_property_class))
-                && (strpos($context->calling_method_id, '::__construct')
-                    || strpos($context->calling_method_id, '::unserialize')
-                    || strpos($context->calling_method_id, '::__unserialize')
-                    || strpos($context->calling_method_id, '::__clone')
+                && (str_ends_with($context->calling_method_id, '::__construct')
+                    || str_ends_with($context->calling_method_id, '::unserialize')
+                    || str_ends_with($context->calling_method_id, '::__unserialize')
+                    || str_ends_with($context->calling_method_id, '::__clone')
                     || $property_storage->allow_private_mutation
                     || $property_var_pure_compatible);
 
-            if (!$can_set_readonly_property) {
-                if ($property_storage->readonly) {
-                    IssueBuffer::maybeAdd(
-                        new InaccessibleProperty(
-                            $property_id . ' is marked readonly',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                } elseif (!$declaring_class_storage->mutation_free
-                    && isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation'])
-                    && $statements_analyzer->getSource()
-                        instanceof FunctionLikeAnalyzer
-                ) {
-                    $codebase->analyzer->addMutableClass($declaring_class_storage->name);
-                }
+            if (!$can_set_readonly_property && $property_storage->readonly) {
+                IssueBuffer::maybeAdd(
+                    new InaccessibleProperty(
+                        $property_id . ' is marked readonly',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
             }
+        }
+        
+        if ($lhs_var_id !== null
+            && isset($context->vars_in_scope[$lhs_var_id])
+        ) {
+            $real = $lhs_var_id === '$this'
+                ? Mutations::LEVEL_INTERNAL_READ_WRITE
+                : Mutations::LEVEL_EXTERNAL;
+            $mut = $can_set_readonly_property ?
+                ($property_var_pure_compatible
+                    ? Mutations::LEVEL_NONE
+                    : Mutations::LEVEL_INTERNAL_READ
+                ) : $real;
+            $statements_analyzer->signalMutation(
+                $mut,
+                $context,
+                'property assignment to ' . $property_id,
+                ImpurePropertyAssignment::class,
+                $stmt,
+                // We must not emit errors if the property is readonly
+                // but we're in a constructor/unserialize, etc,
+                // but we still must make sure the method mutatibility inference logic knows
+                // that the property is being mutated.
+                $real,
+            );
+            $codebase->analyzer->addMutableClass(
+                $declaring_class_storage->name,
+                $mut,
+            );
+        } else {
+            // e.g. the property of an array element: the class is still being mutated from outside
+            $codebase->analyzer->addMutableClass(
+                $declaring_class_storage->name,
+                Mutations::LEVEL_EXTERNAL,
+            );
         }
     }
 
@@ -584,10 +629,8 @@ final class InstancePropertyAssignmentAnalyzer
 
         $graph->addNode($localized_property_node);
 
-        $property_node = DataFlowNode::make(
+        $property_node = DataFlowNode::getForPropertyFetch(
             $property_id,
-            $property_id,
-            null,
             null,
         );
 
@@ -637,10 +680,8 @@ final class InstancePropertyAssignmentAnalyzer
                 || $stmt instanceof PhpParser\Node\Expr\StaticPropertyFetch)
             && $stmt->name instanceof PhpParser\Node\Identifier
         ) {
-            $declaring_property_node = DataFlowNode::make(
+            $declaring_property_node = DataFlowNode::getForPropertyFetch(
                 $declaring_property_class . '::$' . $stmt->name,
-                $declaring_property_class . '::$' . $stmt->name,
-                null,
                 null,
             );
 
@@ -955,8 +996,8 @@ final class InstancePropertyAssignmentAnalyzer
         $class_exists = false;
         $interface_exists = false;
 
-        if (!$codebase->classExists($lhs_type_part->value)) {
-            if ($codebase->interfaceExists($lhs_type_part->value)) {
+        if (!$codebase->classExists($lhs_type_part->value, null, $context)) {
+            if ($codebase->interfaceExists($lhs_type_part->value, null, $context)) {
                 $interface_exists = true;
                 $interface_storage = $codebase->classlike_storage_provider->get(
                     strtolower($lhs_type_part->value),
@@ -966,7 +1007,7 @@ final class InstancePropertyAssignmentAnalyzer
 
                 foreach ($intersection_types as $intersection_type) {
                     if ($intersection_type instanceof TNamedObject
-                        && $codebase->classExists($intersection_type->value)
+                        && $codebase->classExists($intersection_type->value, null, $context)
                     ) {
                         $fq_class_name = $intersection_type->value;
                         $class_exists = true;
@@ -974,7 +1015,14 @@ final class InstancePropertyAssignmentAnalyzer
                     }
                 }
 
-                if (!$class_exists) {
+                // Test if the property has a 'set' hook
+                $interface_property = $stmt->name instanceof PhpParser\Node\Identifier
+                    ? $interface_storage->properties[$stmt->name->name] ?? null
+                    : null;
+                $has_set_hook = $codebase->analysis_php_version_id >= 8_04_00
+                    && $interface_property?->hook_set !== null;
+
+                if (!$class_exists && !$has_set_hook) {
                     if (IssueBuffer::accepts(
                         new NoInterfaceProperties(
                             'Interfaces cannot have properties',
@@ -986,7 +1034,7 @@ final class InstancePropertyAssignmentAnalyzer
                         return null;
                     }
 
-                    if (!$codebase->methods->methodExists(
+                    if (!$codebase->methodExists(
                         new MethodIdentifier(
                             $fq_class_name,
                             '__set',
@@ -1019,7 +1067,7 @@ final class InstancePropertyAssignmentAnalyzer
 
         $set_method_id = new MethodIdentifier($fq_class_name, '__set');
 
-        if ((!$codebase->properties->propertyExists($property_id, false, $statements_analyzer, $context)
+        if ((!$codebase->propertyExists($property_id, false, $statements_analyzer, $context)
                 || ($lhs_var_id !== '$this'
                     && $fq_class_name !== $context->self
                     && ClassLikeAnalyzer::checkPropertyVisibility(
@@ -1031,7 +1079,7 @@ final class InstancePropertyAssignmentAnalyzer
                         false,
                     ) !== true)
             )
-            && $codebase->methods->methodExists(
+            && $codebase->methodExists(
                 $set_method_id,
                 $context->calling_method_id,
                 $codebase->collect_locations
@@ -1133,7 +1181,7 @@ final class InstancePropertyAssignmentAnalyzer
             $self_property_id = $context->self . '::$' . $prop_name;
 
             if ($self_property_id !== $property_id
-                && $codebase->properties->propertyExists(
+                && $codebase->propertyExists(
                     $self_property_id,
                     false,
                     $statements_analyzer,
@@ -1160,7 +1208,7 @@ final class InstancePropertyAssignmentAnalyzer
             );
         }
 
-        if (!$codebase->properties->propertyExists(
+        if (!$codebase->propertyExists(
             $property_id,
             false,
             $statements_analyzer,
@@ -1295,30 +1343,8 @@ final class InstancePropertyAssignmentAnalyzer
                 $property_storage,
                 $declaring_class_storage,
                 $context,
+                $lhs_var_id,
             );
-
-            if (!$property_storage->readonly
-                && !$context->collect_mutations
-                && !$context->collect_initializations
-                && $lhs_var_id !== null
-                && isset($context->vars_in_scope[$lhs_var_id])
-                && !$context->vars_in_scope[$lhs_var_id]->allow_mutations
-            ) {
-                if ($context->mutation_free) {
-                    IssueBuffer::maybeAdd(
-                        new ImpurePropertyAssignment(
-                            'Cannot assign to a property from a mutation-free context',
-                            new CodeLocation($statements_analyzer, $stmt),
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                } elseif ($statements_analyzer->getSource()
-                    instanceof FunctionLikeAnalyzer
-                    && $statements_analyzer->getSource()->track_mutations
-                ) {
-                    $statements_analyzer->getSource()->inferred_impure = true;
-                }
-            }
 
             if ($property_storage->getter_method) {
                 $getter_id = $lhs_var_id . '->' . $property_storage->getter_method . '()';

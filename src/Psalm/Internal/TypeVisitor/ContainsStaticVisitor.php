@@ -16,6 +16,9 @@ final class ContainsStaticVisitor extends TypeVisitor
 {
     private bool $contains_static = false;
 
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     protected function enterNode(TypeNode $type): ?int
     {

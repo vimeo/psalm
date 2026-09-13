@@ -10,9 +10,13 @@ use Override;
  * Denotes a `scalar` type that is also empty.
  *
  * @psalm-immutable
+ * @api
  */
 final class TEmptyScalar extends TScalar
 {
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getId(bool $exact = true, bool $nested = false): string
     {

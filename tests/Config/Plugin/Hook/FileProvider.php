@@ -10,6 +10,9 @@ use Psalm\Plugin\EventHandler\BeforeFileAnalysisInterface;
 use Psalm\Plugin\EventHandler\Event\AfterFileAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\BeforeFileAnalysisEvent;
 
+/**
+ * @psalm-suppress UnusedClass registered as a plugin via test config, instantiated by reflection
+ */
 final class FileProvider implements
     AfterFileAnalysisInterface,
     BeforeFileAnalysisInterface

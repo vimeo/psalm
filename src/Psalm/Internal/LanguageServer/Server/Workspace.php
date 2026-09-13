@@ -22,9 +22,13 @@ use function realpath;
  * Provides method handlers for all workspace/* methods
  *
  * @internal
+ * @psalm-suppress PossiblyUnusedProperty deps read only from reflection-invoked JSON-RPC handlers
  */
 final class Workspace
 {
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         protected LanguageServer $server,
         protected Codebase $codebase,

@@ -10,9 +10,13 @@ use Override;
  * Denotes the `numeric` type (which can also result from an `is_numeric` check).
  *
  * @psalm-immutable
+ * @api
  */
 class TNumeric extends Scalar
 {
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getKey(bool $include_extra = true): string
     {
@@ -20,7 +24,8 @@ class TNumeric extends Scalar
     }
 
     /**
-     * @param  array<lowercase-string, string> $aliased_classes
+     * @param array<lowercase-string, string> $aliased_classes
+     * @psalm-pure
      */
     #[Override]
     public function toPhpString(
@@ -32,6 +37,9 @@ class TNumeric extends Scalar
         return null;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {

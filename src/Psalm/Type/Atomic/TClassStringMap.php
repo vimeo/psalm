@@ -20,6 +20,7 @@ use Psalm\Type\Union;
  * is a function of its string key value
  *
  * @psalm-immutable
+ * @api
  */
 final class TClassStringMap extends Atomic
 {
@@ -84,7 +85,8 @@ final class TClassStringMap extends Atomic
     }
 
     /**
-     * @param  array<lowercase-string, string> $aliased_classes
+     * @param array<lowercase-string, string> $aliased_classes
+     * @psalm-pure
      */
     #[Override]
     public function toPhpString(
@@ -96,12 +98,18 @@ final class TClassStringMap extends Atomic
         return 'array';
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getKey(bool $include_extra = true): string
     {
@@ -195,6 +203,9 @@ final class TClassStringMap extends Atomic
         );
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     protected function getChildNodeKeys(): array
     {

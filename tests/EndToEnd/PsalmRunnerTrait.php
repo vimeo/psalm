@@ -12,6 +12,7 @@ use function in_array;
 
 use const PHP_BINARY;
 
+/** @psalm-mutable */
 trait PsalmRunnerTrait
 {
     private string $psalm = __DIR__ . '/../../psalm';

@@ -7,12 +7,15 @@ namespace Psalm\Internal\Scanner\UnresolvedConstant;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 
 /**
- * @psalm-immutable
  * @internal
+ * @psalm-immutable
  */
 final class ArrayValue extends UnresolvedConstantComponent
 {
-    /** @param list<KeyValuePair|ArraySpread> $entries */
+    /**
+     * @param list<KeyValuePair|ArraySpread> $entries
+     * @psalm-mutation-free
+     */
     public function __construct(public readonly array $entries)
     {
     }

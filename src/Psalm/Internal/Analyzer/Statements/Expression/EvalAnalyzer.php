@@ -43,8 +43,8 @@ final class EvalAnalyzer
             ) {
                 $arg_location = new CodeLocation($statements_analyzer->getSource(), $stmt->expr);
 
-                $eval_param_sink = DataFlowNode::getForMethodArgument(
-                    'eval',
+                $eval_param_sink = DataFlowNode::getForCallableArg(
+                    'builtin',
                     'eval',
                     0,
                     $arg_location,

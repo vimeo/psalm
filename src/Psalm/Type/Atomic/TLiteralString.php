@@ -17,6 +17,7 @@ use function strlen;
  * Denotes a string whose value is known.
  *
  * @psalm-immutable
+ * @api
  */
 class TLiteralString extends TString
 {
@@ -53,6 +54,7 @@ class TLiteralString extends TString
      * For all other purposes use {@see Type::getAtomicStringFromLiteral}
      *
      * @psalm-api
+     * @psalm-pure
      */
     public static function make(string $value, bool $from_docblock = false): self
     {
@@ -60,7 +62,6 @@ class TLiteralString extends TString
     }
 
     /**
-     * @psalm-suppress PossiblyUnusedMethod
      * @return static
      */
     public function setValue(string $value): self

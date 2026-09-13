@@ -10,20 +10,30 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 
 /**
  * @internal
+ * @psalm-external-mutation-free
  */
 final class CombinedFlowGraph extends DataFlowGraph
 {
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         public readonly VariableUseGraph $variable_use_graph,
         public readonly TaintFlowGraph $taint_flow_graph,
     ) {
     }
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function addNode(DataFlowNode $node): void
     {
         $this->variable_use_graph->addNode($node);
         $this->taint_flow_graph->addNode($node);
     }
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function addPath(
         DataFlowNode $from,
@@ -36,22 +46,34 @@ final class CombinedFlowGraph extends DataFlowGraph
         $this->taint_flow_graph->addPath($from, $to, $path_type, $added_taints, $removed_taints);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addSource(DataFlowNode $node): void
     {
         $this->taint_flow_graph->addSource($node);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addSink(DataFlowNode $node): void
     {
         $this->taint_flow_graph->addSink($node);
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function summarizeEdges(): never
     {
         throw new AssertionError("Unreachable");
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getEdgeStats(): never
     {

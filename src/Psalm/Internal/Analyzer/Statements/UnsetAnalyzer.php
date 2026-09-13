@@ -5,9 +5,13 @@ declare(strict_types=1);
 namespace Psalm\Internal\Analyzer\Statements;
 
 use PhpParser;
+use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Issue\ImpureVariable;
+use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TIntRange;
@@ -21,6 +25,7 @@ use Psalm\Type\Union;
 
 use function count;
 use function is_int;
+use function strtok;
 
 /**
  * @internal
@@ -49,6 +54,21 @@ final class UnsetAnalyzer
             );
 
             if ($var_id) {
+                if ($context->isMutationFree()
+                    && (VariableFetchAnalyzer::isSuperGlobal((string) strtok($var_id, '['))
+                        || isset($context->references_to_external_scope[$var_id])
+                        || isset($context->referenced_globals[$var_id])
+                    )
+                ) {
+                    IssueBuffer::maybeAdd(
+                        new ImpureVariable(
+                            'Cannot modify global ' . $var_id . ' in a mutation-free context',
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+                }
+
                 $context->remove($var_id);
                 unset($context->references_possibly_from_confusing_scope[$var_id]);
             }

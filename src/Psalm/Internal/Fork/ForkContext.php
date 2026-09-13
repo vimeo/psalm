@@ -212,6 +212,9 @@ final class ForkContext extends AbstractContext
         parent::send($data);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     private function checkExit(bool $wait = false): ?int
     {
         if ($this->exited === null) {

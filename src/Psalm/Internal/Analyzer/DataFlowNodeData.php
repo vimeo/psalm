@@ -14,6 +14,9 @@ final class DataFlowNodeData
 {
     use ImmutableNonCloneableTrait;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         public readonly string $label,
         public readonly int $line_from,

@@ -23,6 +23,7 @@ use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Stubs\Generator\StubsGenerator;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
@@ -413,7 +414,6 @@ final class ArgumentsAnalyzer
 
             $replaced_type = new Union([
                 new TCallable(
-                    'callable',
                     array_reverse($function_like_params),
                 ),
             ]);
@@ -504,13 +504,26 @@ final class ArgumentsAnalyzer
                             }
 
                             if ($param_storage->type && !$param_type_inferred) {
+                                $param_comparison_result = new TypeComparisonResult();
+
                                 $type_match_found = UnionTypeComparator::isContainedBy(
                                     $codebase,
                                     $replaced_param_type,
                                     $param_storage->type,
+                                    false,
+                                    false,
+                                    $param_comparison_result,
                                 );
 
                                 if (!$type_match_found) {
+                                    continue;
+                                }
+
+                                if ($param_comparison_result->type_variable_lower_bounds
+                                    || $param_comparison_result->type_variable_upper_bounds
+                                ) {
+                                    // a containment that recorded type-variable bounds is
+                                    // provisional, not definitive: keep the declared type
                                     continue;
                                 }
                             }
@@ -689,6 +702,7 @@ final class ArgumentsAnalyzer
                             $self_fq_class_name,
                             $static_fq_class_name,
                             $code_location,
+                            $function_storage,
                             $function_params[$i],
                             $i,
                             $i,
@@ -871,6 +885,7 @@ final class ArgumentsAnalyzer
                     $self_fq_class_name,
                     $static_fq_class_name,
                     $code_location,
+                    $function_storage,
                     $function_param,
                     $argument_offset + $i,
                     $i,
@@ -898,21 +913,30 @@ final class ArgumentsAnalyzer
 
                 foreach ($arg_function_params[$argument_offset] as $function_param) {
                     if ($function_param->sinks) {
-                        if (!$function_storage || $function_storage->specialize_call) {
-                            $sink = DataFlowNode::getForMethodArgument(
-                                $cased_method_id,
+                        if (!$function_storage) {
+                            $sink = DataFlowNode::getForCallableArg(
+                                $in_call_map
+                                    ? 'builtin'
+                                    : ($method_id instanceof MethodIdentifier ? 'magic-method' : 'callable-object'),
                                 $cased_method_id,
                                 $argument_offset,
-                                $function_param->location,
+                                $function_param->location ?? $code_location,
+                                $code_location,
+                                $function_param->sinks,
+                            );
+                        } elseif ($function_storage->specialize_call) {
+                            $sink = DataFlowNode::getForMethodArgument(
+                                $cased_method_id,
+                                $argument_offset,
+                                $function_storage,
                                 $code_location,
                                 $function_param->sinks,
                             );
                         } else {
                             $sink = DataFlowNode::getForMethodArgument(
                                 $cased_method_id,
-                                $cased_method_id,
                                 $argument_offset,
-                                $function_param->location,
+                                $function_storage,
                                 null,
                                 $function_param->sinks,
                             );
@@ -1279,6 +1303,7 @@ final class ArgumentsAnalyzer
         PhpParser\Node\Expr\PropertyFetch $stmt,
         string $fq_class_name,
         string $prop_name,
+        ?string $lhs_var_id,
     ): void {
         $property_id = $fq_class_name . '::$' . $prop_name;
 
@@ -1305,6 +1330,7 @@ final class ArgumentsAnalyzer
                 $property_storage,
                 $declaring_class_storage,
                 $context,
+                $lhs_var_id,
             );
         }
     }
@@ -1333,6 +1359,15 @@ final class ArgumentsAnalyzer
         if ($arg->value instanceof PhpParser\Node\Expr\PropertyFetch
             && $arg->value->name instanceof PhpParser\Node\Identifier) {
             $prop_name = $arg->value->name->name;
+
+            // @todo atm only works for simple fetch, $a->foo, not $a->foo->bar
+            // I guess there's a function to do this, but I couldn't locate it
+            $var_id = ExpressionIdentifier::getVarId(
+                $arg->value->var,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
+            );
+
             if (!empty($statements_analyzer->getFQCLN())) {
                 $fq_class_name = $statements_analyzer->getFQCLN();
 
@@ -1342,29 +1377,21 @@ final class ArgumentsAnalyzer
                     $arg->value,
                     $fq_class_name,
                     $prop_name,
+                    $var_id,
                 );
-            } else {
-                // @todo atm only works for simple fetch, $a->foo, not $a->foo->bar
-                // I guess there's a function to do this, but I couldn't locate it
-                $var_id = ExpressionIdentifier::getVarId(
-                    $arg->value->var,
-                    $statements_analyzer->getFQCLN(),
-                    $statements_analyzer,
-                );
+            } elseif ($var_id && isset($context->vars_in_scope[$var_id])) {
+                foreach ($context->vars_in_scope[$var_id]->getAtomicTypes() as $atomic_type) {
+                    if ($atomic_type instanceof TNamedObject) {
+                        $fq_class_name = $atomic_type->value;
 
-                if ($var_id && isset($context->vars_in_scope[$var_id])) {
-                    foreach ($context->vars_in_scope[$var_id]->getAtomicTypes() as $atomic_type) {
-                        if ($atomic_type instanceof TNamedObject) {
-                            $fq_class_name = $atomic_type->value;
-
-                            self::handleByRefReadonlyArg(
-                                $statements_analyzer,
-                                $context,
-                                $arg->value,
-                                $fq_class_name,
-                                $prop_name,
-                            );
-                        }
+                        self::handleByRefReadonlyArg(
+                            $statements_analyzer,
+                            $context,
+                            $arg->value,
+                            $fq_class_name,
+                            $prop_name,
+                            $var_id,
+                        );
                     }
                 }
             }
@@ -1629,8 +1656,7 @@ final class ArgumentsAnalyzer
                         }
 
                         if ($arg_value_type->isSingle()
-                            && ($atomic_arg_type = $arg_value_type->getSingleAtomic())
-                            && $atomic_arg_type instanceof TKeyedArray
+                            && ($atomic_arg_type = $arg_value_type->getSingleAtomic()) instanceof TKeyedArray
                             && !$atomic_arg_type->is_list
                         ) {
                             //if we have a single shape, we'll check param names

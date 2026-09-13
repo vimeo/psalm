@@ -152,7 +152,7 @@ final class Psalm
         'root:',
         'set-baseline::',
         'show-info:',
-        'show-snippet:',
+        'show-snippet::',
         'stats',
         'threads:',
         'scan-threads:',
@@ -469,6 +469,9 @@ final class Psalm
         return $threads;
     }
 
+    /**
+     * @psalm-pure
+     */
     private static function initOutputFormat(array $options): string
     {
         return isset($options['output-format']) && is_string($options['output-format'])
@@ -478,6 +481,7 @@ final class Psalm
 
     /**
      * @return Report::TYPE_*
+     * @psalm-pure
      */
     private static function findDefaultOutputFormat(): string
     {
@@ -493,6 +497,9 @@ final class Psalm
         return Report::TYPE_CONSOLE;
     }
 
+    /**
+     * @psalm-pure
+     */
     private static function initShowInfo(array $options): bool
     {
         return isset($options['show-info'])
@@ -959,6 +966,7 @@ final class Psalm
         Progress $progress,
     ): void {
         $ini_handler = new PsalmRestarter('PSALM');
+        $ini_handler->enableJit = $force_jit;
 
         if (isset($options['disable-extension'])) {
             if (is_array($options['disable-extension'])) {
@@ -1007,20 +1015,25 @@ final class Psalm
                 $progress->write(PHP_EOL
                     . 'JIT acceleration: ON'
                     . PHP_EOL . PHP_EOL);
-            } else {
+            } elseif ($force_jit) {
                 $progress->write(PHP_EOL
                     . 'JIT acceleration: OFF (an error occurred while enabling JIT)' . PHP_EOL
                     . 'Please report this to https://github.com/vimeo/psalm with your OS and PHP configuration!'
+                    . PHP_EOL . PHP_EOL);
+            } else {
+                $progress->write(PHP_EOL
+                    . 'JIT acceleration: OFF' . PHP_EOL
+                    . 'You can enable JIT acceleration (experimental) with --force-jit.'
                     . PHP_EOL . PHP_EOL);
             }
         } else {
             $progress->write(PHP_EOL
                 . 'JIT acceleration: OFF (opcache not installed or not enabled)' . PHP_EOL
-                . 'Install and enable the opcache extension to make use of JIT for a 20%+ performance boost!'
+                . 'Install and enable the opcache extension to use JIT with --force-jit.'
                 . PHP_EOL . PHP_EOL);
         }
         if ($force_jit && !$hasJit) {
-            $progress->write('Exiting because JIT was requested but is not available.' . PHP_EOL . PHP_EOL);
+            $progress->write('Exiting because --force-jit was set but JIT is not available.' . PHP_EOL . PHP_EOL);
             exit(1);
         }
 
@@ -1068,7 +1081,6 @@ final class Psalm
         if (isset($options['review'])) {
             require_once __DIR__ . '/Review.php';
             array_shift($argv);
-            /** @psalm-suppress PossiblyNullArgument */
             Review::run(array_values($argv));
             exit;
         }
@@ -1240,7 +1252,10 @@ final class Psalm
         }
     }
 
-    /** @return false|'always'|'auto' */
+    /**
+     * @return false|'always'|'auto'
+     * @psalm-mutation-free
+     */
     private static function shouldFindUnusedCode(array $options, Config $config): bool|string
     {
         $find_unused_code = false;
@@ -1261,6 +1276,9 @@ final class Psalm
         return $find_unused_code;
     }
 
+    /**
+     * @psalm-pure
+     */
     private static function shouldRunTaintAnalysis(array $options): bool
     {
         return (isset($options['track-tainted-input'])
@@ -1376,7 +1394,6 @@ final class Psalm
         sort($formats);
         $outputFormats = wordwrap(implode(', ', $formats), 75, "\n            ");
 
-        /** @psalm-suppress ImpureMethodCall */
         $reports = array_keys(Report::getMapping());
         sort($reports);
         $reportFormats = wordwrap('"' . implode('", "', $reports) . '"', 75, "\n        ");
@@ -1400,7 +1417,7 @@ final class Psalm
                 Used to disable certain extensions while Psalm is running.
 
             --force-jit
-                If set, requires JIT acceleration to be available in order to run Psalm, exiting immediately if it cannot be enabled.
+                Enable JIT acceleration. Exits immediately if JIT cannot be enabled.
 
             --threads=INT
                 If greater than one, Psalm will run the scan and analysis on multiple threads, speeding things up.
@@ -1429,7 +1446,9 @@ final class Psalm
                 Look for unused code. Options are 'auto' or 'always'. If no value is specified, default is 'auto'
 
             --find-unused-psalm-suppress
-                Finds all @psalm-suppress annotations that aren’t used
+                Finds all @psalm-suppress annotations that aren’t used, including those on
+                classes, interfaces, traits and enums. @psalm-suppress of Tainted* issues is
+                only checked under --taint-analysis.
 
             --find-references-to=[class|method|property]
                 Searches the codebase for references to the given fully-qualified class or method,

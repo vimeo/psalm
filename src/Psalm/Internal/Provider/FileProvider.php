@@ -14,7 +14,6 @@ use UnexpectedValueException;
 use function file_exists;
 use function file_get_contents;
 use function file_put_contents;
-use function filemtime;
 use function in_array;
 use function is_dir;
 
@@ -40,6 +39,9 @@ class FileProvider
      */
     protected array $open_files_paths = [];
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function getContents(string $file_path, bool $go_to_source = false): string
     {
         if (!$go_to_source && isset($this->temp_files[$file_path])) {
@@ -50,14 +52,17 @@ class FileProvider
             return self::$open_files[$file_path];
         }
 
+        /** @psalm-suppress ImpureFunctionCall */
         if (!file_exists($file_path)) {
             throw new UnexpectedValueException('File ' . $file_path . ' should exist to get contents');
         }
 
+        /** @psalm-suppress ImpureFunctionCall */
         if (is_dir($file_path)) {
             throw new UnexpectedValueException('File ' . $file_path . ' is a directory');
         }
 
+        /** @psalm-suppress ImpureFunctionCall */
         $file_contents = (string) file_get_contents($file_path);
 
         self::$open_files[$file_path] = $file_contents;
@@ -81,6 +86,9 @@ class FileProvider
         file_put_contents($file_path, $file_contents);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function setOpenContents(string $file_path, ?string $file_contents = null): void
     {
         if (isset(self::$open_files[$file_path])) {
@@ -88,15 +96,9 @@ class FileProvider
         }
     }
 
-    public function getModifiedTime(string $file_path): int
-    {
-        if (!file_exists($file_path)) {
-            throw new UnexpectedValueException('File should exist to get modified time');
-        }
-
-        return (int) filemtime($file_path);
-    }
-
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addTemporaryFileChanges(string $file_path, string $new_content, ?int $version = null): void
     {
         if (isset($this->temp_files[$file_path]) &&
@@ -112,6 +114,9 @@ class FileProvider
         ];
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function removeTemporaryFileChanges(string $file_path): void
     {
         unset($this->temp_files[$file_path]);
@@ -122,17 +127,27 @@ class FileProvider
         return $this->open_files_paths;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function openFile(string $file_path): void
     {
         self::$open_files[$file_path] = $this->getContents($file_path, true);
         $this->open_files_paths[$file_path] = $file_path;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function isOpen(string $file_path): bool
     {
         return isset($this->temp_files[$file_path]) || isset(self::$open_files[$file_path]);
     }
 
+    /**
+     * @psalm-suppress PossiblyUnusedMethod called from the reflection-invoked LSP didClose handler
+     * @psalm-external-mutation-free
+     */
     public function closeFile(string $file_path): void
     {
         unset(

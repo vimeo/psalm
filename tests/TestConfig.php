@@ -14,6 +14,7 @@ use function getcwd;
 
 final class TestConfig extends Config
 {
+    public const INIT_PROJECT_FILES_NOW = true;
     private static ?ProjectFileFilter $cached_project_files = null;
 
     public function __construct()
@@ -43,6 +44,23 @@ final class TestConfig extends Config
             );
         }
 
+        $this->setCustomErrorLevel(
+            'MissingImmutableAnnotation',
+            Config::REPORT_SUPPRESS,
+        );
+        $this->setCustomErrorLevel(
+            'MissingPureAnnotation',
+            Config::REPORT_SUPPRESS,
+        );
+        $this->setCustomErrorLevel(
+            'MissingAbstractPureAnnotation',
+            Config::REPORT_SUPPRESS,
+        );
+        $this->setCustomErrorLevel(
+            'MissingInterfaceImmutableAnnotation',
+            Config::REPORT_SUPPRESS,
+        );
+
         $this->project_files = self::$cached_project_files;
         $this->setIncludeCollector(new IncludeCollector());
 
@@ -50,6 +68,9 @@ final class TestConfig extends Config
         $this->collectPredefinedFunctions();
     }
 
+    /**
+     * @psalm-pure
+     */
     protected function getContents(): string
     {
         return '<?xml version="1.0"?>
@@ -62,13 +83,19 @@ final class TestConfig extends Config
                 </projectFiles>';
     }
 
-    /** @return false */
+    /**
+     * @return false
+     * @psalm-pure
+     */
     #[Override]
     public function getComposerFilePathForClassLike(string $fq_classlike_name): bool
     {
         return false;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getProjectDirectories(): array
     {

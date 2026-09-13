@@ -6,8 +6,14 @@ namespace Psalm\Tests\FileManipulation;
 
 use Override;
 
+/**
+ * @psalm-immutable
+ */
 final class ReturnTypeManipulationTest extends FileManipulationTestCase
 {
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerValidCodeParse(): array
     {
@@ -265,7 +271,7 @@ final class ReturnTypeManipulationTest extends FileManipulationTestCase
                     }
 
                     /**
-                     * @psalm-return Closure(string):string
+                     * @psalm-return impure-Closure(string):string
                      */
                     function bar() : Closure {
                         return function(string $name) {

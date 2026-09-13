@@ -265,13 +265,15 @@ When `true`, Psalm will attempt to find all unused variables, the equivalent of 
 ```
 When `true`, Psalm will attempt to find all unused code (including unused variables), the equivalent of running with `--find-unused-code`. Defaults to `true`.
 
+Unused-code detection is based on a graph of references between code elements, resolved by reachability from the program's entry points (the public API, top-level code, free functions, and code outside of the project directories). As a result, a class, method, property or constant that is referenced only by other unused code — including cycles of otherwise unreferenced code — is reported as unused. Suppressing an unused-code issue (e.g. `@psalm-suppress UnusedClass`) only silences the report for that symbol; it does not turn the symbol into an entry point, so code that only it references is still reported.
+
 #### forceJit
 ```xml
 <psalm
   forceJit="[bool]"
 >
 ```
-When `true`, Psalm will exit immediately if JIT acceleration (up to +20% performance) cannot be enabled, the equivalent of running with `--force-jit`. Defaults to `false`.
+When `true`, Psalm will enable JIT acceleration and exit immediately if it cannot be enabled, the equivalent of running with `--force-jit`. When `false` (default), Psalm runs without JIT.
 
 #### noCache
 ```xml

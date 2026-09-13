@@ -16,6 +16,7 @@ use Psalm\Type\Union;
  * Represents the type used when using TValueOf when the type of the array or enum is a template
  *
  * @psalm-immutable
+ * @api
  */
 final class TTemplateValueOf extends Atomic
 {
@@ -59,7 +60,8 @@ final class TTemplateValueOf extends Atomic
     }
 
     /**
-     * @param  array<lowercase-string, string> $aliased_classes
+     * @param array<lowercase-string, string> $aliased_classes
+     * @psalm-pure
      */
     #[Override]
     public function toPhpString(
@@ -71,6 +73,9 @@ final class TTemplateValueOf extends Atomic
         return null;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {

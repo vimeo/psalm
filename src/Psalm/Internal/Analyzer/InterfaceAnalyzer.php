@@ -30,6 +30,9 @@ use function strtolower;
  */
 final class InterfaceAnalyzer extends ClassLikeAnalyzer
 {
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         PhpParser\Node\Stmt\Interface_ $interface,
         SourceAnalyzer $source,
@@ -48,6 +51,8 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
         $codebase = $project_analyzer->getCodebase();
         $config = $project_analyzer->getConfig();
 
+        self::registerDocblockSuppressions($this->storage, $this->getFilePath(), $codebase);
+
         $fq_interface_name = $this->getFQCLN();
 
         if (!$fq_interface_name) {
@@ -55,6 +60,8 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
         }
 
         $class_storage = $codebase->classlike_storage_provider->get($fq_interface_name);
+
+        $class_context = new Context($fq_interface_name);
 
         if ($this->class->extends) {
             foreach ($this->class->extends as $extended_interface) {
@@ -68,6 +75,7 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
                 if (!$codebase->classOrInterfaceExists(
                     $extended_interface_name,
                     $parent_reference_location,
+                    $class_context,
                 )) {
                     // we should not normally get here
                     return;
@@ -158,6 +166,14 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
         $member_stmts = [];
         foreach ($this->class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
+                $method_name_lc = strtolower($stmt->name->name);
+                if (!isset($class_storage->methods[$method_name_lc])) {
+                    // Storage was overwritten by a different class-like with the same FQCN
+                    // (e.g., project declares interface X while vendor has class X).
+                    // Skip analysis — DuplicateClass was already emitted during scanning.
+                    continue;
+                }
+
                 $method_analyzer = new MethodAnalyzer($stmt, $this);
 
                 $type_provider = new NodeDataProvider();
@@ -180,10 +196,15 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
                         $fq_interface_name,
                         $actual_method_id,
                         $actual_method_id,
-                        false,
+                        $class_context,
                     );
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Property) {
+                // PHP 8.4+ allows interface properties with hooks
+                if ($codebase->analysis_php_version_id >= 8_04_00 && !empty($stmt->hooks)) {
+                    continue;
+                }
+
                 IssueBuffer::maybeAdd(
                     new ParseError(
                         'Interfaces cannot have properties',

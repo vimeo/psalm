@@ -25,6 +25,7 @@ use function strtolower;
  * The parent type from which the classes descend may or may not be specified in the constructor.
  *
  * @psalm-immutable
+ * @api
  */
 class TClassString extends TString
 {
@@ -79,6 +80,9 @@ class TClassString extends TString
         return ($this->is_loaded ? 'loaded-' : '') . $key . ($this->as === 'object' ? '' : '<' . $this->as_type . '>');
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getAssertionString(): string
     {
@@ -86,7 +90,8 @@ class TClassString extends TString
     }
 
     /**
-     * @param  array<lowercase-string, string> $aliased_classes
+     * @param array<lowercase-string, string> $aliased_classes
+     * @psalm-pure
      */
     #[Override]
     public function toPhpString(
@@ -131,6 +136,9 @@ class TClassString extends TString
         return 'class-string<\\' . $this->as . '>';
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {

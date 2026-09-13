@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace Psalm\Type;
 
+/**
+ * @api
+ */
 abstract class TypeVisitor
 {
     public const STOP_TRAVERSAL = 1;
     public const DONT_TRAVERSE_CHILDREN = 2;
 
     /**
+     * @psalm-external-mutation-free
      * @return self::STOP_TRAVERSAL|self::DONT_TRAVERSE_CHILDREN|null
      */
     abstract protected function enterNode(TypeNode $type): ?int;

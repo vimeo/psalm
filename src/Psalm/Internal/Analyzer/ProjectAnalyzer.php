@@ -146,14 +146,16 @@ final class ProjectAnalyzer
     public array $check_paths_files = [];
 
     /**
+     * @psalm-suppress PropertyNotSetInConstructor Intentional to throw if accessed before initialization
      * @var array<string,string>
      */
-    private array $project_files = [];
+    private array $project_files;
 
     /**
+     * @psalm-suppress PropertyNotSetInConstructor Intentional to throw if accessed before initialization
      * @var array<string,string>
      */
-    private array $extra_files = [];
+    private array $extra_files;
 
     /**
      * @var array<string, string>
@@ -232,8 +234,52 @@ final class ProjectAnalyzer
         $this->codebase = $codebase;
 
         $this->config->processPluginFileExtensions($this);
-        $file_extensions = $this->config->getFileExtensions();
 
+        if ($this->config::INIT_PROJECT_FILES_NOW) {
+            $this->initExtraFiles();
+            $this->initProjectFiles();
+        }
+
+        self::$instance = $this;
+    }
+
+    private bool $extra_files_initialized = false;
+    /**
+     * @internal
+     */
+    public function initExtraFiles(): void
+    {
+        if ($this->extra_files_initialized) {
+            return;
+        }
+        $this->extra_files = [];
+        $file_extensions = $this->config->getFileExtensions();
+        foreach ($this->config->getExtraDirectories() as $dir_name) {
+            $file_paths = $this->file_provider->getFilesInDir(
+                $dir_name,
+                $file_extensions,
+                $this->config->isInExtraDirs(...),
+            );
+
+            foreach ($file_paths as $file_path) {
+                $this->extra_files[$file_path] = $file_path;
+            }
+        }
+        $this->extra_files_initialized = true;
+    }
+
+    private bool $project_files_initialized = false;
+
+    /**
+     * @internal
+     */
+    public function initProjectFiles(): void
+    {
+        if ($this->project_files_initialized) {
+            return;
+        }
+        $this->project_files = [];
+        $file_extensions = $this->config->getFileExtensions();
         foreach ($this->config->getProjectDirectories() as $dir_name) {
             $file_paths = $this->file_provider->getFilesInDir(
                 $dir_name,
@@ -246,23 +292,10 @@ final class ProjectAnalyzer
             }
         }
 
-        foreach ($this->config->getExtraDirectories() as $dir_name) {
-            $file_paths = $this->file_provider->getFilesInDir(
-                $dir_name,
-                $file_extensions,
-                $this->config->isInExtraDirs(...),
-            );
-
-            foreach ($file_paths as $file_path) {
-                $this->extra_files[$file_path] = $file_path;
-            }
-        }
-
         foreach ($this->config->getProjectFiles() as $file_path) {
             $this->project_files[$file_path] = $file_path;
         }
-
-        self::$instance = $this;
+        $this->project_files_initialized = true;
     }
 
     /**
@@ -310,6 +343,9 @@ final class ProjectAnalyzer
 
     public function serverMode(LanguageServer $server): void
     {
+        $this->initExtraFiles();
+        $this->initProjectFiles();
+
         $server->logInfo("Initializing: Visiting Autoload Files...");
         $this->visitAutoloadFiles();
         $this->codebase->diff_methods = true;
@@ -335,9 +371,13 @@ final class ProjectAnalyzer
     /** @psalm-mutation-free */
     public function canReportIssues(string $file_path): bool
     {
-        return isset($this->project_files[$file_path]);
+        $list = $this->project_files;
+        return isset($list[$file_path]);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     private function generatePHPVersionMessage(): string
     {
         $codebase = $this->codebase;
@@ -390,6 +430,11 @@ final class ProjectAnalyzer
         if (!$base_dir) {
             throw new InvalidArgumentException('Cannot work with empty base_dir');
         }
+        $this->progress->write($this->generatePHPVersionMessage());
+        $this->progress->startPhase(Phase::SCAN, $this->scanThreads);
+
+        $this->initProjectFiles();
+        $this->initExtraFiles();
 
         $diff_files = null;
         $deleted_files = null;
@@ -408,9 +453,6 @@ final class ProjectAnalyzer
             $deleted_files = $this->file_reference_provider->getDeletedReferencedFiles();
             $diff_files = [...$deleted_files, ...$this->getDiffFiles()];
         }
-
-        $this->progress->write($this->generatePHPVersionMessage());
-        $this->progress->startPhase(Phase::SCAN, $this->scanThreads);
 
         $diff_no_files = false;
 
@@ -568,8 +610,8 @@ final class ProjectAnalyzer
                 strtolower($source_parts[1]),
             );
 
-            if ($this->codebase->methods->methodExists($source_method_id)) {
-                if ($this->codebase->methods->methodExists(
+            if ($this->codebase->methodExists($source_method_id)) {
+                if ($this->codebase->methodExists(
                     new MethodIdentifier(
                         $destination_parts[0],
                         strtolower($destination_parts[1]),
@@ -619,13 +661,13 @@ final class ProjectAnalyzer
                     );
                 }
 
-                if (!$this->codebase->properties->propertyExists($source, true)) {
+                if (!$this->codebase->propertyExists($source, true)) {
                     throw new RefactorException(
                         'Property ' . $source . ' does not exist',
                     );
                 }
 
-                if ($this->codebase->properties->propertyExists($destination, true)) {
+                if ($this->codebase->propertyExists($destination, true)) {
                     throw new RefactorException(
                         'Destination property ' . $destination . ' already exists',
                     );
@@ -809,14 +851,14 @@ final class ProjectAnalyzer
 
     public function checkDir(string $dir_name): void
     {
+        $this->progress->write($this->generatePHPVersionMessage());
+        $this->progress->startPhase(Phase::SCAN, $this->scanThreads);
+
         $this->file_reference_provider->loadReferenceCache();
 
         $this->config->visitPreloadedStubFiles($this->codebase, $this->progress);
 
         $this->checkDirWithConfig($dir_name, $this->config, true);
-
-        $this->progress->write($this->generatePHPVersionMessage());
-        $this->progress->startPhase(Phase::SCAN, $this->scanThreads);
 
         $this->config->initializePlugins($this);
 
@@ -862,6 +904,7 @@ final class ProjectAnalyzer
         if (!$this->parser_cache_provider || !$this->project_cache_provider) {
             throw new UnexpectedValueException('Parser cache provider cannot be null here');
         }
+        $this->initProjectFiles();
 
         $diff_files = [];
 
@@ -903,7 +946,15 @@ final class ProjectAnalyzer
 
     public function checkFile(string $file_path): void
     {
+        $this->progress->write($this->generatePHPVersionMessage());
+        $this->progress->startPhase(Phase::SCAN, $this->scanThreads);
+
         $this->progress->debug('Checking ' . $file_path . PHP_EOL);
+
+        if (!$this->project_files_initialized) {
+            // issues raised while scanning need to know which files are being checked
+            $this->project_files = [$file_path => $file_path];
+        }
 
         $this->config->visitPreloadedStubFiles($this->codebase, $this->progress);
 
@@ -912,9 +963,6 @@ final class ProjectAnalyzer
         $this->codebase->addFilesToAnalyze([$file_path => $file_path]);
 
         $this->file_reference_provider->loadReferenceCache();
-
-        $this->progress->write($this->generatePHPVersionMessage());
-        $this->progress->startPhase(Phase::SCAN, $this->scanThreads);
 
         $this->config->initializePlugins($this);
 
@@ -939,6 +987,24 @@ final class ProjectAnalyzer
     {
         $this->progress->write($this->generatePHPVersionMessage());
         $this->progress->startPhase(Phase::SCAN, $this->scanThreads);
+
+        if (!$this->project_files_initialized) {
+            $file_extensions = $this->config->getFileExtensions();
+            $this->project_files = [];
+            foreach ($paths_to_check as $file_path) {
+                if (is_dir($file_path)) {
+                    foreach ($this->file_provider->getFilesInDir(
+                        $file_path,
+                        $file_extensions,
+                    ) as $file_path) {
+                        $this->project_files[$file_path] = $file_path;
+                    }
+                } elseif (is_file($file_path)) {
+                    $this->project_files[$file_path] = $file_path;
+                }
+            }
+        }
+        $this->initExtraFiles();
 
         $this->config->visitPreloadedStubFiles($this->codebase, $this->progress);
 
@@ -1010,8 +1076,9 @@ final class ProjectAnalyzer
     }
 
     /**
-     * @param  array<string>  $diff_files
+     * @param array<string>  $diff_files
      * @return array<string, string>
+     * @psalm-external-mutation-free
      */
     public function getReferencedFilesFromDiff(array $diff_files, bool $include_referencing_files = true): array
     {
@@ -1107,6 +1174,7 @@ final class ProjectAnalyzer
     /**
      * @param array<string, bool> $issues
      * @throws UnsupportedIssueToFixException
+     * @psalm-external-mutation-free
      */
     public function setIssuesToFix(array $issues): void
     {
@@ -1128,6 +1196,9 @@ final class ProjectAnalyzer
         $this->issues_to_fix = $issues;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function setAllIssuesToFix(): void
     {
         $keyed_issues = array_fill_keys(static::getSupportedIssuesToFix(), true);

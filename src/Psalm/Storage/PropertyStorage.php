@@ -9,6 +9,9 @@ use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Type\Union;
 
+/**
+ * @api
+ */
 final class PropertyStorage implements HasAttributesInterface
 {
     use CustomMetadataTrait;
@@ -67,6 +70,12 @@ final class PropertyStorage implements HasAttributesInterface
 
     public ?string $description = null;
 
+    public ?PropertyHookStorage $hook_get = null;
+    public ?PropertyHookStorage $hook_set = null;
+
+    /**
+     * @psalm-mutation-free
+     */
     public function getInfo(): string
     {
         $visibility_text = match ($this->visibility) {

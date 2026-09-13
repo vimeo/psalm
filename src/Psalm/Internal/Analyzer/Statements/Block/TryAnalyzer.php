@@ -193,7 +193,7 @@ final class TryAnalyzer
                         $statements_analyzer,
                         $catch_type,
                         $fq_catch_class,
-                        $context->calling_method_id,
+                        $context,
                     );
                 }
 
@@ -202,18 +202,17 @@ final class TryAnalyzer
                         $statements_analyzer,
                         $fq_catch_class,
                         new CodeLocation($statements_analyzer->getSource(), $catch_type, $context->include_location),
-                        $context->self,
-                        $context->calling_method_id,
+                        $context,
                         $statements_analyzer->getSuppressedIssues(),
                         new ClassLikeNameOptions(true),
                     );
                 }
 
-                if (($codebase->classExists($fq_catch_class)
+                if (($codebase->classExists($fq_catch_class, null, $context)
                         && strtolower($fq_catch_class) !== 'exception'
                         && !($codebase->classExtends($fq_catch_class, 'Exception')
                             || $codebase->classImplements($fq_catch_class, 'Throwable')))
-                    || ($codebase->interfaceExists($fq_catch_class)
+                    || ($codebase->interfaceExists($fq_catch_class, null, $context)
                         && strtolower($fq_catch_class) !== 'throwable'
                         && !$codebase->interfaceExtends($fq_catch_class, 'Throwable'))
                 ) {
@@ -238,9 +237,9 @@ final class TryAnalyzer
                         $exception_fqcln_lower = strtolower($exception_fqcln);
 
                         if ($exception_fqcln_lower === $fq_catch_class_lower
-                            || ($codebase->classExists($exception_fqcln)
+                            || ($codebase->classExists($exception_fqcln, null, $context)
                                 && $codebase->classExtendsOrImplements($exception_fqcln, $fq_catch_class))
-                            || ($codebase->interfaceExists($exception_fqcln)
+                            || ($codebase->interfaceExists($exception_fqcln, null, $context)
                                 && $codebase->interfaceExtends($exception_fqcln, $fq_catch_class))
                         ) {
                             unset($original_context->possibly_thrown_exceptions[$exception_fqcln]);
@@ -266,7 +265,7 @@ final class TryAnalyzer
                             false,
                             false,
                             strtolower($fq_catch_class) !== 'throwable'
-                                && $codebase->interfaceExists($fq_catch_class)
+                                && $codebase->interfaceExists($fq_catch_class, null, $context)
                                 && !$codebase->interfaceExtends($fq_catch_class, 'Throwable')
                                     ? ['Throwable' => new TNamedObject('Throwable')]
                                     : [],

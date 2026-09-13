@@ -17,7 +17,10 @@ use Psalm\Internal\Codebase\Analyzer;
  */
 final class AnalyzerTask implements Task
 {
-    /** @psalm-suppress PossiblyUnusedMethod */
+    /**
+     * @psalm-suppress PossiblyUnusedMethod
+     * @psalm-mutation-free
+     */
     public function __construct(private string $file)
     {
     }

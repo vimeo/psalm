@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Psalm\Internal\FileManipulation;
 
 use PhpParser;
+use PhpParser\Node;
 use PhpParser\Node\Expr\ArrowFunction;
 use PhpParser\Node\Expr\Closure;
-use PhpParser\Node\FunctionLike;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Function_;
 use Psalm\DocComment;
@@ -15,6 +15,7 @@ use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Scanner\ParsedDocblock;
+use Psalm\Storage\Mutations;
 
 use function array_key_exists;
 use function array_reduce;
@@ -38,7 +39,7 @@ use function substr;
 final class FunctionDocblockManipulator
 {
     /**
-     * Manipulators ordered by line number
+     * Manipulators keyed by function-like start offset
      *
      * @var array<string, array<int, FunctionDocblockManipulator>>
      */
@@ -83,7 +84,8 @@ final class FunctionDocblockManipulator
     /** @var array<string, array{int, int}> */
     private array $param_typehint_offsets = [];
 
-    private bool $is_pure = false;
+    /** @var ?Mutations::LEVEL_* */
+    private ?int $allowed_mutations = null;
 
     /** @var list<string> */
     private array $throwsExceptions = [];
@@ -91,18 +93,25 @@ final class FunctionDocblockManipulator
     /**
      * @param  Closure|Function_|ClassMethod|ArrowFunction $stmt
      */
+    /**
+     * @param ?Node $docblock_anchor the node the docblock belongs to, when it's not the
+     *        function-like itself (e.g. the statement a closure is assigned in)
+     */
     public static function getForFunction(
         ProjectAnalyzer $project_analyzer,
         string $file_path,
-        FunctionLike $stmt,
+        Closure|Function_|ClassMethod|ArrowFunction $stmt,
+        ?Node $docblock_anchor = null,
     ): FunctionDocblockManipulator {
-        if (isset(self::$manipulators[$file_path][$stmt->getLine()])) {
-            return self::$manipulators[$file_path][$stmt->getLine()];
+        $function_start = (int) $stmt->getAttribute('startFilePos');
+
+        if (isset(self::$manipulators[$file_path][$function_start])) {
+            return self::$manipulators[$file_path][$function_start];
         }
 
         $manipulator
-            = self::$manipulators[$file_path][$stmt->getLine()]
-            = new self($file_path, $stmt, $project_analyzer);
+            = self::$manipulators[$file_path][$function_start]
+            = new self($file_path, $stmt, $project_analyzer, $docblock_anchor);
 
         return $manipulator;
     }
@@ -111,10 +120,15 @@ final class FunctionDocblockManipulator
         string $file_path,
         private readonly Closure|Function_|ClassMethod|ArrowFunction $stmt,
         ProjectAnalyzer $project_analyzer,
+        ?Node $docblock_anchor = null,
     ) {
-        $docblock = $stmt->getDocComment();
-        $this->docblock_start = $docblock ? $docblock->getStartFilePos() : (int)$stmt->getAttribute('startFilePos');
-        $this->docblock_end = $function_start = (int)$stmt->getAttribute('startFilePos');
+        $docblock_anchor ??= $stmt;
+        $docblock = $docblock_anchor->getDocComment();
+        $this->docblock_start = $docblock
+            ? $docblock->getStartFilePos()
+            : (int)$docblock_anchor->getAttribute('startFilePos');
+        $this->docblock_end = (int)$docblock_anchor->getAttribute('startFilePos');
+        $function_start = (int)$stmt->getAttribute('startFilePos');
         $function_end = (int)$stmt->getAttribute('endFilePos');
 
         $attributes = $stmt->getAttrGroups();
@@ -156,7 +170,7 @@ final class FunctionDocblockManipulator
 
         $this->return_typehint_area_start = $end_bracket_position + 1;
 
-        $function_code = substr($file_contents, $function_start, $function_end);
+        $function_code = substr($file_contents, $function_start, $function_end - $function_start);
 
         $function_code_after_bracket = substr($function_code, $end_bracket_position + 1 - $function_start);
 
@@ -264,6 +278,8 @@ final class FunctionDocblockManipulator
 
     /**
      * Sets the new return type
+     *
+     * @psalm-external-mutation-free
      */
     public function setReturnType(
         ?string $php_type,
@@ -283,6 +299,8 @@ final class FunctionDocblockManipulator
 
     /**
      * Sets a new param type
+     *
+     * @psalm-external-mutation-free
      */
     public function setParamType(
         string $param_name,
@@ -404,9 +422,15 @@ final class FunctionDocblockManipulator
             $old_phpdoc_return_type = reset($parsed_docblock->tags['return']);
         }
 
-        if ($this->is_pure) {
+        if ($this->allowed_mutations !== null) {
             $modified_docblock = true;
-            $parsed_docblock->tags['psalm-pure'] = [''];
+            unset($parsed_docblock->tags['psalm-pure']);
+            unset($parsed_docblock->tags['psalm-mutation-free']);
+            unset($parsed_docblock->tags['psalm-external-mutation-free']);
+            unset($parsed_docblock->tags['psalm-impure']);
+            $parsed_docblock->tags[
+                Mutations::TO_ATTRIBUTE_FUNCTIONLIKE[$this->allowed_mutations]
+            ] = [''];
         }
         if (count($this->throwsExceptions) > 0) {
             $modified_docblock = true;
@@ -504,7 +528,7 @@ final class FunctionDocblockManipulator
             if (!$manipulator->new_php_return_type
                 || !$manipulator->return_type_is_php_compatible
                 || $manipulator->docblock_start !== $manipulator->docblock_end
-                || $manipulator->is_pure
+                || $manipulator->allowed_mutations !== null
             ) {
                 $file_manipulations[$manipulator->docblock_start] = new FileManipulation(
                     $manipulator->docblock_start,
@@ -551,19 +575,27 @@ final class FunctionDocblockManipulator
         return $file_manipulations;
     }
 
-    public function makePure(): void
+    /**
+     * @param Mutations::LEVEL_* $allowed_mutations
+     * @psalm-external-mutation-free
+     */
+    public function setAllowedMutations(int $allowed_mutations): void
     {
-        $this->is_pure = true;
+        $this->allowed_mutations = $allowed_mutations;
     }
 
     /**
      * @param list<string> $exceptions
+     * @psalm-external-mutation-free
      */
     public function addThrowsDocblock(array $exceptions): void
     {
         $this->throwsExceptions = $exceptions;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public static function clearCache(): void
     {
         self::$manipulators = [];
@@ -571,6 +603,7 @@ final class FunctionDocblockManipulator
 
     /**
      * @param array<string, array<int, FunctionDocblockManipulator>> $manipulators
+     * @psalm-external-mutation-free
      */
     public static function addManipulators(array $manipulators): void
     {
@@ -579,6 +612,7 @@ final class FunctionDocblockManipulator
 
     /**
      * @return array<string, array<int, FunctionDocblockManipulator>>
+     * @psalm-external-mutation-free
      */
     public static function getManipulators(): array
     {

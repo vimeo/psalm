@@ -28,6 +28,7 @@ final class FilterVarReturnTypeProvider implements FunctionReturnTypeProviderInt
 {
     /**
      * @return array<lowercase-string>
+     * @psalm-pure
      */
     #[Override]
     public static function getFunctionIds(): array
@@ -42,6 +43,7 @@ final class FilterVarReturnTypeProvider implements FunctionReturnTypeProviderInt
         if (!$statements_analyzer instanceof StatementsAnalyzer) {
             throw new UnexpectedValueException();
         }
+        $context = $event->getContext();
 
         $arg_names = array_flip(['value', 'filter', 'options']);
         $call_args = [];
@@ -80,6 +82,7 @@ final class FilterVarReturnTypeProvider implements FunctionReturnTypeProviderInt
             $helper = FilterUtils::getOptionsArgValueOrError(
                 $call_args[2],
                 $statements_analyzer,
+                $context,
                 $codebase,
                 $code_location,
                 $function_id,

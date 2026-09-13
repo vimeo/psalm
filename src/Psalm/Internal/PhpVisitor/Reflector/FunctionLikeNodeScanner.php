@@ -44,6 +44,7 @@ use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\Mutations;
 use Psalm\Storage\Possibilities;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
@@ -61,6 +62,7 @@ use function end;
 use function explode;
 use function in_array;
 use function is_string;
+use function min;
 use function spl_object_id;
 use function str_contains;
 use function str_starts_with;
@@ -80,6 +82,7 @@ final class FunctionLikeNodeScanner
     /**
      * @param array<string, non-empty-array<string, Union>> $existing_function_template_types
      * @param array<string, TypeAlias> $type_aliases
+     * @psalm-mutation-free
      */
     public function __construct(
         private readonly Codebase $codebase,
@@ -225,7 +228,7 @@ final class FunctionLikeNodeScanner
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod
                 && $storage instanceof MethodStorage
                 && $classlike_storage
-                && !$classlike_storage->mutation_free
+                && !$classlike_storage->isMutationFree()
                 && $stmt->stmts
                 && count($stmt->stmts) === 1
                 && !count($stmt->params)
@@ -239,10 +242,13 @@ final class FunctionLikeNodeScanner
 
                 if (isset($classlike_storage->properties[$property_name])
                     && $classlike_storage->properties[$property_name]->type
+                    && !$classlike_storage->properties[$property_name]->hook_get
                 ) {
-                    $storage->mutation_free = true;
-                    $storage->external_mutation_free = true;
-                    $storage->mutation_free_inferred = !$stmt->isFinal() && !$classlike_storage->final;
+                    $storage->allowed_mutations = min(
+                        Mutations::LEVEL_INTERNAL_READ,
+                        $storage->allowed_mutations,
+                    );
+                    $storage->mutation_free_assumed = !$stmt->isFinal() && !$classlike_storage->final;
 
                     $classlike_storage->properties[$property_name]->getter_method = strtolower($stmt->name->name);
                 }
@@ -683,10 +689,8 @@ final class FunctionLikeNodeScanner
                     || $attribute->fq_class_name === 'JetBrains\\PhpStorm\\Pure'
                 ) {
                     $storage->specialize_call = true;
-                    $storage->mutation_free = true;
-                    if ($storage instanceof MethodStorage) {
-                        $storage->external_mutation_free = true;
-                    }
+                    $storage->allowed_mutations = Mutations::LEVEL_NONE;
+                    $storage->has_mutations_annotation = true;
                 }
 
                 if ($attribute->fq_class_name === 'Psalm\\Deprecated'
@@ -703,7 +707,11 @@ final class FunctionLikeNodeScanner
                 if ($attribute->fq_class_name === 'Psalm\\ExternalMutationFree'
                     && $storage instanceof MethodStorage
                 ) {
-                    $storage->external_mutation_free = true;
+                    $storage->allowed_mutations = min(
+                        $storage->allowed_mutations,
+                        Mutations::LEVEL_INTERNAL_READ_WRITE,
+                    );
+                    $storage->has_mutations_annotation = true;
                 }
 
                 if ($attribute->fq_class_name === 'JetBrains\\PhpStorm\\NoReturn') {
@@ -775,8 +783,12 @@ final class FunctionLikeNodeScanner
             return;
         }
 
-        $storage->external_mutation_free = true;
-        $storage->mutation_free_inferred = true;
+        $storage->allowed_mutations = min(
+            Mutations::LEVEL_INTERNAL_READ_WRITE,
+            $storage->allowed_mutations,
+        );
+
+        $storage->mutation_free_assumed = true;
 
         foreach ($assigned_properties as $property_name => $property_type) {
             $classlike_storage->properties[$property_name]->type = $property_type;

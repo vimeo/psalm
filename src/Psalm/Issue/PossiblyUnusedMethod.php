@@ -8,11 +8,17 @@ use Psalm\CodeLocation;
 
 use function strtolower;
 
+/**
+ * @api
+ */
 final class PossiblyUnusedMethod extends MethodIssue
 {
     public const ERROR_LEVEL = -2;
     public const SHORTCODE = 87;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         string $message,
         CodeLocation $code_location,

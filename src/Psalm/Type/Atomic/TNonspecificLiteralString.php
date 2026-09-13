@@ -11,9 +11,13 @@ use Override;
  * we know that the string is not from user input
  *
  * @psalm-immutable
+ * @api
  */
 class TNonspecificLiteralString extends TString
 {
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getId(bool $exact = true, bool $nested = true): string
     {
@@ -24,12 +28,18 @@ class TNonspecificLiteralString extends TString
         return 'literal-string';
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getAssertionString(): string
     {

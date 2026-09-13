@@ -16,6 +16,9 @@ final class ForeachTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerValidCodeParse(): iterable
     {
@@ -1248,10 +1251,36 @@ final class ForeachTest extends TestCase
         ];
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'foreachKeyAndDestructuredValueNotNullAfterBreakingLoopOnNonEmptyArray' => [
+                'code' => '<?php
+                    /** @param non-empty-array<int, array{int, string|null}> $argument_map */
+                    function f(array $argument_map, int $offset): ?string {
+                        $start_pos = null;
+                        $end_pos = null;
+                        $reference = null;
+                        foreach ($argument_map as $start_pos => [$end_pos, $possible_reference]) {
+                            if ($offset < $start_pos) {
+                                break;
+                            }
+                            if ($offset > $end_pos) {
+                                continue;
+                            }
+                            $reference = $possible_reference;
+                        }
+                        if ($reference === null || $start_pos === null || $end_pos === null) {
+                            return null;
+                        }
+                        return $reference;
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
             'switchVariableWithContinueOnce' => [
                 'code' => '<?php
                     foreach (["a", "b", "c"] as $letter) {

@@ -22,9 +22,11 @@ use function str_split;
 use function strlen;
 use function strpos;
 use function strtolower;
+use function substr;
 
 /**
  * @internal
+ * @psalm-external-mutation-free
  */
 final class TypeTokenizer
 {
@@ -54,13 +56,24 @@ final class TypeTokenizer
         'interface-string' => true,
         'enum-string' => true,
         'trait-string' => true,
+        
         'callable-string' => true,
+
         'callable-array' => true,
+        
         'callable-list' => true,
+
         'callable-object' => true,
+        
         'stringable-object' => true,
         'pure-callable' => true,
         'pure-Closure' => true,
+        'impure-callable' => true,
+        'impure-Closure' => true,
+        'self-mutating-callable' => true,
+        'self-mutating-Closure' => true,
+        'self-accessing-callable' => true,
+        'self-accessing-Closure' => true,
         'literal-string' => true,
         'non-empty-literal-string' => true,
         'lowercase-string' => true,
@@ -113,6 +126,7 @@ final class TypeTokenizer
      * contains the string token and the second element contains its offset,
      *
      * @return list<array{0: string, 1: int}>
+     * @psalm-external-mutation-free
      */
     public static function tokenize(string $string_type, bool $ignore_space = true): array
     {
@@ -146,8 +160,18 @@ final class TypeTokenizer
                         && ($chars[$i + 2] ?? null) === '.'
                         && ($chars[$i + 3] ?? null) === '$'))
             ) {
-                $type_tokens[++$rtc] = [' ', $i - 1];
-                $type_tokens[++$rtc] = ['', $i];
+                // "$this" in a type context is a type token (equivalent to "static"), not a parameter name
+                if ($char === '$'
+                    && substr($string_type, $i, 5) === '$this'
+                    && !preg_match('/[a-zA-Z0-9_\x7f-\xff]/', $chars[$i + 5] ?? '')
+                ) {
+                    if ($type_tokens[$rtc][0] !== '') {
+                        $type_tokens[++$rtc] = ['', $i];
+                    }
+                } else {
+                    $type_tokens[++$rtc] = [' ', $i - 1];
+                    $type_tokens[++$rtc] = ['', $i];
+                }
             } elseif ($was_space
                 && in_array(implode('', array_slice($chars, $i, 3)), ['as ', 'is ', 'of '])
             ) {
@@ -155,6 +179,10 @@ final class TypeTokenizer
                 $type_tokens[++$rtc] = ['', ++$i];
                 $was_char = false;
                 continue;
+            } elseif ($was_space
+                && in_array($type_tokens[$rtc][0], ['covariant', 'contravariant'], true)
+            ) {
+                $type_tokens[++$rtc] = ['', $i];
             } elseif ($was_char) {
                 $type_tokens[++$rtc] = ['', $i];
             }
@@ -332,9 +360,10 @@ final class TypeTokenizer
     }
 
     /**
-     * @param  array<string, mixed>|null       $template_type_map
-     * @param  array<string, TypeAlias>|null   $type_aliases
+     * @param array<string, mixed>|null       $template_type_map
+     * @param array<string, TypeAlias>|null   $type_aliases
      * @return list<array{0: string, 1: int, 2?: string}>
+     * @psalm-external-mutation-free
      */
     public static function getFullyQualifiedTokens(
         string $string_type,
@@ -354,6 +383,7 @@ final class TypeTokenizer
                 $string_type_token[0],
                 [
                     '<', '>', '|', '?', ',', '{', '}', ':', '::', '[', ']', '(', ')', '&', '=', '...', 'as', 'is',
+                    'covariant', 'contravariant',
                 ],
                 true,
             )) {
@@ -491,6 +521,9 @@ final class TypeTokenizer
         return $type_tokens;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public static function clearCache(): void
     {
         self::$memoized_tokens = [];

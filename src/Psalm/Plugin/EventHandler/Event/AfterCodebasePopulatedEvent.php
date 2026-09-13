@@ -6,12 +6,17 @@ namespace Psalm\Plugin\EventHandler\Event;
 
 use Psalm\Codebase;
 
+/**
+ * @psalm-immutable
+ * @api
+ */
 final class AfterCodebasePopulatedEvent
 {
     /**
      * Called after codebase has been populated
      *
      * @internal
+     * @psalm-mutation-free
      */
     public function __construct(
         private readonly Codebase $codebase,

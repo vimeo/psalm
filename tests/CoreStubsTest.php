@@ -13,6 +13,9 @@ final class CoreStubsTest extends TestCase
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
 
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public function providerValidCodeParse(): iterable
     {
@@ -49,8 +52,8 @@ final class CoreStubsTest extends TestCase
                 echo $dt->format("Y-m-d");
             }',
             'assertions' => [
-                '$period' => 'DatePeriod<DateTimeImmutable>',
-                '$dt' => 'DateTimeInterface|null',
+                '$period' => 'DatePeriod<DateTimeImmutable, DateTimeImmutable>',
+                '$dt' => 'DateTimeImmutable|null',
             ],
             'ignored_issues' => [],
             'php_version' => '7.3',
@@ -68,7 +71,7 @@ final class CoreStubsTest extends TestCase
                 echo $dt->format("Y-m-d");
             }',
             'assertions' => [
-                '$period' => 'DatePeriod<DateTimeImmutable>',
+                '$period' => 'DatePeriod<DateTimeImmutable, DateTimeImmutable>',
                 '$dt' => 'DateTimeImmutable|null',
             ],
             'ignored_issues' => [],
@@ -83,7 +86,7 @@ final class CoreStubsTest extends TestCase
                 echo $dt->format("Y-m-d");
             }',
             'assertions' => [
-                '$period' => 'DatePeriod<string>',
+                '$period' => 'DatePeriod<string, DateTime>',
                 '$dt' => 'DateTime|null',
             ],
             'ignored_issues' => [],
@@ -106,6 +109,64 @@ final class CoreStubsTest extends TestCase
             'assertions' => [],
             'ignored_issues' => ['RedundantCondition'],
             'php_version' => '8.0',
+        ];
+        yield 'DatePeriod with TDate template param does not trigger TooManyTemplateParams' => [
+            'code' => '<?php
+
+            /** @param DatePeriod<DateTimeImmutable, DateTimeImmutable> $period */
+            function foo(DatePeriod $period): void {
+                foreach ($period as $dt) {
+                    echo $dt->format("Y-m-d");
+                }
+            }',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.2',
+        ];
+        yield 'DatePeriod with DateTime start binds TDate to DateTime' => [
+            'code' => '<?php
+
+            $period = new DatePeriod(
+                new DateTime("now"),
+                DateInterval::createFromDateString("1 day"),
+                new DateTime("+1 week")
+            );
+            $dt = null;
+            foreach ($period as $dt) {
+                echo $dt->format("Y-m-d");
+            }',
+            'assertions' => [
+                '$period' => 'DatePeriod<DateTime, DateTime>',
+                '$dt' => 'DateTime|null',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.2',
+        ];
+        yield 'DatePeriod getIterator returns correctly typed Iterator' => [
+            'code' => '<?php
+
+            $period = new DatePeriod(
+                new DateTimeImmutable("now"),
+                DateInterval::createFromDateString("1 day"),
+                new DateTimeImmutable("+1 week")
+            );
+            $iterator = $period->getIterator();',
+            'assertions' => [
+                '$iterator' => 'Iterator<int, DateTimeImmutable>',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.2',
+        ];
+        yield 'DatePeriod getIterator with ISO string returns Iterator of DateTime' => [
+            'code' => '<?php
+
+            $period = new DatePeriod("R4/2012-07-01T00:00:00Z/P7D");
+            $iterator = $period->getIterator();',
+            'assertions' => [
+                '$iterator' => 'Iterator<int, DateTime>',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.2',
         ];
         yield 'sprintf yields a non-empty-string for non-empty-string value' => [
             'code' => '<?php
@@ -444,6 +505,9 @@ final class CoreStubsTest extends TestCase
         ];
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public function providerInvalidCodeParse(): iterable
     {

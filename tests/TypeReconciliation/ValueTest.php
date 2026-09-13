@@ -38,6 +38,9 @@ final class ValueTest extends TestCase
         $this->project_analyzer->setPhpVersion('7.3', 'tests');
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerValidCodeParse(): iterable
     {
@@ -911,6 +914,9 @@ final class ValueTest extends TestCase
         ];
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerInvalidCodeParse(): iterable
     {

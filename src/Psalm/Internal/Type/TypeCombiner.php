@@ -108,6 +108,7 @@ final class TypeCombiner
         foreach ($types as $type) {
             $from_docblock = $from_docblock || $type->from_docblock;
 
+            /** @psalm-suppress ImpureMethodCall */
             $result = self::scrapeTypeProperties(
                 $type,
                 $combination,
@@ -208,6 +209,7 @@ final class TypeCombiner
         $new_types = [];
 
         if ($combination->objectlike_entries) {
+            /** @psalm-suppress ImpureMethodCall */
             $new_types = self::handleKeyedArrayEntries(
                 $combination,
                 $overwrite_empty_array,
@@ -219,7 +221,7 @@ final class TypeCombiner
             if (count($combination->array_type_params) !== 2) {
                 throw new UnexpectedValueException('Unexpected number of parameters');
             }
-
+            /** @psalm-suppress ImpureMethodCall */
             $new_types[] = self::getArrayTypeFromGenericParams(
                 $codebase,
                 $combination,
@@ -544,7 +546,7 @@ final class TypeCombiner
         }
 
         if ($type instanceof TKeyedArray && $type->is_callable) {
-            if (isset($combination->value_types['callable'])) {
+            if (isset($combination->value_types['impure-callable'])) {
                 return null;
             }
             if ($combination->all_arrays_callable !== false) {
@@ -651,7 +653,7 @@ final class TypeCombiner
         }
 
         if ($type instanceof TKeyedArray) {
-            if ($type->is_callable && isset($combination->value_types['callable'])) {
+            if ($type->is_callable && isset($combination->value_types['impure-callable'])) {
                 return null;
             }
 
@@ -789,7 +791,7 @@ final class TypeCombiner
         }
 
         if ($type instanceof TObject) {
-            if ($type instanceof TCallableObject && isset($combination->value_types['callable'])) {
+            if ($type instanceof TCallableObject && isset($combination->value_types['impure-callable'])) {
                 return null;
             }
 
@@ -965,7 +967,7 @@ final class TypeCombiner
             return null;
         }
 
-        if ($type instanceof TCallable && $type_key === 'callable') {
+        if ($type instanceof TCallable && $type_key === 'impure-callable') {
             if (($combination->value_types['string'] ?? null) instanceof TCallableString) {
                 unset($combination->value_types['string']);
             } elseif (!empty($combination->objectlike_entries) && $combination->all_arrays_callable) {
@@ -986,7 +988,7 @@ final class TypeCombiner
         ?Codebase $codebase,
         int $literal_limit,
     ): void {
-        if ($type instanceof TCallableString && isset($combination->value_types['callable'])) {
+        if ($type instanceof TCallableString && isset($combination->value_types['impure-callable'])) {
             return;
         }
 
@@ -1350,6 +1352,7 @@ final class TypeCombiner
 
     /**
      * @return array<string, bool>
+     * @psalm-mutation-free
      */
     private static function getSharedTypes(TypeCombination $combination, Codebase $codebase): array
     {
@@ -1387,6 +1390,7 @@ final class TypeCombiner
 
     /**
      * @return array<string, true>
+     * @psalm-mutation-free
      */
     private static function getClassLikes(Codebase $codebase, string $fq_classlike_name): array
     {

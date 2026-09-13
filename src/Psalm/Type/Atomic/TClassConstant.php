@@ -13,6 +13,7 @@ use Psalm\Type\Atomic;
  * Denotes a class constant whose value might not yet be known.
  *
  * @psalm-immutable
+ * @api
  */
 final class TClassConstant extends Atomic
 {
@@ -44,7 +45,8 @@ final class TClassConstant extends Atomic
     }
 
     /**
-     * @param  array<lowercase-string, string> $aliased_classes
+     * @param array<lowercase-string, string> $aliased_classes
+     * @psalm-pure
      */
     #[Override]
     public function toPhpString(
@@ -56,6 +58,9 @@ final class TClassConstant extends Atomic
         return null;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {

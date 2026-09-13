@@ -81,6 +81,9 @@ use function strpos;
 use function strtolower;
 use function substr;
 
+/**
+ * @api
+ */
 class Reconciler
 {
     public const RECONCILIATION_OK = 0;
@@ -427,15 +430,16 @@ class Reconciler
      * generates the assertions
      *
      * [
-     *     '$a' => '=int-or-string-array-access',
-     *     '$a[0]' => '=isset',
-     *     '$a[0]->foo' => '=isset',
-     *     '$a[0]->foo->bar' => 'isset' // original assertion
+     * '$a' => '=int-or-string-array-access',
+     * '$a[0]' => '=isset',
+     * '$a[0]->foo' => '=isset',
+     * '$a[0]->foo->bar' => 'isset' // original assertion
      * ]
      *
      * @param array<string, array<array<int, Assertion>>> $new_types
      * @param array<string, Union> $existing_types
      * @return array<string, array<array<int, Assertion>>>
+     * @psalm-external-mutation-free
      */
     private static function addNestedAssertions(array $new_types, array $existing_types): array
     {
@@ -549,6 +553,7 @@ class Reconciler
 
     /**
      * @return non-empty-list<string>
+     * @psalm-external-mutation-free
      */
     public static function breakUpPathIntoParts(string $path): array
     {
@@ -864,7 +869,7 @@ class Reconciler
                                         strtolower(substr($property_name, 0, -2)),
                                     );
 
-                                    if (!$codebase->methods->methodExists($method_id)) {
+                                    if (!$codebase->methodExists($method_id)) {
                                         return null;
                                     }
 
@@ -878,11 +883,9 @@ class Reconciler
 
                                     $declaring_class = $declaring_method_id->fq_class_name;
 
-                                    $method_return_type = $codebase->methods->getMethodReturnType(
+                                    $method_return_type = $codebase->getMethodReturnType(
                                         $method_id,
                                         $declaring_class,
-                                        null,
-                                        null,
                                     );
 
                                     if ($method_return_type) {
@@ -951,7 +954,7 @@ class Reconciler
     ): ?Union {
         $property_id = $fq_class_name . '::$' . $property_name;
 
-        if (!$codebase->properties->propertyExists($property_id, true)) {
+        if (!$codebase->propertyExists($property_id, true)) {
             $declaring_class_storage = $codebase->classlike_storage_provider->get(
                 $fq_class_name,
             );
@@ -1240,10 +1243,16 @@ class Reconciler
         }
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     protected static function refineArrayKey(Union $key_type): Union
     {
         return self::refineArrayKeyInner($key_type) ?? $key_type;
     }
+    /**
+     * @psalm-external-mutation-free
+     */
     private static function refineArrayKeyInner(Union $key_type): ?Union
     {
         $refined = false;

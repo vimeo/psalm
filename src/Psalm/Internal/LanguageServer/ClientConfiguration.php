@@ -8,6 +8,7 @@ use LanguageServerProtocol\MessageType;
 
 /**
  * @internal
+ * @psalm-suppress PossiblyUnusedProperty flags read only from reflection-invoked LSP handlers
  */
 final class ClientConfiguration
 {
@@ -36,6 +37,7 @@ final class ClientConfiguration
      * Undocumented function
      *
      * @param 'always'|'auto'|null $findUnusedCode
+     * @psalm-mutation-free
      */
     public function __construct(
         /**

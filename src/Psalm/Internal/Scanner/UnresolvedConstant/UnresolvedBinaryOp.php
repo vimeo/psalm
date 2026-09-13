@@ -8,13 +8,16 @@ use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Storage\ImmutableNonCloneableTrait;
 
 /**
- * @psalm-immutable
  * @internal
+ * @psalm-immutable
  */
 abstract class UnresolvedBinaryOp extends UnresolvedConstantComponent
 {
     use ImmutableNonCloneableTrait;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         public readonly UnresolvedConstantComponent $left,
         public readonly UnresolvedConstantComponent $right,

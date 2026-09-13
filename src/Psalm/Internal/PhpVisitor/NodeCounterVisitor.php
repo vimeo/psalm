@@ -14,6 +14,9 @@ final class NodeCounterVisitor extends PhpParser\NodeVisitorAbstract
 {
     public int $count = 0;
 
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function enterNode(PhpParser\Node $node): ?int
     {

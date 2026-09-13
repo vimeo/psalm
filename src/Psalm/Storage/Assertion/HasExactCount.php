@@ -10,6 +10,7 @@ use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 
 /**
  * @psalm-immutable
+ * @api
  */
 final class HasExactCount extends Assertion
 {
@@ -25,6 +26,9 @@ final class HasExactCount extends Assertion
         return new DoesNotHaveExactCount($this->count);
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function hasEquality(): bool
     {

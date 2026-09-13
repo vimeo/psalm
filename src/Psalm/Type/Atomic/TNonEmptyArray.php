@@ -11,6 +11,7 @@ use Psalm\Type\Union;
  * It expects an array with two elements, both union types.
  *
  * @psalm-immutable
+ * @api
  */
 final class TNonEmptyArray extends TArray
 {

@@ -71,6 +71,9 @@ use function strpos;
 use function strtolower;
 use function substr;
 
+/**
+ * @api
+ */
 abstract class Type
 {
     /**
@@ -92,6 +95,9 @@ abstract class Type
         );
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public static function getFQCLNFromString(
         string $class,
         Aliases $aliases,
@@ -264,8 +270,8 @@ abstract class Type
     }
 
     /**
-     * @psalm-suppress PossiblyUnusedMethod
      * @return TLiteralString|TLiteralInt
+     * @psalm-pure
      */
     public static function getLiteral(int|string $value): Atomic
     {
@@ -416,7 +422,7 @@ abstract class Type
      */
     public static function getClosure(): Union
     {
-        $type = new TClosure('Closure');
+        $type = new TClosure();
 
         return new Union([$type]);
     }
@@ -1033,6 +1039,7 @@ abstract class Type
 
     /**
      * @psalm-assert-if-true TIterable|TNamedObject|TTemplateParam|TObjectWithProperties $type
+     * @psalm-mutation-free
      */
     private static function mayHaveIntersection(Atomic $type, Codebase $codebase): bool
     {
@@ -1054,6 +1061,9 @@ abstract class Type
         return !$storage->final;
     }
 
+    /**
+     * @psalm-pure
+     */
     private static function hasIntersection(Atomic $type): bool
     {
         return self::isIntersectionType($type) && $type->extra_types;
@@ -1061,6 +1071,7 @@ abstract class Type
 
     /**
      * @psalm-assert-if-true TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject $type
+     * @psalm-pure
      */
     public static function isIntersectionType(Atomic $type): bool
     {

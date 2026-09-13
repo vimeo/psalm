@@ -22,6 +22,7 @@ use Psalm\Issue\UndefinedGlobalVariable;
 use Psalm\Issue\UndefinedVariable;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TBool;
@@ -118,21 +119,13 @@ final class VariableFetchAnalyzer
                 );
             }
 
-            if (!$context->collect_mutations && !$context->collect_initializations) {
-                if ($context->pure) {
-                    IssueBuffer::maybeAdd(
-                        new ImpureVariable(
-                            'Cannot reference $this in a pure context',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                } elseif ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
-                    && $statements_analyzer->getSource()->track_mutations
-                ) {
-                    $statements_analyzer->getSource()->inferred_impure = true;
-                }
-            }
+            $statements_analyzer->signalMutation(
+                Mutations::LEVEL_INTERNAL_READ,
+                $context,
+                '$this',
+                ImpureVariable::class,
+                $stmt,
+            );
 
             return true;
         }
@@ -172,6 +165,14 @@ final class VariableFetchAnalyzer
             }
             $var_name = '$' . $stmt->name;
 
+            $statements_analyzer->signalMutation(
+                Mutations::LEVEL_EXTERNAL,
+                $context,
+                "superglobal $var_name",
+                ImpureGlobalVariable::class,
+                $stmt,
+            );
+
             if (isset($context->vars_in_scope[$var_name])) {
                 $type = $context->vars_in_scope[$var_name];
 
@@ -201,19 +202,13 @@ final class VariableFetchAnalyzer
         }
 
         if (!is_string($stmt->name)) {
-            if ($context->pure) {
-                IssueBuffer::maybeAdd(
-                    new ImpureVariable(
-                        'Cannot reference an unknown variable in a pure context',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt),
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
-            } elseif ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
-                && $statements_analyzer->getSource()->track_mutations
-            ) {
-                $statements_analyzer->getSource()->inferred_impure = true;
-            }
+            $statements_analyzer->signalMutation(
+                Mutations::LEVEL_INTERNAL_READ,
+                $context,
+                'unknown variable',
+                ImpureVariable::class,
+                $stmt,
+            );
 
             $was_inside_general_use = $context->inside_general_use;
             $context->inside_general_use = true;
@@ -535,12 +530,11 @@ final class VariableFetchAnalyzer
 
         $taint_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
-        $taint_source = DataFlowNode::make(
+        $taint_source = DataFlowNode::getForTaintSink(
             $var_name,
-            $var_name,
-            null,
-            $taint_location->file_name . ':' . $taint_location->raw_file_start,
+            $taint_location,
             $taints,
+            $taint_location,
         );
         $graph->addSource($taint_source);
 

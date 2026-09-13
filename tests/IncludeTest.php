@@ -7,6 +7,9 @@ namespace Psalm\Tests;
 use Psalm\Config;
 use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\FileAnalyzer;
+use Psalm\Internal\Provider\ClassLikeStorageProvider;
+use Psalm\Storage\ClassLikeStorage;
+use ReflectionProperty;
 
 use function getcwd;
 use function preg_quote;
@@ -119,6 +122,7 @@ final class IncludeTest extends TestCase
                         }',
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
                         class A{
+                            /** @psalm-mutation-free */
                             public function fooFoo(): void {
 
                             }
@@ -141,6 +145,7 @@ final class IncludeTest extends TestCase
                         }',
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
                         class A{
+                            /** @psalm-mutation-free */
                             public function fooFoo(): void {
 
                             }
@@ -154,6 +159,7 @@ final class IncludeTest extends TestCase
                 'files' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
                         class A{
+                            /** @psalm-mutation-free */
                             public function fooFoo(): void {
 
                             }
@@ -167,6 +173,7 @@ final class IncludeTest extends TestCase
                         require("file2.php");
 
                         class C extends B {
+                            /** @psalm-mutation-free */
                             public function doFoo(): void {
                                 $this->fooFoo();
                             }
@@ -199,6 +206,7 @@ final class IncludeTest extends TestCase
             'requireFunction' => [
                 'files' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        /** @psalm-mutation-free */
                         function fooFoo(): void {
 
                         }',
@@ -214,6 +222,7 @@ final class IncludeTest extends TestCase
             'namespacedRequireFunction' => [
                 'files' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        /** @psalm-mutation-free */
                         function fooFoo(): void {
 
                         }',
@@ -272,6 +281,7 @@ final class IncludeTest extends TestCase
                         require_once("file3.php");
 
                         class B extends A {
+                            /** @psalm-mutation-free */
                             public function doFoo(): void {
                                 $this->fooFoo();
                             }
@@ -284,6 +294,7 @@ final class IncludeTest extends TestCase
                         require_once("file3.php");
 
                         class A{
+                            /** @psalm-mutation-free */
                             public function fooFoo(): void { }
                         }
 
@@ -312,14 +323,17 @@ final class IncludeTest extends TestCase
                             }
                         }
                         class C {
+                            /** @psalm-mutation-free */
                             public function barBar(): void { }
                         }',
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
                         require_once("file1.php");
                         class A{
+                            /** @psalm-mutation-free */
                             public function fooFoo(): void { }
                         }
                         class D extends C {
+                            /** @psalm-mutation-free */
                             public function doBar(): void {
                                 $this->barBar();
                             }
@@ -354,6 +368,7 @@ final class IncludeTest extends TestCase
                         require_once("file2.php");
                         variadicArgs(5, 2, "hello");',
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
+                        /** @psalm-mutation-free */
                         function variadicArgs() : void {
                             $args = func_get_args();
                         }',
@@ -386,6 +401,7 @@ final class IncludeTest extends TestCase
                         namespace Foo;
 
                         class A{
+                            /** @psalm-mutation-free */
                             function doThing() : void {}
                         }',
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
@@ -510,6 +526,7 @@ final class IncludeTest extends TestCase
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'func.php' => '<?php
                         namespace ns;
 
+                        /** @psalm-mutation-free */
                         function func(): void {}
 
                         define("ns\\cons", 0);
@@ -523,6 +540,7 @@ final class IncludeTest extends TestCase
                         cons;
 
                         class Base {
+                            /** @psalm-mutation-free */
                             public function __construct() {}
                         }',
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'Child.php' => '<?php
@@ -538,6 +556,7 @@ final class IncludeTest extends TestCase
                              */
                             public $x;
 
+                            /** @psalm-external-mutation-free */
                             public function __construct() {
                                 parent::__construct();
 
@@ -586,6 +605,7 @@ final class IncludeTest extends TestCase
                         bar();
                         ',
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        /** @psalm-mutation-free */
                         function bar(): void {}
                         ',
                 ],
@@ -639,12 +659,14 @@ final class IncludeTest extends TestCase
                         ',
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'include_1.php' => '<?php
                         class Class_1 {
+                            /** @psalm-mutation-free */
                             public static function foo(): void {
                                 // empty;
                             }
                         }',
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'a' . DIRECTORY_SEPARATOR . 'include_2.php' => '<?php
                         class Class_2 {
+                            /** @psalm-mutation-free */
                             public static function bar(): void {
                                 // empty;
                             }
@@ -679,6 +701,7 @@ final class IncludeTest extends TestCase
                             }
                         }',
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        /** @psalm-suppress MissingPureAnnotation */
                         class A{
                             public function fooFoo(): void {
 
@@ -693,6 +716,7 @@ final class IncludeTest extends TestCase
             'requireFunctionWithStrictTypes' => [
                 'files' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        /** @psalm-suppress MissingPureAnnotation */
                         function fooFoo(int $bar): void {
 
                         }',
@@ -709,6 +733,7 @@ final class IncludeTest extends TestCase
             'requireFunctionWithStrictTypesInClass' => [
                 'files' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        /** @psalm-suppress MissingPureAnnotation */
                         function fooFoo(int $bar): void {
 
                         }',
@@ -729,6 +754,7 @@ final class IncludeTest extends TestCase
             'requireFunctionWithWeakTypes' => [
                 'files' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        /** @psalm-suppress MissingPureAnnotation */
                         function fooFoo(int $bar): void {
 
                         }',
@@ -745,7 +771,10 @@ final class IncludeTest extends TestCase
             'requireFunctionWithStrictTypesButDocblockType' => [
                 'files' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
-                        /** @param int $bar */
+                        /**
+                         * @param int $bar
+                         * @psalm-suppress MissingPureAnnotation
+                         */
                         function fooFoo($bar): void {
 
                         }',
@@ -762,6 +791,7 @@ final class IncludeTest extends TestCase
             'namespacedRequireFunction' => [
                 'files' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        /** @psalm-suppress MissingPureAnnotation */
                         function fooFoo(): void {
 
                         }',
@@ -805,6 +835,7 @@ final class IncludeTest extends TestCase
                             use A;
                         }',
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        /** @psalm-suppress MissingPureAnnotation */
                         trait A{
                             public function fooFoo(): string {
                                 return 5;
@@ -841,6 +872,7 @@ final class IncludeTest extends TestCase
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
                         namespace Bat;
 
+                        /** @psalm-suppress MissingPureAnnotation */
                         trait A{
                             public function fooFoo(): string {
                                 return 5;
@@ -899,6 +931,7 @@ final class IncludeTest extends TestCase
                         bar();
                         ',
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        /** @psalm-mutation-free */
                         function bar(): void {}
                         ',
                 ],
@@ -936,5 +969,53 @@ final class IncludeTest extends TestCase
                 'directories' => [(string) getcwd() . DIRECTORY_SEPARATOR],
             ],
         ];
+    }
+
+    /**
+     * Regression test: InterfaceAnalyzer must not crash when storage was
+     * overwritten by a class with the same FQCN (e.g. loaded via reflection
+     * from vendor). The interface's methods are absent from the overwritten
+     * storage, so InterfaceAnalyzer must skip them gracefully.
+     */
+    public function testInterfaceAnalysisDoesNotCrashWhenStorageOverwritten(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+
+        $config->setCustomErrorLevel('DuplicateClass', Config::REPORT_SUPPRESS);
+        $config->throw_exception = false;
+
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php';
+        $this->addFile($file_path, '<?php
+            namespace Foo;
+            interface Bar {
+                public function someMethod(): void;
+            }
+        ');
+
+        $codebase->addFilesToAnalyze([$file_path => $file_path]);
+        $codebase->scanFiles();
+
+        // Simulate reflection overwriting the interface storage with a class
+        // that lacks the interface's methods (this is what happens when a
+        // vendor class with the same FQCN is loaded via reflection).
+        $overwritten = new ClassLikeStorage('Foo\\Bar');
+        $overwritten->is_interface = false;
+        $overwritten->populated = true;
+
+        $ref = new ReflectionProperty(ClassLikeStorageProvider::class, 'storage');
+        /** @var array<string, ClassLikeStorage> $all */
+        $all = $ref->getValue();
+        $all['foo\\bar'] = $overwritten;
+        $ref->setValue(null, $all);
+
+        $file_analyzer = new FileAnalyzer(
+            $this->project_analyzer,
+            $file_path,
+            $config->shortenFileName($file_path),
+        );
+        // This must not crash — previously threw UnexpectedValueException
+        // from MethodAnalyzer when the method was missing from storage.
+        $file_analyzer->analyze();
     }
 }

@@ -35,9 +35,13 @@ use function substr_count;
  * Provides method handlers for all textDocument/* methods
  *
  * @internal
+ * @psalm-suppress PossiblyUnusedProperty deps read only from reflection-invoked JSON-RPC handlers
  */
 final class TextDocument
 {
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         protected LanguageServer $server,
         protected Codebase $codebase,

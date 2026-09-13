@@ -10,9 +10,13 @@ use Override;
  * Denotes the `numeric` type that's also empty (which can also result from an `is_numeric` and `empty` check).
  *
  * @psalm-immutable
+ * @api
  */
 final class TEmptyNumeric extends TNumeric
 {
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getId(bool $exact = true, bool $nested = false): string
     {

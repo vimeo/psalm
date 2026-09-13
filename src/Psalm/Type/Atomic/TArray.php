@@ -18,6 +18,7 @@ use function count;
  * Denotes a simple array of the form `array<TKey, TValue>`. It expects an array with two elements, both union types.
  *
  * @psalm-immutable
+ * @api
  */
 class TArray extends Atomic
 {
@@ -45,6 +46,9 @@ class TArray extends Atomic
         parent::__construct($from_docblock);
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getKey(bool $include_extra = true): string
     {
@@ -166,6 +170,9 @@ class TArray extends Atomic
         return $this;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     protected function getChildNodeKeys(): array
     {

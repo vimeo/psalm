@@ -13,6 +13,9 @@ final class EnumTest extends TestCase
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerValidCodeParse(): iterable
     {
@@ -66,6 +69,17 @@ final class EnumTest extends TestCase
                     }
 
                     if (Suit::Hearts->value === "h") {}',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'enumCanHaveImpureMethods' => [
+                'code' => '<?php
+                    enum a {
+                        public function test(): void {
+                            echo "test";
+                        }
+                    }',
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
@@ -745,6 +759,9 @@ final class EnumTest extends TestCase
         ];
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerInvalidCodeParse(): iterable
     {

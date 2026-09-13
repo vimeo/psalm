@@ -9,6 +9,7 @@ use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Storage\FunctionLikeParameter;
+use Psalm\Storage\Mutations;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
@@ -17,35 +18,36 @@ use Psalm\Type\Union;
  * Denotes the `callable` type. Can result from an `is_callable` check.
  *
  * @psalm-immutable
+ * @api
  */
 final class TCallable extends Atomic
 {
     use UnserializeMemoryUsageSuppressionTrait;
     use CallableTrait;
 
-    public string $value;
+    public string $value = 'callable';
 
     /**
      * Constructs a new instance of a generic type
      *
      * @param list<FunctionLikeParameter> $params
+     * @param Mutations::LEVEL_* $allowed_mutations
      */
     public function __construct(
-        string $value = 'callable',
         ?array $params = null,
         ?Union $return_type = null,
-        ?bool $is_pure = null,
+        int $allowed_mutations = Mutations::LEVEL_EXTERNAL,
         bool $from_docblock = false,
     ) {
-        $this->value = $value;
         $this->params = $params;
         $this->return_type = $return_type;
-        $this->is_pure = $is_pure;
+        $this->allowed_mutations = $allowed_mutations;
         parent::__construct($from_docblock);
     }
 
     /**
-     * @param  array<lowercase-string, string> $aliased_classes
+     * @param array<lowercase-string, string> $aliased_classes
+     * @psalm-pure
      */
     #[Override]
     public function toPhpString(
@@ -74,10 +76,9 @@ final class TCallable extends Atomic
             return $this;
         }
         return new static(
-            $this->value,
             $replaced[0],
             $replaced[1],
-            $this->is_pure,
+            $this->allowed_mutations,
         );
     }
     /**
@@ -112,10 +113,9 @@ final class TCallable extends Atomic
             return $this;
         }
         return new static(
-            $this->value,
             $replaced[0],
             $replaced[1],
-            $this->is_pure,
+            $this->allowed_mutations,
         );
     }
 
@@ -125,7 +125,10 @@ final class TCallable extends Atomic
         return $this->getCallableChildNodeKeys();
     }
 
-    /** @return true */
+    /**
+     * @return true
+     * @psalm-pure
+     */
     #[Override]
     public function isCallableType(): bool
     {

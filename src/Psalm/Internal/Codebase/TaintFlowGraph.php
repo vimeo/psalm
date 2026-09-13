@@ -20,6 +20,7 @@ use Psalm\Issue\TaintedHeader;
 use Psalm\Issue\TaintedHtml;
 use Psalm\Issue\TaintedInclude;
 use Psalm\Issue\TaintedLdap;
+use Psalm\Issue\TaintedLlmPrompt;
 use Psalm\Issue\TaintedSSRF;
 use Psalm\Issue\TaintedShell;
 use Psalm\Issue\TaintedSleep;
@@ -35,11 +36,6 @@ use Psalm\Progress\Progress;
 use Psalm\Type\TaintKind;
 use Webmozart\Assert\Assert;
 
-use function array_diff;
-use function array_filter;
-use function array_intersect;
-use function array_merge;
-use function array_unique;
 use function array_unshift;
 use function count;
 use function end;
@@ -76,6 +72,9 @@ final class TaintFlowGraph extends DataFlowGraph
      */
     private array $specialized_calls = [];
 
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function addNode(DataFlowNode $node): void
     {
@@ -88,11 +87,17 @@ final class TaintFlowGraph extends DataFlowGraph
         }
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addSource(DataFlowNode $node): void
     {
         $this->sources[$node->id] = $node;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addSink(DataFlowNode $node): void
     {
         $this->sinks[$node->id] = $node;
@@ -100,6 +105,9 @@ final class TaintFlowGraph extends DataFlowGraph
         $this->nodes[$node->id] = $node;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addGraph(self $other): void
     {
         $this->sources += $other->sources;
@@ -124,6 +132,9 @@ final class TaintFlowGraph extends DataFlowGraph
         }
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getPredecessorPath(DataFlowNode $source): string
     {
         $location_summary = '';
@@ -155,6 +166,9 @@ final class TaintFlowGraph extends DataFlowGraph
         return $source_descriptor;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getSuccessorPath(DataFlowNode $sink): string
     {
         $location_summary = '';
@@ -188,6 +202,7 @@ final class TaintFlowGraph extends DataFlowGraph
 
     /**
      * @return list<array{location: ?CodeLocation, label: string, entry_path_type: string}>
+     * @psalm-pure
      */
     public function getIssueTrace(DataFlowNode $source): array
     {
@@ -594,6 +609,12 @@ final class TaintFlowGraph extends DataFlowGraph
                             ),
                             TaintKind::INPUT_EXTRACT => new TaintedExtract(
                                 'Detected tainted extract',
+                                $issue_location,
+                                $issue_trace,
+                                $path,
+                            ),
+                            TaintKind::INPUT_LLM_PROMPT => new TaintedLlmPrompt(
+                                'Detected tainted LLM prompt',
                                 $issue_location,
                                 $issue_trace,
                                 $path,

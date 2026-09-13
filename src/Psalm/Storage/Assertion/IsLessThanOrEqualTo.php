@@ -10,6 +10,7 @@ use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 
 /**
  * @psalm-immutable
+ * @api
  */
 final class IsLessThanOrEqualTo extends Assertion
 {
@@ -24,6 +25,9 @@ final class IsLessThanOrEqualTo extends Assertion
         return new IsGreaterThan($this->value);
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function isNegation(): bool
     {
@@ -41,6 +45,9 @@ final class IsLessThanOrEqualTo extends Assertion
         return $assertion instanceof IsGreaterThan && $this->value === $assertion->value;
     }
 
+    /**
+     * @psalm-pure
+     */
     public function doesFilterNullOrFalse(): bool
     {
         return false;

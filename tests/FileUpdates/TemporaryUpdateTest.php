@@ -86,6 +86,10 @@ final class TemporaryUpdateTest extends TestCase
         }
 
         $config = $codebase->config;
+        $ignored_issues['MissingImmutableAnnotation'] = Config::REPORT_SUPPRESS;
+        $ignored_issues['MissingInterfaceImmutableAnnotation'] = Config::REPORT_SUPPRESS;
+        $ignored_issues['MissingPureAnnotation'] = Config::REPORT_SUPPRESS;
+        $ignored_issues['MissingAbstractPureAnnotation'] = Config::REPORT_SUPPRESS;
 
         foreach ($ignored_issues as $error_type => $error_level) {
             $config->setCustomErrorLevel($error_type, $error_level);
@@ -885,6 +889,43 @@ final class TemporaryUpdateTest extends TestCase
                     ],
                 ],
                 'error_positions' => [[196], []],
+            ],
+            'changeQualifiedUseShouldInvalidateBadReturn' => [
+                [
+                    [
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo {
+                                use Baz as Imported;
+
+                                class A {
+                                    public function foo() : ?Imported\\B {
+                                        return null;
+                                    }
+                                }
+                            }
+
+                            namespace Bar {
+                                class B {}
+                            }',
+                    ],
+                    [
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo {
+                                use Bar as Imported;
+
+                                class A {
+                                    public function foo() : ?Imported\\B {
+                                        return null;
+                                    }
+                                }
+                            }
+
+                            namespace Bar {
+                                class B {}
+                            }',
+                    ],
+                ],
+                'error_positions' => [[206], []],
             ],
             'changeUseShouldInvalidateBadDocblockReturn' => [
                 [

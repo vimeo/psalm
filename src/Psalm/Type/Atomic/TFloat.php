@@ -10,9 +10,13 @@ use Override;
  * Denotes the `float` type, where the exact value is unknown.
  *
  * @psalm-immutable
+ * @api
  */
 class TFloat extends Scalar
 {
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getKey(bool $include_extra = true): string
     {
@@ -20,7 +24,8 @@ class TFloat extends Scalar
     }
 
     /**
-     * @param  array<lowercase-string, string> $aliased_classes
+     * @param array<lowercase-string, string> $aliased_classes
+     * @psalm-pure
      */
     #[Override]
     public function toPhpString(

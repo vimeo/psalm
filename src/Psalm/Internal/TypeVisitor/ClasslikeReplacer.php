@@ -21,6 +21,9 @@ final class ClasslikeReplacer extends MutableTypeVisitor
 {
     private readonly string $old;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         string $old,
         private readonly string $new,

@@ -6,11 +6,17 @@ namespace Psalm\Issue;
 
 use Psalm\CodeLocation;
 
+/**
+ * @api
+ */
 final class TypeDoesNotContainNull extends CodeIssue
 {
     public const ERROR_LEVEL = 4;
     public const SHORTCODE = 90;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(string $message, CodeLocation $code_location, ?string $dupe_key)
     {
         parent::__construct($message, $code_location);

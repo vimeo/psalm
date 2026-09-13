@@ -10,9 +10,13 @@ use Override;
  * Denotes a string that's also a numeric value e.g. `"5"`. It can result from `is_string($s) && is_numeric($s)`.
  *
  * @psalm-immutable
+ * @api
  */
 final class TNumericString extends TNonEmptyString
 {
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getId(bool $exact = true, bool $nested = false): string
     {
@@ -23,18 +27,27 @@ final class TNumericString extends TNonEmptyString
         return 'numeric-string';
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getKey(bool $include_extra = true): string
     {
         return 'numeric-string';
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getAssertionString(): string
     {

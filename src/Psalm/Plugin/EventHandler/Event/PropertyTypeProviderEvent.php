@@ -7,9 +7,16 @@ namespace Psalm\Plugin\EventHandler\Event;
 use Psalm\Context;
 use Psalm\StatementsSource;
 
+/**
+ * @psalm-immutable
+ * @api
+ */
 final class PropertyTypeProviderEvent
 {
-    /** @internal */
+    /**
+     * @internal
+     * @psalm-mutation-free
+     */
     public function __construct(
         private readonly string $fq_classlike_name,
         private readonly string $property_name,

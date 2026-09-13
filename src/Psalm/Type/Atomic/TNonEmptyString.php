@@ -10,9 +10,13 @@ use Override;
  * Denotes a string, that is also non-empty (every string except '')
  *
  * @psalm-immutable
+ * @api
  */
 class TNonEmptyString extends TString
 {
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getId(bool $exact = true, bool $nested = false): string
     {

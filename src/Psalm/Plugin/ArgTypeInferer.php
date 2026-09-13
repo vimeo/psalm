@@ -11,10 +11,14 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Type;
 use Psalm\Type\Union;
 
+/**
+ * @api
+ */
 final class ArgTypeInferer
 {
     /**
      * @internal
+     * @psalm-mutation-free
      */
     public function __construct(
         private readonly Context $context,

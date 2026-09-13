@@ -25,6 +25,7 @@ use Psalm\Internal\Type\ParseTree\MethodWithReturnTypeTree;
 use Psalm\Internal\Type\ParseTreeCreator;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
+use Psalm\Storage\Mutations;
 
 use function array_key_first;
 use function array_shift;
@@ -45,8 +46,6 @@ use function strtolower;
 use function substr;
 use function substr_count;
 use function trim;
-
-use const PREG_OFFSET_CAPTURE;
 
 /**
  * @internal
@@ -261,16 +260,25 @@ final class ClassLikeDocblockParser
             }
         }
 
-        if (isset($parsed_docblock->tags['psalm-immutable'])
+        $info->allowed_mutations = Mutations::LEVEL_ALL;
+
+        if (isset($parsed_docblock->tags['psalm-pure'])
+        ) {
+            $info->allowed_mutations = Mutations::LEVEL_NONE;
+            $info->taint_specialize = true;
+            $info->has_mutations_annotation = true;
+        } elseif (isset($parsed_docblock->tags['psalm-immutable'])
             || isset($parsed_docblock->tags['psalm-mutation-free'])
         ) {
-            $info->mutation_free = true;
-            $info->external_mutation_free = true;
+            $info->allowed_mutations = Mutations::LEVEL_INTERNAL_READ;
             $info->taint_specialize = true;
-        }
-
-        if (isset($parsed_docblock->tags['psalm-external-mutation-free'])) {
-            $info->external_mutation_free = true;
+            $info->has_mutations_annotation = true;
+        } elseif (isset($parsed_docblock->tags['psalm-external-mutation-free'])) {
+            $info->allowed_mutations = Mutations::LEVEL_INTERNAL_READ_WRITE;
+            $info->has_mutations_annotation = true;
+        } elseif (isset($parsed_docblock->tags['psalm-mutable'])) {
+            $info->allowed_mutations = Mutations::LEVEL_ALL;
+            $info->has_mutations_annotation = true;
         }
 
         if (isset($parsed_docblock->tags['psalm-taint-specialize'])) {
@@ -352,10 +360,44 @@ final class ClassLikeDocblockParser
                     $method_entry,
                 );
 
-                $end_of_method_regex = '/(?<!array\()\) ?(\: ?(\??[\\\\a-zA-Z0-9_]+))?/';
+                // Find the method's closing parenthesis by tracking nesting depth,
+                // so parenthesized union types like ('a'|'b') don't terminate the scan early.
+                $method_open_paren = strpos($method_entry, '(');
+                if ($method_open_paren !== false) {
+                    $depth = 0;
+                    $method_close_paren = null;
+                    for ($i = $method_open_paren, $len = strlen($method_entry); $i < $len; ++$i) {
+                        $char = $method_entry[$i];
+                        if ($char === "'" || $char === '"') {
+                            $close = strpos($method_entry, $char, $i + 1);
+                            if ($close !== false) {
+                                $i = $close;
+                            }
+                            continue;
+                        }
+                        if ($char === '(') {
+                            ++$depth;
+                        } elseif ($char === ')') {
+                            --$depth;
+                            if ($depth === 0) {
+                                $method_close_paren = $i;
+                                break;
+                            }
+                        }
+                    }
 
-                if (preg_match($end_of_method_regex, $method_entry, $matches, PREG_OFFSET_CAPTURE)) {
-                    $method_entry = substr($method_entry, 0, $matches[0][1] + strlen($matches[0][0]));
+                    if ($method_close_paren !== null) {
+                        $after_paren = substr($method_entry, $method_close_paren + 1);
+                        // Optionally consume return type annotation after the closing paren
+                        if (preg_match('/^ ?(\: ?(\??[\\\\a-zA-Z0-9_]+))/', $after_paren, $return_matches)
+                            && isset($return_matches[0])
+                        ) {
+                            $end = $method_close_paren + 1 + strlen($return_matches[0]);
+                            $method_entry = substr($method_entry, 0, $end);
+                        } else {
+                            $method_entry = substr($method_entry, 0, $method_close_paren + 1);
+                        }
+                    }
                 }
 
                 $method_entry = str_replace([', ', '( '], [',', '('], $method_entry);
@@ -591,6 +633,9 @@ final class ClassLikeDocblockParser
         }
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     private static function getMethodOffset(Doc $comment, string $method_entry): int
     {
         $lines = explode("\n", $comment->getText());

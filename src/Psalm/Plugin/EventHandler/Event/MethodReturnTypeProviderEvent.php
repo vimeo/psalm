@@ -10,6 +10,10 @@ use Psalm\Context;
 use Psalm\StatementsSource;
 use Psalm\Type\Union;
 
+/**
+ * @psalm-immutable
+ * @api
+ */
 final class MethodReturnTypeProviderEvent
 {
     /**
@@ -21,6 +25,7 @@ final class MethodReturnTypeProviderEvent
      * @param lowercase-string $method_name_lowercase
      * @param lowercase-string $called_method_name_lowercase
      * @internal
+     * @psalm-mutation-free
      */
     public function __construct(
         private readonly StatementsSource $source,
@@ -55,6 +60,7 @@ final class MethodReturnTypeProviderEvent
 
     /**
      * @return list<PhpParser\Node\Arg>
+     * @psalm-mutation-free
      */
     public function getCallArgs(): array
     {

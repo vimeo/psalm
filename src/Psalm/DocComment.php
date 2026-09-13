@@ -18,6 +18,9 @@ use function strspn;
 use function substr;
 use function trim;
 
+/**
+ * @api
+ */
 final class DocComment
 {
     public const PSALM_ANNOTATIONS = [
@@ -36,7 +39,7 @@ final class DocComment
         'taint-unescape', 'self-out', 'consistent-constructor', 'stub-override',
         'require-extends', 'require-implements', 'param-out', 'ignore-var',
         'consistent-templates', 'if-this-is', 'this-out', 'check-type', 'check-type-exact',
-        'api', 'inheritors',
+        'api', 'inheritors', 'mutable', 'impure',
     ];
 
     /**

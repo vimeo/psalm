@@ -9,6 +9,9 @@ use Psalm\Internal\Type\TypeAlias;
 use Psalm\Issue\CodeIssue;
 use Psalm\Type\Union;
 
+/**
+ * @api
+ */
 final class FileStorage
 {
     use CustomMetadataTrait;
@@ -84,6 +87,9 @@ final class FileStorage
     /** @var Aliases[] */
     public array $namespace_aliases = [];
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(public string $file_path)
     {
     }

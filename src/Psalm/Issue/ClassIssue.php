@@ -6,8 +6,14 @@ namespace Psalm\Issue;
 
 use Psalm\CodeLocation;
 
+/**
+ * @api
+ */
 abstract class ClassIssue extends CodeIssue
 {
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         string $message,
         CodeLocation $code_location,

@@ -11,9 +11,13 @@ use Override;
  * we know that the string is not from user input
  *
  * @psalm-immutable
+ * @api
  */
 final class TNonEmptyNonspecificLiteralString extends TNonspecificLiteralString
 {
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getId(bool $exact = true, bool $nested = false): string
     {

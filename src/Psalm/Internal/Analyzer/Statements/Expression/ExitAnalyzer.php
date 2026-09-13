@@ -7,7 +7,6 @@ namespace Psalm\Internal\Analyzer\Statements\Expression;
 use PhpParser\Node\Expr\Exit_;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -16,6 +15,7 @@ use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\ImpureFunctionCall;
 use Psalm\IssueBuffer;
 use Psalm\Storage\FunctionLikeParameter;
+use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TString;
@@ -68,11 +68,11 @@ final class ExitAnalyzer
             if ($statements_analyzer->taint_flow_graph) {
                 $call_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
-                $echo_param_sink = DataFlowNode::getForMethodArgument(
-                    'exit',
+                $echo_param_sink = DataFlowNode::getForCallableArg(
+                    'builtin',
                     'exit',
                     0,
-                    null,
+                    $call_location,
                     $call_location,
                     TaintKind::INPUT_HTML
                         | TaintKind::INPUT_HAS_QUOTES
@@ -100,6 +100,7 @@ final class ExitAnalyzer
                     new CodeLocation($statements_analyzer->getSource(), $stmt->expr),
                     $stmt->expr,
                     $context,
+                    null,
                     $exit_param,
                     false,
                     null,
@@ -114,27 +115,15 @@ final class ExitAnalyzer
             $context->inside_call = false;
         }
 
-        if ($expr_type
-            && !$expr_type->isInt()
-            && !$context->collect_mutations
-            && !$context->collect_initializations
-        ) {
-            if ($context->mutation_free || $context->external_mutation_free) {
-                $function_name = $stmt->getAttribute('kind') === Exit_::KIND_DIE ? 'die' : 'exit';
-
-                IssueBuffer::maybeAdd(
-                    new ImpureFunctionCall(
-                        'Cannot call ' . $function_name . ' with a non-integer argument from a mutation-free context',
-                        new CodeLocation($statements_analyzer, $stmt),
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
-            } elseif ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
-                && $statements_analyzer->getSource()->track_mutations
-            ) {
-                $statements_analyzer->getSource()->inferred_has_mutation = true;
-                $statements_analyzer->getSource()->inferred_impure = true;
-            }
+        if ($expr_type && !$expr_type->isInt()) {
+            $function_name = $stmt->getAttribute('kind') === Exit_::KIND_DIE ? 'die' : 'exit';
+            $statements_analyzer->signalMutation(
+                Mutations::LEVEL_EXTERNAL,
+                $context,
+                $function_name . ' with a non-integer argument',
+                ImpureFunctionCall::class,
+                $stmt,
+            );
         }
 
         $statements_analyzer->node_data->setType($stmt, Type::getNever());

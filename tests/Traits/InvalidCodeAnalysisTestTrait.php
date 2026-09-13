@@ -7,6 +7,10 @@ namespace Psalm\Tests\Traits;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
+use Psalm\Tests\FileManipulation\PureAnnotationAdditionTest;
+use Psalm\Tests\ImmutableAnnotationTest;
+use Psalm\Tests\PureAnnotationTest;
+use Psalm\Tests\PureCallableTest;
 
 use function preg_quote;
 use function str_replace;
@@ -30,6 +34,7 @@ use const PHP_VERSION_ID;
  *     error_levels?: list<string>,
  *     php_version?: string
  * }
+ * @psalm-mutable
  */
 trait InvalidCodeAnalysisTestTrait
 {
@@ -83,6 +88,28 @@ trait InvalidCodeAnalysisTestTrait
             $error_level = Config::REPORT_SUPPRESS;
 
             Config::getInstance()->setCustomErrorLevel($issue_name, $error_level);
+        }
+        if ($this instanceof PureAnnotationTest
+            || $this instanceof PureCallableTest
+            || $this instanceof PureAnnotationAdditionTest
+            || $this instanceof ImmutableAnnotationTest
+        ) {
+            Config::getInstance()->setCustomErrorLevel(
+                'MissingImmutableAnnotation',
+                Config::REPORT_ERROR,
+            );
+            Config::getInstance()->setCustomErrorLevel(
+                'MissingInterfaceImmutableAnnotation',
+                Config::REPORT_ERROR,
+            );
+            Config::getInstance()->setCustomErrorLevel(
+                'MissingPureAnnotation',
+                Config::REPORT_ERROR,
+            );
+            Config::getInstance()->setCustomErrorLevel(
+                'MissingAbstractPureAnnotation',
+                Config::REPORT_ERROR,
+            );
         }
 
         $this->project_analyzer->setPhpVersion($php_version, 'tests');

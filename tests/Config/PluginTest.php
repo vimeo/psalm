@@ -40,8 +40,6 @@ use const DIRECTORY_SEPARATOR;
 
 final class PluginTest extends TestCase
 {
-    protected static TestConfig $config;
-
     #[Override]
     public static function setUpBeforeClass(): void
     {
@@ -51,9 +49,12 @@ final class PluginTest extends TestCase
         global $argv;
         $argv = [];
 
-        self::$config = new TestConfig();
+        new TestConfig();
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function setUp(): void
     {
@@ -64,7 +65,7 @@ final class PluginTest extends TestCase
     private function getProjectAnalyzerWithConfig(Config $config): ProjectAnalyzer
     {
         $config->setIncludeCollector(new IncludeCollector());
-        return new ProjectAnalyzer(
+        $p = new ProjectAnalyzer(
             $config,
             new Providers(
                 $this->file_provider,
@@ -72,6 +73,9 @@ final class PluginTest extends TestCase
             ),
             new ReportOptions(),
         );
+        $p->initExtraFiles();
+        $p->initProjectFiles();
+        return $p;
     }
 
     public function testStringAnalyzerPlugin(): void
@@ -505,6 +509,7 @@ final class PluginTest extends TestCase
             /**
              * @return void
              * @phpcsSuppress SlevomatCodingStandard.TypeHints.ReturnTypeHint
+             * @psalm-mutation-free
              */
             #[Override]
             public static function afterCodebasePopulated(AfterCodebasePopulatedEvent $event)
@@ -595,6 +600,7 @@ final class PluginTest extends TestCase
 
                 interface I {}
                 class Foo2 implements I {
+                    /** @psalm-mutation-free */
                     public function id(): int { return 1; }
                 }
 
@@ -602,10 +608,13 @@ final class PluginTest extends TestCase
                  * @method static int magicMethod(string $s)  this method return type gets overridden
                  */
                 class Foo {
+                    /** @psalm-mutation-free */
                     public function __call(string $method_name, array $args) {}
+                    /** @psalm-mutation-free */
                     public static function __callStatic(string $method_name, array $args) {}
                 }
 
+                /** @psalm-mutation-free */
                 function i(I $i): void {}
 
                 $foo = new Foo();
@@ -884,11 +893,17 @@ final class PluginTest extends TestCase
         $plugin = new class($mock) implements AfterEveryFunctionCallAnalysisInterface {
             private static MockObject $m;
 
+            /**
+             * @psalm-mutation-free
+             */
             public function __construct(MockObject $m)
             {
                 self::$m = $m;
             }
 
+            /**
+             * @psalm-external-mutation-free
+             */
             #[Override]
             public static function afterEveryFunctionCallAnalysis(AfterEveryFunctionCallAnalysisEvent $event): void
             {
@@ -907,7 +922,9 @@ final class PluginTest extends TestCase
             $file_path,
             '<?php
 
+            /** @psalm-mutation-free */
             function a(): void {}
+            /** @psalm-pure */
             function b(int $e): int { return $e; }
 
             array_map("b", [1,3,3]);
@@ -1006,6 +1023,8 @@ final class PluginTest extends TestCase
             '<?php // --taint-analysis
 
             /**
+             * @psalm-mutation-free
+             * 
              * @psalm-taint-sink html $build
              */
             function output(array $build) {}
@@ -1077,12 +1096,14 @@ final class PluginTest extends TestCase
             $file_path,
             '<?php
                 /**
+                 * @psalm-mutation-free
                  * @param mixed ...$_args
                  * @return mixed
                  */
                 function custom_array_map(...$_args) { throw new RuntimeException("???"); }
 
                 /**
+                 * @psalm-mutation-free
                  * @param list<array{num: int}> $_list
                  */
                 function acceptsList(array $_list): void { }

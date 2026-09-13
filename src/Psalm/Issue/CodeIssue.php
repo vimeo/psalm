@@ -10,21 +10,32 @@ use Psalm\Internal\Analyzer\IssueData;
 use function array_pop;
 use function explode;
 
+/**
+ * @api
+ */
 abstract class CodeIssue
 {
     /** @var int */
     public const ERROR_LEVEL = -1;
     /** @var int<0, max> */
     public const SHORTCODE = 0;
+    /** @var non-empty-string|null */
+    public const DOCUMENTATION_URL = null;
 
     public ?string $dupe_key = null;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         public readonly string $message,
         public readonly CodeLocation $code_location,
     ) {
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getShortLocationWithPrevious(): string
     {
         $previous_text = '';
@@ -37,16 +48,25 @@ abstract class CodeIssue
         return $this->code_location->file_name . ':' . $this->code_location->getLineNumber() . $previous_text;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getShortLocation(): string
     {
         return $this->code_location->file_name . ':' . $this->code_location->getLineNumber();
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getFilePath(): string
     {
         return $this->code_location->file_path;
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getIssueType(): string
     {
         $fqcn_parts = explode('\\', static::class);
@@ -92,6 +112,7 @@ abstract class CodeIssue
                 ]
                 : null,
             $this->dupe_key,
+            static::DOCUMENTATION_URL,
         );
     }
 }

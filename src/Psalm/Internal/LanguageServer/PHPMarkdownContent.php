@@ -36,6 +36,8 @@ final class PHPMarkdownContent extends MarkupContent implements JsonSerializable
     /**
      * This is needed because VSCode Does not like nulls
      * meaning if a null is sent then this will not compute
+     *
+     * @psalm-mutation-free
      */
     #[Override]
     #[ReturnTypeWillChange]

@@ -10,9 +10,15 @@ use Psalm\CodeLocation;
 use function substr;
 use function substr_count;
 
-/** @psalm-immutable */
+/**
+ * @psalm-immutable
+ * @api
+ */
 final class ParseErrorLocation extends CodeLocation
 {
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         PhpParser\Error $error,
         string $file_contents,

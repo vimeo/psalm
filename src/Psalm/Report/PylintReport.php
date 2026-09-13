@@ -11,8 +11,15 @@ use Psalm\Report;
 
 use function sprintf;
 
+/**
+ * @psalm-external-mutation-free
+ * @api
+ */
 final class PylintReport extends Report
 {
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public function create(): string
     {
@@ -24,6 +31,9 @@ final class PylintReport extends Report
         return $output;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     private function format(IssueData $issue_data): string
     {
         $message = sprintf(

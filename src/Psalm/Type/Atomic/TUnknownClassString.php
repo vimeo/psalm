@@ -9,6 +9,7 @@ namespace Psalm\Type\Atomic;
  * The parent type from which the classes descend may or may not be specified in the constructor.
  *
  * @psalm-immutable
+ * @api
  */
 final class TUnknownClassString extends TClassString
 {

@@ -21,6 +21,7 @@ use function substr;
  * denotes the `iterable` type(which can also result from an `is_iterable` check).
  *
  * @psalm-immutable
+ * @api
  */
 final class TIterable extends Atomic
 {
@@ -66,6 +67,9 @@ final class TIterable extends Atomic
         return 'iterable';
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getAssertionString(): string
     {
@@ -90,7 +94,8 @@ final class TIterable extends Atomic
     }
 
     /**
-     * @param  array<lowercase-string, string> $aliased_classes
+     * @param array<lowercase-string, string> $aliased_classes
+     * @psalm-pure
      */
     #[Override]
     public function toPhpString(
@@ -128,6 +133,9 @@ final class TIterable extends Atomic
         return true;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     protected function getChildNodeKeys(): array
     {

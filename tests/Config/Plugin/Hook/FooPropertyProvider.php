@@ -14,6 +14,9 @@ use Psalm\Plugin\EventHandler\PropertyVisibilityProviderInterface;
 use Psalm\Type;
 use Psalm\Type\Union;
 
+/**
+ * @psalm-suppress UnusedClass registered as a plugin via test config, instantiated by reflection
+ */
 final class FooPropertyProvider implements
     PropertyExistenceProviderInterface,
     PropertyVisibilityProviderInterface,
@@ -21,6 +24,7 @@ final class FooPropertyProvider implements
 {
     /**
      * @return array<string>
+     * @psalm-pure
      */
     #[Override]
     public static function getClassLikeNames(): array
@@ -28,6 +32,9 @@ final class FooPropertyProvider implements
         return ['Ns\Foo'];
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public static function doesPropertyExist(PropertyExistenceProviderEvent $event): ?bool
     {
@@ -35,6 +42,9 @@ final class FooPropertyProvider implements
         return $property_name === 'magic_property';
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public static function isPropertyVisible(PropertyVisibilityProviderEvent $event): ?bool
     {

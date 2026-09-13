@@ -7,6 +7,9 @@ namespace Psalm\Node\Expr\AssignOp;
 use PhpParser\Node\Expr\AssignOp\Concat;
 use Psalm\Node\VirtualNode;
 
+/**
+ * @api
+ */
 final class VirtualConcat extends Concat implements VirtualNode
 {
 

@@ -11,6 +11,7 @@ use Psalm\Type\Atomic;
 
 /**
  * @psalm-immutable
+ * @api
  */
 final class IsNotAClass extends Assertion
 {
@@ -20,6 +21,9 @@ final class IsNotAClass extends Assertion
     {
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function isNegation(): bool
     {

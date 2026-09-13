@@ -26,6 +26,9 @@ final class PropertyVisibilityProvider
      */
     private static array $handlers = [];
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct()
     {
         self::$handlers = [];
@@ -45,12 +48,16 @@ final class PropertyVisibilityProvider
 
     /**
      * @param Closure(PropertyVisibilityProviderEvent): ?bool $c
+     * @psalm-external-mutation-free
      */
     public function registerClosure(string $fq_classlike_name, Closure $c): void
     {
         self::$handlers[strtolower($fq_classlike_name)][] = $c;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function has(string $fq_classlike_name): bool
     {
         return isset(self::$handlers[strtolower($fq_classlike_name)]);

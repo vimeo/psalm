@@ -10,6 +10,7 @@ use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 
 /**
  * @psalm-immutable
+ * @api
  */
 final class IsClassNotEqual extends Assertion
 {
@@ -18,6 +19,9 @@ final class IsClassNotEqual extends Assertion
     {
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function isNegation(): bool
     {

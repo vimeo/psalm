@@ -10,18 +10,25 @@ use Override;
  * Denotes the `false` value type
  *
  * @psalm-immutable
+ * @api
  */
 final class TFalse extends TBool
 {
     /** @var false */
     public bool $value = false;
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getKey(bool $include_extra = true): string
     {
         return 'false';
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {

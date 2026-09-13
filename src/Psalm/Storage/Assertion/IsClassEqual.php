@@ -10,6 +10,7 @@ use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 
 /**
  * @psalm-immutable
+ * @api
  */
 final class IsClassEqual extends Assertion
 {
@@ -24,6 +25,9 @@ final class IsClassEqual extends Assertion
         return new IsClassNotEqual($this->type);
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function hasEquality(): bool
     {

@@ -10,6 +10,7 @@ use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 
 /**
  * @psalm-immutable
+ * @api
  */
 final class DoesNotHaveAtLeastCount extends Assertion
 {
@@ -25,6 +26,9 @@ final class DoesNotHaveAtLeastCount extends Assertion
         return new HasAtLeastCount($this->count);
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function isNegation(): bool
     {

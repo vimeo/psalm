@@ -16,6 +16,7 @@ use Psalm\Type\Union;
  * Internal representation of a conditional return type in phpdoc. For example ($param1 is int ? int : string)
  *
  * @psalm-immutable
+ * @api
  */
 final class TConditional extends Atomic
 {
@@ -64,6 +65,9 @@ final class TConditional extends Atomic
         return 'TConditional<' . $this->param_name . '>';
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getAssertionString(): string
     {
@@ -82,8 +86,9 @@ final class TConditional extends Atomic
     }
 
     /**
-     * @param  array<lowercase-string, string> $aliased_classes
+     * @param array<lowercase-string, string> $aliased_classes
      * @return null
+     * @psalm-pure
      */
     #[Override]
     public function toPhpString(
@@ -96,7 +101,8 @@ final class TConditional extends Atomic
     }
 
     /**
-     * @param  array<lowercase-string, string> $aliased_classes
+     * @param array<lowercase-string, string> $aliased_classes
+     * @psalm-pure
      */
     #[Override]
     public function toNamespacedString(
@@ -108,12 +114,18 @@ final class TConditional extends Atomic
         return '';
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     protected function getChildNodeKeys(): array
     {
         return ['conditional_type', 'if_type', 'else_type'];
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {

@@ -22,6 +22,9 @@ final class UnusedVariableTest extends TestCase
         $this->project_analyzer->getCodebase()->reportUnusedVariables();
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerValidCodeParse(): array
     {
@@ -2612,6 +2615,9 @@ final class UnusedVariableTest extends TestCase
         ];
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerInvalidCodeParse(): array
     {

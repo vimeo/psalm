@@ -15,10 +15,14 @@ use function strtolower;
 
 /**
  * @internal
+ * @psalm-external-mutation-free
  */
 final class DomDocumentPropertyTypeProvider implements PropertyTypeProviderInterface
 {
     private static ?Union $cache = null;
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public static function getPropertyType(PropertyTypeProviderEvent $event): ?Union
     {
@@ -33,6 +37,9 @@ final class DomDocumentPropertyTypeProvider implements PropertyTypeProviderInter
         return null;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public static function getClassLikeNames(): array
     {

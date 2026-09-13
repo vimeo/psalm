@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Scanner;
 
+use Psalm\Storage\Mutations;
+
 /**
  * @internal
  */
@@ -75,11 +77,6 @@ final class FunctionDocblockComment
      * Whether or not the function uses get_args
      */
     public bool $variadic = false;
-
-    /**
-     * Whether or not the function is pure
-     */
-    public bool $pure = false;
 
     /**
      * Whether or not to specialize a given call (useful for taint analysis)
@@ -162,9 +159,10 @@ final class FunctionDocblockComment
 
     public bool $inheritdoc = false;
 
-    public bool $mutation_free = false;
+    /** @var Mutations::LEVEL_* */
+    public int $allowed_mutations = Mutations::LEVEL_ALL;
 
-    public bool $external_mutation_free = false;
+    public bool $has_mutations_annotation = false;
 
     public bool $no_named_args = false;
 

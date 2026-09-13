@@ -31,6 +31,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\Analyzer;
 use Psalm\Internal\Codebase\ClassLikes;
+use Psalm\Internal\Codebase\CodeUseGraph;
 use Psalm\Internal\Codebase\Functions;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\Methods;
@@ -89,6 +90,7 @@ use function is_numeric;
 use function is_string;
 use function krsort;
 use function ksort;
+use function ltrim;
 use function preg_match;
 use function preg_replace;
 use function str_contains;
@@ -111,7 +113,10 @@ final class Codebase
 {
     /**
      * A map of fully-qualified use declarations to the files
-     * that reference them (keyed by filename)
+     * that reference them (keyed by filename).
+     *
+     * Separated from the CodeUseGraph because a use import does not
+     * automatically mean a class is actually used.
      *
      * @var array<lowercase-string, array<int, CodeLocation>>
      */
@@ -172,6 +177,8 @@ final class Codebase
     public Properties $properties;
 
     public Populator $populator;
+
+    public CodeUseGraph $code_use_graph;
 
     public ?TaintFlowGraph $taint_flow_graph = null;
 
@@ -288,6 +295,7 @@ final class Codebase
         $this->file_provider = $providers->file_provider;
         $this->file_reference_provider = $providers->file_reference_provider;
         $this->statements_provider = $providers->statements_provider;
+        $this->code_use_graph = $providers->file_reference_provider->code_use_graph;
 
         self::$stubbed_constants = [];
 
@@ -316,7 +324,6 @@ final class Codebase
 
         $this->properties = new Properties(
             $providers->classlike_storage_provider,
-            $providers->file_reference_provider,
             $this->classlikes,
         );
 
@@ -335,6 +342,185 @@ final class Codebase
         );
 
         $this->loadAnalyzer();
+    }
+
+    /**
+     * Records a reference to a class from the code described by $context
+     * (or the top-level code of the file of $location).
+     *
+     * @param lowercase-string $fq_class_name_lc
+     * @psalm-external-mutation-free
+     */
+    public function addReferenceToClass(
+        string $fq_class_name_lc,
+        ?CodeLocation $location = null,
+        ?Context $context = null,
+        ?string $file_path = null,
+    ): void {
+        $this->code_use_graph->addReference(
+            CodeUseGraph::classNode($fq_class_name_lc),
+            $context,
+            $location,
+            CodeUseGraph::EDGE_USE,
+            $file_path,
+        );
+    }
+
+    /**
+     * Records a reference to a property. Only reads make the property used,
+     * but writes are still recorded for reference lookups and cache invalidation.
+     *
+     * @param lowercase-string $fq_class_name_lc
+     * @param string $property_name without the leading `$`
+     * @psalm-external-mutation-free
+     */
+    public function addReferenceToProperty(
+        string $fq_class_name_lc,
+        string $property_name,
+        bool $reading,
+        ?CodeLocation $location = null,
+        ?Context $context = null,
+        ?string $file_path = null,
+    ): void {
+        $this->code_use_graph->addReference(
+            CodeUseGraph::propertyNode($fq_class_name_lc, $property_name),
+            $context,
+            $location,
+            $reading ? CodeUseGraph::EDGE_USE : CodeUseGraph::EDGE_WRITE,
+            $file_path,
+        );
+
+        if (!$reading) {
+            // writing to a property of a class still uses the class
+            $this->code_use_graph->addReference(
+                CodeUseGraph::classNode($fq_class_name_lc),
+                $context,
+                $location,
+            );
+        }
+    }
+
+    /**
+     * Records a reference to a function or method, optionally marking its
+     * return value as used too.
+     *
+     * @param lowercase-string $function_id
+     * @psalm-external-mutation-free
+     */
+    public function addReferenceToFunctionLike(
+        string $function_id,
+        ?CodeLocation $location = null,
+        ?Context $context = null,
+        bool $is_return_value_used = false,
+        ?string $file_path = null,
+    ): void {
+        $function_node = CodeUseGraph::functionLikeNode($function_id);
+
+        if ($is_return_value_used) {
+            $return_node = CodeUseGraph::functionLikeReturnNode($function_id);
+            // using the return value implies calling the function
+            $this->code_use_graph->addEdge($return_node, $function_node, CodeUseGraph::EDGE_RETURN);
+            $this->code_use_graph->addReference(
+                $return_node,
+                $context,
+                $location,
+                CodeUseGraph::EDGE_USE,
+                $file_path,
+            );
+        } else {
+            $this->code_use_graph->addReference(
+                $function_node,
+                $context,
+                $location,
+                CodeUseGraph::EDGE_USE,
+                $file_path,
+            );
+        }
+    }
+
+    /**
+     * Records a reference to a method that does not exist (yet), so that the
+     * referencing code is re-analysed if the method gets added.
+     *
+     * @param lowercase-string $method_id
+     * @psalm-external-mutation-free
+     */
+    public function addReferenceToMissingMethod(
+        string $method_id,
+        ?CodeLocation $location = null,
+        ?Context $context = null,
+        ?string $file_path = null,
+    ): void {
+        $this->code_use_graph->addReference(
+            CodeUseGraph::missingMethodNode($method_id),
+            $context,
+            $location,
+            CodeUseGraph::EDGE_USE,
+            $file_path,
+        );
+    }
+
+    /**
+     * Records a reference to a property that does not exist (yet), so that the
+     * referencing code is re-analysed if the property gets added.
+     *
+     * @param lowercase-string $fq_class_name_lc
+     * @param string $property_name without the leading `$`
+     * @psalm-external-mutation-free
+     */
+    public function addReferenceToMissingProperty(
+        string $fq_class_name_lc,
+        string $property_name,
+        ?CodeLocation $location = null,
+        ?Context $context = null,
+        ?string $file_path = null,
+    ): void {
+        $this->code_use_graph->addReference(
+            CodeUseGraph::missingPropertyNode($fq_class_name_lc, $property_name),
+            $context,
+            $location,
+            CodeUseGraph::EDGE_USE,
+            $file_path,
+        );
+    }
+
+    /**
+     * @param lowercase-string $fq_class_name_lc
+     * @param string $const_name case-sensitive constant name
+     * @psalm-external-mutation-free
+     */
+    public function addReferenceToClassConstant(
+        string $fq_class_name_lc,
+        string $const_name,
+        ?CodeLocation $location = null,
+        ?Context $context = null,
+        ?string $file_path = null,
+    ): void {
+        $this->code_use_graph->addReference(
+            CodeUseGraph::classConstantNode($fq_class_name_lc, $const_name),
+            $context,
+            $location,
+            CodeUseGraph::EDGE_USE,
+            $file_path,
+        );
+    }
+
+    /**
+     * Records that the code described by $context resolves a class name
+     * through a `use` import alias of the given file, so that it gets
+     * re-analysed when the import changes.
+     *
+     * @psalm-external-mutation-free
+     */
+    public function addReferenceToUseAlias(
+        string $alias,
+        string $file_path,
+        ?Context $context = null,
+    ): void {
+        $this->code_use_graph->addReference(
+            CodeUseGraph::useAliasNode($alias, $file_path),
+            $context,
+        );
     }
 
     /**
@@ -383,6 +569,7 @@ final class Codebase
      * Register an alias taint name based on one or more pre-existing taints.
      *
      * @throws AssertionError if the passed taint is already registered or if the alias uses some unregistered taints.
+     * @psalm-external-mutation-free
      */
     public function registerTaintAlias(string $taint_type, int $alias): int
     {
@@ -402,6 +589,9 @@ final class Codebase
         return $alias;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     private function loadAnalyzer(): void
     {
         $this->analyzer = new Analyzer(
@@ -478,6 +668,9 @@ final class Codebase
         $this->populator->populateCodebase();
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function enterServerMode(): void
     {
         $this->server_mode = true;
@@ -487,22 +680,23 @@ final class Codebase
     public function collectLocations(): void
     {
         $this->collect_locations = true;
-        $this->classlikes->collect_locations = true;
-        $this->methods->collect_locations = true;
-        $this->properties->collect_locations = true;
+        $this->code_use_graph->collect_locations = true;
     }
 
     /**
      * @param 'always'|'auto' $find_unused_code
+     * @psalm-external-mutation-free
      */
     public function reportUnusedCode(string $find_unused_code = 'auto'): void
     {
         $this->collect_references = true;
-        $this->classlikes->collect_references = true;
         $this->find_unused_code = $find_unused_code;
         $this->find_unused_variables = true;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function reportUnusedVariables(): void
     {
         $this->collect_references = true;
@@ -511,6 +705,7 @@ final class Codebase
 
     /**
      * @param array<string, string> $files_to_analyze
+     * @psalm-external-mutation-free
      */
     public function addFilesToAnalyze(array $files_to_analyze): void
     {
@@ -530,6 +725,9 @@ final class Codebase
         }
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function getFileContents(string $file_path): string
     {
         return $this->file_provider->getContents($file_path);
@@ -551,6 +749,9 @@ final class Codebase
         );
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function createClassLikeStorage(string $fq_classlike_name): ClassLikeStorage
     {
         return $this->classlike_storage_provider->create($fq_classlike_name);
@@ -591,13 +792,17 @@ final class Codebase
         return Reflection::getPsalmTypeFromReflectionType($type);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function createFileStorageForPath(string $file_path): FileStorage
     {
         return $this->file_storage_provider->create($file_path);
     }
 
     /**
-     * @return array<int, CodeLocation>
+     * @return array<string, CodeLocation>
+     * @psalm-mutation-free
      */
     public function findReferencesToSymbol(string $symbol): array
     {
@@ -610,49 +815,74 @@ final class Codebase
         }
 
         if (str_contains($symbol, '::')) {
-            return $this->findReferencesToMethod($symbol);
+            return $this->findReferencesToMethod($symbol)
+                + $this->findReferencesToClassConstant($symbol);
         }
 
         return $this->findReferencesToClassLike($symbol);
     }
 
     /**
-     * @return array<int, CodeLocation>
+     * @return array<string, CodeLocation>
+     * @psalm-mutation-free
      */
     public function findReferencesToMethod(string $method_id): array
     {
-        return $this->file_reference_provider->getClassMethodLocations(strtolower($method_id));
+        return $this->code_use_graph->getReferenceLocations(
+            CodeUseGraph::functionLikeNode(strtolower($method_id)),
+        );
     }
 
     /**
-     * @return array<int, CodeLocation>
+     * @return array<string, CodeLocation>
+     * @psalm-mutation-free
      */
     public function findReferencesToProperty(string $property_id): array
     {
         /** @psalm-suppress PossiblyUndefinedIntArrayOffset */
         [$fq_class_name, $property_name] = explode('::', $property_id);
 
-        return $this->file_reference_provider->getClassPropertyLocations(
-            strtolower($fq_class_name) . '::' . $property_name,
+        return $this->code_use_graph->getReferenceLocations(
+            CodeUseGraph::propertyNode(strtolower($fq_class_name), ltrim($property_name, '$')),
         );
     }
 
     /**
      * @return CodeLocation[]
-     * @psalm-return array<int, CodeLocation>
+     * @psalm-return array<string, CodeLocation>
+     * @psalm-mutation-free
      */
     public function findReferencesToClassLike(string $fq_class_name): array
     {
         $fq_class_name_lc = strtolower($fq_class_name);
-        $locations = $this->file_reference_provider->getClassLocations($fq_class_name_lc);
+        $refs = $this->code_use_graph->getReferenceLocations(
+            CodeUseGraph::classNode($fq_class_name_lc),
+        );
 
-        if (isset($this->use_referencing_locations[$fq_class_name_lc])) {
-            $locations = [...$locations, ...$this->use_referencing_locations[$fq_class_name_lc]];
+        foreach ($this->use_referencing_locations[$fq_class_name_lc] ?? [] as $location) {
+            $refs[$location->getHash()] = $location;
         }
 
-        return $locations;
+        return $refs;
     }
 
+    /**
+     * @return array<string, CodeLocation>
+     * @psalm-mutation-free
+     */
+    public function findReferencesToClassConstant(string $const_id): array
+    {
+        /** @psalm-suppress PossiblyUndefinedIntArrayOffset */
+        [$fq_class_name, $const_name] = explode('::', $const_id);
+
+        return $this->code_use_graph->getReferenceLocations(
+            CodeUseGraph::classConstantNode(strtolower($fq_class_name), $const_name),
+        );
+    }
+
+    /**
+     * @psalm-external-mutation-free
+     */
     public function getClosureStorage(string $file_path, string $closure_id): FunctionStorage
     {
         $file_storage = $this->file_storage_provider->get($file_path);
@@ -667,11 +897,17 @@ final class Codebase
         );
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addGlobalConstantType(string $const_id, Union $type): void
     {
         self::$stubbed_constants[$const_id] = $type;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function getStubbedConstantType(string $const_id): ?Union
     {
         return self::$stubbed_constants[$const_id] ?? null;
@@ -679,6 +915,7 @@ final class Codebase
 
     /**
      * @param array<string, Union> $stubs
+     * @psalm-external-mutation-free
      */
     public function addGlobalConstantTypes(array $stubs): void
     {
@@ -687,6 +924,7 @@ final class Codebase
 
     /**
      * @return array<string, Union>
+     * @psalm-external-mutation-free
      */
     public function getAllStubbedConstants(): array
     {
@@ -700,18 +938,18 @@ final class Codebase
 
     /**
      * Check whether a class/interface exists
+     *
+     * @psalm-external-mutation-free
      */
     public function classOrInterfaceExists(
         string $fq_class_name,
         ?CodeLocation $code_location = null,
-        ?string $calling_fq_class_name = null,
-        ?string $calling_method_id = null,
+        ?Context $context = null,
     ): bool {
         return $this->classlikes->classOrInterfaceExists(
             $fq_class_name,
             $code_location,
-            $calling_fq_class_name,
-            $calling_method_id,
+            $context,
         );
     }
 
@@ -719,18 +957,17 @@ final class Codebase
      * Check whether a class/interface exists
      *
      * @psalm-assert-if-true class-string|interface-string|enum-string $fq_class_name
+     * @psalm-external-mutation-free
      */
     public function classOrInterfaceOrEnumExists(
         string $fq_class_name,
         ?CodeLocation $code_location = null,
-        ?string $calling_fq_class_name = null,
-        ?string $calling_method_id = null,
+        ?Context $context = null,
     ): bool {
         return $this->classlikes->classOrInterfaceOrEnumExists(
             $fq_class_name,
             $code_location,
-            $calling_fq_class_name,
-            $calling_method_id,
+            $context,
         );
     }
 
@@ -743,18 +980,18 @@ final class Codebase
 
     /**
      * Determine whether or not a given class exists
+     *
+     * @psalm-external-mutation-free
      */
     public function classExists(
         string $fq_class_name,
         ?CodeLocation $code_location = null,
-        ?string $calling_fq_class_name = null,
-        ?string $calling_method_id = null,
+        ?Context $context = null,
     ): bool {
         return $this->classlikes->classExists(
             $fq_class_name,
             $code_location,
-            $calling_fq_class_name,
-            $calling_method_id,
+            $context,
         );
     }
 
@@ -763,6 +1000,7 @@ final class Codebase
      *
      * @throws UnpopulatedClasslikeException when called on unpopulated class
      * @throws InvalidArgumentException when class does not exist
+     * @psalm-mutation-free
      */
     public function classExtends(string $fq_class_name, string $possible_parent): bool
     {
@@ -771,26 +1009,32 @@ final class Codebase
 
     /**
      * Check whether a class implements an interface
+     *
+     * @psalm-mutation-free
      */
     public function classImplements(string $fq_class_name, string $interface): bool
     {
         return $this->classlikes->classImplements($fq_class_name, $interface);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function interfaceExists(
         string $fq_interface_name,
         ?CodeLocation $code_location = null,
-        ?string $calling_fq_class_name = null,
-        ?string $calling_method_id = null,
+        ?Context $context = null,
     ): bool {
         return $this->classlikes->interfaceExists(
             $fq_interface_name,
             $code_location,
-            $calling_fq_class_name,
-            $calling_method_id,
+            $context,
         );
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function interfaceExtends(string $interface_name, string $possible_parent): bool
     {
         return $this->classlikes->interfaceExtends($interface_name, $possible_parent);
@@ -798,6 +1042,7 @@ final class Codebase
 
     /**
      * @return array<string, string> all interfaces extended by $interface_name
+     * @psalm-mutation-free
      */
     public function getParentInterfaces(string $fq_interface_name): array
     {
@@ -808,17 +1053,25 @@ final class Codebase
 
     /**
      * Determine whether or not a class has the correct casing
+     *
+     * @psalm-mutation-free
      */
     public function classHasCorrectCasing(string $fq_class_name): bool
     {
         return $this->classlikes->classHasCorrectCasing($fq_class_name);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function interfaceHasCorrectCasing(string $fq_interface_name): bool
     {
         return $this->classlikes->interfaceHasCorrectCasing($fq_interface_name);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function traitHasCorrectCasing(string $fq_trait_name): bool
     {
         return $this->classlikes->traitHasCorrectCasing($fq_trait_name);
@@ -855,23 +1108,53 @@ final class Codebase
     }
 
     /**
+     * Whether or not a given property exists
+     */
+    public function propertyExists(
+        string $property_id,
+        bool $read_mode,
+        ?StatementsSource $source = null,
+        ?Context $context = null,
+        ?CodeLocation $code_location = null,
+    ): bool {
+        return $this->properties->propertyExists(
+            $this,
+            $property_id,
+            $read_mode,
+            $source,
+            $context,
+            $code_location,
+        );
+    }
+
+    /**
      * Whether or not a given method exists
      */
     public function methodExists(
         string|MethodIdentifier $method_id,
-        ?CodeLocation $code_location = null,
         string|MethodIdentifier|null $calling_method_id = null,
-        ?string $file_path = null,
+        ?CodeLocation $code_location = null,
+        ?StatementsSource $source = null,
+        ?string $source_file_path = null,
+        bool $use_method_existence_provider = true,
         bool $is_used = true,
+        bool $with_pseudo = false,
     ): bool {
         return $this->methods->methodExists(
+            $this,
             MethodIdentifier::wrap($method_id),
-            is_string($calling_method_id) ? strtolower($calling_method_id) : strtolower((string) $calling_method_id),
+            $calling_method_id !== null
+                ? (is_string($calling_method_id)
+                    ? strtolower($calling_method_id)
+                    : strtolower((string) $calling_method_id)
+                )
+                : null,
             $code_location,
-            null,
-            $file_path,
-            true,
+            $source,
+            $source_file_path,
+            $use_method_existence_provider,
             $is_used,
+            $with_pseudo,
         );
     }
 
@@ -883,6 +1166,9 @@ final class Codebase
         return $this->methods->getMethodParams(MethodIdentifier::wrap($method_id));
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isVariadic(string|MethodIdentifier $method_id): bool
     {
         return $this->methods->isVariadic(MethodIdentifier::wrap($method_id));
@@ -897,6 +1183,7 @@ final class Codebase
         array $call_args = [],
     ): ?Union {
         return $this->methods->getMethodReturnType(
+            $this,
             MethodIdentifier::wrap($method_id),
             $self_class,
             null,
@@ -904,6 +1191,9 @@ final class Codebase
         );
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function getMethodReturnsByRef(string|MethodIdentifier $method_id): bool
     {
         return $this->methods->getMethodReturnsByRef(MethodIdentifier::wrap($method_id));
@@ -919,6 +1209,9 @@ final class Codebase
         );
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getDeclaringMethodId(string|MethodIdentifier $method_id): ?string
     {
         $new_method_id = $this->methods->getDeclaringMethodId(MethodIdentifier::wrap($method_id));
@@ -928,6 +1221,8 @@ final class Codebase
 
     /**
      * Get the class this method appears in (vs is declared in, which could give a trait)
+     *
+     * @psalm-mutation-free
      */
     public function getAppearingMethodId(string|MethodIdentifier $method_id): ?string
     {
@@ -938,17 +1233,24 @@ final class Codebase
 
     /**
      * @return array<string, MethodIdentifier>
+     * @psalm-mutation-free
      */
     public function getOverriddenMethodIds(string|MethodIdentifier $method_id): array
     {
         return $this->methods->getOverriddenMethodIds(MethodIdentifier::wrap($method_id));
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getCasedMethodId(string|MethodIdentifier $method_id): string
     {
         return $this->methods->getCasedMethodId(MethodIdentifier::wrap($method_id));
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function invalidateInformationForFile(string $file_path): void
     {
         $this->scanner->removeFile($file_path);
@@ -967,6 +1269,9 @@ final class Codebase
         $this->file_storage_provider->remove($file_path);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function getFunctionStorageForSymbol(string $file_path, string $symbol): ?FunctionLikeStorage
     {
         if (strpos($symbol, '::')) {
@@ -1410,9 +1715,6 @@ final class Codebase
             return null;
         }
 
-        $start_pos = null;
-        $end_pos = null;
-
         ksort($argument_map);
 
         foreach ($argument_map as $start_pos => [$end_pos, $possible_reference, $possible_argument_number]) {
@@ -1428,7 +1730,7 @@ final class Codebase
             $argument_number = $possible_argument_number;
         }
 
-        if ($reference === null || $start_pos === null || $end_pos === null || $argument_number === null) {
+        if ($reference === null || $argument_number === null) {
             return null;
         }
 
@@ -1842,6 +2144,7 @@ final class Codebase
      * @return list<CompletionItem>
      * @deprecated to be removed in Psalm 6
      * @api fix deprecation problem "PossiblyUnusedMethod: Cannot find any calls to method"
+     * @psalm-mutation-free
      */
     public function filterCompletionItemsByBeginLiteralPart(array $items, string $literal_part): array
     {
@@ -2129,11 +2432,17 @@ final class Codebase
         );
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addTemporaryFileChanges(string $file_path, string $new_content, ?int $version = null): void
     {
         $this->file_provider->addTemporaryFileChanges($file_path, $new_content, $version);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function removeTemporaryFileChanges(string $file_path): void
     {
         $this->file_provider->removeTemporaryFileChanges($file_path);
@@ -2230,21 +2539,22 @@ final class Codebase
         $this->scanner->queueClassLikeForScanning($fq_classlike_name, $analyze_too, $store_failure, $phantom_classes);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addTaintSource(
         Union $expr_type,
         string $taint_id,
+        CodeLocation $code_location,
         int $taints = TaintKind::ALL_INPUT,
-        ?CodeLocation $code_location = null,
     ): Union {
         if (!$this->taint_flow_graph) {
             return $expr_type;
         }
 
-        $source = DataFlowNode::make(
-            $taint_id,
+        $source = DataFlowNode::getForTaintSink(
             $taint_id,
             $code_location,
-            null,
             $taints,
         );
 
@@ -2253,36 +2563,46 @@ final class Codebase
         return $expr_type->addParentNodes([$source->id => $source]);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addTaintSink(
         string $taint_id,
+        CodeLocation $code_location,
         int $taints = TaintKind::ALL_INPUT,
-        ?CodeLocation $code_location = null,
     ): void {
         if (!$this->taint_flow_graph) {
             return;
         }
 
-        $sink = DataFlowNode::make(
-            $taint_id,
+        $sink = DataFlowNode::getForTaintSink(
             $taint_id,
             $code_location,
-            null,
             $taints,
         );
 
         $this->taint_flow_graph->addSink($sink);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getMinorAnalysisPhpVersion(): int
     {
         return self::transformPhpVersionId($this->analysis_php_version_id % 10_000, 100);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getMajorAnalysisPhpVersion(): int
     {
         return self::transformPhpVersionId($this->analysis_php_version_id, 10_000);
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function transformPhpVersionId(int $php_version_id, int $div): int
     {
         return intdiv($php_version_id, $div);

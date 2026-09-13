@@ -198,6 +198,9 @@ final class MethodCallTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerValidCodeParse(): iterable
     {
@@ -1085,7 +1088,7 @@ final class MethodCallTest extends TestCase
 
                     if ($main->getProperty() !== null && $main->getProperty()->test()) {}',
             ],
-            'getterTypeInferring' => [
+            'getterTypeInferring1' => [
                 'code' => '<?php
                     class A {
                         /** @var int|string|null */
@@ -1264,6 +1267,9 @@ final class MethodCallTest extends TestCase
         ];
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerInvalidCodeParse(): iterable
     {

@@ -6,6 +6,10 @@ namespace Psalm\Plugin\EventHandler\Event;
 
 use Psalm\StatementsSource;
 
+/**
+ * @psalm-immutable
+ * @api
+ */
 final class FunctionExistenceProviderEvent
 {
     /**
@@ -14,6 +18,7 @@ final class FunctionExistenceProviderEvent
      * will continue to determine if the function actually exists.
      *
      * @internal
+     * @psalm-mutation-free
      */
     public function __construct(
         private readonly StatementsSource $statements_source,

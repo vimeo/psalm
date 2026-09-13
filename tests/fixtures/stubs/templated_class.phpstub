@@ -3,6 +3,7 @@
 /** @template T */
 class A {
     /**
+     * @psalm-mutation-free
      * @param int $id
      * @param ?int $lockMode
      * @param ?int $lockVersion

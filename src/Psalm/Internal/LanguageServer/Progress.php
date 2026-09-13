@@ -18,6 +18,9 @@ final class Progress extends Base
 
     private ?LanguageServer $server = null;
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function setServer(LanguageServer $server): void
     {
         $this->server = $server;
@@ -31,26 +34,41 @@ final class Progress extends Base
         }
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public function startPhase(Phase $phase, int $threads = 1): void
     {
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public function alterFileDone(string $file_name): void
     {
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public function expand(int $number_of_tasks): void
     {
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public function taskDone(int $level): void
     {
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public function finish(): void
     {

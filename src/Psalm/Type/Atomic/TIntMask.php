@@ -13,6 +13,7 @@ use function substr;
  * `int-mask<1, 2, 4>` corresponds to `0|1|2|3|4|5|6|7`
  *
  * @psalm-immutable
+ * @api
  */
 final class TIntMask extends TInt
 {
@@ -69,6 +70,9 @@ final class TIntMask extends TInt
         return 'int-mask<' . substr($s, 0, -2) . '>';
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {

@@ -12,15 +12,17 @@ use function array_unique;
 
 /**
  * @internal
+ * @psalm-external-mutation-free
  */
 final class TypeAnalyzer
 {
     /**
      * Takes two arrays of types and merges them
      *
-     * @param  array<string, Union>  $new_types
-     * @param  array<string, Union>  $existing_types
+     * @param array<string, Union>  $new_types
+     * @param array<string, Union>  $existing_types
      * @return array<string, Union>
+     * @psalm-external-mutation-free
      */
     public static function combineKeyedTypes(array $new_types, array $existing_types): array
     {

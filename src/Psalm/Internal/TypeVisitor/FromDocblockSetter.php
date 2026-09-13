@@ -17,6 +17,9 @@ use Psalm\Type\Union;
  */
 final class FromDocblockSetter extends MutableTypeVisitor
 {
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         private readonly bool $from_docblock,
     ) {

@@ -8,6 +8,7 @@ use Exception;
 use PhpParser\Node\Arg;
 use PhpParser\Node\Expr\Variable;
 use Psalm\Codebase;
+use Psalm\Context;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
@@ -29,6 +30,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_merge;
 use function array_slice;
 use function assert;
 use function count;
@@ -69,9 +71,9 @@ final class CallableTypeComparator
         }
         assert($input_type_part instanceof TClosure || $input_type_part instanceof TCallable);
 
-        if ($container_type_part->is_pure && !$input_type_part->is_pure) {
+        if ($container_type_part->allowed_mutations < $input_type_part->allowed_mutations) {
             if ($atomic_comparison_result) {
-                $atomic_comparison_result->type_coerced = $input_type_part->is_pure === null;
+                $atomic_comparison_result->type_coerced = true;
             }
 
             return false;
@@ -120,12 +122,10 @@ final class CallableTypeComparator
 
                 if ($container_param->type
                     && !$container_param->type->hasMixed()
-                    && !UnionTypeComparator::isContainedBy(
+                    && !self::isParamContainedBy(
                         $codebase,
                         $container_param->type,
                         $input_param->type ?: Type::getMixed(),
-                        false,
-                        false,
                         $atomic_comparison_result,
                     )
                 ) {
@@ -140,12 +140,10 @@ final class CallableTypeComparator
             foreach (array_slice($container_type_part->params ?? [], $input_variadic_param_idx) as $container_param) {
                 if ($container_param->type
                     && !$container_param->type->hasMixed()
-                    && !UnionTypeComparator::isContainedBy(
+                    && !self::isParamContainedBy(
                         $codebase,
                         $container_param->type,
                         $input_param->type ?: Type::getMixed(),
-                        false,
-                        false,
                         $atomic_comparison_result,
                     )
                 ) {
@@ -185,6 +183,72 @@ final class CallableTypeComparator
         }
 
         return true;
+    }
+
+    /**
+     * Compares a contravariant parameter position, recording type-variable
+     * bounds flipped: a lower bound recorded on the param comparison is an
+     * upper bound on the variable, and vice versa. On a failed comparison
+     * the bounds are dropped with the rest of the result.
+     */
+    private static function isParamContainedBy(
+        Codebase $codebase,
+        Union $container_param_type,
+        Union $input_param_type,
+        ?TypeComparisonResult $atomic_comparison_result,
+    ): bool {
+        if (!$atomic_comparison_result) {
+            return UnionTypeComparator::isContainedBy(
+                $codebase,
+                $container_param_type,
+                $input_param_type,
+            );
+        }
+
+        $lower_bound_count = count($atomic_comparison_result->type_variable_lower_bounds);
+        $upper_bound_count = count($atomic_comparison_result->type_variable_upper_bounds);
+
+        $contained = UnionTypeComparator::isContainedBy(
+            $codebase,
+            $container_param_type,
+            $input_param_type,
+            false,
+            false,
+            $atomic_comparison_result,
+        );
+
+        $new_lower_bounds = array_slice(
+            $atomic_comparison_result->type_variable_lower_bounds,
+            $lower_bound_count,
+        );
+        $new_upper_bounds = array_slice(
+            $atomic_comparison_result->type_variable_upper_bounds,
+            $upper_bound_count,
+        );
+
+        $atomic_comparison_result->type_variable_lower_bounds = array_slice(
+            $atomic_comparison_result->type_variable_lower_bounds,
+            0,
+            $lower_bound_count,
+        );
+        $atomic_comparison_result->type_variable_upper_bounds = array_slice(
+            $atomic_comparison_result->type_variable_upper_bounds,
+            0,
+            $upper_bound_count,
+        );
+
+        if ($contained) {
+            $atomic_comparison_result->type_variable_lower_bounds = array_merge(
+                $atomic_comparison_result->type_variable_lower_bounds,
+                $new_upper_bounds,
+            );
+            $atomic_comparison_result->type_variable_upper_bounds = array_merge(
+                $atomic_comparison_result->type_variable_upper_bounds,
+                $new_lower_bounds,
+            );
+        }
+
+        return $contained;
     }
 
     public static function isNotExplicitlyCallableTypeCallable(
@@ -235,7 +299,14 @@ final class CallableTypeComparator
             }
         }
 
-        $input_callable = self::getCallableFromAtomic($codebase, $input_type_part, $container_type_part, null, true);
+        $input_callable = self::getCallableFromAtomic(
+            $codebase,
+            $input_type_part,
+            $container_type_part,
+            null,
+            null,
+            true,
+        );
 
         if ($input_callable) {
             if (self::isContainedBy(
@@ -260,6 +331,7 @@ final class CallableTypeComparator
         Atomic $input_type_part,
         ?TCallable $container_type_part = null,
         ?StatementsAnalyzer $statements_analyzer = null,
+        ?Context $context = null,
         bool $expand_callable = false,
     ): ?Atomic {
 
@@ -320,10 +392,9 @@ final class CallableTypeComparator
                 }
 
                 return new TCallable(
-                    'callable',
                     $params,
                     $return_type,
-                    $function_storage->pure,
+                    $function_storage->allowed_mutations,
                 );
             } catch (UnexpectedValueException) {
                 if (InternalCallMapHandler::inCallMap($input_type_part->value)) {
@@ -354,13 +425,16 @@ final class CallableTypeComparator
 
                     $must_use = false;
 
-                    $matching_callable = $matching_callable->setIsPure($codebase->functions->isCallMapFunctionPure(
-                        $codebase,
-                        $statements_analyzer->node_data ?? null,
-                        $input_type_part->value,
-                        null,
-                        $must_use,
-                    ));
+                    $matching_callable = $matching_callable->setAllowedMutations(
+                        $codebase->functions->getCallMapFunctionMutations(
+                            $statements_analyzer,
+                            $context,
+                            $codebase,
+                            $input_type_part->value,
+                            null,
+                            $must_use,
+                        ),
+                    );
 
                     return $matching_callable;
                 }
@@ -385,10 +459,9 @@ final class CallableTypeComparator
                     }
 
                     return new TCallable(
-                        'callable',
                         $method_storage->params,
                         $converted_return_type,
-                        $method_storage->pure,
+                        $method_storage->allowed_mutations,
                     );
                 } catch (UnexpectedValueException) {
                     // do nothing
@@ -399,14 +472,14 @@ final class CallableTypeComparator
         ) {
             return new TCallable();
         } elseif ($input_type_part instanceof TNamedObject
-            && $codebase->classExists($input_type_part->value)
+            && $codebase->classExists($input_type_part->value, null, $context)
         ) {
             $invoke_id = new MethodIdentifier(
                 $input_type_part->value,
                 '__invoke',
             );
 
-            if ($codebase->methods->methodExists($invoke_id)) {
+            if ($codebase->methodExists($invoke_id)) {
                 $declaring_method_id = $codebase->methods->getDeclaringMethodId($invoke_id);
                 $template_result = null;
 
@@ -453,10 +526,9 @@ final class CallableTypeComparator
                     }
 
                     $callable = new TCallable(
-                        'callable',
                         $method_storage->params,
                         $converted_return_type,
-                        $method_storage->pure,
+                        $method_storage->allowed_mutations,
                     );
 
                     if ($template_result) {
@@ -475,7 +547,10 @@ final class CallableTypeComparator
         return null;
     }
 
-    /** @return null|'not-callable'|MethodIdentifier */
+    /**
+     * @return null|'not-callable'|MethodIdentifier
+     * @psalm-external-mutation-free
+     */
     public static function getCallableMethodIdFromTKeyedArray(
         TKeyedArray $input_type_part,
         ?Codebase $codebase = null,

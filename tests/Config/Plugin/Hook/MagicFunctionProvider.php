@@ -15,6 +15,9 @@ use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
 use Psalm\Type\Union;
 
+/**
+ * @psalm-suppress UnusedClass registered as a plugin via test config, instantiated by reflection
+ */
 final class MagicFunctionProvider implements
     FunctionExistenceProviderInterface,
     FunctionParamsProviderInterface,
@@ -22,6 +25,7 @@ final class MagicFunctionProvider implements
 {
     /**
      * @return array<lowercase-string>
+     * @psalm-pure
      */
     #[Override]
     public static function getFunctionIds(): array
@@ -29,6 +33,9 @@ final class MagicFunctionProvider implements
         return ['magicfunction'];
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public static function doesFunctionExist(FunctionExistenceProviderEvent $event): ?bool
     {

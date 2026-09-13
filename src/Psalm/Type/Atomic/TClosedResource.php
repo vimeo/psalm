@@ -12,10 +12,14 @@ use Psalm\Type\Atomic;
  * Denotes the `resource` type that has been closed (e.g. a file handle through `fclose()`).
  *
  * @psalm-immutable
+ * @api
  */
 final class TClosedResource extends Atomic
 {
     use UnserializeMemoryUsageSuppressionTrait;
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getKey(bool $include_extra = true): string
     {
@@ -23,7 +27,8 @@ final class TClosedResource extends Atomic
     }
 
     /**
-     * @param  array<lowercase-string, string> $aliased_classes
+     * @param array<lowercase-string, string> $aliased_classes
+     * @psalm-pure
      */
     #[Override]
     public function toPhpString(
@@ -35,6 +40,9 @@ final class TClosedResource extends Atomic
         return null;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {

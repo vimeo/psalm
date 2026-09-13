@@ -35,6 +35,7 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateValueOf;
+use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Union;
 
@@ -644,7 +645,7 @@ final class AtomicTypeComparator
                         return true;
                     }
 
-                    if ($codebase->methods->methodExists(
+                    if ($codebase->methodExists(
                         new MethodIdentifier(
                             $input_type_part->value,
                             '__tostring',
@@ -769,6 +770,7 @@ final class AtomicTypeComparator
 
     /**
      * @psalm-assert-if-true TKeyedArray $array
+     * @psalm-mutation-free
      */
     public static function isLegacyTListLike(Atomic $array): bool
     {
@@ -782,6 +784,7 @@ final class AtomicTypeComparator
     }
     /**
      * @psalm-assert-if-true TKeyedArray $array
+     * @psalm-mutation-free
      */
     public static function isLegacyTNonEmptyListLike(Atomic $array): bool
     {
@@ -802,6 +805,11 @@ final class AtomicTypeComparator
         Atomic $type2_part,
         bool $allow_interface_equality = true,
     ): bool {
+        if ($type1_part instanceof TTypeVariable || $type2_part instanceof TTypeVariable) {
+            // A type variable can be identical to anything; its constraints
+            // are reconciled at the end of the surrounding function-like.
+            return true;
+        }
 
 
         if ((self::isLegacyTListLike($type1_part)

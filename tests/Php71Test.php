@@ -13,6 +13,9 @@ final class Php71Test extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerValidCodeParse(): iterable
     {
@@ -193,7 +196,6 @@ final class Php71Test extends TestCase
                     }
 
                     iterator([1, 2, 3, 4]);
-                    /** @psalm-suppress MixedArgumentTypeCoercion */
                     iterator(new SplFixedArray(5));',
             ],
             'traversableObject' => [
@@ -276,6 +278,9 @@ final class Php71Test extends TestCase
         ];
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerInvalidCodeParse(): iterable
     {

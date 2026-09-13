@@ -17,6 +17,7 @@ use function substr;
 
 /**
  * @internal
+ * @psalm-external-mutation-free
  */
 abstract class DataFlowGraph
 {
@@ -25,6 +26,9 @@ abstract class DataFlowGraph
 
     abstract public function addNode(DataFlowNode $node): void;
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addPath(
         DataFlowNode $from,
         DataFlowNode $to,
@@ -105,6 +109,7 @@ abstract class DataFlowGraph
 
     /**
      * @return array{int, int, int, float}
+     * @psalm-mutation-free
      */
     public function getEdgeStats(): array
     {
@@ -144,6 +149,7 @@ abstract class DataFlowGraph
 
     /**
      * @psalm-return list<list<string>>
+     * @psalm-mutation-free
      */
     public function summarizeEdges(): array
     {

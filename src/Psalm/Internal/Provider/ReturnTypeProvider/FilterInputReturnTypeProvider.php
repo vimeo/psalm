@@ -39,6 +39,7 @@ final class FilterInputReturnTypeProvider implements FunctionReturnTypeProviderI
 {
     /**
      * @return array<lowercase-string>
+     * @psalm-pure
      */
     #[Override]
     public static function getFunctionIds(): array
@@ -102,6 +103,7 @@ final class FilterInputReturnTypeProvider implements FunctionReturnTypeProviderI
             $helper = FilterUtils::getOptionsArgValueOrError(
                 $call_args[3],
                 $statements_analyzer,
+                $event->getContext(),
                 $codebase,
                 $code_location,
                 $function_id,
@@ -238,8 +240,7 @@ final class FilterInputReturnTypeProvider implements FunctionReturnTypeProviderI
                 $input_type = $input_type->setPossiblyUndefined(true);
             }
         } elseif ($global_type->isArray()
-            && ($array_atomic = $global_type->getArray())
-            && $array_atomic instanceof TArray) {
+            && ($array_atomic = $global_type->getArray()) instanceof TArray) {
             [$_, $input_type] = $array_atomic->type_params;
             $input_type = $input_type->setPossiblyUndefined(true);
         } else {

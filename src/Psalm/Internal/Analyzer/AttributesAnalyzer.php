@@ -28,7 +28,6 @@ use Psalm\Type\Union;
 
 use function array_key_first;
 use function array_shift;
-use function array_values;
 use function assert;
 use function count;
 use function strtolower;
@@ -73,7 +72,7 @@ final class AttributesAnalyzer
             $attribute_name = (string) $attribute->name;
             $attribute_name_location = new CodeLocation($source, $attribute->name);
 
-            $attribute_class_storage = $codebase->classlikes->classExists($fq_attribute_name)
+            $attribute_class_storage = $codebase->classlikes->classExists($fq_attribute_name, null, $context)
                 ? $codebase->classlike_storage_provider->get($fq_attribute_name)
                 : null;
 
@@ -139,8 +138,7 @@ final class AttributesAnalyzer
             $source,
             $fq_attribute_name,
             $attribute_name_location,
-            null,
-            null,
+            $context,
             $suppressed_issues,
             new ClassLikeNameOptions(
                 false,
@@ -205,10 +203,15 @@ final class AttributesAnalyzer
             new NodeDataProvider(),
             false,
         );
-        $statements_analyzer->addSuppressedIssues(array_values($suppressed_issues));
+        // keep the char-offset keys so --find-unused-psalm-suppress can mark
+        // these suppressions as used (array_values would turn them into a list,
+        // which addSuppressedIssues re-keys by issue name, defeating the check)
+        $statements_analyzer->addSuppressedIssues($suppressed_issues);
 
         $had_returned = $context->has_returned;
         $context->has_returned = false;
+        $was_inside_attribute = $context->inside_attribute;
+        $context->inside_attribute = true;
 
         IssueBuffer::startRecording();
         $statements_analyzer->analyze(
@@ -217,6 +220,7 @@ final class AttributesAnalyzer
             strtolower($fq_attribute_name) === "attribute" ? new Context() : $context,
         );
         $context->has_returned = $had_returned;
+        $context->inside_attribute = $was_inside_attribute;
 
         $issues = IssueBuffer::clearRecordingLevel();
         IssueBuffer::stopRecording();

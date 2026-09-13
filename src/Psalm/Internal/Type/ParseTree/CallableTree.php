@@ -13,6 +13,9 @@ final class CallableTree extends ParseTree
 {
     public bool $terminated = false;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(public string $value, ?ParseTree $parent = null)
     {
         $this->parent = $parent;

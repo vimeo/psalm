@@ -11,9 +11,13 @@ use Override;
  * This type encompasses `float`, `int`, `bool` and `string`.
  *
  * @psalm-immutable
+ * @api
  */
 class TScalar extends Scalar
 {
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getKey(bool $include_extra = true): string
     {
@@ -21,7 +25,8 @@ class TScalar extends Scalar
     }
 
     /**
-     * @param  array<lowercase-string, string> $aliased_classes
+     * @param array<lowercase-string, string> $aliased_classes
+     * @psalm-pure
      */
     #[Override]
     public function toPhpString(
@@ -33,12 +38,18 @@ class TScalar extends Scalar
         return null;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getAssertionString(): string
     {

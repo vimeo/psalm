@@ -21,6 +21,7 @@ final class ArrayFillReturnTypeProvider implements FunctionReturnTypeProviderInt
 {
     /**
      * @return array<lowercase-string>
+     * @psalm-pure
      */
     #[Override]
     public static function getFunctionIds(): array
@@ -128,6 +129,9 @@ final class ArrayFillReturnTypeProvider implements FunctionReturnTypeProviderInt
         ]);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     private static function isPositiveNumericType(Union $arg): bool
     {
         if ($arg->isSingle()) {

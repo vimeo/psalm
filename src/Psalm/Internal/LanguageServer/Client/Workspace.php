@@ -14,6 +14,9 @@ use Psalm\Internal\LanguageServer\LanguageServer;
  */
 final class Workspace
 {
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         private readonly ClientHandler $handler,
         private readonly LanguageServer $server,

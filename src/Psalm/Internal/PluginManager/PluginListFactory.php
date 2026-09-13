@@ -18,6 +18,9 @@ use const JSON_THROW_ON_ERROR;
  */
 final class PluginListFactory
 {
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         private readonly string $project_root,
         private readonly string $psalm_root,

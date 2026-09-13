@@ -35,6 +35,7 @@ final class ArrayFilterParamsProvider implements FunctionParamsProviderInterface
 {
     /**
      * @return array<lowercase-string>
+     * @psalm-pure
      */
     #[Override]
     public static function getFunctionIds(): array
@@ -122,8 +123,7 @@ final class ArrayFilterParamsProvider implements FunctionParamsProviderInterface
             $first_arg_array = $fallback;
         } else {
             $first_arg_array = $first_arg_type->hasType('array')
-                               && ($array_atomic_type = $first_arg_type->getArray())
-                               && ($array_atomic_type instanceof TArray
+                               && (($array_atomic_type = $first_arg_type->getArray()) instanceof TArray
                                    || $array_atomic_type instanceof TKeyedArray)
                 ? $array_atomic_type
                 : $fallback;
@@ -264,7 +264,6 @@ final class ArrayFilterParamsProvider implements FunctionParamsProviderInterface
         }
 
         $callable = new TCallable(
-            'callable',
             $callback_arg,
             Type::getMixed(),
         );

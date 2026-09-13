@@ -27,6 +27,9 @@ final class Providers
 
     public FileReferenceProvider $file_reference_provider;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         public FileProvider $file_provider,
         public ?ParserCacheProvider $parser_cache_provider = null,

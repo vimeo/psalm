@@ -7,6 +7,10 @@ namespace Psalm\Issue;
 use Override;
 use Psalm\CodeLocation;
 
+/**
+ * @psalm-immutable
+ * @api
+ */
 trait MixedIssueTrait
 {
     /**
@@ -14,6 +18,9 @@ trait MixedIssueTrait
      */
     public ?CodeLocation $origin_location = null;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         string $message,
         CodeLocation $code_location,

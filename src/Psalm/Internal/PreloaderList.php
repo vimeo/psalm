@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace Psalm\Internal;
 
-/** @internal */
+/**
+ * @internal
+ *
+ * @psalm-immutable
+ */
 final class PreloaderList {
     public const CLASSES = [
         \AdvancedJsonRpc\Dispatcher::class,
@@ -747,6 +751,7 @@ final class PreloaderList {
         \Psalm\Internal\Codebase\AssertionsFromInheritanceResolver::class,
         \Psalm\Internal\Codebase\ClassConstantByWildcardResolver::class,
         \Psalm\Internal\Codebase\ClassLikes::class,
+        \Psalm\Internal\Codebase\CombinedFlowGraph::class,
         \Psalm\Internal\Codebase\ConstantTypeResolver::class,
         \Psalm\Internal\Codebase\DataFlowGraph::class,
         \Psalm\Internal\Codebase\Functions::class,
@@ -1029,6 +1034,8 @@ final class PreloaderList {
         \Psalm\Internal\Type\TypeExpander::class,
         \Psalm\Internal\Type\TypeParser::class,
         \Psalm\Internal\Type\TypeTokenizer::class,
+        \Psalm\Internal\Type\TypeVariableBounds::class,
+        \Psalm\Internal\Type\TypeVariableTracker::class,
         \Psalm\Internal\VersionUtils::class,
         \Psalm\IssueBuffer::class,
         \Psalm\Issue\AbstractInstantiation::class,
@@ -1090,6 +1097,7 @@ final class PreloaderList {
         \Psalm\Issue\InaccessibleClassConstant::class,
         \Psalm\Issue\InaccessibleMethod::class,
         \Psalm\Issue\InaccessibleProperty::class,
+        \Psalm\Issue\IncompatibleTypeParameters::class,
         \Psalm\Issue\InheritorViolation::class,
         \Psalm\Issue\InterfaceInstantiation::class,
         \Psalm\Issue\InternalClass::class,
@@ -1164,6 +1172,7 @@ final class PreloaderList {
         \Psalm\Issue\MissingOverrideAttribute::class,
         \Psalm\Issue\MissingParamType::class,
         \Psalm\Issue\MissingPropertyType::class,
+        \Psalm\Issue\MissingPureAnnotation::class,
         \Psalm\Issue\MissingReturnType::class,
         \Psalm\Issue\MissingTemplateParam::class,
         \Psalm\Issue\MissingThrowsDocblock::class,
@@ -1612,6 +1621,7 @@ final class PreloaderList {
         \Psalm\Report\ReportOptions::class,
         \Psalm\Report\SarifReport::class,
         \Psalm\Report\SonarqubeReport::class,
+        \Psalm\Report\TableReport::class,
         \Psalm\Report\TextReport::class,
         \Psalm\Report\XmlReport::class,
         \Psalm\SourceControl\Git\CommitInfo::class,
@@ -1750,6 +1760,7 @@ final class PreloaderList {
         \Psalm\Type\Atomic\TTraitString::class,
         \Psalm\Type\Atomic\TTrue::class,
         \Psalm\Type\Atomic\TTypeAlias::class,
+        \Psalm\Type\Atomic\TTypeVariable::class,
         \Psalm\Type\Atomic\TUnknownClassString::class,
         \Psalm\Type\Atomic\TValueOf::class,
         \Psalm\Type\Atomic\TVoid::class,

@@ -8,13 +8,16 @@ use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Storage\ImmutableNonCloneableTrait;
 
 /**
- * @psalm-immutable
  * @internal
+ * @psalm-immutable
  */
 final class UnresolvedTernary extends UnresolvedConstantComponent
 {
     use ImmutableNonCloneableTrait;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         public readonly UnresolvedConstantComponent $cond,
         public readonly ?UnresolvedConstantComponent $if,

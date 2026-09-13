@@ -16,6 +16,7 @@ use Psalm\Type\Union;
  * Represents the type used when using TPropertiesOf when the type of the array is a template
  *
  * @psalm-immutable
+ * @api
  */
 final class TTemplatePropertiesOf extends Atomic
 {
@@ -62,6 +63,9 @@ final class TTemplatePropertiesOf extends Atomic
         return $this->getKey();
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {

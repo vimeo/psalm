@@ -52,7 +52,7 @@ final class MagicConstAnalyzer
                         $statements_analyzer,
                         $stmt,
                         $context->self,
-                        $context->calling_method_id,
+                        $context,
                     );
                 }
 

@@ -10,6 +10,7 @@ use Override;
  * Denotes a `class-string` corresponding to a template parameter previously specified in a `@template` tag.
  *
  * @psalm-immutable
+ * @api
  */
 final class TTemplateParamClass extends TClassString
 {

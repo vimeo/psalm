@@ -18,6 +18,9 @@ use function assert;
  */
 final class TraitAnalyzer extends ClassLikeAnalyzer
 {
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         Trait_ $class,
         SourceAnalyzer $source,
@@ -47,8 +50,8 @@ final class TraitAnalyzer extends ClassLikeAnalyzer
     }
 
     /**
-     * @psalm-mutation-free
      * @return array<lowercase-string, string>
+     * @psalm-pure
      */
     #[Override]
     public function getAliasedClassesFlipped(): array
@@ -57,8 +60,8 @@ final class TraitAnalyzer extends ClassLikeAnalyzer
     }
 
     /**
-     * @psalm-mutation-free
      * @return array<string, string>
+     * @psalm-pure
      */
     #[Override]
     public function getAliasedClassesFlippedReplaceable(): array
@@ -76,6 +79,8 @@ final class TraitAnalyzer extends ClassLikeAnalyzer
         }
 
         $storage = $codebase->classlike_storage_provider->get($stmt->name->name);
+
+        ClassLikeAnalyzer::registerDocblockSuppressions($storage, $statements_analyzer->getFilePath(), $codebase);
 
         AttributesAnalyzer::analyze(
             $statements_analyzer,

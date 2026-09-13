@@ -10,6 +10,9 @@ use function error_reporting;
 
 use const E_ALL;
 
+/**
+ * @api
+ */
 final class DebugProgress extends Progress
 {
     #[Override]
@@ -39,16 +42,25 @@ final class DebugProgress extends Progress
         });
     }
     
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public function expand(int $number_of_tasks): void
     {
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public function taskDone(int $level): void
     {
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public function finish(): void
     {

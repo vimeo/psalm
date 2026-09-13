@@ -21,7 +21,8 @@ use function strtolower;
 final class TypeScanner extends TypeVisitor
 {
     /**
-     * @param  array<string, mixed> $phantom_classes
+     * @param array<string, mixed> $phantom_classes
+     * @psalm-mutation-free
      */
     public function __construct(
         private readonly Scanner $scanner,

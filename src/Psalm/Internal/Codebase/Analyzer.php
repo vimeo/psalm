@@ -7,7 +7,6 @@ namespace Psalm\Internal\Codebase;
 use Amp\Future;
 use InvalidArgumentException;
 use PhpParser;
-use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\FileManipulation;
@@ -28,6 +27,7 @@ use Psalm\Internal\Provider\StatementsProvider;
 use Psalm\IssueBuffer;
 use Psalm\Progress\Phase;
 use Psalm\Progress\Progress;
+use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\Union;
 use SebastianBergmann\Diff\Differ;
@@ -37,12 +37,14 @@ use UnexpectedValueException;
 use function Amp\Future\await;
 use function array_filter;
 use function array_intersect_key;
+use function array_key_exists;
 use function array_merge;
 use function array_values;
 use function count;
 use function explode;
 use function implode;
 use function ksort;
+use function max;
 use function number_format;
 use function pathinfo;
 use function preg_replace;
@@ -69,33 +71,21 @@ use const PHP_INT_MAX;
  * @psalm-type  WorkerData = array{
  *      issues: array<string, list<IssueData>>,
  *      fixable_issue_counts: array<string, int>,
- *      nonmethod_references_to_classes: array<string, array<string,bool>>,
- *      method_references_to_classes: array<string, array<string,bool>>,
- *      file_references_to_class_members: array<string, array<string,bool>>,
- *      file_references_to_class_properties: array<string, array<string,bool>>,
- *      file_references_to_method_returns: array<string, array<string,bool>>,
- *      file_references_to_missing_class_members: array<string, array<string,bool>>,
  *      mixed_counts: array<string, array{0: int, 1: int}>,
  *      mixed_member_names: array<string, array<string, bool>>,
  *      function_timings: array<string, float>,
  *      file_manipulations: array<string, FileManipulation[]>,
- *      method_references_to_class_members: array<string, array<string,bool>>,
  *      method_dependencies: array<string, array<string,bool>>,
- *      method_references_to_method_returns: array<string, array<string,bool>>,
- *      method_references_to_class_properties: array<string, array<string,bool>>,
- *      method_references_to_missing_class_members: array<string, array<string,bool>>,
  *      method_param_uses: array<string, array<int, array<string, bool>>>,
  *      analyzed_methods: array<string, array<string, int>>,
  *      file_maps: array<string, FileMapType>,
- *      class_locations: array<string, array<int, CodeLocation>>,
- *      class_method_locations: array<string, array<int, CodeLocation>>,
- *      class_property_locations: array<string, array<int, CodeLocation>>,
  *      possible_method_param_types: array<string, array<int, Union>>,
+ *      code_use_data: CodeUseGraph,
  *      taint_data: ?TaintFlowGraph,
  *      unused_suppressions: array<string, array<int, int>>,
  *      used_suppressions: array<string, array<int, bool>>,
  *      function_docblock_manipulators: array<string, array<int, FunctionDocblockManipulator>>,
- *      mutable_classes: array<string, bool>,
+ *      mutable_classes: array<string, Mutations::LEVEL_*>,
  *      issue_handlers: array{type: string, index: int, count: int}[],
  * }
  */
@@ -183,10 +173,13 @@ final class Analyzer
     public array $possible_method_param_types = [];
 
     /**
-     * @var array<string, bool>
+     * @var array<string, Mutations::LEVEL_*>
      */
     public array $mutable_classes = [];
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         private readonly Config $config,
         private readonly FileProvider $file_provider,
@@ -197,6 +190,7 @@ final class Analyzer
 
     /**
      * @param array<string, string> $files_to_analyze
+     * @psalm-external-mutation-free
      */
     public function addFilesToAnalyze(array $files_to_analyze): void
     {
@@ -206,6 +200,7 @@ final class Analyzer
 
     /**
      * @param array<string, string> $files_to_analyze
+     * @psalm-external-mutation-free
      */
     public function addFilesToShowResults(array $files_to_analyze): void
     {
@@ -214,12 +209,16 @@ final class Analyzer
 
     /**
      * @param array<string> $files_to_update
+     * @psalm-external-mutation-free
      */
     public function setFilesToUpdate(array $files_to_update): void
     {
         $this->files_to_update = $files_to_update;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function canReportIssues(string $file_path): bool
     {
         return isset($this->files_with_analysis_results[$file_path]);
@@ -251,6 +250,8 @@ final class Analyzer
         if ($codebase->taint_flow_graph) {
             $codebase->taint_flow_graph->connectSinksAndSources($codebase->progress);
         }
+
+        MutationLevelResolver::resolve($project_analyzer);
 
         $this->progress->finish();
 
@@ -345,38 +346,10 @@ final class Analyzer
                     $codebase->taint_flow_graph->addGraph($pool_data['taint_data']);
                 }
 
-                $codebase->file_reference_provider->addNonMethodReferencesToClasses(
-                    $pool_data['nonmethod_references_to_classes'],
-                );
-                $codebase->file_reference_provider->addMethodReferencesToClasses(
-                    $pool_data['method_references_to_classes'],
-                );
-                $codebase->file_reference_provider->addFileReferencesToClassMembers(
-                    $pool_data['file_references_to_class_members'],
-                );
-                $codebase->file_reference_provider->addFileReferencesToClassProperties(
-                    $pool_data['file_references_to_class_properties'],
-                );
-                $codebase->file_reference_provider->addFileReferencesToMethodReturns(
-                    $pool_data['file_references_to_method_returns'],
-                );
-                $codebase->file_reference_provider->addMethodReferencesToClassMembers(
-                    $pool_data['method_references_to_class_members'],
-                );
+                $codebase->code_use_graph->addGraph($pool_data['code_use_data']);
+
                 $codebase->file_reference_provider->addMethodDependencies(
                     $pool_data['method_dependencies'],
-                );
-                $codebase->file_reference_provider->addMethodReferencesToClassProperties(
-                    $pool_data['method_references_to_class_properties'],
-                );
-                $codebase->file_reference_provider->addMethodReferencesToMethodReturns(
-                    $pool_data['method_references_to_method_returns'],
-                );
-                $codebase->file_reference_provider->addFileReferencesToMissingClassMembers(
-                    $pool_data['file_references_to_missing_class_members'],
-                );
-                $codebase->file_reference_provider->addMethodReferencesToMissingClassMembers(
-                    $pool_data['method_references_to_missing_class_members'],
                 );
                 $codebase->file_reference_provider->addMethodParamUses(
                     $pool_data['method_param_uses'],
@@ -385,17 +358,17 @@ final class Analyzer
                     $pool_data['mixed_member_names'],
                 );
                 $this->function_timings += $pool_data['function_timings'];
-                $codebase->file_reference_provider->addClassLocations(
-                    $pool_data['class_locations'],
-                );
-                $codebase->file_reference_provider->addClassMethodLocations(
-                    $pool_data['class_method_locations'],
-                );
-                $codebase->file_reference_provider->addClassPropertyLocations(
-                    $pool_data['class_property_locations'],
-                );
 
-                $this->mutable_classes = array_merge($this->mutable_classes, $pool_data['mutable_classes']);
+                foreach ($pool_data['mutable_classes'] as $class => $level) {
+                    if (array_key_exists($class, $this->mutable_classes)) {
+                        $this->mutable_classes[$class] = max(
+                            $this->mutable_classes[$class],
+                            $level,
+                        );
+                    } else {
+                        $this->mutable_classes[$class] = $level;
+                    }
+                }
 
                 FunctionDocblockManipulator::addManipulators($pool_data['function_docblock_manipulators']);
 
@@ -445,9 +418,6 @@ final class Analyzer
         }
     }
 
-    /**
-     * @psalm-suppress ComplexMethod
-     */
     public function loadCachedResults(ProjectAnalyzer $project_analyzer): void
     {
         $codebase = $project_analyzer->getCodebase();
@@ -468,35 +438,17 @@ final class Analyzer
             }
         }
 
-        $method_references_to_class_members = $file_reference_provider->getAllMethodReferencesToClassMembers();
+        $code_use_graph = $codebase->code_use_graph;
 
         $method_dependencies = $file_reference_provider->getAllMethodDependencies();
 
-        $method_references_to_class_properties = $file_reference_provider->getAllMethodReferencesToClassProperties();
+        $all_referencing_methods = $method_dependencies;
 
-        $method_references_to_method_returns = $file_reference_provider->getAllMethodReferencesToMethodReturns();
-
-        $method_references_to_missing_class_members =
-            $file_reference_provider->getAllMethodReferencesToMissingClassMembers();
-
-        $all_referencing_methods = $method_references_to_class_members
-            + $method_references_to_missing_class_members
-            + $method_dependencies;
-
-        $nonmethod_references_to_classes = $file_reference_provider->getAllNonMethodReferencesToClasses();
-
-        $method_references_to_classes = $file_reference_provider->getAllMethodReferencesToClasses();
+        foreach ($code_use_graph->getFunctionLikeReferencesToMembers() as $member_id => $referencing_methods) {
+            $all_referencing_methods[$member_id] = ($all_referencing_methods[$member_id] ?? []) + $referencing_methods;
+        }
 
         $method_param_uses = $file_reference_provider->getAllMethodParamUses();
-
-        $file_references_to_class_members = $file_reference_provider->getAllFileReferencesToClassMembers();
-
-        $file_references_to_class_properties = $file_reference_provider->getAllFileReferencesToClassProperties();
-
-        $file_references_to_method_returns = $file_reference_provider->getAllFileReferencesToMethodReturns();
-
-        $file_references_to_missing_class_members
-            = $file_reference_provider->getAllFileReferencesToMissingClassMembers();
 
         $references_to_mixed_member_names = $file_reference_provider->getAllReferencesToMixedMemberNames();
 
@@ -577,15 +529,7 @@ final class Analyzer
                 }
 
                 unset(
-                    $method_references_to_class_members[$member_id],
                     $method_dependencies[$member_id],
-                    $method_references_to_class_properties[$member_id],
-                    $method_references_to_method_returns[$member_id],
-                    $file_references_to_class_members[$member_id],
-                    $file_references_to_class_properties[$member_id],
-                    $file_references_to_method_returns[$member_id],
-                    $method_references_to_missing_class_members[$member_id],
-                    $file_references_to_missing_class_members[$member_id],
                     $references_to_mixed_member_names[$member_id],
                     $method_param_uses[$member_id],
                 );
@@ -609,31 +553,15 @@ final class Analyzer
                     $newly_invalidated_methods[$method_referencing_deleted] = true;
                 }
             }
+
+            $code_use_graph->removeReferencesFromFile($deleted_file);
         }
 
         foreach ($newly_invalidated_methods as $method_id => $_) {
-            foreach ($method_references_to_class_members as $i => $_) {
-                unset($method_references_to_class_members[$i][$method_id]);
-            }
+            $code_use_graph->removeReferencesFrom(CodeUseGraph::functionLikeNode(strtolower($method_id)));
 
             foreach ($method_dependencies as $i => $_) {
                 unset($method_dependencies[$i][$method_id]);
-            }
-
-            foreach ($method_references_to_class_properties as $i => $_) {
-                unset($method_references_to_class_properties[$i][$method_id]);
-            }
-
-            foreach ($method_references_to_method_returns as $i => $_) {
-                unset($method_references_to_method_returns[$i][$method_id]);
-            }
-
-            foreach ($method_references_to_classes as $i => $_) {
-                unset($method_references_to_classes[$i][$method_id]);
-            }
-
-            foreach ($method_references_to_missing_class_members as $i => $_) {
-                unset($method_references_to_missing_class_members[$i][$method_id]);
             }
 
             foreach ($references_to_mixed_member_names as $i => $_) {
@@ -677,29 +605,11 @@ final class Analyzer
 
             $this->setMixedCountsForFile($file_path, [0, 0]);
 
-            foreach ($file_references_to_class_members as $i => $_) {
-                unset($file_references_to_class_members[$i][$file_path]);
-            }
-
-            foreach ($file_references_to_class_properties as $i => $_) {
-                unset($file_references_to_class_properties[$i][$file_path]);
-            }
-
-            foreach ($file_references_to_method_returns as $i => $_) {
-                unset($file_references_to_method_returns[$i][$file_path]);
-            }
-
-            foreach ($nonmethod_references_to_classes as $i => $_) {
-                unset($nonmethod_references_to_classes[$i][$file_path]);
-            }
-
             foreach ($references_to_mixed_member_names as $i => $_) {
                 unset($references_to_mixed_member_names[$i][$file_path]);
             }
 
-            foreach ($file_references_to_missing_class_members as $i => $_) {
-                unset($file_references_to_missing_class_members[$i][$file_path]);
-            }
+            $this->removeCodeUseReferencesForFile($codebase, $file_path);
         }
 
         foreach ($this->existing_issues as $file_path => $issues) {
@@ -712,109 +622,82 @@ final class Analyzer
             }
         }
 
-        $method_references_to_class_members = array_filter(
-            $method_references_to_class_members,
-        );
-
         $method_dependencies = array_filter(
             $method_dependencies,
-        );
-
-        $method_references_to_class_properties = array_filter(
-            $method_references_to_class_properties,
-        );
-
-        $method_references_to_method_returns = array_filter(
-            $method_references_to_method_returns,
-        );
-
-        $method_references_to_missing_class_members = array_filter(
-            $method_references_to_missing_class_members,
-        );
-
-        $file_references_to_class_members = array_filter(
-            $file_references_to_class_members,
-        );
-
-        $file_references_to_class_properties = array_filter(
-            $file_references_to_class_properties,
-        );
-
-        $file_references_to_method_returns = array_filter(
-            $file_references_to_method_returns,
-        );
-
-        $file_references_to_missing_class_members = array_filter(
-            $file_references_to_missing_class_members,
         );
 
         $references_to_mixed_member_names = array_filter(
             $references_to_mixed_member_names,
         );
 
-        $nonmethod_references_to_classes = array_filter(
-            $nonmethod_references_to_classes,
-        );
-
-        $method_references_to_classes = array_filter(
-            $method_references_to_classes,
-        );
-
         $method_param_uses = array_filter(
             $method_param_uses,
-        );
-
-        $file_reference_provider->setCallingMethodReferencesToClassMembers(
-            $method_references_to_class_members,
         );
 
         $file_reference_provider->setMethodDependencies(
             $method_dependencies,
         );
 
-        $file_reference_provider->setCallingMethodReferencesToClassProperties(
-            $method_references_to_class_properties,
-        );
-
-        $file_reference_provider->setCallingMethodReferencesToMethodReturns(
-            $method_references_to_method_returns,
-        );
-
-        $file_reference_provider->setFileReferencesToClassMembers(
-            $file_references_to_class_members,
-        );
-
-        $file_reference_provider->setFileReferencesToClassProperties(
-            $file_references_to_class_properties,
-        );
-
-        $file_reference_provider->setFileReferencesToMethodReturns(
-            $file_references_to_method_returns,
-        );
-
-        $file_reference_provider->setCallingMethodReferencesToMissingClassMembers(
-            $method_references_to_missing_class_members,
-        );
-
-        $file_reference_provider->setFileReferencesToMissingClassMembers(
-            $file_references_to_missing_class_members,
-        );
 
         $file_reference_provider->setReferencesToMixedMemberNames(
             $references_to_mixed_member_names,
         );
 
-        $file_reference_provider->setCallingMethodReferencesToClasses(
-            $method_references_to_classes,
-        );
-
-        $file_reference_provider->setNonMethodReferencesToClasses(
-            $nonmethod_references_to_classes,
-        );
-
         $file_reference_provider->setMethodParamUses(
             $method_param_uses,
         );
+    }
+
+    /**
+     * Drops the references recorded by the code of a file that is about to be
+     * (re-)analysed, except the references of methods whose cached analysis
+     * is still valid and which will therefore be skipped.
+     *
+     * @psalm-external-mutation-free
+     */
+    private function removeCodeUseReferencesForFile(Codebase $codebase, string $file_path): void
+    {
+        $code_use_graph = $codebase->code_use_graph;
+
+        $keep_nodes = [];
+
+        foreach ($this->analyzed_methods[$file_path] ?? [] as $trait_safe_method_id => $_) {
+            $keep_nodes[CodeUseGraph::functionLikeNode(strtolower(explode('&', $trait_safe_method_id)[0]))] = true;
+        }
+
+        $code_use_graph->removeReferencesFromFile($file_path, $keep_nodes);
+
+        try {
+            $file_storage = $codebase->file_storage_provider->get($file_path);
+        } catch (InvalidArgumentException) {
+            return;
+        }
+
+        foreach ($file_storage->classlikes_in_file as $fq_class_name_lc => $_) {
+            $code_use_graph->removeReferencesFrom(CodeUseGraph::classNode($fq_class_name_lc));
+
+            try {
+                $classlike_storage = $codebase->classlike_storage_provider->get($fq_class_name_lc);
+            } catch (InvalidArgumentException) {
+                continue;
+            }
+
+            foreach ($classlike_storage->appearing_method_ids as $appearing_method_id) {
+                if (strtolower($appearing_method_id->fq_class_name) !== $fq_class_name_lc) {
+                    continue;
+                }
+
+                $method_node = CodeUseGraph::functionLikeNode(strtolower((string) $appearing_method_id));
+
+                if (!isset($keep_nodes[$method_node])) {
+                    $code_use_graph->removeReferencesFrom($method_node);
+                }
+            }
+        }
+
+        foreach ($file_storage->functions as $function_id => $_) {
+            $code_use_graph->removeReferencesFrom(CodeUseGraph::functionLikeNode(strtolower($function_id)));
+        }
     }
 
     public function shiftFileOffsets(StatementsProvider $statements_provider): void
@@ -980,11 +863,17 @@ final class Analyzer
         return $this->mixed_member_names;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addMixedMemberName(string $member_id, string $reference): void
     {
         $this->mixed_member_names[$member_id][$reference] = true;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function hasMixedMemberName(string $member_id): bool
     {
         return isset($this->mixed_member_names[$member_id]);
@@ -992,6 +881,7 @@ final class Analyzer
 
     /**
      * @param array<string, array<string, bool>> $names
+     * @psalm-external-mutation-free
      */
     public function addMixedMemberNames(array $names): void
     {
@@ -1009,6 +899,7 @@ final class Analyzer
 
     /**
      * @return list{int, int}
+     * @psalm-external-mutation-free
      */
     public function getMixedCountsForFile(string $file_path): array
     {
@@ -1020,13 +911,17 @@ final class Analyzer
     }
 
     /**
-     * @param  list{int, int} $mixed_counts
+     * @param list{int, int} $mixed_counts
+     * @psalm-external-mutation-free
      */
     public function setMixedCountsForFile(string $file_path, array $mixed_counts): void
     {
         $this->mixed_counts[$file_path] = $mixed_counts;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function incrementMixedCount(string $file_path): void
     {
         if (!$this->count_mixed) {
@@ -1040,6 +935,9 @@ final class Analyzer
         ++$this->mixed_counts[$file_path][0];
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function decrementMixedCount(string $file_path): void
     {
         if (!$this->count_mixed) {
@@ -1057,6 +955,9 @@ final class Analyzer
         --$this->mixed_counts[$file_path][0];
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function incrementNonMixedCount(string $file_path): void
     {
         if (!$this->count_mixed) {
@@ -1072,6 +973,7 @@ final class Analyzer
 
     /**
      * @return array<string, array{0: int, 1: int}>
+     * @psalm-mutation-free
      */
     public function getMixedCounts(): array
     {
@@ -1092,6 +994,9 @@ final class Analyzer
         return $this->function_timings;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addFunctionTiming(string $function_id, float $time_per_node): void
     {
         $this->function_timings[$function_id] = $time_per_node;
@@ -1113,6 +1018,9 @@ final class Analyzer
         ];
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addNodeArgument(
         string $file_path,
         int $start_position,
@@ -1147,6 +1055,9 @@ final class Analyzer
         ];
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addOffsetReference(string $file_path, int $start, int $end, string $reference): void
     {
         if (!$reference) {
@@ -1161,6 +1072,7 @@ final class Analyzer
 
     /**
      * @return array{int, int}
+     * @psalm-external-mutation-free
      */
     public function getTotalTypeCoverage(Codebase $codebase): array
     {
@@ -1183,6 +1095,9 @@ final class Analyzer
         return [$mixed_count, $nonmixed_count];
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function getTypeInferenceSummary(Codebase $codebase): string
     {
         $all_deep_scanned_files = [];
@@ -1251,11 +1166,17 @@ final class Analyzer
         return $stats;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function disableMixedCounts(): void
     {
         $this->count_mixed = false;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function enableMixedCounts(): void
     {
         $this->count_mixed = true;
@@ -1331,6 +1252,7 @@ final class Analyzer
 
     /**
      * @return list<IssueData>
+     * @psalm-mutation-free
      */
     public function getExistingIssuesForFile(string $file_path, int $start, int $end, ?string $issue_type = null): array
     {
@@ -1351,6 +1273,9 @@ final class Analyzer
         return $applicable_issues;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function removeExistingDataForFile(string $file_path, int $start, int $end, ?string $issue_type = null): void
     {
         if (isset($this->existing_issues[$file_path])) {
@@ -1398,6 +1323,7 @@ final class Analyzer
 
     /**
      * @return array<string, FileMapType>
+     * @psalm-mutation-free
      */
     public function getFileMaps(): array
     {
@@ -1428,6 +1354,7 @@ final class Analyzer
 
     /**
      * @return FileMapType
+     * @psalm-mutation-free
      */
     public function getMapsForFile(string $file_path): array
     {
@@ -1446,16 +1373,34 @@ final class Analyzer
         return $this->possible_method_param_types;
     }
 
-    public function addMutableClass(string $fqcln): void
+    /**
+     * @param Mutations::LEVEL_* $allowed_mutations
+     * @psalm-external-mutation-free
+     */
+    public function addMutableClass(string $fqcln, int $allowed_mutations): void
     {
-        $this->mutable_classes[strtolower($fqcln)] = true;
+        $fqcln = strtolower($fqcln);
+        if (array_key_exists($fqcln, $this->mutable_classes)) {
+            $this->mutable_classes[$fqcln] = max(
+                $this->mutable_classes[$fqcln],
+                $allowed_mutations,
+            );
+        } else {
+            $this->mutable_classes[$fqcln] = $allowed_mutations;
+        }
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function setAnalyzedMethod(string $file_path, string $method_id, bool $is_constructor = false): void
     {
         $this->analyzed_methods[$file_path][$method_id] = $is_constructor ? 2 : 1;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isMethodAlreadyAnalyzed(string $file_path, string $method_id, bool $is_constructor = false): bool
     {
         if ($is_constructor) {

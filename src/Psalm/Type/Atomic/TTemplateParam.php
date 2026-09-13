@@ -18,6 +18,7 @@ use function implode;
  * denotes a template parameter that has been previously specified in a `@template` tag.
  *
  * @psalm-immutable
+ * @api
  */
 final class TTemplateParam extends Atomic
 {
@@ -86,8 +87,9 @@ final class TTemplateParam extends Atomic
     }
 
     /**
-     * @param  array<lowercase-string, string> $aliased_classes
+     * @param array<lowercase-string, string> $aliased_classes
      * @return null
+     * @psalm-pure
      */
     #[Override]
     public function toPhpString(
@@ -128,12 +130,18 @@ final class TTemplateParam extends Atomic
         return $this->param_name . $intersection_types;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     protected function getChildNodeKeys(): array
     {
         return ['as', 'extra_types'];
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {

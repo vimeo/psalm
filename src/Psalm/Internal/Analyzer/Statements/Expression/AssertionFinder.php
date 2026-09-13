@@ -1378,6 +1378,7 @@ final class AssertionFinder
 
     /**
      * @param Identical|Equal|NotIdentical|NotEqual $conditional
+     * @psalm-mutation-free
      */
     private static function hasEmptyArrayVariable(
         PhpParser\Node\Expr\BinaryOp $conditional,
@@ -1884,6 +1885,9 @@ final class AssertionFinder
         return false;
     }
 
+    /**
+     * @psalm-pure
+     */
     private static function getIsAssertion(string $function_name): ?Assertion
     {
         return match ($function_name) {
@@ -2691,7 +2695,6 @@ final class AssertionFinder
                 $var_type,
                 new CodeLocation($source, $whichclass_expr),
                 null,
-                null,
                 $source->getSuppressedIssues(),
             ) !== false
         ) {
@@ -3394,7 +3397,6 @@ final class AssertionFinder
                     $source,
                     $var_type,
                     new CodeLocation($source, $whichclass_expr),
-                    null,
                     null,
                     $source->getSuppressedIssues(),
                     new ClassLikeNameOptions(true),
@@ -4260,7 +4262,7 @@ final class AssertionFinder
                 }
 
                 $magic_getter = $class_definition->methods['__get'] ?? null;
-                if ($magic_getter === null || !$magic_getter->mutation_free) {
+                if ($magic_getter === null || !$magic_getter->isMutationFree()) {
                     return "{$class_definition->name}::__get is not mutation-free, so the assertion cannot be applied";
                 }
             }

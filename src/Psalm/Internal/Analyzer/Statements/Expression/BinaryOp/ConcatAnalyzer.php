@@ -10,12 +10,14 @@ use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\TemplateBound;
 use Psalm\Issue\FalseOperand;
 use Psalm\Issue\ImplicitToStringCast;
 use Psalm\Issue\ImpureMethodCall;
@@ -41,6 +43,7 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -378,6 +381,19 @@ final class ConcatAnalyzer
         $comparison_result = new TypeComparisonResult();
 
         foreach ($operand_type->getAtomicTypes() as $operand_type_part) {
+            if ($operand_type_part instanceof TTypeVariable) {
+                // a type variable concatenates, constrained from above to array-key
+                $statements_analyzer->type_variable_tracker->addBounds(
+                    [],
+                    [[$operand_type_part->name, new TemplateBound(Type::getArrayKey())]],
+                    new CodeLocation($statements_analyzer->getSource(), $operand),
+                );
+
+                $has_valid_operand = true;
+
+                continue;
+            }
+
             if ($operand_type_part instanceof TTemplateParam && !$operand_type_part->as->isString()) {
                 IssueBuffer::maybeAdd(
                     new MixedOperand(
@@ -424,7 +440,7 @@ final class ConcatAnalyzer
                         '__tostring',
                     );
 
-                    if ($codebase->methods->methodExists(
+                    if ($codebase->methodExists(
                         $to_string_method_id,
                         $context->calling_method_id,
                         $codebase->collect_locations
@@ -442,22 +458,22 @@ final class ConcatAnalyzer
                             continue;
                         }
 
-                        if ($context->mutation_free && !$storage->mutation_free) {
-                            IssueBuffer::maybeAdd(
-                                new ImpureMethodCall(
-                                    'Cannot call a possibly-mutating method '
-                                        . $atomic_type->value . '::__toString from a pure context',
-                                    new CodeLocation($statements_analyzer, $operand),
-                                ),
-                                $statements_analyzer->getSuppressedIssues(),
-                            );
-                        } elseif ($statements_analyzer->getSource()
-                                instanceof FunctionLikeAnalyzer
-                            && $statements_analyzer->getSource()->track_mutations
-                        ) {
-                            $statements_analyzer->getSource()->inferred_has_mutation = true;
-                            $statements_analyzer->getSource()->inferred_impure = true;
-                        }
+                        $var_id = ExpressionIdentifier::getExtendedVarId(
+                            $operand,
+                            $statements_analyzer->getFQCLN(),
+                            $statements_analyzer,
+                        );
+                        $statements_analyzer->signalMutation(
+                            $storage->allowed_mutations,
+                            $context,
+                            'possibly-mutating method '
+                                        . $atomic_type->value . '::__toString',
+                            ImpureMethodCall::class,
+                            $operand,
+                            null,
+                            false,
+                            $var_id === '$this' ? $storage : null,
+                        );
                     }
                 }
             }

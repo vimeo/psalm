@@ -11,6 +11,7 @@ use Psalm\Type\Atomic;
 
 /**
  * @psalm-immutable
+ * @api
  */
 final class IsNotType extends Assertion
 {
@@ -19,6 +20,9 @@ final class IsNotType extends Assertion
     {
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function isNegation(): bool
     {
@@ -44,6 +48,7 @@ final class IsNotType extends Assertion
 
     /**
      * @return static
+     * @psalm-pure
      */
     #[Override]
     public function setAtomicType(Atomic $type): self

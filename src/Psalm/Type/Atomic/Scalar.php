@@ -10,10 +10,14 @@ use Psalm\Type\Atomic;
 
 /**
  * @psalm-immutable
+ * @api
  */
 abstract class Scalar extends Atomic
 {
     use UnserializeMemoryUsageSuppressionTrait;
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {

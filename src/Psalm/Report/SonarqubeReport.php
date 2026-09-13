@@ -16,9 +16,15 @@ use function max;
  * generic (external) issue data via `sonar.externalIssuesReportPaths`.
  *
  * https://docs.sonarqube.org/latest/analysis/generic-issue/
+ *
+ * @psalm-external-mutation-free
+ * @api
  */
 final class SonarqubeReport extends Report
 {
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public function create(): string
     {

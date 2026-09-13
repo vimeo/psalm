@@ -7,9 +7,16 @@ namespace Psalm\Plugin\EventHandler\Event;
 use Psalm\Codebase;
 use Psalm\Issue\CodeIssue;
 
+/**
+ * @psalm-immutable
+ * @api
+ */
 final class BeforeAddIssueEvent
 {
-    /** @internal */
+    /**
+     * @internal
+     * @psalm-mutation-free
+     */
     public function __construct(
         private readonly CodeIssue $issue,
         private readonly bool $fixable,

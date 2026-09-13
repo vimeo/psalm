@@ -12,15 +12,21 @@ use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use UnexpectedValueException;
 
+/**
+ * @psalm-immutable
+ * @api
+ */
 final class EnumCaseStorage
 {
     use UnserializeMemoryUsageSuppressionTrait;
 
-    public bool $deprecated = false;
-
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         public TLiteralString|TLiteralInt|UnresolvedConstantComponent|null $value,
         public CodeLocation $stmt_location,
+        public bool $deprecated = false,
     ) {
     }
 

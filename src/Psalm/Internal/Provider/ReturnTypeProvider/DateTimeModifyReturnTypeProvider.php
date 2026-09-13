@@ -18,6 +18,9 @@ use Psalm\Type\Union;
  */
 final class DateTimeModifyReturnTypeProvider implements MethodReturnTypeProviderInterface
 {
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public static function getClassLikeNames(): array
     {

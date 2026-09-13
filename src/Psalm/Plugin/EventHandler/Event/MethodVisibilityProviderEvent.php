@@ -8,9 +8,16 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\StatementsSource;
 
+/**
+ * @psalm-immutable
+ * @api
+ */
 final class MethodVisibilityProviderEvent
 {
-    /** @internal */
+    /**
+     * @internal
+     * @psalm-mutation-free
+     */
     public function __construct(
         private readonly StatementsSource $source,
         private readonly string $fq_classlike_name,

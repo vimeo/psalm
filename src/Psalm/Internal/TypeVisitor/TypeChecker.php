@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use Override;
 use Psalm\CodeLocation;
 use Psalm\CodeLocation\DocblockTypeLocation;
+use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
@@ -41,7 +42,7 @@ use ReflectionProperty;
 use function array_keys;
 use function array_search;
 use function count;
-use function md5;
+use function explode;
 use function str_contains;
 use function str_starts_with;
 use function strtolower;
@@ -54,8 +55,9 @@ final class TypeChecker extends TypeVisitor
     private bool $has_errors = false;
 
     /**
-     * @param  array<string>    $suppressed_issues
-     * @param  array<string, bool> $phantom_classes
+     * @param array<string>    $suppressed_issues
+     * @param array<string, bool> $phantom_classes
+     * @psalm-mutation-free
      */
     public function __construct(
         private readonly StatementsSource $source,
@@ -65,7 +67,7 @@ final class TypeChecker extends TypeVisitor
         private readonly bool $inferred = true,
         private readonly bool $inherited = false,
         private bool $prevent_template_covariance = false,
-        private readonly ?string $calling_method_id = null,
+        private readonly ?Context $context = null,
     ) {
     }
 
@@ -121,29 +123,34 @@ final class TypeChecker extends TypeVisitor
             );
         }
 
-        if ($this->calling_method_id
+        if ($this->context?->calling_method_id !== null
             && $atomic->text !== null
         ) {
-            $codebase->file_reference_provider->addMethodReferenceToClassMember(
-                $this->calling_method_id,
-                'use:' . $atomic->text . ':' . md5($this->source->getFilePath()),
-                false,
+            $codebase->addReferenceToClass(
+                strtolower($atomic->value),
+                $this->code_location,
+                $this->context,
+            );
+            // the type was written using an import alias: re-analyse if the import changes
+            $codebase->addReferenceToUseAlias(
+                explode('\\', $atomic->text, 2)[0],
+                $this->source->getFilePath(),
+                $this->context,
             );
         }
 
-        if (!isset($this->phantom_classes[strtolower($atomic->value)]) &&
-            ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
+        if (!isset($this->phantom_classes[strtolower($atomic->value)])) {
+            if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                 $this->source,
                 $atomic->value,
                 $this->code_location,
-                $this->source->getFQCLN(),
-                $this->calling_method_id,
+                $this->context,
                 $this->suppressed_issues,
                 new ClassLikeNameOptions($this->inferred, false, true, true, $atomic->from_docblock),
-            ) === false
-        ) {
-            $this->has_errors = true;
-            return;
+            ) === false) {
+                $this->has_errors = true;
+                return;
+            }
         }
 
         $fq_class_name_lc = strtolower($atomic->value);
@@ -285,8 +292,7 @@ final class TypeChecker extends TypeVisitor
             $this->source,
             $fq_classlike_name,
             $this->code_location,
-            null,
-            null,
+            $this->context,
             $this->suppressed_issues,
             new ClassLikeNameOptions($this->inferred, false, true, true, $atomic->from_docblock),
         ) === false
@@ -353,8 +359,8 @@ final class TypeChecker extends TypeVisitor
                     : null;
 
                 if ($method_storage instanceof MethodStorage
-                    && $method_storage->mutation_free
-                    && !$method_storage->mutation_free_inferred
+                    && $method_storage->isMutationFree()
+                    && !$method_storage->mutation_free_assumed
                 ) {
                     // do nothing
                 } else {

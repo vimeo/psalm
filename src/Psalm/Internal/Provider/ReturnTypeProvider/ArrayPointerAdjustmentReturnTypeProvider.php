@@ -38,6 +38,7 @@ final class ArrayPointerAdjustmentReturnTypeProvider implements FunctionReturnTy
 
     /**
      * @return array<lowercase-string>
+     * @psalm-pure
      */
     #[Override]
     public static function getFunctionIds(): array
@@ -121,6 +122,9 @@ final class ArrayPointerAdjustmentReturnTypeProvider implements FunctionReturnTy
         return $value_type;
     }
 
+    /**
+     * @psalm-pure
+     */
     private static function isFunctionAlreadyHandledByStub(string $function_id): bool
     {
         return !in_array($function_id, self::IGNORE_FUNCTION_IDS_FOR_FALSE_RETURN_TYPE, true);

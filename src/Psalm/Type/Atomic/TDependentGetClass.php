@@ -11,6 +11,7 @@ use Psalm\Type\Union;
  * Represents a string whose value is a fully-qualified class found by get_class($var)
  *
  * @psalm-immutable
+ * @api
  */
 final class TDependentGetClass extends TString implements DependentType
 {
@@ -45,12 +46,18 @@ final class TDependentGetClass extends TString implements DependentType
         return $this->typeof;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getReplacement(): TClassString
     {
         return new TClassString();
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {

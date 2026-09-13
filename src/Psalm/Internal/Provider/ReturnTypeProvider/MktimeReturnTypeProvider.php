@@ -20,6 +20,7 @@ final class MktimeReturnTypeProvider implements FunctionReturnTypeProviderInterf
 {
     /**
      * @return array<lowercase-string>
+     * @psalm-pure
      */
     #[Override]
     public static function getFunctionIds(): array

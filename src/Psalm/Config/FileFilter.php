@@ -44,6 +44,7 @@ use const GLOB_ONLYDIR;
 
 /**
  * @psalm-consistent-constructor
+ * @api
  */
 class FileFilter
 {
@@ -102,6 +103,9 @@ class FileFilter
      */
     protected array $declare_strict_types = [];
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(protected bool $inclusive)
     {
     }
@@ -516,6 +520,9 @@ class FileFilter
         return rtrim($str, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function allows(string $file_name, bool $case_sensitive = false): bool
     {
         if ($this->inclusive) {
@@ -570,6 +577,9 @@ class FileFilter
         return true;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function allowsClass(string $fq_classlike_name): bool
     {
         if ($this->fq_classlike_patterns) {
@@ -583,6 +593,9 @@ class FileFilter
         return in_array(strtolower($fq_classlike_name), $this->fq_classlike_names, true);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function allowsMethod(string $method_id): bool
     {
         if (!$this->method_ids) {
@@ -612,16 +625,25 @@ class FileFilter
         return in_array($method_id, $this->method_ids, true);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function allowsProperty(string $property_id): bool
     {
         return in_array(strtolower($property_id), $this->property_ids, true);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function allowsClassConstant(string $constant_id): bool
     {
         return in_array(strtolower($constant_id), $this->class_constant_ids, true);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function allowsVariable(string $var_name): bool
     {
         return in_array(strtolower($var_name), $this->var_names, true);
@@ -643,12 +665,18 @@ class FileFilter
         return $this->files;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addFile(string $file_name): void
     {
         $this->files[] = $file_name;
         $this->files_lowercase[] = strtolower($file_name);
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addDirectory(string $dir_name): void
     {
         $this->directories[] = self::slashify($dir_name);

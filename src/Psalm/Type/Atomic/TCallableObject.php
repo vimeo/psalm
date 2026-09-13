@@ -10,12 +10,16 @@ use Override;
  * Denotes an object that is also `callable` (i.e. it has `__invoke` defined).
  *
  * @psalm-immutable
+ * @api
  */
 final class TCallableObject extends TObject
 {
     use HasIntersectionTrait;
 
-    /** @return true */
+    /**
+     * @return true
+     * @psalm-pure
+     */
     #[Override]
     public function isCallableType(): bool
     {
@@ -34,12 +38,12 @@ final class TCallableObject extends TObject
         if ($this->callable !== null) {
             $key .= $this->callable->getParamString() . $this->callable->getReturnTypeString();
         }
-
         return $key;
     }
 
     /**
-     * @param  array<lowercase-string, string> $aliased_classes
+     * @param array<lowercase-string, string> $aliased_classes
+     * @psalm-pure
      */
     #[Override]
     public function toPhpString(
@@ -51,12 +55,18 @@ final class TCallableObject extends TObject
         return $analysis_php_version_id >= 7_02_00 ? 'object' : null;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getAssertionString(): string
     {

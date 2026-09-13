@@ -6,8 +6,14 @@ namespace Psalm\Exception;
 
 use LogicException;
 
+/**
+ * @api
+ */
 final class UnpopulatedClasslikeException extends LogicException
 {
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(string $fq_classlike_name)
     {
         parent::__construct(

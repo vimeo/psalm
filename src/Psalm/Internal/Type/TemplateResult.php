@@ -48,8 +48,9 @@ final class TemplateResult
     public array $upper_bounds_unintersectable_types = [];
 
     /**
-     * @param  array<string, array<string, Union>> $template_types
-     * @param  array<string, array<string, Union>> $lower_bounds
+     * @param array<string, array<string, Union>> $template_types
+     * @param array<string, array<string, Union>> $lower_bounds
+     * @psalm-mutation-free
      */
     public function __construct(public array $template_types, array $lower_bounds)
     {

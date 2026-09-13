@@ -11,6 +11,7 @@ use Psalm\Type\Atomic;
 
 /**
  * @psalm-immutable
+ * @api
  */
 final class IsIdentical extends Assertion
 {
@@ -30,6 +31,9 @@ final class IsIdentical extends Assertion
         return '=' . $this->type->getAssertionString();
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function hasEquality(): bool
     {
@@ -44,6 +48,7 @@ final class IsIdentical extends Assertion
 
     /**
      * @return static
+     * @psalm-pure
      */
     #[Override]
     public function setAtomicType(Atomic $type): self

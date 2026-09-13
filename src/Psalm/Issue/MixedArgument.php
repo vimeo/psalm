@@ -8,6 +8,9 @@ use Psalm\CodeLocation;
 
 use function strtolower;
 
+/**
+ * @api
+ */
 final class MixedArgument extends ArgumentIssue implements MixedIssue
 {
     public const ERROR_LEVEL = 1;
@@ -15,6 +18,9 @@ final class MixedArgument extends ArgumentIssue implements MixedIssue
 
     use MixedIssueTrait;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         string $message,
         CodeLocation $code_location,

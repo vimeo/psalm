@@ -8,15 +8,22 @@ use Override;
 
 /**
  * @psalm-immutable
+ * @api
  */
 final class TLowercaseString extends TString
 {
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getId(bool $exact = true, bool $nested = false): string
     {
         return 'lowercase-string';
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {

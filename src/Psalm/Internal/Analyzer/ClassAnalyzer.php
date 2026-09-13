@@ -37,8 +37,10 @@ use Psalm\Issue\DeprecatedInterface;
 use Psalm\Issue\DeprecatedTrait;
 use Psalm\Issue\DuplicateEnumCaseValue;
 use Psalm\Issue\ExtensionRequirementViolation;
+use Psalm\Issue\ImmutableDependency;
 use Psalm\Issue\ImplementationRequirementViolation;
 use Psalm\Issue\InaccessibleMethod;
+use Psalm\Issue\InaccessibleProperty;
 use Psalm\Issue\InheritorViolation;
 use Psalm\Issue\InternalClass;
 use Psalm\Issue\InvalidEnumCaseValue;
@@ -48,7 +50,6 @@ use Psalm\Issue\InvalidTraversableImplementation;
 use Psalm\Issue\MethodSignatureMismatch;
 use Psalm\Issue\MismatchingDocblockPropertyType;
 use Psalm\Issue\MissingConstructor;
-use Psalm\Issue\MissingImmutableAnnotation;
 use Psalm\Issue\MissingPropertyType;
 use Psalm\Issue\MutableDependency;
 use Psalm\Issue\NoEnumProperties;
@@ -76,6 +77,7 @@ use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -208,6 +210,8 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         $project_analyzer = $this->file_analyzer->project_analyzer;
         $codebase = $this->getCodebase();
 
+        self::registerDocblockSuppressions($storage, $this->getFilePath(), $codebase);
+
         if ($codebase->alter_code && $class->name && $codebase->classes_to_move) {
             if (isset($codebase->classes_to_move[strtolower($this->fq_class_name)])) {
                 $destination_class = $codebase->classes_to_move[strtolower($this->fq_class_name)];
@@ -275,6 +279,11 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         }
 
         $parent_fq_class_name = $this->parent_fq_class_name;
+
+        if (!$class_context) {
+            $class_context = new Context($this->fq_class_name);
+            $class_context->parent = $parent_fq_class_name;
+        }
 
         if ($class instanceof PhpParser\Node\Stmt\Class_ && $class->extends && $parent_fq_class_name) {
             $this->checkParentClass(
@@ -370,11 +379,6 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     );
                 }
             }
-        }
-
-        if (!$class_context) {
-            $class_context = new Context($this->fq_class_name);
-            $class_context->parent = $parent_fq_class_name;
         }
 
         if ($global_context) {
@@ -685,6 +689,17 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             $property_class_storage = $codebase->classlike_storage_provider->get($property_class_name);
 
             $property_storage = $property_class_storage->properties[$property_name];
+
+            if ($property_class_storage->isPure() && $property_storage->location) {
+                IssueBuffer::maybeAdd(
+                    new InaccessibleProperty(
+                        'Property ' . $property_class_name . '::$' . $property_name
+                            . ' is declared in a pure class and cannot be accessed',
+                        $property_storage->location,
+                    ),
+                    $property_storage->suppressed_issues,
+                );
+            }
 
             if (isset($storage->overridden_property_ids[$property_name])) {
                 foreach ($storage->overridden_property_ids[$property_name] as $overridden_property_id) {
@@ -1116,10 +1131,9 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 );
             }
 
-            $codebase->file_reference_provider->addMethodReferenceToMissingClassMember(
-                $fq_class_name_lc . '::__construct',
-                strtolower($property_class_name) . '::$' . $property_name,
-            );
+            // no reference is recorded from the constructor to the property: this check
+            // runs again whenever the class is re-analysed, so the constructor's own
+            // analysis needn't be invalidated when the property changes
 
             if ($property->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE) {
                 $uninitialized_private_properties = true;
@@ -1128,7 +1142,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             $uninitialized_variables[] = '$this->' . $property_name;
             $uninitialized_properties[$property_class_name . '::$' . $property_name] = $property;
 
-            if ($property->type) {
+            if ($property->type && !$property->hook_get) {
                 // Complain about all natively typed properties and all non-mixed docblock typed properties
                 if (!$property->type->from_docblock || !$property->type->isMixed()) {
                     $uninitialized_typed_properties[$property_class_name . '::$' . $property_name] = $property;
@@ -1399,7 +1413,11 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 $aliases,
             );
 
-            if (!$codebase->classlikes->hasFullyQualifiedTraitName($fq_trait_name, $trait_location)) {
+            if (!$codebase->classlikes->hasFullyQualifiedTraitName(
+                $fq_trait_name,
+                $trait_location,
+                $class_context,
+            )) {
                 IssueBuffer::maybeAdd(
                     new UndefinedTrait(
                         'Trait ' . $fq_trait_name . ' does not exist',
@@ -1427,6 +1445,8 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
 
             $fq_trait_name_resolved = $codebase->classlikes->getUnAliasedName($fq_trait_name);
             $trait_storage = $codebase->classlike_storage_provider->get($fq_trait_name_resolved);
+
+            $trait_storage->trait_used = true;
 
             if ($trait_storage->deprecated) {
                 IssueBuffer::maybeAdd(
@@ -1472,15 +1492,18 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 }
             }
 
-            if ($storage->mutation_free && !$trait_storage->mutation_free) {
+            if ($storage->allowed_mutations < $trait_storage->allowed_mutations) {
                 IssueBuffer::maybeAdd(
                     new MutableDependency(
-                        $storage->name . ' is marked @psalm-immutable but ' . $fq_trait_name . ' is not',
+                        $storage->name . ' is marked '.Mutations::TO_ATTRIBUTE_CLASSLIKE[
+                            $storage->allowed_mutations
+                        ].' but ' . $fq_trait_name . ' is not',
                         new CodeLocation($previous_trait_analyzer ?? $this, $trait_name),
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
                 );
             }
+            $codebase->analyzer->addMutableClass($storage->name, $trait_storage->allowed_mutations);
 
             $trait_file_analyzer = $project_analyzer->getFileAnalyzerForClassLike($fq_trait_name_resolved);
             $trait_node = $codebase->classlikes->getTraitNode($fq_trait_name_resolved);
@@ -1752,7 +1775,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                         $declaring_method_storage,
                         $this->fq_class_name,
                         $implementer_method_storage->visibility,
-                        new CodeLocation($source, $stmt),
+                        $implementer_method_storage->stmt_location ?? new CodeLocation($source, $stmt),
                         $implementer_method_storage->suppressed_issues,
                         false,
                     );
@@ -1844,7 +1867,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 $class_context->self,
                 $analyzed_method_id,
                 $actual_method_id,
-                $method_context->has_returned,
+                $method_context,
             );
         }
 
@@ -1859,6 +1882,9 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         return $method_analyzer;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     private static function getThisObjectType(
         ClassLikeStorage $class_storage,
         string $original_fq_classlike_name,
@@ -1897,8 +1923,9 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         string $fq_classlike_name,
         MethodIdentifier $analyzed_method_id,
         MethodIdentifier $actual_method_id,
-        bool $did_explicitly_return,
+        ?Context $context,
     ): void {
+        $did_explicitly_return = (bool) $context?->has_returned;
         $secondary_return_type_location = null;
 
         $actual_method_storage = $codebase->methods->getStorage($actual_method_id);
@@ -1911,6 +1938,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         $original_fq_classlike_name = $fq_classlike_name;
 
         $return_type = $codebase->methods->getMethodReturnType(
+            $codebase,
             $analyzed_method_id,
             $fq_classlike_name,
             $method_analyzer,
@@ -1963,11 +1991,11 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             foreach ($overridden_method_ids as $interface_method_id) {
                 $interface_class = $interface_method_id->fq_class_name;
 
-                if (!$codebase->classlikes->interfaceExists($interface_class)) {
+                if (!$codebase->classlikes->interfaceExists($interface_class, null, $context)) {
                     continue;
                 }
 
-                $interface_return_type = $codebase->methods->getMethodReturnType(
+                $interface_return_type = $codebase->getMethodReturnType(
                     $interface_method_id,
                     $interface_class,
                 );
@@ -2040,7 +2068,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             $codebase->analyzer->addNodeReference(
                 $this->getFilePath(),
                 $interface_name,
-                $codebase->classlikes->interfaceExists($fq_interface_name)
+                $codebase->classlikes->interfaceExists($fq_interface_name, null, $class_context)
                     ? $fq_interface_name
                     : '*'
                         . ($interface_name instanceof PhpParser\Node\Name\FullyQualified
@@ -2055,8 +2083,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 $this,
                 $fq_interface_name,
                 $interface_location,
-                null,
-                null,
+                $class_context,
                 $this->getSuppressedIssues(),
             ) === false) {
                 return false;
@@ -2186,18 +2213,25 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 );
             }
 
-            if ($interface_storage->external_mutation_free
-                && !$storage->external_mutation_free
+            if ($interface_storage->allowed_mutations
+                < $storage->allowed_mutations
             ) {
                 IssueBuffer::maybeAdd(
-                    new MissingImmutableAnnotation(
-                        $fq_interface_name . ' is marked @psalm-immutable, but '
-                        . $fq_class_name . ' is not marked @psalm-immutable',
+                    new ImmutableDependency(
+                        $fq_interface_name . ' is marked with @'.Mutations::TO_ATTRIBUTE_CLASSLIKE[
+                            $interface_storage->allowed_mutations
+                        ].', but '
+                        . $fq_class_name . ' is not',
                         $code_location,
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
                 );
             }
+
+            $codebase->analyzer->addMutableClass(
+                $storage->name,
+                $interface_storage->allowed_mutations,
+            );
 
             foreach ($interface_storage->methods as $interface_method_name_lc => $interface_method_storage) {
                 if ($interface_method_storage->visibility === self::VISIBILITY_PUBLIC) {
@@ -2342,8 +2376,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             $this->getSource(),
             $parent_fq_class_name,
             $parent_reference_location,
-            null,
-            null,
+            $class_context,
             $storage->suppressed_issues + $this->getSuppressedIssues(),
         ) === false) {
             return;
@@ -2427,36 +2460,40 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 );
             }
 
-            if ($parent_class_storage->external_mutation_free
-                && !$storage->external_mutation_free
+            if ($parent_class_storage->allowed_mutations
+                < $storage->allowed_mutations
             ) {
                 IssueBuffer::maybeAdd(
-                    new MissingImmutableAnnotation(
-                        $parent_fq_class_name . ' is marked @psalm-immutable, but '
-                        . $fq_class_name . ' is not marked @psalm-immutable',
+                    new ImmutableDependency(
+                        $parent_fq_class_name . ' is marked with @'.Mutations::TO_ATTRIBUTE_CLASSLIKE[
+                            $parent_class_storage->allowed_mutations
+                        ].', but '
+                        . $fq_class_name . ' is not',
                         $code_location,
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
                 );
-            }
-
-            if ($storage->mutation_free
-                && !$parent_class_storage->mutation_free
+            } elseif ($parent_class_storage->allowed_mutations
+                > $storage->allowed_mutations
             ) {
                 IssueBuffer::maybeAdd(
                     new MutableDependency(
-                        $fq_class_name . ' is marked @psalm-immutable but ' . $parent_fq_class_name . ' is not',
+                        $fq_class_name . ' is marked with @'.Mutations::TO_ATTRIBUTE_CLASSLIKE[
+                            $storage->allowed_mutations
+                        ].', but parent class '
+                        . $parent_fq_class_name . ' is not',
                         $code_location,
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
                 );
             }
+            $codebase->analyzer->addMutableClass($storage->name, $parent_class_storage->allowed_mutations);
 
             if ($codebase->store_node_types) {
                 $codebase->analyzer->addNodeReference(
                     $this->getFilePath(),
                     $extended_class,
-                    $codebase->classlikes->classExists($parent_fq_class_name)
+                    $codebase->classlikes->classExists($parent_fq_class_name, null, $class_context)
                         ? $parent_fq_class_name
                         : '*'
                             . ($extended_class instanceof PhpParser\Node\Name\FullyQualified

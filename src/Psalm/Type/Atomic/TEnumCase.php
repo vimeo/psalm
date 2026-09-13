@@ -10,6 +10,7 @@ use Override;
  * Denotes an enum with a specific value
  *
  * @psalm-immutable
+ * @api
  */
 final class TEnumCase extends TNamedObject
 {
@@ -40,6 +41,9 @@ final class TEnumCase extends TNamedObject
         return $this->value;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {

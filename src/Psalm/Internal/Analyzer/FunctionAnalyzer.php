@@ -20,6 +20,9 @@ use function strtolower;
 final class FunctionAnalyzer extends FunctionLikeAnalyzer
 {
     use UnserializeMemoryUsageSuppressionTrait;
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(PhpParser\Node\Stmt\Function_ $function, SourceAnalyzer $source)
     {
         $codebase = $source->getCodebase();
@@ -46,6 +49,7 @@ final class FunctionAnalyzer extends FunctionLikeAnalyzer
     /**
      * @return non-empty-lowercase-string
      * @throws UnexpectedValueException if function is closure or arrow function.
+     * @psalm-mutation-free
      */
     public function getFunctionId(): string
     {

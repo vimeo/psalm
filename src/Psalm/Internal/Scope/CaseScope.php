@@ -17,10 +17,16 @@ final class CaseScope
      */
     public ?array $break_vars = null;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(public Context $parent_context)
     {
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function __destruct()
     {
         unset($this->parent_context);

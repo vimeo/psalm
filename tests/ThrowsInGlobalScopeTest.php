@@ -20,6 +20,7 @@ final class ThrowsInGlobalScopeTest extends TestCase
             'somefile.php',
             '<?php
                 /**
+                 * @psalm-pure
                  * @throws RangeException
                  * @throws InvalidArgumentException
                  */
@@ -52,6 +53,7 @@ final class ThrowsInGlobalScopeTest extends TestCase
             'somefile.php',
             '<?php
                 /**
+                 * @psalm-pure
                  * @throws RangeException
                  * @throws InvalidArgumentException
                  */
@@ -84,6 +86,7 @@ final class ThrowsInGlobalScopeTest extends TestCase
         $this->addFile(
             'somefile.php',
             '<?php
+                /** @psalm-pure */
                 function foo(int $x, int $y) : int {
                     if ($y === 0) {
                         throw new \RangeException("Cannot divide by zero");
@@ -115,6 +118,7 @@ final class ThrowsInGlobalScopeTest extends TestCase
             '<?php
                 namespace ns;
                 /**
+                 * @psalm-pure
                  * @throws \RangeException
                  * @throws \InvalidArgumentException
                  */
@@ -214,6 +218,7 @@ final class ThrowsInGlobalScopeTest extends TestCase
             'somefile.php',
             '<?php
                 /**
+                 * @psalm-pure
                  * @throws RangeException
                  * @throws InvalidArgumentException
                  */
@@ -247,6 +252,8 @@ final class ThrowsInGlobalScopeTest extends TestCase
             '<?php
                 namespace ns;
                 /**
+                 * @psalm-pure
+                 * 
                  * @throws \RangeException
                  * @throws \InvalidArgumentException
                  */
@@ -281,6 +288,7 @@ final class ThrowsInGlobalScopeTest extends TestCase
             'somefile.php',
             '<?php
                 /**
+                 * @psalm-pure
                  * @throws RangeException
                  * @throws InvalidArgumentException
                  */

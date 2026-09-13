@@ -40,7 +40,10 @@ final class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
 
     private readonly int $a_file_contents_length;
 
-    /** @param array<int, array{0: int, 1: int, 2: int, 3: int, 4: int, 5: string}> $offset_map */
+    /**
+     * @param array<int, array{0: int, 1: int, 2: int, 3: int, 4: int, 5: string}> $offset_map
+     * @psalm-mutation-free
+     */
     public function __construct(
         private readonly Parser $parser,
         private readonly Collecting $error_handler,
@@ -365,6 +368,9 @@ final class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
         return null;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function mustRescan(): bool
     {
         return $this->must_rescan || $this->non_method_changes;

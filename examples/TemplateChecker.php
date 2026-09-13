@@ -99,7 +99,6 @@ final class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
             $method_id->fq_class_name,
             new CodeLocation($this, $stmt),
             null,
-            null,
             [],
             new ClassLikeNameOptions(true),
         ) === false
@@ -172,7 +171,7 @@ final class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
         $view_method_analyzer = new MethodAnalyzer($class_method, $class_analyzer, new MethodStorage());
 
         if (!$context->check_variables) {
-            $view_method_analyzer->addSuppressedIssue('UndefinedVariable');
+            $view_method_analyzer->addSuppressedIssues(['UndefinedVariable']);
         }
 
         $statements_source = new StatementsAnalyzer(

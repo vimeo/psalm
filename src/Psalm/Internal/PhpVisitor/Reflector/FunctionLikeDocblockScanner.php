@@ -40,6 +40,7 @@ use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\Mutations;
 use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
@@ -56,6 +57,7 @@ use function array_values;
 use function count;
 use function explode;
 use function in_array;
+use function min;
 use function preg_last_error_msg;
 use function preg_match;
 use function preg_replace;
@@ -98,17 +100,17 @@ final class FunctionLikeDocblockScanner
 
         $config = Config::getInstance();
 
-        if ($docblock_info->mutation_free) {
-            $storage->mutation_free = true;
-
-            if ($storage instanceof MethodStorage) {
-                $storage->external_mutation_free = true;
-                $storage->mutation_free_inferred = false;
-            }
-        }
-
-        if ($storage instanceof MethodStorage && $docblock_info->external_mutation_free) {
-            $storage->external_mutation_free = true;
+        $storage->allowed_mutations = min(
+            $docblock_info->allowed_mutations,
+            $storage->allowed_mutations,
+        );
+        $storage->has_mutations_annotation = $docblock_info->has_mutations_annotation;
+        
+        if ($storage instanceof MethodStorage
+            && $docblock_info->allowed_mutations <= Mutations::LEVEL_INTERNAL_READ
+        ) {
+            // If we explicitly marked this as mutation free, it's not inferred anymore.
+            $storage->mutation_free_assumed = false;
         }
 
         if ($docblock_info->deprecated) {
@@ -133,18 +135,18 @@ final class FunctionLikeDocblockScanner
             $storage->variadic = true;
         }
 
-        if ($docblock_info->pure) {
-            $storage->pure = true;
+        $storage->allowed_mutations = min(
+            $docblock_info->allowed_mutations,
+            $storage->allowed_mutations,
+        );
+        $storage->has_mutations_annotation = $docblock_info->has_mutations_annotation;
+
+        if ($docblock_info->allowed_mutations === Mutations::LEVEL_NONE
+            || $docblock_info->specialize_call
+        ) {
             $storage->specialize_call = true;
-            $storage->mutation_free = true;
-            if ($storage instanceof MethodStorage) {
-                $storage->external_mutation_free = true;
-            }
         }
 
-        if ($docblock_info->specialize_call) {
-            $storage->specialize_call = true;
-        }
 
         // we make sure we only add ignore flag for internal stubs if the config is set to true
         if ($docblock_info->ignore_nullable_return

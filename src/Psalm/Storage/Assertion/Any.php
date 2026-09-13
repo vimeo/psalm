@@ -10,6 +10,7 @@ use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 
 /**
  * @psalm-immutable
+ * @api
  */
 final class Any extends Assertion
 {
@@ -20,11 +21,17 @@ final class Any extends Assertion
         return $this;
     }
 
+    /**
+     * @psalm-pure
+     */
     public function __toString(): string
     {
         return 'mixed';
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function isNegationOf(Assertion $assertion): bool
     {

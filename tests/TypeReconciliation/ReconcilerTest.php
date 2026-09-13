@@ -192,6 +192,7 @@ final class ReconcilerTest extends TestCase
 
     /**
      * @return array<string,array{string,string}>
+     * @psalm-pure
      */
     public function providerTestTypeIsContainedBy(): array
     {
@@ -263,6 +264,7 @@ final class ReconcilerTest extends TestCase
 
     /**
      * @return array<non-empty-string,array{Assertion,string}>
+     * @psalm-pure
      */
     public function constantAssertions(): array
     {

@@ -32,6 +32,9 @@ use function strtolower;
  */
 final class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public static function getFunctionIds(): array
     {

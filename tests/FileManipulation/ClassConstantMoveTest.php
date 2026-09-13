@@ -20,6 +20,9 @@ final class ClassConstantMoveTest extends TestCase
 {
     protected ProjectAnalyzer $project_analyzer;
 
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function setUp(): void
     {
@@ -78,6 +81,7 @@ final class ClassConstantMoveTest extends TestCase
 
     /**
      * @return array<string,array{input:string,output:string,migrations:array<string, string>}>
+     * @psalm-pure
      */
     public function providerValidCodeParse(): array
     {

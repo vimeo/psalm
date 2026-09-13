@@ -10,21 +10,31 @@ use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 
 /**
  * @psalm-immutable
+ * @api
  */
 final class IsIsset extends Assertion
 {
     use UnserializeMemoryUsageSuppressionTrait;
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getNegation(): Assertion
     {
         return new IsNotIsset();
     }
 
+    /**
+     * @psalm-pure
+     */
     public function __toString(): string
     {
         return 'isset';
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function isNegationOf(Assertion $assertion): bool
     {

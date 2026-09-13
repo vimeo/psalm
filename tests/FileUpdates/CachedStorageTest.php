@@ -64,6 +64,7 @@ final class CachedStorageTest extends TestCase
             (string) getcwd() . DIRECTORY_SEPARATOR . 'V1.php' => '<?php
                 namespace AnotherPackage;
                 interface StorageInterface {
+                   /** @psalm-mutation-free */
                    public function getRecord(): OperationInterface;
                 }',
             (string) getcwd() . DIRECTORY_SEPARATOR . 'V2.php' => '<?php
