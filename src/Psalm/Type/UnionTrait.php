@@ -1622,10 +1622,10 @@ trait UnionTrait
 
     public function getTaintsToRemove(): int
     {
-        if (!$this->isSingle()) {
-            return 0;
-        }
-        // numeric types can't be tainted (except sleep & custom taints), neither can bool
+        // numeric types can't be tainted (except sleep & custom taints), neither can bool.
+        // isInt()/isString() already require every atomic member to match, so unions of
+        // literals such as int(0)|int(1) or ''|'1' (e.g. produced by casting a bool) are
+        // handled too; isFloat()/isBool() carry their own single-type checks.
         if ($this->isInt() || $this->isFloat()) {
             return TaintKind::ALL_INPUT & ~TaintKind::NUMERIC_ONLY;
         }

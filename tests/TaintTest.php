@@ -244,6 +244,67 @@ final class TaintTest extends TestCase
                     // a plain string can never be a NoSQL query, so this is safe
                     query((string) $_GET["username"]);',
             ],
+            'nosqlSinkNotTaintedByIntCast' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink nosql $filter */
+                    function query($filter): void {}
+
+                    // an int can never be a NoSQL query document
+                    query((int) $_GET["username"]);',
+            ],
+            'nosqlSinkNotTaintedByFloatCast' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink nosql $filter */
+                    function query($filter): void {}
+
+                    query((float) $_GET["username"]);',
+            ],
+            'nosqlSinkNotTaintedByBoolCast' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink nosql $filter */
+                    function query($filter): void {}
+
+                    query((bool) $_GET["username"]);',
+            ],
+            'nosqlFilterEscapedByIntCast' => [
+                'code' => '<?php
+                    function getUser(): MongoDB\Driver\Query {
+                        // casting the value to int inside the filter means it can no
+                        // longer be an injected operator like ["$ne" => null]
+                        return new MongoDB\Driver\Query(["age" => (int) $_GET["age"]]);
+                    }',
+            ],
+            'nosqlFilterEscapedByFloatCast' => [
+                'code' => '<?php
+                    function getUser(): MongoDB\Driver\Query {
+                        return new MongoDB\Driver\Query(["lat" => (float) $_GET["lat"]]);
+                    }',
+            ],
+            'nosqlFilterEscapedByBoolCast' => [
+                'code' => '<?php
+                    function getUser(): MongoDB\Driver\Query {
+                        return new MongoDB\Driver\Query(["active" => (bool) $_GET["active"]]);
+                    }',
+            ],
+            'sqlSinkNotTaintedByIntCast' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink sql $q */
+                    function query($q): void {}
+
+                    // an int can never carry a SQL injection
+                    query((int) $_GET["id"]);',
+            ],
+            'sqlSinkNotTaintedByFloatCast' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink sql $q */
+                    function query($q): void {}
+
+                    query((float) $_GET["id"]);',
+            ],
+            'htmlSinkNotTaintedByBoolCast' => [
+                'code' => '<?php
+                    echo (bool) $_GET["flag"];',
+            ],
             'nosqlFilterEscapedByStringCast' => [
                 'code' => '<?php
                     function getUser(): MongoDB\Driver\Query {
@@ -2882,6 +2943,30 @@ final class TaintTest extends TestCase
                 'code' => '<?php
                     sleep($_GET["seconds"]);',
                 'error_message' => 'TaintedSleep',
+            ],
+            'sleepSurvivesIntCast' => [
+                'code' => '<?php
+                    // a numeric value can still cause a DoS, so the sleep taint must
+                    // survive casting to int
+                    sleep((int) $_GET["seconds"]);',
+                'error_message' => 'TaintedSleep',
+            ],
+            'sleepSurvivesFloatCast' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink sleep $s */
+                    function mysleep($s): void {}
+                    mysleep((float) $_GET["seconds"]);',
+                'error_message' => 'TaintedSleep',
+            ],
+            'sqlSurvivesStringCast' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink sql $q */
+                    function query($q): void {}
+
+                    // a string can still carry a SQL injection, so casting to string
+                    // must only strip the array/object-only taints (e.g. nosql)
+                    query((string) $_GET["id"]);',
+                'error_message' => 'TaintedSql',
             ],
             'taintedUsleep' => [
                 'code' => '<?php

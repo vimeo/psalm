@@ -9,7 +9,8 @@ array/object instead of a scalar. For example, a request like `?username[$ne]=` 
 "not equal" match and can bypass authentication.
 
 Because of this, only values that can hold an array (or object) can carry the `nosql` taint —
-a plain `string` can never be a NoSQL query, so casting user input to `string` removes the taint.
+a scalar can never be a NoSQL query, so casting user input to `string`, `int`, `float` or
+`bool` removes the taint.
 
 ```php
 <?php
@@ -31,7 +32,8 @@ Cast user input to a scalar so it can only ever be a literal value, never a quer
 <?php
 
 function getUser(): MongoDB\Driver\Query {
-    // (string) forces a literal match; the nosql taint is removed
+    // (string) forces a literal match; the nosql taint is removed.
+    // Casting to (int)/(float)/(bool) works the same way for numeric/boolean fields.
     return new MongoDB\Driver\Query(["username" => (string) $_GET["username"]]);
 }
 ```
