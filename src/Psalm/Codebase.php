@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm;
 
+use Amp\Sync\Channel;
 use AssertionError;
 use Exception;
 use InvalidArgumentException;
@@ -75,6 +76,7 @@ use RuntimeException;
 use UnexpectedValueException;
 
 use function array_combine;
+use function array_diff_key;
 use function array_key_exists;
 use function array_pop;
 use function array_reverse;
@@ -279,6 +281,15 @@ final class Codebase
      * @var array<int, string>
      */
     public array $custom_taints = [];
+
+    /**
+     * Set (only) while scanning inside a forked worker process: the channel back to the parent, used to
+     * register new custom taints in the parent's single authoritative registry so all workers agree on the
+     * bit assigned to a given taint name. Null in the parent and when scanning single-threaded.
+     *
+     * @var Channel<array{id: int|null, count: int}, string>|null
+     */
+    private ?Channel $taint_registration_channel = null;
 
     /** @internal */
     public function __construct(
@@ -536,33 +547,108 @@ final class Codebase
         if (isset($this->taint_map[$taint_type])) {
             return $this->taint_map[$taint_type];
         }
+
+        // When scanning runs in forked worker processes, register new taints in the parent's single
+        // authoritative registry so that every worker resolves a given taint name to the same bit. Workers
+        // assign bits from independent counters, so without this two brand-new taints first seen by
+        // different workers could be given the same bit -- or one taint two different bits -- silently
+        // corrupting the merged storage and the taint findings built from it.
+        if ($this->taint_registration_channel !== null) {
+            return $this->registerTaintViaParent($this->taint_registration_channel, $taint_type, $location);
+        }
+
         if ($this->taint_count+1 === (PHP_INT_SIZE * 8)) {
-            $taints = implode(',', $this->custom_taints);
-            $err = "No more taint slots left (using $taints), ";
-            if (PHP_INT_SIZE === 8) {
-                $err .= "please use fewer custom taints and use some of the built-in taints!";
-            } else {
-                $err .= "please switch to a 64-bit build of PHP to get 32 more taint slots,".
-                    " or use fewer custom taints and use some of the built-in taints!";
-            }
-            if ($location !== null) {
-                IssueBuffer::maybeAdd(new InvalidDocblock($err, $location));
-                return null;
-            }
-            throw new RuntimeException($err);
+            return $this->reportTaintSlotsExhausted($location);
         }
         if ($taint_type[0] === '(') {
-            $err = "Conditional taints cannot be used in this context";
-            if ($location !== null) {
-                IssueBuffer::maybeAdd(new InvalidDocblock($err, $location));
-                return null;
-            }
-            throw new RuntimeException($err);
+            return $this->reportTaintRegistrationError('Conditional taints cannot be used in this context', $location);
         }
         $id = 1 << ($this->taint_count++);
         $this->custom_taints[$id] = $taint_type;
         $this->taint_map[$taint_type] = $id;
         return $id;
+    }
+
+    /**
+     * Set (or clear) the channel used to register taints in the parent process while scanning inside a
+     * forked worker. See {@see self::$taint_registration_channel}.
+     *
+     * @param Channel<array{id: int|null, count: int}, string>|null $channel
+     * @internal
+     * @psalm-external-mutation-free
+     */
+    public function setTaintRegistrationChannel(?Channel $channel): void
+    {
+        $this->taint_registration_channel = $channel;
+    }
+
+    /**
+     * Handle a taint-registration request coming from a forked scanning worker (see {@see
+     * self::registerTaintViaParent()}): register the taint in this parent process's single registry and
+     * return the assigned bit together with the resulting taint count so the worker can mirror it locally.
+     * `id` is null when no taint slots remain.
+     *
+     * @return array{id: int|null, count: int}
+     * @internal
+     */
+    public function registerTaintFromWorker(string $taint_type): array
+    {
+        try {
+            $id = $this->getOrRegisterTaint($taint_type);
+        } catch (RuntimeException) {
+            // No taint slots left (getOrRegisterTaint throws when no location is available); the worker
+            // re-emits the diagnostic against the offending code location.
+            $id = null;
+        }
+
+        return ['id' => $id, 'count' => $this->taint_count];
+    }
+
+    /**
+     * @param Channel<array{id: int|null, count: int}, string> $channel
+     */
+    private function registerTaintViaParent(Channel $channel, string $taint_type, ?CodeLocation $location): ?int
+    {
+        if ($taint_type[0] === '(') {
+            return $this->reportTaintRegistrationError('Conditional taints cannot be used in this context', $location);
+        }
+
+        $channel->send($taint_type);
+        $response = $channel->receive();
+        $this->taint_count = $response['count'];
+
+        if ($response['id'] === null) {
+            return $this->reportTaintSlotsExhausted($location);
+        }
+
+        $this->taint_map[$taint_type] = $response['id'];
+        $this->custom_taints[$response['id']] = $taint_type;
+
+        return $response['id'];
+    }
+
+    private function reportTaintSlotsExhausted(?CodeLocation $location): ?int
+    {
+        $taints = implode(',', $this->custom_taints);
+        $err = "No more taint slots left (using $taints), ";
+        if (PHP_INT_SIZE === 8) {
+            $err .= 'please use fewer custom taints and use some of the built-in taints!';
+        } else {
+            $err .= 'please switch to a 64-bit build of PHP to get 32 more taint slots,'.
+                ' or use fewer custom taints and use some of the built-in taints!';
+        }
+
+        return $this->reportTaintRegistrationError($err, $location);
+    }
+
+    private function reportTaintRegistrationError(string $err, ?CodeLocation $location): ?int
+    {
+        if ($location !== null) {
+            IssueBuffer::maybeAdd(new InvalidDocblock($err, $location));
+            return null;
+        }
+
+        throw new RuntimeException($err);
     }
 
     /**
@@ -587,6 +673,51 @@ final class Codebase
         $this->taint_map[$taint_type] = $alias;
 
         return $alias;
+    }
+
+    /**
+     * Export the custom (non-builtin) taints registered so far, so they can be persisted across runs.
+     *
+     * Custom taint bits are assigned lazily, in the order taints are first encountered while scanning
+     * docblocks/plugins. Those bits are baked into the cached file/classlike storage. When a subsequent
+     * run reuses that cache, the defining docblocks are not re-parsed, so without restoring this mapping
+     * the same taint name would be assigned a different bit (or none at all), silently breaking the
+     * matching of cached sinks and sources. See {@see self::importCustomTaints()}.
+     *
+     * @return array{count: int, custom: array<int, string>, map: array<string, int>}
+     * @internal
+     * @psalm-mutation-free
+     */
+    public function exportCustomTaints(): array
+    {
+        return [
+            'count' => $this->taint_count,
+            'custom' => $this->custom_taints,
+            'map' => array_diff_key($this->taint_map, TaintKind::TAINT_NAMES),
+        ];
+    }
+
+    /**
+     * Restore the custom taint mapping persisted by a previous run (see {@see self::exportCustomTaints()}),
+     * so that taint bits baked into cached storage keep pointing at the same taint names.
+     *
+     * Must be called before any custom taint is registered in this run (i.e. before scanning), so it is a
+     * no-op if anything custom has already been registered.
+     *
+     * @param array{count: int, custom: array<int, string>, map: array<string, int>} $data
+     * @internal
+     * @psalm-external-mutation-free
+     */
+    public function importCustomTaints(array $data): void
+    {
+        if ($this->custom_taints !== []) {
+            return;
+        }
+
+        $this->taint_count = $data['count'];
+        $this->custom_taints = $data['custom'];
+        // Keep the builtin taints (and any already-registered alias) and add the persisted ones on top.
+        $this->taint_map += $data['map'];
     }
 
     /**

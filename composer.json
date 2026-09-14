@@ -30,7 +30,7 @@
         "composer-runtime-api": "^2",
         "amphp/amp": "^3",
         "amphp/byte-stream": "^2",
-        "amphp/parallel": "^2.3",
+        "amphp/parallel": "^2.4.0",
         "composer/semver": "^1.4 || ^2.0 || ^3.0",
         "composer/xdebug-handler": "^2.0 || ^3.0",
         "danog/advanced-json-rpc": "^3.1",
