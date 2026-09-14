@@ -315,6 +315,16 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             return true;
         }
 
+        if ($function_call_info->callable_id !== null) {
+            FunctionCallReturnTypeFetcher::taintCallableReturnType(
+                $statements_analyzer,
+                $stmt,
+                $real_stmt,
+                $function_call_info->callable_id,
+                $context,
+            );
+        }
+
         foreach ($function_call_info->defined_constants as $const_name => $const_type) {
             $context->constants[$const_name] = $const_type;
             $context->vars_in_scope[$const_name] = $const_type;
@@ -717,6 +727,10 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
                     if ($var_type_part instanceof TClosure) {
                         $function_call_info->byref_uses += $var_type_part->byref_uses;
+                    }
+
+                    if ($var_type_part->callable_id !== null) {
+                        $function_call_info->callable_id = $var_type_part->callable_id;
                     }
 
                     $function_call_info->function_exists = true;

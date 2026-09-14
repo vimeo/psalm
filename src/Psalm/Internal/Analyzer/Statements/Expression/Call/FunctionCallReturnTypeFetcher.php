@@ -90,6 +90,7 @@ final class FunctionCallReturnTypeFetcher
                     $candidate_callable->params,
                     $candidate_callable->return_type,
                     $candidate_callable->allowed_mutations,
+                    callable_id: strtolower($function_id),
                 )]);
             } else {
                 $stmt_type = Type::getClosure();
@@ -535,6 +536,45 @@ final class FunctionCallReturnTypeFetcher
         }
 
         return $stmt_type;
+    }
+
+    /**
+     * Re-dispatches taint-source handling when a callable value is invoked (e.g. a
+     * first-class callable `$f = file_get_contents(...); $f('php://input');`).
+     *
+     * The argument sinks of the underlying function already propagate via the callable's
+     * params; this additionally applies the source behavior keyed on the underlying
+     * function id, which is otherwise skipped because the call target is an expression
+     * rather than a {@see PhpParser\Node\Name}.
+     *
+     * @param lowercase-string $callable_id
+     */
+    public static function taintCallableReturnType(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\FuncCall $stmt,
+        PhpParser\Node\Expr $real_stmt,
+        string $callable_id,
+        Context $context,
+    ): void {
+        if ($stmt->isFirstClassCallable()) {
+            return;
+        }
+
+        $stmt_type = $statements_analyzer->node_data->getType($real_stmt);
+
+        if ($stmt_type === null) {
+            return;
+        }
+
+        self::taintStreamReadReturnType(
+            $statements_analyzer,
+            $stmt,
+            $callable_id,
+            $stmt_type,
+            $context,
+        );
+
+        $statements_analyzer->node_data->setType($real_stmt, $stmt_type);
     }
 
     /**

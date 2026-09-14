@@ -1051,6 +1051,12 @@ final class TaintTest extends TestCase
                     echo stream_get_contents(STDIN);',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintedInputFromFirstClassCallable' => [
+                'code' => '<?php
+                    $f = file_get_contents(...);
+                    echo $f("php://input");',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintedInputFromMethodReturnTypeSimple' => [
                 'code' => '<?php
                     class A {
