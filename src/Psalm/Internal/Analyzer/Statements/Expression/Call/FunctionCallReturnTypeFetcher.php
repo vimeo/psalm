@@ -661,6 +661,18 @@ final class FunctionCallReturnTypeFetcher
         }
     }
 
+
+    // function id => offset of the argument holding the stream path.
+    // Only functions that *return* the stream contents belong here (readfile()
+    // writes to the output buffer and returns a byte count, so it is excluded).
+    /** @var array<string, int> */
+    private const SOURCE_PATH_ARG = [
+        'fopen' => 0,
+        'file_get_contents' => 0,
+        'stream_get_contents' => 0,
+        'file' => 0,
+    ];
+
     /**
      * fopen()/file_get_contents()/file() called with a literal 'php://input' or
      * 'php://stdin' path read user-controlled data, so their return value becomes a
@@ -685,23 +697,13 @@ final class FunctionCallReturnTypeFetcher
             return;
         }
 
-        // function id => offset of the argument holding the stream path.
-        // Only functions that *return* the stream contents belong here (readfile()
-        // writes to the output buffer and returns a byte count, so it is excluded).
-        /** @var array<string, int> $source_path_arg */
-        static $source_path_arg = [
-            'fopen' => 0,
-            'file_get_contents' => 0,
-            'file' => 0,
-        ];
-
         $function_id = strtolower($function_id);
 
-        if (!isset($source_path_arg[$function_id])) {
+        if (!isset(self::SOURCE_PATH_ARG[$function_id])) {
             return;
         }
 
-        $offset = $source_path_arg[$function_id];
+        $offset = self::SOURCE_PATH_ARG[$function_id];
         $args = $stmt->getArgs();
 
         if (!isset($args[$offset])) {
