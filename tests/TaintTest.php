@@ -107,12 +107,96 @@ final class TaintTest extends TestCase
     }
 
     /**
+     * A taint flow longer than the old hard-coded resolution depth of 40 hops is
+     * now detected: resolution runs to a fixed point rather than stopping at an
+     * arbitrary nesting level.
+     */
+    public function testTaintFlowDeeperThanLegacyResolutionDepth(): void
+    {
+        $chain = '';
+        for ($i = 1; $i <= 60; $i++) {
+            $chain .= '                    $a' . $i . ' = $a' . ($i - 1) . ";\n";
+        }
+
+        $code = "<?php\n"
+            . '                    $a0 = (string) $_GET["x"];' . "\n"
+            . $chain
+            . '                    echo $a60;';
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessageMatches('/\bTaintedHtml\b/');
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+
+        $this->addFile($file_path, $code);
+
+        $this->project_analyzer->trackTaintedInputs();
+        foreach (self::IGNORE as $issue_name) {
+            Config::getInstance()->setCustomErrorLevel($issue_name, Config::REPORT_SUPPRESS);
+        }
+
+        $this->analyzeFile($file_path, new Context(), false);
+    }
+
+    /**
+     * A taint flow through a chain of distinct function calls deeper than the old
+     * 40-hop resolution limit is detected. Every call site is a specialized node,
+     * so this also exercises the specialization linking of the sink-reachability
+     * pruning: if a specialized node on the path were wrongly pruned, the flow
+     * would be missed.
+     */
+    public function testTaintFlowThroughDeepSpecializedCallChain(): void
+    {
+        $functions = '';
+        for ($i = 0; $i < 60; $i++) {
+            $functions .= '                    function f' . $i . '(string $s): string { return $s; }' . "\n";
+        }
+
+        $calls = '';
+        for ($i = 0; $i < 60; $i++) {
+            $calls .= '                    $v = f' . $i . "(\$v);\n";
+        }
+
+        $code = "<?php\n"
+            . $functions
+            . '                    $v = (string) $_GET["x"];' . "\n"
+            . $calls
+            . '                    echo $v;';
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessageMatches('/\bTaintedHtml\b/');
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+
+        $this->addFile($file_path, $code);
+
+        $this->project_analyzer->trackTaintedInputs();
+        foreach (self::IGNORE as $issue_name) {
+            Config::getInstance()->setCustomErrorLevel($issue_name, Config::REPORT_SUPPRESS);
+        }
+
+        $this->analyzeFile($file_path, new Context(), false);
+    }
+
+    /**
      * @return array<string, array{code:string}>
      * @psalm-pure
      */
     public function providerValidCodeParse(): array
     {
         return [
+            'sanitizedArrayValueNotReported' => [
+                'code' => '<?php
+                    $arr = [];
+                    $arr["evil"] = (string) $_GET["x"];
+                    $arr["safe"] = htmlspecialchars((string) $_GET["y"], ENT_QUOTES);
+
+                    echo $arr["safe"];',
+            ],
             'untaintedRecursiveFunction' => [
                 'code' => '<?php
                     function f(string $s, int $depth): string {
