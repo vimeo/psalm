@@ -669,7 +669,6 @@ final class FunctionCallReturnTypeFetcher
     private const SOURCE_PATH_ARG = [
         'fopen' => 0,
         'file_get_contents' => 0,
-        'stream_get_contents' => 0,
         'file' => 0,
     ];
 
