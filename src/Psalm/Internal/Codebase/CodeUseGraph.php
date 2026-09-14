@@ -614,7 +614,16 @@ final class CodeUseGraph
                 if ($type === self::EDGE_OVERRIDE) {
                     $owner_class = self::getOwnerClass($target_node);
 
-                    if ($owner_class !== null) {
+                    // An override edge is normally only followed once the
+                    // overriding class is known to be used, since a call to the
+                    // parent only reaches the override when that class is
+                    // actually instantiated. When the parent is external,
+                    // though, external code holding the parent type can invoke
+                    // the override on an instance it constructs itself, which
+                    // Psalm cannot see — so the override (e.g. a plugin entry
+                    // point implementing a vendor interface) must be treated as
+                    // reachable regardless of any in-project instantiation.
+                    if ($owner_class !== null && !$is_external($node_id)) {
                         $owner_node = self::classNode($owner_class);
 
                         if (!isset($used[$owner_node])) {

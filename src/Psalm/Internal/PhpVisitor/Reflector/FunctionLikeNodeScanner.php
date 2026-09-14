@@ -16,6 +16,7 @@ use Psalm\Aliases;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Config;
+use Psalm\DocComment;
 use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\IncorrectDocblockException;
@@ -29,6 +30,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scanner\FileScanner;
+use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Issue\DuplicateFunction;
 use Psalm\Issue\DuplicateMethod;
@@ -67,6 +69,7 @@ use function spl_object_id;
 use function str_contains;
 use function str_starts_with;
 use function strtolower;
+use function trim;
 
 /**
  * @internal
@@ -418,7 +421,18 @@ final class FunctionLikeNodeScanner
             $storage->returns_by_ref = true;
         }
 
-        $doc_comment = $stmt->getDocComment() ?? $doc_comment;
+        $own_doc_comment = $stmt->getDocComment();
+
+        if ($own_doc_comment !== null && $doc_comment !== null) {
+            // a closure assigned to a variable may carry annotations both on the
+            // variable's docblock and inline on the closure itself; merge them so
+            // that everything declared on the variable (e.g. an auto-added purity
+            // annotation) still applies to the closure. Tags appearing in both
+            // are kept, so a genuine conflict is reported as a duplicate tag.
+            $doc_comment = self::mergeDocComments($own_doc_comment, $doc_comment);
+        } else {
+            $doc_comment = $own_doc_comment ?? $doc_comment;
+        }
 
 
         if ($classlike_storage && !$classlike_storage->is_trait) {
@@ -723,6 +737,56 @@ final class FunctionLikeNodeScanner
         }
 
         return $storage;
+    }
+
+    /**
+     * Merges two docblocks into one by unioning their tags. Used to combine a
+     * closure's own inline docblock (primary) with the docblock of the variable
+     * it is assigned to (secondary), so annotations declared on the variable
+     * still apply to the closure. Tags are not deduplicated, so a tag present in
+     * both — e.g. a conflicting @param or @return — survives into the merged
+     * docblock and is reported by the usual duplicate-tag detection. The result
+     * keeps the primary's source position so any reported docblock issue still
+     * points at real code.
+     */
+    private static function mergeDocComments(
+        PhpParser\Comment\Doc $primary,
+        PhpParser\Comment\Doc $secondary,
+    ): PhpParser\Comment\Doc {
+        $primary_parsed = DocComment::parsePreservingLength($primary, true);
+        $secondary_parsed = DocComment::parsePreservingLength($secondary, true);
+
+        // The tags of both docblocks are unioned rather than deduplicated: a tag
+        // that appears in both (e.g. a conflicting @param or @return) is kept so
+        // that the duplicate-tag detection in FunctionLikeDocblockParser fires on
+        // the merged docblock, just as it would within a single docblock.
+        // parsePreservingLength pads the tag text to keep source offsets, so the
+        // lines are trimmed before being re-rendered.
+        $tags = [];
+
+        foreach ([$primary_parsed->tags, $secondary_parsed->tags] as $parsed_tags) {
+            foreach ($parsed_tags as $type => $lines) {
+                foreach ($lines as $line) {
+                    $tags[$type][] = trim($line);
+                }
+            }
+        }
+
+        $description = $primary_parsed->description !== ''
+            ? $primary_parsed->description
+            : $secondary_parsed->description;
+
+        $merged = new ParsedDocblock($description, $tags);
+
+        return new PhpParser\Comment\Doc(
+            $merged->render(''),
+            $primary->getStartLine(),
+            $primary->getStartFilePos(),
+            $primary->getStartTokenPos(),
+            $primary->getEndLine(),
+            $primary->getEndFilePos(),
+            $primary->getEndTokenPos(),
+        );
     }
 
     private function inferPropertyTypeFromConstructor(
