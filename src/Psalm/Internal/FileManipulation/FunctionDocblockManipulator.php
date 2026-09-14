@@ -89,9 +89,6 @@ final class FunctionDocblockManipulator
     /** @var list<string> */
     private array $throwsExceptions = [];
 
-    /**
-     * @param  Closure|Function_|ClassMethod|ArrowFunction $stmt
-     */
     public static function getForFunction(
         ProjectAnalyzer $project_analyzer,
         string $file_path,
