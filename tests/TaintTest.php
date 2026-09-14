@@ -113,6 +113,18 @@ final class TaintTest extends TestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'firstClassCallableOfTaintPropagatingFunction' => [
+                'code' => '<?php
+                    function f(string $s): array {
+                        return array_map(trim(...), explode("|", $s));
+                    }',
+            ],
+            'firstClassCallableOfPregReplace' => [
+                'code' => '<?php
+                    function f(array $patterns, array $replacements, array $subjects): array {
+                        return array_map(preg_replace(...), $patterns, $replacements, $subjects);
+                    }',
+            ],
             'untaintedRecursiveFunction' => [
                 'code' => '<?php
                     function f(string $s, int $depth): string {

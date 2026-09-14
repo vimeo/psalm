@@ -620,7 +620,8 @@ final class FunctionCallReturnTypeFetcher
             return $function_call_node;
         }
 
-        if ($function_storage->return_source_params) {
+        // getArgs() asserts on first-class callables, so the guard must precede it, not just the flows below.
+        if ($function_storage->return_source_params && !$stmt->isFirstClassCallable()) {
             $removed_taints = $function_storage->removed_taints;
 
             $args = $stmt->getArgs();
@@ -659,18 +660,16 @@ final class FunctionCallReturnTypeFetcher
             $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
             $removed_taints |= $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
-            if (!$stmt->isFirstClassCallable()) {
-                self::taintUsingFlows(
-                    $function_storage,
-                    $taint_flow_graph,
-                    $function_id,
-                    $stmt->getArgs(),
-                    $node_location,
-                    $function_call_node,
-                    $removed_taints | $conditionally_removed_taints,
-                    $added_taints,
-                );
-            }
+            self::taintUsingFlows(
+                $function_storage,
+                $taint_flow_graph,
+                $function_id,
+                $args,
+                $node_location,
+                $function_call_node,
+                $removed_taints | $conditionally_removed_taints,
+                $added_taints,
+            );
         }
 
         self::taintUsingStorage($function_storage, $taint_flow_graph, $function_call_node);
