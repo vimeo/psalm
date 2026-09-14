@@ -21,6 +21,7 @@ use Psalm\Issue\TaintedHeader;
 use Psalm\Issue\TaintedHtml;
 use Psalm\Issue\TaintedInclude;
 use Psalm\Issue\TaintedLdap;
+use Psalm\Issue\TaintedNosql;
 use Psalm\Issue\TaintedSSRF;
 use Psalm\Issue\TaintedShell;
 use Psalm\Issue\TaintedSleep;
@@ -387,6 +388,12 @@ final class TaintFlowGraph extends DataFlowGraph
                             ),
                             TaintKind::INPUT_LDAP => new TaintedLdap(
                                 'Detected tainted LDAP request',
+                                $issue_location,
+                                $issue_trace,
+                                $path,
+                            ),
+                            TaintKind::INPUT_NOSQL => new TaintedNosql(
+                                'Detected tainted NoSQL query',
                                 $issue_location,
                                 $issue_trace,
                                 $path,

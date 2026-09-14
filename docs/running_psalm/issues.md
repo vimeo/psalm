@@ -249,6 +249,7 @@
  - [TaintedInclude](issues/TaintedInclude.md)
  - [TaintedInput](issues/TaintedInput.md)
  - [TaintedLdap](issues/TaintedLdap.md)
+ - [TaintedNosql](issues/TaintedNosql.md)
  - [TaintedShell](issues/TaintedShell.md)
  - [TaintedSleep](issues/TaintedSleep.md)
  - [TaintedSql](issues/TaintedSql.md)

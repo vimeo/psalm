@@ -15,6 +15,7 @@ final class TaintKind
     public const INPUT_EVAL = 'eval';
     public const INPUT_LDAP = 'ldap';
     public const INPUT_SQL = 'sql';
+    public const INPUT_NOSQL = 'nosql';
     public const INPUT_HTML = 'html';
     public const INPUT_HAS_QUOTES = 'has_quotes';
     public const INPUT_SHELL = 'shell';

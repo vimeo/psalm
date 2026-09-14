@@ -1294,6 +1294,7 @@ final class PreloaderList {
         \Psalm\Issue\TaintedInclude::class,
         \Psalm\Issue\TaintedInput::class,
         \Psalm\Issue\TaintedLdap::class,
+        \Psalm\Issue\TaintedNosql::class,
         \Psalm\Issue\TaintedSSRF::class,
         \Psalm\Issue\TaintedShell::class,
         \Psalm\Issue\TaintedSleep::class,
