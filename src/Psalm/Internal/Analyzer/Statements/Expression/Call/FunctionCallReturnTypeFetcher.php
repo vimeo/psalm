@@ -269,6 +269,16 @@ final class FunctionCallReturnTypeFetcher
             return $stmt_type;
         }
 
+        // For a first-class callable (`foo(...)`) the value produced here is the closure
+        // itself, not foo()'s return value. Attributing foo()'s return taint to the closure
+        // would be wrong (e.g. it would make invoking the closure trip the variable-call sink,
+        // and would leak the source/flow re-applied on invocation back onto the closure value).
+        // The underlying function's taint behavior is re-dispatched onto the invocation's
+        // return value in taintCallableReturnType() instead.
+        if ($stmt->isFirstClassCallable()) {
+            return $stmt_type;
+        }
+
         $return_node = self::taintReturnType(
             $statements_analyzer,
             $stmt,
@@ -543,12 +553,15 @@ final class FunctionCallReturnTypeFetcher
      * invoked (e.g. a first-class callable `$f = file_get_contents(...); $f('php://input');`,
      * or `$f = fgets(...); $f(STDIN);`).
      *
-     * Argument sinks already propagate via the callable's params; what is otherwise
-     * skipped - because the call target is an expression rather than a
-     * {@see PhpParser\Node\Name} - is the return-value taint: taint sources
-     * (@psalm-taint-source, and the conditional php://input source) and taint that
-     * flows from an argument to the return value (@psalm-flow). This applies all of
-     * those generically for the underlying function id.
+     * The regular named-call wiring is skipped for callable-valued invocations because the
+     * call target is an expression rather than a {@see PhpParser\Node\Name}, so none of the
+     * underlying function's taint behavior is applied. This re-creates it generically for the
+     * underlying function id:
+     *  - the return value receives taint sources (@psalm-taint-source, and the conditional
+     *    php://input source), argument-to-return flows (@psalm-flow) and the implicit
+     *    param->return flow of an analyzed function body;
+     *  - each argument is connected to the function's per-parameter node, which feeds an
+     *    analyzed body and registers any @psalm-taint-sink parameters as sinks.
      *
      * @param non-empty-lowercase-string $callable_id
      */
@@ -582,59 +595,112 @@ final class FunctionCallReturnTypeFetcher
             $context,
         );
 
-        // re-apply the declared taint behavior of functions that have storage
-        // (@psalm-taint-source sources and @psalm-flow argument-to-return flows)
+        // Re-apply the declared taint behavior of the underlying function. When the call
+        // target is an expression (a callable value) rather than a Node\Name, the regular
+        // named-call wiring is skipped, so nothing connects the return value to the
+        // function's taint sources / return flows, and nothing connects the arguments to the
+        // function's argument sinks. Re-create those connections generically here.
         $storage = self::getCallableStorage($statements_analyzer, $callable_id);
 
-        if ($storage !== null
-            && ($storage->taint_source_types !== 0 || $storage->return_source_params)
-        ) {
-            $location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+        if ($storage === null) {
+            $statements_analyzer->node_data->setType($real_stmt, $stmt_type);
 
-            $return_node = DataFlowNode::getForMethodReturn(
-                $callable_id,
-                $storage,
-                $storage->specialize_call ? $location : null,
-            );
-            $graph->addNode($return_node);
+            return;
+        }
 
-            self::taintUsingStorage($storage, $graph, $return_node);
+        $args = $stmt->getArgs();
 
-            // @psalm-flow: connect the actual argument nodes to the return. The
-            // per-function argument sink nodes taintUsingFlows() relies on are not
-            // created for a callable-valued invocation, so wire the arguments directly.
-            $args = $stmt->getArgs();
+        // Return value: taint sources (@psalm-taint-source), argument-to-return flows
+        // (@psalm-flow), and the implicit param->return flow of an analyzed function body.
+        // The body links its per-argument entry nodes (getForMethodArgument) to this return
+        // node, so wiring the actual arguments to those entry nodes below completes the flow.
+        $return_node = DataFlowNode::getForMethodReturn(
+            $callable_id,
+            $storage,
+            $storage->specialize_call ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null,
+        );
+        $graph->addNode($return_node);
 
-            foreach ($storage->return_source_params as $i => $path_type) {
-                $arg_indices = [$i];
+        self::taintUsingStorage($storage, $graph, $return_node);
 
-                if (isset($storage->params[$i]) && $storage->params[$i]->is_variadic) {
-                    for ($j = $i + 1, $max = count($args); $j < $max; $j++) {
-                        $arg_indices[] = $j;
-                    }
+        // @psalm-flow: connect the actual argument nodes directly to the return. The
+        // per-function argument nodes taintUsingFlows() relies on are not created for a
+        // callable-valued invocation, so wire the arguments to the return here.
+        foreach ($storage->return_source_params as $i => $path_type) {
+            foreach (self::callableArgIndices($storage, $args, $i) as $arg_index) {
+                $arg_type = $statements_analyzer->node_data->getType($args[$arg_index]->value);
+
+                if ($arg_type === null) {
+                    continue;
                 }
 
-                foreach ($arg_indices as $arg_index) {
-                    if (!isset($args[$arg_index])) {
-                        continue;
-                    }
-
-                    $arg_type = $statements_analyzer->node_data->getType($args[$arg_index]->value);
-
-                    if ($arg_type === null) {
-                        continue;
-                    }
-
-                    foreach ($arg_type->parent_nodes as $parent_node) {
-                        $graph->addPath($parent_node, $return_node, $path_type);
-                    }
+                foreach ($arg_type->parent_nodes as $parent_node) {
+                    $graph->addPath($parent_node, $return_node, $path_type);
                 }
             }
+        }
 
-            $stmt_type = $stmt_type->addParentNodes([$return_node->id => $return_node]);
+        $stmt_type = $stmt_type->addParentNodes([$return_node->id => $return_node]);
+
+        // Argument entry / sinks: connect each argument to the function's per-parameter node
+        // (getForMethodArgument). This carries taint into an analyzed body (whose param->return
+        // path completes the implicit return flow above) and into any @psalm-taint-sink params,
+        // which are registered as sinks here.
+        foreach ($storage->params as $i => $param) {
+            if ($param->location === null) {
+                continue;
+            }
+
+            foreach (self::callableArgIndices($storage, $args, $i) as $arg_index) {
+                $arg_type = $statements_analyzer->node_data->getType($args[$arg_index]->value);
+
+                if ($arg_type === null || !$arg_type->parent_nodes) {
+                    continue;
+                }
+
+                $param_node = DataFlowNode::getForMethodArgument(
+                    $callable_id,
+                    $i,
+                    $storage,
+                    $storage->specialize_call ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null,
+                    $param->sinks,
+                );
+                $graph->addNode($param_node);
+
+                if ($param->sinks) {
+                    $graph->addSink($param_node);
+                }
+
+                foreach ($arg_type->parent_nodes as $parent_node) {
+                    $graph->addPath($parent_node, $param_node, 'arg');
+                }
+            }
         }
 
         $statements_analyzer->node_data->setType($real_stmt, $stmt_type);
+    }
+
+    /**
+     * Argument indices that feed parameter offset $i of $storage, given the actual $args.
+     * A variadic parameter collects every trailing argument.
+     *
+     * @param list<PhpParser\Node\Arg> $args
+     * @return list<int>
+     * @psalm-mutation-free
+     */
+    private static function callableArgIndices(FunctionLikeStorage $storage, array $args, int $i): array
+    {
+        if (isset($storage->params[$i]) && $storage->params[$i]->is_variadic) {
+            $indices = [];
+
+            for ($j = $i, $max = count($args); $j < $max; $j++) {
+                $indices[] = $j;
+            }
+
+            return $indices;
+        }
+
+        return isset($args[$i]) ? [$i] : [];
     }
 
     /**

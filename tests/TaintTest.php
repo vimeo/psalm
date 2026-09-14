@@ -1063,6 +1063,51 @@ final class TaintTest extends TestCase
                     echo $f(STDIN);',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintedInputFromFirstClassCallableExplicitSource' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-taint-source input
+                     */
+                    function getName(): string {
+                        return "";
+                    }
+
+                    $f = getName(...);
+                    echo $f();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputFromFirstClassCallableFlow' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-flow ($r) -> return
+                     */
+                    function some_stub(string $r): string { return ""; }
+
+                    $f = some_stub(...);
+                    echo $f((string) $_GET["untrusted"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputFromFirstClassCallableFlowUserFunction' => [
+                'code' => '<?php
+                    function echoback(string $in): string {
+                        return $in;
+                    }
+
+                    $f = echoback(...);
+                    echo $f((string) $_GET["untrusted"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputToFirstClassCallableSink' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-taint-sink html $in
+                     */
+                    function my_sink(string $in): void {}
+
+                    $f = my_sink(...);
+                    $f((string) $_GET["untrusted"]);',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintedInputFromMethodReturnTypeSimple' => [
                 'code' => '<?php
                     class A {
