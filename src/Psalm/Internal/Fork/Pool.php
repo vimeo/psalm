@@ -8,6 +8,7 @@ use Amp\Cancellation;
 use Amp\Future;
 use Amp\Parallel\Context\Context;
 use Amp\Parallel\Context\ContextFactory;
+use Amp\Parallel\Context\ForkContext;
 use Amp\Parallel\Ipc\IpcHub;
 use Amp\Parallel\Ipc\LocalIpcHub;
 use Amp\Parallel\Worker\ContextWorkerFactory;
@@ -15,6 +16,7 @@ use Amp\Parallel\Worker\ContextWorkerPool;
 use Amp\Parallel\Worker\Task;
 use Amp\Parallel\Worker\Worker;
 use Amp\Parallel\Worker\WorkerPool;
+use Amp\Serialization\NativeSerializer;
 use AssertionError;
 use Closure;
 use Override;
@@ -24,6 +26,7 @@ use Revolt\EventLoop;
 use function Amp\Future\await;
 use function array_map;
 use function count;
+use function extension_loaded;
 use function gc_collect_cycles;
 
 use const PHP_EOL;
@@ -72,7 +75,15 @@ final class Pool
                     #[Override]
                     public function start(string|array $script, ?Cancellation $cancellation = null): Context
                     {
-                        return ForkContext::start($script, $this->ipcHub, $cancellation, $this->childConnectTimeout);
+                        $context = ForkContext::start(
+                            $this->ipcHub,
+                            $script,
+                            $cancellation,
+                            $this->childConnectTimeout,
+                            extension_loaded('igbinary') ? new IgbinarySerializer() : new NativeSerializer(),
+                        );
+
+                        return new SignalDiagnosticContext($context);
                     }
                 },
             ),
