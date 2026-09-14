@@ -12,9 +12,11 @@ use Amp\Parallel\Ipc\IpcHub;
 use Amp\Parallel\Ipc\LocalIpcHub;
 use Amp\Parallel\Worker\ContextWorkerFactory;
 use Amp\Parallel\Worker\ContextWorkerPool;
+use Amp\Parallel\Worker\Execution;
 use Amp\Parallel\Worker\Task;
 use Amp\Parallel\Worker\Worker;
 use Amp\Parallel\Worker\WorkerPool;
+use Amp\Sync\ChannelException;
 use AssertionError;
 use Closure;
 use Override;
@@ -22,6 +24,7 @@ use Psalm\Progress\Progress;
 use Revolt\EventLoop;
 
 use function Amp\Future\await;
+use function Amp\async;
 use function array_map;
 use function count;
 use function gc_collect_cycles;
@@ -81,19 +84,25 @@ final class Pool
 
     /**
      * @template TResult
+     * @template TReceive
+     * @template TSend
      * @param array<string> $process_task_data_iterator
      * An array of task data items to be divided up among the
      * workers. The size of this is the number of forked processes.
      * @phpcsSuppress SlevomatCodingStandard.TypeHints.ParameterTypeHint
-     * @param class-string<Task<TResult, void, void>> $main_task A task to execute on each task data.
-     *                                                           It must return an array (to be gathered).
+     * @param class-string<Task<TResult, TReceive, TSend>> $main_task A task to execute on each task data.
+     *                                                                It must return an array (to be gathered).
      *
      * @param Closure(TResult $data):void $task_done_closure A closure to execute when a task is done
+     * @param null|Closure(TSend):TReceive $message_handler Handles a message sent by a worker over its task
+     *        channel and returns the reply. Used to answer requests a task makes mid-execution (e.g.
+     *        registering a custom taint in the parent process).
      */
     public function run(
         array $process_task_data_iterator,
         string $main_task,
         ?Closure $task_done_closure = null,
+        ?Closure $message_handler = null,
     ): void {
         $total = count($process_task_data_iterator);
         $this->progress->debug("Processing ".$total." tasks...".PHP_EOL);
@@ -102,7 +111,11 @@ final class Pool
 
         $results = [];
         foreach ($process_task_data_iterator as $file) {
-            $results []= $f = $this->pool->submit(new $main_task($file))->getFuture();
+            $execution = $this->pool->submit(new $main_task($file));
+            $results []= $f = $execution->getFuture();
+            if ($message_handler !== null) {
+                $results []= $this->pumpMessages($execution, $f, $message_handler);
+            }
             if ($task_done_closure) {
                 $f->map($task_done_closure);
             }
@@ -124,6 +137,40 @@ final class Pool
             });
         }
         await($results);
+    }
+
+    /**
+     * Answer messages a running task sends over its channel, until the task finishes.
+     *
+     * The worker blocks on the reply before continuing, so the task's own future only resolves once every
+     * request has been answered; once it resolves we close the channel, which unblocks the receive loop.
+     *
+     * @template TResult
+     * @template TReceive
+     * @template TSend
+     * @param Execution<TResult, TReceive, TSend> $execution
+     * @param Future<TResult> $result
+     * @param Closure(TSend):TReceive $message_handler
+     * @return Future<void>
+     */
+    private function pumpMessages(Execution $execution, Future $result, Closure $message_handler): Future
+    {
+        $channel = $execution->getChannel();
+
+        $result->finally(static function () use ($channel): void {
+            $channel->close();
+        });
+
+        return async(static function () use ($channel, $message_handler): void {
+            try {
+                while (true) {
+                    // The worker blocks on the reply, so answer each request in turn.
+                    $channel->send($message_handler($channel->receive()));
+                }
+            } catch (ChannelException) {
+                // The channel was closed once the task finished; nothing more to answer.
+            }
+        });
     }
 
     /**
