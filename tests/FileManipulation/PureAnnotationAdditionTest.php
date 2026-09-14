@@ -327,10 +327,10 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                         return $s;
                     }',
                 'output' => '<?php
-                    /**
+                    $f = /**
                      * @psalm-pure
                      */
-                    $f = function(string $s): string {
+                    function(string $s): string {
                         return bar($s);
                     };
                     /**
@@ -347,13 +347,13 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                 'input' => '<?php
                     $a = function(): int { return 1; }; $b = function(): int { return 2; };',
                 'output' => '<?php
-                    /**
+                    $a = /**
                      * @psalm-pure
                      */
-                    $a = function(): int { return 1; }; /**
+                    function(): int { return 1; }; $b = /**
                      * @psalm-pure
                      */
-                    $b = function(): int { return 2; };',
+                    function(): int { return 2; };',
                 'php_version' => '7.4',
                 'issues_to_fix' => ['MissingPureAnnotation'],
                 'safe_types' => true,
@@ -537,10 +537,10 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                         return $s;
                     }',
                 'output' => '<?php
-                    /**
+                    $f = /**
                      * @psalm-pure
                      */
-                    $f = function(string $s, int $v) use (&$f): string {
+                    function(string $s, int $v) use (&$f): string {
                         if ($v > 5) {
                             return $f($s, $v - 1);
                         }

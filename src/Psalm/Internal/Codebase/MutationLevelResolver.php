@@ -8,7 +8,6 @@ use PhpParser\Node;
 use PhpParser\Node\Expr\ArrowFunction;
 use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\FunctionLike;
-use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Function_;
 use PhpParser\NodeFinder;
@@ -158,14 +157,13 @@ final class MutationLevelResolver
             if ($fix) {
                 $file_path = $info['location']->file_path;
 
-                [$stmt, $docblock_anchor] = self::findFunctionLike($codebase, $file_path, $info['start']);
+                $stmt = self::findFunctionLike($codebase, $file_path, $info['start']);
 
                 if ($stmt !== null) {
                     FunctionDocblockManipulator::getForFunction(
                         $project_analyzer,
                         $file_path,
                         $stmt,
-                        $docblock_anchor,
                     )->setAllowedMutations($level);
                 }
             }
@@ -173,20 +171,17 @@ final class MutationLevelResolver
     }
 
     /**
-     * Finds the function-like starting at the given offset, along with the
-     * statement its docblock belongs to for closures (`$f = function () {}`).
-     *
-     * @return array{Closure|Function_|ClassMethod|ArrowFunction|null, ?Stmt}
+     * Finds the function-like starting at the given offset.
      */
     private static function findFunctionLike(
         Codebase $codebase,
         string $file_path,
         int $start_pos,
-    ): array {
+    ): Closure|Function_|ClassMethod|ArrowFunction|null {
         try {
             $stmts = $codebase->getStatementsForFile($file_path);
         } catch (Throwable) {
-            return [null, null];
+            return null;
         }
 
         $finder = new NodeFinder();
@@ -197,30 +192,14 @@ final class MutationLevelResolver
                 && (int) $node->getAttribute('startFilePos') === $start_pos,
         );
 
-        if ($node instanceof Function_ || $node instanceof ClassMethod) {
-            return [$node, null];
+        if ($node instanceof Function_
+            || $node instanceof ClassMethod
+            || $node instanceof Closure
+            || $node instanceof ArrowFunction
+        ) {
+            return $node;
         }
 
-        if (!$node instanceof Closure && !$node instanceof ArrowFunction) {
-            return [null, null];
-        }
-
-        // the innermost statement containing the closure
-        $anchor = null;
-
-        foreach ($finder->find(
-            $stmts,
-            static fn(Node $candidate): bool => $candidate instanceof Stmt
-                && (int) $candidate->getAttribute('startFilePos') <= $start_pos
-                && (int) $candidate->getAttribute('endFilePos') >= $start_pos,
-        ) as $candidate) {
-            if ($anchor === null
-                || (int) $candidate->getAttribute('startFilePos') >= (int) $anchor->getAttribute('startFilePos')
-            ) {
-                $anchor = $candidate;
-            }
-        }
-
-        return [$node, $anchor instanceof Stmt ? $anchor : null];
+        return null;
     }
 }

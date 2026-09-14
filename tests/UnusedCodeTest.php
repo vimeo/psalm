@@ -200,6 +200,47 @@ final class UnusedCodeTest extends TestCase
         );
     }
 
+    public function testClassReferencedFromExternalInterfaceOverrideIsUsed(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+
+        foreach (['MissingImmutableAnnotation', 'MissingOverrideAttribute'] as $issue_type) {
+            $this->project_analyzer->getConfig()->setCustomErrorLevel($issue_type, Config::REPORT_SUPPRESS);
+        }
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class Registered {}
+
+                // Handler implements an interface defined outside the project, so
+                // it may be instantiated and called externally through Countable:
+                // its overriding methods, and the classes they reference, count as
+                // used even without an explicit @api annotation.
+                final class Handler implements Countable {
+                    public function count(): int {
+                        return strlen(Registered::class);
+                    }
+                }',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        // only the never-instantiated entry point is unused; Registered, which is
+        // referenced from its externally-callable method, must not be reported
+        self::assertSame(
+            ['UnusedClass'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+        self::assertSame(
+            'Handler',
+            IssueBuffer::getIssuesDataForFile($file_path)[0]->selected_text,
+        );
+    }
+
     public function testDeadReadDoesNotMakeConstructorOnlyPropertyUsed(): void
     {
         $this->project_analyzer->getConfig()->throw_exception = false;

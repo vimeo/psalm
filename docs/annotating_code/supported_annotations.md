@@ -786,6 +786,35 @@ any explicit references to them in your code. You should mark these classes with
 class UnreferencedClass {}
 ```
 
+When an [`Unused*` issue](../running_psalm/issues.md) is reported, there are only
+two correct fix paths:
+
+ * The symbol is genuinely **public surface** — consumed from outside the
+   analysed codebase, e.g. a library entry point, or a class instantiated only
+   by a framework, container or plugin loader. Mark it with `@api`/`@psalm-api`.
+   Use this *only* for real public surface.
+ * Otherwise the symbol is **dead code** — remove it, along with anything that
+   was only reachable through it.
+
+For a reported method or property, `@api` may be placed either on that member or
+on the whole class, but marking the **whole class** is almost always the right
+choice: an externally-consumed member belongs to an externally-consumed class,
+and one class-level annotation then covers its entire public API. Conversely, if
+a member is reported as unused inside a class that is *not* marked `@api`, it is
+almost always genuinely dead code — remove it rather than annotating the lone
+member. Annotating an individual member is only correct in the uncommon case
+where the class is not public API but that one member genuinely is.
+
+A class that implements an interface (or extends a class) defined outside the
+project is treated as public surface automatically, since it can be instantiated
+and invoked through that external type: its overriding methods are considered
+used without an explicit `@api`.
+
+Do not reach for `@psalm-suppress UnusedClass` (or another `Unused*`
+suppression) in place of `@api`: as noted above, a suppression only silences the
+report, it does not mark the symbol as used, so symbols it references may still
+be reported as unused.
+
 ### `@psalm-inheritors`
 
 Used to tell Psalm that a class can only be extended by a certain subset of classes.
