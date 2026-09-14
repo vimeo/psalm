@@ -11,6 +11,7 @@ use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TypeCombiner;
@@ -883,6 +884,31 @@ final class CastAnalyzer
         }
 
         if ($statements_analyzer->data_flow_graph) {
+            // casting to string escapes taints that can only apply to a value able to
+            // hold an array/object (e.g. nosql): the result is a plain string and can
+            // never be, say, a NoSQL query document.
+            $removed_taints = $str_type->getTaintsToRemove();
+
+            if ($removed_taints !== 0 && $parent_nodes) {
+                $cast_node = DataFlowNode::getForAssignment(
+                    'string-cast',
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                );
+                $statements_analyzer->data_flow_graph->addNode($cast_node);
+
+                foreach ($parent_nodes as $parent_node) {
+                    $statements_analyzer->data_flow_graph->addPath(
+                        $parent_node,
+                        $cast_node,
+                        'string-cast',
+                        0,
+                        $removed_taints,
+                    );
+                }
+
+                $parent_nodes = [$cast_node->id => $cast_node];
+            }
+
             $str_type = $str_type->setParentNodes($parent_nodes);
         }
 

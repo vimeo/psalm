@@ -244,6 +244,14 @@ final class TaintTest extends TestCase
                     // a plain string can never be a NoSQL query, so this is safe
                     query((string) $_GET["username"]);',
             ],
+            'nosqlFilterEscapedByStringCast' => [
+                'code' => '<?php
+                    function getUser(): MongoDB\Driver\Query {
+                        // casting to string forces a literal match: the value can no
+                        // longer be an injected operator like ["$ne" => null]
+                        return new MongoDB\Driver\Query(["username" => (string) $_GET["username"]]);
+                    }',
+            ],
             'nosqlFilterEscapedBySanitizer' => [
                 'code' => '<?php
                     /**
