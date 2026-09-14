@@ -256,7 +256,7 @@ final class FunctionCallReturnTypeFetcher
         }
 
         if (!$stmt->isFirstClassCallable()) {
-            self::taintStreamReadReturnType(
+            self::taintPhpInputSource(
                 $statements_analyzer,
                 $stmt,
                 $function_id,
@@ -566,7 +566,7 @@ final class FunctionCallReturnTypeFetcher
             return;
         }
 
-        self::taintStreamReadReturnType(
+        self::taintPhpInputSource(
             $statements_analyzer,
             $stmt,
             $callable_id,
@@ -578,17 +578,19 @@ final class FunctionCallReturnTypeFetcher
     }
 
     /**
-     * Reading from php://input or php://stdin yields user-controlled data.
+     * fopen()/file_get_contents()/file() called with a literal 'php://input' or
+     * 'php://stdin' path read user-controlled data, so their return value becomes a
+     * taint source.
      *
-     * This handles the builtin (callmap-only) reading functions, which never get a
-     * FunctionLikeStorage and so are skipped by {@see self::taintReturnType()}:
-     *  - fopen()/file_get_contents()/file() with a literal 'php://input' or
-     *    'php://stdin' path become taint sources;
-     *  - stream reading functions (stream_get_contents, fgets, fread, ...) propagate
-     *    the taint of their stream-resource argument to their return value, so data
-     *    read from a tainted fopen() handle stays tainted.
+     * This is not expressible as a stub because the source is conditional on the
+     * literal argument *value*; stream reading functions that merely relay their
+     * handle's taint (fgets, fread, stream_get_contents, ...) are instead annotated
+     * with @psalm-flow in the stubs.
+     *
+     * These are callmap-only functions, so they never get a FunctionLikeStorage and
+     * are skipped by {@see self::taintReturnType()}.
      */
-    private static function taintStreamReadReturnType(
+    private static function taintPhpInputSource(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\FuncCall $stmt,
         string $function_id,
@@ -599,98 +601,63 @@ final class FunctionCallReturnTypeFetcher
             return;
         }
 
-        // function id => offset of the argument holding the stream path
+        // function id => offset of the argument holding the stream path.
+        // Only functions that *return* the stream contents belong here (readfile()
+        // writes to the output buffer and returns a byte count, so it is excluded).
+        /** @var array<string, int> $source_path_arg */
         static $source_path_arg = [
             'fopen' => 0,
             'file_get_contents' => 0,
             'file' => 0,
-            'readfile' => 0,
-        ];
-
-        // function id => offset of the argument holding the stream resource
-        static $stream_resource_arg = [
-            'stream_get_contents' => 0,
-            'stream_get_line' => 0,
-            'fgets' => 0,
-            'fgetss' => 0,
-            'fread' => 0,
-            'fgetc' => 0,
-            'fgetcsv' => 0,
-            'fscanf' => 0,
         ];
 
         $function_id = strtolower($function_id);
-        $args = $stmt->getArgs();
 
-        if (isset($source_path_arg[$function_id])) {
-            $offset = $source_path_arg[$function_id];
-
-            if (!isset($args[$offset])) {
-                return;
-            }
-
-            $arg_type = $statements_analyzer->node_data->getType($args[$offset]->value);
-
-            if (!$arg_type || !$arg_type->isSingleStringLiteral()) {
-                return;
-            }
-
-            $path = strtolower($arg_type->getSingleStringLiteral()->value);
-
-            if ($path !== 'php://input' && $path !== 'php://stdin') {
-                return;
-            }
-
-            $codebase = $statements_analyzer->getCodebase();
-            $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
-
-            $taints = TaintKind::ALL_INPUT;
-            $taints |= $codebase->config->eventDispatcher->dispatchAddTaints($event);
-            $taints &= ~$codebase->config->eventDispatcher->dispatchRemoveTaints($event);
-
-            if ($taints === 0) {
-                return;
-            }
-
-            $location = new CodeLocation($statements_analyzer->getSource(), $stmt);
-
-            $source = DataFlowNode::getForTaintSink(
-                $function_id . '(' . $path . ')',
-                $location,
-                $taints,
-                $location,
-            );
-            $graph->addSource($source);
-
-            $stmt_type = $stmt_type->addParentNodes([$source->id => $source]);
-
+        if (!isset($source_path_arg[$function_id])) {
             return;
         }
 
-        if (isset($stream_resource_arg[$function_id])) {
-            $offset = $stream_resource_arg[$function_id];
+        $offset = $source_path_arg[$function_id];
+        $args = $stmt->getArgs();
 
-            if (!isset($args[$offset])) {
-                return;
-            }
-
-            $arg_type = $statements_analyzer->node_data->getType($args[$offset]->value);
-
-            if (!$arg_type || !$arg_type->parent_nodes) {
-                return;
-            }
-
-            $location = new CodeLocation($statements_analyzer->getSource(), $stmt);
-
-            $return_node = DataFlowNode::getForAssignment($function_id . '-stream-read', $location);
-            $graph->addNode($return_node);
-
-            foreach ($arg_type->parent_nodes as $parent_node) {
-                $graph->addPath($parent_node, $return_node, 'stream-read');
-            }
-
-            $stmt_type = $stmt_type->addParentNodes([$return_node->id => $return_node]);
+        if (!isset($args[$offset])) {
+            return;
         }
+
+        $arg_type = $statements_analyzer->node_data->getType($args[$offset]->value);
+
+        if (!$arg_type || !$arg_type->isSingleStringLiteral()) {
+            return;
+        }
+
+        $path = strtolower($arg_type->getSingleStringLiteral()->value);
+
+        if ($path !== 'php://input' && $path !== 'php://stdin') {
+            return;
+        }
+
+        $codebase = $statements_analyzer->getCodebase();
+        $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
+
+        $taints = TaintKind::ALL_INPUT;
+        $taints |= $codebase->config->eventDispatcher->dispatchAddTaints($event);
+        $taints &= ~$codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+
+        if ($taints === 0) {
+            return;
+        }
+
+        $location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+
+        $source = DataFlowNode::getForTaintSink(
+            $function_id . '(' . $path . ')',
+            $location,
+            $taints,
+            $location,
+        );
+        $graph->addSource($source);
+
+        $stmt_type = $stmt_type->addParentNodes([$source->id => $source]);
     }
 
     private static function taintReturnType(
