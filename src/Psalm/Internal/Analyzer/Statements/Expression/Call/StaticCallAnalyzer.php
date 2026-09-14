@@ -281,7 +281,6 @@ final class StaticCallAnalyzer extends CallAnalyzer
             $method_source = DataFlowNode::getForCallableReturn(
                 'builtin',
                 $cased_method_id,
-                null,
             );
         } elseif ($method_storage->specialize_call) {
             $method_source = DataFlowNode::getForMethodReturn(
