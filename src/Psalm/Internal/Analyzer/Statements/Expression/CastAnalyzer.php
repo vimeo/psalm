@@ -883,25 +883,23 @@ final class CastAnalyzer
             );
         }
 
-        if ($statements_analyzer->data_flow_graph) {
+        if ($graph = $statements_analyzer->data_flow_graph) {
             // casting to string escapes taints that can only apply to a value able to
             // hold an array/object (e.g. nosql): the result is a plain string and can
-            // never be, say, a NoSQL query document. This only concerns the taint
-            // graph - the variable-use graph must be left untouched so that unused
-            // variable/reference analysis is unaffected.
-            $removed_taints = $statements_analyzer->taint_flow_graph
-                ? $str_type->getTaintsToRemove()
-                : 0;
+            // never be, say, a NoSQL query document. The pass-through node is added to
+            // the active graph so variable-use tracking stays intact; removed_taints is
+            // ignored by the variable-use graph and only takes effect for taint analysis.
+            $removed_taints = $str_type->getTaintsToRemove();
 
             if ($removed_taints !== 0 && $parent_nodes) {
                 $cast_node = DataFlowNode::getForAssignment(
                     'string-cast',
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                 );
-                $statements_analyzer->taint_flow_graph->addNode($cast_node);
+                $graph->addNode($cast_node);
 
                 foreach ($parent_nodes as $parent_node) {
-                    $statements_analyzer->taint_flow_graph->addPath(
+                    $graph->addPath(
                         $parent_node,
                         $cast_node,
                         'string-cast',
