@@ -1503,7 +1503,6 @@
       <code><![CDATA[$config->error_baseline]]></code>
       <code><![CDATA[$f_paths]]></code>
       <code><![CDATA[$path_to_config]]></code>
-      <code><![CDATA[$stdin = fgets(STDIN)]]></code>
       <code><![CDATA[$version = $config->getPHPVersionFromComposerJson()]]></code>
       <code><![CDATA[$version = $config->getPhpVersionFromConfig()]]></code>
       <code><![CDATA[strpos(__NAMESPACE__, 'HumbugBox')]]></code>

@@ -352,17 +352,23 @@ final class CliUtils
         try {
             $stdin = fgets(STDIN);
 
-            if ($stdin === false || trim($stdin) === '') {
+            if ($stdin === false) {
                 return null;
             }
 
-            $paths = preg_split('/\s+/', trim($stdin));
+            $stdin = trim($stdin);
+
+            if ($stdin === '') {
+                return null;
+            }
+
+            $paths = preg_split('/\s+/', $stdin);
 
             if ($paths === false) {
                 throw new RuntimeException('Invalid paths: ' . preg_last_error_msg());
             }
 
-            return $paths === [] ? null : $paths;
+            return $paths;
         } finally {
             stream_set_blocking(STDIN, $meta['blocked']);
         }
