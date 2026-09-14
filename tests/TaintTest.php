@@ -1041,6 +1041,21 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedSql',
             ],
+            'taintedNosqlFromMongoQuery' => [
+                'code' => '<?php
+                    function getUser() : MongoDB\Driver\Query {
+                        $filter = ["username" => $_GET["username"]];
+                        return new MongoDB\Driver\Query($filter);
+                    }',
+                'error_message' => 'TaintedNosql',
+            ],
+            'taintedNosqlFromMongoBulkWrite' => [
+                'code' => '<?php
+                    function deleteUser(MongoDB\Driver\BulkWrite $bulk) : void {
+                        $bulk->delete(["username" => $_GET["username"]]);
+                    }',
+                'error_message' => 'TaintedNosql',
+            ],
             'taintedInputFromFunctionReturnType' => [
                 'code' => '<?php
                     function getName() : string {
