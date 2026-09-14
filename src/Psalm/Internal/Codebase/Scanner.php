@@ -337,9 +337,16 @@ final class Scanner
             );
 
             await($pool->runAll(new InitScannerTask));
-            $pool->run($files_to_scan, ScannerTask::class, function (): void {
-                $this->progress->taskDone(0);
-            });
+            $pool->run(
+                $files_to_scan,
+                ScannerTask::class,
+                function (): void {
+                    $this->progress->taskDone(0);
+                },
+                // Register custom taints a worker discovers in this (parent) process's single registry, so
+                // every worker resolves a given taint name to the same bit.
+                fn(string $taint_type): array => $this->codebase->registerTaintFromWorker($taint_type),
+            );
 
             // Wait for all tasks to complete and collect the results.
             $forked_pool_data = $pool->runAll(new ShutdownScannerTask);

@@ -867,6 +867,10 @@ final class IssueBuffer
             $project_analyzer->finish($start_time, PSALM_VERSION);
         }
 
+        // Persist the custom taint name->bit mapping on every run that populated the cache (not just full
+        // runs), so cached taint sinks/sources keep matching after the analysis is reused from cache.
+        $project_analyzer->persistCustomTaints();
+
         if ($error_count
             && !($codebase->taint_flow_graph
                 && $project_analyzer->generated_report_options
