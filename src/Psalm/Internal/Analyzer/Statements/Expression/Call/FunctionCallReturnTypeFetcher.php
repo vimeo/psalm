@@ -733,7 +733,7 @@ final class FunctionCallReturnTypeFetcher
 
         $location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
-        $source = DataFlowNode::getForTaintSink(
+        $source = DataFlowNode::getForTaint(
             $function_id . '(' . $path . ')',
             $location,
             $taints,

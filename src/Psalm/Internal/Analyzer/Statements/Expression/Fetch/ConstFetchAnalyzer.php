@@ -149,7 +149,7 @@ final class ConstFetchAnalyzer
 
         $location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
-        $source = DataFlowNode::getForTaintSink('STDIN', $location, $taints, $location);
+        $source = DataFlowNode::getForTaint('STDIN', $location, $taints, $location);
         $graph->addSource($source);
 
         $type = $type->setParentNodes([$source->id => $source]);

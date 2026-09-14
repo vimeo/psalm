@@ -89,9 +89,13 @@ final class DataFlowNode implements Stringable
     }
 
     /**
+     * Builds a node carrying a taint bitmask at a location. Whether it behaves as a
+     * source or a sink depends on whether the caller passes it to
+     * {@see TaintFlowGraph::addSource()} or {@see TaintFlowGraph::addSink()}.
+     *
      * @psalm-pure
      */
-    public static function getForTaintSink(
+    public static function getForTaint(
         string $taint_id,
         CodeLocation $code_location,
         int $taints,
