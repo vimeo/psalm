@@ -247,6 +247,27 @@ namespace MongoDB\Driver
         }
     }
 
+    final class Manager
+    {
+        final public function __construct(?string $uri = null, array $uriOptions = [], array $driverOptions = [])
+        {
+        }
+
+        /**
+         * @return Cursor<int, array|object>
+         */
+        final public function executeQuery(string $namespace, Query $query, $options = null): Cursor
+        {
+        }
+
+        /**
+         * @return Cursor<int, array|object>
+         */
+        final public function executeCommand(string $db, Command $command, $options = null): Cursor
+        {
+        }
+    }
+
     final class Query
     {
         /**

@@ -49,6 +49,12 @@ final class TaintKind
     public const NUMERIC_ONLY = self::INPUT_SLEEP;
     /** @internal */
     public const BOOL_ONLY = self::INPUT_SLEEP;
+    /**
+     * @internal Taints that can only apply to values able to hold an array/object
+     * (e.g. a NoSQL query document). A plain string can never carry these taints,
+     * so casting user input to string acts as an escape.
+     */
+    public const ARRAY_ONLY = self::INPUT_NOSQL;
 
     /** @internal Keep this synced with the above */
     public const BUILTIN_TAINT_COUNT = 20;

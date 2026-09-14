@@ -1632,6 +1632,11 @@ trait UnionTrait
         if ($this->isBool()) {
             return TaintKind::ALL_INPUT & ~TaintKind::BOOL_ONLY;
         }
+        // a plain string can't carry a NoSQL query (only arrays/objects can),
+        // so casting user input to string escapes the nosql taint
+        if ($this->isString()) {
+            return TaintKind::ARRAY_ONLY;
+        }
         return 0;
     }
     #[Override]

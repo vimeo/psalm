@@ -236,6 +236,30 @@ final class TaintTest extends TestCase
                     $agent = new LlmAgent();
                     $agent->prompt(sanitize_for_llm((string) $_GET["question"]));',
             ],
+            'nosqlSinkNotTaintedByString' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink nosql $filter */
+                    function query($filter): void {}
+
+                    // a plain string can never be a NoSQL query, so this is safe
+                    query((string) $_GET["username"]);',
+            ],
+            'nosqlFilterEscaped' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, string> $filter
+                     * @return array<string, string>
+                     * @psalm-taint-escape nosql
+                     */
+                    function sanitize_mongo_filter(array $filter): array {
+                        return $filter;
+                    }
+
+                    function getUser(): MongoDB\Driver\Query {
+                        $filter = sanitize_mongo_filter(["username" => (string) $_GET["username"]]);
+                        return new MongoDB\Driver\Query($filter);
+                    }',
+            ],
             'taintedInputToParamButSafe' => [
                 'code' => '<?php
                     class A {
@@ -1053,6 +1077,14 @@ final class TaintTest extends TestCase
                 'code' => '<?php
                     function deleteUser(MongoDB\Driver\BulkWrite $bulk) : void {
                         $bulk->delete(["username" => $_GET["username"]]);
+                    }',
+                'error_message' => 'TaintedNosql',
+            ],
+            'taintedNosqlFromWholeUserControlledFilter' => [
+                'code' => '<?php
+                    function getUser() : MongoDB\Driver\Query {
+                        // $_GET["filter"] may be an array like ["username" => ["$ne" => null]]
+                        return new MongoDB\Driver\Query((array) $_GET["filter"]);
                     }',
                 'error_message' => 'TaintedNosql',
             ],
