@@ -46,7 +46,7 @@ final class FunctionCallInfo
      * underlying function id is known, this holds that id so taint sources can be
      * re-dispatched on invocation.
      *
-     * @var ?lowercase-string
+     * @var ?non-empty-lowercase-string
      */
     public ?string $callable_id = null;
 

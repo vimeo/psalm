@@ -32,9 +32,9 @@ final class TCallable extends Atomic
      *
      * @param list<FunctionLikeParameter> $params
      * @param Mutations::LEVEL_* $allowed_mutations
-     * @param ?lowercase-string $callable_id The id of the underlying function/method, when known.
-     *                                        Metadata only - it does not affect the structural type -
-     *                                        and is used to re-dispatch taint sinks/sources on invocation.
+     * @param ?non-empty-lowercase-string $callable_id The id of the underlying function/method, when
+     *                                        known. Metadata only - it does not affect the structural
+     *                                        type - and is used to re-dispatch taint sinks/sources on invocation.
      */
     public function __construct(
         ?array $params = null,

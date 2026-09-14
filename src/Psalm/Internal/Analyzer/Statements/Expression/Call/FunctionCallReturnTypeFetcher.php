@@ -550,7 +550,7 @@ final class FunctionCallReturnTypeFetcher
      * flows from an argument to the return value (@psalm-flow). This applies all of
      * those generically for the underlying function id.
      *
-     * @param lowercase-string $callable_id
+     * @param non-empty-lowercase-string $callable_id
      */
     public static function taintCallableReturnType(
         StatementsAnalyzer $statements_analyzer,
@@ -641,7 +641,7 @@ final class FunctionCallReturnTypeFetcher
      * Resolves the storage for a called function id, or null if it has none
      * (e.g. a callmap-only builtin).
      *
-     * @param lowercase-string $function_id
+     * @param non-empty-lowercase-string $function_id
      */
     private static function getCallableStorage(
         StatementsAnalyzer $statements_analyzer,

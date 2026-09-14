@@ -37,8 +37,8 @@ final class TClosure extends TNamedObject
      * @param array<string, bool> $byref_uses
      * @param Mutations::LEVEL_* $allowed_mutations
      * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject> $extra_types
-     * @param ?lowercase-string $callable_id The id of the underlying function/method, when known
-     *                                        (e.g. for a first-class callable `foo(...)`). Metadata
+     * @param ?non-empty-lowercase-string $callable_id The id of the underlying function/method, when
+     *                                        known (e.g. for a first-class callable `foo(...)`). Metadata
      *                                        only - it does not affect the structural type - and is
      *                                        used to re-dispatch taint sinks/sources on invocation.
      */
