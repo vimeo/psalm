@@ -525,7 +525,6 @@ final class VariableFetchAnalyzer
             $var_name,
             $taint_location,
             $taints,
-            $taint_location,
         );
         $graph->addSource($taint_source);
 
