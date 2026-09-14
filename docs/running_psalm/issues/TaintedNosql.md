@@ -42,17 +42,26 @@ Or route the filter through a sanitizer annotated with `@psalm-taint-escape nosq
 <?php
 
 /**
- * @param array<string, string> $filter
+ * Forces every filter value to a scalar so an attacker cannot inject query
+ * operators such as ["$ne" => null] through array-valued input.
+ *
+ * @param array<string, mixed> $filter
  * @return array<string, string>
  * @psalm-taint-escape nosql
  */
 function sanitize_mongo_filter(array $filter): array {
-    // e.g. reject any value that is not a scalar
-    return $filter;
+    $safe = [];
+    foreach ($filter as $field => $value) {
+        if (is_array($value)) {
+            throw new InvalidArgumentException("Filter values must be scalar");
+        }
+        $safe[$field] = (string) $value;
+    }
+    return $safe;
 }
 
 function getUser(): MongoDB\Driver\Query {
-    $filter = sanitize_mongo_filter(["username" => (string) $_GET["username"]]);
+    $filter = sanitize_mongo_filter(["username" => $_GET["username"]]);
     return new MongoDB\Driver\Query($filter);
 }
 ```

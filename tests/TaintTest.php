@@ -244,19 +244,37 @@ final class TaintTest extends TestCase
                     // a plain string can never be a NoSQL query, so this is safe
                     query((string) $_GET["username"]);',
             ],
-            'nosqlFilterEscaped' => [
+            'nosqlFilterEscapedByStringCast' => [
+                'code' => '<?php
+                    function getUser(): MongoDB\Driver\Query {
+                        // casting to string forces a literal match: the value can no
+                        // longer be an injected operator like ["$ne" => null]
+                        return new MongoDB\Driver\Query(["username" => (string) $_GET["username"]]);
+                    }',
+            ],
+            'nosqlFilterEscapedBySanitizer' => [
                 'code' => '<?php
                     /**
-                     * @param array<string, string> $filter
+                     * Forces every filter value to a scalar so an attacker cannot inject
+                     * query operators such as ["$ne" => null] through array-valued input.
+                     *
+                     * @param array<string, mixed> $filter
                      * @return array<string, string>
                      * @psalm-taint-escape nosql
                      */
                     function sanitize_mongo_filter(array $filter): array {
-                        return $filter;
+                        $safe = [];
+                        foreach ($filter as $field => $value) {
+                            if (is_array($value)) {
+                                throw new InvalidArgumentException("Filter values must be scalar");
+                            }
+                            $safe[$field] = (string) $value;
+                        }
+                        return $safe;
                     }
 
                     function getUser(): MongoDB\Driver\Query {
-                        $filter = sanitize_mongo_filter(["username" => (string) $_GET["username"]]);
+                        $filter = sanitize_mongo_filter(["username" => $_GET["username"]]);
                         return new MongoDB\Driver\Query($filter);
                     }',
             ],
