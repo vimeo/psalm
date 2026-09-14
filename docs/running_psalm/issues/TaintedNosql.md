@@ -8,8 +8,9 @@ array/object instead of a scalar. For example, a request like `?username[$ne]=` 
 `$_GET['username']` to be the array `['$ne' => '']`, which turns an equality match into a
 "not equal" match and can bypass authentication.
 
-Because of this, only values that can hold an array (or object) can carry the `nosql` taint —
-a plain `string` can never be a NoSQL query, so casting user input to `string` removes the taint.
+Because of this, only values that can hold an array (or object) can carry the `nosql` taint:
+a value that Psalm knows to be a plain `string` can never be a NoSQL query, so a `string`-typed
+argument reaching a `nosql` sink is not reported.
 
 ```php
 <?php
@@ -25,18 +26,8 @@ function getUser(MongoDB\Driver\Manager $manager): array {
 
 ## Safe alternatives
 
-Cast user input to a scalar so it can only ever be a literal value, never a query operator:
-
-```php
-<?php
-
-function getUser(): MongoDB\Driver\Query {
-    // (string) forces a literal match; the nosql taint is removed
-    return new MongoDB\Driver\Query(["username" => (string) $_GET["username"]]);
-}
-```
-
-Or route the filter through a sanitizer annotated with `@psalm-taint-escape nosql`:
+Force every filter value to a scalar so an attacker cannot inject query operators, and route
+the filter through a sanitizer annotated with `@psalm-taint-escape nosql`:
 
 ```php
 <?php
