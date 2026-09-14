@@ -16,5 +16,6 @@ digraph Taints {
 	"call to echo from src/filewitherrors.php:431-463" -> "echo#1 specialized in src/filewitherrors.php:426"
 	"call to echo from src/filewitherrors.php:503-569" -> "echo#1 specialized in src/filewitherrors.php:498"
 	"call to is_string from src/filewitherrors.php:536-547" -> "is_string#1 specialized in src/filewitherrors.php:526"
-	"coalesce from src/filewitherrors.php:441-462" -> "call to echo from src/filewitherrors.php:431-463"
+	"coalesce from src/filewitherrors.php:441-462" -> "string-cast from src/filewitherrors.php:441-462"
+	"string-cast from src/filewitherrors.php:441-462" -> "call to echo from src/filewitherrors.php:431-463"
 }
