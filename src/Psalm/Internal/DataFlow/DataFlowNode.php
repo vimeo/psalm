@@ -94,6 +94,30 @@ final class DataFlowNode implements Stringable
     }
 
     /**
+     * Create a node whose location is folded into its id, so id -> location is a pure function --
+     * the only sanctioned way to attach a location that is not derived from a FunctionLikeStorage.
+     * Two nodes built from the same location get the same id and location; nodes at different
+     * locations get different ids. This is why {@see self::getForAssignment()} and
+     * {@see self::getForTaintSink()} may take a raw CodeLocation: it is consumed into the identity
+     * here, never stored decoupled from it. See the class invariant.
+     *
+     * @psalm-pure
+     */
+    private static function makeLocatedById(
+        string $id_prefix,
+        string $id_separator,
+        string $label,
+        CodeLocation $location,
+        ?string $specialization_key = null,
+        int $taints = 0,
+    ): self {
+        $id = $id_prefix . $id_separator . strtolower($location->file_name)
+            . ':' . $location->raw_file_start . '-' . $location->raw_file_end;
+
+        return self::make($id, $label, $location, $specialization_key, $taints);
+    }
+
+    /**
      * @psalm-pure
      */
     public static function getForPropertyFetch(
@@ -114,19 +138,14 @@ final class DataFlowNode implements Stringable
         string $taint_id,
         CodeLocation $code_location,
         int $taints,
-        ?CodeLocation $specialization_location = null,
     ): self {
-        $specialization_key = $specialization_location
-            ? strtolower($specialization_location->file_name) . ':' . $specialization_location->raw_file_start
-            : null;
+        // A taint source/sink is identified by *where* it occurs, so its location doubles as the
+        // specialization key and is thereby folded into the id: id -> location is a pure function
+        // (see the class invariant). There is deliberately no independent location parameter -- a
+        // caller cannot give the same id two different locations.
+        $specialization_key = strtolower($code_location->file_name) . ':' . $code_location->raw_file_start;
 
-        // Fold the location into the id (as getForAssignment() does) so a taint source/sink id always
-        // maps to exactly one location, even if a caller reuses the same $taint_id at several sites;
-        // see the class invariant. The human-readable label keeps the bare $taint_id.
-        $id = $taint_id . ' at ' . strtolower($code_location->file_name)
-            . ':' . $code_location->raw_file_start . '-' . $code_location->raw_file_end;
-
-        return self::make($id, $taint_id, $code_location, $specialization_key, $taints);
+        return self::make($taint_id, $taint_id, $code_location, $specialization_key, $taints);
     }
 
     /**
@@ -238,12 +257,7 @@ final class DataFlowNode implements Stringable
         CodeLocation $assignment_location,
         ?string $specialization_key = null,
     ): self {
-        $label = $var_id;
-        $var_id .= ' from ' . strtolower($assignment_location->file_name)
-            . ':' . $assignment_location->raw_file_start
-            . '-' . $assignment_location->raw_file_end;
-
-        return self::make($var_id, $label, $assignment_location, $specialization_key);
+        return self::makeLocatedById($var_id, ' from ', $var_id, $assignment_location, $specialization_key);
     }
 
     /**
