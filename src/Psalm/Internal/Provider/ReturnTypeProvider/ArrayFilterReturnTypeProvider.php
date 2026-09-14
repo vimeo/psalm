@@ -32,7 +32,6 @@ use function array_map;
 use function array_slice;
 use function count;
 use function is_string;
-use function mt_rand;
 use function reset;
 use function spl_object_id;
 
@@ -204,7 +203,9 @@ final class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderI
                 if ($array_arg && $mapping_function_ids) {
                     $assertions = [];
 
-                    $fake_var_discriminator = mt_rand();
+                    // Deterministic discriminator (see ArrayMapReturnTypeProvider) so the synthetic offset
+                    // variable — and the taint-graph nodes derived from it — stay stable across runs/threads.
+                    $fake_var_discriminator = $function_call_arg->getStartFilePos();
                     ArrayMapReturnTypeProvider::getReturnTypeFromMappingIds(
                         $statements_source,
                         $mapping_function_ids,
