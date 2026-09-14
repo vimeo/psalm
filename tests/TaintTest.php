@@ -1023,6 +1023,34 @@ final class TaintTest extends TestCase
                     $agent->prompt(buildPrompt((string) $_GET["topic"]));',
                 'error_message' => 'TaintedLlmPrompt',
             ],
+            'taintedInputFromPhpInputViaFileGetContents' => [
+                'code' => '<?php
+                    echo file_get_contents("php://input");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputFromPhpStdinViaFileGetContents' => [
+                'code' => '<?php
+                    echo file_get_contents("php://stdin");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputFromPhpInputViaFopenAndFread' => [
+                'code' => '<?php
+                    $fp = fopen("php://input", "r");
+                    if ($fp !== false) {
+                        echo fread($fp, 1024);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputFromStdinConstant' => [
+                'code' => '<?php
+                    echo fgets(STDIN);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputFromStdinViaStreamGetContents' => [
+                'code' => '<?php
+                    echo stream_get_contents(STDIN);',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintedInputFromMethodReturnTypeSimple' => [
                 'code' => '<?php
                     class A {

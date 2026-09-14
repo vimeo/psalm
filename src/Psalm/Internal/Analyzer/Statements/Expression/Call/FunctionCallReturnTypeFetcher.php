@@ -254,6 +254,16 @@ final class FunctionCallReturnTypeFetcher
             $stmt_type = Type::getMixed();
         }
 
+        if (!$stmt->isFirstClassCallable()) {
+            self::taintStreamReadReturnType(
+                $statements_analyzer,
+                $stmt,
+                $function_id,
+                $stmt_type,
+                $context,
+            );
+        }
+
         if (!$statements_analyzer->data_flow_graph || !$function_storage) {
             return $stmt_type;
         }
@@ -525,6 +535,122 @@ final class FunctionCallReturnTypeFetcher
         }
 
         return $stmt_type;
+    }
+
+    /**
+     * Reading from php://input or php://stdin yields user-controlled data.
+     *
+     * This handles the builtin (callmap-only) reading functions, which never get a
+     * FunctionLikeStorage and so are skipped by {@see self::taintReturnType()}:
+     *  - fopen()/file_get_contents()/file() with a literal 'php://input' or
+     *    'php://stdin' path become taint sources;
+     *  - stream reading functions (stream_get_contents, fgets, fread, ...) propagate
+     *    the taint of their stream-resource argument to their return value, so data
+     *    read from a tainted fopen() handle stays tainted.
+     */
+    private static function taintStreamReadReturnType(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\FuncCall $stmt,
+        string $function_id,
+        Union &$stmt_type,
+        Context $context,
+    ): void {
+        if (!$graph = $statements_analyzer->getTaintFlowGraphWithSuppressed()) {
+            return;
+        }
+
+        // function id => offset of the argument holding the stream path
+        static $source_path_arg = [
+            'fopen' => 0,
+            'file_get_contents' => 0,
+            'file' => 0,
+            'readfile' => 0,
+        ];
+
+        // function id => offset of the argument holding the stream resource
+        static $stream_resource_arg = [
+            'stream_get_contents' => 0,
+            'stream_get_line' => 0,
+            'fgets' => 0,
+            'fgetss' => 0,
+            'fread' => 0,
+            'fgetc' => 0,
+            'fgetcsv' => 0,
+            'fscanf' => 0,
+        ];
+
+        $function_id = strtolower($function_id);
+        $args = $stmt->getArgs();
+
+        if (isset($source_path_arg[$function_id])) {
+            $offset = $source_path_arg[$function_id];
+
+            if (!isset($args[$offset])) {
+                return;
+            }
+
+            $arg_type = $statements_analyzer->node_data->getType($args[$offset]->value);
+
+            if (!$arg_type || !$arg_type->isSingleStringLiteral()) {
+                return;
+            }
+
+            $path = strtolower($arg_type->getSingleStringLiteral()->value);
+
+            if ($path !== 'php://input' && $path !== 'php://stdin') {
+                return;
+            }
+
+            $codebase = $statements_analyzer->getCodebase();
+            $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
+
+            $taints = TaintKind::ALL_INPUT;
+            $taints |= $codebase->config->eventDispatcher->dispatchAddTaints($event);
+            $taints &= ~$codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+
+            if ($taints === 0) {
+                return;
+            }
+
+            $location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+
+            $source = DataFlowNode::getForTaintSink(
+                $function_id . '(' . $path . ')',
+                $location,
+                $taints,
+                $location,
+            );
+            $graph->addSource($source);
+
+            $stmt_type = $stmt_type->addParentNodes([$source->id => $source]);
+
+            return;
+        }
+
+        if (isset($stream_resource_arg[$function_id])) {
+            $offset = $stream_resource_arg[$function_id];
+
+            if (!isset($args[$offset])) {
+                return;
+            }
+
+            $arg_type = $statements_analyzer->node_data->getType($args[$offset]->value);
+
+            if (!$arg_type || !$arg_type->parent_nodes) {
+                return;
+            }
+
+            $location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+
+            $return_node = DataFlowNode::getForAssignment($function_id . '-stream-read', $location);
+            $graph->addNode($return_node);
+
+            foreach ($arg_type->parent_nodes as $parent_node) {
+                $graph->addPath($parent_node, $return_node, 'stream-read');
+            }
+
+            $stmt_type = $stmt_type->addParentNodes([$return_node->id => $return_node]);
+        }
     }
 
     private static function taintReturnType(
