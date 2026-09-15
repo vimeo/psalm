@@ -357,6 +357,14 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             $context,
         );
 
+        self::checkFunctionNoDiscard(
+            $statements_analyzer,
+            $stmt,
+            $function_name,
+            $function_call_info,
+            $context,
+        );
+
         if ($function_call_info->function_storage) {
             if ($function_call_info->function_storage->assertions && $function_name instanceof PhpParser\Node\Name) {
                 self::applyAssertionsToContext(
@@ -1119,6 +1127,40 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 }
             }
         }
+    }
+
+    /**
+     * Reports the return value of a `#[\NoDiscard]` function being discarded at a call site.
+     *
+     * @see NoDiscardAnalyzer::isDiscardReported() for when this applies.
+     */
+    private static function checkFunctionNoDiscard(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\FuncCall $stmt,
+        PhpParser\Node $function_name,
+        FunctionCallInfo $function_call_info,
+        Context $context,
+    ): void {
+        if ($function_call_info->function_id === null
+            || $function_call_info->function_storage === null
+            || !NoDiscardAnalyzer::isDiscardReported(
+                $statements_analyzer->getCodebase(),
+                $context,
+                $function_call_info->function_storage,
+                $stmt->isFirstClassCallable(),
+            )
+        ) {
+            return;
+        }
+
+        IssueBuffer::maybeAdd(
+            new UnusedFunctionCall(
+                'The call to ' . $function_call_info->function_id . ' is not used',
+                new CodeLocation($statements_analyzer, $function_name),
+                $function_call_info->function_id,
+            ),
+            $statements_analyzer->getSuppressedIssues(),
+        );
     }
 
     private static function callUsesByReferenceArguments(
