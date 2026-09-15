@@ -52,7 +52,7 @@ jobs:
           git config --global core.eol lf
 
       - name: Set up PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@7c071dfe9dc99bdf297fa79cb49ea005b9fcadbc # v2
         with:
           php-version: '8.5'
           #ini-values: zend.assertions=1, assert.exception=1, opcache.enable_cli=1, opcache.jit=function, opcache.jit_buffer_size=512M
@@ -69,7 +69,7 @@ jobs:
           php -v
           php -r 'var_dump(PHP_VERSION_ID);'
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
       - name: Get Composer Cache Directories
         id: composer-cache
@@ -85,7 +85,7 @@ jobs:
           COMPOSER_ROOT_VERSION: dev-master
 
       - name: Cache composer cache
-        uses: actions/cache@v5
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
         with:
           path: |
             ${{ steps.composer-cache.outputs.files_cache }}

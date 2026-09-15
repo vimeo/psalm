@@ -54,6 +54,7 @@
  - [InaccessibleClassConstant](issues/InaccessibleClassConstant.md)
  - [InaccessibleMethod](issues/InaccessibleMethod.md)
  - [InaccessibleProperty](issues/InaccessibleProperty.md)
+ - [IncompatibleTypeParameters](issues/IncompatibleTypeParameters.md)
  - [InheritorViolation](issues/InheritorViolation.md)
  - [InterfaceInstantiation](issues/InterfaceInstantiation.md)
  - [InternalClass](issues/InternalClass.md)

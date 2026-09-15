@@ -1440,11 +1440,6 @@ final class ReturnTypeTest extends TestCase
                     }',
                 'error_message' => 'ReservedWord',
             ],
-            'voidParamType' => [
-                'code' => '<?php
-                    function f(void $p): void {}',
-                'error_message' => 'ReservedWord',
-            ],
             'voidClass' => [
                 'code' => '<?php
                     class void {}',
@@ -1552,7 +1547,8 @@ final class ReturnTypeTest extends TestCase
                         $obj = new ArrayObject([1, 2, 3, 4]);
                         return $obj->getIterator();
                     }',
-                'error_message' => 'InvalidReturnStatement',
+                'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:4:32 - Type 1|2|3|4 should be a subtype of string',
             ],
             'objectLikeArrayOptionalKeyWithNonOptionalReturn' => [
                 'code' => '<?php

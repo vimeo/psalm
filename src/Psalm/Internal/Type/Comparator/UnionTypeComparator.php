@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
+use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArrayKey;
@@ -17,6 +18,7 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeAlias;
+use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
 
 use function array_merge;
@@ -87,6 +89,30 @@ final class UnionTypeComparator
                 continue;
             }
 
+            if ($input_type_part instanceof TTypeVariable) {
+                // A type variable in input position is constrained from above
+                // by the container: record `name <: container` and treat it
+                // as contained.
+                $container_single = $container_type->isSingle()
+                    ? $container_type->getSingleAtomic()
+                    : null;
+
+                if ($container_single instanceof TTypeVariable
+                    && $container_single->name === $input_type_part->name
+                ) {
+                    continue;
+                }
+
+                if ($union_comparison_result) {
+                    $union_comparison_result->type_variable_upper_bounds[] = [
+                        $input_type_part->name,
+                        new TemplateBound($container_type),
+                    ];
+                }
+
+                continue;
+            }
+
 
             $type_match_found = false;
             $scalar_type_match_found = false;
@@ -137,6 +163,25 @@ final class UnionTypeComparator
                     && !$input_type_part instanceof TFalse
                 ) {
                     continue;
+                }
+
+                if ($container_type_part instanceof TTypeVariable) {
+                    // A type variable in container position is constrained
+                    // from below by the input: record `name >: input` and
+                    // treat it as a match.
+                    if ($union_comparison_result) {
+                        $union_comparison_result->type_variable_lower_bounds[] = [
+                            $container_type_part->name,
+                            new TemplateBound($input_type),
+                        ];
+                    }
+
+                    $type_match_found = true;
+                    $all_to_string_cast = false;
+                    $all_type_coerced = false;
+                    $all_type_coerced_from_mixed = false;
+                    $all_type_coerced_from_as_mixed = false;
+                    break;
                 }
 
                 // if params are specified
@@ -295,6 +340,18 @@ final class UnionTypeComparator
                     if ($atomic_comparison_result) {
                         if ($atomic_comparison_result->to_string_cast !== true) {
                             $all_to_string_cast = false;
+                        }
+
+                        if ($union_comparison_result) {
+                            $union_comparison_result->type_variable_lower_bounds = array_merge(
+                                $union_comparison_result->type_variable_lower_bounds,
+                                $atomic_comparison_result->type_variable_lower_bounds,
+                            );
+
+                            $union_comparison_result->type_variable_upper_bounds = array_merge(
+                                $union_comparison_result->type_variable_upper_bounds,
+                                $atomic_comparison_result->type_variable_upper_bounds,
+                            );
                         }
                     }
 

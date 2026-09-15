@@ -27,12 +27,10 @@ use const DIRECTORY_SEPARATOR;
 
 final class RemoveTaintsInterfaceTest extends TestCase
 {
-    protected static TestConfig $config;
-
     #[Override]
     public static function setUpBeforeClass(): void
     {
-        self::$config = new TestConfig();
+        new TestConfig();
 
         if (!defined('PSALM_VERSION')) {
             define('PSALM_VERSION', '4.0.0');
