@@ -273,6 +273,29 @@ final class TemplateInferredTypeReplacer
             $codebase,
         );
 
+        // a template that appears only in an unmatched part of a parameter's type
+        // (e.g. `(callable(T): TResult)|null` called with `null`) gets a placeholder
+        // lower bound with no real inferred content. When the template declares a
+        // default, prefer it over that placeholder; otherwise fall through to the
+        // pre-existing placeholder-resolution behavior (e.g. native stubs like
+        // array_pop() with an untyped TValue and no declared default).
+        $own_lower_bounds = $inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class] ?? null;
+        $has_only_unbound_fallback_bounds = $own_lower_bounds !== null;
+        foreach ($own_lower_bounds ?? [] as $own_lower_bound) {
+            if (!$own_lower_bound->from_unbound_template_fallback) {
+                $has_only_unbound_fallback_bounds = false;
+                break;
+            }
+        }
+
+        if ($traversed_type && $has_only_unbound_fallback_bounds) {
+            $default_type = self::getTemplateDefault($atomic_type, $template_result, $codebase, $visiting_defaults);
+
+            if ($default_type !== null) {
+                return $default_type;
+            }
+        }
+
         if ($traversed_type) {
             $template_type = $traversed_type;
 
@@ -371,9 +394,7 @@ final class TemplateInferredTypeReplacer
             }
         }
 
-        if ($template_type === null
-            || ($template_type->isMixed() && $atomic_type->as->isMixed())
-        ) {
+        if ($template_type === null) {
             $default_type = self::getTemplateDefault(
                 $atomic_type,
                 $template_result,
