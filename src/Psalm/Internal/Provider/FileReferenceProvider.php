@@ -97,9 +97,10 @@ final class FileReferenceProvider
      */
     public function __construct(
         private readonly FileProvider $file_provider,
+        ClassLikeStorageProvider $classlike_storage_provider,
         public ?FileReferenceCacheProvider $cache = null,
     ) {
-        $this->code_use_graph = new CodeUseGraph();
+        $this->code_use_graph = new CodeUseGraph($classlike_storage_provider);
     }
 
     /**

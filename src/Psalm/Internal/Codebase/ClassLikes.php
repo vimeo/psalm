@@ -33,6 +33,7 @@ use Psalm\Issue\PossiblyUnusedParam;
 use Psalm\Issue\PossiblyUnusedProperty;
 use Psalm\Issue\PossiblyUnusedReturnValue;
 use Psalm\Issue\UnusedClass;
+use Psalm\Issue\UnusedFunction;
 use Psalm\Issue\UnusedConstructor;
 use Psalm\Issue\UnusedMethod;
 use Psalm\Issue\UnusedParam;
@@ -80,6 +81,14 @@ use const PHP_EOL;
  */
 final class ClassLikes
 {
+    /**
+     * Appended to unused public-surface issues: @api is the fix only when the
+     * code is genuinely reachable from outside this codebase.
+     */
+    private const API_HINT = '. If it is used outside this codebase (e.g. a controller'
+        . ' entry point, or an API covered by your library backwards-compatibility promise),'
+        . ' mark it with @api instead; otherwise it is dead code and can be removed';
+
     /**
      * @var array<lowercase-string, bool>
      */
@@ -918,23 +927,46 @@ final class ClassLikes
             }
         }
 
-        $code_use_graph->resolve(function (string $node_id): bool {
-            $owner_class = CodeUseGraph::getOwnerClass($node_id);
-
-            if ($owner_class === null) {
-                return false;
+        // @api free functions are entry points: external callers can invoke them,
+        // keeping them and what they reference alive.
+        foreach ($codebase->file_storage_provider->getAll() as $file_storage) {
+            foreach ($file_storage->functions as $function_id => $function_storage) {
+                if ($function_storage->public_api) {
+                    $code_use_graph->markAsPublicApi(CodeUseGraph::functionLikeNode(strtolower($function_id)));
+                }
             }
+        }
 
-            try {
-                $owner_storage = $this->classlike_storage_provider->get($owner_class);
-            } catch (InvalidArgumentException) {
-                // unknown class, e.g. a caller made up by a plugin
-                return true;
+        $code_use_graph->resolve();
+
+        if ($find_unused_code) {
+            foreach ($codebase->file_storage_provider->getAll() as $file_storage) {
+                foreach ($file_storage->functions as $function_id => $function_storage) {
+                    if ($function_storage->location === null
+                        || $function_storage->public_api
+                        // closures/arrow functions are keyed by a colon-delimited id
+                        || strpos($function_id, ':') !== false
+                        || !$this->config->isInProjectDirs($function_storage->location->file_path)
+                    ) {
+                        continue;
+                    }
+
+                    if ($code_use_graph->isUsed(CodeUseGraph::functionLikeNode(strtolower($function_id)))) {
+                        continue;
+                    }
+
+                    IssueBuffer::maybeAdd(
+                        new UnusedFunction(
+                            'Function ' . $function_storage->cased_name . ' is never used'
+                            . self::API_HINT,
+                            $function_storage->location,
+                            $function_id,
+                        ),
+                        $function_storage->suppressed_issues,
+                    );
+                }
             }
-
-            return !$owner_storage->location
-                || !$this->config->isInProjectDirs($owner_storage->location->file_path);
-        });
+        }
 
         foreach ($this->existing_classlikes_lc as $fq_class_name_lc => $_) {
             try {
@@ -959,7 +991,7 @@ final class ClassLikes
                         } else {
                             IssueBuffer::maybeAdd(
                                 new UnusedClass(
-                                    'Class ' . $classlike_storage->name . ' is never used',
+                                    'Class ' . $classlike_storage->name . ' is never used' . self::API_HINT,
                                     $classlike_storage->location,
                                     $classlike_storage->name,
                                 ),
@@ -2004,7 +2036,8 @@ final class ClassLikes
                             $issue = new PossiblyUnusedMethod(
                                 'Cannot find ' . ($has_variable_calls ? 'explicit' : 'any')
                                     . ' calls to method ' . $method_id
-                                    . ($has_variable_calls ? ' (but did find some potential callers)' : ''),
+                                    . ($has_variable_calls ? ' (but did find some potential callers)' : '')
+                                    . self::API_HINT,
                                 $method_storage->location,
                                 $method_id,
                             );
@@ -2384,7 +2417,8 @@ final class ClassLikes
                         $issue = new PossiblyUnusedProperty(
                             'Cannot find ' . ($has_variable_calls ? 'explicit' : 'any')
                                 . ' references to property ' . $property_id
-                                . ($has_variable_calls ? ' (but did find some potential references)' : ''),
+                                . ($has_variable_calls ? ' (but did find some potential references)' : '')
+                                . self::API_HINT,
                             $property_storage->location,
                             $property_id,
                         );

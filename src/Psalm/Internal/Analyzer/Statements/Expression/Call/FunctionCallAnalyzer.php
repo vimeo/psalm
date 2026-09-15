@@ -406,6 +406,20 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             }
         }
 
+        if ($function_name instanceof PhpParser\Node\Name
+            && $function_call_info->function_id
+            && !$function_call_info->in_call_map
+            && !$context->collect_initializations
+            && !$context->collect_mutations
+        ) {
+            // record the reference so dead-code analysis sees the function is used
+            $codebase->addReferenceToFunctionLike(
+                strtolower($function_call_info->function_id),
+                new CodeLocation($statements_analyzer->getSource(), $function_name),
+                $context,
+            );
+        }
+
         if ($function_name instanceof PhpParser\Node\Name && $function_call_info->function_id) {
             NamedFunctionCallHandler::handle(
                 $statements_analyzer,

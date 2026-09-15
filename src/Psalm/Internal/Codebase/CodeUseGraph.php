@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Codebase;
 
-use Closure;
+use InvalidArgumentException;
 use LogicException;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 
@@ -29,10 +30,9 @@ use function substr;
  * An edge `A -> B` means "if A is alive, B is used by A".
  *
  * Usage is resolved by a reachability search from a set of root nodes
- * (the public API, top-level file code, free functions, which psalm never
- * reports as unused, and code outside of the project), so code that is only
- * referenced from other unused code (including cycles of otherwise
- * unreferenced code) is correctly reported as unused.
+ * (the public API, top-level file code, and code outside of the project), so
+ * code that is only referenced from other unused code (including cycles of
+ * otherwise unreferenced code) is correctly reported as unused.
  *
  * @psalm-import-type MutationInfo from MutationLevelResolver
  * @internal
@@ -185,6 +185,7 @@ final class CodeUseGraph
      * @psalm-mutation-free
      */
     public function __construct(
+        private readonly ClassLikeStorageProvider $storage_provider,
         public bool $collect_locations = false,
     ) {
     }
@@ -370,28 +371,30 @@ final class CodeUseGraph
     }
 
     /**
-     * Whether a node is a root of the usage search: a root is always alive.
+     * Whether a node is a root because it belongs to code Psalm cannot see and
+     * must assume is reachable: a caller invented by a plugin (an unknown class).
+     * @api entry points are handled separately via {@see self::markAsPublicApi()}.
+     * Structural roots (top-level file code) are handled in resolve(). Overridable
+     * in tests.
      *
-     * @param Closure(string): bool $is_external whether a node belongs to code outside of the project
+     * @psalm-mutation-free
      */
-    private static function isRoot(string $node_id, Closure $is_external): bool
+    protected function isRoot(string $node_id): bool
     {
-        if ($node_id === self::PUBLIC_API) {
+        $owner_class = self::getOwnerClass($node_id);
+
+        if ($owner_class === null) {
+            return false;
+        }
+
+        try {
+            $this->storage_provider->get($owner_class);
+        } catch (InvalidArgumentException) {
+            // unknown class, e.g. a caller made up by a plugin
             return true;
         }
 
-        $kind = self::getKind($node_id);
-
-        if ($kind === self::KIND_FILE) {
-            return true;
-        }
-
-        // Psalm never reports unused free functions, so they're entry points
-        if ($kind === self::KIND_FUNCTION_LIKE && !str_contains($node_id, '::')) {
-            return true;
-        }
-
-        return $is_external($node_id);
+        return false;
     }
 
     // Building
@@ -579,18 +582,25 @@ final class CodeUseGraph
      *
      * Must be called before isUsed(), and again after the graph changes.
      *
-     * @param Closure(string): bool $is_external whether a node (with outgoing
-     *        edges) belongs to code outside of the project, e.g. a vendor class
-     *        or a caller made up by a plugin: such code is never reported as
-     *        unused, so what it references is used.
+     * Roots are top-level file code, @api public-API entry points, and the
+     * plugin-invented callers {@see self::isRoot()} identifies from the storage
+     * provider injected at construction.
+     *
+     * @psalm-external-mutation-free
      */
-    public function resolve(Closure $is_external): void
+    public function resolve(): void
     {
         $used = [self::PUBLIC_API => true];
         $queue = [self::PUBLIC_API];
 
         foreach ($this->forward_edges as $node_id => $_) {
-            if (!isset($used[$node_id]) && self::isRoot($node_id, $is_external)) {
+            if (isset($used[$node_id])) {
+                continue;
+            }
+
+            if (self::getKind($node_id) === self::KIND_FILE
+                || $this->isRoot($node_id)
+            ) {
                 $used[$node_id] = true;
                 $queue[] = $node_id;
             }
@@ -614,16 +624,13 @@ final class CodeUseGraph
                 if ($type === self::EDGE_OVERRIDE) {
                     $owner_class = self::getOwnerClass($target_node);
 
-                    // An override edge is normally only followed once the
-                    // overriding class is known to be used, since a call to the
-                    // parent only reaches the override when that class is
-                    // actually instantiated. When the parent is external,
-                    // though, external code holding the parent type can invoke
-                    // the override on an instance it constructs itself, which
-                    // Psalm cannot see — so the override (e.g. a plugin entry
-                    // point implementing a vendor interface) must be treated as
-                    // reachable regardless of any in-project instantiation.
-                    if ($owner_class !== null && !$is_external($node_id)) {
+                    // An override edge is only followed once the overriding class
+                    // is used, since a call to the parent reaches the override
+                    // only when that class is actually instantiated. A class that
+                    // is only reachable as a plugin/library entry point should be
+                    // marked @api (which makes it a public-API root) rather than
+                    // relying on the type it extends.
+                    if ($owner_class !== null) {
                         $owner_node = self::classNode($owner_class);
 
                         if (!isset($used[$owner_node])) {
