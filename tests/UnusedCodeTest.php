@@ -200,7 +200,7 @@ final class UnusedCodeTest extends TestCase
         );
     }
 
-    public function testClassReferencedFromExternalInterfaceOverrideIsUsed(): void
+    public function testClassImplementingNonApiExternalInterfaceIsUnused(): void
     {
         $this->project_analyzer->getConfig()->throw_exception = false;
         $this->project_analyzer->setPhpVersion('8.0', 'tests');
@@ -216,10 +216,7 @@ final class UnusedCodeTest extends TestCase
             '<?php
                 final class Registered {}
 
-                // Handler implements an interface defined outside the project, so
-                // it may be instantiated and called externally through Countable:
-                // its overriding methods, and the classes they reference, count as
-                // used even without an explicit @api annotation.
+                // Countable is external but not @api, so the override is not kept alive
                 final class Handler implements Countable {
                     public function count(): int {
                         return strlen(Registered::class);
@@ -229,15 +226,128 @@ final class UnusedCodeTest extends TestCase
         $this->analyzeFile($file_path, new Context(), false);
         $this->project_analyzer->consolidateAnalyzedData();
 
-        // only the never-instantiated entry point is unused; Registered, which is
-        // referenced from its externally-callable method, must not be reported
+        self::assertFalse(
+            $this->project_analyzer->getCodebase()->code_use_graph->isUsed(
+                CodeUseGraph::functionLikeNode('handler::count'),
+            ),
+        );
+
+        // neither the entry point nor the class its override references survives
+        $issues = IssueBuffer::getIssuesDataForFile($file_path);
+
         self::assertSame(
-            ['UnusedClass'],
+            ['UnusedClass', 'UnusedClass'],
+            array_column($issues, 'type'),
+        );
+
+        $unused = array_column($issues, 'selected_text');
+        sort($unused);
+        self::assertSame(['Handler', 'Registered'], $unused);
+    }
+
+    public function testApiClassImplementingExternalInterfaceIsUsed(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+
+        foreach (['MissingImmutableAnnotation', 'MissingOverrideAttribute'] as $issue_type) {
+            $this->project_analyzer->getConfig()->setCustomErrorLevel($issue_type, Config::REPORT_SUPPRESS);
+        }
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        // extending a vendored interface no longer keeps a class alive; the entry
+        // point itself is marked @api instead, which keeps it and what it
+        // references alive
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class Registered {}
+
+                /** @api */
+                final class Handler implements Countable {
+                    public function count(): int {
+                        return strlen(Registered::class);
+                    }
+                }',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        self::assertSame(
+            [],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
+    public function testUnusedFreeFunctionIsReported(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function used_fn(): void {}
+                function dead_fn(): void {}
+                used_fn();',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        self::assertSame(
+            ['UnusedFunction'],
             array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
         );
         self::assertSame(
-            'Handler',
+            'dead_fn',
             IssueBuffer::getIssuesDataForFile($file_path)[0]->selected_text,
+        );
+    }
+
+    public function testApiFreeFunctionIsNotReported(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @api */
+                function public_entry(): void { helper(); }
+                function helper(): void {}',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        // the @api function is an entry point, and it keeps helper() alive
+        self::assertSame(
+            [],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
+    public function testFunctionReferencedByCallableStringIsUsed(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function via_callable(int $x): int { return $x; }
+                $r = array_map("via_callable", [1, 2]);
+                echo $r[0];',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        self::assertNotContains(
+            'UnusedFunction',
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
         );
     }
 
@@ -397,7 +507,9 @@ final class UnusedCodeTest extends TestCase
 
                     function bar(): void {
                         (new A)->foo();
-                    }',
+                    }
+
+                    bar();',
             ],
             'nonFinalClassWithChildren' => [
                 'code' => '<?php
@@ -740,7 +852,9 @@ final class UnusedCodeTest extends TestCase
                             return a::get();
                         }
                         return $handler->test();
-                    }',
+                    }
+
+                    process(new b());',
             ],
             'usedParamInIf' => [
                 'code' => '<?php
@@ -794,7 +908,9 @@ final class UnusedCodeTest extends TestCase
                         }
 
                         return $foo1;
-                    }',
+                    }
+
+                    takesFoo(new Foo(), new Foo());',
             ],
             'usedParamInLoopBeforeContinue' => [
                 'code' => '<?php
@@ -812,7 +928,9 @@ final class UnusedCodeTest extends TestCase
                         }
 
                         return $foo1;
-                    }',
+                    }
+
+                    takesFoo(new Foo(), new Foo());',
             ],
             'usedParamInLoopBeforeWithChangeContinue' => [
                 'code' => '<?php
@@ -841,7 +959,9 @@ final class UnusedCodeTest extends TestCase
                         }
 
                         return $foo;
-                    }',
+                    }
+
+                    takesFoo(new Foo());',
             ],
             'suppressUnusedMethod' => [
                 'code' => '<?php
@@ -858,6 +978,8 @@ final class UnusedCodeTest extends TestCase
                 'code' => '<?php
                     function fooBar(): void {}
 
+                    fooBar();
+
                     $foo = "foo";
                     $bar = "bar";
 
@@ -870,7 +992,9 @@ final class UnusedCodeTest extends TestCase
                      */
                     function foo(string $s, object $o) : void {
                         $o->foo("COUNT{$s}");
-                    }',
+                    }
+
+                    foo("", new stdClass());',
             ],
             'usedFunctioninMethodCallName' => [
                 'code' => '<?php
@@ -920,7 +1044,9 @@ final class UnusedCodeTest extends TestCase
                     function inc(array $arr) : array {
                         $arr[strlen("hello")]++;
                         return $arr;
-                    }',
+                    }
+
+                    echo count(inc([]));',
             ],
             'pureFunctionUsesMethodBeforeReturning' => [
                 'code' => '<?php
@@ -942,7 +1068,9 @@ final class UnusedCodeTest extends TestCase
                         $c = new Counter($i);
                         $c->increment();
                         return $c;
-                    }',
+                    }
+
+                    makesACounter(1)->increment();',
             ],
             'setRawCookieImpure' => [
                 'code' => '<?php
@@ -957,7 +1085,9 @@ final class UnusedCodeTest extends TestCase
                     function foo(array $arr) : array {
                         usort($arr, "strnatcasecmp");
                         return $arr;
-                    }',
+                    }
+
+                    foo([]);',
             ],
             'allowArrayMapWithClosure' => [
                 'code' => '<?php
@@ -985,7 +1115,9 @@ final class UnusedCodeTest extends TestCase
                     function takesMixed($i) : int {
                         assertInt($i);
                         return $i;
-                    }',
+                    }
+
+                    echo takesMixed(1);',
             ],
             'usedFunctionCallInEval' => [
                 'code' => '<?php
@@ -1004,7 +1136,9 @@ final class UnusedCodeTest extends TestCase
                             default:
                                 break;
                         }
-                    }',
+                    }
+
+                    getArg("post");',
             ],
             'ignoreJsonSerialize' => [
                 'code' => '<?php
@@ -1056,7 +1190,9 @@ final class UnusedCodeTest extends TestCase
                         }
 
                         return true;
-                    }',
+                    }
+
+                    test(1, 1, []);',
             ],
             'useIteratorMethodsWhenCallingForeach' => [
                 'code' => '<?php
@@ -1177,7 +1313,9 @@ final class UnusedCodeTest extends TestCase
                         }
 
                         return strrev($string);
-                    }',
+                    }
+
+                    echo reverse("foo");',
             ],
             'unusedByReferenceFunctionCall' => [
                 'code' => '<?php
@@ -1194,7 +1332,9 @@ final class UnusedCodeTest extends TestCase
                         bar($f);
 
                         return $f;
-                    }',
+                    }
+
+                    baz();',
             ],
             'unusedVoidByReferenceFunctionCall' => [
                 'code' => '<?php
@@ -1209,7 +1349,9 @@ final class UnusedCodeTest extends TestCase
                         bar($f);
 
                         return $f;
-                    }',
+                    }
+
+                    baz();',
             ],
             'unusedNamedByReferenceFunctionCall' => [
                 'code' => '<?php
@@ -1227,7 +1369,9 @@ final class UnusedCodeTest extends TestCase
                         bar(str: $f);
 
                         return $f;
-                    }',
+                    }
+
+                    baz();',
             ],
             'unusedNamedByReferenceFunctionCallV2' => [
                 'code' => '<?php
@@ -1244,7 +1388,9 @@ final class UnusedCodeTest extends TestCase
                         bar(st: $f);
 
                         return $f;
-                    }',
+                    }
+
+                    baz();',
             ],
             'unusedNamedByReferenceFunctionCallV3' => [
                 'code' => '<?php
@@ -1261,7 +1407,9 @@ final class UnusedCodeTest extends TestCase
                         bar(st: $f, str: $c);
 
                         return $f;
-                    }',
+                    }
+
+                    baz();',
             ],
             'functionCallUsedInThrow' => [
                 'code' => '<?php
@@ -1433,6 +1581,8 @@ final class UnusedCodeTest extends TestCase
                         $b = -$a;
                         return $b;
                     }
+
+                    echo f();
                 ',
             ],
             'variableUsedAsUnaryPlusOperand' => [
@@ -1443,6 +1593,8 @@ final class UnusedCodeTest extends TestCase
                         $b = +$a;
                         return $b;
                     }
+
+                    echo f();
                 ',
             ],
             'variableUsedInBacktick' => [
@@ -1645,6 +1797,7 @@ final class UnusedCodeTest extends TestCase
                         }
                     }
 
+                    /** @api */
                     function load(Entry $entry): void {
                         $entry();
                     }',
@@ -1729,6 +1882,7 @@ final class UnusedCodeTest extends TestCase
                         }
                     }
 
+                    /** @api */
                     function load(Entry $entry): void {
                         $entry();
                     }
@@ -2170,6 +2324,7 @@ final class UnusedCodeTest extends TestCase
                         public function work(): bool;
                     }
 
+                    /** @api */
                     function f(I $worker): void {
                         $worker->work();
                     }',

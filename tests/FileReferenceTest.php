@@ -101,7 +101,7 @@ final class FileReferenceTest extends TestCase
 
     public function testRemovedSourceNodeCanBeReassignedToAnotherFile(): void
     {
-        $graph = new CodeUseGraph();
+        $graph = new TestCodeUseGraph(static fn(string $_): bool => false);
         $source_node = CodeUseGraph::functionLikeNode('a::foo');
         $target_node = CodeUseGraph::classNode('b');
         $context = new Context();
@@ -119,7 +119,7 @@ final class FileReferenceTest extends TestCase
 
     public function testUsedReferencesExcludeDeadSources(): void
     {
-        $graph = new CodeUseGraph();
+        $graph = new TestCodeUseGraph(static fn(string $_): bool => false);
         $used_source = CodeUseGraph::functionLikeNode('a::used');
         $dead_source = CodeUseGraph::functionLikeNode('a::dead');
         $target = CodeUseGraph::functionLikeNode('a::target');
@@ -127,7 +127,7 @@ final class FileReferenceTest extends TestCase
         $graph->markAsPublicApi($used_source);
         $graph->addEdge($used_source, $target);
         $graph->addEdge($dead_source, $target);
-        $graph->resolve(static fn(string $_): bool => false);
+        $graph->resolve();
 
         self::assertSame([$used_source => true], $graph->getUsedReferencingNodes($target));
     }
