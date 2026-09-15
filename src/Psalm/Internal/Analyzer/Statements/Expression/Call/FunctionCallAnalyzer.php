@@ -162,6 +162,24 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             }
         }
 
+        // Record that a named function is referenced so dead-code analysis sees
+        // it is used. This runs before the first-class-callable early return
+        // below, so that `foo(...)` counts as a use of foo(). Only named (Name)
+        // calls are handled here; callable-string/array references are recorded
+        // through the callable-argument analysis.
+        if ($function_name instanceof PhpParser\Node\Name
+            && $function_call_info->function_id
+            && !$function_call_info->in_call_map
+            && !$context->collect_initializations
+            && !$context->collect_mutations
+        ) {
+            $codebase->addReferenceToFunctionLike(
+                strtolower($function_call_info->function_id),
+                new CodeLocation($statements_analyzer->getSource(), $function_name),
+                $context,
+            );
+        }
+
         $set_inside_conditional = false;
 
         if ($function_name instanceof PhpParser\Node\Name
@@ -404,20 +422,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     $statements_analyzer->getSuppressedIssues(),
                 );
             }
-        }
-
-        if ($function_name instanceof PhpParser\Node\Name
-            && $function_call_info->function_id
-            && !$function_call_info->in_call_map
-            && !$context->collect_initializations
-            && !$context->collect_mutations
-        ) {
-            // record the reference so dead-code analysis sees the function is used
-            $codebase->addReferenceToFunctionLike(
-                strtolower($function_call_info->function_id),
-                new CodeLocation($statements_analyzer->getSource(), $function_name),
-                $context,
-            );
         }
 
         if ($function_name instanceof PhpParser\Node\Name && $function_call_info->function_id) {
