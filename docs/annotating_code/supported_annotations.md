@@ -583,6 +583,33 @@ Like `@psalm-check-type`, but checks the exact type of the variable without allo
 $foo = 1; // Checked variable $foo = int does not match $foo = 1
 ```
 
+### `@psalm-check-return-type`
+
+Like `@psalm-check-type`, but checks the type of a return expression instead of a variable.
+
+```php
+<?php
+
+/** @psalm-check-return-type array{name: string, driver: string} */
+return ['name' => 'primary', 'driver' => 'mysql']; // No issue
+
+/** @psalm-check-return-type array{name: string, driver: string} */
+return ['name' => 'primary']; // Checked return type does not match inferred type
+```
+
+### `@psalm-check-return-type-exact`
+
+Like `@psalm-check-return-type`, but checks the exact type without allowing subtypes.
+
+```php
+<?php
+
+function foo(string $s): string {
+    /** @psalm-check-return-type-exact string */
+    return $s; // No issue
+}
+```
+
 ### `@psalm-taint-*`
 
 See [Security Analysis annotations](../security_analysis/annotations.md).
