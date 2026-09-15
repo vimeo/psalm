@@ -300,16 +300,11 @@ final class CliUtils
         }
 
         if ($filtered_input_paths === ['-']) {
-            $meta = stream_get_meta_data(STDIN);
-            stream_set_blocking(STDIN, false);
-            if ($stdin = fgets(STDIN)) {
-                $filtered_input_paths = preg_split('/\s+/', trim($stdin));
-                if ($filtered_input_paths === false) {
-                    throw new RuntimeException('Invalid paths: ' . preg_last_error_msg());
-                }
+            $stdin_paths = self::getPathsToCheckFromStdin();
+
+            if ($stdin_paths !== null) {
+                $filtered_input_paths = $stdin_paths;
             }
-            $blocked = $meta['blocked'];
-            stream_set_blocking(STDIN, $blocked);
         }
 
         foreach ($filtered_input_paths as $path_to_check) {
@@ -338,6 +333,45 @@ final class CliUtils
         }
 
         return $paths_to_check;
+    }
+
+    /**
+     * Reads a whitespace-separated list of paths to analyse from STDIN (used with `psalm -`).
+     *
+     * The paths are supplied by the (trusted) user invoking the CLI, so the input taint that
+     * the STDIN stream carries is escaped here.
+     *
+     * @return non-empty-list<string>|null
+     * @psalm-taint-escape input
+     */
+    private static function getPathsToCheckFromStdin(): ?array
+    {
+        $meta = stream_get_meta_data(STDIN);
+        stream_set_blocking(STDIN, false);
+
+        try {
+            $stdin = fgets(STDIN);
+
+            if ($stdin === false) {
+                return null;
+            }
+
+            $stdin = trim($stdin);
+
+            if ($stdin === '') {
+                return null;
+            }
+
+            $paths = preg_split('/\s+/', $stdin);
+
+            if ($paths === false) {
+                throw new RuntimeException('Invalid paths: ' . preg_last_error_msg());
+            }
+
+            return $paths;
+        } finally {
+            stream_set_blocking(STDIN, $meta['blocked']);
+        }
     }
 
 

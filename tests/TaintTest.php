@@ -107,12 +107,116 @@ final class TaintTest extends TestCase
     }
 
     /**
+     * A taint flow longer than the old hard-coded resolution depth of 40 hops is
+     * now detected: resolution runs to a fixed point rather than stopping at an
+     * arbitrary nesting level.
+     */
+    public function testTaintFlowDeeperThanLegacyResolutionDepth(): void
+    {
+        $chain = '';
+        for ($i = 1; $i <= 60; $i++) {
+            $chain .= '                    $a' . $i . ' = $a' . ($i - 1) . ";\n";
+        }
+
+        $code = "<?php\n"
+            . '                    $a0 = (string) $_GET["x"];' . "\n"
+            . $chain
+            . '                    echo $a60;';
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessageMatches('/\bTaintedHtml\b/');
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+
+        $this->addFile($file_path, $code);
+
+        $this->project_analyzer->trackTaintedInputs();
+        foreach (self::IGNORE as $issue_name) {
+            Config::getInstance()->setCustomErrorLevel($issue_name, Config::REPORT_SUPPRESS);
+        }
+
+        $this->analyzeFile($file_path, new Context(), false);
+    }
+
+    /**
+     * A taint flow through a chain of distinct function calls deeper than the old
+     * 40-hop resolution limit is detected. Every call site is a specialized node,
+     * so this also exercises the specialization linking of the sink-reachability
+     * pruning: if a specialized node on the path were wrongly pruned, the flow
+     * would be missed.
+     */
+    public function testTaintFlowThroughDeepSpecializedCallChain(): void
+    {
+        $functions = '';
+        for ($i = 0; $i < 60; $i++) {
+            $functions .= '                    function f' . $i . '(string $s): string { return $s; }' . "\n";
+        }
+
+        $calls = '';
+        for ($i = 0; $i < 60; $i++) {
+            $calls .= '                    $v = f' . $i . "(\$v);\n";
+        }
+
+        $code = "<?php\n"
+            . $functions
+            . '                    $v = (string) $_GET["x"];' . "\n"
+            . $calls
+            . '                    echo $v;';
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessageMatches('/\bTaintedHtml\b/');
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+
+        $this->addFile($file_path, $code);
+
+        $this->project_analyzer->trackTaintedInputs();
+        foreach (self::IGNORE as $issue_name) {
+            Config::getInstance()->setCustomErrorLevel($issue_name, Config::REPORT_SUPPRESS);
+        }
+
+        $this->analyzeFile($file_path, new Context(), false);
+    }
+
+    /**
      * @return array<string, array{code:string}>
      * @psalm-pure
      */
     public function providerValidCodeParse(): array
     {
         return [
+            'firstClassCallableOfTaintPropagatingFunction' => [
+                'code' => '<?php
+                    function f(string $s): array {
+                        return array_map(trim(...), explode("|", $s));
+                    }',
+            ],
+            'firstClassCallableOfPregReplace' => [
+                'code' => '<?php
+                    function f(array $patterns, array $replacements, array $subjects): array {
+                        return array_map(preg_replace(...), $patterns, $replacements, $subjects);
+                    }',
+              ],
+            'sanitizedArrayValueNotReported' => [
+                'code' => '<?php
+                    $arr = [];
+                    $arr["evil"] = (string) $_GET["x"];
+                    $arr["safe"] = htmlspecialchars((string) $_GET["y"], ENT_QUOTES);
+
+                    echo $arr["safe"];',
+            ],
+            'noTaintNamedArgumentToSafeParameter' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-sink html $dangerous */
+                    function mySink(string $safe, string $dangerous) : void {}
+
+                    $tainted = (string) $_GET["x"];
+                    mySink(safe: $tainted, dangerous: "ok");',
+            ],
             'untaintedRecursiveFunction' => [
                 'code' => '<?php
                     function f(string $s, int $depth): string {
@@ -981,6 +1085,27 @@ final class TaintTest extends TestCase
     public function providerInvalidCodeParse(): array
     {
         return [
+            'taintedNamedArgumentToSinkParameter' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-sink html $dangerous */
+                    function mySink(string $safe, string $dangerous) : void {}
+
+                    $tainted = (string) $_GET["x"];
+                    mySink(dangerous: $tainted, safe: "ok");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedNamedArgumentThroughMethodToSink' => [
+                'code' => '<?php // --taint-analysis
+                    class A {
+                        public function process(string $safe, string $dangerous) : void {
+                            echo $dangerous;
+                        }
+                    }
+
+                    $tainted = (string) $_GET["x"];
+                    (new A)->process(dangerous: $tainted, safe: "ok");',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintedInputThroughRecursiveFunction' => [
                 'code' => '<?php
                     function f(string $s, int $depth): string {
@@ -1125,6 +1250,91 @@ final class TaintTest extends TestCase
                     $agent = new LlmAgent();
                     $agent->prompt(buildPrompt((string) $_GET["topic"]));',
                 'error_message' => 'TaintedLlmPrompt',
+            ],
+            'taintedInputFromPhpInputViaFileGetContents' => [
+                'code' => '<?php
+                    echo file_get_contents("php://input");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputFromPhpStdinViaFileGetContents' => [
+                'code' => '<?php
+                    echo file_get_contents("php://stdin");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputFromPhpInputViaFopenAndFread' => [
+                'code' => '<?php
+                    $fp = fopen("php://input", "r");
+                    if ($fp !== false) {
+                        echo fread($fp, 1024);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputFromStdinConstant' => [
+                'code' => '<?php
+                    echo fgets(STDIN);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputFromStdinViaStreamGetContents' => [
+                'code' => '<?php
+                    echo stream_get_contents(STDIN);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputFromFirstClassCallable' => [
+                'code' => '<?php
+                    $f = file_get_contents(...);
+                    echo $f("php://input");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputFromFirstClassCallableStreamRead' => [
+                'code' => '<?php
+                    $f = fgets(...);
+                    echo $f(STDIN);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputFromFirstClassCallableExplicitSource' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-taint-source input
+                     */
+                    function getName(): string {
+                        return "";
+                    }
+
+                    $f = getName(...);
+                    echo $f();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputFromFirstClassCallableFlow' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-flow ($r) -> return
+                     */
+                    function some_stub(string $r): string { return ""; }
+
+                    $f = some_stub(...);
+                    echo $f((string) $_GET["untrusted"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputFromFirstClassCallableFlowUserFunction' => [
+                'code' => '<?php
+                    function echoback(string $in): string {
+                        return $in;
+                    }
+
+                    $f = echoback(...);
+                    echo $f((string) $_GET["untrusted"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputToFirstClassCallableSink' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-taint-sink html $in
+                     */
+                    function my_sink(string $in): void {}
+
+                    $f = my_sink(...);
+                    $f((string) $_GET["untrusted"]);',
+                'error_message' => 'TaintedHtml',
             ],
             'taintedInputFromMethodReturnTypeSimple' => [
                 'code' => '<?php

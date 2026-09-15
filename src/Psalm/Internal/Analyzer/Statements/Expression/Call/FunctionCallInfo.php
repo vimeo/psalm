@@ -41,6 +41,15 @@ final class FunctionCallInfo
 
     public ?PhpParser\Node\Name $new_function_name = null;
 
+    /**
+     * When the call target is a callable value (closure / first-class callable) whose
+     * underlying function id is known, this holds that id so taint sources can be
+     * re-dispatched on invocation.
+     *
+     * @var ?non-empty-lowercase-string
+     */
+    public ?string $callable_id = null;
+
     public bool $allow_named_args = true;
 
     public array $byref_uses = [];
