@@ -537,6 +537,91 @@ final class TemplateDefaultTest extends TestCase
                     '$r===' => "'hello'",
                 ],
             ],
+            'classExtendsWithoutTypeArgsUsesParentDefault' => [
+                'code' => '<?php
+                    /**
+                     * @template T = string
+                     */
+                    class Foo {
+                        /** @return T */
+                        public function get() {
+                            throw new RuntimeException("empty");
+                        }
+                    }
+
+                    class Sub extends Foo {}
+
+                    $r = (new Sub())->get();',
+                'assertions' => [
+                    '$r===' => 'string',
+                ],
+                'ignored_issues' => ['MissingTemplateParam'],
+            ],
+            'classImplementsWithoutTypeArgsUsesInterfaceDefault' => [
+                'code' => '<?php
+                    /**
+                     * @template T = int
+                     */
+                    interface IFoo {
+                        /** @return T */
+                        public function get();
+                    }
+
+                    class Impl implements IFoo {
+                        public function get() {
+                            throw new RuntimeException("empty");
+                        }
+                    }
+
+                    $r = (new Impl())->get();',
+                'assertions' => [
+                    '$r===' => 'int',
+                ],
+                'ignored_issues' => ['MissingTemplateParam'],
+            ],
+            'traitUseWithoutTypeArgsUsesTraitDefault' => [
+                'code' => '<?php
+                    /**
+                     * @template T = float
+                     */
+                    trait Tr {
+                        /** @return T */
+                        public function get() {
+                            throw new RuntimeException("empty");
+                        }
+                    }
+
+                    class UsesTr {
+                        use Tr;
+                    }
+
+                    $r = (new UsesTr())->get();',
+                'assertions' => [
+                    '$r===' => 'float',
+                ],
+                'ignored_issues' => ['MissingTemplateParam'],
+            ],
+            'classExtendsWithoutTypeArgsResolvesChainedDefault' => [
+                'code' => '<?php
+                    /**
+                     * @template T = string
+                     * @template U = T
+                     */
+                    class Foo {
+                        /** @return U */
+                        public function get() {
+                            throw new RuntimeException("empty");
+                        }
+                    }
+
+                    class Sub extends Foo {}
+
+                    $r = (new Sub())->get();',
+                'assertions' => [
+                    '$r===' => 'string',
+                ],
+                'ignored_issues' => ['MissingTemplateParam'],
+            ],
         ];
     }
 

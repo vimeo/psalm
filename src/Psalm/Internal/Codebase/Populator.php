@@ -11,6 +11,9 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
+use Psalm\Internal\Type\TemplateBound;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\Issue\CircularReference;
 use Psalm\Issue\UndefinedTrait;
 use Psalm\IssueBuffer;
@@ -639,10 +642,31 @@ final class Populator
                     }
                 }
             } else {
+                // seeded incrementally below so a later default referencing an earlier
+                // one (e.g. `@template U = T`) resolves against what T was just mapped to
+                $mapped_lower_bounds = [];
+
                 foreach ($parent_storage->template_types as $template_name => $template_type_map) {
                     foreach ($template_type_map as $template_type) {
-                        $default_param = $template_type->setProperties(['from_docblock' => false]);
+                        $declared_default = $parent_storage->template_type_defaults[$template_name] ?? null;
+
+                        if ($declared_default !== null) {
+                            $seed_template_result = new TemplateResult([], []);
+                            $seed_template_result->lower_bounds = $mapped_lower_bounds;
+
+                            $default_param = TemplateInferredTypeReplacer::replace(
+                                $declared_default,
+                                $seed_template_result,
+                                null,
+                            )->setProperties(['from_docblock' => false]);
+                        } else {
+                            $default_param = $template_type->setProperties(['from_docblock' => false]);
+                        }
+
                         $storage->template_extended_params[$parent_storage->name][$template_name] = $default_param;
+                        $mapped_lower_bounds[$template_name][$parent_storage->name] = [
+                            new TemplateBound($default_param),
+                        ];
                     }
                 }
 
