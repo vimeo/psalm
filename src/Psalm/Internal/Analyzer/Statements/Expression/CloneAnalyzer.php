@@ -26,6 +26,7 @@ use Psalm\Issue\MixedClone;
 use Psalm\Issue\ParseError;
 use Psalm\Issue\PossiblyInvalidClone;
 use Psalm\Issue\PossiblyInvalidPropertyAssignmentValue;
+use Psalm\Issue\TooFewArguments;
 use Psalm\Issue\TooManyArguments;
 use Psalm\Issue\UndefinedPropertyAssignment;
 use Psalm\IssueBuffer;
@@ -168,6 +169,17 @@ final class CloneAnalyzer
             }
         }
 
+        if ($object_arg === null) {
+            IssueBuffer::maybeAdd(
+                new TooFewArguments(
+                    'Too few arguments for clone - expecting object to be passed',
+                    $location,
+                    'clone',
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
+
         // No object to clone (e.g. `clone(withProperties: [...])`); fall back to `object`.
         $object_type = $object_arg !== null
             ? $statements_analyzer->node_data->getType($object_arg->value)
@@ -177,7 +189,7 @@ final class CloneAnalyzer
             ? self::analyzeClonedType($statements_analyzer, $context, $location, $object_type)
             : null;
 
-        if ($object_arg !== null && $with_properties_arg !== null) {
+        if ($with_properties_arg !== null) {
             self::analyzeWithProperties(
                 $statements_analyzer,
                 $context,

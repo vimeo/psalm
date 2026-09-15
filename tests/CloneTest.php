@@ -496,6 +496,20 @@ final class CloneTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.5',
             ],
+            'cloneWithPropertiesNamedButNoObject' => [
+                'code' => '<?php
+                    clone(withProperties: 5);',
+                'error_message' => 'TooFewArguments',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'cloneWithEmptyPropertiesNamedButNoObject' => [
+                'code' => '<?php
+                    clone(withProperties: []);',
+                'error_message' => 'TooFewArguments',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
         ];
     }
 }
