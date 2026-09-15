@@ -496,6 +496,18 @@ final class CloneTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.5',
             ],
+            'cloneWithPositionalArgumentAfterNamed' => [
+                'code' => '<?php
+                    class Foo {
+                        public function __construct(public int $x) {}
+                    }
+                    $o = new Foo(1);
+                    $x = ["x" => 2];
+                    clone(object: $o, $x);',
+                'error_message' => 'InvalidNamedArgument',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
             'cloneWithPropertiesNamedButNoObject' => [
                 'code' => '<?php
                     clone(withProperties: 5);',

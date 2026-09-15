@@ -120,53 +120,74 @@ final class CloneAnalyzer
         $object_arg = null;
         $with_properties_arg = null;
         $positional_count = 0;
+        $named_arg_seen = false;
 
         foreach ($stmt->getArgs() as $arg) {
             $arg_name = $arg->name?->name;
 
             if ($arg_name === null) {
-                if ($positional_count === 0) {
+                if ($named_arg_seen) {
+                    // PHP raises a fatal "Cannot use positional argument after named
+                    // argument" for this; report it rather than let the positional
+                    // value silently overwrite the already-resolved named one.
+                    IssueBuffer::maybeAdd(
+                        new InvalidNamedArgument(
+                            'Cannot use positional argument after named argument',
+                            new CodeLocation($statements_analyzer->getSource(), $arg),
+                            'clone',
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+                } elseif ($positional_count === 0) {
                     $object_arg = $arg;
                 } elseif ($positional_count === 1) {
                     $with_properties_arg = $arg;
+                }
+
+                ++$positional_count;
+            } else {
+                $named_arg_seen = true;
+
+                if (($arg_name === 'object' && $object_arg !== null)
+                    || ($arg_name === 'withProperties' && $with_properties_arg !== null)
+                ) {
+                    // Named argument overwrites one already passed by position.
+                    IssueBuffer::maybeAdd(
+                        new InvalidNamedArgument(
+                            'Parameter $' . $arg_name . ' of function clone is already passed by position',
+                            new CodeLocation($statements_analyzer->getSource(), $arg),
+                            'clone',
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+                } elseif ($arg_name === 'object') {
+                    $object_arg = $arg;
+                } elseif ($arg_name === 'withProperties') {
+                    $with_properties_arg = $arg;
                 } else {
                     IssueBuffer::maybeAdd(
-                        new TooManyArguments(
-                            'Too many arguments for clone - expecting 2 but saw ' . count($stmt->getArgs()),
+                        new InvalidNamedArgument(
+                            'Parameter $' . $arg_name . ' does not exist on function clone',
                             new CodeLocation($statements_analyzer->getSource(), $arg),
                             'clone',
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     );
                 }
-
-                ++$positional_count;
-            } elseif (($arg_name === 'object' && $object_arg !== null)
-                || ($arg_name === 'withProperties' && $with_properties_arg !== null)
-            ) {
-                // Named argument overwrites one already passed by position.
-                IssueBuffer::maybeAdd(
-                    new InvalidNamedArgument(
-                        'Parameter $' . $arg_name . ' of function clone is already passed by position',
-                        new CodeLocation($statements_analyzer->getSource(), $arg),
-                        'clone',
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
-            } elseif ($arg_name === 'object') {
-                $object_arg = $arg;
-            } elseif ($arg_name === 'withProperties') {
-                $with_properties_arg = $arg;
-            } else {
-                IssueBuffer::maybeAdd(
-                    new InvalidNamedArgument(
-                        'Parameter $' . $arg_name . ' does not exist on function clone',
-                        new CodeLocation($statements_analyzer->getSource(), $arg),
-                        'clone',
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
             }
+        }
+
+        // Extra positional arguments beyond the two clone() accepts are reported once
+        // for the whole call, matching ArgumentsAnalyzer's one-issue-per-call convention.
+        if ($positional_count > 2) {
+            IssueBuffer::maybeAdd(
+                new TooManyArguments(
+                    'Too many arguments for clone - expecting 2 but saw ' . count($stmt->getArgs()),
+                    $location,
+                    'clone',
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
         }
 
         if ($object_arg === null) {
