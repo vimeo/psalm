@@ -44,11 +44,15 @@ final class FunctionCallInfo
     /**
      * When the call target is a callable value (closure / first-class callable) whose
      * underlying function id is known, this holds that id so taint sources can be
-     * re-dispatched on invocation.
+     * re-dispatched on invocation. If the target is a union of several distinct
+     * callables (e.g. `rand() ? a(...) : b(...)`), every known id is collected here so
+     * the taint behavior of all of them is re-dispatched, since any of them may run.
      *
-     * @var ?non-empty-lowercase-string
+     * Used as a set (id => true) to deduplicate repeated ids.
+     *
+     * @var array<non-empty-lowercase-string, true>
      */
-    public ?string $callable_id = null;
+    public array $callable_ids = [];
 
     public bool $allow_named_args = true;
 

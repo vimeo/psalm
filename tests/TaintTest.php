@@ -201,6 +201,14 @@ final class TaintTest extends TestCase
                         return array_map(preg_replace(...), $patterns, $replacements, $subjects);
                     }',
               ],
+            'ambiguousFirstClassCallableWithoutTaintNotReported' => [
+                'code' => '<?php
+                    function ambig_plain_a(): string { return "a"; }
+                    function ambig_plain_b(int $x = 0): string { return (string) $x; }
+
+                    $f = rand(0, 1) ? ambig_plain_a(...) : ambig_plain_b(...);
+                    echo $f();',
+            ],
             'sanitizedArrayValueNotReported' => [
                 'code' => '<?php
                     $arr = [];
@@ -1333,6 +1341,66 @@ final class TaintTest extends TestCase
                     function my_sink(string $in): void {}
 
                     $f = my_sink(...);
+                    $f((string) $_GET["untrusted"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputFromAmbiguousFirstClassCallableSourceFirstBranch' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-taint-source input
+                     */
+                    function ambig_source(): string {
+                        return "";
+                    }
+
+                    function ambig_plain(int $x = 0): string {
+                        return (string) $x;
+                    }
+
+                    $f = rand(0, 1) ? ambig_source(...) : ambig_plain(...);
+                    echo $f();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputFromAmbiguousFirstClassCallableSourceSecondBranch' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-taint-source input
+                     */
+                    function ambig_source(): string {
+                        return "";
+                    }
+
+                    function ambig_plain(int $x = 0): string {
+                        return (string) $x;
+                    }
+
+                    $f = rand(0, 1) ? ambig_plain(...) : ambig_source(...);
+                    echo $f();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputThroughAmbiguousFirstClassCallableFlow' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-flow ($r) -> return
+                     */
+                    function ambig_flow(string $r): string { return ""; }
+
+                    function ambig_other(string $r = ""): string { return ""; }
+
+                    $f = rand(0, 1) ? ambig_flow(...) : ambig_other(...);
+                    echo $f((string) $_GET["untrusted"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputToAmbiguousFirstClassCallableSink' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-taint-sink html $in
+                     */
+                    function ambig_html_sink(string $in): void {}
+
+                    function ambig_no_sink(string $in, int $extra = 0): void {}
+
+                    $f = rand(0, 1) ? ambig_html_sink(...) : ambig_no_sink(...);
                     $f((string) $_GET["untrusted"]);',
                 'error_message' => 'TaintedHtml',
             ],

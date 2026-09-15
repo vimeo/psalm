@@ -315,12 +315,12 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             return true;
         }
 
-        if ($function_call_info->callable_id !== null) {
+        foreach ($function_call_info->callable_ids as $callable_id => $_) {
             FunctionCallReturnTypeFetcher::taintCallableReturnType(
                 $statements_analyzer,
                 $stmt,
                 $real_stmt,
-                $function_call_info->callable_id,
+                $callable_id,
                 $context,
             );
         }
@@ -663,9 +663,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
             $invalid_function_call_types = [];
             $has_valid_function_call_type = false;
-            // becomes true once we see callable members that don't agree on a single
-            // underlying function id, so we don't re-dispatch taint to the wrong one
-            $callable_id_ambiguous = false;
 
             $var_atomic_types = $stmt_name_type->getAtomicTypes();
 
@@ -732,18 +729,13 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                         $function_call_info->byref_uses += $var_type_part->byref_uses;
                     }
 
-                    if (!$callable_id_ambiguous) {
-                        if ($var_type_part->callable_id === null
-                            || ($function_call_info->callable_id !== null
-                                && $function_call_info->callable_id !== $var_type_part->callable_id)
-                        ) {
-                            // either a callable with no known id, or several callables with
-                            // differing ids: re-dispatching taint to a single id would be unsound
-                            $function_call_info->callable_id = null;
-                            $callable_id_ambiguous = true;
-                        } else {
-                            $function_call_info->callable_id = $var_type_part->callable_id;
-                        }
+                    if ($var_type_part->callable_id !== null) {
+                        // Collect every known underlying id. When the call target is a union of
+                        // distinct callables, any of them may run, so the taint behavior of all
+                        // of them is re-dispatched on invocation (an over-approximation, which is
+                        // the sound direction for taint). Callables with no known id contribute
+                        // nothing to re-dispatch and are simply skipped.
+                        $function_call_info->callable_ids[$var_type_part->callable_id] = true;
                     }
 
                     $function_call_info->function_exists = true;
