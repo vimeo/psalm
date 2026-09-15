@@ -5,8 +5,12 @@ declare(strict_types=1);
 namespace Psalm\Internal\PhpVisitor\Reflector;
 
 use function array_search;
+use function array_shift;
 use function array_slice;
+use function array_unshift;
 use function implode;
+use function strpos;
+use function substr;
 
 /**
  * @internal
@@ -14,27 +18,46 @@ use function implode;
 final class TemplateTagParser
 {
     /**
-     * Splits the `= DefaultType` suffix off a tokenized `@template` tag, if present.
+     * Splits a tokenized `@template` tag into its name, its remaining modifier/bound
+     * tokens, and its default type string (from a trailing `= DefaultType`), if any.
      *
-     * `$template_type` is the whitespace-tokenized remainder of an `@template` tag after
-     * the template name has been shifted off (so it may still carry a modifier like
-     * `of`/`as`/`super` and its bound ahead of the `=`).
+     * `$tokens` is the whitespace-tokenized `@template` tag, name included, e.g.
+     * `['T', 'of', 'Foo', '=', 'Bar']` for `@template T of Foo = Bar`. It also handles
+     * `@template T=Bar` (no spaces around the `=`), where whitespace tokenizing leaves
+     * the name and default glued into a single `T=Bar` token.
      *
-     * @param list<string> $template_type
-     * @return array{0: list<string>, 1: ?string} The tokens with any `= Default` suffix
-     *     removed, and the default type string (or null if there was no default).
+     * @param list<string> $tokens
+     * @return array{0: string, 1: list<string>, 2: ?string} The template name, the
+     *     remaining tokens with any `= Default` suffix removed, and the default type
+     *     string (or null if there was no default).
      */
-    public static function splitDefault(array $template_type): array
+    public static function splitDefault(array $tokens): array
     {
-        $eq_pos = array_search('=', $template_type, true);
+        $name = array_shift($tokens) ?? '';
 
-        if ($eq_pos === false) {
-            return [$template_type, null];
+        $glued_eq_pos = strpos($name, '=');
+        if ($glued_eq_pos !== false && $glued_eq_pos > 0) {
+            // `@template T=Bar`: no space around `=`, so the name and the default type
+            // end up glued into a single token; there is no room for a bound here
+            $glued_default = substr($name, $glued_eq_pos + 1);
+            $name = substr($name, 0, $glued_eq_pos);
+
+            if ($glued_default !== '') {
+                array_unshift($tokens, $glued_default);
+            }
+
+            return [$name, [], implode(' ', $tokens) ?: null];
         }
 
-        $default_tokens = array_slice($template_type, $eq_pos + 1);
+        $eq_pos = array_search('=', $tokens, true);
+
+        if ($eq_pos === false) {
+            return [$name, $tokens, null];
+        }
+
+        $default_tokens = array_slice($tokens, $eq_pos + 1);
         $default_type_string = implode(' ', $default_tokens) ?: null;
 
-        return [array_slice($template_type, 0, $eq_pos), $default_type_string];
+        return [$name, array_slice($tokens, 0, $eq_pos), $default_type_string];
     }
 }

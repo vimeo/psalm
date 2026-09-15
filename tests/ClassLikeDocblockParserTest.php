@@ -64,6 +64,18 @@ final class ClassLikeDocblockParserTest extends TestCase
         $this->assertSame([['T', 'of', 'object', false, 17, 'stdClass']], $class_docblock->templates);
     }
 
+    public function testTemplateDefaultWithoutSpaces(): void
+    {
+        $doc = '/**
+ * @template T=string
+ */
+';
+        $node = new Class_(null);
+        $php_parser_doc = new Doc($doc);
+        $class_docblock = ClassLikeDocblockParser::parse($node, $php_parser_doc, new Aliases());
+        $this->assertSame([['T', null, null, false, 17, 'string']], $class_docblock->templates);
+    }
+
     /**
      * @return iterable<array-key, array{annotation: string, expected: array}>
      */
