@@ -250,6 +250,14 @@ final class ThisOutTest extends TestCase
                     }',
                 'error_message' => 'InvalidDocblock',
             ],
+            'conditionalWithoutIsTypeIsReportedInsteadOfCrashing' => [
+                'code' => '<?php
+                    class A {
+                        /** @psalm-self-out ($key is ? int : string) */
+                        public function m(?int $key = null): void {}
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
         ];
     }
 }
