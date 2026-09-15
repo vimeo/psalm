@@ -605,8 +605,8 @@ final class TypeExpander
             if ($container_class_storage->template_types
                 && array_any(
                     $container_class_storage->template_types,
-                    static fn(array $type_map, string $template_name): bool => isset($template_type_defaults[$template_name])
-                        || !reset($type_map)->hasMixed(),
+                    static fn(array $type_map, string $template_name): bool
+                        => isset($template_type_defaults[$template_name]) || !reset($type_map)->hasMixed(),
                 )
             ) {
                 $template_result = new TemplateResult([], []);
