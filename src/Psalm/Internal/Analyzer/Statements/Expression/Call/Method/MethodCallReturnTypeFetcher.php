@@ -357,18 +357,14 @@ final class MethodCallReturnTypeFetcher
                 $method_call_nodes = [];
 
                 if ($unspecialized_parent_nodes) {
-                    $method_call_node = $is_declaring
-                        ? DataFlowNode::getForMethodReturn(
-                            $cased_method_id,
-                            $method_storage,
-                            $node_location,
-                        )
-                        : DataFlowNode::getForCallableReturn(
-                            'inherited-method',
-                            $cased_method_id,
-                            null,
-                            $node_location,
-                        );
+                    // Always derive the return node location from the (single) declaring-method
+                    // storage, whether or not this class is the declaring one, so the same node id
+                    // never gets a concrete location in one process and none in another.
+                    $method_call_node = DataFlowNode::getForMethodReturn(
+                        $cased_method_id,
+                        $method_storage,
+                        $node_location,
+                    );
 
                     $method_call_nodes[$method_call_node->id] = $method_call_node;
                 }
@@ -378,35 +374,18 @@ final class MethodCallReturnTypeFetcher
                         continue;
                     }
 
-                    if ($is_declaring) {
-                        $universal_method_call_node = DataFlowNode::getForMethodReturn(
-                            $cased_method_id,
-                            $method_storage,
-                        );
+                    $universal_method_call_node = DataFlowNode::getForMethodReturn(
+                        $cased_method_id,
+                        $method_storage,
+                    );
 
-                        $method_call_node = DataFlowNode::getForMethodReturn(
-                            $cased_method_id,
-                            $method_storage,
-                            null,
-                            0,
-                            $parent_node->specialization_key,
-                        );
-                    } else {
-                        $universal_method_call_node = DataFlowNode::getForCallableReturn(
-                            'inherited-method',
-                            $cased_method_id,
-                            null,
-                        );
-
-                        $method_call_node = DataFlowNode::getForCallableReturn(
-                            'inherited-method',
-                            $cased_method_id,
-                            null,
-                            null,
-                            0,
-                            $parent_node->specialization_key,
-                        );
-                    }
+                    $method_call_node = DataFlowNode::getForMethodReturn(
+                        $cased_method_id,
+                        $method_storage,
+                        null,
+                        0,
+                        $parent_node->specialization_key,
+                    );
 
                     $taint_flow_graph->addPath(
                         $universal_method_call_node,
@@ -464,18 +443,11 @@ final class MethodCallReturnTypeFetcher
 
                 $context->vars_in_scope[$var_id] = $stmt_var_type;
             } else {
-                $method_call_node = $is_declaring
-                    ? DataFlowNode::getForMethodReturn(
-                        $cased_method_id,
-                        $method_storage,
-                        $node_location,
-                    )
-                    : DataFlowNode::getForCallableReturn(
-                        'inherited-method',
-                        $cased_method_id,
-                        null,
-                        $node_location,
-                    );
+                $method_call_node = DataFlowNode::getForMethodReturn(
+                    $cased_method_id,
+                    $method_storage,
+                    $node_location,
+                );
 
                 if (!$is_declaring) {
                     $cased_declaring_method_id = $codebase->methods->getCasedMethodId($declaring_method_id);
@@ -507,16 +479,10 @@ final class MethodCallReturnTypeFetcher
             $graph = $variable_use_graph;
         }
         if ($graph) {
-            $method_call_node = $is_declaring
-                ? DataFlowNode::getForMethodReturn(
-                    $cased_method_id,
-                    $method_storage,
-                )
-                : DataFlowNode::getForCallableReturn(
-                    'inherited-method',
-                    $cased_method_id,
-                    null,
-                );
+            $method_call_node = DataFlowNode::getForMethodReturn(
+                $cased_method_id,
+                $method_storage,
+            );
 
             if (!$is_declaring) {
                 $cased_declaring_method_id = $codebase->methods->getCasedMethodId($declaring_method_id);

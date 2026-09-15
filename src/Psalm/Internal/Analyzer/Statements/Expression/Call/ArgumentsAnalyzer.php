@@ -920,7 +920,6 @@ final class ArgumentsAnalyzer
                                     : ($method_id instanceof MethodIdentifier ? 'magic-method' : 'callable-object'),
                                 $cased_method_id,
                                 $argument_offset,
-                                $function_param->location ?? $code_location,
                                 $code_location,
                                 $function_param->sinks,
                             );
@@ -930,7 +929,6 @@ final class ArgumentsAnalyzer
                                 $argument_offset,
                                 $function_storage,
                                 $code_location,
-                                $function_param->sinks,
                             );
                         } else {
                             $sink = DataFlowNode::getForMethodArgument(
@@ -938,7 +936,6 @@ final class ArgumentsAnalyzer
                                 $argument_offset,
                                 $function_storage,
                                 null,
-                                $function_param->sinks,
                             );
                         }
 

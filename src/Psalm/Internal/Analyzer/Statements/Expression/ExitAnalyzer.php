@@ -73,7 +73,6 @@ final class ExitAnalyzer
                     'exit',
                     0,
                     $call_location,
-                    $call_location,
                     TaintKind::INPUT_HTML
                         | TaintKind::INPUT_HAS_QUOTES
                         | TaintKind::USER_SECRET

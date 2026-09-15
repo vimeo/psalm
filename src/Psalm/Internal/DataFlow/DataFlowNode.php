@@ -6,9 +6,9 @@ namespace Psalm\Internal\DataFlow;
 
 use Override;
 use Psalm\CodeLocation;
+use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Stringable;
-use UnexpectedValueException;
 
 use function count;
 use function strtolower;
@@ -107,12 +107,22 @@ final class DataFlowNode implements Stringable
     /**
      * @psalm-pure
      * @param CallableKind $kind
+     *
+     * Unlike {@see self::getForMethodArgument()}, a callable node has no {@see FunctionLikeStorage}
+     * to derive a canonical location from (it stands for a builtin/magic/callable-object/dynamic
+     * call). Its only well-defined location is therefore its specialization (the callsite), which is
+     * already baked into the node id via $specialization_location. Passing an independent
+     * $code_location here used to allow the *same* (unspecialized) node id to be created with a
+     * different callsite location in each analysis process; whichever forked worker registered the
+     * id first then won the merge non-deterministically, so taint findings shifted between runs. The
+     * location is now always derived from $specialization_location, keeping id -> location a pure
+     * function. If you have a real storage and want a definition location, use
+     * {@see self::getForMethodArgument()} / {@see self::getForMethodReturn()} instead.
      */
     public static function getForCallableArg(
         string $kind,
         string $cased_function_id,
         int $argument_offset,
-        ?CodeLocation $location,
         ?CodeLocation $specialization_location = null,
         int $taints = 0,
     ): self {
@@ -127,17 +137,19 @@ final class DataFlowNode implements Stringable
                 . ':' . $specialization_location->raw_file_start;
         }
 
-        return self::make($arg_id, $label, $location, $specialization_key, $taints);
+        return self::make($arg_id, $label, $specialization_location, $specialization_key, $taints);
     }
 
     /**
      * @psalm-pure
      * @param CallableKind $kind
+     *
+     * See {@see self::getForCallableArg()} for why the node location is derived from
+     * $specialization_location rather than accepted as an independent argument.
      */
     public static function getForCallableReturn(
         string $kind,
         string $cased_function_id,
-        ?CodeLocation $location,
         ?CodeLocation $specialization_location = null,
         int $taints = 0,
         ?string $specialization_key = null,
@@ -150,7 +162,7 @@ final class DataFlowNode implements Stringable
         return self::make(
             strtolower($cased_function_id),
             $kind . ' ' . $cased_function_id,
-            $location,
+            $specialization_location,
             $specialization_key,
             $taints,
         );
@@ -158,13 +170,18 @@ final class DataFlowNode implements Stringable
 
     /**
      * @psalm-mutation-free
+     *
+     * The argument node's sink taints are derived from the parameter's storage rather than passed by
+     * the caller: the node id is shared across every call site, so a caller-supplied value made the
+     * same id carry the parameter's sinks at one site and none at another, and which survived the
+     * multi-process graph merge was non-deterministic. Deriving from storage keeps id -> taints a
+     * pure function.
      */
     public static function getForMethodArgument(
         string $cased_method_id,
         int $argument_offset,
         FunctionLikeStorage $storage,
         ?CodeLocation $specialization_location = null,
-        int $taints = 0,
     ): self {
         $arg_id = strtolower($cased_method_id) . '#' . ($argument_offset + 1);
 
@@ -177,12 +194,14 @@ final class DataFlowNode implements Stringable
                 . ':' . $specialization_location->raw_file_start;
         }
 
+        $param = self::getParameter($storage, $argument_offset);
+
         return self::make(
             $arg_id,
             $label,
-            self::getParameterLocation($storage, $argument_offset),
+            $param?->signature_type_location ?: $param?->type_location ?: $param?->location,
             $specialization_key,
-            $taints,
+            $param?->sinks ?? 0,
         );
     }
 
@@ -241,7 +260,7 @@ final class DataFlowNode implements Stringable
     /**
      * @psalm-mutation-free
      */
-    private static function getParameterLocation(FunctionLikeStorage $storage, int $argument_offset): ?CodeLocation
+    private static function getParameter(FunctionLikeStorage $storage, int $argument_offset): ?FunctionLikeParameter
     {
         $param = $storage->params[$argument_offset] ?? null;
 
@@ -250,17 +269,7 @@ final class DataFlowNode implements Stringable
             $param = $last_param->is_variadic ? $last_param : null;
         }
 
-        if (!$param) {
-            throw new UnexpectedValueException(
-                'No parameter at offset ' . $argument_offset . ' for ' . $storage->cased_name,
-            );
-        }
-
-        $loc = $param->signature_type_location
-            ?: $param->type_location
-            ?: $param->location;
-
-        return $loc;
+        return $param;
     }
 
 

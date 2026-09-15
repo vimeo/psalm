@@ -1853,7 +1853,6 @@ final class ArgumentAnalyzer
                     $callable_kind,
                     $cased_method_id,
                     $argument_offset,
-                    $taint_flow_graph ? $function_param->location : null,
                     $function_call_location,
                 );
         } else {
@@ -1867,7 +1866,6 @@ final class ArgumentAnalyzer
                     $callable_kind,
                     $cased_method_id,
                     $argument_offset,
-                    $taint_flow_graph ? $function_param->location : null,
                 );
 
             if ($taint_flow_graph
@@ -1886,17 +1884,22 @@ final class ArgumentAnalyzer
                     );
                     $dependent_method_id = new MethodIdentifier($dependent_classlike_lc, $method_name);
 
-                    $new_sink = $codebase->methods->hasStorage($dependent_method_id)
+                    // Resolve the declaring method's storage (a dependent class usually inherits the
+                    // method, so it has no storage under its own id) so this node's location is the
+                    // same canonical parameter location used wherever else the node id is created.
+                    $dependent_declaring_id = $codebase->methods->getDeclaringMethodId($dependent_method_id);
+
+                    $new_sink = $dependent_declaring_id !== null
+                        && $codebase->methods->hasStorage($dependent_declaring_id)
                         ? DataFlowNode::getForMethodArgument(
                             $dependent_classlike_storage->name . '::' . $cased_method_name,
                             $argument_offset,
-                            $codebase->methods->getStorage($dependent_method_id),
+                            $codebase->methods->getStorage($dependent_declaring_id),
                         )
                         : DataFlowNode::getForCallableArg(
                             'inherited-method',
                             $dependent_classlike_storage->name . '::' . $cased_method_name,
                             $argument_offset,
-                            $arg_location,
                         );
 
                     $taint_flow_graph->addNode($new_sink);

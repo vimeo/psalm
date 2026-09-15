@@ -856,7 +856,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     'variable-call',
                     0,
                     $arg_location,
-                    $arg_location,
                     TaintKind::INPUT_CALLABLE,
                 );
 
