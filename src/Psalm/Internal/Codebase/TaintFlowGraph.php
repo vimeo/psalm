@@ -326,15 +326,10 @@ final class TaintFlowGraph extends DataFlowGraph
                     }
                     $specialized_calls = $source->specialized_calls;
                     $specialized_calls[$source->specialization_key][$source->unspecialized_id] = $source->id;
-                    $generated_source = new DataFlowNode(
+                    $generated_source = $source->withSpecialization(
                         $source->unspecialized_id,
                         null,
                         null,
-                        $source->label,
-                        $source->code_location,
-                        $source->taints,
-                        $source->taintSource,
-                        $source->path_types,
                         $specialized_calls,
                     );
 
@@ -365,16 +360,11 @@ final class TaintFlowGraph extends DataFlowGraph
                             }
                             $copy = $specialized_calls;
                             unset($copy[$specialization]);
-            
-                            $new_source = new DataFlowNode(
+
+                            $new_source = $source->withSpecialization(
                                 $specialized_id,
                                 $source->id,
                                 $specialization,
-                                $source->label,
-                                $source->code_location,
-                                $source->taints,
-                                $source->taintSource,
-                                $source->path_types,
                                 $copy,
                             );
 
@@ -393,15 +383,10 @@ final class TaintFlowGraph extends DataFlowGraph
                     } else {
                         // If not processing descendants, accept all specializations.
                         foreach ($this->specializations[$source->id] as $specialization => $specialized_id) {
-                            $new_source = new DataFlowNode(
+                            $new_source = $source->withSpecialization(
                                 $specialized_id,
                                 $source->id,
                                 $specialization,
-                                $source->label,
-                                $source->code_location,
-                                $source->taints,
-                                $source->taintSource,
-                                $source->path_types,
                                 $specialized_calls,
                             );
 
@@ -426,15 +411,10 @@ final class TaintFlowGraph extends DataFlowGraph
                             if (!isset($this->forward_edges[$specialized_id])) {
                                 continue;
                             }
-                            $new_source = new DataFlowNode(
+                            $new_source = $source->withSpecialization(
                                 $specialized_id,
                                 $source->id,
                                 $specialization,
-                                $source->label,
-                                $source->code_location,
-                                $source->taints,
-                                $source->taintSource,
-                                $source->path_types,
                                 $source->specialized_calls,
                             );
 
@@ -793,12 +773,7 @@ final class TaintFlowGraph extends DataFlowGraph
             $old = $this->nodes[$to_id];
             $path_types = $generated_source->path_types;
             $path_types []= $path_type;
-            $new_destination = new DataFlowNode(
-                $old->id,
-                $old->unspecialized_id,
-                $old->specialization_key,
-                $old->label,
-                $old->code_location,
+            $new_destination = $old->withFlow(
                 $new_taints,
                 $generated_source,
                 $path_types,

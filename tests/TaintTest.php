@@ -197,6 +197,14 @@ final class TaintTest extends TestCase
 
                     echo $arr["safe"];',
             ],
+            'noTaintNamedArgumentToSafeParameter' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-sink html $dangerous */
+                    function mySink(string $safe, string $dangerous) : void {}
+
+                    $tainted = (string) $_GET["x"];
+                    mySink(safe: $tainted, dangerous: "ok");',
+            ],
             'untaintedRecursiveFunction' => [
                 'code' => '<?php
                     function f(string $s, int $depth): string {
@@ -1065,6 +1073,27 @@ final class TaintTest extends TestCase
     public function providerInvalidCodeParse(): array
     {
         return [
+            'taintedNamedArgumentToSinkParameter' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-sink html $dangerous */
+                    function mySink(string $safe, string $dangerous) : void {}
+
+                    $tainted = (string) $_GET["x"];
+                    mySink(dangerous: $tainted, safe: "ok");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedNamedArgumentThroughMethodToSink' => [
+                'code' => '<?php // --taint-analysis
+                    class A {
+                        public function process(string $safe, string $dangerous) : void {
+                            echo $dangerous;
+                        }
+                    }
+
+                    $tainted = (string) $_GET["x"];
+                    (new A)->process(dangerous: $tainted, safe: "ok");',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintedInputThroughRecursiveFunction' => [
                 'code' => '<?php
                     function f(string $s, int $depth): string {

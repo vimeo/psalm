@@ -120,7 +120,6 @@ final class IncludeAnalyzer
                 'include',
                 0,
                 $arg_location,
-                $arg_location,
                 TaintKind::INPUT_INCLUDE,
             );
 

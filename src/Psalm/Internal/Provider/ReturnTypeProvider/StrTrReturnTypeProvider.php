@@ -47,7 +47,6 @@ final class StrTrReturnTypeProvider implements FunctionReturnTypeProviderInterfa
             $function_return_sink = DataFlowNode::getForCallableReturn(
                 'builtin',
                 $function_id,
-                null,
                 $code_location,
             );
 
@@ -57,7 +56,6 @@ final class StrTrReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                     'builtin',
                     $function_id,
                     $i,
-                    null,
                     $code_location,
                 );
 
