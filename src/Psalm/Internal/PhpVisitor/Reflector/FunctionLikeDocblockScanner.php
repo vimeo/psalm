@@ -318,36 +318,48 @@ final class FunctionLikeDocblockScanner
 
         if ($docblock_info->self_out
             && $storage instanceof MethodStorage) {
-            $out_type = TypeParser::parseTokens(
-                TypeTokenizer::getFullyQualifiedTokens(
-                    $docblock_info->self_out['type'],
-                    $aliases,
+            try {
+                $storage->self_out_type = TypeParser::parseTokens(
+                    TypeTokenizer::getFullyQualifiedTokens(
+                        $docblock_info->self_out['type'],
+                        $aliases,
+                        $function_template_types + $class_template_types,
+                        $type_aliases,
+                        $classlike_storage ? $classlike_storage->name : null,
+                    ),
+                    null,
                     $function_template_types + $class_template_types,
                     $type_aliases,
-                    $classlike_storage ? $classlike_storage->name : null,
-                ),
-                null,
-                $function_template_types + $class_template_types,
-                $type_aliases,
-            );
-            $storage->self_out_type = $out_type;
+                );
+            } catch (TypeParseTreeException $e) {
+                $storage->docblock_issues[] = new InvalidDocblock(
+                    $e->getMessage() . ' in docblock for ' . $cased_function_id,
+                    new CodeLocation($file_scanner, $stmt, null, true),
+                );
+            }
         }
 
         if ($docblock_info->if_this_is
             && $storage instanceof MethodStorage) {
-            $out_type = TypeParser::parseTokens(
-                TypeTokenizer::getFullyQualifiedTokens(
-                    $docblock_info->if_this_is['type'],
-                    $aliases,
+            try {
+                $storage->if_this_is_type = TypeParser::parseTokens(
+                    TypeTokenizer::getFullyQualifiedTokens(
+                        $docblock_info->if_this_is['type'],
+                        $aliases,
+                        $function_template_types + $class_template_types,
+                        $type_aliases,
+                        $classlike_storage ? $classlike_storage->name : null,
+                    ),
+                    null,
                     $function_template_types + $class_template_types,
                     $type_aliases,
-                    $classlike_storage ? $classlike_storage->name : null,
-                ),
-                null,
-                $function_template_types + $class_template_types,
-                $type_aliases,
-            );
-            $storage->if_this_is_type = $out_type;
+                );
+            } catch (TypeParseTreeException $e) {
+                $storage->docblock_issues[] = new InvalidDocblock(
+                    $e->getMessage() . ' in docblock for ' . $cased_function_id,
+                    new CodeLocation($file_scanner, $stmt, null, true),
+                );
+            }
         }
 
         foreach ($docblock_info->taint_sink_params as $taint_sink_param) {
