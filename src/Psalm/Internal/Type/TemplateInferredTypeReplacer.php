@@ -50,6 +50,7 @@ final class TemplateInferredTypeReplacer
     /**
      * This replaces template types in unions with the inferred types they should be
      *
+     * @param array<string, true> $visiting_defaults
      * @psalm-external-mutation-free
      */
     public static function replace(
@@ -252,8 +253,6 @@ final class TemplateInferredTypeReplacer
 
     /**
      * @param array<string, array<string, non-empty-list<TemplateBound>>> $inferred_lower_bounds
-     */
-    /**
      * @param array<string, true> $visiting_defaults
      */
     private static function replaceTemplateParam(
