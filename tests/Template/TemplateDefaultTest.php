@@ -704,6 +704,27 @@ final class TemplateDefaultTest extends TestCase
                     '$r===' => 'string',
                 ],
             ],
+            'templateDefaultBoundNotFlaggedForUnresolvedClassConstant' => [
+                'code' => '<?php
+                    class K {
+                        const MAP = ["a" => 1, "b" => 2];
+                    }
+
+                    /**
+                     * @template T of int = value-of<K::MAP>
+                     */
+                    class Foo {
+                        /** @return T */
+                        public function get() {
+                            throw new RuntimeException("empty");
+                        }
+                    }
+
+                    $r = (new Foo())->get();',
+                'assertions' => [
+                    '$r===' => '1|2',
+                ],
+            ],
         ];
     }
 

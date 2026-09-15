@@ -2162,6 +2162,16 @@ final class ClassLikeNodeScanner
             return false;
         }
 
+        // Skip when either side is derived from a class constant or a class's
+        // properties (value-of<K::MAP>, key-of<...>, properties-of<...>): class
+        // constants aren't evaluated yet at scan time, so the comparator would
+        // see an unresolved placeholder rather than the constant's real type.
+        if ($bound_visitor->matchesUnresolvedDerivedType()
+            || $default_visitor->matchesUnresolvedDerivedType()
+        ) {
+            return false;
+        }
+
         try {
             return !UnionTypeComparator::isContainedBy($codebase, $default_type, $bound);
         } catch (InvalidArgumentException) {
