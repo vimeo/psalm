@@ -235,7 +235,7 @@ final class CloneAnalyzer
      * been emitted), mirroring the bare `clone $x` behaviour of leaving the
      * expression untyped.
      */
-    public static function analyzeClonedType(
+    private static function analyzeClonedType(
         StatementsAnalyzer $statements_analyzer,
         Context $context,
         CodeLocation $location,

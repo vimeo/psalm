@@ -223,6 +223,27 @@ final class CloneTest extends TestCase
                 'ignored_issues' => ['MixedArgument', 'TooFewArguments'],
                 'php_version' => '8.5',
             ],
+            'cloneFirstClassCallableDoesNotCrash' => [
+                // Guards the getArgs() assertion in the CallLike node (isPartialFunctionApplication)
+                // that a naive intercept could trip; the first-class-callable check must run first.
+                'code' => '<?php
+                    $f = clone(...);',
+                'assertions' => [],
+                'ignored_issues' => ['UnusedVariable'],
+                'php_version' => '8.5',
+            ],
+            'cloneCalledThroughVariableFunctionNotIntercepted' => [
+                // The intercept only matches a literal `clone` Name node, so calling it
+                // indirectly through a variable falls back to the normal CallMap path.
+                'code' => '<?php
+                    class Foo {}
+                    $o = new Foo();
+                    $fn = "clone";
+                    $fn($o, []);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
         ];
     }
 
