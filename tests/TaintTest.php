@@ -3473,6 +3473,26 @@ final class TaintTest extends TestCase
                     'TaintedInclude{ require $second; }',
                 ],
             ],
+            'twoFlowsOfDifferentLengthIntoTheSameSink' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-flow ($value) -> return
+                     */
+                    function relay(string $value): string { return $value; }
+
+                    /**
+                     * @psalm-taint-sink shell $cmd
+                     */
+                    function runCmd(string $cmd): void {}
+
+                    runCmd((string)($_GET["direct"] ?? ""));
+                    runCmd(relay((string)($_GET["relayed"] ?? "")));
+                ',
+                'expectedIssueTypes' => [
+                    'TaintedShell{ function runCmd(string $cmd): void {} }',
+                    'TaintedShell{ function runCmd(string $cmd): void {} }',
+                ],
+            ],
         ];
     }
 }
