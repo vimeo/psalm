@@ -347,6 +347,10 @@ final class TypeParser
                 throw new TypeParseTreeException('Invalid conditional');
             }
 
+            if (count($parse_tree->condition->children) !== 1) {
+                throw new TypeParseTreeException('Invalid conditional, expected type after is');
+            }
+
             $first_class = array_keys($template_type_map[$template_param_name])[0];
 
             $conditional_type = self::getTypeFromTree(
