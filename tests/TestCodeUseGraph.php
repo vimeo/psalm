@@ -31,7 +31,7 @@ final class TestCodeUseGraph extends CodeUseGraph
      */
     public function __construct(private readonly Closure $is_root)
     {
-        parent::__construct(new ClassLikeStorageProvider(), new TestConfig());
+        parent::__construct(new ClassLikeStorageProvider());
     }
 
     #[Override]
