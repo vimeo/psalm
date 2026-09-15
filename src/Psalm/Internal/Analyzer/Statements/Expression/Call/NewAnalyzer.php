@@ -763,7 +763,6 @@ final class NewAnalyzer extends CallAnalyzer
                 $method_source = DataFlowNode::getForCallableReturn(
                     'builtin',
                     $fq_class_name . '::__construct',
-                    $storage->location,
                     $storage->isExternalMutationFree() ? $code_location : null,
                 );
             } elseif ($storage->isExternalMutationFree() || $method_storage->specialize_call) {
@@ -831,7 +830,6 @@ final class NewAnalyzer extends CallAnalyzer
                     'dynamic-instantiation',
                     'variable-call',
                     0,
-                    $arg_location,
                     $arg_location,
                     TaintKind::INPUT_CALLABLE,
                 );

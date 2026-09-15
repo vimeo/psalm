@@ -914,31 +914,51 @@ final class ArgumentsAnalyzer
                 foreach ($arg_function_params[$argument_offset] as $function_param) {
                     if ($function_param->sinks) {
                         if (!$function_storage) {
-                            $sink = DataFlowNode::getForCallableArg(
-                                $in_call_map
-                                    ? 'builtin'
-                                    : ($method_id instanceof MethodIdentifier ? 'magic-method' : 'callable-object'),
-                                $cased_method_id,
-                                $argument_offset,
-                                $function_param->location ?? $code_location,
-                                $code_location,
-                                $function_param->sinks,
-                            );
+                            // Mirror the value-node keying in ArgumentAnalyzer::processTaintedness:
+                            // when the caller has no storage, resolve it from the cased method id so
+                            // the sink is keyed by the declared parameter index (via $function_param),
+                            // and only a genuinely storage-less callable falls back to the call offset.
+                            $sink = ($in_call_map
+                                ? null
+                                : DataFlowNode::getForMethodArgumentById(
+                                    $codebase->methods,
+                                    $cased_method_id,
+                                    $argument_offset,
+                                    $code_location,
+                                    $function_param,
+                                ))
+                                ?? DataFlowNode::getForCallableArg(
+                                    $in_call_map
+                                        ? 'builtin'
+                                        : ($method_id instanceof MethodIdentifier
+                                            ? 'magic-method'
+                                            : 'callable-object'),
+                                    $cased_method_id,
+                                    $argument_offset,
+                                    $code_location,
+                                    $function_param->sinks,
+                                );
                         } elseif ($function_storage->specialize_call) {
                             $sink = DataFlowNode::getForMethodArgument(
                                 $cased_method_id,
-                                $argument_offset,
+                                DataFlowNode::getParameterOffset(
+                                    $function_storage,
+                                    $function_param,
+                                    $argument_offset,
+                                ),
                                 $function_storage,
                                 $code_location,
-                                $function_param->sinks,
                             );
                         } else {
                             $sink = DataFlowNode::getForMethodArgument(
                                 $cased_method_id,
-                                $argument_offset,
+                                DataFlowNode::getParameterOffset(
+                                    $function_storage,
+                                    $function_param,
+                                    $argument_offset,
+                                ),
                                 $function_storage,
                                 null,
-                                $function_param->sinks,
                             );
                         }
 

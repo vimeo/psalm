@@ -107,6 +107,82 @@ final class TaintTest extends TestCase
     }
 
     /**
+     * A taint flow longer than the old hard-coded resolution depth of 40 hops is
+     * now detected: resolution runs to a fixed point rather than stopping at an
+     * arbitrary nesting level.
+     */
+    public function testTaintFlowDeeperThanLegacyResolutionDepth(): void
+    {
+        $chain = '';
+        for ($i = 1; $i <= 60; $i++) {
+            $chain .= '                    $a' . $i . ' = $a' . ($i - 1) . ";\n";
+        }
+
+        $code = "<?php\n"
+            . '                    $a0 = (string) $_GET["x"];' . "\n"
+            . $chain
+            . '                    echo $a60;';
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessageMatches('/\bTaintedHtml\b/');
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+
+        $this->addFile($file_path, $code);
+
+        $this->project_analyzer->trackTaintedInputs();
+        foreach (self::IGNORE as $issue_name) {
+            Config::getInstance()->setCustomErrorLevel($issue_name, Config::REPORT_SUPPRESS);
+        }
+
+        $this->analyzeFile($file_path, new Context(), false);
+    }
+
+    /**
+     * A taint flow through a chain of distinct function calls deeper than the old
+     * 40-hop resolution limit is detected. Every call site is a specialized node,
+     * so this also exercises the specialization linking of the sink-reachability
+     * pruning: if a specialized node on the path were wrongly pruned, the flow
+     * would be missed.
+     */
+    public function testTaintFlowThroughDeepSpecializedCallChain(): void
+    {
+        $functions = '';
+        for ($i = 0; $i < 60; $i++) {
+            $functions .= '                    function f' . $i . '(string $s): string { return $s; }' . "\n";
+        }
+
+        $calls = '';
+        for ($i = 0; $i < 60; $i++) {
+            $calls .= '                    $v = f' . $i . "(\$v);\n";
+        }
+
+        $code = "<?php\n"
+            . $functions
+            . '                    $v = (string) $_GET["x"];' . "\n"
+            . $calls
+            . '                    echo $v;';
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessageMatches('/\bTaintedHtml\b/');
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+
+        $this->addFile($file_path, $code);
+
+        $this->project_analyzer->trackTaintedInputs();
+        foreach (self::IGNORE as $issue_name) {
+            Config::getInstance()->setCustomErrorLevel($issue_name, Config::REPORT_SUPPRESS);
+        }
+
+        $this->analyzeFile($file_path, new Context(), false);
+    }
+
+    /**
      * @return array<string, array{code:string}>
      * @psalm-pure
      */
@@ -124,6 +200,22 @@ final class TaintTest extends TestCase
                     function f(array $patterns, array $replacements, array $subjects): array {
                         return array_map(preg_replace(...), $patterns, $replacements, $subjects);
                     }',
+              ],
+            'sanitizedArrayValueNotReported' => [
+                'code' => '<?php
+                    $arr = [];
+                    $arr["evil"] = (string) $_GET["x"];
+                    $arr["safe"] = htmlspecialchars((string) $_GET["y"], ENT_QUOTES);
+
+                    echo $arr["safe"];',
+            ],
+            'noTaintNamedArgumentToSafeParameter' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-sink html $dangerous */
+                    function mySink(string $safe, string $dangerous) : void {}
+
+                    $tainted = (string) $_GET["x"];
+                    mySink(safe: $tainted, dangerous: "ok");',
             ],
             'untaintedRecursiveFunction' => [
                 'code' => '<?php
@@ -247,6 +339,109 @@ final class TaintTest extends TestCase
 
                     $agent = new LlmAgent();
                     $agent->prompt(sanitize_for_llm((string) $_GET["question"]));',
+            ],
+            'nosqlSinkNotTaintedByString' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink nosql $filter */
+                    function query($filter): void {}
+
+                    // a plain string can never be a NoSQL query, so this is safe
+                    query((string) $_GET["username"]);',
+            ],
+            'nosqlSinkNotTaintedByIntCast' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink nosql $filter */
+                    function query($filter): void {}
+
+                    // an int can never be a NoSQL query document
+                    query((int) $_GET["username"]);',
+            ],
+            'nosqlSinkNotTaintedByFloatCast' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink nosql $filter */
+                    function query($filter): void {}
+
+                    query((float) $_GET["username"]);',
+            ],
+            'nosqlSinkNotTaintedByBoolCast' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink nosql $filter */
+                    function query($filter): void {}
+
+                    query((bool) $_GET["username"]);',
+            ],
+            'nosqlFilterEscapedByIntCast' => [
+                'code' => '<?php
+                    function getUser(): MongoDB\Driver\Query {
+                        // casting the value to int inside the filter means it can no
+                        // longer be an injected operator like ["$ne" => null]
+                        return new MongoDB\Driver\Query(["age" => (int) $_GET["age"]]);
+                    }',
+            ],
+            'nosqlFilterEscapedByFloatCast' => [
+                'code' => '<?php
+                    function getUser(): MongoDB\Driver\Query {
+                        return new MongoDB\Driver\Query(["lat" => (float) $_GET["lat"]]);
+                    }',
+            ],
+            'nosqlFilterEscapedByBoolCast' => [
+                'code' => '<?php
+                    function getUser(): MongoDB\Driver\Query {
+                        return new MongoDB\Driver\Query(["active" => (bool) $_GET["active"]]);
+                    }',
+            ],
+            'sqlSinkNotTaintedByIntCast' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink sql $q */
+                    function query($q): void {}
+
+                    // an int can never carry a SQL injection
+                    query((int) $_GET["id"]);',
+            ],
+            'sqlSinkNotTaintedByFloatCast' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink sql $q */
+                    function query($q): void {}
+
+                    query((float) $_GET["id"]);',
+            ],
+            'htmlSinkNotTaintedByBoolCast' => [
+                'code' => '<?php
+                    echo (bool) $_GET["flag"];',
+            ],
+            'nosqlFilterEscapedByStringCast' => [
+                'code' => '<?php
+                    function getUser(): MongoDB\Driver\Query {
+                        // casting to string forces a literal match: the value can no
+                        // longer be an injected operator like ["$ne" => null]
+                        return new MongoDB\Driver\Query(["username" => (string) $_GET["username"]]);
+                    }',
+            ],
+            'nosqlFilterEscapedBySanitizer' => [
+                'code' => '<?php
+                    /**
+                     * Forces every filter value to a scalar so an attacker cannot inject
+                     * query operators such as ["$ne" => null] through array-valued input.
+                     *
+                     * @param array<string, mixed> $filter
+                     * @return array<string, string>
+                     * @psalm-taint-escape nosql
+                     */
+                    function sanitize_mongo_filter(array $filter): array {
+                        $safe = [];
+                        foreach ($filter as $field => $value) {
+                            if (is_array($value)) {
+                                throw new InvalidArgumentException("Filter values must be scalar");
+                            }
+                            $safe[$field] = (string) $value;
+                        }
+                        return $safe;
+                    }
+
+                    function getUser(): MongoDB\Driver\Query {
+                        $filter = sanitize_mongo_filter(["username" => $_GET["username"]]);
+                        return new MongoDB\Driver\Query($filter);
+                    }',
             ],
             'taintedInputToParamButSafe' => [
                 'code' => '<?php
@@ -890,6 +1085,27 @@ final class TaintTest extends TestCase
     public function providerInvalidCodeParse(): array
     {
         return [
+            'taintedNamedArgumentToSinkParameter' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-sink html $dangerous */
+                    function mySink(string $safe, string $dangerous) : void {}
+
+                    $tainted = (string) $_GET["x"];
+                    mySink(dangerous: $tainted, safe: "ok");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedNamedArgumentThroughMethodToSink' => [
+                'code' => '<?php // --taint-analysis
+                    class A {
+                        public function process(string $safe, string $dangerous) : void {
+                            echo $dangerous;
+                        }
+                    }
+
+                    $tainted = (string) $_GET["x"];
+                    (new A)->process(dangerous: $tainted, safe: "ok");',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintedInputThroughRecursiveFunction' => [
                 'code' => '<?php
                     function f(string $s, int $depth): string {
@@ -1035,6 +1251,91 @@ final class TaintTest extends TestCase
                     $agent->prompt(buildPrompt((string) $_GET["topic"]));',
                 'error_message' => 'TaintedLlmPrompt',
             ],
+            'taintedInputFromPhpInputViaFileGetContents' => [
+                'code' => '<?php
+                    echo file_get_contents("php://input");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputFromPhpStdinViaFileGetContents' => [
+                'code' => '<?php
+                    echo file_get_contents("php://stdin");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputFromPhpInputViaFopenAndFread' => [
+                'code' => '<?php
+                    $fp = fopen("php://input", "r");
+                    if ($fp !== false) {
+                        echo fread($fp, 1024);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputFromStdinConstant' => [
+                'code' => '<?php
+                    echo fgets(STDIN);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputFromStdinViaStreamGetContents' => [
+                'code' => '<?php
+                    echo stream_get_contents(STDIN);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputFromFirstClassCallable' => [
+                'code' => '<?php
+                    $f = file_get_contents(...);
+                    echo $f("php://input");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputFromFirstClassCallableStreamRead' => [
+                'code' => '<?php
+                    $f = fgets(...);
+                    echo $f(STDIN);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputFromFirstClassCallableExplicitSource' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-taint-source input
+                     */
+                    function getName(): string {
+                        return "";
+                    }
+
+                    $f = getName(...);
+                    echo $f();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputFromFirstClassCallableFlow' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-flow ($r) -> return
+                     */
+                    function some_stub(string $r): string { return ""; }
+
+                    $f = some_stub(...);
+                    echo $f((string) $_GET["untrusted"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputFromFirstClassCallableFlowUserFunction' => [
+                'code' => '<?php
+                    function echoback(string $in): string {
+                        return $in;
+                    }
+
+                    $f = echoback(...);
+                    echo $f((string) $_GET["untrusted"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputToFirstClassCallableSink' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-taint-sink html $in
+                     */
+                    function my_sink(string $in): void {}
+
+                    $f = my_sink(...);
+                    $f((string) $_GET["untrusted"]);',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintedInputFromMethodReturnTypeSimple' => [
                 'code' => '<?php
                     class A {
@@ -1052,6 +1353,29 @@ final class TaintTest extends TestCase
                         }
                     }',
                 'error_message' => 'TaintedSql',
+            ],
+            'taintedNosqlFromMongoQuery' => [
+                'code' => '<?php
+                    function getUser() : MongoDB\Driver\Query {
+                        $filter = ["username" => $_GET["username"]];
+                        return new MongoDB\Driver\Query($filter);
+                    }',
+                'error_message' => 'TaintedNosql',
+            ],
+            'taintedNosqlFromMongoBulkWrite' => [
+                'code' => '<?php
+                    function deleteUser(MongoDB\Driver\BulkWrite $bulk) : void {
+                        $bulk->delete(["username" => $_GET["username"]]);
+                    }',
+                'error_message' => 'TaintedNosql',
+            ],
+            'taintedNosqlFromWholeUserControlledFilter' => [
+                'code' => '<?php
+                    function getUser() : MongoDB\Driver\Query {
+                        // $_GET["filter"] may be an array like ["username" => ["$ne" => null]]
+                        return new MongoDB\Driver\Query((array) $_GET["filter"]);
+                    }',
+                'error_message' => 'TaintedNosql',
             ],
             'taintedInputFromFunctionReturnType' => [
                 'code' => '<?php
@@ -1231,7 +1555,7 @@ final class TaintTest extends TestCase
                             $pdo->exec("delete from users where user_id = " . $userId);
                         }
                     }',
-                'error_message' => 'TaintedSql - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:40 - Detected tainted SQL in path: $_GET (src' . DIRECTORY_SEPARATOR . 'somefile.php:4:45) -> $_GET[\'user_id\'] (src' . DIRECTORY_SEPARATOR . 'somefile.php:4:45) -> A::getUserId (src' . DIRECTORY_SEPARATOR . 'somefile.php:3:55) -> concat (src' . DIRECTORY_SEPARATOR . 'somefile.php:8:36) -> A::getAppendedUserId (src' . DIRECTORY_SEPARATOR . 'somefile.php:7:63) -> $userId (src' . DIRECTORY_SEPARATOR . 'somefile.php:12:29) -> call to A::deleteUser (src' . DIRECTORY_SEPARATOR . 'somefile.php:13:53) -> A::deleteUser#2 (src' . DIRECTORY_SEPARATOR . 'somefile.php:16:62) -> $userId (src' . DIRECTORY_SEPARATOR . 'somefile.php:16:69) -> call to PDO::exec (src' . DIRECTORY_SEPARATOR . 'somefile.php:17:40) -> PDO::exec#1',
+                'error_message' => 'TaintedSql - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:40 - Detected tainted SQL in path: $_GET (src' . DIRECTORY_SEPARATOR . 'somefile.php:4:45) -> $_GET[\'user_id\'] (src' . DIRECTORY_SEPARATOR . 'somefile.php:4:45) -> string-cast (src' . DIRECTORY_SEPARATOR . 'somefile.php:4:45) -> A::getUserId (src' . DIRECTORY_SEPARATOR . 'somefile.php:3:55) -> concat (src' . DIRECTORY_SEPARATOR . 'somefile.php:8:36) -> A::getAppendedUserId (src' . DIRECTORY_SEPARATOR . 'somefile.php:7:63) -> $userId (src' . DIRECTORY_SEPARATOR . 'somefile.php:12:29) -> call to A::deleteUser (src' . DIRECTORY_SEPARATOR . 'somefile.php:13:53) -> A::deleteUser#2 (src' . DIRECTORY_SEPARATOR . 'somefile.php:16:62) -> $userId (src' . DIRECTORY_SEPARATOR . 'somefile.php:16:69) -> call to PDO::exec (src' . DIRECTORY_SEPARATOR . 'somefile.php:17:40) -> PDO::exec#1',
             ],
             'taintedInputToParam' => [
                 'code' => '<?php
@@ -1301,7 +1625,7 @@ final class TaintTest extends TestCase
                             }
                         }
                     }',
-                'error_message' => 'TaintedSql - src' . DIRECTORY_SEPARATOR . 'somefile.php:23:44 - Detected tainted SQL in path: $_GET (src' . DIRECTORY_SEPARATOR . 'somefile.php:7:67) -> $_GET[\'user_id\'] (src' . DIRECTORY_SEPARATOR . 'somefile.php:7:67) -> call to A::getAppendedUserId (src' . DIRECTORY_SEPARATOR . 'somefile.php:7:58) -> A::getAppendedUserId#1 (src' . DIRECTORY_SEPARATOR . 'somefile.php:11:59) -> $user_id (src' . DIRECTORY_SEPARATOR . 'somefile.php:11:66) -> concat (src' . DIRECTORY_SEPARATOR . 'somefile.php:12:36) -> A::getAppendedUserId (src' . DIRECTORY_SEPARATOR . 'somefile.php:11:78) -> call to A::deleteUser (src' . DIRECTORY_SEPARATOR . 'somefile.php:7:33) -> A::deleteUser#3 (src' . DIRECTORY_SEPARATOR . 'somefile.php:19:78) -> $userId2 (src' . DIRECTORY_SEPARATOR . 'somefile.php:19:85) -> call to PDO::exec (src' . DIRECTORY_SEPARATOR . 'somefile.php:23:44) -> PDO::exec#1',
+                'error_message' => 'TaintedSql - src' . DIRECTORY_SEPARATOR . 'somefile.php:23:44 - Detected tainted SQL in path: $_GET (src' . DIRECTORY_SEPARATOR . 'somefile.php:7:67) -> $_GET[\'user_id\'] (src' . DIRECTORY_SEPARATOR . 'somefile.php:7:67) -> string-cast (src' . DIRECTORY_SEPARATOR . 'somefile.php:7:67) -> call to A::getAppendedUserId (src' . DIRECTORY_SEPARATOR . 'somefile.php:7:58) -> A::getAppendedUserId#1 (src' . DIRECTORY_SEPARATOR . 'somefile.php:11:59) -> $user_id (src' . DIRECTORY_SEPARATOR . 'somefile.php:11:66) -> concat (src' . DIRECTORY_SEPARATOR . 'somefile.php:12:36) -> A::getAppendedUserId (src' . DIRECTORY_SEPARATOR . 'somefile.php:11:78) -> call to A::deleteUser (src' . DIRECTORY_SEPARATOR . 'somefile.php:7:33) -> A::deleteUser#3 (src' . DIRECTORY_SEPARATOR . 'somefile.php:19:78) -> $userId2 (src' . DIRECTORY_SEPARATOR . 'somefile.php:19:85) -> call to PDO::exec (src' . DIRECTORY_SEPARATOR . 'somefile.php:23:44) -> PDO::exec#1',
             ],
             'taintedInParentLoader' => [
                 'code' => '<?php
@@ -1332,7 +1656,7 @@ final class TaintTest extends TestCase
                     }
 
                     (new C)->foo((string) $_GET["user_id"]);',
-                'error_message' => 'TaintedSql - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:44 - Detected tainted SQL in path: $_GET (src' . DIRECTORY_SEPARATOR . 'somefile.php:28:43) -> $_GET[\'user_id\'] (src' . DIRECTORY_SEPARATOR . 'somefile.php:28:43) -> call to C::foo (src' . DIRECTORY_SEPARATOR . 'somefile.php:28:34) -> C::foo#1 (src' . DIRECTORY_SEPARATOR . 'somefile.php:23:45) -> $user_id (src' . DIRECTORY_SEPARATOR . 'somefile.php:23:52) -> call to AGrandChild::loadFull (src' . DIRECTORY_SEPARATOR . 'somefile.php:24:51) -> A::loadFull#1 (src' . DIRECTORY_SEPARATOR . 'somefile.php:5:57) -> $sink (src' . DIRECTORY_SEPARATOR . 'somefile.php:5:64) -> call to A::loadPartial (src' . DIRECTORY_SEPARATOR . 'somefile.php:6:49) -> A::loadPartial#1 (src' . DIRECTORY_SEPARATOR . 'somefile.php:3:69) -> AChild::loadPartial#1 (src' . DIRECTORY_SEPARATOR . 'somefile.php:15:60) -> $sink (src' . DIRECTORY_SEPARATOR . 'somefile.php:15:67) -> call to PDO::exec (src' . DIRECTORY_SEPARATOR . 'somefile.php:16:44) -> PDO::exec#1',
+                'error_message' => 'TaintedSql - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:44 - Detected tainted SQL in path: $_GET (src' . DIRECTORY_SEPARATOR . 'somefile.php:28:43) -> $_GET[\'user_id\'] (src' . DIRECTORY_SEPARATOR . 'somefile.php:28:43) -> string-cast (src' . DIRECTORY_SEPARATOR . 'somefile.php:28:43) -> call to C::foo (src' . DIRECTORY_SEPARATOR . 'somefile.php:28:34) -> C::foo#1 (src' . DIRECTORY_SEPARATOR . 'somefile.php:23:45) -> $user_id (src' . DIRECTORY_SEPARATOR . 'somefile.php:23:52) -> call to AGrandChild::loadFull (src' . DIRECTORY_SEPARATOR . 'somefile.php:24:51) -> A::loadFull#1 (src' . DIRECTORY_SEPARATOR . 'somefile.php:5:57) -> $sink (src' . DIRECTORY_SEPARATOR . 'somefile.php:5:64) -> call to A::loadPartial (src' . DIRECTORY_SEPARATOR . 'somefile.php:6:49) -> A::loadPartial#1 (src' . DIRECTORY_SEPARATOR . 'somefile.php:3:69) -> AChild::loadPartial#1 (src' . DIRECTORY_SEPARATOR . 'somefile.php:15:60) -> $sink (src' . DIRECTORY_SEPARATOR . 'somefile.php:15:67) -> call to PDO::exec (src' . DIRECTORY_SEPARATOR . 'somefile.php:16:44) -> PDO::exec#1',
             ],
             'taintedInputFromProperty' => [
                 'code' => '<?php
@@ -2829,6 +3153,30 @@ final class TaintTest extends TestCase
                 'code' => '<?php
                     sleep($_GET["seconds"]);',
                 'error_message' => 'TaintedSleep',
+            ],
+            'sleepSurvivesIntCast' => [
+                'code' => '<?php
+                    // a numeric value can still cause a DoS, so the sleep taint must
+                    // survive casting to int
+                    sleep((int) $_GET["seconds"]);',
+                'error_message' => 'TaintedSleep',
+            ],
+            'sleepSurvivesFloatCast' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink sleep $s */
+                    function mysleep($s): void {}
+                    mysleep((float) $_GET["seconds"]);',
+                'error_message' => 'TaintedSleep',
+            ],
+            'sqlSurvivesStringCast' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink sql $q */
+                    function query($q): void {}
+
+                    // a string can still carry a SQL injection, so casting to string
+                    // must only strip the array/object-only taints (e.g. nosql)
+                    query((string) $_GET["id"]);',
+                'error_message' => 'TaintedSql',
             ],
             'taintedUsleep' => [
                 'code' => '<?php

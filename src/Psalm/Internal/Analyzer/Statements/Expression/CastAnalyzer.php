@@ -11,6 +11,7 @@ use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TypeCombiner;
@@ -143,13 +144,16 @@ final class CastAnalyzer
                 }
             }
 
-            if ($statements_analyzer->variable_use_graph
-            ) {
-                $type = new Union([new TBool()], [
-                    'parent_nodes' => $maybe_type->parent_nodes ?? [],
-                ]);
-            } else {
-                $type = Type::getBool();
+            $type = new Union([new TBool()]);
+
+            if ($statements_analyzer->data_flow_graph) {
+                $type = self::stripCastTaints(
+                    $statements_analyzer,
+                    $type,
+                    $stmt,
+                    $maybe_type->parent_nodes ?? [],
+                    'bool',
+                );
             }
 
             $statements_analyzer->node_data->setType($stmt, $type);
@@ -325,7 +329,7 @@ final class CastAnalyzer
 
         $parent_nodes = [];
 
-        if ($statements_analyzer->variable_use_graph) {
+        if ($statements_analyzer->data_flow_graph) {
             $parent_nodes = $stmt_type->parent_nodes;
         }
 
@@ -487,11 +491,13 @@ final class CastAnalyzer
             );
         }
 
-        if ($statements_analyzer->data_flow_graph) {
-            $int_type = $int_type->setParentNodes($parent_nodes);
-        }
-
-        return $int_type;
+        return self::stripCastTaints(
+            $statements_analyzer,
+            $int_type,
+            $stmt,
+            $parent_nodes,
+            'int',
+        );
     }
 
     public static function castFloatAttempt(
@@ -511,7 +517,7 @@ final class CastAnalyzer
 
         $parent_nodes = [];
 
-        if ($statements_analyzer->variable_use_graph) {
+        if ($statements_analyzer->data_flow_graph) {
             $parent_nodes = $stmt_type->parent_nodes;
         }
 
@@ -684,11 +690,13 @@ final class CastAnalyzer
             );
         }
 
-        if ($statements_analyzer->data_flow_graph) {
-            $float_type = $float_type->setParentNodes($parent_nodes);
-        }
-
-        return $float_type;
+        return self::stripCastTaints(
+            $statements_analyzer,
+            $float_type,
+            $stmt,
+            $parent_nodes,
+            'float',
+        );
     }
 
     public static function castStringAttempt(
@@ -882,11 +890,61 @@ final class CastAnalyzer
             );
         }
 
-        if ($statements_analyzer->data_flow_graph) {
-            $str_type = $str_type->setParentNodes($parent_nodes);
+        return self::stripCastTaints(
+            $statements_analyzer,
+            $str_type,
+            $stmt,
+            $parent_nodes,
+            'string',
+        );
+    }
+
+    /**
+     * Route the parent nodes of a scalar cast through a pass-through node that strips the
+     * taints which cannot survive the target scalar type (see Union::getTaintsToRemove()):
+     * casting to int/float removes every non-numeric taint, casting to bool every
+     * non-bool taint, and casting to string the array/object-only taints (e.g. nosql).
+     *
+     * The pass-through node is added to the active data-flow graph so variable-use tracking
+     * stays intact in every mode; the removed_taints on the edge is ignored by the
+     * variable-use graph and only takes effect for taint analysis.
+     *
+     * @param array<string, DataFlowNode> $parent_nodes
+     */
+    private static function stripCastTaints(
+        StatementsAnalyzer $statements_analyzer,
+        Union $result_type,
+        PhpParser\Node\Expr $stmt,
+        array $parent_nodes,
+        string $cast_type,
+    ): Union {
+        if (!$graph = $statements_analyzer->data_flow_graph) {
+            return $result_type;
         }
 
-        return $str_type;
+        $removed_taints = $result_type->getTaintsToRemove();
+
+        if ($removed_taints !== 0 && $parent_nodes) {
+            $cast_node = DataFlowNode::getForAssignment(
+                $cast_type . '-cast',
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
+            );
+            $graph->addNode($cast_node);
+
+            foreach ($parent_nodes as $parent_node) {
+                $graph->addPath(
+                    $parent_node,
+                    $cast_node,
+                    $cast_type . '-cast',
+                    0,
+                    $removed_taints,
+                );
+            }
+
+            $parent_nodes = [$cast_node->id => $cast_node];
+        }
+
+        return $result_type->setParentNodes($parent_nodes);
     }
 
     private static function checkExprGeneralUse(

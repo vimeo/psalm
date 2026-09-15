@@ -33,6 +33,9 @@ use function Amp\async;
  * docblocks are not re-parsed, so unless the name->bit mapping is restored the same taint name gets a
  * different bit (or none), and cached taint sinks/sources silently stop matching. These tests cover the
  * persistence/restore mechanism that keeps the bits stable across runs.
+ *
+ * `graphql`/`graphql-json` below are arbitrary *custom* taint names (they are deliberately not among the
+ * builtin {@see TaintKind::TAINT_NAMES}), standing in for taints a plugin or docblock might introduce.
  */
 final class CustomTaintCacheTest extends TestCase
 {
@@ -59,12 +62,12 @@ final class CustomTaintCacheTest extends TestCase
     {
         $codebase = $this->project_analyzer->getCodebase();
 
-        $nosql = $codebase->getOrRegisterTaint('nosql');
-        $nosql_json = $codebase->getOrRegisterTaint('nosql-json');
+        $graphql = $codebase->getOrRegisterTaint('graphql');
+        $graphql_json = $codebase->getOrRegisterTaint('graphql-json');
 
         // Custom taints get the first bits after the builtin ones, in registration order.
-        $this->assertSame(1 << TaintKind::BUILTIN_TAINT_COUNT, $nosql);
-        $this->assertSame(1 << (TaintKind::BUILTIN_TAINT_COUNT + 1), $nosql_json);
+        $this->assertSame(1 << TaintKind::BUILTIN_TAINT_COUNT, $graphql);
+        $this->assertSame(1 << (TaintKind::BUILTIN_TAINT_COUNT + 1), $graphql_json);
 
         $exported = $codebase->exportCustomTaints();
 
@@ -77,8 +80,8 @@ final class CustomTaintCacheTest extends TestCase
         $fresh->importCustomTaints($exported);
 
         // The restored names resolve to exactly the same bits...
-        $this->assertSame($nosql, $fresh->getOrRegisterTaint('nosql'));
-        $this->assertSame($nosql_json, $fresh->getOrRegisterTaint('nosql-json'));
+        $this->assertSame($graphql, $fresh->getOrRegisterTaint('graphql'));
+        $this->assertSame($graphql_json, $fresh->getOrRegisterTaint('graphql-json'));
 
         // ...and a brand new taint appends after the restored ones rather than colliding with them.
         $this->assertSame(
@@ -91,7 +94,7 @@ final class CustomTaintCacheTest extends TestCase
     {
         $codebase = $this->project_analyzer->getCodebase();
 
-        $nosql = $codebase->getOrRegisterTaint('nosql');
+        $graphql = $codebase->getOrRegisterTaint('graphql');
 
         // Restoring must not clobber taints already registered in this run.
         $codebase->importCustomTaints([
@@ -100,7 +103,7 @@ final class CustomTaintCacheTest extends TestCase
             'map' => ['something-else' => 1 << TaintKind::BUILTIN_TAINT_COUNT],
         ]);
 
-        $this->assertSame($nosql, $codebase->getOrRegisterTaint('nosql'));
+        $this->assertSame($graphql, $codebase->getOrRegisterTaint('graphql'));
     }
 
     public function testForkedWorkerRegistersTaintsThroughParentRegistry(): void
@@ -114,15 +117,15 @@ final class CustomTaintCacheTest extends TestCase
         $pump = $this->pumpTaintRequests($parent_channel, $parent);
 
         // The worker never assigns bits itself; each one comes from the parent's single registry.
-        $nosql = $worker->getOrRegisterTaint('nosql');
-        $nosql_json = $worker->getOrRegisterTaint('nosql-json');
+        $graphql = $worker->getOrRegisterTaint('graphql');
+        $graphql_json = $worker->getOrRegisterTaint('graphql-json');
 
-        $this->assertSame(1 << TaintKind::BUILTIN_TAINT_COUNT, $nosql);
-        $this->assertSame(1 << (TaintKind::BUILTIN_TAINT_COUNT + 1), $nosql_json);
+        $this->assertSame(1 << TaintKind::BUILTIN_TAINT_COUNT, $graphql);
+        $this->assertSame(1 << (TaintKind::BUILTIN_TAINT_COUNT + 1), $graphql_json);
 
         // The parent ends up knowing them too, so exportCustomTaints() persists a complete map.
-        $this->assertSame($nosql, $parent->getOrRegisterTaint('nosql'));
-        $this->assertSame($nosql_json, $parent->getOrRegisterTaint('nosql-json'));
+        $this->assertSame($graphql, $parent->getOrRegisterTaint('graphql'));
+        $this->assertSame($graphql_json, $parent->getOrRegisterTaint('graphql-json'));
 
         $worker_channel->close();
         $pump->await();
@@ -228,19 +231,19 @@ final class CustomTaintCacheTest extends TestCase
 
         // First run registers two custom taints (order fixes their bits) and persists the mapping.
         $first = new ProjectAnalyzer($config, $providers);
-        $nosql = $first->getCodebase()->getOrRegisterTaint('nosql');
-        $nosql_json = $first->getCodebase()->getOrRegisterTaint('nosql-json');
+        $graphql = $first->getCodebase()->getOrRegisterTaint('graphql');
+        $graphql_json = $first->getCodebase()->getOrRegisterTaint('graphql-json');
         $first->persistCustomTaints();
 
-        // Second run reuses the same cache. Suppose only the file defining `nosql-json` gets re-scanned
-        // (the `nosql` sink is served from cache and never re-registered). Without restoring the mapping,
-        // `nosql-json` would now be the *first* custom taint and collide with `nosql`'s cached bit.
+        // Second run reuses the same cache. Suppose only the file defining `graphql-json` gets re-scanned
+        // (the `graphql` sink is served from cache and never re-registered). Without restoring the mapping,
+        // `graphql-json` would now be the *first* custom taint and collide with `graphql`'s cached bit.
         $second = new ProjectAnalyzer($config, $providers);
-        $this->assertSame($nosql_json, $second->getCodebase()->getOrRegisterTaint('nosql-json'));
-        $this->assertSame($nosql, $second->getCodebase()->getOrRegisterTaint('nosql'));
+        $this->assertSame($graphql_json, $second->getCodebase()->getOrRegisterTaint('graphql-json'));
+        $this->assertSame($graphql, $second->getCodebase()->getOrRegisterTaint('graphql'));
 
-        // Sanity check the failure mode: with a fresh (empty) cache, `nosql-json` really would be assigned
-        // `nosql`'s bit, which is exactly the mismatch the persistence prevents.
+        // Sanity check the failure mode: with a fresh (empty) cache, `graphql-json` really would be assigned
+        // `graphql`'s bit, which is exactly the mismatch the persistence prevents.
         $withoutCache = new ProjectAnalyzer(
             $config,
             new Providers(
@@ -252,6 +255,6 @@ final class CustomTaintCacheTest extends TestCase
                 new ProjectCacheProvider(),
             ),
         );
-        $this->assertSame($nosql, $withoutCache->getCodebase()->getOrRegisterTaint('nosql-json'));
+        $this->assertSame($graphql, $withoutCache->getCodebase()->getOrRegisterTaint('graphql-json'));
     }
 }

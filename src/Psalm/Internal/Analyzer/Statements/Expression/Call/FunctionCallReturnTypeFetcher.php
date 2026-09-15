@@ -90,6 +90,7 @@ final class FunctionCallReturnTypeFetcher
                     $candidate_callable->params,
                     $candidate_callable->return_type,
                     $candidate_callable->allowed_mutations,
+                    callable_id: strtolower($function_id),
                 )]);
             } else {
                 $stmt_type = Type::getClosure();
@@ -254,7 +255,27 @@ final class FunctionCallReturnTypeFetcher
             $stmt_type = Type::getMixed();
         }
 
+        if (!$stmt->isFirstClassCallable()) {
+            self::taintPhpInputSource(
+                $statements_analyzer,
+                $stmt,
+                $function_id,
+                $stmt_type,
+                $context,
+            );
+        }
+
         if (!$statements_analyzer->data_flow_graph || !$function_storage) {
+            return $stmt_type;
+        }
+
+        // For a first-class callable (`foo(...)`) the value produced here is the closure
+        // itself, not foo()'s return value. Attributing foo()'s return taint to the closure
+        // would be wrong (e.g. it would make invoking the closure trip the variable-call sink,
+        // and would leak the source/flow re-applied on invocation back onto the closure value).
+        // The underlying function's taint behavior is re-dispatched onto the invocation's
+        // return value in taintCallableReturnType() instead.
+        if ($stmt->isFirstClassCallable()) {
             return $stmt_type;
         }
 
@@ -527,6 +548,269 @@ final class FunctionCallReturnTypeFetcher
         return $stmt_type;
     }
 
+    /**
+     * Re-dispatches the underlying function's taint behavior when a callable value is
+     * invoked (e.g. a first-class callable `$f = file_get_contents(...); $f('php://input');`,
+     * or `$f = fgets(...); $f(STDIN);`).
+     *
+     * The regular named-call wiring is skipped for callable-valued invocations because the
+     * call target is an expression rather than a {@see PhpParser\Node\Name}, so none of the
+     * underlying function's taint behavior is applied. This re-creates it generically for the
+     * underlying function id:
+     *  - the return value receives taint sources (@psalm-taint-source, and the conditional
+     *    php://input source), argument-to-return flows (@psalm-flow) and the implicit
+     *    param->return flow of an analyzed function body;
+     *  - each argument is connected to the function's per-parameter node, which feeds an
+     *    analyzed body and registers any @psalm-taint-sink parameters as sinks.
+     *
+     * @param non-empty-lowercase-string $callable_id
+     */
+    public static function taintCallableReturnType(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\FuncCall $stmt,
+        PhpParser\Node\Expr $real_stmt,
+        string $callable_id,
+        Context $context,
+    ): void {
+        if ($stmt->isFirstClassCallable()) {
+            return;
+        }
+
+        if (!$graph = $statements_analyzer->getTaintFlowGraphWithSuppressed()) {
+            return;
+        }
+
+        $stmt_type = $statements_analyzer->node_data->getType($real_stmt);
+
+        if ($stmt_type === null) {
+            return;
+        }
+
+        // callmap-only conditional source (fopen/file_get_contents('php://input'))
+        self::taintPhpInputSource(
+            $statements_analyzer,
+            $stmt,
+            $callable_id,
+            $stmt_type,
+            $context,
+        );
+
+        // Re-apply the declared taint behavior of the underlying function. When the call
+        // target is an expression (a callable value) rather than a Node\Name, the regular
+        // named-call wiring is skipped, so nothing connects the return value to the
+        // function's taint sources / return flows, and nothing connects the arguments to the
+        // function's argument sinks. Re-create those connections generically here.
+        $storage = self::getCallableStorage($statements_analyzer, $callable_id);
+
+        if ($storage === null) {
+            $statements_analyzer->node_data->setType($real_stmt, $stmt_type);
+
+            return;
+        }
+
+        $args = $stmt->getArgs();
+
+        // Return value: taint sources (@psalm-taint-source), argument-to-return flows
+        // (@psalm-flow), and the implicit param->return flow of an analyzed function body.
+        // The body links its per-argument entry nodes (getForMethodArgument) to this return
+        // node, so wiring the actual arguments to those entry nodes below completes the flow.
+        $return_node = DataFlowNode::getForMethodReturn(
+            $callable_id,
+            $storage,
+            $storage->specialize_call ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null,
+        );
+        $graph->addNode($return_node);
+
+        self::taintUsingStorage($storage, $graph, $return_node);
+
+        // @psalm-flow: connect the actual argument nodes directly to the return. The
+        // per-function argument nodes taintUsingFlows() relies on are not created for a
+        // callable-valued invocation, so wire the arguments to the return here.
+        foreach ($storage->return_source_params as $i => $path_type) {
+            foreach (self::callableArgIndices($storage, $args, $i) as $arg_index) {
+                $arg_type = $statements_analyzer->node_data->getType($args[$arg_index]->value);
+
+                if ($arg_type === null) {
+                    continue;
+                }
+
+                foreach ($arg_type->parent_nodes as $parent_node) {
+                    $graph->addPath($parent_node, $return_node, $path_type);
+                }
+            }
+        }
+
+        $stmt_type = $stmt_type->addParentNodes([$return_node->id => $return_node]);
+
+        // Argument entry / sinks: connect each argument to the function's per-parameter node
+        // (getForMethodArgument). This carries taint into an analyzed body (whose param->return
+        // path completes the implicit return flow above) and into any @psalm-taint-sink params,
+        // which are registered as sinks here.
+        foreach ($storage->params as $i => $param) {
+            if ($param->location === null) {
+                continue;
+            }
+
+            foreach (self::callableArgIndices($storage, $args, $i) as $arg_index) {
+                $arg_type = $statements_analyzer->node_data->getType($args[$arg_index]->value);
+
+                if ($arg_type === null || !$arg_type->parent_nodes) {
+                    continue;
+                }
+
+                $param_node = DataFlowNode::getForMethodArgument(
+                    $callable_id,
+                    $i,
+                    $storage,
+                    $storage->specialize_call ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null,
+                    $param->sinks,
+                );
+                $graph->addNode($param_node);
+
+                if ($param->sinks) {
+                    $graph->addSink($param_node);
+                }
+
+                foreach ($arg_type->parent_nodes as $parent_node) {
+                    $graph->addPath($parent_node, $param_node, 'arg');
+                }
+            }
+        }
+
+        $statements_analyzer->node_data->setType($real_stmt, $stmt_type);
+    }
+
+    /**
+     * Argument indices that feed parameter offset $i of $storage, given the actual $args.
+     * A variadic parameter collects every trailing argument.
+     *
+     * @param list<PhpParser\Node\Arg> $args
+     * @return list<int>
+     * @psalm-mutation-free
+     */
+    private static function callableArgIndices(FunctionLikeStorage $storage, array $args, int $i): array
+    {
+        if (isset($storage->params[$i]) && $storage->params[$i]->is_variadic) {
+            $indices = [];
+
+            for ($j = $i, $max = count($args); $j < $max; $j++) {
+                $indices[] = $j;
+            }
+
+            return $indices;
+        }
+
+        return isset($args[$i]) ? [$i] : [];
+    }
+
+    /**
+     * Resolves the storage for a called function id, or null if it has none
+     * (e.g. a callmap-only builtin).
+     *
+     * @param non-empty-lowercase-string $function_id
+     */
+    private static function getCallableStorage(
+        StatementsAnalyzer $statements_analyzer,
+        string $function_id,
+    ): ?FunctionLikeStorage {
+        $codebase = $statements_analyzer->getCodebase();
+
+        if (!$codebase->functions->functionExists($statements_analyzer, $function_id)) {
+            return null;
+        }
+
+        try {
+            return $codebase->functions->getStorage($statements_analyzer, $function_id);
+        } catch (UnexpectedValueException) {
+            // callmap-only builtins have no storage
+            return null;
+        }
+    }
+
+
+    // function id => offset of the argument holding the stream path.
+    // Only functions that *return* the stream contents belong here (readfile()
+    // writes to the output buffer and returns a byte count, so it is excluded).
+    /** @var array<string, int> */
+    private const SOURCE_PATH_ARG = [
+        'fopen' => 0,
+        'file_get_contents' => 0,
+        'file' => 0,
+    ];
+
+    /**
+     * fopen()/file_get_contents()/file() called with a literal 'php://input' or
+     * 'php://stdin' path read user-controlled data, so their return value becomes a
+     * taint source.
+     *
+     * This is not expressible as a stub because the source is conditional on the
+     * literal argument *value*; stream reading functions that merely relay their
+     * handle's taint (fgets, fread, stream_get_contents, ...) are instead annotated
+     * with @psalm-flow in the stubs.
+     *
+     * These are callmap-only functions, so they never get a FunctionLikeStorage and
+     * are skipped by {@see self::taintReturnType()}.
+     */
+    private static function taintPhpInputSource(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\FuncCall $stmt,
+        string $function_id,
+        Union &$stmt_type,
+        Context $context,
+    ): void {
+        if (!$graph = $statements_analyzer->getTaintFlowGraphWithSuppressed()) {
+            return;
+        }
+
+        $function_id = strtolower($function_id);
+
+        if (!isset(self::SOURCE_PATH_ARG[$function_id])) {
+            return;
+        }
+
+        $offset = self::SOURCE_PATH_ARG[$function_id];
+        $args = $stmt->getArgs();
+
+        if (!isset($args[$offset])) {
+            return;
+        }
+
+        $arg_type = $statements_analyzer->node_data->getType($args[$offset]->value);
+
+        if (!$arg_type || !$arg_type->isSingleStringLiteral()) {
+            return;
+        }
+
+        $path = strtolower($arg_type->getSingleStringLiteral()->value);
+
+        if ($path !== 'php://input' && $path !== 'php://stdin') {
+            return;
+        }
+
+        $codebase = $statements_analyzer->getCodebase();
+        $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
+
+        $taints = TaintKind::ALL_INPUT;
+        $taints |= $codebase->config->eventDispatcher->dispatchAddTaints($event);
+        $taints &= ~$codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+
+        if ($taints === 0) {
+            return;
+        }
+
+        $location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+
+        $source = DataFlowNode::getForTaint(
+            $function_id . '(' . $path . ')',
+            $location,
+            $taints,
+            $location,
+        );
+        $graph->addSource($source);
+
+        $stmt_type = $stmt_type->addParentNodes([$source->id => $source]);
+    }
+
     private static function taintReturnType(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\FuncCall $stmt,
@@ -620,7 +904,6 @@ final class FunctionCallReturnTypeFetcher
             return $function_call_node;
         }
 
-        // getArgs() asserts on first-class callables, so the guard must precede it, not just the flows below.
         if ($function_storage->return_source_params && !$stmt->isFirstClassCallable()) {
             $removed_taints = $function_storage->removed_taints;
 

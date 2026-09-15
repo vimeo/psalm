@@ -1499,7 +1499,6 @@ final class FilterUtils
             $function_return_sink = DataFlowNode::getForCallableReturn(
                 'builtin',
                 $function_id,
-                null,
                 $code_location,
             );
 
@@ -1509,7 +1508,6 @@ final class FilterUtils
                 'builtin',
                 $function_id,
                 0,
-                null,
                 $code_location,
             );
 

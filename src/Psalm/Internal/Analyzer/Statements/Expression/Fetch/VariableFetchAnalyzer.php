@@ -521,11 +521,10 @@ final class VariableFetchAnalyzer
 
         $taint_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
-        $taint_source = DataFlowNode::getForTaintSink(
+        $taint_source = DataFlowNode::getForTaint(
             $var_name,
             $taint_location,
             $taints,
-            $taint_location,
         );
         $graph->addSource($taint_source);
 

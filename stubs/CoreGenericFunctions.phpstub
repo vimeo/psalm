@@ -484,6 +484,54 @@ function print_r($value, bool $return = false) {}
 function highlight_file($filename, bool $return = false) {}
 
 /**
+ * Stream reading functions relay the taint of the stream they read from, so data
+ * read from a tainted handle (e.g. fopen('php://input') or STDIN) stays tainted.
+ *
+ * @param resource $stream
+ * @return string|false
+ *
+ * @psalm-taint-specialize
+ * @psalm-flow ($stream) -> return
+ */
+function fgetc($stream) {}
+
+/**
+ * @param resource $stream
+ * @return string|false
+ *
+ * @psalm-taint-specialize
+ * @psalm-flow ($stream) -> return
+ */
+function fgets($stream, ?int $length = null) {}
+
+/**
+ * @param resource $stream
+ * @return string|false
+ *
+ * @psalm-taint-specialize
+ * @psalm-flow ($stream) -> return
+ */
+function fread($stream, int $length) {}
+
+/**
+ * @param resource $stream
+ * @return string|false
+ *
+ * @psalm-taint-specialize
+ * @psalm-flow ($stream) -> return
+ */
+function stream_get_contents($stream, ?int $length = null, int $offset = -1) {}
+
+/**
+ * @param resource $stream
+ * @return string|false
+ *
+ * @psalm-taint-specialize
+ * @psalm-flow ($stream) -> return
+ */
+function stream_get_line($stream, int $length, string $ending = "") {}
+
+/**
  * @psalm-pure
  *
  * @psalm-taint-sink file $filename
