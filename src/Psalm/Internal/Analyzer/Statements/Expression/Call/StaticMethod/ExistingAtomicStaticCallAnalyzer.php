@@ -39,6 +39,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Union;
 
+use function array_key_first;
 use function array_map;
 use function count;
 use function explode;
@@ -185,6 +186,16 @@ final class ExistingAtomicStaticCallAnalyzer
         }
 
         $template_result = new TemplateResult([], $found_generic_params ?: []);
+
+        $method_storage_for_defaults = $class_storage->methods[$method_name_lc] ?? null;
+        if ($method_storage_for_defaults && $method_storage_for_defaults->template_type_defaults !== null) {
+            foreach ($method_storage_for_defaults->template_type_defaults as $template_name => $default_type) {
+                if (isset($method_storage_for_defaults->template_types[$template_name])) {
+                    $defining_key = array_key_first($method_storage_for_defaults->template_types[$template_name]);
+                    $template_result->template_type_defaults[$template_name][$defining_key] = $default_type;
+                }
+            }
+        }
 
         if ($inferred_template_result) {
             $template_result->lower_bounds += $inferred_template_result->lower_bounds;
@@ -500,14 +511,17 @@ final class ExistingAtomicStaticCallAnalyzer
                         [$template_type->param_name]
                         [$template_type->defining_class],
                     )) {
-                        $template_result->lower_bounds[$template_type->param_name]
-                            = self::resolveTemplateResultLowerBound(
-                                $codebase,
-                                $stmt,
-                                $class_storage,
-                                $method_id,
-                                $template_type,
-                            );
+                        $resolved_lower_bound = self::resolveTemplateResultLowerBound(
+                            $codebase,
+                            $stmt,
+                            $class_storage,
+                            $method_id,
+                            $template_type,
+                        );
+
+                        if ($resolved_lower_bound !== null) {
+                            $template_result->lower_bounds[$template_type->param_name] = $resolved_lower_bound;
+                        }
                     }
                 }
             }
@@ -544,7 +558,7 @@ final class ExistingAtomicStaticCallAnalyzer
                 $static_type = $fq_class_name;
             }
 
-            if ($template_result->lower_bounds) {
+            if ($template_result->lower_bounds || $template_result->template_type_defaults) {
                 $return_type_candidate = TypeExpander::expandUnion(
                     $codebase,
                     $return_type_candidate,
@@ -615,7 +629,9 @@ final class ExistingAtomicStaticCallAnalyzer
     }
 
     /**
-     * @return non-empty-array<string,non-empty-list<TemplateBound>>
+     * @return non-empty-array<string,non-empty-list<TemplateBound>>|null Null means the
+     *     template is intentionally left unbound (it has a declared default) so
+     *     TemplateInferredTypeReplacer can apply that default instead of a synthetic bound.
      */
     private static function resolveTemplateResultLowerBound(
         Codebase $codebase,
@@ -623,7 +639,7 @@ final class ExistingAtomicStaticCallAnalyzer
         ClassLikeStorage $class_storage,
         MethodIdentifier $method_id,
         TTemplateParam $template_type,
-    ): array {
+    ): ?array {
         if ($template_type->param_name === 'TFunctionArgCount') {
             return [
                 'fn-' . $method_id->method_name => [
@@ -669,6 +685,13 @@ final class ExistingAtomicStaticCallAnalyzer
                     new TemplateBound($extended_param_type),
                 ],
             ];
+        }
+
+        $method_storage = $class_storage->methods[$method_id->method_name] ?? null;
+        if (isset($method_storage->template_type_defaults[$template_type->param_name])) {
+            // Templates with a declared default are intentionally left unbound
+            // here so TemplateInferredTypeReplacer can apply the default.
+            return null;
         }
 
         return [

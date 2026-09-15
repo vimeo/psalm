@@ -485,6 +485,58 @@ final class TemplateDefaultTest extends TestCase
                     '$r===' => 'mixed',
                 ],
             ],
+            'instanceMethodTemplateDefaultAppliedWhenNoArguments' => [
+                'code' => '<?php
+                    class Box {
+                        /**
+                         * @template T = int
+                         * @return T
+                         */
+                        public function get() {
+                            throw new RuntimeException("empty");
+                        }
+                    }
+
+                    $r = (new Box())->get();',
+                'assertions' => [
+                    '$r===' => 'int',
+                ],
+            ],
+            'staticMethodTemplateDefaultAppliedWhenNoArguments' => [
+                'code' => '<?php
+                    class Box {
+                        /**
+                         * @template T = int
+                         * @return T
+                         */
+                        public static function make() {
+                            throw new RuntimeException("empty");
+                        }
+                    }
+
+                    $r = Box::make();',
+                'assertions' => [
+                    '$r===' => 'int',
+                ],
+            ],
+            'instanceMethodTemplateInferredFromArgOverridesDefault' => [
+                'code' => '<?php
+                    class Box {
+                        /**
+                         * @template T = int
+                         * @param T $x
+                         * @return T
+                         */
+                        public function identity($x) {
+                            return $x;
+                        }
+                    }
+
+                    $r = (new Box())->identity("hello");',
+                'assertions' => [
+                    '$r===' => "'hello'",
+                ],
+            ],
         ];
     }
 
