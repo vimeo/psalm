@@ -179,9 +179,18 @@ final class TypeVariableTracker
     ): void {
         $relevant_lower_bounds = self::getRelevantBounds($lower_bounds);
 
+        $content_lower_bounds = [];
+        foreach ($relevant_lower_bounds as $bound) {
+            if (!$bound->from_invariant_argument_mirror) {
+                $content_lower_bounds[] = $bound;
+            }
+        }
+
+        $lower_bounds_to_check = $content_lower_bounds ?: $relevant_lower_bounds;
+
         $has_issue = false;
 
-        foreach ($relevant_lower_bounds as $relevant_lower_bound) {
+        foreach ($lower_bounds_to_check as $relevant_lower_bound) {
             foreach ($upper_bounds as $upper_bound) {
                 $union_comparison_result = new TypeComparisonResult();
 
@@ -201,11 +210,18 @@ final class TypeVariableTracker
                     }
 
                     $has_issue = true;
+
+                    // argument requirements point at the call site; return
+                    // types and constraints point at where the value entered
+                    $pos = $upper_bound->from_argument_requirement
+                        ? ($upper_bound->pos ?? $relevant_lower_bound->pos ?? $fallback_location)
+                        : ($relevant_lower_bound->pos ?? $upper_bound->pos ?? $fallback_location);
+
                     IssueBuffer::maybeAdd(
                         new IncompatibleTypeParameters(
                             'Type ' . $relevant_lower_bound->type->getId()
                                 . ' should be a subtype of ' . $upper_bound->type->getId(),
-                            $relevant_lower_bound->pos ?? $upper_bound->pos ?? $fallback_location,
+                            $pos,
                         ),
                         $suppressed_issues,
                     );

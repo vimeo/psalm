@@ -38,4 +38,17 @@ final class TemplateBound
         public ?CodeLocation $pos = null,
     ) {
     }
+
+    /**
+     * True for a lower bound that only mirrors an invariant argument's upper
+     * bound (e.g. `Box<`_0>` passed to `Box<string>`): a requirement, not a
+     * value the variable holds, so reconciliation ignores it as content.
+     */
+    public bool $from_invariant_argument_mirror = false;
+
+    /**
+     * True for an upper bound imposed by an argument position. Failures against
+     * it are reported at the call site, not the construction site.
+     */
+    public bool $from_argument_requirement = false;
 }

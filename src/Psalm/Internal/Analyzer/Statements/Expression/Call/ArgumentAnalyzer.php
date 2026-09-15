@@ -986,6 +986,11 @@ final class ArgumentAnalyzer
                 }
             }
 
+            // these upper bounds are requirements imposed by this call site
+            foreach ($union_comparison_results->type_variable_upper_bounds as [$_, $upper_bound]) {
+                $upper_bound->from_argument_requirement = true;
+            }
+
             // transfer any type-variable bounds the containment comparison
             // recorded, stamped with the argument's position
             $statements_analyzer->type_variable_tracker->addBounds(

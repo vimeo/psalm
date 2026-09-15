@@ -999,8 +999,33 @@ final class Populator
                             = $declaring_method_id;
                     }
                 } else {
-                    $storage->overridden_method_ids[$method_name_lc][$declaring_method_id->fq_class_name]
-                        = $declaring_method_id;
+                    // A method can end up in $parent_storage->inheritable_method_ids
+                    // while being private -- this happens when it was originally declared in a trait, since
+                    // traits copy even private methods into every using class (see
+                    // FunctionLikeNodeScanner::$classlike_storage->is_trait carve-out). Such a private method
+                    // is not part of the externally visible API and PHP does not consider it overridable
+                    // across a real class boundary, so it must not be recorded as "overridden" here -- doing
+                    // so produced a MissingOverrideAttribute false positive whenever a subclass re-declared
+                    // (or re-imported via the same trait) a same-named private method.
+                    $declaring_class_storage = $this->classlike_storage_provider->get(
+                        $declaring_method_id->fq_class_name,
+                    );
+                    $declaring_method_storage = $declaring_class_storage->methods[$method_name_lc] ?? null;
+
+                    // A `use T { f as public; }` adaptation does not rewrite the copied method's own
+                    // visibility -- Psalm keeps it in trait_visibility_map on the using class and every
+                    // consumer overlays it (see MethodVisibilityAnalyzer). Reading only
+                    // $declaring_method_storage->visibility would therefore still see `private` for a
+                    // method the parent exposes publicly, and would wrongly drop a real override.
+                    $declaring_visibility = $parent_storage->trait_visibility_map[$method_name_lc]
+                        ?? $declaring_method_storage?->visibility;
+
+                    if ($declaring_method_storage === null
+                        || $declaring_visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
+                    ) {
+                        $storage->overridden_method_ids[$method_name_lc][$declaring_method_id->fq_class_name]
+                            = $declaring_method_id;
+                    }
                 }
 
                 if (isset($parent_storage->overridden_method_ids[$method_name_lc])

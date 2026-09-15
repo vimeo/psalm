@@ -1129,6 +1129,37 @@ final class MethodCallTest extends TestCase
 
                     if ($it->current() === null) {}',
             ],
+            'inheritedStaticReturnType' => [
+                'code' => '<?php
+                    class P {
+                        public function returnThis(): static {
+                            return $this;
+                        }
+
+                        /** @return static */
+                        public function docReturnThis(): static {
+                            return $this;
+                        }
+                    }
+
+                    class C extends P {}
+                    final class D extends P {}
+
+                    $z = (new C())->returnThis();
+                    $y = (new C())->docReturnThis();
+                    $chained = $z->returnThis();
+                    $finalNative = (new D())->returnThis();
+                    $finalDocblock = (new D())->docReturnThis();',
+                'assertions' => [
+                    '$z===' => 'C&static',
+                    '$y===' => 'C&static',
+                    '$chained===' => 'C&static',
+                    '$finalNative===' => 'D',
+                    '$finalDocblock===' => 'D',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'resolveFinalInParentCall' => [
                 'code' => '<?php
                     abstract class A {
