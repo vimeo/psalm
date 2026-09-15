@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 final class ThisOutTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
+    use InvalidCodeAnalysisTestTrait;
 
     #[Override]
     public function providerValidCodeParse(): iterable
@@ -107,6 +109,32 @@ final class ThisOutTest extends TestCase
                 'assertions' => [
                     '$app===' => "App<'idle'>",
                 ],
+            ],
+        ];
+    }
+
+    /**
+     * @return array<string, array{code: string, error_message: string}>
+     */
+    #[Override]
+    public function providerInvalidCodeParse(): iterable
+    {
+        return [
+            'unparseableTypeIsReportedInsteadOfCrashing' => [
+                'code' => '<?php
+                    class A {
+                        /** @psalm-self-out garbage<<< */
+                        public function t(): void {}
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'parameterConditionalTypeIsReportedInsteadOfCrashing' => [
+                'code' => '<?php
+                    class A {
+                        /** @phpstan-this-out ($key is null ? static : $this) */
+                        public function s(?int $key): void {}
+                    }',
+                'error_message' => 'InvalidDocblock',
             ],
         ];
     }
