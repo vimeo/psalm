@@ -315,6 +315,16 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             return true;
         }
 
+        if ($function_call_info->callable_id !== null) {
+            FunctionCallReturnTypeFetcher::taintCallableReturnType(
+                $statements_analyzer,
+                $stmt,
+                $real_stmt,
+                $function_call_info->callable_id,
+                $context,
+            );
+        }
+
         foreach ($function_call_info->defined_constants as $const_name => $const_type) {
             $context->constants[$const_name] = $const_type;
             $context->vars_in_scope[$const_name] = $const_type;
@@ -653,6 +663,9 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
             $invalid_function_call_types = [];
             $has_valid_function_call_type = false;
+            // becomes true once we see callable members that don't agree on a single
+            // underlying function id, so we don't re-dispatch taint to the wrong one
+            $callable_id_ambiguous = false;
 
             $var_atomic_types = $stmt_name_type->getAtomicTypes();
 
@@ -717,6 +730,20 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
                     if ($var_type_part instanceof TClosure) {
                         $function_call_info->byref_uses += $var_type_part->byref_uses;
+                    }
+
+                    if (!$callable_id_ambiguous) {
+                        if ($var_type_part->callable_id === null
+                            || ($function_call_info->callable_id !== null
+                                && $function_call_info->callable_id !== $var_type_part->callable_id)
+                        ) {
+                            // either a callable with no known id, or several callables with
+                            // differing ids: re-dispatching taint to a single id would be unsound
+                            $function_call_info->callable_id = null;
+                            $callable_id_ambiguous = true;
+                        } else {
+                            $function_call_info->callable_id = $var_type_part->callable_id;
+                        }
                     }
 
                     $function_call_info->function_exists = true;

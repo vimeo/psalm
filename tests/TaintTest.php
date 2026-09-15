@@ -1239,6 +1239,91 @@ final class TaintTest extends TestCase
                     $agent->prompt(buildPrompt((string) $_GET["topic"]));',
                 'error_message' => 'TaintedLlmPrompt',
             ],
+            'taintedInputFromPhpInputViaFileGetContents' => [
+                'code' => '<?php
+                    echo file_get_contents("php://input");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputFromPhpStdinViaFileGetContents' => [
+                'code' => '<?php
+                    echo file_get_contents("php://stdin");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputFromPhpInputViaFopenAndFread' => [
+                'code' => '<?php
+                    $fp = fopen("php://input", "r");
+                    if ($fp !== false) {
+                        echo fread($fp, 1024);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputFromStdinConstant' => [
+                'code' => '<?php
+                    echo fgets(STDIN);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputFromStdinViaStreamGetContents' => [
+                'code' => '<?php
+                    echo stream_get_contents(STDIN);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputFromFirstClassCallable' => [
+                'code' => '<?php
+                    $f = file_get_contents(...);
+                    echo $f("php://input");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputFromFirstClassCallableStreamRead' => [
+                'code' => '<?php
+                    $f = fgets(...);
+                    echo $f(STDIN);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputFromFirstClassCallableExplicitSource' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-taint-source input
+                     */
+                    function getName(): string {
+                        return "";
+                    }
+
+                    $f = getName(...);
+                    echo $f();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputFromFirstClassCallableFlow' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-flow ($r) -> return
+                     */
+                    function some_stub(string $r): string { return ""; }
+
+                    $f = some_stub(...);
+                    echo $f((string) $_GET["untrusted"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputFromFirstClassCallableFlowUserFunction' => [
+                'code' => '<?php
+                    function echoback(string $in): string {
+                        return $in;
+                    }
+
+                    $f = echoback(...);
+                    echo $f((string) $_GET["untrusted"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputToFirstClassCallableSink' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-taint-sink html $in
+                     */
+                    function my_sink(string $in): void {}
+
+                    $f = my_sink(...);
+                    $f((string) $_GET["untrusted"]);',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintedInputFromMethodReturnTypeSimple' => [
                 'code' => '<?php
                     class A {
