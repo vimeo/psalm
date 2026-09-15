@@ -567,6 +567,11 @@ final class TaintFlowGraph extends DataFlowGraph
         ProjectAnalyzer $project_analyzer,
         Codebase $codebase,
     ): void {
+        // $generated_source->specialized_calls is constant across all of this node's outgoing
+        // edges, so encode it once here rather than re-serialising it for every edge in the
+        // frontier-dedup key below (this is the hottest loop in taint resolution).
+        $specialized_calls_key = json_encode($generated_source->specialized_calls, JSON_THROW_ON_ERROR);
+
         foreach ($this->forward_edges[$generated_source->id] as $to_id => $path) {
             if (!isset($this->nodes[$to_id])) {
                 continue;
@@ -762,9 +767,7 @@ final class TaintFlowGraph extends DataFlowGraph
                 }
             }
 
-            $key = $to_id .
-                ' ' . json_encode($generated_source->specialized_calls, JSON_THROW_ON_ERROR) .
-                ' ' . $new_taints;
+            $key = $to_id . ' ' . $specialized_calls_key . ' ' . $new_taints;
 
             if (isset($new_sources[$key])) {
                 continue;
