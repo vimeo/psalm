@@ -38,6 +38,7 @@ use function in_array;
 use function preg_match;
 use function preg_quote;
 use function spl_object_id;
+use function strpos;
 use function substr;
 
 /**
@@ -376,6 +377,31 @@ final class IfElseAnalyzer
             $context->assigned_var_ids,
             $if_scope->assigned_var_ids ?: [],
         );
+
+        foreach ($if_scope->possibly_new_vars as $var_id => $type) {
+            if (isset($context->vars_in_scope[$var_id])
+                || !isset($if_scope->new_vars_possibly_in_scope[$var_id])
+                || isset($if_scope->new_vars[$var_id])
+            ) {
+                continue;
+            }
+
+            // only plain variables: offsets and properties of a narrowed root would leak out here
+            if (strpos($var_id, '[') !== false
+                || strpos($var_id, '->') !== false
+                || strpos($var_id, '::') !== false
+            ) {
+                continue;
+            }
+
+            if ($statements_analyzer->data_flow_graph) {
+                $type = $type->addParentNodes(
+                    $statements_analyzer->getParentNodesForPossiblyUndefinedVariable($var_id),
+                );
+            }
+
+            $context->vars_in_scope[$var_id] = $type->setPossiblyUndefined(true);
+        }
 
         if ($if_scope->new_vars) {
             foreach ($if_scope->new_vars as $var_id => &$type) {

@@ -382,12 +382,9 @@ final class RedundantConditionTest extends TestCase
                         $options = ["option" => true];
                     }
 
-                    /** @psalm-suppress PossiblyUndefinedGlobalVariable */
                     $option = $options["option"] ?? false;
 
                     if ($option !== false) {}',
-                'assertions' => [],
-                'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess'],
             ],
             'allowIntValueCheckAfterComparisonDueToOverflow' => [
                 'code' => '<?php
