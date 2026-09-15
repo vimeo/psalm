@@ -306,6 +306,52 @@ final class UnusedCodeTest extends TestCase
         );
     }
 
+    public function testDeadRecursiveFunctionIsReported(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function dead_recursion(int $n): int {
+                    return $n <= 0 ? 0 : dead_recursion($n - 1);
+                }',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        // a self-call must not keep an otherwise-unreferenced function alive
+        self::assertSame(
+            ['UnusedFunction'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
+    public function testUsedRecursiveFunctionIsNotReported(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function used_recursion(int $n): int {
+                    return $n <= 0 ? 0 : used_recursion($n - 1);
+                }
+                echo used_recursion(3);',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        self::assertNotContains(
+            'UnusedFunction',
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
     public function testApiFreeFunctionIsNotReported(): void
     {
         $this->project_analyzer->getConfig()->throw_exception = false;
