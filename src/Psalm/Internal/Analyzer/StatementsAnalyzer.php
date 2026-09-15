@@ -50,6 +50,7 @@ use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
+use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\Issue\CheckType;
 use Psalm\Issue\ComplexFunction;
 use Psalm\Issue\ComplexMethod;
@@ -151,10 +152,36 @@ final class StatementsAnalyzer extends SourceAnalyzer
      */
     public array $foreach_var_locations = [];
 
+    /**
+     * Tracks bounds for the type variables minted while these statements are
+     * analyzed. Shared with the enclosing function-like's statements analyzer
+     * (when there is one) so that constraints recorded in nested
+     * function-likes reconcile with the outermost function-like's variables.
+     */
+    public TypeVariableTracker $type_variable_tracker;
+
+    /**
+     * Whether this analyzer minted its own tracker (and so is responsible for
+     * reconciling it) rather than sharing an enclosing analyzer's.
+     */
+    public readonly bool $owns_type_variable_tracker;
+
     public function __construct(protected SourceAnalyzer $source, public NodeDataProvider $node_data)
     {
         $this->file_analyzer = $source->getFileAnalyzer();
         $this->codebase = $source->getCodebase();
+
+        $parent_statements_analyzer = $source instanceof FunctionLikeAnalyzer
+            ? $source->getSource()
+            : null;
+
+        if ($parent_statements_analyzer instanceof self) {
+            $this->type_variable_tracker = $parent_statements_analyzer->type_variable_tracker;
+            $this->owns_type_variable_tracker = false;
+        } else {
+            $this->type_variable_tracker = new TypeVariableTracker();
+            $this->owns_type_variable_tracker = true;
+        }
 
         if ($this->codebase->taint_flow_graph) {
             $this->data_flow_graph = new TaintFlowGraph();

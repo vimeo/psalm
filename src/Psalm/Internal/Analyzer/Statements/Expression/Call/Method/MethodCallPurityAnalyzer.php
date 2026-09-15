@@ -12,6 +12,7 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer as AssignmentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\NoDiscardAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Issue\ImpureMethodCall;
@@ -131,6 +132,23 @@ final class MethodCallPurityAnalyzer
                     $stmt->setAttribute('pure', true);
                 }
             }
+        }
+
+        if (NoDiscardAnalyzer::isDiscardReported(
+            $codebase,
+            $context,
+            $method_storage,
+            $stmt->isFirstClassCallable(),
+            $class_storage,
+        )) {
+            IssueBuffer::maybeAdd(
+                new UnusedMethodCall(
+                    'The call to ' . $cased_method_id . ' is not used',
+                    new CodeLocation($statements_analyzer, $stmt->name),
+                    (string) $method_id,
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
         }
 
         if ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
