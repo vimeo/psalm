@@ -1843,22 +1843,18 @@ final class ArgumentAnalyzer
 
         $specialization_location = $specialize_taint ? $function_call_location : null;
 
-        // Key the argument node by the parameter's declared index rather than its position in this
-        // call, so a named argument resolves to the same node as the equivalent positional one (and
-        // as the method body's own parameter node). For a positional call this is the same offset.
-        $param_offset = $function_storage
-            ? DataFlowNode::getParameterOffset($function_storage, $function_param, $argument_offset)
-            : $argument_offset;
-
         // The argument sink node id (`Class::method#offset`) is shared by every call of this method,
         // so its location and sink taints must be a function of that identity -- derived from the
-        // method's single (declaring) storage. When the caller has no storage, resolve it from the
-        // cased method id itself (see DataFlowNode::getForMethodArgumentById()); only a genuinely
-        // storage-less callable (builtin/magic/callable-object) then falls back to getForCallableArg().
+        // method's single (declaring) storage. The node is keyed by the parameter's declared index
+        // (see getParameterOffset() / getForMethodArgumentById()), not by its position in this call,
+        // so a named argument resolves to the same node as the equivalent positional one (and as the
+        // method body's parameter node). When the caller has no storage it is resolved from the cased
+        // method id; only a genuinely storage-less callable falls back to getForCallableArg(), which
+        // has no declared parameter to key on and so uses the call offset.
         $method_node = ($function_storage
             ? DataFlowNode::getForMethodArgument(
                 $cased_method_id,
-                $param_offset,
+                DataFlowNode::getParameterOffset($function_storage, $function_param, $argument_offset),
                 $function_storage,
                 $specialization_location,
             )
@@ -1869,6 +1865,7 @@ final class ArgumentAnalyzer
                     $cased_method_id,
                     $argument_offset,
                     $specialization_location,
+                    $function_param,
                 )))
             ?? DataFlowNode::getForCallableArg(
                 $callable_kind,
@@ -1893,16 +1890,19 @@ final class ArgumentAnalyzer
                 );
 
                 // Resolve the declaring method's storage (a dependent class usually inherits the
-                // method, so it has no storage under its own id) so this node's location is the same
-                // canonical parameter location used wherever else the node id is created.
+                // method, so it has no storage under its own id) so this node's location -- and the
+                // declared parameter it is keyed by -- is the same canonical one used wherever else
+                // the node id is created.
                 $new_sink = DataFlowNode::getForMethodArgumentById(
                     $codebase->methods,
                     $dependent_classlike_storage->name . '::' . $cased_method_name,
-                    $param_offset,
+                    $argument_offset,
+                    null,
+                    $function_param,
                 ) ?? DataFlowNode::getForCallableArg(
                     'inherited-method',
                     $dependent_classlike_storage->name . '::' . $cased_method_name,
-                    $param_offset,
+                    $argument_offset,
                 );
 
                 $taint_flow_graph->addNode($new_sink);
@@ -1920,10 +1920,11 @@ final class ArgumentAnalyzer
             $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
             if ($declaring_method_id && (string) $declaring_method_id !== (string) $method_id) {
+                $declaring_storage = $codebase->methods->getStorage($declaring_method_id);
                 $new_sink = DataFlowNode::getForMethodArgument(
                     $codebase->methods->getCasedMethodId($declaring_method_id),
-                    $param_offset,
-                    $codebase->methods->getStorage($declaring_method_id),
+                    DataFlowNode::getParameterOffset($declaring_storage, $function_param, $argument_offset),
+                    $declaring_storage,
                     null,
                 );
 
