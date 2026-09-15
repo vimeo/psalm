@@ -102,6 +102,7 @@ final class FunctionLikeNodeScanner
 
     /**
      * @param  bool $fake_method in the case of @method annotations we do something a little strange
+     * @psalm-suppress ComplexMethod
      */
     public function start(
         PhpParser\Node\FunctionLike $stmt,
