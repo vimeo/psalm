@@ -14,6 +14,25 @@ use function count;
 use function strtolower;
 
 /**
+ * A node in the data-flow / taint graph.
+ *
+ * INVARIANT: a node's {@see self::$code_location} MUST be a pure function of its {@see self::$id}
+ * -- every node created with a given id anywhere, in any (forked) analysis process, must carry the
+ * same location. The forked-worker graphs are merged in a non-deterministic order, so if two
+ * workers gave the same id two different locations the surviving one -- and therefore the location
+ * a taint issue is reported at -- would depend on scheduling, and findings would differ between
+ * otherwise identical runs.
+ *
+ * This is enforced structurally: the constructor is private, so a location can only reach a node
+ * through one of the factories below, and each derives it deterministically from the node's
+ * identity -- from the entity's {@see FunctionLikeStorage} (methods/functions), from a location
+ * that is itself encoded into the id (assignments, taint sinks, specialized callables), or not at
+ * all (null). Nodes produced while resolving the graph ({@see self::withSpecialization()},
+ * {@see self::withFlow()}) copy the location from an existing node and can never introduce a new
+ * one. There is therefore no code path -- internal or in a plugin -- that can attach a location a
+ * caller chose independently of the id. Keep it that way: never add a factory that accepts a raw
+ * CodeLocation which is not also folded into the id.
+ *
  * @psalm-consistent-constructor
  * @internal
  * @psalm-external-mutation-free
@@ -24,7 +43,7 @@ final class DataFlowNode implements Stringable
     /**
      * @psalm-mutation-free
      */
-    public function __construct(
+    private function __construct(
         public readonly string $id,
         public readonly ?string $unspecialized_id,
         public readonly ?string $specialization_key,
