@@ -6,6 +6,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use AssertionError;
 use Psalm\Codebase;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Storage\ClassLikeStorage;
@@ -147,8 +148,16 @@ final class ClassTemplateParamCollector
                         $class_storage->name => $output_type_extends ?? Type::getMixed(),
                     ];
                 } else {
+                    $declared_default = $class_storage->template_type_defaults[$type_name] ?? null;
+
                     $class_template_params[$type_name] = [
-                        $class_storage->name => $class_storage->template_type_defaults[$type_name] ?? Type::getMixed(),
+                        $class_storage->name => $declared_default !== null
+                            ? TemplateInferredTypeReplacer::replace(
+                                $declared_default,
+                                new TemplateResult($template_types, $class_template_params),
+                                $codebase,
+                            )
+                            : Type::getMixed(),
                     ];
                 }
             }
@@ -175,9 +184,17 @@ final class ClassTemplateParamCollector
 
                 if (!$self_call) {
                     if (!isset($class_template_params[$type_name])) {
-                        $default = (!($lhs_type_part instanceof TGenericObject)
+                        $declared_default = (!($lhs_type_part instanceof TGenericObject)
                             && isset($class_storage->template_type_defaults[$type_name]))
                             ? $class_storage->template_type_defaults[$type_name]
+                            : null;
+
+                        $default = $declared_default !== null
+                            ? TemplateInferredTypeReplacer::replace(
+                                $declared_default,
+                                new TemplateResult($template_types, $class_template_params),
+                                $codebase,
+                            )
                             : $type;
 
                         $class_template_params[$type_name] = [

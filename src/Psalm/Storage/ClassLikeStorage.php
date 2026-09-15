@@ -11,6 +11,8 @@ use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeAlias\ClassTypeAlias;
 use Psalm\Issue\CodeIssue;
 use Psalm\Issue\DeprecatedClass;
@@ -440,8 +442,25 @@ final class ClassLikeStorage implements HasAttributesInterface
     {
         $type_params = [];
 
-        foreach ($this->template_types ?? [] as $type_map) {
-            $type_params[] = array_values($type_map)[0];
+        // seeded incrementally so a default referencing an earlier template on
+        // this same class (e.g. `@template U = T`) resolves against what that
+        // earlier template was just mapped to, instead of leaking the raw,
+        // unresolved template reference
+        $resolved_lower_bounds = [];
+
+        foreach ($this->template_types ?? [] as $template_name => $type_map) {
+            $default_type = $this->template_type_defaults[$template_name] ?? null;
+
+            $resolved_type = $default_type !== null
+                ? TemplateInferredTypeReplacer::replace(
+                    $default_type,
+                    new TemplateResult([], $resolved_lower_bounds),
+                    null,
+                )
+                : array_values($type_map)[0];
+
+            $type_params[] = $resolved_type;
+            $resolved_lower_bounds[$template_name][$this->name] = $resolved_type;
         }
 
         return $type_params;

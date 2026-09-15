@@ -622,6 +622,39 @@ final class TemplateDefaultTest extends TestCase
                 ],
                 'ignored_issues' => ['MissingTemplateParam'],
             ],
+            'chainedDefaultResolvesOnUnparameterizedClassInstance' => [
+                'code' => '<?php
+                    /**
+                     * @template T = string
+                     * @template U = T
+                     */
+                    class Pair {
+                        /** @return U */
+                        public function second() {
+                            throw new RuntimeException("empty");
+                        }
+                    }
+
+                    class Holder {
+                        /** @var Pair */
+                        public Pair $p;
+
+                        public function __construct() {
+                            $this->p = new Pair();
+                        }
+                    }
+
+                    /** @param Pair<string, string> $p */
+                    function takesTyped(Pair $p): void {}
+
+                    $h = new Holder();
+                    $r = $h->p->second();
+
+                    takesTyped($h->p);',
+                'assertions' => [
+                    '$r===' => 'string',
+                ],
+            ],
         ];
     }
 
