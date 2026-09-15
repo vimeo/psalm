@@ -319,14 +319,19 @@ final class FunctionLikeDocblockScanner
         if ($docblock_info->self_out
             && $storage instanceof MethodStorage) {
             try {
+                [$fixed_type_tokens, $function_template_types] = self::getConditionalSanitizedTypeTokens(
+                    $docblock_info->self_out['type'],
+                    $aliases,
+                    $function_template_types + $class_template_types,
+                    $type_aliases,
+                    $storage,
+                    $classlike_storage,
+                    $cased_function_id,
+                    $function_template_types,
+                );
+
                 $storage->self_out_type = TypeParser::parseTokens(
-                    TypeTokenizer::getFullyQualifiedTokens(
-                        $docblock_info->self_out['type'],
-                        $aliases,
-                        $function_template_types + $class_template_types,
-                        $type_aliases,
-                        $classlike_storage ? $classlike_storage->name : null,
-                    ),
+                    array_values($fixed_type_tokens),
                     null,
                     $function_template_types + $class_template_types,
                     $type_aliases,
@@ -451,10 +456,10 @@ final class FunctionLikeDocblockScanner
     /**
      * @param  array<string, array<string, Union>> $template_types
      * @param  array<string, TypeAlias>|null   $type_aliases
-     * @param  array<string, array<string, Union>> $function_template_types
+     * @param  array<string, non-empty-array<string, Union>> $function_template_types
      * @return array{
      *     array<int, array{0: string, 1: int, 2?: string}>,
-     *     array<string, array<string, Union>>
+     *     array<string, non-empty-array<string, Union>>
      * }
      */
     private static function getConditionalSanitizedTypeTokens(
