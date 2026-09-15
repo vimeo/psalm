@@ -44,7 +44,11 @@ final class Providers
             $file_provider,
             $parser_cache_provider,
         );
-        $this->file_reference_provider = new FileReferenceProvider($file_provider, $file_reference_cache_provider);
+        $this->file_reference_provider = new FileReferenceProvider(
+            $file_provider,
+            $this->classlike_storage_provider,
+            $file_reference_cache_provider,
+        );
     }
 
     public static function safeFileGetContents(string $path): string
