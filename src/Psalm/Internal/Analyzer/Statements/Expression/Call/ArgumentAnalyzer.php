@@ -71,6 +71,7 @@ use function count;
 use function explode;
 use function implode;
 use function in_array;
+use function ltrim;
 use function ord;
 use function preg_split;
 use function reset;
@@ -1837,6 +1838,31 @@ final class ArgumentAnalyzer
                 $expr,
                 false,
             );
+        }
+
+        // The argument sink node id (`Class::method#offset`) is shared by every call of this method,
+        // so its location must be a function of that identity -- derived from the method's single
+        // (declaring) storage -- rather than left unset here. Otherwise the same node id is created
+        // with a concrete parameter location at some call sites and with none here, and which one
+        // survives the forked-worker graph merge depends on scheduling, making taint findings
+        // non-deterministic between runs. Resolve the declaring storage from the cased method id
+        // itself (not from the possibly-absent $method_id/$function_storage the caller happened to
+        // have), so every site that creates this node agrees on the location.
+        $separator_pos = strpos($cased_method_id, '::');
+
+        if ($function_storage === null
+            && !$in_call_map
+            && $separator_pos !== false
+        ) {
+            $lookup_id = new MethodIdentifier(
+                strtolower(ltrim(substr($cased_method_id, 0, $separator_pos), '\\')),
+                strtolower(substr($cased_method_id, $separator_pos + 2)),
+            );
+            $declaring_id = $codebase->methods->getDeclaringMethodId($lookup_id);
+
+            if ($declaring_id !== null && $codebase->methods->hasStorage($declaring_id)) {
+                $function_storage = $codebase->methods->getStorage($declaring_id);
+            }
         }
 
         $callable_kind = $in_call_map ? 'builtin' : ($method_id ? 'magic-method' : 'callable-object');
