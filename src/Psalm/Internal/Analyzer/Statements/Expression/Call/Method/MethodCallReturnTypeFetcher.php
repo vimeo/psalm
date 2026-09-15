@@ -357,9 +357,17 @@ final class MethodCallReturnTypeFetcher
                 $method_call_nodes = [];
 
                 if ($unspecialized_parent_nodes) {
-                    // Always derive the return node location from the (single) declaring-method
-                    // storage, whether or not this class is the declaring one, so the same node id
-                    // never gets a concrete location in one process and none in another.
+                    // Build the return node the same way whether or not this class declares the
+                    // method (it used to get a dedicated location-less 'inherited-method' node when
+                    // inherited): a single getForMethodReturn() that derives the node's location from
+                    // the declaring-method storage. This gives the inherited-call node a meaningful
+                    // definition location -- the method's return-type location -- instead of null, so
+                    // a taint trace points at where the method is actually defined; and, since that
+                    // location is a pure function of the (declaring) storage, it keeps id -> location
+                    // deterministic across forked workers. (The classification itself never differs
+                    // between workers -- getDeclaringMethodId() is a pure function of the fixed class
+                    // hierarchy -- so this is about node quality and unifying the two code paths, not
+                    // about resolving a per-process disagreement.)
                     $method_call_node = DataFlowNode::getForMethodReturn(
                         $cased_method_id,
                         $method_storage,
