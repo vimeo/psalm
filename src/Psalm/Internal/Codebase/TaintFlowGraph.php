@@ -259,11 +259,12 @@ final class TaintFlowGraph extends DataFlowGraph
             }
         } unset($map);
 
-        // reprocess resolved descendants up to a maximum nesting level of 40
-        $depth = 40;
-
-        $progress->expand($depth);
-        for ($i = 0; count($sinks) && count($sources) && $i < $depth; $i++) {
+        // Resolution runs to a fixed point (rather than for a fixed number of
+        // rounds): the (id, taints) visited guard below makes the state space
+        // finite, so the loop is guaranteed to terminate on its own, with no
+        // artificial nesting limit needed.
+        $progress->expand(1);
+        while (count($sinks) && count($sources)) {
             $new_sources = [];
 
             ksort($sources);
@@ -430,9 +431,8 @@ final class TaintFlowGraph extends DataFlowGraph
 
             $progress->taskDone(0);
         }
-        for (; $i < $depth; $i++) {
-            $progress->taskDone(0);
-        }
+
+        $progress->taskDone(0);
     }
 
     /**
