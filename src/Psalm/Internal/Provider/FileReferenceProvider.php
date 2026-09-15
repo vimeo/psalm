@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Provider;
 
 use Psalm\Codebase;
+use Psalm\Config;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Codebase\Analyzer;
@@ -98,9 +99,10 @@ final class FileReferenceProvider
     public function __construct(
         private readonly FileProvider $file_provider,
         ClassLikeStorageProvider $classlike_storage_provider,
+        Config $config,
         public ?FileReferenceCacheProvider $cache = null,
     ) {
-        $this->code_use_graph = new CodeUseGraph($classlike_storage_provider);
+        $this->code_use_graph = new CodeUseGraph($classlike_storage_provider, $config);
     }
 
     /**

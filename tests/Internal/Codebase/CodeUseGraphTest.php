@@ -6,7 +6,9 @@ namespace Psalm\Tests\Internal\Codebase;
 
 use Closure;
 use Psalm\Internal\Codebase\CodeUseGraph;
+use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Tests\TestCase;
+use Psalm\Tests\TestConfig;
 use Psalm\Tests\TestCodeUseGraph;
 
 final class CodeUseGraphTest extends TestCase
@@ -107,6 +109,24 @@ final class CodeUseGraphTest extends TestCase
         $graph->resolve();
 
         self::assertTrue($graph->isUsed($method));
+    }
+
+    public function testOutOfProjectOwnerIsARootOfTheRealGraph(): void
+    {
+        // an out-of-project caller (e.g. a framework/test-runner method the
+        // phpunit plugin registers) must keep the in-project code it references
+        // alive, since Psalm cannot see the external call
+        $provider = new ClassLikeStorageProvider();
+        $provider->create('vendor\\framework'); // no location => out of project
+
+        $graph = new CodeUseGraph($provider, new TestConfig());
+        $external_caller = CodeUseGraph::functionLikeNode('vendor\\framework::run');
+        $target = CodeUseGraph::functionLikeNode('app\\c::handler');
+        $graph->addEdge($external_caller, $target);
+
+        $graph->resolve();
+
+        self::assertTrue($graph->isUsed($target));
     }
 
     public function testFreeFunctionIsNotARootByItself(): void

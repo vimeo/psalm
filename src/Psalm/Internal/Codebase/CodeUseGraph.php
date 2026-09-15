@@ -7,6 +7,7 @@ namespace Psalm\Internal\Codebase;
 use InvalidArgumentException;
 use LogicException;
 use Psalm\CodeLocation;
+use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Storage\FunctionLikeStorage;
@@ -186,6 +187,7 @@ final class CodeUseGraph
      */
     public function __construct(
         private readonly ClassLikeStorageProvider $storage_provider,
+        private readonly Config $config,
         public bool $collect_locations = false,
     ) {
     }
@@ -371,9 +373,14 @@ final class CodeUseGraph
     }
 
     /**
-     * Whether a node is a root because it belongs to code Psalm cannot see and
-     * must assume is reachable: a caller invented by a plugin (an unknown class).
-     * @api entry points are handled separately via {@see self::markAsPublicApi()}.
+     * Whether a node is a root because it belongs to code outside the project
+     * that Psalm cannot see into: a caller invented by a plugin (an unknown
+     * class), or any out-of-project (vendored) class. Such code may call or
+     * reference this node in ways Psalm cannot observe — framework callbacks,
+     * test runners registering test methods, an external base class invoking an
+     * override — so it is assumed reachable. Whether such external code keeps an
+     * in-project *override* alive is decided separately, on the overriding
+     * class's own reachability (see the EDGE_OVERRIDE handling in resolve()).
      * Structural roots (top-level file code) are handled in resolve(). Overridable
      * in tests.
      *
@@ -388,13 +395,14 @@ final class CodeUseGraph
         }
 
         try {
-            $this->storage_provider->get($owner_class);
+            $owner_storage = $this->storage_provider->get($owner_class);
         } catch (InvalidArgumentException) {
             // unknown class, e.g. a caller made up by a plugin
             return true;
         }
 
-        return false;
+        return !$owner_storage->location
+            || !$this->config->isInProjectDirs($owner_storage->location->file_path);
     }
 
     // Building
@@ -583,8 +591,8 @@ final class CodeUseGraph
      * Must be called before isUsed(), and again after the graph changes.
      *
      * Roots are top-level file code, @api public-API entry points, and the
-     * plugin-invented callers {@see self::isRoot()} identifies from the storage
-     * provider injected at construction.
+     * out-of-project code {@see self::isRoot()} identifies from the storage
+     * provider and config injected at construction.
      *
      * @psalm-external-mutation-free
      */
