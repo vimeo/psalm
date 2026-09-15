@@ -85,6 +85,9 @@ use function strtolower;
  */
 final class FunctionCallAnalyzer extends CallAnalyzer
 {
+    /**
+     * @psalm-suppress ComplexMethod
+     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\FuncCall $stmt,

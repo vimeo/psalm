@@ -663,7 +663,6 @@ final class FunctionCallReturnTypeFetcher
                     $i,
                     $storage,
                     $storage->specialize_call ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null,
-                    $param->sinks,
                 );
                 $graph->addNode($param_node);
 
@@ -804,7 +803,6 @@ final class FunctionCallReturnTypeFetcher
             $function_id . '(' . $path . ')',
             $location,
             $taints,
-            $location,
         );
         $graph->addSource($source);
 
