@@ -28,6 +28,7 @@ final class TestCodeUseGraph extends CodeUseGraph
 {
     /**
      * @param Closure(string): bool $is_root
+     * @psalm-mutation-free
      */
     public function __construct(private readonly Closure $is_root)
     {
