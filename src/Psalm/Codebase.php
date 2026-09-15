@@ -2683,7 +2683,7 @@ final class Codebase
             return $expr_type;
         }
 
-        $source = DataFlowNode::getForTaintSink(
+        $source = DataFlowNode::getForTaint(
             $taint_id,
             $code_location,
             $taints,
@@ -2706,7 +2706,7 @@ final class Codebase
             return;
         }
 
-        $sink = DataFlowNode::getForTaintSink(
+        $sink = DataFlowNode::getForTaint(
             $taint_id,
             $code_location,
             $taints,

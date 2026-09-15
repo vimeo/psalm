@@ -43,7 +43,11 @@ You're also free to define your own taint types when defining custom taint sourc
 
 ## Taint Sources
 
-Psalm currently defines three default taint sources: the `$_GET`, `$_POST` and `$_COOKIE` server variables.
+Psalm defines the following default taint sources:
+
+ - the `$_GET`, `$_POST`, `$_COOKIE` and `$_REQUEST` server variables;
+ - reading from the input stream: `fopen()`, `file_get_contents()` and `file()` called with a literal `php://input` or `php://stdin` path, and the stream reading functions (`fgets()`, `fread()`, `stream_get_contents()`, ...) applied to such a handle;
+ - the predefined `STDIN` constant (the `php://stdin` stream).
 
 You can also [define your own taint sources](custom_taint_sources.md).
 

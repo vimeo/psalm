@@ -46,7 +46,7 @@
 
 - [BC] The signatures of `Psalm\Internal\DataFlow\DataFlowNode::getForMethodArgument` and `Psalm\Internal\DataFlow\DataFlowNode::getForMethodReturn` changed: the `$method_id` parameter was removed (the ID is now derived from the cased method ID), and the code location parameters were replaced with a mandatory `Psalm\Storage\FunctionLikeStorage $storage` parameter, from which the parameter/return type location is derived. For callables without a storage (builtin functions and language constructs, dynamic function calls and instantiations, callable objects, inherited or magic methods), use the new `getForCallableArg`/`getForCallableReturn` methods, which take a `$kind` and an explicit `?CodeLocation $location`.
 
-- The `Psalm\Internal\DataFlow\DataFlowNode::getForTaintSink`, `Psalm\Internal\DataFlow\DataFlowNode::getForPropertyFetch`, `Psalm\Internal\DataFlow\DataFlowNode::getForCallableArg` and `Psalm\Internal\DataFlow\DataFlowNode::getForCallableReturn` factory methods were added.
+- The `Psalm\Internal\DataFlow\DataFlowNode::getForTaint`, `Psalm\Internal\DataFlow\DataFlowNode::getForPropertyFetch`, `Psalm\Internal\DataFlow\DataFlowNode::getForCallableArg` and `Psalm\Internal\DataFlow\DataFlowNode::getForCallableReturn` factory methods were added.
 
 - [BC] Type of property `Psalm\Storage\FunctionLikeParameter::$sinks` changed from `array|null` to `int`
 
