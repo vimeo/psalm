@@ -420,15 +420,63 @@ final class TemplateDefaultTest extends TestCase
                     '$p===' => 'Pair<string, string>',
                 ],
             ],
-            'classCyclicDefaultsDoNotInfiniteLoop' => [
+            // @template tags are resolved in declaration order at scan time, so when T's
+            // default (`= U`) is parsed, U isn't a known template yet: it's parsed as an
+            // ordinary (here: undefined) class-name reference, not a template reference.
+            // By the time U's default (`= T`) is parsed, T is already registered, so U
+            // correctly resolves to "whatever T resolved to" - which is that same phantom
+            // class reference. Neither side ever re-enters getTemplateDefault() for the
+            // same template, so this never was a cycle that reaches the infinite-loop
+            // guard; see classSelfReferentialTemplateDefaultDoesNotInfiniteLoop below for
+            // a default that actually does.
+            'classForwardReferencedTemplateDefaultIsTreatedAsClassName' => [
                 'code' => '<?php
                     /**
                      * @template T = U
                      * @template U = T
                      */
-                    class Cycle {}
+                    class Cycle {
+                        /** @return T */
+                        public function getT() {
+                            throw new RuntimeException("empty");
+                        }
 
-                    new Cycle();',
+                        /** @return U */
+                        public function getU() {
+                            throw new RuntimeException("empty");
+                        }
+                    }
+
+                    $c = new Cycle();
+                    $t = $c->getT();
+                    $u = $c->getU();',
+                'assertions' => [
+                    '$t===' => 'U',
+                    '$u===' => 'U',
+                ],
+            ],
+            // unlike the forward-reference case above, T here is already registered as a
+            // template by the time its own default is parsed, so `= T` is a genuine
+            // self-reference: resolving it re-enters getTemplateDefault() for T while
+            // already resolving T's default, which is exactly what the cycle guard
+            // (visiting_defaults) exists to catch. It returns null rather than looping,
+            // so T is left unresolved (shown with its "as" bound) instead of a type.
+            'classSelfReferentialTemplateDefaultDoesNotInfiniteLoop' => [
+                'code' => '<?php
+                    /**
+                     * @template T = T
+                     */
+                    class SelfCycle {
+                        /** @return T */
+                        public function get() {
+                            throw new RuntimeException("empty");
+                        }
+                    }
+
+                    $r = (new SelfCycle())->get();',
+                'assertions' => [
+                    '$r===' => 'T:SelfCycle as mixed',
+                ],
             ],
             'functionTemplateDefaultAppliedWhenNoArguments' => [
                 'code' => '<?php
