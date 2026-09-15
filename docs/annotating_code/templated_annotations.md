@@ -113,6 +113,68 @@ function array_combine(array $arr, array $arr2) {}
 - `@template` tag order matters for class docblocks, as they dictate the order in which those generic parameters are referenced in docblocks.
 - The names of your templated types (e.g. `TKey`, `TValue`) don't matter outside the scope of the class or function in which they're declared.
 
+### Default types
+
+A `@template` tag can declare a default type with `= DefaultType`. Psalm uses the default whenever it can't infer the template from how the class or function is used (for example, a class instantiated without a template-bearing argument, or a function called without one). `@phpstan-template T = DefaultType` is accepted as an alias, so a docblock shared with PHPStan works unchanged.
+
+```php
+<?php
+/**
+ * @template T = string
+ */
+class Box {
+    /** @return T */
+    public function get() {
+        throw new RuntimeException('empty');
+    }
+}
+
+$box = new Box();
+$value = $box->get(); // Psalm infers T as string, so $value is string
+```
+
+The same applies to a standalone function:
+
+```php
+<?php
+/**
+ * @template T = string
+ * @return T
+ */
+function makeDefault() {
+    throw new RuntimeException('empty');
+}
+
+$value = makeDefault(); // Psalm infers T as string, so $value is string
+```
+
+A default can be combined with a bound using `@template T of Bound = Default` (the bound comes before the default, and the default must satisfy the bound). A default can also reference an earlier template parameter declared on the same class or function, letting one template's default follow another's inferred or defaulted type.
+
+```php
+<?php
+/**
+ * @template T of int|string = int
+ * @template U = T
+ */
+class Pair {
+    /** @return T */
+    public function first() {
+        throw new RuntimeException('empty');
+    }
+
+    /** @return U */
+    public function second() {
+        throw new RuntimeException('empty');
+    }
+}
+
+$pair = new Pair();
+$first = $pair->first();   // int, from T's own default
+$second = $pair->second(); // int, from U's default referencing T
+```
+
+A default only fills in a template that was never inferred. If a template is inferred from an actual argument, even to a broad type such as `mixed`, that inferred type is used instead of the default.
+
 ## @param class-string&lt;T&gt;
 
 Psalm also allows you to parameterize class types
