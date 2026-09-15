@@ -7,6 +7,7 @@ namespace Psalm\Internal\Analyzer;
 use Override;
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -33,11 +34,16 @@ use function strtolower;
 final class ClosureAnalyzer extends FunctionLikeAnalyzer
 {
     use UnserializeMemoryUsageSuppressionTrait;
+
     /**
      * @param PhpParser\Node\Expr\Closure|PhpParser\Node\Expr\ArrowFunction $function
+     * @param ?string $bound_this_class class `$this` is bound to by `@param-closure-this` at the call site
      */
-    public function __construct(PhpParser\Node\FunctionLike $function, SourceAnalyzer $source)
-    {
+    public function __construct(
+        PhpParser\Node\FunctionLike $function,
+        SourceAnalyzer $source,
+        private readonly ?string $bound_this_class = null,
+    ) {
         $codebase = $source->getCodebase();
 
         $function_id = strtolower($source->getFilePath())
@@ -48,6 +54,12 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
         $storage = $codebase->getClosureStorage($source->getFilePath(), $function_id);
 
         parent::__construct($function, $source, $storage);
+    }
+
+    /** @psalm-mutation-free */
+    public function getBoundThisClass(): ?string
+    {
+        return $this->bound_this_class;
     }
 
 
@@ -70,6 +82,41 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
     }
 
     /**
+     * Type `@param-closure-this` bound `$this` to at this call site, as stamped on the node by
+     * {@see \Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer}.
+     *
+     * Only a single known class binds. A union would leave `self::` and the property seeding in
+     * {@see self::analyzeExpression()} ambiguous, and a static closure cannot be rebound at all,
+     * so both fall back to the usual unbound handling.
+     *
+     * @param PhpParser\Node\Expr\Closure|PhpParser\Node\Expr\ArrowFunction $stmt
+     */
+    private static function resolveBoundThis(
+        Codebase $codebase,
+        PhpParser\Node\FunctionLike $stmt,
+    ): ?TNamedObject {
+        /** @psalm-suppress MixedAssignment attribute values are untyped */
+        $bound_this_type = $stmt->getAttribute('psalm-closure-this-type');
+
+        if ($stmt->static
+            || !$bound_this_type instanceof Union
+            || !$bound_this_type->isSingle()
+        ) {
+            return null;
+        }
+
+        $bound_atomic = $bound_this_type->getSingleAtomic();
+
+        if (!$bound_atomic instanceof TNamedObject
+            || !$codebase->classlike_storage_provider->has($bound_atomic->value)
+        ) {
+            return null;
+        }
+
+        return $bound_atomic;
+    }
+
+    /**
      * @param PhpParser\Node\Expr\Closure|PhpParser\Node\Expr\ArrowFunction $stmt
      */
     public static function analyzeExpression(
@@ -77,19 +124,24 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
         PhpParser\Node\FunctionLike $stmt,
         Context $context,
     ): bool {
-        $closure_analyzer = new ClosureAnalyzer($stmt, $statements_analyzer);
-
         if ($stmt instanceof PhpParser\Node\Expr\Closure
             && self::analyzeClosureUses($statements_analyzer, $stmt, $context) === false
         ) {
             return false;
         }
 
-        $use_context = new Context($context->self);
-
         $codebase = $statements_analyzer->getCodebase();
 
-        if (!$statements_analyzer->isStatic() && !$closure_analyzer->isStatic()) {
+        $bound_atomic = self::resolveBoundThis($codebase, $stmt);
+        $bound_self = $bound_atomic?->value;
+
+        $closure_analyzer = new ClosureAnalyzer($stmt, $statements_analyzer, $bound_self);
+
+        $use_context = new Context($bound_self ?? $context->self);
+
+        if ($bound_atomic !== null) {
+            $use_context->vars_in_scope['$this'] = new Union([$bound_atomic]);
+        } elseif (!$statements_analyzer->isStatic() && !$closure_analyzer->isStatic()) {
             if ($context->collect_mutations &&
                 $context->self &&
                 $codebase->classExtends(
@@ -106,27 +158,37 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
             }
         }
 
-        foreach ($context->vars_in_scope as $var => $type) {
-            if (str_starts_with($var, '$this->')) {
-                $use_context->vars_in_scope[$var] = $type;
+        if ($bound_self === null) {
+            foreach ($context->vars_in_scope as $var => $type) {
+                if (str_starts_with($var, '$this->')) {
+                    $use_context->vars_in_scope[$var] = $type;
+                }
             }
         }
 
-        if ($context->self) {
-            $self_class_storage = $codebase->classlike_storage_provider->get($context->self);
+        $properties_class = $bound_self ?? $context->self;
+
+        if ($properties_class !== null && $codebase->classlike_storage_provider->has($properties_class)) {
+            $self_class_storage = $codebase->classlike_storage_provider->get($properties_class);
+
+            $parent_fqcln = $bound_self !== null
+                ? $self_class_storage->parent_class
+                : $statements_analyzer->getParentFQCLN();
 
             ClassAnalyzer::addContextProperties(
                 $statements_analyzer,
                 $self_class_storage,
                 $use_context,
-                $context->self,
-                $statements_analyzer->getParentFQCLN(),
+                $properties_class,
+                $parent_fqcln,
             );
         }
 
-        foreach ($context->vars_possibly_in_scope as $var => $_) {
-            if (str_starts_with($var, '$this->')) {
-                $use_context->vars_possibly_in_scope[$var] = true;
+        if ($bound_self === null) {
+            foreach ($context->vars_possibly_in_scope as $var => $_) {
+                if (str_starts_with($var, '$this->')) {
+                    $use_context->vars_possibly_in_scope[$var] = true;
+                }
             }
         }
 
