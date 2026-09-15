@@ -1453,6 +1453,74 @@ final class ArrayFunctionCallTest extends TestCase
                     '$b' => 'null',
                 ],
             ],
+            'arrayFirst' => [
+                'code' => '<?php
+                    /** @return array<string, int> */
+                    function makeArray(): array { return ["one" => 1, "two" => 3]; }
+                    $a = makeArray();
+                    $b = array_first($a);',
+                'assertions' => [
+                    '$b' => 'int|null',
+                ],
+            ],
+            'arrayFirstNonEmpty' => [
+                'code' => '<?php
+                    $a = ["one" => 1, "two" => 3];
+                    $b = array_first($a);',
+                'assertions' => [
+                    '$b' => 'int',
+                ],
+            ],
+            'arrayFirstEmpty' => [
+                'code' => '<?php
+                    $a = [];
+                    $b = array_first($a);',
+                'assertions' => [
+                    '$b' => 'null',
+                ],
+            ],
+            'arrayLast' => [
+                'code' => '<?php
+                    /** @return array<string, int> */
+                    function makeArray(): array { return ["one" => 1, "two" => 3]; }
+                    $a = makeArray();
+                    $b = array_last($a);',
+                'assertions' => [
+                    '$b' => 'int|null',
+                ],
+            ],
+            'arrayLastNonEmpty' => [
+                'code' => '<?php
+                    $a = ["one" => 1, "two" => 3];
+                    $b = array_last($a);',
+                'assertions' => [
+                    '$b' => 'int',
+                ],
+            ],
+            'arrayLastEmpty' => [
+                'code' => '<?php
+                    $a = [];
+                    $b = array_last($a);',
+                'assertions' => [
+                    '$b' => 'null',
+                ],
+            ],
+            'arrayAnyReturnsBoolWithTypedCallback' => [
+                'code' => '<?php
+                    $a = ["one" => 1, "two" => 3];
+                    $b = array_any($a, fn (int $value, string $key): bool => $value > 1);',
+                'assertions' => [
+                    '$b' => 'bool',
+                ],
+            ],
+            'arrayAllReturnsBoolWithTypedCallback' => [
+                'code' => '<?php
+                    $a = ["one" => 1, "two" => 3];
+                    $b = array_all($a, fn (int $value, string $key): bool => $value > 1);',
+                'assertions' => [
+                    '$b' => 'bool',
+                ],
+            ],
             'arrayResetNonEmptyArray' => [
                 'code' => '<?php
                     /** @return non-empty-array<string, int> */
