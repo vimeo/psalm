@@ -209,10 +209,7 @@ final class CloneTest extends TestCase
                 'php_version' => '8.5',
             ],
             'cloneWithSpreadArgsFallsBackGracefully' => [
-                // An unpacked first arg skips the clone-with intercept and falls back to
-                // normal call analysis (CallMap). That path is conservative about spreads;
-                // the point here is that the intercept is bypassed without a crash and the
-                // result type stays object.
+                // Unpacked first arg skips the clone-with intercept; must not crash.
                 'code' => '<?php
                     class Foo {}
                     /** @param array{0: Foo} $args */

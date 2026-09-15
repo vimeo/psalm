@@ -79,13 +79,7 @@ final class CloneAnalyzer
     }
 
     /**
-     * Handles the PHP 8.5 clone-with-properties form, which php-parser routes as a
-     * call to the `clone` function rather than a `Clone_` node:
-     *   - `clone($object, ['prop' => $value, ...])`
-     *   - `clone(object: $object, withProperties: [...])`
-     *
-     * The cloned type is preserved (instead of the flat `object` the CallMap would
-     * return) and the same validity checks as the bare `clone $x` form are applied.
+     * Handles `clone($object, [...])`, PHP 8.5's function-call form of clone-with.
      */
     public static function analyzeFuncCall(
         StatementsAnalyzer $statements_analyzer,
@@ -94,8 +88,7 @@ final class CloneAnalyzer
     ): bool {
         $location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
-        // The function form of clone only exists on PHP 8.5+. Below that it is a
-        // compile error, so report it while still analysing the call for tooling.
+        // Below PHP 8.5 this is a compile error; still analyze for tooling.
         if ($statements_analyzer->getCodebase()->analysis_php_version_id < 8_05_00) {
             IssueBuffer::maybeAdd(
                 new ParseError(
@@ -106,17 +99,15 @@ final class CloneAnalyzer
             );
         }
 
-        // Analyze every argument value up front so no sub-expression is skipped, even
-        // for malformed calls (extra or unknown-named arguments).
+        // Analyze all args up front so none is skipped even for malformed calls.
         foreach ($stmt->getArgs() as $arg) {
             if (ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context) === false) {
                 return false;
             }
         }
 
-        // Resolve the object/withProperties arguments by position or name, and report
-        // argument-count and unknown-named-argument errors the normal call path would
-        // otherwise raise (it is skipped because clone is intercepted before it runs).
+        // Replicate argument-count/named-argument validation, since the normal call
+        // path (which would raise it) is skipped by intercepting clone here.
         $object_arg = null;
         $with_properties_arg = null;
         $positional_count = 0;
@@ -127,9 +118,7 @@ final class CloneAnalyzer
 
             if ($arg_name === null) {
                 if ($named_arg_seen) {
-                    // PHP raises a fatal "Cannot use positional argument after named
-                    // argument" for this; report it rather than let the positional
-                    // value silently overwrite the already-resolved named one.
+                    // PHP fatals on a positional arg after a named one; report it here too.
                     IssueBuffer::maybeAdd(
                         new InvalidNamedArgument(
                             'Cannot use positional argument after named argument',
@@ -177,8 +166,7 @@ final class CloneAnalyzer
             }
         }
 
-        // Extra positional arguments beyond the two clone() accepts are reported once
-        // for the whole call, matching ArgumentsAnalyzer's one-issue-per-call convention.
+        // Reported once per call, matching ArgumentsAnalyzer's convention.
         if ($positional_count > 2) {
             IssueBuffer::maybeAdd(
                 new TooManyArguments(
@@ -227,13 +215,7 @@ final class CloneAnalyzer
     }
 
     /**
-     * Validates a clone of the given type, emitting clone-validity issues
-     * (MixedClone/InvalidClone/PossiblyInvalidClone, __clone visibility) and
-     * returning the result type with immutability flags applied.
-     *
-     * Returns null when the clone is invalid (the relevant issue has already
-     * been emitted), mirroring the bare `clone $x` behaviour of leaving the
-     * expression untyped.
+     * Validates clone-ability of $clone_type; null return means an issue was already emitted.
      */
     private static function analyzeClonedType(
         StatementsAnalyzer $statements_analyzer,
@@ -354,21 +336,7 @@ final class CloneAnalyzer
         return $clone_type;
     }
 
-    /**
-     * Validates the `withProperties` array of a clone-with expression.
-     *
-     * Each literal-string key must name an accessible property of the cloned class,
-     * and each value must be assignable to that property's declared type. Unlike a
-     * regular property write, replacing `readonly` properties is permitted here (the
-     * point of the RFC), so this validation deliberately does not route through
-     * InstancePropertyAssignmentAnalyzer, whose readonly write guard would reject
-     * top-level clone-with calls (it requires `$context->self`, which is null outside
-     * a class). The type/visibility/existence checks are replicated instead.
-     *
-     * Not (yet) replicated from the regular property-write path: data-flow/taint of the
-     * replacement values, magic `__set` value typing, and the softer coercion diagnostics
-     * (PropertyTypeCoercion, ImplicitToStringCast, PossiblyNull/FalsePropertyAssignmentValue).
-     */
+    /** Skips InstancePropertyAssignmentAnalyzer: its readonly guard would reject clone-with. */
     private static function analyzeWithProperties(
         StatementsAnalyzer $statements_analyzer,
         Context $context,
@@ -399,9 +367,8 @@ final class CloneAnalyzer
             return;
         }
 
-        // Per-key validation needs both a literal array and a single, known class.
-        // Anything else (dynamic array, union/templated/object target) is left
-        // unchecked to avoid false positives; the result type is preserved regardless.
+        // Per-key validation needs a literal array and a single known class; anything
+        // else is left unchecked to avoid false positives.
         if (!$with_properties_value instanceof PhpParser\Node\Expr\Array_) {
             return;
         }
@@ -439,10 +406,7 @@ final class CloneAnalyzer
         }
     }
 
-    /**
-     * Validates a single `prop => value` entry of a clone-with array against the
-     * cloned class, emitting undefined-property, visibility and value-type issues.
-     */
+    /** Validates a single `prop => value` entry of a clone-with array. */
     private static function validateClonedProperty(
         StatementsAnalyzer $statements_analyzer,
         Context $context,
@@ -517,10 +481,7 @@ final class CloneAnalyzer
             return;
         }
 
-        // The value comparison is skipped for a generic cloned class, whose property
-        // types may reference template parameters that are not resolved here (the type
-        // arguments are not threaded into getExpandedPropertyType, so they stay as
-        // `T as ...`). Skipping avoids false positives at the cost of not validating.
+        // Skipped for generic classes: property types stay as unresolved template params.
         if ($class_property_type === null || $class_storage->template_types !== null) {
             return;
         }
@@ -534,11 +495,7 @@ final class CloneAnalyzer
         );
     }
 
-    /**
-     * Reports InvalidPropertyAssignmentValue / PossiblyInvalidPropertyAssignmentValue
-     * when the assigned value is not (possibly) assignable to the property's declared
-     * type, mirroring InstancePropertyAssignmentAnalyzer's value check.
-     */
+    /** Reports (Possibly)InvalidPropertyAssignmentValue for a non-assignable value. */
     private static function validatePropertyValueType(
         StatementsAnalyzer $statements_analyzer,
         Union $value_type,
@@ -591,11 +548,7 @@ final class CloneAnalyzer
         );
     }
 
-    /**
-     * Returns the single named class behind the cloned object's type, or null when it
-     * is not exactly one known class (union, intersection, template, plain object,
-     * interface, ...), in which case per-key validation is skipped.
-     */
+    /** Returns the single named class behind $object_type, or null if not exactly one. */
     private static function getClonedClassName(Codebase $codebase, ?Union $object_type): ?string
     {
         if ($object_type === null || !$object_type->isSingle()) {
