@@ -461,6 +461,30 @@ final class TemplateDefaultTest extends TestCase
                     '$r===' => 'string',
                 ],
             ],
+            // pins the fix for a regression where a legitimately inferred `mixed`
+            // lower bound was mistaken for "nothing inferred" and overridden by
+            // the declared default; companion to functionTemplateDefaultAppliedWhenNoArguments
+            // above, which pins the no-argument case still falling back to the default
+            'functionTemplateDefaultNotAppliedWhenMixedInferred' => [
+                'code' => '<?php
+                    /**
+                     * @template T = string
+                     * @param T $x
+                     * @return T
+                     */
+                    function identity($x) {
+                        return $x;
+                    }
+
+                    /** @var mixed $m */
+                    $m = null;
+
+                    /** @psalm-suppress MixedAssignment */
+                    $r = identity($m);',
+                'assertions' => [
+                    '$r===' => 'mixed',
+                ],
+            ],
         ];
     }
 

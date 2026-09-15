@@ -431,25 +431,30 @@ final class ArgumentAnalyzer
                         [$template_type->param_name]
                         [$template_type->defining_class],
                 )) {
+                    // this template appears in the parameter's type but nothing in the
+                    // call actually matched it (e.g. a `(callable(T): TResult)|null`
+                    // parameter passed `null`): the bound below is a placeholder, not
+                    // real inferred content, so mark it as such
                     if (isset(
                         $template_result->upper_bounds
                             [$template_type->param_name]
                             [$template_type->defining_class],
                     )) {
-                        $template_result->lower_bounds[$template_type->param_name][$template_type->defining_class] = [
-                            new TemplateBound(
-                                $template_result->upper_bounds
-                                    [$template_type->param_name]
-                                    [$template_type->defining_class]->type,
-                            ),
-                        ];
+                        $fallback_bound = new TemplateBound(
+                            $template_result->upper_bounds
+                                [$template_type->param_name]
+                                [$template_type->defining_class]->type,
+                        );
                     } else {
-                        $template_result->lower_bounds[$template_type->param_name][$template_type->defining_class] = [
-                            new TemplateBound(
-                                $template_type->as,
-                            ),
-                        ];
+                        $fallback_bound = new TemplateBound(
+                            $template_type->as,
+                        );
                     }
+
+                    $fallback_bound->from_unbound_template_fallback = true;
+                    $template_result->lower_bounds[$template_type->param_name][$template_type->defining_class] = [
+                        $fallback_bound,
+                    ];
                 }
             }
 
