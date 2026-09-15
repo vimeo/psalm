@@ -164,7 +164,13 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         // must run before the first-class-callable early return below, so that
         // `foo(...)` counts as a use of foo()
-        self::recordNamedFunctionReference($statements_analyzer, $codebase, $function_name, $function_call_info, $context);
+        self::recordNamedFunctionReference(
+            $statements_analyzer,
+            $codebase,
+            $function_name,
+            $function_call_info,
+            $context,
+        );
 
         $set_inside_conditional = false;
 
