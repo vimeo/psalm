@@ -168,7 +168,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         // calls are handled here; callable-string/array references are recorded
         // through the callable-argument analysis.
         if ($function_name instanceof PhpParser\Node\Name
-            && $function_call_info->function_id
+            && $function_call_info->function_id !== null
             && !$function_call_info->in_call_map
             && !$context->collect_initializations
             && !$context->collect_mutations

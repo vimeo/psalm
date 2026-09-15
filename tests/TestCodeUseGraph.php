@@ -12,6 +12,17 @@ use Psalm\Internal\Provider\ClassLikeStorageProvider;
 /**
  * A {@see CodeUseGraph} with an injected out-of-project root predicate, so unit
  * tests can control root selection over synthetic node ids without real storages.
+ *
+ * CodeUseGraph is final; extending it here is only possible because tests run
+ * with dg/bypass-finals. Psalm's static analysis still sees the final class, so
+ * the resulting inheritance/override complaints are suppressed.
+ *
+ * @psalm-suppress InvalidExtendClass
+ * @psalm-suppress MethodSignatureMismatch
+ * @psalm-suppress ConstructorSignatureMismatch
+ * @psalm-suppress ParamNameMismatch
+ * @psalm-suppress ImplementedParamTypeMismatch
+ * @psalm-suppress ImmutableDependency
  */
 final class TestCodeUseGraph extends CodeUseGraph
 {
