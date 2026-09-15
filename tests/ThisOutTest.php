@@ -136,6 +136,14 @@ final class ThisOutTest extends TestCase
                     }',
                 'error_message' => 'InvalidDocblock',
             ],
+            'incompleteConditionalTypeIsReportedInsteadOfCrashing' => [
+                'code' => '<?php
+                    class A {
+                        /** @phpstan-this-out ($key is null) */
+                        public function s(?int $key): void {}
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
         ];
     }
 }

@@ -761,6 +761,12 @@ final class TypeParseTest extends TestCase
         );
     }
 
+    public function testConditionalTypeWithoutTernary(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('(T is string)', null, ['T' => ['' => Type::getArray()]]);
+    }
+
     public function testConditionalTypeWithCallableElseBool(): void
     {
         $this->expectException(TypeParseTreeException::class);
