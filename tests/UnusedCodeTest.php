@@ -19,6 +19,7 @@ use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use function array_column;
 use function getcwd;
 use function preg_quote;
+use function sort;
 use function strpos;
 
 use const DIRECTORY_SEPARATOR;

@@ -16,7 +16,6 @@ use Psalm\Storage\MethodStorage;
 use function array_intersect_key;
 use function array_pop;
 use function md5;
-use function str_contains;
 use function strpos;
 use function strtolower;
 use function substr;
@@ -187,7 +186,6 @@ final class CodeUseGraph
      */
     public function __construct(
         private readonly ClassLikeStorageProvider $storage_provider,
-        private readonly Config $config,
         public bool $collect_locations = false,
     ) {
     }
@@ -384,7 +382,7 @@ final class CodeUseGraph
      * Structural roots (top-level file code) are handled in resolve(). Overridable
      * in tests.
      *
-     * @psalm-mutation-free
+     * @psalm-external-mutation-free
      */
     protected function isRoot(string $node_id): bool
     {
@@ -401,8 +399,11 @@ final class CodeUseGraph
             return true;
         }
 
+        // Config::getInstance() is resolved lazily: a config is always
+        // initialized by the time the graph is resolved, whereas the graph
+        // itself is constructed before one exists.
         return !$owner_storage->location
-            || !$this->config->isInProjectDirs($owner_storage->location->file_path);
+            || !Config::getInstance()->isInProjectDirs($owner_storage->location->file_path);
     }
 
     // Building
@@ -592,7 +593,7 @@ final class CodeUseGraph
      *
      * Roots are top-level file code, @api public-API entry points, and the
      * out-of-project code {@see self::isRoot()} identifies from the storage
-     * provider and config injected at construction.
+     * provider and the current config.
      *
      * @psalm-external-mutation-free
      */

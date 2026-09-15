@@ -343,7 +343,9 @@ final class UnusedCodeManipulationTest extends FileManipulationTestCase
                     function foo(A $a, string $var) {
                         /** @psalm-ignore-variable-method */
                         echo $a->$var();
-                    }',
+                    }
+
+                    foo(new A(), "foo");',
                 'output' => '<?php
                     class A {
 
@@ -352,7 +354,9 @@ final class UnusedCodeManipulationTest extends FileManipulationTestCase
                     function foo(A $a, string $var) {
                         /** @psalm-ignore-variable-method */
                         echo $a->$var();
-                    }',
+                    }
+
+                    foo(new A(), "foo");',
                 'php_version' => '7.1',
                 'issues_to_fix' => ['PossiblyUnusedMethod'],
                 'safe_types' => true,
@@ -462,7 +466,9 @@ final class UnusedCodeManipulationTest extends FileManipulationTestCase
                     function foo(A $a, string $var) {
                         /** @psalm-ignore-variable-property */
                         echo $a->$var;
-                    }',
+                    }
+
+                    foo(new A(), "foo");',
                 'output' => '<?php
                     class A {
 
@@ -471,7 +477,9 @@ final class UnusedCodeManipulationTest extends FileManipulationTestCase
                     function foo(A $a, string $var) {
                         /** @psalm-ignore-variable-property */
                         echo $a->$var;
-                    }',
+                    }
+
+                    foo(new A(), "foo");',
                 'php_version' => '7.1',
                 'issues_to_fix' => ['PossiblyUnusedProperty'],
                 'safe_types' => true,

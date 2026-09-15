@@ -8,7 +8,6 @@ use Closure;
 use Psalm\Internal\Codebase\CodeUseGraph;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Tests\TestCase;
-use Psalm\Tests\TestConfig;
 use Psalm\Tests\TestCodeUseGraph;
 
 final class CodeUseGraphTest extends TestCase
@@ -119,7 +118,7 @@ final class CodeUseGraphTest extends TestCase
         $provider = new ClassLikeStorageProvider();
         $provider->create('vendor\\framework'); // no location => out of project
 
-        $graph = new CodeUseGraph($provider, new TestConfig());
+        $graph = new CodeUseGraph($provider);
         $external_caller = CodeUseGraph::functionLikeNode('vendor\\framework::run');
         $target = CodeUseGraph::functionLikeNode('app\\c::handler');
         $graph->addEdge($external_caller, $target);

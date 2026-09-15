@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Provider;
 
-use Psalm\Config;
 use RuntimeException;
 
 use function fclose;
@@ -48,7 +47,6 @@ final class Providers
         $this->file_reference_provider = new FileReferenceProvider(
             $file_provider,
             $this->classlike_storage_provider,
-            Config::getInstance(),
             $file_reference_cache_provider,
         );
     }
