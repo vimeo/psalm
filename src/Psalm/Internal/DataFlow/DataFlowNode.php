@@ -101,7 +101,13 @@ final class DataFlowNode implements Stringable
             ? strtolower($specialization_location->file_name) . ':' . $specialization_location->raw_file_start
             : null;
 
-        return self::make($taint_id, $taint_id, $code_location, $specialization_key, $taints);
+        // Fold the location into the id (as getForAssignment() does) so a taint source/sink id always
+        // maps to exactly one location, even if a caller reuses the same $taint_id at several sites;
+        // see the class invariant. The human-readable label keeps the bare $taint_id.
+        $id = $taint_id . ' at ' . strtolower($code_location->file_name)
+            . ':' . $code_location->raw_file_start . '-' . $code_location->raw_file_end;
+
+        return self::make($id, $taint_id, $code_location, $specialization_key, $taints);
     }
 
     /**
@@ -320,6 +326,76 @@ final class DataFlowNode implements Stringable
             $this->path_types,
             $this->specialized_calls,
         );
+    }
+
+    /**
+     * Re-key this node under a different (un)specialization while carrying over its identity-derived
+     * location, label and flow state unchanged. Used by the taint resolver when it de-specializes or
+     * re-specializes a node it already holds. The location is copied from $this, so it can never
+     * diverge from the id -- see the class invariant.
+     *
+     * @param array<string, array<string, string>> $specialized_calls
+     * @psalm-mutation-free
+     */
+    public function withSpecialization(
+        string $id,
+        ?string $unspecialized_id,
+        ?string $specialization_key,
+        array $specialized_calls,
+    ): self {
+        return new self(
+            $id,
+            $unspecialized_id,
+            $specialization_key,
+            $this->label,
+            $this->code_location,
+            $this->taints,
+            $this->taintSource,
+            $this->path_types,
+            $specialized_calls,
+        );
+    }
+
+    /**
+     * Produce the successor reached when taint flows out of this node along an edge: the same
+     * identity, label and location, with updated flow state (taints, provenance and path types).
+     * The location is copied from $this, so it can never diverge from the id -- see the class
+     * invariant.
+     *
+     * @param list<string> $path_types
+     * @param array<string, array<string, string>> $specialized_calls
+     * @psalm-mutation-free
+     */
+    public function withFlow(
+        int $taints,
+        self $taintSource,
+        array $path_types,
+        array $specialized_calls,
+    ): self {
+        return new self(
+            $this->id,
+            $this->unspecialized_id,
+            $this->specialization_key,
+            $this->label,
+            $this->code_location,
+            $taints,
+            $taintSource,
+            $path_types,
+            $specialized_calls,
+        );
+    }
+
+    /**
+     * A node identified only by its id, with no location and no taint state. Used by the
+     * variable-use graph, whose nodes are never taint-reporting sites; a null location trivially
+     * satisfies the id -> location invariant.
+     *
+     * @param list<string> $path_types
+     * @psalm-pure
+     */
+    public static function getForVariableUseDestination(string $id, array $path_types = []): self
+    {
+        return new self($id, null, null, $id, null, 0, null, $path_types);
     }
 
     /**
