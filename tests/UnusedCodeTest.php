@@ -351,6 +351,28 @@ final class UnusedCodeTest extends TestCase
         );
     }
 
+    public function testFunctionReferencedByFirstClassCallableIsUsed(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function via_fcc(int $x): int { return $x; }
+                $f = via_fcc(...);
+                echo $f(1);',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        self::assertNotContains(
+            'UnusedFunction',
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
     public function testDeadReadDoesNotMakeConstructorOnlyPropertyUsed(): void
     {
         $this->project_analyzer->getConfig()->throw_exception = false;
