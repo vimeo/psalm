@@ -1404,19 +1404,13 @@ final class AssertionFinder
     private static function hasGetTypeCheck(
         PhpParser\Node\Expr\BinaryOp $conditional,
     ): bool|int {
-        if ($conditional->right instanceof PhpParser\Node\Expr\FuncCall
-            && $conditional->right->name instanceof PhpParser\Node\Name
-            && strtolower($conditional->right->name->getFirst()) === 'gettype'
-            && $conditional->right->getArgs()
+        if (self::isFunctionCallToOneOf($conditional->right, ['gettype'], 1)
             && $conditional->left instanceof PhpParser\Node\Scalar\String_
         ) {
             return self::ASSIGNMENT_TO_RIGHT;
         }
 
-        if ($conditional->left instanceof PhpParser\Node\Expr\FuncCall
-            && $conditional->left->name instanceof PhpParser\Node\Name
-            && strtolower($conditional->left->name->getFirst()) === 'gettype'
-            && $conditional->left->getArgs()
+        if (self::isFunctionCallToOneOf($conditional->left, ['gettype'], 1)
             && $conditional->right instanceof PhpParser\Node\Scalar\String_
         ) {
             return self::ASSIGNMENT_TO_LEFT;
@@ -1432,20 +1426,14 @@ final class AssertionFinder
     private static function hasGetDebugTypeCheck(
         PhpParser\Node\Expr\BinaryOp $conditional,
     ): bool|int {
-        if ($conditional->right instanceof PhpParser\Node\Expr\FuncCall
-            && $conditional->right->name instanceof PhpParser\Node\Name
-            && strtolower($conditional->right->name->getFirst()) === 'get_debug_type'
-            && $conditional->right->getArgs()
+        if (self::isFunctionCallToOneOf($conditional->right, ['get_debug_type'], 1)
             && ($conditional->left instanceof PhpParser\Node\Scalar\String_
                 || $conditional->left instanceof PhpParser\Node\Expr\ClassConstFetch)
         ) {
             return self::ASSIGNMENT_TO_RIGHT;
         }
 
-        if ($conditional->left instanceof PhpParser\Node\Expr\FuncCall
-            && $conditional->left->name instanceof PhpParser\Node\Name
-            && strtolower($conditional->left->name->getFirst()) === 'get_debug_type'
-            && $conditional->left->getArgs()
+        if (self::isFunctionCallToOneOf($conditional->left, ['get_debug_type'], 1)
             && ($conditional->right instanceof PhpParser\Node\Scalar\String_
                 || $conditional->right instanceof PhpParser\Node\Expr\ClassConstFetch)
         ) {
@@ -1463,90 +1451,59 @@ final class AssertionFinder
         PhpParser\Node\Expr\BinaryOp $conditional,
         FileSource $source,
     ): bool|int {
-        if (!$source instanceof StatementsAnalyzer) {
-            return false;
-        }
-
-        $right_get_class = $conditional->right instanceof PhpParser\Node\Expr\FuncCall
-            && $conditional->right->name instanceof PhpParser\Node\Name
-            && strtolower($conditional->right->name->getFirst()) === 'get_class';
-
-        $right_static_class = $conditional->right instanceof PhpParser\Node\Expr\ClassConstFetch
-            && $conditional->right->class instanceof PhpParser\Node\Name
-            && $conditional->right->class->getParts() === ['static']
-            && $conditional->right->name instanceof PhpParser\Node\Identifier
-            && strtolower($conditional->right->name->name) === 'class';
-
-        $right_variable_class_const = $conditional->right instanceof PhpParser\Node\Expr\ClassConstFetch
-            && !$conditional->right->class instanceof PhpParser\Node\Name
-            && $conditional->right->name instanceof PhpParser\Node\Identifier
-            && strtolower($conditional->right->name->name) === 'class';
-
-        $left_class_string = $conditional->left instanceof PhpParser\Node\Expr\ClassConstFetch
-            && $conditional->left->class instanceof PhpParser\Node\Name
-            && $conditional->left->name instanceof PhpParser\Node\Identifier
-            && strtolower($conditional->left->name->name) === 'class';
-
-        $left_variable_class_const = $conditional->left instanceof PhpParser\Node\Expr\ClassConstFetch
-            && !$conditional->left->class instanceof PhpParser\Node\Name
-            && $conditional->left->name instanceof PhpParser\Node\Identifier
-            && strtolower($conditional->left->name->name) === 'class';
-
-        $left_class_string_t = false;
-
-        if (!$left_variable_class_const) {
-            $left_type = $source->node_data->getType($conditional->left);
-
-            if ($left_type && $left_type->isSingle()) {
-                foreach ($left_type->getAtomicTypes() as $type_part) {
-                    if ($type_part instanceof TClassString) {
-                        $left_class_string_t = true;
-                        break;
-                    }
-                }
-            }
-        }
-
-        if (($right_get_class || $right_static_class || $right_variable_class_const)
-            && ($left_class_string || $left_class_string_t)
-        ) {
+        if (self::isGetClassCheck($source, $conditional->left, $conditional->right)) {
             return self::ASSIGNMENT_TO_RIGHT;
         }
 
-        $left_get_class = $conditional->left instanceof PhpParser\Node\Expr\FuncCall
-            && $conditional->left->name instanceof PhpParser\Node\Name
-            && strtolower($conditional->left->name->getFirst()) === 'get_class';
+        if (self::isGetClassCheck($source, $conditional->right, $conditional->left)) {
+            return self::ASSIGNMENT_TO_LEFT;
+        }
 
-        $left_static_class = $conditional->left instanceof PhpParser\Node\Expr\ClassConstFetch
-            && $conditional->left->class instanceof PhpParser\Node\Name
-            && $conditional->left->class->getParts() === ['static']
-            && $conditional->left->name instanceof PhpParser\Node\Identifier
-            && strtolower($conditional->left->name->name) === 'class';
+        return false;
+    }
 
-        $right_class_string = $conditional->right instanceof PhpParser\Node\Expr\ClassConstFetch
-            && $conditional->right->class instanceof PhpParser\Node\Name
-            && $conditional->right->name instanceof PhpParser\Node\Identifier
-            && strtolower($conditional->right->name->name) === 'class';
+    private static function isGetClassCheck(
+        FileSource $source,
+        PhpParser\Node\Expr $first,
+        PhpParser\Node\Expr $second,
+    ): bool {
+        // Check if the first expression is a `::class` access.
+        $right_is_class_string = self::isClassConstantAccessTo($first, 'class');
+        // If not, check the type of the first expression
+        if (!$right_is_class_string) {
+            if (!$source instanceof StatementsAnalyzer) {
+                // If we don't have a StatementsAnalyzer, we can't check the type.
+                return false;
+            }
 
-        $right_class_string_t = false;
+            $right_type = $source->node_data->getType($first);
+            if (null === $right_type || !$right_type->isSingle()) {
+                // If we don't have a type, or it's not a single type, we can't check for class string.
+                return false;
+            }
 
-        if (!$right_variable_class_const) {
-            $right_type = $source->node_data->getType($conditional->right);
-
-            if ($right_type && $right_type->isSingle()) {
-                foreach ($right_type->getAtomicTypes() as $type_part) {
-                    if ($type_part instanceof TClassString) {
-                        $right_class_string_t = true;
-                        break;
-                    }
+            foreach ($right_type->getAtomicTypes() as $type_part) {
+                // If the first expression union contains a class string type, break.
+                if ($type_part instanceof TClassString) {
+                    $right_is_class_string = true;
+                    break;
                 }
+            }
+
+            // Check if a class string type was found in the first expression
+            if (!$right_is_class_string) {
+                // No need to check for the second expression.
+                return false;
             }
         }
 
-        if (($left_get_class || $left_static_class || $left_variable_class_const)
-            && ($right_class_string || $right_class_string_t)
+        // Check that the second expression is either a `get_class` function call
+        // or a `::class` access on `static` or a variable.
+        if (self::isFunctionCallToOneOf($second, ['get_class'], 1)
+            || self::isStaticConstantAccessTo($second, 'class')
+            || self::isVariableConstantAccessTo($second, 'class')
         ) {
-            return self::ASSIGNMENT_TO_LEFT;
+            return true;
         }
 
         return false;
@@ -1560,20 +1517,14 @@ final class AssertionFinder
         PhpParser\Node\Expr\BinaryOp $conditional,
         ?int &$min_count,
     ): bool|int {
-        if ($conditional->left instanceof PhpParser\Node\Expr\FuncCall
-            && $conditional->left->name instanceof PhpParser\Node\Name
-            && in_array(strtolower($conditional->left->name->getFirst()), ['count', 'sizeof'])
-            && $conditional->left->getArgs()
-            && ($conditional instanceof BinaryOp\Greater || $conditional instanceof BinaryOp\GreaterOrEqual)
+        if (($conditional instanceof BinaryOp\Greater || $conditional instanceof BinaryOp\GreaterOrEqual)
+            && self::isFunctionCallToOneOf($conditional->left, ['count', 'sizeof'], 1)
         ) {
             $assignment_to = self::ASSIGNMENT_TO_RIGHT;
             $compare_to = $conditional->right;
             $comparison_adjustment = $conditional instanceof BinaryOp\Greater ? 1 : 0;
-        } elseif ($conditional->right instanceof PhpParser\Node\Expr\FuncCall
-            && $conditional->right->name instanceof PhpParser\Node\Name
-            && in_array(strtolower($conditional->right->name->getFirst()), ['count', 'sizeof'])
-            && $conditional->right->getArgs()
-            && ($conditional instanceof BinaryOp\Smaller || $conditional instanceof BinaryOp\SmallerOrEqual)
+        } elseif (($conditional instanceof BinaryOp\Smaller || $conditional instanceof BinaryOp\SmallerOrEqual)
+            && self::isFunctionCallToOneOf($conditional->right, ['count', 'sizeof'], 1)
         ) {
             $assignment_to = self::ASSIGNMENT_TO_LEFT;
             $compare_to = $conditional->left;
@@ -1596,23 +1547,17 @@ final class AssertionFinder
 
     /**
      * @param Greater|GreaterOrEqual|Smaller|SmallerOrEqual $conditional
-     * @return false|int
      */
     private static function hasLessThanCountEqualityCheck(
         PhpParser\Node\Expr\BinaryOp $conditional,
         ?int &$max_count,
-    ): bool|int {
-        $left_count = $conditional->left instanceof PhpParser\Node\Expr\FuncCall
-            && $conditional->left->name instanceof PhpParser\Node\Name
-            && in_array(strtolower($conditional->left->name->getFirst()), ['count', 'sizeof'])
-            && $conditional->left->getArgs();
-
+    ): false|int {
         $operator_less_than_or_equal =
             $conditional instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual
             || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller;
 
-        if ($left_count
-            && $operator_less_than_or_equal
+        if ($operator_less_than_or_equal
+            && self::isFunctionCallToOneOf($conditional->left, ['count', 'sizeof'], 1)
             && $conditional->right instanceof PhpParser\Node\Scalar\Int_
         ) {
             $max_count = $conditional->right->value -
@@ -1621,17 +1566,12 @@ final class AssertionFinder
             return self::ASSIGNMENT_TO_RIGHT;
         }
 
-        $right_count = $conditional->right instanceof PhpParser\Node\Expr\FuncCall
-            && $conditional->right->name instanceof PhpParser\Node\Name
-            && in_array(strtolower($conditional->right->name->getFirst()), ['count', 'sizeof'])
-            && $conditional->right->getArgs();
-
         $operator_greater_than_or_equal =
             $conditional instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual
             || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater;
 
-        if ($right_count
-            && $operator_greater_than_or_equal
+        if ($operator_greater_than_or_equal
+            && self::isFunctionCallToOneOf($conditional->right, ['count', 'sizeof'], 1)
             && $conditional->left instanceof PhpParser\Node\Scalar\Int_
         ) {
             $max_count = $conditional->left->value -
@@ -1651,23 +1591,17 @@ final class AssertionFinder
         PhpParser\Node\Expr\BinaryOp $conditional,
         ?int &$count,
     ): bool|int {
-        $left_count = $conditional->left instanceof PhpParser\Node\Expr\FuncCall
-            && $conditional->left->name instanceof PhpParser\Node\Name
-            && in_array(strtolower($conditional->left->name->getFirst()), ['count', 'sizeof'])
-            && $conditional->left->getArgs();
-
-        if ($left_count && $conditional->right instanceof PhpParser\Node\Scalar\Int_) {
+        if ($conditional->right instanceof PhpParser\Node\Scalar\Int_
+            && self::isFunctionCallToOneOf($conditional->left, ['count', 'sizeof'], 1)
+        ) {
             $count = $conditional->right->value;
 
             return self::ASSIGNMENT_TO_RIGHT;
         }
 
-        $right_count = $conditional->right instanceof PhpParser\Node\Expr\FuncCall
-            && $conditional->right->name instanceof PhpParser\Node\Name
-            && in_array(strtolower($conditional->right->name->getFirst()), ['count', 'sizeof'])
-            && $conditional->right->getArgs();
-
-        if ($right_count && $conditional->left instanceof PhpParser\Node\Scalar\Int_) {
+        if ($conditional->left instanceof PhpParser\Node\Scalar\Int_
+            && self::isFunctionCallToOneOf($conditional->right, ['count', 'sizeof'], 1)
+        ) {
             $count = $conditional->left->value;
 
             return self::ASSIGNMENT_TO_LEFT;
@@ -1677,123 +1611,47 @@ final class AssertionFinder
     }
 
     /**
-     * @param PhpParser\Node\Expr\BinaryOp\Greater|PhpParser\Node\Expr\BinaryOp\GreaterOrEqual $conditional
-     * @return false|int
+     * @return array{is_left: bool, value: int}|null
      */
-    private static function hasSuperiorNumberCheck(
+    private static function getComparisonLiteralOperand(
         FileSource $source,
         PhpParser\Node\Expr\BinaryOp $conditional,
-        ?int &$literal_value_comparison,
-    ): bool|int {
-        $right_assignment = false;
-        $value_right = null;
-        if ($source instanceof StatementsAnalyzer
-            && ($type = $source->node_data->getType($conditional->right))
-            && $type->isSingleIntLiteral()
-        ) {
-            $right_assignment = true;
-            $value_right = $type->getSingleIntLiteral()->value;
-        } elseif ($conditional->right instanceof Int_) {
-            $right_assignment = true;
-            $value_right = $conditional->right->value;
-        } elseif ($conditional->right instanceof UnaryMinus && $conditional->right->expr instanceof Int_) {
-            $right_assignment = true;
-            $value_right = -$conditional->right->expr->value;
-        } elseif ($conditional->right instanceof UnaryPlus && $conditional->right->expr instanceof Int_) {
-            $right_assignment = true;
-            $value_right = $conditional->right->expr->value;
-        }
-        if ($right_assignment === true && $value_right !== null) {
-            $literal_value_comparison = $value_right;
-
-            return self::ASSIGNMENT_TO_RIGHT;
+    ): ?array {
+        $left_literal = self::getLiteralIntegerFromExpression($source, $conditional->left);
+        if ($left_literal !== null) {
+            return ['is_left' => true, 'value' => $left_literal];
         }
 
-        $left_assignment = false;
-        $value_left = null;
-        if ($source instanceof StatementsAnalyzer
-            && ($type = $source->node_data->getType($conditional->left))
-            && $type->isSingleIntLiteral()
-        ) {
-            $left_assignment = true;
-            $value_left = $type->getSingleIntLiteral()->value;
-        } elseif ($conditional->left instanceof Int_) {
-            $left_assignment = true;
-            $value_left = $conditional->left->value;
-        } elseif ($conditional->left instanceof UnaryMinus && $conditional->left->expr instanceof Int_) {
-            $left_assignment = true;
-            $value_left = -$conditional->left->expr->value;
-        } elseif ($conditional->left instanceof UnaryPlus && $conditional->left->expr instanceof Int_) {
-            $left_assignment = true;
-            $value_left = $conditional->left->expr->value;
-        }
-        if ($left_assignment === true && $value_left !== null) {
-            $literal_value_comparison = $value_left;
-
-            return self::ASSIGNMENT_TO_LEFT;
+        $right_literal = self::getLiteralIntegerFromExpression($source, $conditional->right);
+        if ($right_literal !== null) {
+            return ['is_left' => false, 'value' => $right_literal];
         }
 
-        return false;
+        return null;
     }
 
-    /**
-     * @param PhpParser\Node\Expr\BinaryOp\Smaller|PhpParser\Node\Expr\BinaryOp\SmallerOrEqual $conditional
-     * @return false|int
-     */
-    private static function hasInferiorNumberCheck(
-        FileSource $source,
-        PhpParser\Node\Expr\BinaryOp $conditional,
-        ?int &$literal_value_comparison,
-    ): bool|int {
-        $right_assignment = false;
-        $value_right = null;
-        if ($source instanceof StatementsAnalyzer
-            && ($type = $source->node_data->getType($conditional->right))
-            && $type->isSingleIntLiteral()
-        ) {
-            $right_assignment = true;
-            $value_right = $type->getSingleIntLiteral()->value;
-        } elseif ($conditional->right instanceof Int_) {
-            $right_assignment = true;
-            $value_right = $conditional->right->value;
-        } elseif ($conditional->right instanceof UnaryMinus && $conditional->right->expr instanceof Int_) {
-            $right_assignment = true;
-            $value_right = -$conditional->right->expr->value;
-        } elseif ($conditional->right instanceof UnaryPlus && $conditional->right->expr instanceof Int_) {
-            $right_assignment = true;
-            $value_right = $conditional->right->expr->value;
-        }
-        if ($right_assignment === true && $value_right !== null) {
-            $literal_value_comparison = $value_right;
-
-            return self::ASSIGNMENT_TO_RIGHT;
+    private static function getLiteralIntegerFromExpression(FileSource $source, PhpParser\Node\Expr $expr): ?int
+    {
+        if ($source instanceof StatementsAnalyzer) {
+            $type = $source->node_data->getType($expr);
+            if ($type && $type->isSingleIntLiteral()) {
+                return $type->getSingleIntLiteral()->value;
+            }
         }
 
-        $left_assignment = false;
-        $value_left = null;
-        if ($source instanceof StatementsAnalyzer
-            && ($type = $source->node_data->getType($conditional->left))
-            && $type->isSingleIntLiteral()
-        ) {
-            $left_assignment = true;
-            $value_left = $type->getSingleIntLiteral()->value;
-        } elseif ($conditional->left instanceof Int_) {
-            $left_assignment = true;
-            $value_left = $conditional->left->value;
-        } elseif ($conditional->left instanceof UnaryMinus && $conditional->left->expr instanceof Int_) {
-            $left_assignment = true;
-            $value_left = -$conditional->left->expr->value;
-        } elseif ($conditional->left instanceof UnaryPlus && $conditional->left->expr instanceof Int_) {
-            $left_assignment = true;
-            $value_left = $conditional->left->expr->value;
-        }
-        if ($left_assignment === true && $value_left !== null) {
-            $literal_value_comparison = $value_left;
-
-            return self::ASSIGNMENT_TO_LEFT;
+        if ($expr instanceof Int_) {
+            return $expr->value;
         }
 
-        return false;
+        if ($expr instanceof UnaryMinus && $expr->expr instanceof Int_) {
+            return -$expr->expr->value;
+        }
+
+        if ($expr instanceof UnaryPlus && $expr->expr instanceof Int_) {
+            return $expr->expr->value;
+        }
+
+        return null;
     }
 
     /**
@@ -1803,9 +1661,7 @@ final class AssertionFinder
     private static function hasReconcilableNonEmptyCountEqualityCheck(
         PhpParser\Node\Expr\BinaryOp $conditional,
     ): bool|int {
-        $left_count = $conditional->left instanceof PhpParser\Node\Expr\FuncCall
-            && $conditional->left->name instanceof PhpParser\Node\Name
-            && in_array(strtolower($conditional->left->name->getFirst()), ['count', 'sizeof']);
+        $left_count = self::isFunctionCallToOneOf($conditional->left, ['count', 'sizeof'], 1);
 
         $right_number = $conditional->right instanceof PhpParser\Node\Scalar\Int_
             && $conditional->right->value === (
@@ -3879,15 +3735,6 @@ final class AssertionFinder
 
         $min_count = null;
         $count_equality_position = self::hasNonEmptyCountEqualityCheck($conditional, $min_count);
-        $max_count = null;
-        $count_inequality_position = self::hasLessThanCountEqualityCheck($conditional, $max_count);
-        $superior_value_comparison = null;
-        $superior_value_position = self::hasSuperiorNumberCheck(
-            $source,
-            $conditional,
-            $superior_value_comparison,
-        );
-
         if ($count_equality_position) {
             if ($count_equality_position === self::ASSIGNMENT_TO_RIGHT) {
                 $counted_expr = $conditional->left;
@@ -3917,6 +3764,8 @@ final class AssertionFinder
             return $if_types ? [$if_types] : [];
         }
 
+        $max_count = null;
+        $count_inequality_position = self::hasLessThanCountEqualityCheck($conditional, $max_count);
         if ($count_inequality_position) {
             if ($count_inequality_position === self::ASSIGNMENT_TO_LEFT) {
                 $count_expr = $conditional->right;
@@ -3942,33 +3791,34 @@ final class AssertionFinder
             return $if_types ? [$if_types] : [];
         }
 
-        if ($superior_value_position && $superior_value_comparison !== null) {
-            if ($superior_value_position === self::ASSIGNMENT_TO_RIGHT) {
+        $superior_value = self::getComparisonLiteralOperand($source, $conditional);
+        if ($superior_value !== null) {
+            if ($superior_value['is_left']) {
                 $var_name = ExpressionIdentifier::getExtendedVarId(
-                    $conditional->left,
+                    $conditional->right,
                     $this_class_name,
                     $source,
                 );
             } else {
                 $var_name = ExpressionIdentifier::getExtendedVarId(
-                    $conditional->right,
+                    $conditional->left,
                     $this_class_name,
                     $source,
                 );
             }
 
             if ($var_name !== null) {
-                if ($superior_value_position === self::ASSIGNMENT_TO_RIGHT) {
+                if ($superior_value['is_left']) {
                     if ($conditional instanceof GreaterOrEqual) {
-                        $if_types[$var_name] = [[new IsGreaterThanOrEqualTo($superior_value_comparison)]];
+                        $if_types[$var_name] = [[new IsLessThanOrEqualTo($superior_value['value'])]];
                     } else {
-                        $if_types[$var_name] = [[new IsGreaterThan($superior_value_comparison)]];
+                        $if_types[$var_name] = [[new IsLessThan($superior_value['value'])]];
                     }
                 } else {
                     if ($conditional instanceof GreaterOrEqual) {
-                        $if_types[$var_name] = [[new IsLessThanOrEqualTo($superior_value_comparison)]];
+                        $if_types[$var_name] = [[new IsGreaterThanOrEqualTo($superior_value['value'])]];
                     } else {
-                        $if_types[$var_name] = [[new IsLessThan($superior_value_comparison)]];
+                        $if_types[$var_name] = [[new IsGreaterThan($superior_value['value'])]];
                     }
                 }
             }
@@ -3989,17 +3839,9 @@ final class AssertionFinder
         ?string $this_class_name,
     ): array {
         $if_types = [];
+
         $min_count = null;
         $count_equality_position = self::hasNonEmptyCountEqualityCheck($conditional, $min_count);
-        $max_count = null;
-        $count_inequality_position = self::hasLessThanCountEqualityCheck($conditional, $max_count);
-        $inferior_value_comparison = null;
-        $inferior_value_position = self::hasInferiorNumberCheck(
-            $source,
-            $conditional,
-            $inferior_value_comparison,
-        );
-
         if ($count_equality_position) {
             if ($count_equality_position === self::ASSIGNMENT_TO_LEFT) {
                 $count_expr = $conditional->right;
@@ -4025,6 +3867,8 @@ final class AssertionFinder
             return $if_types ? [$if_types] : [];
         }
 
+        $max_count = null;
+        $count_inequality_position = self::hasLessThanCountEqualityCheck($conditional, $max_count);
         if ($count_inequality_position) {
             if ($count_inequality_position === self::ASSIGNMENT_TO_RIGHT) {
                 $count_expr = $conditional->left;
@@ -4050,34 +3894,35 @@ final class AssertionFinder
             return $if_types ? [$if_types] : [];
         }
 
-        if ($inferior_value_position) {
-            if ($inferior_value_position === self::ASSIGNMENT_TO_RIGHT) {
+        $inferior_value = self::getComparisonLiteralOperand($source, $conditional);
+        if ($inferior_value !== null) {
+            if ($inferior_value['is_left']) {
                 $var_name = ExpressionIdentifier::getExtendedVarId(
-                    $conditional->left,
+                    $conditional->right,
                     $this_class_name,
                     $source,
                 );
             } else {
                 $var_name = ExpressionIdentifier::getExtendedVarId(
-                    $conditional->right,
+                    $conditional->left,
                     $this_class_name,
                     $source,
                 );
             }
 
 
-            if ($var_name !== null && $inferior_value_comparison !== null) {
-                if ($inferior_value_position === self::ASSIGNMENT_TO_RIGHT) {
+            if ($var_name !== null) {
+                if ($inferior_value['is_left']) {
                     if ($conditional instanceof SmallerOrEqual) {
-                        $if_types[$var_name] = [[new IsLessThanOrEqualTo($inferior_value_comparison)]];
+                        $if_types[$var_name] = [[new IsGreaterThanOrEqualTo($inferior_value['value'])]];
                     } else {
-                        $if_types[$var_name] = [[new IsLessThan($inferior_value_comparison)]];
+                        $if_types[$var_name] = [[new IsGreaterThan($inferior_value['value'])]];
                     }
                 } else {
                     if ($conditional instanceof SmallerOrEqual) {
-                        $if_types[$var_name] = [[new IsGreaterThanOrEqualTo($inferior_value_comparison)]];
+                        $if_types[$var_name] = [[new IsLessThanOrEqualTo($inferior_value['value'])]];
                     } else {
-                        $if_types[$var_name] = [[new IsGreaterThan($inferior_value_comparison)]];
+                        $if_types[$var_name] = [[new IsLessThan($inferior_value['value'])]];
                     }
                 }
             }
@@ -4267,5 +4112,112 @@ final class AssertionFinder
         }
 
         return null;
+    }
+
+    /**
+     * @param non-empty-string $constant
+     */
+    private static function isClassConstantAccessTo(PhpParser\Node\Expr $expr, string $constant): bool
+    {
+        if (!$expr instanceof PhpParser\Node\Expr\ClassConstFetch) {
+            return false;
+        }
+
+        if (!$expr->class instanceof PhpParser\Node\Name) {
+            return false;
+        }
+
+        if (!$expr->name instanceof PhpParser\Node\Identifier) {
+            return false;
+        }
+
+        if (strtolower($expr->name->name) !== $constant) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * @param non-empty-string $constant
+     */
+    private static function isStaticConstantAccessTo(PhpParser\Node\Expr $expr, string $constant): bool
+    {
+        if (!$expr instanceof PhpParser\Node\Expr\ClassConstFetch) {
+            return false;
+        }
+
+        if (!$expr->class instanceof PhpParser\Node\Name) {
+            return false;
+        }
+
+        if ($expr->class->getParts() !== ['static']) {
+            return false;
+        }
+
+        if (!$expr->name instanceof PhpParser\Node\Identifier) {
+            return false;
+        }
+
+        if (strtolower($expr->name->name) !== $constant) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * @param non-empty-string $constant
+     */
+    private static function isVariableConstantAccessTo(PhpParser\Node\Expr $expr, string $constant): bool
+    {
+        if (!$expr instanceof PhpParser\Node\Expr\ClassConstFetch) {
+            return false;
+        }
+
+        if (!$expr->class instanceof PhpParser\Node\Expr\Variable) {
+            return false;
+        }
+
+        if (!$expr->name instanceof PhpParser\Node\Identifier) {
+            return false;
+        }
+
+        if (strtolower($expr->name->name) !== $constant) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * @param non-empty-list<non-empty-string> $functions The list of functions to check
+     * @param null|int $expected_arguments The number of expected arguments, or `null` if no check is needed.
+     */
+    private static function isFunctionCallToOneOf(
+        PhpParser\Node\Expr $expr,
+        array $functions,
+        null|int $expected_arguments = null,
+    ): bool {
+        if (!$expr instanceof PhpParser\Node\Expr\FuncCall) {
+            return false;
+        }
+
+        if ($expr->isFirstClassCallable()) {
+            return false;
+        }
+
+        if (null !== $expected_arguments) {
+            $arguments_count = count($expr->getArgs());
+            if ($arguments_count !== $expected_arguments) {
+                return false;
+            }
+        }
+
+        if (!$expr->name instanceof PhpParser\Node\Name) {
+            return false;
+        }
+
+        return in_array(strtolower($expr->name->getFirst()), $functions);
     }
 }
