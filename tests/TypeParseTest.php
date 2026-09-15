@@ -1439,6 +1439,7 @@ final class TypeParseTest extends TestCase
         if (!function_exists('Psalm\Tests\someFunction')) {
             /**
              * @psalm-suppress UnusedParam
+             * @psalm-suppress UnusedFunction (referenced via ReflectionFunction below)
              * @psalm-pure
              */
             function someFunction(string $param, array $param2, ?int $param3 = null): string
