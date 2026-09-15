@@ -469,7 +469,16 @@ final class ClassLikeNodeScanner
                     $storage->template_covariants[$i] = $template_map[3];
 
                     $default_type_string = $template_map[5] ?? null;
-                    if ($default_type_string !== null) {
+                    if ($default_type_string !== null && trim($default_type_string)) {
+                        try {
+                            $default_type_string = CommentAnalyzer::splitDocLine($default_type_string)[0];
+                        } catch (DocblockParseException $e) {
+                            $storage->docblock_issues[] = new InvalidDocblock(
+                                $e->getMessage() . ' in docblock for ' . $fq_classlike_name,
+                                $name_location ?? $class_location,
+                            );
+                            continue;
+                        }
                         $default_type_string = CommentAnalyzer::sanitizeDocblockType($default_type_string);
                         try {
                             $default_type = TypeParser::parseTokens(

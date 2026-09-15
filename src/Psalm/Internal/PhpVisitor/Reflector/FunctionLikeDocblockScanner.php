@@ -1499,7 +1499,17 @@ final class FunctionLikeDocblockScanner
                 ];
 
                 $default_type_string = $template_map[4] ?? null;
-                if ($default_type_string !== null) {
+                if ($default_type_string !== null && trim($default_type_string)) {
+                    try {
+                        $default_type_string = CommentAnalyzer::splitDocLine($default_type_string)[0];
+                    } catch (DocblockParseException $e) {
+                        $storage->docblock_issues[] = new InvalidDocblock(
+                            'Template ' . $template_name . ' has invalid default type - ' . $e->getMessage(),
+                            new CodeLocation($file_scanner, $stmt, null, true),
+                        );
+
+                        continue;
+                    }
                     $default_type_string = CommentAnalyzer::sanitizeDocblockType($default_type_string);
                     try {
                         $default_type = TypeParser::parseTokens(

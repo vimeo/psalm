@@ -655,6 +655,55 @@ final class TemplateDefaultTest extends TestCase
                     '$r===' => 'string',
                 ],
             ],
+            'templateDefaultNotGluedToTrailingDescription' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int|string = int the id type
+                     */
+                    class Foo {
+                        /** @return T */
+                        public function get() {
+                            throw new RuntimeException("empty");
+                        }
+                    }
+
+                    $r = (new Foo())->get();',
+                'assertions' => [
+                    '$r===' => 'int',
+                ],
+            ],
+            'functionTemplateDefaultNotGluedToTrailingDescription' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int|string = int the id type
+                     * @return T
+                     */
+                    function makeDefault() {
+                        throw new RuntimeException("empty");
+                    }
+
+                    $r = makeDefault();',
+                'assertions' => [
+                    '$r===' => 'int',
+                ],
+            ],
+            'templateDefaultWithoutSpacesAroundEquals' => [
+                'code' => '<?php
+                    /**
+                     * @template T=string
+                     */
+                    class Foo {
+                        /** @return T */
+                        public function get() {
+                            throw new RuntimeException("empty");
+                        }
+                    }
+
+                    $r = (new Foo())->get();',
+                'assertions' => [
+                    '$r===' => 'string',
+                ],
+            ],
         ];
     }
 

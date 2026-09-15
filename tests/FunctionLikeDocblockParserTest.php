@@ -162,6 +162,21 @@ final class FunctionLikeDocblockParserTest extends BaseTestCase
         $this->assertSame([['T', 'of', 'object', false, 'stdClass']], $function_docblock->templates);
     }
 
+    public function testTemplateDefaultWithoutSpaces(): void
+    {
+        $doc = '/**
+ * @template T=int
+ */
+';
+        $php_parser_doc = new Doc($doc);
+        $function_docblock = FunctionLikeDocblockParser::parse(
+            $php_parser_doc,
+            $this->test_code_location,
+            $this->test_cased_function_id,
+        );
+        $this->assertSame([['T', null, null, false, 'int']], $function_docblock->templates);
+    }
+
     public function testReturnsUnexpectedTags(): void
     {
         $doc = '/**

@@ -494,7 +494,8 @@ final class FunctionLikeDocblockParser
                     throw new AssertionError(preg_last_error_msg());
                 }
 
-                $template_name = array_shift($template_type);
+                [$template_name, $template_type, $default_type_string]
+                    = TemplateTagParser::splitDefault($template_type);
 
                 if (!$template_name) {
                     throw new IncorrectDocblockException('Empty @template tag');
@@ -506,8 +507,6 @@ final class FunctionLikeDocblockParser
                 } elseif (isset($parsed_docblock->tags['phpstan-template'][$offset])) {
                     $source_prefix = 'phpstan';
                 }
-
-                [$template_type, $default_type_string] = TemplateTagParser::splitDefault($template_type);
 
                 if (count($template_type) > 1
                     && in_array(strtolower($template_type[0]), ['as', 'super', 'of'], true)
