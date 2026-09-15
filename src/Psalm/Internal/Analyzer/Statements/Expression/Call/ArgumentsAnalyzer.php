@@ -926,14 +926,22 @@ final class ArgumentsAnalyzer
                         } elseif ($function_storage->specialize_call) {
                             $sink = DataFlowNode::getForMethodArgument(
                                 $cased_method_id,
-                                $argument_offset,
+                                DataFlowNode::getParameterOffset(
+                                    $function_storage,
+                                    $function_param,
+                                    $argument_offset,
+                                ),
                                 $function_storage,
                                 $code_location,
                             );
                         } else {
                             $sink = DataFlowNode::getForMethodArgument(
                                 $cased_method_id,
-                                $argument_offset,
+                                DataFlowNode::getParameterOffset(
+                                    $function_storage,
+                                    $function_param,
+                                    $argument_offset,
+                                ),
                                 $function_storage,
                                 null,
                             );

@@ -6,12 +6,17 @@ namespace Psalm\Internal\DataFlow;
 
 use Override;
 use Psalm\CodeLocation;
+use Psalm\Internal\Codebase\Methods;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Stringable;
 
 use function count;
+use function ltrim;
+use function strpos;
 use function strtolower;
+use function substr;
 
 /**
  * A node in the data-flow / taint graph.
@@ -91,30 +96,6 @@ final class DataFlowNode implements Stringable
             $code_location,
             $taints,
         );
-    }
-
-    /**
-     * Create a node whose location is folded into its id, so id -> location is a pure function --
-     * the only sanctioned way to attach a location that is not derived from a FunctionLikeStorage.
-     * Two nodes built from the same location get the same id and location; nodes at different
-     * locations get different ids. This is why {@see self::getForAssignment()} and
-     * {@see self::getForTaintSink()} may take a raw CodeLocation: it is consumed into the identity
-     * here, never stored decoupled from it. See the class invariant.
-     *
-     * @psalm-pure
-     */
-    private static function makeLocatedById(
-        string $id_prefix,
-        string $id_separator,
-        string $label,
-        CodeLocation $location,
-        ?string $specialization_key = null,
-        int $taints = 0,
-    ): self {
-        $id = $id_prefix . $id_separator . strtolower($location->file_name)
-            . ':' . $location->raw_file_start . '-' . $location->raw_file_end;
-
-        return self::make($id, $label, $location, $specialization_key, $taints);
     }
 
     /**
@@ -250,6 +231,77 @@ final class DataFlowNode implements Stringable
     }
 
     /**
+     * Like {@see self::getForMethodArgument()} but resolves the (declaring) method storage from the
+     * cased method id itself, via $methods, instead of requiring the caller to hold it. Returns null
+     * when the id does not resolve to a stored method (a callable object, or a magic method with no
+     * backing storage), so the caller can fall back to {@see self::getForCallableArg()}.
+     *
+     * Centralises the id -> declaring-storage lookup so every site that mints a `Class::method#offset`
+     * node derives the same location and sink taints for the same id -- see the class invariant.
+     *
+     * @psalm-mutation-free
+     */
+    public static function getForMethodArgumentById(
+        Methods $methods,
+        string $cased_method_id,
+        int $argument_offset,
+        ?CodeLocation $specialization_location = null,
+    ): ?self {
+        $separator_pos = strpos($cased_method_id, '::');
+
+        if ($separator_pos === false) {
+            return null;
+        }
+
+        $method_id = new MethodIdentifier(
+            strtolower(ltrim(substr($cased_method_id, 0, $separator_pos), '\\')),
+            strtolower(substr($cased_method_id, $separator_pos + 2)),
+        );
+
+        $declaring_id = $methods->getDeclaringMethodId($method_id);
+
+        if ($declaring_id === null || !$methods->hasStorage($declaring_id)) {
+            return null;
+        }
+
+        return self::getForMethodArgument(
+            $cased_method_id,
+            $argument_offset,
+            $methods->getStorage($declaring_id),
+            $specialization_location,
+        );
+    }
+
+    /**
+     * The declared parameter index that identifies $param within $storage. Argument nodes are keyed
+     * by this rather than by the parameter's position in a given call, so a named argument resolves
+     * to the same node as the equivalent positional one -- and as the method body's own parameter
+     * node (see {@see FunctionLikeAnalyzer}). For a positional call this is already the call offset,
+     * so nothing changes. Falls back to $fallback (the call offset) for a variadic parameter --
+     * matching the per-call-position nodes the flow path creates -- and when $param cannot be
+     * located, keeping id -> parameter deterministic (see the class invariant).
+     *
+     * @psalm-mutation-free
+     */
+    public static function getParameterOffset(
+        FunctionLikeStorage $storage,
+        FunctionLikeParameter $param,
+        int $fallback,
+    ): int {
+        if ($param->is_variadic) {
+            return $fallback;
+        }
+
+        foreach ($storage->params as $i => $candidate) {
+            if ($candidate->name === $param->name) {
+                return $i;
+            }
+        }
+
+        return $fallback;
+    }
+
+    /**
      * @psalm-pure
      */
     public static function getForAssignment(
@@ -257,7 +309,14 @@ final class DataFlowNode implements Stringable
         CodeLocation $assignment_location,
         ?string $specialization_key = null,
     ): self {
-        return self::makeLocatedById($var_id, ' from ', $var_id, $assignment_location, $specialization_key);
+        // The assignment location is folded into the id, so id -> location is a pure function (see
+        // the class invariant): two assignments at the same location get the same id, and nodes at
+        // different locations get different ids. This is the only sanctioned way to attach a
+        // location that is not derived from a FunctionLikeStorage.
+        $id = $var_id . ' from ' . strtolower($assignment_location->file_name)
+            . ':' . $assignment_location->raw_file_start . '-' . $assignment_location->raw_file_end;
+
+        return self::make($id, $var_id, $assignment_location, $specialization_key);
     }
 
     /**
