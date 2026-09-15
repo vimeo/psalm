@@ -237,7 +237,11 @@ final class DataFlowNode implements Stringable
      * backing storage), so the caller can fall back to {@see self::getForCallableArg()}.
      *
      * Centralises the id -> declaring-storage lookup so every site that mints a `Class::method#offset`
-     * node derives the same location and sink taints for the same id -- see the class invariant.
+     * node derives the same location and sink taints for the same id -- see the class invariant. When
+     * the matched $param is given, the node is keyed by its declared index in the resolved storage
+     * (see {@see self::getParameterOffset()}), so a named argument keys the same way here as it does
+     * on the storage-carrying path -- otherwise a reordered named argument would attach to the node
+     * for whichever parameter happens to sit at the call offset.
      *
      * @psalm-mutation-free
      */
@@ -246,6 +250,7 @@ final class DataFlowNode implements Stringable
         string $cased_method_id,
         int $argument_offset,
         ?CodeLocation $specialization_location = null,
+        ?FunctionLikeParameter $param = null,
     ): ?self {
         $separator_pos = strpos($cased_method_id, '::');
 
@@ -264,10 +269,12 @@ final class DataFlowNode implements Stringable
             return null;
         }
 
+        $storage = $methods->getStorage($declaring_id);
+
         return self::getForMethodArgument(
             $cased_method_id,
-            $argument_offset,
-            $methods->getStorage($declaring_id),
+            $param === null ? $argument_offset : self::getParameterOffset($storage, $param, $argument_offset),
+            $storage,
             $specialization_location,
         );
     }
