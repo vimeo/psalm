@@ -7,6 +7,7 @@ namespace Psalm\Internal\Type\Comparator;
 use Psalm\Codebase;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TCallable;
@@ -21,12 +22,17 @@ use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
 
+use function array_map;
 use function array_merge;
 use function array_pop;
 use function array_push;
 use function array_reverse;
+use function array_unique;
+use function assert;
 use function count;
+use function implode;
 use function is_array;
+use function sort;
 
 use const PHP_INT_MAX;
 
@@ -93,13 +99,12 @@ final class UnionTypeComparator
                 // A type variable in input position is constrained from above
                 // by the container: record `name <: container` and treat it
                 // as contained.
-                $container_single = $container_type->isSingle()
-                    ? $container_type->getSingleAtomic()
-                    : null;
-
-                if ($container_single instanceof TTypeVariable
-                    && $container_single->name === $input_type_part->name
-                ) {
+                //
+                // A container that already holds the variable itself (`T <: T|X`)
+                // constrains nothing, and recording it would make the variable's
+                // bounds refer back to the variable, which can never be rendered
+                // or resolved to a finite type.
+                if (isset($container_type->getAtomicTypes()[$input_type_part->name])) {
                     continue;
                 }
 
@@ -150,6 +155,19 @@ final class UnionTypeComparator
                 }
             }
 
+            // Type variables among the container parts are only fallen back
+            // to when no concrete container part accepts the input part: a
+            // value that a concrete alternative already accounts for should
+            // not constrain a variable it never has to flow into.
+            $type_variable_container_parts = [];
+
+            // The bounds recorded by each concrete container part that
+            // accepted the input part. Only one alternative of a union needs
+            // to hold, so they are reconciled with each other below rather
+            // than all being imposed at once.
+            $alternative_bounds = [];
+            $unconditional_match = false;
+
             foreach (self::getTypeParts($codebase, $container_type) as $container_type_part) {
                 if ($ignore_null
                     && $container_type_part instanceof TNull
@@ -166,22 +184,8 @@ final class UnionTypeComparator
                 }
 
                 if ($container_type_part instanceof TTypeVariable) {
-                    // A type variable in container position is constrained
-                    // from below by the input: record `name >: input` and
-                    // treat it as a match.
-                    if ($union_comparison_result) {
-                        $union_comparison_result->type_variable_lower_bounds[] = [
-                            $container_type_part->name,
-                            new TemplateBound($input_type),
-                        ];
-                    }
-
-                    $type_match_found = true;
-                    $all_to_string_cast = false;
-                    $all_type_coerced = false;
-                    $all_type_coerced_from_mixed = false;
-                    $all_type_coerced_from_as_mixed = false;
-                    break;
+                    $type_variable_container_parts[] = $container_type_part;
+                    continue;
                 }
 
                 // if params are specified
@@ -343,15 +347,16 @@ final class UnionTypeComparator
                         }
 
                         if ($union_comparison_result) {
-                            $union_comparison_result->type_variable_lower_bounds = array_merge(
-                                $union_comparison_result->type_variable_lower_bounds,
-                                $atomic_comparison_result->type_variable_lower_bounds,
-                            );
-
-                            $union_comparison_result->type_variable_upper_bounds = array_merge(
-                                $union_comparison_result->type_variable_upper_bounds,
-                                $atomic_comparison_result->type_variable_upper_bounds,
-                            );
+                            if ($atomic_comparison_result->type_variable_lower_bounds
+                                || $atomic_comparison_result->type_variable_upper_bounds
+                            ) {
+                                $alternative_bounds[] = [
+                                    $atomic_comparison_result->type_variable_lower_bounds,
+                                    $atomic_comparison_result->type_variable_upper_bounds,
+                                ];
+                            } else {
+                                $unconditional_match = true;
+                            }
                         }
                     }
 
@@ -359,6 +364,45 @@ final class UnionTypeComparator
                     $all_type_coerced_from_as_mixed = false;
                     $all_type_coerced = false;
                 }
+            }
+
+            if (!$type_match_found && $type_variable_container_parts) {
+                // A type variable in container position is constrained from
+                // below by an input part no concrete container part accepted:
+                // record `name >: part` and treat it as a match. Where several
+                // variables could take the part, only one needs to, and with
+                // nothing to tell them apart the first is constrained.
+                //
+                // The input part is never the variable itself (that case is
+                // handled above), so the bound cannot refer back to it.
+                if ($union_comparison_result) {
+                    $union_comparison_result->type_variable_lower_bounds[] = [
+                        $type_variable_container_parts[0]->name,
+                        new TemplateBound(new Union([$input_type_part])),
+                    ];
+                }
+
+                $type_match_found = true;
+                $all_to_string_cast = false;
+                $all_type_coerced = false;
+                $all_type_coerced_from_mixed = false;
+                $all_type_coerced_from_as_mixed = false;
+            } elseif ($union_comparison_result && $alternative_bounds && !$unconditional_match) {
+                // every accepting alternative constrained a type variable, so
+                // whichever holds, the variables are bound by at least their
+                // reconciliation; an alternative that accepted the part
+                // outright leaves them unconstrained instead
+                [$lower_bounds, $upper_bounds] = self::mergeAlternativeBounds($alternative_bounds, $codebase);
+
+                $union_comparison_result->type_variable_lower_bounds = array_merge(
+                    $union_comparison_result->type_variable_lower_bounds,
+                    $lower_bounds,
+                );
+
+                $union_comparison_result->type_variable_upper_bounds = array_merge(
+                    $union_comparison_result->type_variable_upper_bounds,
+                    $upper_bounds,
+                );
             }
 
             if ($union_comparison_result) {
@@ -495,6 +539,15 @@ final class UnionTypeComparator
             }
 
             foreach (self::getTypeParts($codebase, $input_type) as $input_type_part) {
+                if ($input_type_part instanceof TTypeVariable) {
+                    // a type variable can stand for anything the container
+                    // accepts; it is bound as itself (read sites unroll a
+                    // variable nested in another variable's bound), and
+                    // reconciles with the constraints it is later held to
+                    $matching_input_keys[$input_type_part->getKey()] = true;
+                    continue;
+                }
+
                 $atomic_comparison_result = new TypeComparisonResult();
                 $is_atomic_contained_by = AtomicTypeComparator::isContainedBy(
                     $codebase,
@@ -514,6 +567,115 @@ final class UnionTypeComparator
         }
 
         return (bool)$matching_input_keys;
+    }
+
+    /**
+     * Merges the type-variable bounds recorded by the alternatives of a union
+     * container that each accepted the same input part. Only one alternative
+     * needs to hold, so a bound recorded by some of them constrains nothing on
+     * its own; what remains is what every alternative agrees on:
+     *
+     * - a variable every alternative bounded from above is bounded by the
+     *   union of the recorded types (a single alternative's several upper
+     *   bounds are folded the same way, which can only loosen them);
+     * - a variable every alternative bounded from below identically keeps that
+     *   bound; differing lower bounds are dropped.
+     *
+     * @param non-empty-list<array{
+     *     list<array{string, TemplateBound}>,
+     *     list<array{string, TemplateBound}>
+     * }> $alternatives
+     * @return array{list<array{string, TemplateBound}>, list<array{string, TemplateBound}>}
+     * @psalm-external-mutation-free
+     */
+    private static function mergeAlternativeBounds(array $alternatives, Codebase $codebase): array
+    {
+        $alternative_count = count($alternatives);
+
+        if ($alternative_count === 1) {
+            return $alternatives[0];
+        }
+
+        /** @var array<string, array<int, list<TemplateBound>>> $lower_by_name */
+        $lower_by_name = [];
+        /** @var array<string, array<int, list<TemplateBound>>> $upper_by_name */
+        $upper_by_name = [];
+
+        foreach ($alternatives as $i => [$lower_bounds, $upper_bounds]) {
+            foreach ($lower_bounds as [$name, $bound]) {
+                $lower_by_name[$name][$i][] = $bound;
+            }
+
+            foreach ($upper_bounds as [$name, $bound]) {
+                $upper_by_name[$name][$i][] = $bound;
+            }
+        }
+
+        $merged_lower_bounds = [];
+
+        foreach ($lower_by_name as $name => $bounds_by_alternative) {
+            if (count($bounds_by_alternative) !== $alternative_count) {
+                continue;
+            }
+
+            if (count(array_unique(array_map(self::getBoundsId(...), $bounds_by_alternative))) === 1) {
+                // every alternative recorded the same bounds: the first stand
+                // for all of them
+                foreach ($bounds_by_alternative as $bounds) {
+                    foreach ($bounds as $bound) {
+                        $merged_lower_bounds[] = [$name, $bound];
+                    }
+
+                    break;
+                }
+            }
+        }
+
+        $merged_upper_bounds = [];
+
+        foreach ($upper_by_name as $name => $bounds_by_alternative) {
+            if (count($bounds_by_alternative) !== $alternative_count) {
+                continue;
+            }
+
+            if (count(array_unique(array_map(self::getBoundsId(...), $bounds_by_alternative))) === 1) {
+                foreach ($bounds_by_alternative as $bounds) {
+                    foreach ($bounds as $bound) {
+                        $merged_upper_bounds[] = [$name, $bound];
+                    }
+
+                    break;
+                }
+
+                continue;
+            }
+
+            $merged_type = null;
+
+            foreach ($bounds_by_alternative as $bounds) {
+                foreach ($bounds as $bound) {
+                    $merged_type = Type::combineUnionTypes($merged_type, $bound->type, $codebase);
+                }
+            }
+
+            assert($merged_type !== null);
+
+            $merged_upper_bounds[] = [$name, new TemplateBound($merged_type)];
+        }
+
+        return [$merged_lower_bounds, $merged_upper_bounds];
+    }
+
+    /**
+     * @param list<TemplateBound> $bounds
+     * @psalm-external-mutation-free
+     */
+    private static function getBoundsId(array $bounds): string
+    {
+        $ids = array_map(static fn(TemplateBound $bound): string => $bound->type->getId(), $bounds);
+        sort($ids);
+
+        return implode('|', $ids);
     }
 
     /**

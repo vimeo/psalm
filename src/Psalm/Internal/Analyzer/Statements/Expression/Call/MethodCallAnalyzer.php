@@ -15,6 +15,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\DirectConstructorCall;
 use Psalm\Issue\InvalidMethodCall;
 use Psalm\Issue\InvalidScope;
@@ -34,6 +35,7 @@ use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
 
 use function array_merge;
@@ -176,6 +178,13 @@ final class MethodCallAnalyzer extends CallAnalyzer
         if (!$class_type) {
             $class_type = Type::getMixed();
         }
+
+        // A bare type variable minted for a class template resolves to its
+        // construction-site shape: the concrete object it stands for is what a
+        // method is actually being called on. Only top-level variables resolve —
+        // one nested in a generic object (e.g. `Box<`_0>`) stays live so later
+        // calls can still constrain it.
+        $class_type = TypeVariableResolver::resolveTopLevel($class_type, $codebase);
 
         $lhs_types = $class_type->getAtomicTypes();
 
@@ -410,24 +419,41 @@ final class MethodCallAnalyzer extends CallAnalyzer
             && ($class_type->from_docblock || $class_type->isNullable())
             && $real_method_call
         ) {
+            // the method call may have written a bare type variable back into
+            // scope; resolve it again so the narrowed type keeps a concrete
+            // object rather than dropping to nothing below
+            $class_type = TypeVariableResolver::resolveTopLevel($class_type, $codebase);
+
             $types = $class_type->getAtomicTypes();
 
+            $had_type_variable = false;
+
             foreach ($types as $key => &$type) {
+                if ($type instanceof TTypeVariable) {
+                    $had_type_variable = true;
+                }
+
                 if (!$type instanceof TNamedObject && !$type instanceof TObject && !$type instanceof TConditional) {
                     unset($types[$key]);
                 } else {
                     $type = $type->setFromDocblock(false);
                 }
             }
-            if (!$types) {
+            unset($type);
+
+            if (!$types && !$had_type_variable) {
                 throw new AssertionError("We must have some types here!");
             }
 
-            $context->removeVarFromConflictingClauses($lhs_var_id, null, $statements_analyzer);
+            if ($types) {
+                // an unresolvable type variable leaves nothing to narrow to; in
+                // that case skip the update rather than tripping the invariant
+                $context->removeVarFromConflictingClauses($lhs_var_id, null, $statements_analyzer);
 
-            $class_type = $class_type->getBuilder()->setTypes($types);
-            $class_type->from_docblock = false;
-            $context->vars_in_scope[$lhs_var_id] = $class_type->freeze();
+                $class_type = $class_type->getBuilder()->setTypes($types);
+                $class_type->from_docblock = false;
+                $context->vars_in_scope[$lhs_var_id] = $class_type->freeze();
+            }
         }
 
         return true;

@@ -186,10 +186,13 @@ final class CallableTypeComparator
     }
 
     /**
-     * Compares a contravariant parameter position, recording type-variable
-     * bounds flipped: a lower bound recorded on the param comparison is an
-     * upper bound on the variable, and vice versa. On a failed comparison
-     * the bounds are dropped with the rest of the result.
+     * Compares a contravariant parameter position: the container's param must
+     * be accepted by the input's, so the comparison runs with the roles
+     * swapped. The type-variable bounds it records already point the right
+     * way (a container param `T` against an input param `Foo` records
+     * `T <: Foo`: every value the callee passes must be one the input
+     * accepts), so they are kept as recorded; on a failed comparison they are
+     * dropped with the rest of the result.
      */
     private static function isParamContainedBy(
         Codebase $codebase,
@@ -240,11 +243,11 @@ final class CallableTypeComparator
         if ($contained) {
             $atomic_comparison_result->type_variable_lower_bounds = array_merge(
                 $atomic_comparison_result->type_variable_lower_bounds,
-                $new_upper_bounds,
+                $new_lower_bounds,
             );
             $atomic_comparison_result->type_variable_upper_bounds = array_merge(
                 $atomic_comparison_result->type_variable_upper_bounds,
-                $new_lower_bounds,
+                $new_upper_bounds,
             );
         }
 

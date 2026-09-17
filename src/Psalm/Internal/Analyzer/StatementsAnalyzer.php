@@ -45,6 +45,7 @@ use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Provider\NodeDataProvider;
+use Psalm\Internal\Provider\TypeVariableResolvingNodeTypeProvider;
 use Psalm\Internal\ReferenceConstraint;
 use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -169,6 +170,8 @@ final class StatementsAnalyzer extends SourceAnalyzer
      * reconciling it) rather than sharing an enclosing analyzer's.
      */
     public readonly bool $owns_type_variable_tracker;
+
+    private ?TypeVariableResolvingNodeTypeProvider $resolving_node_type_provider = null;
 
     /**
      * @psalm-mutation-free
@@ -1259,12 +1262,23 @@ final class StatementsAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * @return NodeDataProvider
+     * The node types as seen from outside the analysis of this function-like
+     * (plugins, return type providers): the same types as `$this->node_data`,
+     * with every class-template type variable resolved to the shape inferred
+     * at its construction site, since consumers out there only know arrays and
+     * objects. The analysis itself keeps reading `$this->node_data`, where the
+     * variables stay live so later calls can still constrain them.
+     *
+     * @psalm-external-mutation-free
      */
     #[Override]
     public function getNodeTypeProvider(): NodeTypeProvider
     {
-        return $this->node_data;
+        return $this->resolving_node_type_provider ??= new TypeVariableResolvingNodeTypeProvider(
+            $this->node_data,
+            $this->type_variable_tracker,
+            $this->codebase,
+        );
     }
 
     public function getFullyQualifiedFunctionMethodOrNamespaceName(): ?string

@@ -438,12 +438,17 @@ final class ReturnAnalyzer
                             if ($upper_bound->equality_bound_classlike === null) {
                                 $upper_bound->equality_bound_classlike = '';
                             }
+
+                            // a value that only reaches this bound through mixed
+                            // is reported as MixedReturnTypeCoercion at reconciliation
+                            $upper_bound->from_return_requirement = true;
                         }
 
                         $statements_analyzer->type_variable_tracker->addBounds(
                             $union_comparison_results->type_variable_lower_bounds,
                             $union_comparison_results->type_variable_upper_bounds,
                             new CodeLocation($source, $stmt->expr),
+                            $statements_analyzer->getSuppressedIssues(),
                         );
                     }
 

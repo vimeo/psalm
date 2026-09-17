@@ -51,6 +51,7 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTrue;
+use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -357,8 +358,13 @@ final class TypeCombiner
                 continue;
             }
 
-            if ($type instanceof TNever && (count($combination->value_types) > 1 || count($new_types))) {
-                $has_never = true;
+            // a type variable minted for an empty construction stands for
+            // `never` until something binds it, and `never` adds nothing to a
+            // union: `T|Foo` for such a variable is just `Foo`
+            if (($type instanceof TNever || ($type instanceof TTypeVariable && $type->isNeverBound()))
+                && (count($combination->value_types) > 1 || count($new_types))
+            ) {
+                $has_never = $has_never || $type instanceof TNever;
                 continue;
             }
 

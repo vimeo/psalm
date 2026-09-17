@@ -633,6 +633,75 @@ final class PluginTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testMethodProviderSeesResolvedTypeVariables(): void
+    {
+        require_once __DIR__ . '/Plugin/TypeVariablePlugin.php';
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <plugins>
+                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\TypeVariablePlugin" />
+                    </plugins>
+                </psalm>',
+            ),
+        );
+
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        // the class template of Collection is carried as a type variable while
+        // run() is analyzed; the plugin must nonetheless see the receiver of
+        // describe() as an object, and the receiver of names() as a generic
+        // object over an object, or it types both calls as mixed
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace Ns;
+
+                /** @template T */
+                class Collection {
+                    /** @param list<T> $items */
+                    public function __construct(array $items) {}
+
+                    /** @param T $item */
+                    public function add($item): void {}
+
+                    /** @return list<T> */
+                    public function all(): array { return []; }
+
+                    /** @return list<string> */
+                    public function names(): array { return []; }
+                }
+
+                class Item {
+                    public function describe(): string { return ""; }
+                }
+
+                function run(): void {
+                    $items = new Collection([new Item()]);
+
+                    foreach ($items->all() as $item) {
+                        $description = $item->describe();
+                        echo strlen($description);
+                    }
+
+                    $names = $items->names();
+                    echo implode(",", $names);
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     public function testFunctionProviderHooks(): void
     {
         require_once __DIR__ . '/Plugin/FunctionPlugin.php';
