@@ -40,6 +40,15 @@ final class ClassLikeStorage implements HasAttributesInterface
 
     public bool $stubbed = false;
 
+    /**
+     * The `analysis_php_version_id` at which this native symbol became available, from an `@since`
+     * tag on a stub class (e.g. 8_05_00 for a class tagged `@since 8.5`). Used to report the symbol
+     * as undefined when analysing an older PHP version without a polyfill, while still keeping its
+     * stubbed definition for analysis. Null when unversioned/user-defined. Propagates to the class's
+     * own constants, methods and properties unless they carry a later `@since` of their own.
+     */
+    public ?int $since_php_version_id = null;
+
     public bool $deprecated = false;
 
     /**

@@ -1,39 +1,11 @@
 <?php
+
+// Reopens of pre-existing classes to refine their types / add PHP 8.1 methods. These stay version
+// gated (loaded only when analysing >= 8.1). Genuinely-new 8.1 classes (enums, reflection-enum
+// classes, ReflectionIntersectionType, the resource->object classes, ...) live in
+// PhpVersionedClasses.phpstub (always loaded, `@since` tagged).
+
 namespace {
-    interface UnitEnum {
-        /** @var non-empty-string $name */
-        public readonly string $name;
-
-        /**
-         * @psalm-pure
-         * @return list<static>
-         */
-        public static function cases(): array;
-    }
-
-    interface BackedEnum extends UnitEnum
-    {
-        /** @var non-empty-string $name */
-        public readonly string $name;
-        public readonly int|string $value;
-
-        /**
-         * @psalm-pure
-         */
-        public static function from(string|int $value): static;
-
-        /**
-         * @psalm-pure
-         */
-        public static function tryFrom(string|int $value): ?static;
-
-        /**
-         * @psalm-pure
-         * @return list<static>
-         */
-        public static function cases(): array;
-    }
-
     class ReflectionClass implements Reflector {
         /** @psalm-pure */
         public function isEnum(): bool {}
@@ -58,62 +30,4 @@ namespace {
          */
         public function setAccessible(bool $accessible): void {}
     }
-
-    /** @psalm-immutable */
-    class ReflectionEnum extends ReflectionClass implements Reflector
-    {
-        public function getBackingType(): ?ReflectionType;
-        public function getCase(string $name): ReflectionEnumUnitCase;
-        /** @return list<ReflectionEnumUnitCase> */
-        public function getCases(): array;
-        public function hasCase(string $name): bool;
-        public function isBacked(): bool;
-    }
-
-    /** @psalm-immutable */
-    class ReflectionEnumUnitCase extends ReflectionClassConstant implements Reflector
-    {
-        public function getEnum(): ReflectionEnum;
-        public function getValue(): UnitEnum;
-    }
-
-    /** @psalm-immutable */
-    class ReflectionEnumBackedCase extends ReflectionEnumUnitCase implements Reflector
-    {
-        public function getBackingValue(): int|string;
-    }
-
-    /** @psalm-immutable */
-    class ReflectionIntersectionType extends ReflectionType {
-        /** @return non-empty-list<ReflectionNamedType> */
-        public function getTypes(): array {}
-
-        /** @return false */
-        public function allowsNull(): bool {}
-    }
-}
-
-namespace FTP {
-    final class Connection {}
-}
-
-namespace IMAP {
-    final class Connection {}
-}
-
-namespace LDAP {
-   final class Connection {}
-   final class Result {}
-   final class ResultEntry {}
-}
-
-namespace PgSql {
-   final class Connection {}
-   final class Result {}
-   final class Lob {}
-}
-
-namespace PSpell {
-     final class Config {}
-     final class Dictionary {}
 }

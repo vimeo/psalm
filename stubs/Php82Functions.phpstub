@@ -1,0 +1,14 @@
+<?php
+
+// Signature refinement for a function that already exists on earlier PHP versions but whose Psalm
+// types are tightened for PHP 8.2. Kept version gated (loaded only when analysing >= 8.2) so the
+// stricter types are not applied against the looser earlier signature. See Php80Functions.phpstub.
+
+/**
+ * @psalm-pure
+ * @param positive-int $length
+ * @return list<non-empty-string>
+ *
+ * @psalm-flow ($string) -> return
+ */
+function str_split(string $string, int $length = 1) {}

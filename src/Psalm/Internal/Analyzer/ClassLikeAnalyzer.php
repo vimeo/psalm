@@ -335,6 +335,40 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             return null;
         }
 
+        // The class is known to Psalm (its stubbed definition is always loaded so analysis is
+        // unaffected), but a native symbol introduced in a later PHP version is undefined when
+        // analysing an older version without a polyfill. The issue is reported without halting
+        // resolution, so the rest of the analysis still sees the symbol's real shape.
+        //
+        // Attributes are a PHP 8.0 feature: below 8.0 an `#[...]` is an inert comment that
+        // references no class, so attribute-class availability is not reported there.
+        if ($check_classes
+            && !$class_storage->user_defined
+            && $class_storage->since_php_version_id !== null
+            && $codebase->analysis_php_version_id < $class_storage->since_php_version_id
+            && !($options->from_attribute && $codebase->analysis_php_version_id < 8_00_00)
+        ) {
+            $message = $fq_class_name . ' '
+                . $codebase->getUnavailableSymbolMessageSuffix($class_storage->since_php_version_id);
+
+            if ($options->from_docblock) {
+                IssueBuffer::maybeAdd(
+                    new UndefinedDocblockClass($message, $code_location, $fq_class_name),
+                    $suppressed_issues,
+                );
+            } elseif ($options->from_attribute) {
+                IssueBuffer::maybeAdd(
+                    new UndefinedAttributeClass($message, $code_location, $fq_class_name),
+                    $suppressed_issues,
+                );
+            } else {
+                IssueBuffer::maybeAdd(
+                    new UndefinedClass($message, $code_location, $fq_class_name),
+                    $suppressed_issues,
+                );
+            }
+        }
+
         foreach ($class_storage->invalid_dependencies as $dependency_class_name => $_) {
             // if the implemented/extended class is stubbed, it may not yet have
             // been hydrated
