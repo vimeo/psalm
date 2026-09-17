@@ -235,6 +235,36 @@ final class DataFlowNode implements Stringable
     }
 
     /**
+     * The variable-use graph's counterpart of {@see self::getForMethodArgument()}: the same id and
+     * label, so the call-site edge and the method body's parameter edge still meet on one node, but
+     * no location and no sink taints. Only taint analysis needs the argument node located at the
+     * parameter declaration; in the variable-use graph a located node would make the edge's length
+     * the line distance between the call and the callee's declaration (see DataFlowGraph::addPath()),
+     * and DataFlowGraph::getEdgeStats() would count that inter-procedural hop toward the
+     * ComplexMethod/ComplexFunction metric, which is meant to measure the flow inside one method.
+     *
+     * @psalm-pure
+     */
+    public static function getForVariableUseMethodArgument(
+        string $cased_method_id,
+        int $argument_offset,
+        ?CodeLocation $specialization_location = null,
+    ): self {
+        $arg_id = strtolower($cased_method_id) . '#' . ($argument_offset + 1);
+
+        $label = $cased_method_id . '#' . ($argument_offset + 1);
+
+        $specialization_key = null;
+
+        if ($specialization_location) {
+            $specialization_key = strtolower($specialization_location->file_name)
+                . ':' . $specialization_location->raw_file_start;
+        }
+
+        return self::make($arg_id, $label, null, $specialization_key);
+    }
+
+    /**
      * Like {@see self::getForMethodArgument()} but resolves the (declaring) method storage from the
      * cased method id itself, via $methods, instead of requiring the caller to hold it. Returns null
      * when the id does not resolve to a stored method (a callable object, or a magic method with no

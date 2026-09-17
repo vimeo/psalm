@@ -22,6 +22,7 @@ use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Codebase\CodeUseGraph;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\FileManipulation\FunctionDocblockManipulator;
@@ -1150,12 +1151,19 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $statements_analyzer->data_flow_graph->addNode($param_assignment);
 
                 if ($cased_method_id !== null) {
-                    $type_source = DataFlowNode::getForMethodArgument(
-                        $cased_method_id,
-                        $offset,
-                        $storage,
-                        null,
-                    );
+                    // the variable-use graph's argument node deliberately carries no location
+                    // (see DataFlowNode::getForVariableUseMethodArgument())
+                    $type_source = $statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+                        ? DataFlowNode::getForMethodArgument(
+                            $cased_method_id,
+                            $offset,
+                            $storage,
+                            null,
+                        )
+                        : DataFlowNode::getForVariableUseMethodArgument(
+                            $cased_method_id,
+                            $offset,
+                        );
 
                     $statements_analyzer->data_flow_graph->addPath(
                         $type_source,

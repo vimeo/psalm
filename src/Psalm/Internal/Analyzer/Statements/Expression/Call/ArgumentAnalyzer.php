@@ -1851,28 +1851,42 @@ final class ArgumentAnalyzer
         // method body's parameter node). When the caller has no storage it is resolved from the cased
         // method id; only a genuinely storage-less callable falls back to getForCallableArg(), which
         // has no declared parameter to key on and so uses the call offset.
-        $method_node = ($function_storage
-            ? DataFlowNode::getForMethodArgument(
+        if (!$taint_flow_graph) {
+            // Outside taint analysis the argument node only has to link the call site to the
+            // callee's parameter in the variable-use graph; it must not carry the parameter's
+            // declaration location, or the ComplexMethod metric would measure the edge as the
+            // line distance to that declaration (see DataFlowNode::getForVariableUseMethodArgument()).
+            $method_node = DataFlowNode::getForVariableUseMethodArgument(
                 $cased_method_id,
-                DataFlowNode::getParameterOffset($function_storage, $function_param, $argument_offset),
-                $function_storage,
+                $function_storage
+                    ? DataFlowNode::getParameterOffset($function_storage, $function_param, $argument_offset)
+                    : $argument_offset,
                 $specialization_location,
-            )
-            : ($in_call_map
-                ? null
-                : DataFlowNode::getForMethodArgumentById(
-                    $codebase->methods,
+            );
+        } else {
+            $method_node = ($function_storage
+                ? DataFlowNode::getForMethodArgument(
+                    $cased_method_id,
+                    DataFlowNode::getParameterOffset($function_storage, $function_param, $argument_offset),
+                    $function_storage,
+                    $specialization_location,
+                )
+                : ($in_call_map
+                    ? null
+                    : DataFlowNode::getForMethodArgumentById(
+                        $codebase->methods,
+                        $cased_method_id,
+                        $argument_offset,
+                        $specialization_location,
+                        $function_param,
+                    )))
+                ?? DataFlowNode::getForCallableArg(
+                    $callable_kind,
                     $cased_method_id,
                     $argument_offset,
                     $specialization_location,
-                    $function_param,
-                )))
-            ?? DataFlowNode::getForCallableArg(
-                $callable_kind,
-                $cased_method_id,
-                $argument_offset,
-                $specialization_location,
-            );
+                );
+        }
 
         if (!$specialize_taint
             && $taint_flow_graph
