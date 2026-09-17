@@ -24,6 +24,16 @@ final class FunctionCallTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'streamReadStubsHonourIgnoreInternalFalsableReturn' => [
+                'code' => '<?php
+                    /** @param resource $stream */
+                    function readAll($stream): string {
+                        $line = trim(fgets($stream));
+                        $chunk = fread($stream, 1024) . fgetc($stream);
+                        $rest = stream_get_contents($stream) . stream_get_line($stream, 10);
+                        return $line . $chunk . $rest;
+                    }',
+            ],
             'callTemplatedFunctionWithUnionArgument' => [
                 'code' => '<?php
                     /** @template T */

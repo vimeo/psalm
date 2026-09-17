@@ -489,6 +489,7 @@ function highlight_file($filename, bool $return = false) {}
  *
  * @param resource $stream
  * @return string|false
+ * @psalm-ignore-falsable-return
  *
  * @psalm-taint-specialize
  * @psalm-flow ($stream) -> return
@@ -498,6 +499,7 @@ function fgetc($stream) {}
 /**
  * @param resource $stream
  * @return string|false
+ * @psalm-ignore-falsable-return
  *
  * @psalm-taint-specialize
  * @psalm-flow ($stream) -> return
@@ -507,6 +509,7 @@ function fgets($stream, ?int $length = null) {}
 /**
  * @param resource $stream
  * @return string|false
+ * @psalm-ignore-falsable-return
  *
  * @psalm-taint-specialize
  * @psalm-flow ($stream) -> return
@@ -516,6 +519,7 @@ function fread($stream, int $length) {}
 /**
  * @param resource $stream
  * @return string|false
+ * @psalm-ignore-falsable-return
  *
  * @psalm-taint-specialize
  * @psalm-flow ($stream) -> return
@@ -525,6 +529,7 @@ function stream_get_contents($stream, ?int $length = null, int $offset = -1) {}
 /**
  * @param resource $stream
  * @return string|false
+ * @psalm-ignore-falsable-return
  *
  * @psalm-taint-specialize
  * @psalm-flow ($stream) -> return
