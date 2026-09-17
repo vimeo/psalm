@@ -2644,7 +2644,7 @@ final class ClassTemplateTest extends TestCase
 
                         public function __construct()
                         {
-                            $this->c = new ArrayCollection();
+                            $this->c = new ArrayCollection([new DateTime()]);
                             $this->c->filter(function (DateTime $dt): bool {
                                 return $dt === $dt;
                             });

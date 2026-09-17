@@ -574,6 +574,8 @@ final class ClassLikeNodeScanner
                         $this->aliases,
                         $this->class_template_types,
                         $this->type_aliases,
+                        $fq_classlike_name,
+                        $storage->parent_class,
                     );
 
                     try {
