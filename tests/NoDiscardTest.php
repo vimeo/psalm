@@ -85,6 +85,9 @@ final class NoDiscardTest extends TestCase
         $this->assertCount(1, $unused_calls);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public function providerValidCodeParse(): iterable
     {
@@ -364,6 +367,9 @@ final class NoDiscardTest extends TestCase
         ];
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public function providerInvalidCodeParse(): iterable
     {

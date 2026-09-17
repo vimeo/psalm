@@ -190,15 +190,6 @@ final class MethodCallPurityAnalyzer
             );
         }
 
-        if ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
-            && $statements_analyzer->getSource()->track_mutations
-            && !$method_storage->mutation_free
-            && !$method_pure_compatible
-        ) {
-            $statements_analyzer->getSource()->inferred_has_mutation = true;
-            $statements_analyzer->getSource()->inferred_impure = true;
-        }
-
         if (!$config->remember_property_assignments_after_call
             && $method_allowed_mutations >= Mutations::LEVEL_INTERNAL_READ_WRITE
         ) {

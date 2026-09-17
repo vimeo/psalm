@@ -1189,6 +1189,9 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         );
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     private static function callUsesByReferenceArguments(
         FunctionCallInfo $function_call_info,
         PhpParser\Node\Expr\FuncCall $stmt,

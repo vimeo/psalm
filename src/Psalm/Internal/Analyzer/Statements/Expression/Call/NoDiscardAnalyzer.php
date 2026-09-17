@@ -12,6 +12,8 @@ use Psalm\Storage\MethodStorage;
 
 /**
  * @internal
+ *
+ * @psalm-immutable
  */
 final class NoDiscardAnalyzer
 {
@@ -28,6 +30,8 @@ final class NoDiscardAnalyzer
      * so `$context->insideUse()` is already true by the time the call is reached.
      *
      * @param ?ClassLikeStorage $class_storage the class the call resolved through, for methods
+     *
+     * @psalm-mutation-free
      */
     public static function isDiscardReported(
         Codebase $codebase,
