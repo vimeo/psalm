@@ -20,6 +20,28 @@ final class TypeVariableTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'untypedClosureParamResolvesInferredObjectElement' => [
+                'code' => '<?php
+                    /** @template TValue */
+                    class Collection {
+                        /** @param iterable<TValue> $data */
+                        public function __construct(iterable $data) {}
+
+                        /** @param callable(TValue): string $cb */
+                        public function each($cb): void {}
+                    }
+
+                    class Item {
+                        public int $id = 0;
+                    }
+
+                    function process(): void {
+                        $c = new Collection([new Item()]);
+                        $c->each(static function ($item): string {
+                            return (string) $item->id;
+                        });
+                    }',
+            ],
             'unboundConstructorTemplate' => [
                 'code' => '<?php
                     /** @template T of int|string */
