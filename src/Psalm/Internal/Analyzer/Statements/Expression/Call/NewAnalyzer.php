@@ -533,8 +533,15 @@ final class NewAnalyzer extends CallAnalyzer
                         $constraint = array_values($base_type)[0];
                         $unconstrainable_templates ??= self::getUnconstrainableTemplates($storage);
 
+                        // An argument typed `mixed` binds the template to `mixed` from
+                        // below, which no later bound can narrow: the variable would
+                        // only ever resolve to `mixed` while the class template stays
+                        // opaque to reads (`class-string<T>` returns, `self<T&X>`
+                        // assertions, the constraint clamp on later calls). Keep the
+                        // plain parameter instead, as for an explicit `Foo<mixed>`.
                         if ($fq_class_name !== 'SplObjectStorage'
                             && !isset($unconstrainable_templates[$template_name])
+                            && !$generic_param_type->hasMixed()
                         ) {
                             $new_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
@@ -544,13 +551,16 @@ final class NewAnalyzer extends CallAnalyzer
                                 // the appearance depth is normalized: the inference is
                                 // lifted onto the variable itself, where it competes with
                                 // the (depth-0) bounds later code records
-                                $lower_bounds[] = new TemplateBound(
+                                $lower_bound = new TemplateBound(
                                     $arg_bound->type,
                                     0,
                                     $arg_bound->arg_offset,
                                     $arg_bound->equality_bound_classlike,
                                     $new_location,
                                 );
+                                $lower_bound->from_constraint_fallback = $arg_bound->from_constraint_fallback;
+
+                                $lower_bounds[] = $lower_bound;
                             }
 
                             $upper_bounds = [new TemplateBound($constraint, 0, null, null, $new_location)];

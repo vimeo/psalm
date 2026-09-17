@@ -29,6 +29,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\InvalidNamedArgument;
 use Psalm\Issue\InvalidPassByReference;
 use Psalm\Issue\PossiblyUndefinedVariable;
@@ -487,6 +488,28 @@ final class ArgumentsAnalyzer
                     ) {
                         if (isset($replaced_type_part->params[$closure_param_offset]->type)) {
                             $replaced_param_type = $replaced_type_part->params[$closure_param_offset]->type;
+
+                            // A class template inferred at a construction site is
+                            // carried as a type variable (e.g. `` `_0 ``). When it
+                            // reaches an untyped closure parameter, resolve it to
+                            // the shape inferred at the construction site: the
+                            // closure body is a separate function-like where the
+                            // bare variable would otherwise be treated as neither
+                            // array nor object.
+                            //
+                            // A variable minted for an empty construction stands
+                            // for `never` so far; a parameter typed by the closure
+                            // itself keeps that type rather than being reported as
+                            // paradoxical for a collection nothing has filled yet,
+                            // so such a variable is left live for a typed parameter
+                            // (the containment below then records a bound on it and
+                            // keeps the declared type).
+                            $type_variable_resolver = new TypeVariableResolver(
+                                $codebase,
+                                false,
+                                $param_storage->type !== null && !$param_type_inferred,
+                            );
+                            $type_variable_resolver->traverse($replaced_param_type);
 
                             if ($replaced_param_type->hasTemplate()) {
                                 $replaced_param_type = TypeExpander::expandUnion(

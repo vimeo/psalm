@@ -10,6 +10,7 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TTypeVariable;
 
 use function array_merge;
 use function count;
@@ -79,7 +80,14 @@ final class GenericTypeComparator
 
             $container_param = $container_type_part->type_params[$i];
 
-            if ($input_param->isNever()) {
+            // a param standing for `never` (an empty construction's type
+            // variable included) is widened to the container's param: the
+            // value is being handed to code that sees it as the wider type
+            if ($input_param->isNever()
+                || ($input_param->isSingle()
+                    && ($input_variable = $input_param->getSingleAtomic()) instanceof TTypeVariable
+                    && $input_variable->isNeverBound())
+            ) {
                 if ($atomic_comparison_result_type_params !== null) {
                     $atomic_comparison_result_type_params[$i] = $container_param;
                 }

@@ -25,6 +25,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\EmptyArrayAccess;
 use Psalm\Issue\InvalidArrayAccess;
 use Psalm\Issue\InvalidArrayAssignment;
@@ -490,6 +491,11 @@ final class ArrayFetchAnalyzer
         $offset_type = $offset_type_original->getBuilder();
 
         $codebase = $statements_analyzer->getCodebase();
+
+        // A bare type variable minted for a class template stands for the shape
+        // inferred at its construction site; resolve it so the array it holds is
+        // seen as an array here rather than as an unrecognised atomic.
+        $array_type = TypeVariableResolver::resolveTopLevel($array_type, $codebase);
 
         $has_array_access = false;
         $non_array_types = [];

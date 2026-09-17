@@ -15,6 +15,7 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TypeCombiner;
+use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\InvalidCast;
 use Psalm\Issue\PossiblyInvalidCast;
 use Psalm\Issue\RedundantCast;
@@ -198,6 +199,11 @@ final class CastAnalyzer
             $all_permissible = false;
 
             if ($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr)) {
+                $stmt_expr_type = TypeVariableResolver::resolveTopLevel(
+                    $stmt_expr_type,
+                    $statements_analyzer->getCodebase(),
+                );
+
                 if ($stmt_expr_type->isObjectType()) {
                     self::handleRedundantCast($stmt_expr_type, $statements_analyzer, $stmt);
                 }
@@ -242,6 +248,11 @@ final class CastAnalyzer
             $all_permissible = false;
 
             if ($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr)) {
+                $stmt_expr_type = TypeVariableResolver::resolveTopLevel(
+                    $stmt_expr_type,
+                    $statements_analyzer->getCodebase(),
+                );
+
                 if ($stmt_expr_type->isArray()) {
                     self::handleRedundantCast($stmt_expr_type, $statements_analyzer, $stmt);
                 }
@@ -324,6 +335,10 @@ final class CastAnalyzer
         $invalid_casts = [];
         $valid_ints = [];
         $castable_types = [];
+
+        // a bare class-template type variable stands for the shape inferred at
+        // its construction site; that shape is what is being cast
+        $stmt_type = TypeVariableResolver::resolveTopLevel($stmt_type, $codebase);
 
         $atomic_types = $stmt_type->getAtomicTypes();
 
@@ -512,6 +527,10 @@ final class CastAnalyzer
         $invalid_casts = [];
         $valid_floats = [];
         $castable_types = [];
+
+        // a bare class-template type variable stands for the shape inferred at
+        // its construction site; that shape is what is being cast
+        $stmt_type = TypeVariableResolver::resolveTopLevel($stmt_type, $codebase);
 
         $atomic_types = $stmt_type->getAtomicTypes();
 
@@ -711,6 +730,10 @@ final class CastAnalyzer
         $invalid_casts = [];
         $valid_strings = [];
         $castable_types = [];
+
+        // a bare class-template type variable stands for the shape inferred at
+        // its construction site; that shape is what is being cast
+        $stmt_type = TypeVariableResolver::resolveTopLevel($stmt_type, $codebase);
 
         $atomic_types = $stmt_type->getAtomicTypes();
 

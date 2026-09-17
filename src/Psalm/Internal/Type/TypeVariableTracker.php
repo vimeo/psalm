@@ -8,7 +8,13 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\TypeVisitor\TypeVariableResolver;
+use Psalm\Issue\ArgumentTypeCoercion;
 use Psalm\Issue\IncompatibleTypeParameters;
+use Psalm\Issue\MixedArgumentTypeCoercion;
+use Psalm\Issue\MixedPropertyTypeCoercion;
+use Psalm\Issue\MixedReturnTypeCoercion;
+use Psalm\Issue\PropertyTypeCoercion;
 use Psalm\IssueBuffer;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
@@ -51,18 +57,39 @@ final class TypeVariableTracker
     }
 
     /**
+     * Whether any type variable has been minted in the tracked function-like
+     * so far; when none has, no type can mention one.
+     *
+     * @psalm-mutation-free
+     */
+    public function hasVariables(): bool
+    {
+        return $this->bounds !== [];
+    }
+
+    /**
      * Transfers bounds recorded by a type comparison, stamping each with the
      * position of the expression that produced them. Bounds for unknown
      * variables are silently dropped.
      *
+     * The suppressions in effect at that position are kept with the bounds, so
+     * an issue raised against them at reconciliation honours a statement-level
+     * `@psalm-suppress` the way the eagerly reported issue would have.
+     *
      * @param list<array{string, TemplateBound}> $lower
      * @param list<array{string, TemplateBound}> $upper
+     * @param array<string> $suppressed_issues
      */
-    public function addBounds(array $lower, array $upper, ?CodeLocation $pos): void
-    {
+    public function addBounds(
+        array $lower,
+        array $upper,
+        ?CodeLocation $pos,
+        array $suppressed_issues = [],
+    ): void {
         foreach ($lower as [$name, $bound]) {
             if (isset($this->bounds[$name])) {
                 $bound->pos = $pos;
+                $bound->suppressed_issues = $suppressed_issues;
                 $this->bounds[$name]->lower_bounds[] = $bound;
             }
         }
@@ -70,6 +97,7 @@ final class TypeVariableTracker
         foreach ($upper as [$name, $bound]) {
             if (isset($this->bounds[$name])) {
                 $bound->pos = $pos;
+                $bound->suppressed_issues = $suppressed_issues;
                 $this->bounds[$name]->upper_bounds[] = $bound;
             }
         }
@@ -84,6 +112,8 @@ final class TypeVariableTracker
      * so later uses still constrain it.
      *
      * @psalm-external-mutation-free
+     * @psalm-suppress ImpureMethodCall the resolver only mutates itself and the
+     *      union it is handed
      */
     public static function resolveTypeVariables(Union $type, ?Codebase $codebase): Union
     {
@@ -97,6 +127,14 @@ final class TypeVariableTracker
         }
 
         if (!$has_type_variable) {
+            // A variable minted for an empty construction stands for `never`
+            // wherever it is nested as well: a `list<T>` read off an empty
+            // collection is an empty list, and the surrounding analysis can
+            // only see that once the variable has become `never`. Variables
+            // bound to something stay live in there for later constraints.
+            $nested_resolver = new TypeVariableResolver($codebase, true);
+            $nested_resolver->traverse($type);
+
             return $type;
         }
 
@@ -107,9 +145,12 @@ final class TypeVariableTracker
 
             if ($atomic_type instanceof TTypeVariable && $atomic_type->bounds) {
                 if ($atomic_type->bounds->lower_bounds) {
-                    $resolved = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
-                        $atomic_type->bounds->lower_bounds,
-                        $codebase,
+                    $resolved = TTypeVariable::widenMixedToConstraint(
+                        TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                            $atomic_type->bounds->lower_bounds,
+                            $codebase,
+                        ),
+                        $atomic_type->bounds,
                     );
                 } elseif ($atomic_type->bounds->upper_bounds) {
                     $resolved = $atomic_type->bounds->upper_bounds[0]->type;
@@ -125,7 +166,12 @@ final class TypeVariableTracker
             }
         }
 
-        return TypeCombiner::combine($resolved_types, $codebase);
+        $resolved = TypeCombiner::combine($resolved_types, $codebase);
+
+        $nested_resolver = new TypeVariableResolver($codebase, true);
+        $nested_resolver->traverse($resolved);
+
+        return $resolved;
     }
 
     /**
@@ -195,6 +241,13 @@ final class TypeVariableTracker
         $has_issue = false;
 
         foreach ($lower_bounds_to_check as $relevant_lower_bound) {
+            if ($relevant_lower_bound->from_constraint_fallback) {
+                // the constraint standing in for an argument that was
+                // rejected as invalid says nothing about the content, and
+                // that argument has already been reported
+                continue;
+            }
+
             foreach ($upper_bounds as $upper_bound) {
                 $union_comparison_result = new TypeComparisonResult();
 
@@ -206,10 +259,41 @@ final class TypeVariableTracker
                     false,
                     $union_comparison_result,
                 )) {
+                    // suppressions in effect where either bound was recorded
+                    // apply to the issue, as the statement-level suppression
+                    // of an eagerly reported coercion would have (the keys are
+                    // the suppressions' source offsets, which mark them as used)
+                    $bound_suppressed_issues = $suppressed_issues
+                        + $relevant_lower_bound->suppressed_issues
+                        + $upper_bound->suppressed_issues;
+
                     if ($union_comparison_result->type_coerced_from_mixed) {
-                        // a bound inferred through mixed gets the same loose
-                        // gate Psalm applies when binding templates from
-                        // mixed arguments
+                        // a value that entered the variable as mixed (e.g. `new Box($mixed)`)
+                        // and is then required to be something concrete by an argument,
+                        // property or return position gets the same Mixed*TypeCoercion the
+                        // eager template model reported for `Box<mixed>` in that position
+                        // (a return position, as before, tolerates a template resolved
+                        // through its `as mixed` constraint); any other bound inferred
+                        // through mixed gets the same loose gate Psalm applies when binding
+                        // templates from mixed arguments
+                        $reports_mixed_coercion = $upper_bound->from_argument_requirement
+                            || $upper_bound->property_requirement_id !== null
+                            || ($upper_bound->from_return_requirement
+                                && !$union_comparison_result->type_coerced_from_as_mixed);
+
+                        if (!$reports_mixed_coercion) {
+                            continue;
+                        }
+
+                        $has_issue = true;
+
+                        self::reportMixedCoercion(
+                            $relevant_lower_bound,
+                            $upper_bound,
+                            $fallback_location,
+                            $bound_suppressed_issues,
+                        );
+
                         continue;
                     }
 
@@ -221,14 +305,25 @@ final class TypeVariableTracker
                         ? ($upper_bound->pos ?? $relevant_lower_bound->pos ?? $fallback_location)
                         : ($relevant_lower_bound->pos ?? $upper_bound->pos ?? $fallback_location);
 
-                    IssueBuffer::maybeAdd(
-                        new IncompatibleTypeParameters(
-                            'Type ' . $relevant_lower_bound->type->getId()
-                                . ' should be a subtype of ' . $upper_bound->type->getId(),
-                            $pos,
-                        ),
-                        $suppressed_issues,
-                    );
+                    $message = 'Type ' . $relevant_lower_bound->type->getId()
+                        . ' should be a subtype of ' . $upper_bound->type->getId();
+
+                    // a value that is only a parent type of what an argument or
+                    // property position requires (`Box<Base>` where `Box<Child>`
+                    // is expected) is reported as the coercion the eager template
+                    // model reported in that position, so the same suppression
+                    // covers it
+                    if ($union_comparison_result->type_coerced && $upper_bound->from_argument_requirement) {
+                        $issue = new ArgumentTypeCoercion($message, $pos);
+                    } elseif ($union_comparison_result->type_coerced
+                        && $upper_bound->property_requirement_id !== null
+                    ) {
+                        $issue = new PropertyTypeCoercion($message, $pos, $upper_bound->property_requirement_id);
+                    } else {
+                        $issue = new IncompatibleTypeParameters($message, $pos);
+                    }
+
+                    IssueBuffer::maybeAdd($issue, $bound_suppressed_issues);
                 }
             }
         }
@@ -338,6 +433,38 @@ final class TypeVariableTracker
                 }
             }
         }
+    }
+
+    /**
+     * Reports a lower bound that only reached a requirement through mixed, as
+     * the coercion issue matching the position that imposed the requirement.
+     *
+     * @param array<string> $suppressed_issues
+     */
+    private static function reportMixedCoercion(
+        TemplateBound $lower_bound,
+        TemplateBound $upper_bound,
+        CodeLocation $fallback_location,
+        array $suppressed_issues,
+    ): void {
+        $pos = $upper_bound->pos ?? $lower_bound->pos ?? $fallback_location;
+
+        $message = 'Type ' . $lower_bound->type->getId()
+            . ' should be a subtype of ' . $upper_bound->type->getId();
+
+        if ($upper_bound->from_argument_requirement) {
+            $issue = new MixedArgumentTypeCoercion($message, $pos);
+        } elseif ($upper_bound->from_return_requirement) {
+            $issue = new MixedReturnTypeCoercion($message, $pos);
+        } else {
+            $issue = new MixedPropertyTypeCoercion(
+                $message,
+                $pos,
+                (string) $upper_bound->property_requirement_id,
+            );
+        }
+
+        IssueBuffer::maybeAdd($issue, $suppressed_issues);
     }
 
     /**

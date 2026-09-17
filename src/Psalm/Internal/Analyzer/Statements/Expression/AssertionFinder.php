@@ -27,7 +27,6 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
-use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\DocblockTypeContradiction;
@@ -41,6 +40,7 @@ use Psalm\Issue\UnevaluatedCode;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\BinaryOp\VirtualIdentical;
 use Psalm\Node\Expr\BinaryOp\VirtualNotIdentical;
+use Psalm\NodeTypeProvider;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\Assertion\ArrayKeyExists;
 use Psalm\Storage\Assertion\DoesNotHaveAtLeastCount;
@@ -4231,7 +4231,7 @@ final class AssertionFinder
 
     public static function isPropertyImmutableOnArgument(
         string                       $property,
-        NodeDataProvider             $node_provider,
+        NodeTypeProvider             $node_provider,
         ClassLikeStorageProvider     $class_provider,
         PhpParser\Node\Expr\Variable $arg_expr,
     ): ?string {

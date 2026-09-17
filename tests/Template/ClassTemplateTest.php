@@ -4830,8 +4830,8 @@ final class ClassTemplateTest extends TestCase
                             $this->elements[$key] = $t;
                         }
                     }',
-                'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
-                    . 'somefile.php:11:57 - Type C should be a subtype of B',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:11:57 - Argument 2 of ArrayCollection::add expects B, but C provided',
             ],
             'preventIteratorAggregateToIterableWithDifferentTypes' => [
                 'code' => '<?php
