@@ -238,6 +238,25 @@ final class ArgumentsAnalyzer
                 );
             }
 
+            if ($arg->value instanceof PhpParser\Node\Expr\Closure
+                || $arg->value instanceof PhpParser\Node\Expr\ArrowFunction
+            ) {
+                // always clear first: the same node is re-analyzed for each call it reaches, and a
+                // type left over from a previous, bound call must not leak into an unbound one
+                $arg->value->setAttribute('psalm-closure-this-type', null);
+
+                if ($param && $param->closure_this_type) {
+                    self::applyParamClosureThisHint(
+                        $statements_analyzer,
+                        $method_id,
+                        $context,
+                        $template_result ?? new TemplateResult([], []),
+                        $arg,
+                        $param,
+                    );
+                }
+            }
+
             $was_inside_call = $context->inside_call;
             $context->inside_call = true;
 
@@ -567,6 +586,99 @@ final class ArgumentsAnalyzer
                 );
             }
         }
+    }
+
+    /**
+     * Resolves `@param-closure-this` against the call site and stamps the resolved type as
+     * a PHP-Parser node attribute on the Closure/ArrowFunction so ClosureAnalyzer can bind
+     * `$this` inside the closure body.
+     */
+    private static function applyParamClosureThisHint(
+        StatementsAnalyzer $statements_analyzer,
+        ?string $method_id,
+        Context $context,
+        TemplateResult $template_result,
+        PhpParser\Node\Arg $arg,
+        FunctionLikeParameter $param,
+    ): void {
+        if (!$param->closure_this_type) {
+            return;
+        }
+
+        $codebase = $statements_analyzer->getCodebase();
+
+        $self_fq_class_name = $context->self;
+        $static_fq_class_name = null;
+        $parent_fq_class_name = null;
+        $static_class_is_final = false;
+
+        if ($method_id !== null && MethodIdentifier::isValidMethodIdReference($method_id)) {
+            $called_method_id = MethodIdentifier::fromMethodIdReference($method_id);
+            $called_class = $called_method_id->fq_class_name;
+
+            $static_fq_class_name = $called_class;
+            $self_fq_class_name = $called_class;
+
+            if ($codebase->classlike_storage_provider->has($called_class)) {
+                $called_class_storage = $codebase->classlike_storage_provider->get($called_class);
+                $static_class_is_final = $called_class_storage->final;
+
+                // `self` is the class that wrote the docblock, which for an inherited method is a
+                // parent of the called class, while `static` stays the called class.
+                $declaring_method_id = $called_class_storage
+                    ->declaring_method_ids[$called_method_id->method_name] ?? null;
+
+                if ($declaring_method_id !== null) {
+                    $self_fq_class_name = $declaring_method_id->fq_class_name;
+                }
+            }
+        }
+
+        if ($self_fq_class_name !== null
+            && $codebase->classlike_storage_provider->has($self_fq_class_name)
+        ) {
+            $parent_fq_class_name = $codebase->classlike_storage_provider->get($self_fq_class_name)
+                ->parent_class;
+        }
+
+        $closure_this_type = $param->closure_this_type;
+
+        if ($template_result->lower_bounds || $template_result->template_types) {
+            $closure_this_type = TemplateStandinTypeReplacer::replace(
+                $closure_this_type,
+                $template_result,
+                $codebase,
+                $statements_analyzer,
+                null,
+                null,
+                $context->self,
+                $context->calling_method_id ?? $context->calling_function_id,
+            );
+
+            $closure_this_type = TemplateInferredTypeReplacer::replace(
+                $closure_this_type,
+                $template_result,
+                $codebase,
+            );
+        }
+
+        $static_type = $static_fq_class_name !== null
+            ? new TNamedObject($static_fq_class_name, true, $static_class_is_final)
+            : null;
+
+        $closure_this_type = TypeExpander::expandUnion(
+            $codebase,
+            $closure_this_type,
+            $self_fq_class_name,
+            $static_type,
+            $parent_fq_class_name,
+            true,
+            false,
+            $static_class_is_final,
+            true,
+        );
+
+        $arg->value->setAttribute('psalm-closure-this-type', $closure_this_type);
     }
 
     /**

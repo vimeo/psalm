@@ -243,6 +243,12 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         $statements_analyzer = new StatementsAnalyzer($this, $type_provider);
 
+        // `@param-closure-this` rebinds the closure's scope, so `self::` and the `$this` check
+        // inside the body must resolve against the bound class, not the enclosing one.
+        if ($this instanceof ClosureAnalyzer && ($bound_this_class = $this->getBoundThisClass()) !== null) {
+            $statements_analyzer->setFQCLN($bound_this_class);
+        }
+
         $byref_uses = [];
         if ($this instanceof ClosureAnalyzer && $this->function instanceof Closure) {
             foreach ($this->function->uses as $use) {
