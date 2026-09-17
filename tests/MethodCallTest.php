@@ -209,6 +209,16 @@ final class MethodCallTest extends TestCase
                 'code' => '<?php
                     new DOMImplementation();',
             ],
+            'mongoManagerCursorYieldsDocuments' => [
+                'code' => '<?php
+                    $manager = new MongoDB\Driver\Manager("mongodb://localhost");
+                    $items = $manager->executeQuery("db.coll", new MongoDB\Driver\Query([]))->toArray();
+                    $docs = $manager->executeCommand("admin", new MongoDB\Driver\Command(["ping" => 1]))->toArray();',
+                'assertions' => [
+                    '$items' => 'array<array-key, array<array-key, mixed>|object>',
+                    '$docs' => 'array<array-key, array<array-key, mixed>|object>',
+                ],
+            ],
             'parentStaticCall' => [
                 'code' => '<?php
                     class A {
