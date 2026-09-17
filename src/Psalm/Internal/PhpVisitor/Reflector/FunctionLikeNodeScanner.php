@@ -428,8 +428,8 @@ final class FunctionLikeNodeScanner
             // a closure assigned to a variable may carry annotations both on the
             // variable's docblock and inline on the closure itself; merge them so
             // that everything declared on the variable (e.g. an auto-added purity
-            // annotation) still applies to the closure. Tags appearing in both
-            // are kept, so a genuine conflict is reported as a duplicate tag.
+            // annotation) still applies to the closure. Where both describe the
+            // same thing, the inline docblock wins: it sits on the closure itself.
             $doc_comment = self::mergeDocComments($own_doc_comment, $doc_comment);
         } else {
             $doc_comment = $own_doc_comment ?? $doc_comment;
@@ -744,11 +744,17 @@ final class FunctionLikeNodeScanner
      * Merges two docblocks into one by unioning their tags. Used to combine a
      * closure's own inline docblock (primary) with the docblock of the variable
      * it is assigned to (secondary), so annotations declared on the variable
-     * still apply to the closure. Tags are not deduplicated, so a tag present in
-     * both — e.g. a conflicting @param or @return — survives into the merged
-     * docblock and is reported by the usual duplicate-tag detection. The result
-     * keeps the primary's source position so any reported docblock issue still
-     * points at real code.
+     * still apply to the closure.
+     *
+     * Both docblocks may declare a `@return`, typically the variable's repeated
+     * (or refined) inline on the closure. The inline docblock is the closer
+     * declaration, so it wins: the secondary's return tags are dropped when the
+     * primary declares a return type. Everything else is unioned, minus lines
+     * that are literally repeated, so a genuine conflict such as a `@param` for
+     * the same parameter with different types survives into the merged docblock
+     * and is reported by the usual duplicate-tag detection. The result keeps
+     * the primary's source position so any reported docblock issue still points
+     * at real code.
      */
     private static function mergeDocComments(
         PhpParser\Comment\Doc $primary,
@@ -757,19 +763,39 @@ final class FunctionLikeNodeScanner
         $primary_parsed = DocComment::parsePreservingLength($primary, true);
         $secondary_parsed = DocComment::parsePreservingLength($secondary, true);
 
-        // The tags of both docblocks are unioned rather than deduplicated: a tag
-        // that appears in both (e.g. a conflicting @param or @return) is kept so
-        // that the duplicate-tag detection in FunctionLikeDocblockParser fires on
-        // the merged docblock, just as it would within a single docblock.
         // parsePreservingLength pads the tag text to keep source offsets, so the
         // lines are trimmed before being re-rendered.
         $tags = [];
 
-        foreach ([$primary_parsed->tags, $secondary_parsed->tags] as $parsed_tags) {
-            foreach ($parsed_tags as $type => $lines) {
-                foreach ($lines as $line) {
-                    $tags[$type][] = trim($line);
+        foreach ($primary_parsed->tags as $type => $lines) {
+            foreach ($lines as $line) {
+                $tags[$type][] = trim($line);
+            }
+        }
+
+        $return_tags = ['return', 'psalm-return', 'phpstan-return'];
+
+        $primary_declares_return = false;
+
+        foreach ($tags as $type => $_) {
+            if (in_array($type, $return_tags, true)) {
+                $primary_declares_return = true;
+            }
+        }
+
+        foreach ($secondary_parsed->tags as $type => $lines) {
+            if ($primary_declares_return && in_array($type, $return_tags, true)) {
+                continue;
+            }
+
+            foreach ($lines as $line) {
+                $line = trim($line);
+
+                if (in_array($line, $tags[$type] ?? [], true)) {
+                    continue;
                 }
+
+                $tags[$type][] = $line;
             }
         }
 

@@ -22,6 +22,49 @@ final class ClosureTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'inlineClosureDocblockReturnWinsOverVariableDocblock' => [
+                'code' => '<?php
+                    /**
+                     * @param list<int> $chunk
+                     * @return bool
+                     */
+                    $callback = /**
+                     * @return true
+                     */
+                    static function (array $chunk): bool {
+                        if ($chunk === []) {
+                            return true;
+                        }
+                        return true;
+                    };
+
+                    /**
+                     * Merges two arrays keeping the maximum values
+                     * @param array<string, int> $a
+                     * @param array<string, int> $b
+                     *
+                     * @return array<string, int>
+                     */
+                    $mergeMax = /**
+                     * @return array<string, int>
+                     */
+                    static function (array $a, array $b) {
+                        foreach ($b as $key => $value) {
+                            if (!array_key_exists($key, $a) || $value > $a[$key]) {
+                                $a[$key] = $value;
+                            }
+                        }
+                        return $a;
+                    };
+
+                    $merged = $mergeMax(["a" => 1], ["b" => 2]);
+                    $t = $callback([1]);',
+                'assertions' => [
+                    '$callback===' => 'pure-Closure(list<int>):true',
+                    '$merged===' => 'array<string, int>',
+                    '$t===' => 'true',
+                ],
+            ],
             'byRefUseVar' => [
                 'code' => '<?php
                     $doNotContaminate = 123;
