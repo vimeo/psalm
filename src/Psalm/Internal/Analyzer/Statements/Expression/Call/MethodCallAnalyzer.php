@@ -15,6 +15,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\Issue\DirectConstructorCall;
 use Psalm\Issue\InvalidMethodCall;
 use Psalm\Issue\InvalidScope;
@@ -177,6 +178,8 @@ final class MethodCallAnalyzer extends CallAnalyzer
         if (!$class_type) {
             $class_type = Type::getMixed();
         }
+        
+        $class_type = TypeVariableTracker::resolveTypeVariables($class_type, $codebase);
 
         $lhs_types = $class_type->getAtomicTypes();
 
