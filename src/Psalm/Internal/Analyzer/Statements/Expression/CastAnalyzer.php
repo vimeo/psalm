@@ -15,6 +15,7 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TypeCombiner;
+use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\Issue\InvalidCast;
 use Psalm\Issue\PossiblyInvalidCast;
 use Psalm\Issue\RedundantCast;
@@ -49,6 +50,7 @@ use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTrue;
+use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
 
 use function array_merge;
@@ -877,6 +879,20 @@ final class CastAnalyzer
                 $atomic_types = array_merge($atomic_types, $atomic_type->as->getAtomicTypes());
 
                 continue;
+            }
+
+            if ($atomic_type instanceof TTypeVariable) {
+                // A class-template type variable is castable through the bound
+                // its construction inferred — as the TTemplateParam branch reads
+                // through `as`. Resolve it so `(string) $var` sees that bound
+                // instead of rejecting the bare variable as uncastable.
+                $resolved = TypeVariableTracker::resolveTypeVariables(new Union([$atomic_type]), $codebase);
+
+                if ($resolved->getId() !== $atomic_type->getId()) {
+                    $atomic_types = array_merge($atomic_types, $resolved->getAtomicTypes());
+
+                    continue;
+                }
             }
 
             $invalid_casts[] = $atomic_type->getId();
