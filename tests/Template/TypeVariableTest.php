@@ -203,6 +203,32 @@ final class TypeVariableTest extends TestCase
                         echo $inner->value + 1;
                     }',
             ],
+            'propertyFetchOnTypeVariableIteratorElement' => [
+                // reading an element out of a `list<TValue>` return yields a
+                // bare type variable; used as a property-fetch receiver it must
+                // resolve through its object bound — as a method call already
+                // does — rather than being rejected as a non-object.
+                'code' => '<?php
+                    final class User { public int $id = 0; }
+
+                    /** @template TValue */
+                    final class XIter {
+                        /** @param array<TValue> $array */
+                        public function __construct(array $array = []) {}
+                        /** @param callable(TValue, TValue): mixed $func */
+                        public function sortBy(callable $func): void {}
+                        /** @return list<TValue> */
+                        public function toArray(): array { throw new \Exception("stub"); }
+                    }
+
+                    /** @param array<User> $users */
+                    function run(array $users): void {
+                        $items = (new XIter($users))->toArray();
+                        foreach ($items as $user) {
+                            echo $user->id;
+                        }
+                    }',
+            ],
             'unboundTemplateSolvesToClosureParam' => [
                 // an unbound `new Box()` never gets a lower bound, so the
                 // closure parameter only constrains the variable from above
