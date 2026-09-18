@@ -8892,7 +8892,7 @@ return array (
   ),
   'error_get_last' => 
   array (
-    0 => 'array{file: string, line: int, message: string, type: int}|null',
+    0 => 'array{file: string, line: int, message: string, trace?: list<array{args?: list<mixed>, class?: class-string, file?: string, function: string, line?: int, object?: object, type?: string}>, type: int}|null',
   ),
   'error_log' => 
   array (

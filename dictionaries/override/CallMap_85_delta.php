@@ -197,6 +197,17 @@ return array (
         '&...rest=' => 'array<array-key, mixed>|int',
       ),
     ),
+    'error_get_last' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array{file: string, line: int, message: string, type: int}|null',
+      ),
+      'new' => 
+      array (
+        0 => 'array{file: string, line: int, message: string, trace?: list<array{args?: list<mixed>, class?: class-string, file?: string, function: string, line?: int, object?: object, type?: string}>, type: int}|null',
+      ),
+    ),
     'db2_fetch_array' => 
     array (
       'old' => 
