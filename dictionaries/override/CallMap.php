@@ -5859,31 +5859,31 @@ return array (
   array (
     0 => 'array<array-key, mixed>|false',
     'stmt' => 'resource',
-    'row_number=' => 'int|null',
+    'row_number=' => 'int',
   ),
   'db2_fetch_assoc' => 
   array (
     0 => 'array<array-key, mixed>|false',
     'stmt' => 'resource',
-    'row_number=' => 'int|null',
+    'row_number=' => 'int',
   ),
   'db2_fetch_both' => 
   array (
     0 => 'array<array-key, mixed>|false',
     'stmt' => 'resource',
-    'row_number=' => 'int|null',
+    'row_number=' => 'int',
   ),
   'db2_fetch_object' => 
   array (
     0 => 'false|stdClass',
     'stmt' => 'resource',
-    'row_number=' => 'int|null',
+    'row_number=' => 'int',
   ),
   'db2_fetch_row' => 
   array (
     0 => 'bool',
     'stmt' => 'resource',
-    'row_number=' => 'int|null',
+    'row_number=' => 'int',
   ),
   'db2_field_display_size' => 
   array (
@@ -7805,69 +7805,6 @@ return array (
   array (
     0 => 'array<array-key, mixed>',
   ),
-  'ds\\deque::allocate' => 
-  array (
-    0 => 'void',
-    'capacity' => 'int',
-  ),
-  'ds\\deque::apply' => 
-  array (
-    0 => 'void',
-    'callback' => 'callable',
-  ),
-  'ds\\deque::clear' => 
-  array (
-    0 => 'void',
-  ),
-  'ds\\deque::get' => 
-  array (
-    0 => 'void',
-    'index' => 'int',
-  ),
-  'ds\\deque::insert' => 
-  array (
-    0 => 'void',
-    'index' => 'int',
-    '...values=' => 'mixed',
-  ),
-  'ds\\deque::jsonserialize' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'ds\\deque::push' => 
-  array (
-    0 => 'void',
-    '...values=' => 'mixed',
-  ),
-  'ds\\deque::reverse' => 
-  array (
-    0 => 'void',
-  ),
-  'ds\\deque::rotate' => 
-  array (
-    0 => 'void',
-    'rotations' => 'int',
-  ),
-  'ds\\deque::set' => 
-  array (
-    0 => 'void',
-    'index' => 'int',
-    'value' => 'mixed',
-  ),
-  'ds\\deque::sort' => 
-  array (
-    0 => 'void',
-    'comparator=' => 'callable|null',
-  ),
-  'ds\\deque::sum' => 
-  array (
-    0 => 'float|int',
-  ),
-  'ds\\deque::unshift' => 
-  array (
-    0 => 'void',
-    '...values=' => 'mixed',
-  ),
   'ds\\hashable::equals' => 
   array (
     0 => 'bool',
@@ -7940,43 +7877,6 @@ return array (
   'ds\\pair::jsonserialize' => 
   array (
     0 => 'array<array-key, mixed>',
-  ),
-  'ds\\priorityqueue::allocate' => 
-  array (
-    0 => 'void',
-    'capacity' => 'int',
-  ),
-  'ds\\priorityqueue::clear' => 
-  array (
-    0 => 'void',
-  ),
-  'ds\\priorityqueue::jsonserialize' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'ds\\priorityqueue::push' => 
-  array (
-    0 => 'void',
-    'value' => 'mixed',
-    'priority' => 'int',
-  ),
-  'ds\\queue::allocate' => 
-  array (
-    0 => 'void',
-    'capacity' => 'int',
-  ),
-  'ds\\queue::clear' => 
-  array (
-    0 => 'void',
-  ),
-  'ds\\queue::jsonserialize' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'ds\\queue::push' => 
-  array (
-    0 => 'void',
-    '...values=' => 'mixed',
   ),
   'ds\\sequence::allocate' => 
   array (
@@ -8149,82 +8049,6 @@ return array (
   'ds\\set::sum' => 
   array (
     0 => 'float|int',
-  ),
-  'ds\\stack::allocate' => 
-  array (
-    0 => 'void',
-    'capacity' => 'int',
-  ),
-  'ds\\stack::clear' => 
-  array (
-    0 => 'void',
-  ),
-  'ds\\stack::jsonserialize' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'ds\\stack::push' => 
-  array (
-    0 => 'void',
-    '...values=' => 'mixed',
-  ),
-  'ds\\vector::allocate' => 
-  array (
-    0 => 'void',
-    'capacity' => 'int',
-  ),
-  'ds\\vector::apply' => 
-  array (
-    0 => 'void',
-    'callback' => 'callable',
-  ),
-  'ds\\vector::clear' => 
-  array (
-    0 => 'void',
-  ),
-  'ds\\vector::insert' => 
-  array (
-    0 => 'void',
-    'index' => 'int',
-    '...values=' => 'mixed',
-  ),
-  'ds\\vector::jsonserialize' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'ds\\vector::push' => 
-  array (
-    0 => 'void',
-    '...values=' => 'mixed',
-  ),
-  'ds\\vector::reverse' => 
-  array (
-    0 => 'void',
-  ),
-  'ds\\vector::rotate' => 
-  array (
-    0 => 'void',
-    'rotations' => 'int',
-  ),
-  'ds\\vector::set' => 
-  array (
-    0 => 'void',
-    'index' => 'int',
-    'value' => 'mixed',
-  ),
-  'ds\\vector::sort' => 
-  array (
-    0 => 'void',
-    'comparator=' => 'callable|null',
-  ),
-  'ds\\vector::sum' => 
-  array (
-    0 => 'float|int',
-  ),
-  'ds\\vector::unshift' => 
-  array (
-    0 => 'void',
-    '...values=' => 'mixed',
   ),
   'easter_date' => 
   array (
