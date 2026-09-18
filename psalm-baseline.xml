@@ -2370,7 +2370,6 @@
       <code><![CDATA[$const_name]]></code>
       <code><![CDATA[$const_name]]></code>
       <code><![CDATA[$parse_tree->children[0]]]></code>
-      <code><![CDATA[$parse_tree->condition->children[0]]]></code>
       <code><![CDATA[array_keys($offset_template_data)[0]]]></code>
       <code><![CDATA[array_keys($template_type_map[$array_param_name])[0]]]></code>
       <code><![CDATA[array_keys($template_type_map[$class_name])[0]]]></code>

@@ -6,11 +6,13 @@ namespace Psalm\Tests\Template;
 
 use Override;
 use Psalm\Tests\TestCase;
+use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 final class ConditionalReturnTypeTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
+    use InvalidCodeAnalysisTestTrait;
 
     #[Override]
     public function providerValidCodeParse(): iterable
@@ -1126,6 +1128,24 @@ final class ConditionalReturnTypeTest extends TestCase
                     '$two' => 'int',
                     '$three' => 'float',
                 ],
+            ],
+        ];
+    }
+
+    #[Override]
+    public function providerInvalidCodeParse(): iterable
+    {
+        return [
+            'conditionalReturnTypeWithoutIsTypeIsReportedInsteadOfCrashing' => [
+                'code' => '<?php
+                    /**
+                     * @param ?int $key
+                     * @return ($key is ? int : string)
+                     */
+                    function f(?int $key = null) {
+                        return $key === null ? "a" : $key;
+                    }',
+                'error_message' => 'InvalidDocblock',
             ],
         ];
     }
