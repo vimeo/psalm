@@ -114,7 +114,9 @@ jobs:
           composer install -o
 
       # Regenerate the callmaps (from the images built above) and everything else
-      # `composer build` produces, and fail if any committed file is now out of date.
+      # `composer build` produces, and fail if any committed file is now out of
+      # date - writing the changes to a patch that is uploaded as an artifact so
+      # they can be applied locally with `git apply composer-build.patch`.
       - name: Run composer build and check for a diff
         env:
           STUBS_IMAGE_OWNER: ${{ github.repository_owner }}
@@ -123,4 +125,16 @@ jobs:
         run: |
           echo "$GITHUB_TOKEN" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
           composer build
-          git diff --exit-code
+          if ! git diff --quiet; then
+            git diff > composer-build.patch
+            echo "::error::composer build produced uncommitted changes. Download the 'composer-build-patch' artifact and apply it from the repo root with: git apply composer-build.patch"
+            exit 1
+          fi
+
+      - name: Upload patch
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: composer-build-patch
+          path: composer-build.patch
+          if-no-files-found: ignore
