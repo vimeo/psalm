@@ -165,6 +165,28 @@ final class TypeVariableTest extends TestCase
                         return $out;
                     }',
             ],
+            'castTypeVariableToString' => [
+                // a type variable read out of a `list<TValue>` element is
+                // castable through the bound its construction inferred;
+                // `(string) $var` must resolve it rather than reject the bare
+                // variable (InvalidCast "`_N cannot be cast to string").
+                'code' => '<?php
+                    /** @template TValue */
+                    final class XIter {
+                        /** @param array<TValue> $array */
+                        public function __construct(array $array) {}
+                        /** @param callable(TValue, TValue): mixed $func */
+                        public function sortBy(callable $func): void {}
+                        /** @return list<TValue> */
+                        public function toArray(): array { throw new \Exception("stub"); }
+                    }
+
+                    function run(): void {
+                        foreach ((new XIter([1]))->toArray() as $v) {
+                            echo (string) $v;
+                        }
+                    }',
+            ],
             'propertyFetchThenMethodCallOnElement' => [
                 // a type variable reached through a property fetch is the object
                 // it was inferred to be; the method call resolves through its
