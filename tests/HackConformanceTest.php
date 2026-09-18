@@ -67,6 +67,15 @@ final class HackConformanceTest extends TestCase
      */
     public function testHhvmAgreesWithPsalmTest(string $fixture, string $expect, string $psalmTest): void
     {
+        // A malformed fixture header must fail loudly rather than be compared as
+        // an empty string; check it before the availability skip so it is caught
+        // even where the harness itself cannot run.
+        $this->assertContains(
+            $expect,
+            ['no-errors', 'error'],
+            "Fixture $fixture is missing a valid `//// expect: no-errors|error` header",
+        );
+
         $harness = self::harness();
 
         if (!$harness['available']) {
@@ -81,9 +90,17 @@ final class HackConformanceTest extends TestCase
             "The harness produced no HHVM result for $fixture",
         );
 
+        $actual = $results[$fixture]['actual'];
+
+        $this->assertContains(
+            $actual,
+            ['no-errors', 'error'],
+            "HHVM produced an unrecognised verdict for $fixture:\n" . $results[$fixture]['output'],
+        );
+
         $this->assertSame(
             $expect,
-            $results[$fixture]['actual'],
+            $actual,
             "HHVM disagrees with $psalmTest for $fixture:\n" . $results[$fixture]['output'],
         );
     }
