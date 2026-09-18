@@ -6,7 +6,6 @@ namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
 use Psalm\Internal\Type\TemplateBound;
-use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArrayKey;
@@ -102,25 +101,6 @@ final class UnionTypeComparator
                     && $container_single->name === $input_type_part->name
                 ) {
                     continue;
-                }
-
-                if ($container_type->isNever()
-                    && $input_type_part->bounds !== null
-                    && $input_type_part->bounds->lower_bounds !== []
-                    && !TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
-                        $input_type_part->bounds->lower_bounds,
-                        $codebase,
-                    )->isNever()
-                ) {
-                    // `X <: never` holds only when X is itself never. A variable the
-                    // constructor already bound to a concrete (non-never) type is
-                    // inhabited, so it is not contained by `never`, and recording
-                    // `name <: never` would wrongly make it uninhabitable. This is the
-                    // empty-array arm of a return type like
-                    // `Foo<array-key, V>|Foo<never, never>`: it must not match (and pin
-                    // to never) a variable bound to array-key — the other arm matches
-                    // instead, as Hack resolves the variable to its inferred type.
-                    return false;
                 }
 
                 if ($union_comparison_result) {

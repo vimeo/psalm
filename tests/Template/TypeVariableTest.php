@@ -37,7 +37,7 @@ final class TypeVariableTest extends TestCase
 
                     /**
                      * @param array<Foo> $users
-                     * @return XIteratorOnArray<array-key, Foo>|XIteratorOnArray<never, never>
+                     * @return XIteratorOnArray<array-key, Foo>
                      */
                     function filter(array $users): XIteratorOnArray {
                         return new XIteratorOnArray($users);
