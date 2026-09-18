@@ -1,0 +1,11 @@
+{
+    "_comment": "Pins used by the Hack conformance harness. See README.md.",
+    "hhvm_image": "hhvm/hhvm@sha256:1cc1be0d469a378114112096431145c9fe80612c61ba48e8697097d933147f60",
+    "hhvm_version": "4.172.0",
+    "hack_repo": "https://github.com/facebook/hhvm.git",
+    "hack_commit": "2634da1ee3f61b89610e18d72b35d448ebc4c86f",
+    "tracked_paths": [
+        "hphp/hack/test/typecheck/wildcard",
+        "hphp/hack/test/shadow_tyvars"
+    ]
+}

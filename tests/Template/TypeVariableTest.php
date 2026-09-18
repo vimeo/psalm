@@ -84,6 +84,44 @@ final class TypeVariableTest extends TestCase
                         echo (string) $r[0][0];
                     }',
             ],
+            'propertyFetchThenMethodCallOnElement' => [
+                // a type variable reached through a property fetch is the object
+                // it was inferred to be; the method call resolves through its
+                // bounds (Hack: no errors).
+                'code' => '<?php
+                    final class User { public function getId(): int { return 0; } }
+
+                    /** @template T */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(public $value) {}
+                        /** @param callable(T, T): mixed $func */
+                        public function sortBy(callable $func): void {}
+                    }
+
+                    function pchain(): void {
+                        $b = new Box(new User());
+                        echo $b->value->getId();
+                    }',
+            ],
+            'nestedConstructionElementArithmetic' => [
+                // nested `new Box(new Box(5))`: the inner element resolves to int
+                // and supports arithmetic (Hack: no errors).
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(public $value) {}
+                        /** @param callable(T, T): mixed $func */
+                        public function sortBy(callable $func): void {}
+                    }
+
+                    function nested(): void {
+                        $bb = new Box(new Box(5));
+                        $inner = $bb->value;
+                        echo $inner->value + 1;
+                    }',
+            ],
             'unboundTemplateSolvesToClosureParam' => [
                 // an unbound `new Box()` never gets a lower bound, so the
                 // closure parameter only constrains the variable from above
@@ -217,6 +255,27 @@ final class TypeVariableTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'inhabitedVariableNotContainedByNeverReturn' => [
+                // returning `a<int>` where `@return a<never>` is declared is still
+                // rejected: an inhabited type variable is not a subtype of `never`,
+                // so the containment fails (Hack reports the invariant `nothing`
+                // mismatch: "Expected nothing ... But got int"). Guards the
+                // UnionTypeComparator never-arm fix against hiding this — the
+                // single-arm case must error even though the union arm in
+                // `possiblyEmptyArray` is allowed to fall through to its other arm.
+                'code' => '<?php
+                    /** @template T */
+                    final class a {
+                        /** @param T $t */
+                        public function __construct(public $t) {}
+                        /** @param callable(T, T): mixed $func */
+                        public function sortBy(callable $func): void {}
+                    }
+
+                    /** @return a<never> */
+                    function f(): a { return new a(5); }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
             'mixedConstructorInferenceCoercesClosureParam' => [
                 // the constructor infers TValue as mixed (lower bound mixed); the
                 // closure parameter constrains it from above (TValue <: Item),
