@@ -86,7 +86,10 @@ final class ThisOutTest extends TestCase
                     $data3 = $a->getData();
                 ',
                 'assertions' => [
-                    '$data1===' => 'list<1>',
+                    // `new container(1)` mints a type variable for T (constrainable
+                    // via setData/addData); the exact `===` form reveals it here,
+                    // before the subsequent writes reconcile it in $data2/$data3.
+                    '$data1===' => 'list<`_0:1>',
                     '$data2===' => 'list<2>',
                     '$data3===' => 'list<2|3>',
                 ],
