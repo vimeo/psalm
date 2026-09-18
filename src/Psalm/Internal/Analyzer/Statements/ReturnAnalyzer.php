@@ -433,9 +433,23 @@ final class ReturnAnalyzer
                         // transfer recorded type-variable bounds, upgrading
                         // plain upper bounds to equality bounds: the declared
                         // return type names the type parameter exactly, so a
-                        // conflicting use elsewhere must fail reconciliation
-                        foreach ($union_comparison_results->type_variable_upper_bounds as [$_, $upper_bound]) {
-                            if ($upper_bound->equality_bound_classlike === null) {
+                        // conflicting use elsewhere must fail reconciliation.
+                        //
+                        // A union return type (`Foo<int>|Foo<string>`) records
+                        // one bound per arm for the same variable; those arms
+                        // are alternatives the value need only satisfy one of,
+                        // so a variable bound to differing types across arms
+                        // stays as plain upper bounds rather than being pinned
+                        // to every arm at once (which reconciles as impossible).
+                        $distinct_upper_bounds = [];
+                        foreach ($union_comparison_results->type_variable_upper_bounds as [$name, $upper_bound]) {
+                            $distinct_upper_bounds[$name][$upper_bound->type->getId()] = true;
+                        }
+
+                        foreach ($union_comparison_results->type_variable_upper_bounds as [$name, $upper_bound]) {
+                            if ($upper_bound->equality_bound_classlike === null
+                                && count($distinct_upper_bounds[$name]) === 1
+                            ) {
                                 $upper_bound->equality_bound_classlike = '';
                             }
                         }
