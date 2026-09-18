@@ -1,10 +1,14 @@
 #!/bin/bash -e
 
-VERSIONS="7.0 7.1 7.2 7.3 7.4 8.0 8.1 8.2 8.3 8.4 8.5"
+# Namespace the stub images live under (ghcr.io/<owner>/psalm). Overridable so CI
+# can point at the images it just built; defaults to the maintainer's namespace.
+OWNER="${STUBS_IMAGE_OWNER:-danog}"
 
+# Single source of truth for the version list (see build_docker.php).
+VERSIONS="$(php "$(dirname "$0")/build_docker.php" --versions-plain)"
 
 for f in $VERSIONS; do
-    docker run --pull always --platform linux/amd64 --rm -v $PWD:/app ghcr.io/danog/psalm:internal_stubs_$f php /app/bin/stubs/gen_base_callmap.php &
+    docker run --pull always --platform linux/amd64 --rm -v $PWD:/app ghcr.io/$OWNER/psalm:internal_stubs_$f php /app/bin/stubs/gen_base_callmap.php &
 done
 
 wait
