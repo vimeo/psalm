@@ -23,6 +23,70 @@ final class TypeVariableTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'possiblyEmptyArray' => [
+                'code' => '<?php
+                    /**
+                     * @template TTKey as array-key
+                     * @template TTValue
+                     */
+                    final class XIteratorOnArray {
+                        /** @param array<TTKey, TTValue> $array */
+                        public function __construct(array $array = []) {}
+                        /** @param callable(TTValue, TTKey): mixed $func */
+                        public function sortBy(callable $func): void {}
+                    }
+
+                    class Foo {}
+
+                    /**
+                     * @param array<Foo> $users
+                     * @return XIteratorOnArray<array-key, Foo>|XIteratorOnArray<never, never>
+                     */
+                    function filter(array $users): XIteratorOnArray {
+                        return new XIteratorOnArray($users);
+                    }'
+            ],
+            'methodCallOnIteratorElement' => [
+                'code' => '<?php
+                    final class User {
+                        public function getId(): ?int { return null; }
+                    }
+
+                    /** @template TTValue */
+                    final class XIteratorOnArray {
+                        /** @param array<TTValue> $array */
+                        public function __construct(array $array = []) {}
+                        /** @param callable(TTValue, TTValue): mixed $func */
+                        public function sortBy(callable $func): void {}
+                        /** @return list<TTValue> */
+                        public function toArray(): array { throw new \Exception("stub"); }
+                    }
+
+                    /** @param array<User> $users */
+                    function prepareData(array $users): void {
+                        $users = (new XIteratorOnArray($users))->toArray();
+                        foreach ($users as $user) {
+                            $user->getId();
+                        }
+                    }',
+            ],
+            'arrayAccess' => [
+                'code' => '<?php
+                    /** @template TTValue */
+                    final class a {
+                        /** @param non-empty-array<TTValue> $array */
+                        public function __construct(array $array = [0]) {}
+                        /** @param callable(TTValue, TTValue): mixed $func */
+                        public function sortBy(callable $func): void {}
+                        /** @return non-empty-list<TTValue> */
+                        public function toArray(): array { throw new \Exception("stub"); }
+                    }
+
+                    function match2(): void {
+                        $r = (new a([[1, 2]]))->toArray();
+                        echo (string) $r[0][0];
+                    }',
+            ],
             'unboundTemplateSolvesToClosureParam' => [
                 // an unbound `new Box()` never gets a lower bound, so the
                 // closure parameter only constrains the variable from above
