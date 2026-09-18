@@ -46,6 +46,30 @@ final class TypeVariableTest extends TestCase
                         return new XIteratorOnArray($users);
                     }',
             ],
+            'emptyConstructionAgainstUnionKeyReturn' => [
+                // an empty `new It()` returned where the declared type is a
+                // union of two key instantiations (It<string>|It<int>) must
+                // satisfy ONE arm, not be pinned to every arm at once — which
+                // reconciled as impossible (IncompatibleTypeParameters
+                // "int is not in string" / "string is not in int"). The
+                // covariant key read back in the callable keeps it a variable.
+                'code' => '<?php
+                    /** @template-covariant TKey */
+                    class It {
+                        /** @param array<TKey, mixed> $array */
+                        public function __construct(array $array = []) {}
+                        /**
+                         * @param callable(TKey): mixed $func
+                         * @psalm-suppress InvalidTemplateParam
+                         */
+                        public function sortBy(callable $func): void {}
+                    }
+
+                    /** @return It<string>|It<int> */
+                    function takeNew(): It {
+                        return new It();
+                    }',
+            ],
             'methodCallOnIteratorElement' => [
                 'code' => '<?php
                     final class User {
