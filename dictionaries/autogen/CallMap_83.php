@@ -2695,6 +2695,11 @@ return array (
     0 => 'void',
     'options' => 'array<array-key, mixed>',
   ),
+  'co::settimelimit' => 
+  array (
+    0 => 'bool',
+    'timeout' => 'float',
+  ),
   'co::sleep' => 
   array (
     0 => 'bool',
@@ -10612,31 +10617,31 @@ return array (
   array (
     0 => 'array<array-key, mixed>|false',
     'stmt' => 'mixed',
-    'row_number=' => 'int|null',
+    'row_number=' => 'int',
   ),
   'db2_fetch_assoc' => 
   array (
     0 => 'array<array-key, mixed>|false',
     'stmt' => 'mixed',
-    'row_number=' => 'int|null',
+    'row_number=' => 'int',
   ),
   'db2_fetch_both' => 
   array (
     0 => 'array<array-key, mixed>|false',
     'stmt' => 'mixed',
-    'row_number=' => 'int|null',
+    'row_number=' => 'int',
   ),
   'db2_fetch_object' => 
   array (
     0 => 'false|stdClass',
     'stmt' => 'mixed',
-    'row_number=' => 'int|null',
+    'row_number=' => 'int',
   ),
   'db2_fetch_row' => 
   array (
     0 => 'mixed',
     'stmt' => 'mixed',
-    'row_number=' => 'int|null',
+    'row_number=' => 'int',
   ),
   'db2_field_display_size' => 
   array (
@@ -13623,195 +13628,95 @@ return array (
     0 => 'float',
     'value' => 'mixed',
   ),
-  'ds\\deque::__construct' => 
+  'ds\\heap' => 
+  array (
+    0 => 'mixed',
+    'values=' => 'mixed',
+    'comparator=' => 'callable|null',
+  ),
+  'ds\\heap::__construct' => 
   array (
     0 => 'void',
     'values=' => 'mixed',
+    'comparator=' => 'callable|null',
   ),
-  'ds\\deque::allocate' => 
+  'ds\\heap::__serialize' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'ds\\heap::__unserialize' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+  ),
+  'ds\\heap::allocate' => 
   array (
     0 => 'mixed',
     'capacity' => 'int',
   ),
-  'ds\\deque::apply' => 
-  array (
-    0 => 'mixed',
-    'callback' => 'callable',
-  ),
-  'ds\\deque::capacity' => 
+  'ds\\heap::capacity' => 
   array (
     0 => 'int',
   ),
-  'ds\\deque::clear' => 
+  'ds\\heap::clear' => 
   array (
     0 => 'mixed',
   ),
-  'ds\\deque::contains' => 
+  'ds\\heap::copy' => 
   array (
-    0 => 'bool',
-    '...values=' => 'mixed',
+    0 => 'mixed',
   ),
-  'ds\\deque::copy' => 
-  array (
-    0 => 'Ds\\Collection',
-  ),
-  'ds\\deque::count' => 
+  'ds\\heap::count' => 
   array (
     0 => 'int',
   ),
-  'ds\\deque::filter' => 
-  array (
-    0 => 'Ds\\Sequence',
-    'callback=' => 'callable|null',
-  ),
-  'ds\\deque::find' => 
-  array (
-    0 => 'mixed',
-    'value' => 'mixed',
-  ),
-  'ds\\deque::first' => 
-  array (
-    0 => 'mixed',
-  ),
-  'ds\\deque::get' => 
-  array (
-    0 => 'mixed',
-    'index' => 'int',
-  ),
-  'ds\\deque::getiterator' => 
+  'ds\\heap::getiterator' => 
   array (
     0 => 'Traversable',
   ),
-  'ds\\deque::insert' => 
-  array (
-    0 => 'mixed',
-    'index' => 'int',
-    '...values=' => 'mixed',
-  ),
-  'ds\\deque::isempty' => 
+  'ds\\heap::isempty' => 
   array (
     0 => 'bool',
   ),
-  'ds\\deque::join' => 
-  array (
-    0 => 'string',
-    'glue=' => 'string',
-  ),
-  'ds\\deque::jsonserialize' => 
+  'ds\\heap::jsonserialize' => 
   array (
     0 => 'mixed',
   ),
-  'ds\\deque::last' => 
+  'ds\\heap::peek' => 
   array (
     0 => 'mixed',
   ),
-  'ds\\deque::map' => 
-  array (
-    0 => 'Ds\\Sequence',
-    'callback' => 'callable',
-  ),
-  'ds\\deque::merge' => 
-  array (
-    0 => 'Ds\\Sequence',
-    'values' => 'mixed',
-  ),
-  'ds\\deque::offsetexists' => 
-  array (
-    0 => 'bool',
-    'offset' => 'mixed',
-  ),
-  'ds\\deque::offsetget' => 
-  array (
-    0 => 'mixed',
-    'offset' => 'mixed',
-  ),
-  'ds\\deque::offsetset' => 
-  array (
-    0 => 'void',
-    'offset' => 'mixed',
-    'value' => 'mixed',
-  ),
-  'ds\\deque::offsetunset' => 
-  array (
-    0 => 'void',
-    'offset' => 'mixed',
-  ),
-  'ds\\deque::pop' => 
+  'ds\\heap::pop' => 
   array (
     0 => 'mixed',
   ),
-  'ds\\deque::push' => 
+  'ds\\heap::push' => 
   array (
     0 => 'mixed',
     '...values=' => 'mixed',
   ),
-  'ds\\deque::reduce' => 
-  array (
-    0 => 'mixed',
-    'callback' => 'callable',
-    'initial=' => 'mixed',
-  ),
-  'ds\\deque::remove' => 
-  array (
-    0 => 'mixed',
-    'index' => 'int',
-  ),
-  'ds\\deque::reverse' => 
-  array (
-    0 => 'mixed',
-  ),
-  'ds\\deque::reversed' => 
-  array (
-    0 => 'Ds\\Sequence',
-  ),
-  'ds\\deque::rotate' => 
-  array (
-    0 => 'mixed',
-    'rotations' => 'int',
-  ),
-  'ds\\deque::set' => 
-  array (
-    0 => 'mixed',
-    'index' => 'int',
-    'value' => 'mixed',
-  ),
-  'ds\\deque::shift' => 
-  array (
-    0 => 'mixed',
-  ),
-  'ds\\deque::slice' => 
-  array (
-    0 => 'Ds\\Sequence',
-    'index' => 'int',
-    'length=' => 'int|null',
-  ),
-  'ds\\deque::sort' => 
-  array (
-    0 => 'mixed',
-    'comparator=' => 'callable|null',
-  ),
-  'ds\\deque::sorted' => 
-  array (
-    0 => 'Ds\\Sequence',
-    'comparator=' => 'callable|null',
-  ),
-  'ds\\deque::sum' => 
-  array (
-    0 => 'mixed',
-  ),
-  'ds\\deque::toarray' => 
+  'ds\\heap::toarray' => 
   array (
     0 => 'array<array-key, mixed>',
   ),
-  'ds\\deque::unshift' => 
+  'ds\\map' => 
   array (
     0 => 'mixed',
-    '...values=' => 'mixed',
+    'values=' => 'mixed',
   ),
   'ds\\map::__construct' => 
   array (
     0 => 'void',
     'values=' => 'mixed',
+  ),
+  'ds\\map::__serialize' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'ds\\map::__unserialize' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
   ),
   'ds\\map::allocate' => 
   array (
@@ -13833,7 +13738,7 @@ return array (
   ),
   'ds\\map::copy' => 
   array (
-    0 => 'Ds\\Collection',
+    0 => 'mixed',
   ),
   'ds\\map::count' => 
   array (
@@ -14016,12 +13921,17 @@ return array (
   'ds\\pair::__construct' => 
   array (
     0 => 'void',
-    'key=' => 'mixed',
-    'value=' => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
   ),
-  'ds\\pair::copy' => 
+  'ds\\pair::__serialize' => 
   array (
-    0 => 'Ds\\Pair',
+    0 => 'array<array-key, mixed>',
+  ),
+  'ds\\pair::__unserialize' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
   ),
   'ds\\pair::jsonserialize' => 
   array (
@@ -14031,141 +13941,223 @@ return array (
   array (
     0 => 'array<array-key, mixed>',
   ),
-  'ds\\priorityqueue::__construct' => 
-  array (
-    0 => 'void',
-  ),
-  'ds\\priorityqueue::allocate' => 
+  'ds\\seq' => 
   array (
     0 => 'mixed',
-    'capacity' => 'int',
+    'values=' => 'mixed',
   ),
-  'ds\\priorityqueue::capacity' => 
-  array (
-    0 => 'int',
-  ),
-  'ds\\priorityqueue::clear' => 
-  array (
-    0 => 'mixed',
-  ),
-  'ds\\priorityqueue::copy' => 
-  array (
-    0 => 'Ds\\Collection',
-  ),
-  'ds\\priorityqueue::count' => 
-  array (
-    0 => 'int',
-  ),
-  'ds\\priorityqueue::getiterator' => 
-  array (
-    0 => 'Traversable',
-  ),
-  'ds\\priorityqueue::isempty' => 
-  array (
-    0 => 'bool',
-  ),
-  'ds\\priorityqueue::jsonserialize' => 
-  array (
-    0 => 'mixed',
-  ),
-  'ds\\priorityqueue::peek' => 
-  array (
-    0 => 'mixed',
-  ),
-  'ds\\priorityqueue::pop' => 
-  array (
-    0 => 'mixed',
-  ),
-  'ds\\priorityqueue::push' => 
-  array (
-    0 => 'mixed',
-    'value' => 'mixed',
-    'priority' => 'mixed',
-  ),
-  'ds\\priorityqueue::toarray' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'ds\\queue::__construct' => 
+  'ds\\seq::__construct' => 
   array (
     0 => 'void',
     'values=' => 'mixed',
   ),
-  'ds\\queue::allocate' => 
+  'ds\\seq::__serialize' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'ds\\seq::__unserialize' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+  ),
+  'ds\\seq::allocate' => 
   array (
     0 => 'mixed',
     'capacity' => 'int',
   ),
-  'ds\\queue::capacity' => 
+  'ds\\seq::apply' => 
+  array (
+    0 => 'mixed',
+    'callback' => 'callable',
+  ),
+  'ds\\seq::capacity' => 
   array (
     0 => 'int',
   ),
-  'ds\\queue::clear' => 
+  'ds\\seq::clear' => 
   array (
     0 => 'mixed',
   ),
-  'ds\\queue::copy' => 
+  'ds\\seq::contains' => 
   array (
-    0 => 'Ds\\Collection',
+    0 => 'bool',
+    '...values=' => 'mixed',
   ),
-  'ds\\queue::count' => 
+  'ds\\seq::copy' => 
+  array (
+    0 => 'mixed',
+  ),
+  'ds\\seq::count' => 
   array (
     0 => 'int',
   ),
-  'ds\\queue::getiterator' => 
+  'ds\\seq::filter' => 
+  array (
+    0 => 'Ds\\Sequence',
+    'callback=' => 'callable|null',
+  ),
+  'ds\\seq::find' => 
+  array (
+    0 => 'mixed',
+    'value' => 'mixed',
+  ),
+  'ds\\seq::first' => 
+  array (
+    0 => 'mixed',
+  ),
+  'ds\\seq::get' => 
+  array (
+    0 => 'mixed',
+    'index' => 'int',
+  ),
+  'ds\\seq::getiterator' => 
   array (
     0 => 'Traversable',
   ),
-  'ds\\queue::isempty' => 
+  'ds\\seq::insert' => 
+  array (
+    0 => 'mixed',
+    'index' => 'int',
+    '...values=' => 'mixed',
+  ),
+  'ds\\seq::isempty' => 
   array (
     0 => 'bool',
   ),
-  'ds\\queue::jsonserialize' => 
+  'ds\\seq::join' => 
+  array (
+    0 => 'string',
+    'glue=' => 'string',
+  ),
+  'ds\\seq::jsonserialize' => 
   array (
     0 => 'mixed',
   ),
-  'ds\\queue::offsetexists' => 
+  'ds\\seq::last' => 
+  array (
+    0 => 'mixed',
+  ),
+  'ds\\seq::map' => 
+  array (
+    0 => 'Ds\\Sequence',
+    'callback' => 'callable',
+  ),
+  'ds\\seq::merge' => 
+  array (
+    0 => 'Ds\\Sequence',
+    'values' => 'mixed',
+  ),
+  'ds\\seq::offsetexists' => 
   array (
     0 => 'bool',
     'offset' => 'mixed',
   ),
-  'ds\\queue::offsetget' => 
+  'ds\\seq::offsetget' => 
   array (
     0 => 'mixed',
     'offset' => 'mixed',
   ),
-  'ds\\queue::offsetset' => 
+  'ds\\seq::offsetset' => 
   array (
     0 => 'void',
     'offset' => 'mixed',
     'value' => 'mixed',
   ),
-  'ds\\queue::offsetunset' => 
+  'ds\\seq::offsetunset' => 
   array (
     0 => 'void',
     'offset' => 'mixed',
   ),
-  'ds\\queue::peek' => 
+  'ds\\seq::pop' => 
   array (
     0 => 'mixed',
   ),
-  'ds\\queue::pop' => 
-  array (
-    0 => 'mixed',
-  ),
-  'ds\\queue::push' => 
+  'ds\\seq::push' => 
   array (
     0 => 'mixed',
     '...values=' => 'mixed',
   ),
-  'ds\\queue::toarray' => 
+  'ds\\seq::reduce' => 
+  array (
+    0 => 'mixed',
+    'callback' => 'callable',
+    'initial=' => 'mixed',
+  ),
+  'ds\\seq::remove' => 
+  array (
+    0 => 'mixed',
+    'index' => 'int',
+  ),
+  'ds\\seq::reverse' => 
+  array (
+    0 => 'mixed',
+  ),
+  'ds\\seq::reversed' => 
+  array (
+    0 => 'Ds\\Sequence',
+  ),
+  'ds\\seq::rotate' => 
+  array (
+    0 => 'mixed',
+    'rotations' => 'int',
+  ),
+  'ds\\seq::set' => 
+  array (
+    0 => 'mixed',
+    'index' => 'int',
+    'value' => 'mixed',
+  ),
+  'ds\\seq::shift' => 
+  array (
+    0 => 'mixed',
+  ),
+  'ds\\seq::slice' => 
+  array (
+    0 => 'Ds\\Sequence',
+    'index' => 'int',
+    'length=' => 'int|null',
+  ),
+  'ds\\seq::sort' => 
+  array (
+    0 => 'mixed',
+    'comparator=' => 'callable|null',
+  ),
+  'ds\\seq::sorted' => 
+  array (
+    0 => 'Ds\\Sequence',
+    'comparator=' => 'callable|null',
+  ),
+  'ds\\seq::sum' => 
+  array (
+    0 => 'mixed',
+  ),
+  'ds\\seq::toarray' => 
   array (
     0 => 'array<array-key, mixed>',
+  ),
+  'ds\\seq::unshift' => 
+  array (
+    0 => 'mixed',
+    '...values=' => 'mixed',
+  ),
+  'ds\\set' => 
+  array (
+    0 => 'mixed',
+    'values=' => 'mixed',
   ),
   'ds\\set::__construct' => 
   array (
     0 => 'void',
     'values=' => 'mixed',
+  ),
+  'ds\\set::__serialize' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'ds\\set::__unserialize' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
   ),
   'ds\\set::add' => 
   array (
@@ -14192,7 +14184,7 @@ return array (
   ),
   'ds\\set::copy' => 
   array (
-    0 => 'Ds\\Collection',
+    0 => 'mixed',
   ),
   'ds\\set::count' => 
   array (
@@ -14326,267 +14318,6 @@ return array (
   array (
     0 => 'Ds\\Set',
     'set' => 'Ds\\Set',
-  ),
-  'ds\\stack::__construct' => 
-  array (
-    0 => 'void',
-    'values=' => 'mixed',
-  ),
-  'ds\\stack::allocate' => 
-  array (
-    0 => 'mixed',
-    'capacity' => 'int',
-  ),
-  'ds\\stack::capacity' => 
-  array (
-    0 => 'int',
-  ),
-  'ds\\stack::clear' => 
-  array (
-    0 => 'mixed',
-  ),
-  'ds\\stack::copy' => 
-  array (
-    0 => 'Ds\\Collection',
-  ),
-  'ds\\stack::count' => 
-  array (
-    0 => 'int',
-  ),
-  'ds\\stack::getiterator' => 
-  array (
-    0 => 'Traversable',
-  ),
-  'ds\\stack::isempty' => 
-  array (
-    0 => 'bool',
-  ),
-  'ds\\stack::jsonserialize' => 
-  array (
-    0 => 'mixed',
-  ),
-  'ds\\stack::offsetexists' => 
-  array (
-    0 => 'bool',
-    'offset' => 'mixed',
-  ),
-  'ds\\stack::offsetget' => 
-  array (
-    0 => 'mixed',
-    'offset' => 'mixed',
-  ),
-  'ds\\stack::offsetset' => 
-  array (
-    0 => 'void',
-    'offset' => 'mixed',
-    'value' => 'mixed',
-  ),
-  'ds\\stack::offsetunset' => 
-  array (
-    0 => 'void',
-    'offset' => 'mixed',
-  ),
-  'ds\\stack::peek' => 
-  array (
-    0 => 'mixed',
-  ),
-  'ds\\stack::pop' => 
-  array (
-    0 => 'mixed',
-  ),
-  'ds\\stack::push' => 
-  array (
-    0 => 'mixed',
-    '...values=' => 'mixed',
-  ),
-  'ds\\stack::toarray' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'ds\\vector::__construct' => 
-  array (
-    0 => 'void',
-    'values=' => 'mixed',
-  ),
-  'ds\\vector::allocate' => 
-  array (
-    0 => 'mixed',
-    'capacity' => 'int',
-  ),
-  'ds\\vector::apply' => 
-  array (
-    0 => 'mixed',
-    'callback' => 'callable',
-  ),
-  'ds\\vector::capacity' => 
-  array (
-    0 => 'int',
-  ),
-  'ds\\vector::clear' => 
-  array (
-    0 => 'mixed',
-  ),
-  'ds\\vector::contains' => 
-  array (
-    0 => 'bool',
-    '...values=' => 'mixed',
-  ),
-  'ds\\vector::copy' => 
-  array (
-    0 => 'Ds\\Collection',
-  ),
-  'ds\\vector::count' => 
-  array (
-    0 => 'int',
-  ),
-  'ds\\vector::filter' => 
-  array (
-    0 => 'Ds\\Sequence',
-    'callback=' => 'callable|null',
-  ),
-  'ds\\vector::find' => 
-  array (
-    0 => 'mixed',
-    'value' => 'mixed',
-  ),
-  'ds\\vector::first' => 
-  array (
-    0 => 'mixed',
-  ),
-  'ds\\vector::get' => 
-  array (
-    0 => 'mixed',
-    'index' => 'int',
-  ),
-  'ds\\vector::getiterator' => 
-  array (
-    0 => 'Traversable',
-  ),
-  'ds\\vector::insert' => 
-  array (
-    0 => 'mixed',
-    'index' => 'int',
-    '...values=' => 'mixed',
-  ),
-  'ds\\vector::isempty' => 
-  array (
-    0 => 'bool',
-  ),
-  'ds\\vector::join' => 
-  array (
-    0 => 'string',
-    'glue=' => 'string',
-  ),
-  'ds\\vector::jsonserialize' => 
-  array (
-    0 => 'mixed',
-  ),
-  'ds\\vector::last' => 
-  array (
-    0 => 'mixed',
-  ),
-  'ds\\vector::map' => 
-  array (
-    0 => 'Ds\\Sequence',
-    'callback' => 'callable',
-  ),
-  'ds\\vector::merge' => 
-  array (
-    0 => 'Ds\\Sequence',
-    'values' => 'mixed',
-  ),
-  'ds\\vector::offsetexists' => 
-  array (
-    0 => 'bool',
-    'offset' => 'mixed',
-  ),
-  'ds\\vector::offsetget' => 
-  array (
-    0 => 'mixed',
-    'offset' => 'mixed',
-  ),
-  'ds\\vector::offsetset' => 
-  array (
-    0 => 'void',
-    'offset' => 'mixed',
-    'value' => 'mixed',
-  ),
-  'ds\\vector::offsetunset' => 
-  array (
-    0 => 'void',
-    'offset' => 'mixed',
-  ),
-  'ds\\vector::pop' => 
-  array (
-    0 => 'mixed',
-  ),
-  'ds\\vector::push' => 
-  array (
-    0 => 'mixed',
-    '...values=' => 'mixed',
-  ),
-  'ds\\vector::reduce' => 
-  array (
-    0 => 'mixed',
-    'callback' => 'callable',
-    'initial=' => 'mixed',
-  ),
-  'ds\\vector::remove' => 
-  array (
-    0 => 'mixed',
-    'index' => 'int',
-  ),
-  'ds\\vector::reverse' => 
-  array (
-    0 => 'mixed',
-  ),
-  'ds\\vector::reversed' => 
-  array (
-    0 => 'Ds\\Sequence',
-  ),
-  'ds\\vector::rotate' => 
-  array (
-    0 => 'mixed',
-    'rotations' => 'int',
-  ),
-  'ds\\vector::set' => 
-  array (
-    0 => 'mixed',
-    'index' => 'int',
-    'value' => 'mixed',
-  ),
-  'ds\\vector::shift' => 
-  array (
-    0 => 'mixed',
-  ),
-  'ds\\vector::slice' => 
-  array (
-    0 => 'Ds\\Sequence',
-    'index' => 'int',
-    'length=' => 'int|null',
-  ),
-  'ds\\vector::sort' => 
-  array (
-    0 => 'mixed',
-    'comparator=' => 'callable|null',
-  ),
-  'ds\\vector::sorted' => 
-  array (
-    0 => 'Ds\\Sequence',
-    'comparator=' => 'callable|null',
-  ),
-  'ds\\vector::sum' => 
-  array (
-    0 => 'mixed',
-  ),
-  'ds\\vector::toarray' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'ds\\vector::unshift' => 
-  array (
-    0 => 'mixed',
-    '...values=' => 'mixed',
   ),
   'emptyiterator::current' => 
   array (
@@ -28965,10 +28696,6 @@ return array (
     0 => 'void',
     'level=' => 'null|string',
   ),
-  'mongodb\\driver\\readconcern::__serialize' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
   'mongodb\\driver\\readconcern::__set_state' => 
   array (
     0 => 'MongoDB\\Driver\\ReadConcern',
@@ -28997,10 +28724,6 @@ return array (
     'mode' => 'string',
     'tagSets=' => 'array<array-key, mixed>|null',
     'options=' => 'array<array-key, mixed>|null',
-  ),
-  'mongodb\\driver\\readpreference::__serialize' => 
-  array (
-    0 => 'array<array-key, mixed>',
   ),
   'mongodb\\driver\\readpreference::__set_state' => 
   array (
@@ -29275,10 +28998,6 @@ return array (
     'w' => 'int|string',
     'wtimeout=' => 'int|null',
     'journal=' => 'bool|null',
-  ),
-  'mongodb\\driver\\writeconcern::__serialize' => 
-  array (
-    0 => 'array<array-key, mixed>',
   ),
   'mongodb\\driver\\writeconcern::__set_state' => 
   array (
@@ -43859,6 +43578,250 @@ return array (
     'format' => 'string',
     '&...vars=' => 'mixed',
   ),
+  'ssh2_auth_agent' => 
+  array (
+    0 => 'bool',
+    'session' => 'mixed',
+    'username' => 'string',
+  ),
+  'ssh2_auth_hostbased_file' => 
+  array (
+    0 => 'bool',
+    'session' => 'mixed',
+    'username' => 'string',
+    'hostname' => 'string',
+    'pubkeyfile' => 'string',
+    'privkeyfile' => 'string',
+    'passphrase=' => 'null|string',
+    'local_username=' => 'null|string',
+  ),
+  'ssh2_auth_none' => 
+  array (
+    0 => 'bool',
+    'session' => 'mixed',
+    'username' => 'string',
+  ),
+  'ssh2_auth_password' => 
+  array (
+    0 => 'bool',
+    'session' => 'mixed',
+    'username' => 'string',
+    'password' => 'string',
+  ),
+  'ssh2_auth_pubkey' => 
+  array (
+    0 => 'bool',
+    'session' => 'mixed',
+    'username' => 'string',
+    'pubkey' => 'string',
+    'privkey' => 'string',
+    'passphrase=' => 'null|string',
+  ),
+  'ssh2_auth_pubkey_file' => 
+  array (
+    0 => 'bool',
+    'session' => 'mixed',
+    'username' => 'string',
+    'pubkeyfile' => 'string',
+    'privkeyfile' => 'string',
+    'passphrase=' => 'null|string',
+  ),
+  'ssh2_connect' => 
+  array (
+    0 => 'mixed',
+    'host' => 'string',
+    'port=' => 'int',
+    'methods=' => 'array<array-key, mixed>|null',
+    'callbacks=' => 'array<array-key, mixed>|null',
+  ),
+  'ssh2_disconnect' => 
+  array (
+    0 => 'bool',
+    'session' => 'mixed',
+  ),
+  'ssh2_exec' => 
+  array (
+    0 => 'mixed',
+    'session' => 'mixed',
+    'command' => 'string',
+    'pty=' => 'bool',
+    'env=' => 'array<array-key, mixed>|null',
+    'width=' => 'int',
+    'height=' => 'int',
+    'width_height_type=' => 'int',
+  ),
+  'ssh2_fetch_stream' => 
+  array (
+    0 => 'mixed',
+    'channel' => 'mixed',
+    'streamid' => 'int',
+  ),
+  'ssh2_fingerprint' => 
+  array (
+    0 => 'mixed',
+    'session' => 'mixed',
+    'flags=' => 'int',
+  ),
+  'ssh2_forward_accept' => 
+  array (
+    0 => 'false|resource',
+    'listener' => 'resource',
+    '&host=' => 'null|string',
+    '&port=' => 'int|null',
+  ),
+  'ssh2_forward_listen' => 
+  array (
+    0 => 'false|resource',
+    'session' => 'mixed',
+    'port' => 'int',
+    'host=' => 'string',
+    'max_connections=' => 'int',
+  ),
+  'ssh2_methods_negotiated' => 
+  array (
+    0 => 'array<array-key, mixed>',
+    'session' => 'mixed',
+  ),
+  'ssh2_publickey_add' => 
+  array (
+    0 => 'bool',
+    'pkey' => 'mixed',
+    'algoname' => 'string',
+    'blob' => 'string',
+    'overwrite=' => 'bool',
+    'attributes=' => 'array<array-key, mixed>|null',
+  ),
+  'ssh2_publickey_init' => 
+  array (
+    0 => 'mixed',
+    'session' => 'mixed',
+  ),
+  'ssh2_publickey_list' => 
+  array (
+    0 => 'mixed',
+    'pkey' => 'mixed',
+  ),
+  'ssh2_publickey_remove' => 
+  array (
+    0 => 'bool',
+    'pkey' => 'mixed',
+    'algoname' => 'string',
+    'blob' => 'string',
+  ),
+  'ssh2_scp_recv' => 
+  array (
+    0 => 'bool',
+    'session' => 'mixed',
+    'remote_file' => 'string',
+    'local_file' => 'string',
+  ),
+  'ssh2_scp_send' => 
+  array (
+    0 => 'bool',
+    'session' => 'mixed',
+    'local_file' => 'string',
+    'remote_file' => 'string',
+    'create_mode=' => 'int',
+  ),
+  'ssh2_send_eof' => 
+  array (
+    0 => 'bool',
+    'channel' => 'mixed',
+  ),
+  'ssh2_sftp' => 
+  array (
+    0 => 'mixed',
+    'session' => 'mixed',
+  ),
+  'ssh2_sftp_chmod' => 
+  array (
+    0 => 'bool',
+    'sftp' => 'mixed',
+    'filename' => 'string',
+    'mode' => 'int',
+  ),
+  'ssh2_sftp_lstat' => 
+  array (
+    0 => 'mixed',
+    'sftp' => 'mixed',
+    'path' => 'string',
+  ),
+  'ssh2_sftp_mkdir' => 
+  array (
+    0 => 'bool',
+    'sftp' => 'mixed',
+    'dirname' => 'string',
+    'mode=' => 'int',
+    'recursive=' => 'bool',
+  ),
+  'ssh2_sftp_readlink' => 
+  array (
+    0 => 'mixed',
+    'sftp' => 'mixed',
+    'link' => 'string',
+  ),
+  'ssh2_sftp_realpath' => 
+  array (
+    0 => 'mixed',
+    'sftp' => 'mixed',
+    'filename' => 'string',
+  ),
+  'ssh2_sftp_rename' => 
+  array (
+    0 => 'bool',
+    'sftp' => 'mixed',
+    'from' => 'string',
+    'to' => 'string',
+  ),
+  'ssh2_sftp_rmdir' => 
+  array (
+    0 => 'bool',
+    'sftp' => 'mixed',
+    'dirname' => 'string',
+  ),
+  'ssh2_sftp_stat' => 
+  array (
+    0 => 'mixed',
+    'sftp' => 'mixed',
+    'path' => 'string',
+  ),
+  'ssh2_sftp_symlink' => 
+  array (
+    0 => 'bool',
+    'sftp' => 'mixed',
+    'target' => 'string',
+    'link' => 'string',
+  ),
+  'ssh2_sftp_unlink' => 
+  array (
+    0 => 'bool',
+    'sftp' => 'mixed',
+    'filename' => 'string',
+  ),
+  'ssh2_shell' => 
+  array (
+    0 => 'mixed',
+    'session' => 'mixed',
+    'termtype=' => 'string',
+    'env=' => 'array<array-key, mixed>|null',
+    'width=' => 'int',
+    'height=' => 'int',
+    'width_height_type=' => 'int',
+  ),
+  'ssh2_shell_resize' => 
+  array (
+    0 => 'bool',
+    'session' => 'mixed',
+    'width' => 'int',
+    'height' => 'int',
+  ),
+  'ssh2_tunnel' => 
+  array (
+    0 => 'mixed',
+    'session' => 'mixed',
+    'host' => 'string',
+    'port' => 'int',
+  ),
   'stat' => 
   array (
     0 => 'array<array-key, mixed>|false',
@@ -45346,6 +45309,11 @@ return array (
   array (
     0 => 'void',
     'options' => 'array<array-key, mixed>',
+  ),
+  'swoole\\coroutine::settimelimit' => 
+  array (
+    0 => 'bool',
+    'timeout' => 'float',
   ),
   'swoole\\coroutine::sleep' => 
   array (
@@ -46874,6 +46842,49 @@ return array (
     'filename' => 'string',
     'fileContent' => 'string',
     'flags=' => 'int',
+  ),
+  'swoole\\coroutine\\timeoutexception::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'string',
+    'code=' => 'int',
+    'previous=' => 'Throwable|null',
+  ),
+  'swoole\\coroutine\\timeoutexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\coroutine\\timeoutexception::__wakeup' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\coroutine\\timeoutexception::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\timeoutexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\coroutine\\timeoutexception::getline' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\coroutine\\timeoutexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\coroutine\\timeoutexception::getprevious' => 
+  array (
+    0 => 'Throwable|null',
+  ),
+  'swoole\\coroutine\\timeoutexception::gettrace' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'swoole\\coroutine\\timeoutexception::gettraceasstring' => 
+  array (
+    0 => 'string',
   ),
   'swoole\\coroutine\\waitgroup::__construct' => 
   array (
@@ -49917,6 +49928,88 @@ return array (
   array (
     0 => 'bool',
   ),
+  'swoole\\mongodb\\client::__call' => 
+  array (
+    0 => 'mixed',
+    'method' => 'string',
+    'args' => 'array<array-key, mixed>',
+  ),
+  'swoole\\mongodb\\client::__construct' => 
+  array (
+    0 => 'void',
+    'uri=' => 'null|string',
+    'uriOptions=' => 'array<array-key, mixed>',
+    'driverOptions=' => 'array<array-key, mixed>',
+  ),
+  'swoole\\mongodb\\client::__get' => 
+  array (
+    0 => 'mixed',
+    'property' => 'string',
+  ),
+  'swoole\\mongodb\\client::__invoke' => 
+  array (
+    0 => 'mixed',
+    '...args=' => 'mixed',
+  ),
+  'swoole\\mongodb\\client::__set' => 
+  array (
+    0 => 'mixed',
+    'property' => 'string',
+    'value' => 'mixed',
+  ),
+  'swoole\\mongodb\\client::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\mongodb\\client::count' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\mongodb\\client::current' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\mongodb\\client::getobject' => 
+  array (
+    0 => 'Swoole\\RemoteObject',
+  ),
+  'swoole\\mongodb\\client::key' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\mongodb\\client::next' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\mongodb\\client::offsetexists' => 
+  array (
+    0 => 'bool',
+    'offset' => 'mixed',
+  ),
+  'swoole\\mongodb\\client::offsetget' => 
+  array (
+    0 => 'mixed',
+    'offset' => 'mixed',
+  ),
+  'swoole\\mongodb\\client::offsetset' => 
+  array (
+    0 => 'void',
+    'offset' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole\\mongodb\\client::offsetunset' => 
+  array (
+    0 => 'void',
+    'offset' => 'mixed',
+  ),
+  'swoole\\mongodb\\client::rewind' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\mongodb\\client::valid' => 
+  array (
+    0 => 'bool',
+  ),
   'swoole\\multibytestringobject::__construct' => 
   array (
     0 => 'void',
@@ -50964,6 +51057,342 @@ return array (
     0 => 'array<array-key, mixed>|false',
     'tasks' => 'array<array-key, mixed>',
     'timeout=' => 'float',
+  ),
+  'swoole\\remoteobject::__call' => 
+  array (
+    0 => 'mixed',
+    'method' => 'string',
+    'args' => 'array<array-key, mixed>',
+  ),
+  'swoole\\remoteobject::__construct' => 
+  array (
+    0 => 'void',
+    'coroutineId' => 'mixed',
+    'clientId' => 'mixed',
+  ),
+  'swoole\\remoteobject::__destruct' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\remoteobject::__get' => 
+  array (
+    0 => 'mixed',
+    'property' => 'string',
+  ),
+  'swoole\\remoteobject::__invoke' => 
+  array (
+    0 => 'mixed',
+    '...args=' => 'mixed',
+  ),
+  'swoole\\remoteobject::__serialize' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'swoole\\remoteobject::__set' => 
+  array (
+    0 => 'mixed',
+    'property' => 'string',
+    'value' => 'mixed',
+  ),
+  'swoole\\remoteobject::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\remoteobject::__unserialize' => 
+  array (
+    0 => 'void',
+    'data' => 'array<array-key, mixed>',
+  ),
+  'swoole\\remoteobject::call' => 
+  array (
+    0 => 'mixed',
+    'client' => 'Swoole\\RemoteObject\\Client',
+    'fn' => 'string',
+    'args' => 'array<array-key, mixed>',
+  ),
+  'swoole\\remoteobject::count' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\remoteobject::create' => 
+  array (
+    0 => 'Swoole\\RemoteObject',
+    'client' => 'Swoole\\RemoteObject\\Client',
+    'class' => 'string',
+    'args' => 'array<array-key, mixed>',
+  ),
+  'swoole\\remoteobject::current' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\remoteobject::execute' => 
+  array (
+    0 => 'array<array-key, mixed>',
+    'path' => 'string',
+    'params=' => 'array<array-key, mixed>',
+  ),
+  'swoole\\remoteobject::getobjectid' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\remoteobject::key' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\remoteobject::marshal' => 
+  array (
+    0 => 'Swoole\\RemoteObject',
+    'objectId' => 'int',
+    'ownerCoroutineId' => 'int',
+    'clientId' => 'string',
+  ),
+  'swoole\\remoteobject::next' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\remoteobject::offsetexists' => 
+  array (
+    0 => 'bool',
+    'offset' => 'mixed',
+  ),
+  'swoole\\remoteobject::offsetget' => 
+  array (
+    0 => 'mixed',
+    'offset' => 'mixed',
+  ),
+  'swoole\\remoteobject::offsetset' => 
+  array (
+    0 => 'void',
+    'offset' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole\\remoteobject::offsetunset' => 
+  array (
+    0 => 'void',
+    'offset' => 'mixed',
+  ),
+  'swoole\\remoteobject::rewind' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\remoteobject::valid' => 
+  array (
+    0 => 'bool',
+  ),
+  'swoole\\remoteobject\\client::__construct' => 
+  array (
+    0 => 'void',
+    'host=' => 'string',
+    'port=' => 'int',
+    'options=' => 'array<array-key, mixed>',
+  ),
+  'swoole\\remoteobject\\client::call' => 
+  array (
+    0 => 'mixed',
+    'fn' => 'string',
+    '...args=' => 'mixed',
+  ),
+  'swoole\\remoteobject\\client::create' => 
+  array (
+    0 => 'Swoole\\RemoteObject',
+    'class' => 'string',
+    '...args=' => 'mixed',
+  ),
+  'swoole\\remoteobject\\client::execute' => 
+  array (
+    0 => 'mixed',
+    'path' => 'string',
+    'array' => 'array<array-key, mixed>',
+  ),
+  'swoole\\remoteobject\\client::genuuid' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\remoteobject\\client::getid' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\remoteobject\\client::getinstance' => 
+  array (
+    0 => 'null|static',
+    'clientId' => 'string',
+  ),
+  'swoole\\remoteobject\\client::ping' => 
+  array (
+    0 => 'bool',
+  ),
+  'swoole\\remoteobject\\context::__construct' => 
+  array (
+    0 => 'void',
+    'request' => 'Swoole\\Http\\Request',
+    'response' => 'Swoole\\Http\\Response',
+  ),
+  'swoole\\remoteobject\\context::end' => 
+  array (
+    0 => 'void',
+    'data' => 'array<array-key, mixed>',
+  ),
+  'swoole\\remoteobject\\context::getclientid' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\remoteobject\\context::getcoroutineid' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\remoteobject\\context::getdataparam' => 
+  array (
+    0 => 'mixed',
+    'name' => 'string',
+  ),
+  'swoole\\remoteobject\\context::gethandler' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\remoteobject\\context::getparam' => 
+  array (
+    0 => 'string',
+    'name' => 'string',
+  ),
+  'swoole\\remoteobject\\exception::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'string',
+    'code=' => 'int',
+    'previous=' => 'Throwable|null',
+  ),
+  'swoole\\remoteobject\\exception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\remoteobject\\exception::__wakeup' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\remoteobject\\exception::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\remoteobject\\exception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\remoteobject\\exception::getline' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\remoteobject\\exception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\remoteobject\\exception::getprevious' => 
+  array (
+    0 => 'Throwable|null',
+  ),
+  'swoole\\remoteobject\\exception::gettrace' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'swoole\\remoteobject\\exception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\remoteobject\\server::__construct' => 
+  array (
+    0 => 'void',
+    'host=' => 'string',
+    'port=' => 'int',
+    'options=' => 'array<array-key, mixed>',
+  ),
+  'swoole\\remoteobject\\server::_call_function' => 
+  array (
+    0 => 'void',
+    'ctx' => 'Swoole\\RemoteObject\\Context',
+  ),
+  'swoole\\remoteobject\\server::_call_method' => 
+  array (
+    0 => 'void',
+    'ctx' => 'Swoole\\RemoteObject\\Context',
+  ),
+  'swoole\\remoteobject\\server::_destroy' => 
+  array (
+    0 => 'void',
+    'ctx' => 'Swoole\\RemoteObject\\Context',
+  ),
+  'swoole\\remoteobject\\server::_new' => 
+  array (
+    0 => 'void',
+    'ctx' => 'Swoole\\RemoteObject\\Context',
+  ),
+  'swoole\\remoteobject\\server::_offset_exists' => 
+  array (
+    0 => 'void',
+    'ctx' => 'Swoole\\RemoteObject\\Context',
+  ),
+  'swoole\\remoteobject\\server::_offset_get' => 
+  array (
+    0 => 'void',
+    'ctx' => 'Swoole\\RemoteObject\\Context',
+  ),
+  'swoole\\remoteobject\\server::_offset_set' => 
+  array (
+    0 => 'void',
+    'ctx' => 'Swoole\\RemoteObject\\Context',
+  ),
+  'swoole\\remoteobject\\server::_offset_unset' => 
+  array (
+    0 => 'void',
+    'ctx' => 'Swoole\\RemoteObject\\Context',
+  ),
+  'swoole\\remoteobject\\server::_ping' => 
+  array (
+    0 => 'void',
+    'ctx' => 'Swoole\\RemoteObject\\Context',
+  ),
+  'swoole\\remoteobject\\server::_read_property' => 
+  array (
+    0 => 'void',
+    'ctx' => 'Swoole\\RemoteObject\\Context',
+  ),
+  'swoole\\remoteobject\\server::_to_string' => 
+  array (
+    0 => 'void',
+    'ctx' => 'Swoole\\RemoteObject\\Context',
+  ),
+  'swoole\\remoteobject\\server::_write_property' => 
+  array (
+    0 => 'void',
+    'ctx' => 'Swoole\\RemoteObject\\Context',
+  ),
+  'swoole\\remoteobject\\server::addobject' => 
+  array (
+    0 => 'int',
+    'object' => 'mixed',
+  ),
+  'swoole\\remoteobject\\server::marshal' => 
+  array (
+    0 => 'mixed',
+    'ctx' => 'Swoole\\RemoteObject\\Context',
+    'data' => 'mixed',
+  ),
+  'swoole\\remoteobject\\server::onrequest' => 
+  array (
+    0 => 'void',
+    'request' => 'Swoole\\Http\\Request',
+    'response' => 'Swoole\\Http\\Response',
+  ),
+  'swoole\\remoteobject\\server::onstart' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\remoteobject\\server::start' => 
+  array (
+    0 => 'bool',
+  ),
+  'swoole\\remoteobject\\server::unmarshal' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
   ),
   'swoole\\runtime::enablecoroutine' => 
   array (
@@ -52365,6 +52794,12 @@ return array (
     0 => 'bool',
     'settings' => 'array<array-key, mixed>',
   ),
+  'swoole_checkdnsrr' => 
+  array (
+    0 => 'bool',
+    'hostname' => 'string',
+    'type=' => 'string',
+  ),
   'swoole_clear_dns_cache' => 
   array (
     0 => 'void',
@@ -52383,7 +52818,7 @@ return array (
   ),
   'swoole_container_cpu_num' => 
   array (
-    0 => 'mixed',
+    0 => 'int',
   ),
   'swoole_coroutine_create' => 
   array (
@@ -52461,6 +52896,28 @@ return array (
     'obj' => 'Swoole\\Curl\\Handler',
     'array' => 'mixed',
   ),
+  'swoole_dns_check_record' => 
+  array (
+    0 => 'bool',
+    'hostname' => 'string',
+    'type=' => 'string',
+  ),
+  'swoole_dns_get_mx' => 
+  array (
+    0 => 'bool',
+    'hostname' => 'string',
+    '&hosts' => 'array<array-key, mixed>',
+    '&weights=' => 'array<array-key, mixed>|null',
+  ),
+  'swoole_dns_get_record' => 
+  array (
+    0 => 'array<array-key, mixed>|false',
+    'hostname' => 'string',
+    'type=' => 'int',
+    '&authoritative_name_servers=' => 'array<array-key, mixed>|null',
+    '&additional_records=' => 'array<array-key, mixed>|null',
+    'raw=' => 'bool',
+  ),
   'swoole_errno' => 
   array (
     0 => 'int',
@@ -52516,6 +52973,10 @@ return array (
     'fd' => 'mixed',
     'events=' => 'int',
   ),
+  'swoole_event_rshutdown' => 
+  array (
+    0 => 'void',
+  ),
   'swoole_event_set' => 
   array (
     0 => 'bool',
@@ -52541,9 +53002,14 @@ return array (
     '&output=' => 'mixed',
     '&returnVar=' => 'mixed',
   ),
+  'swoole_get_default_remote_object_client' => 
+  array (
+    0 => 'Swoole\\RemoteObject\\Client',
+  ),
   'swoole_get_local_ip' => 
   array (
     0 => 'array<array-key, mixed>',
+    'family=' => 'int',
   ),
   'swoole_get_local_mac' => 
   array (
@@ -52567,6 +53033,23 @@ return array (
   array (
     0 => 'array<array-key, mixed>',
   ),
+  'swoole_gethostbyaddr' => 
+  array (
+    0 => 'string',
+    'ip' => 'string',
+  ),
+  'swoole_gethostbynamel' => 
+  array (
+    0 => 'mixed',
+    'domain' => 'string',
+  ),
+  'swoole_getmxrr' => 
+  array (
+    0 => 'bool',
+    'hostname' => 'string',
+    '&hosts' => 'array<array-key, mixed>',
+    '&weights=' => 'array<array-key, mixed>|null',
+  ),
   'swoole_hashcode' => 
   array (
     0 => 'false|int',
@@ -52584,13 +53067,17 @@ return array (
     'fn' => 'string',
     'args=' => 'mixed',
   ),
+  'swoole_init_default_remote_object_server' => 
+  array (
+    0 => 'void',
+  ),
   'swoole_internal_call_user_shutdown_begin' => 
   array (
     0 => 'bool',
   ),
   'swoole_is_in_container' => 
   array (
-    0 => 'mixed',
+    0 => 'bool',
   ),
   'swoole_last_error' => 
   array (
@@ -52615,6 +53102,14 @@ return array (
   array (
     0 => 'void',
     'options' => 'array<array-key, mixed>',
+  ),
+  'swoole_mail' => 
+  array (
+    0 => 'bool',
+    'to' => 'string',
+    'subject' => 'string',
+    'message' => 'string',
+    'headers=' => 'array<array-key, mixed>',
   ),
   'swoole_mbstring' => 
   array (
@@ -52800,6 +53295,22 @@ return array (
   array (
     0 => 'bool',
     'handle' => 'CurlHandle',
+  ),
+  'swoole_real_dns_get_record' => 
+  array (
+    0 => 'array<array-key, mixed>',
+    'hostname' => 'string',
+    'type' => 'int',
+    'authoritative_name_servers=' => 'array<array-key, mixed>|null',
+    'additional_records=' => 'array<array-key, mixed>|null',
+    'raw=' => 'bool',
+  ),
+  'swoole_real_getmxrr' => 
+  array (
+    0 => 'array<array-key, mixed>',
+    'hostname' => 'string',
+    'hosts=' => 'array<array-key, mixed>|null',
+    'weights=' => 'array<array-key, mixed>|null',
   ),
   'swoole_select' => 
   array (
@@ -53074,6 +53585,21 @@ return array (
     0 => 'false|int',
     'ms' => 'int',
     'callback' => 'callable',
+  ),
+  'swoole_tracer_leak_detect' => 
+  array (
+    0 => 'void',
+    'threshold=' => 'int',
+  ),
+  'swoole_tracer_prof_begin' => 
+  array (
+    0 => 'bool',
+    'options=' => 'array<array-key, mixed>|null',
+  ),
+  'swoole_tracer_prof_end' => 
+  array (
+    0 => 'bool',
+    'output_file' => 'string',
   ),
   'swoole_version' => 
   array (
