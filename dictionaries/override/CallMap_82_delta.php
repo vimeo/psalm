@@ -24,7 +24,7 @@ return array (
     ),
     'libxml_get_external_entity_loader' => 
     array (
-      0 => 'callable(string, string, array{directory: null|string, extSubSystem: null|string, extSubURI: null|string, intSubName: null|string}):(null|resource|string)|null',
+      0 => 'impure-callable(string, string, array{directory: null|string, extSubSystem: null|string, extSubURI: null|string, intSubName: null|string}):(null|resource|string)|null',
     ),
     'mysqli::execute_query' => 
     array (
@@ -289,14 +289,14 @@ return array (
       array (
         0 => 'bool',
         '&array' => 'array<array-key, mixed>',
-        'callback' => 'callable',
+        'callback' => 'impure-callable',
         'arg=' => 'mixed',
       ),
       'new' => 
       array (
         0 => 'true',
         '&array' => 'array<array-key, mixed>',
-        'callback' => 'callable',
+        'callback' => 'impure-callable',
         'arg=' => 'mixed',
       ),
     ),
@@ -306,14 +306,14 @@ return array (
       array (
         0 => 'bool',
         '&array' => 'array<array-key, mixed>',
-        'callback' => 'callable',
+        'callback' => 'impure-callable',
         'arg=' => 'mixed',
       ),
       'new' => 
       array (
         0 => 'true',
         '&array' => 'array<array-key, mixed>',
-        'callback' => 'callable',
+        'callback' => 'impure-callable',
         'arg=' => 'mixed',
       ),
     ),
@@ -420,13 +420,13 @@ return array (
       'old' => 
       array (
         0 => 'bool|null',
-        'callback' => 'callable',
+        'callback' => 'impure-callable',
         '...args=' => 'mixed',
       ),
       'new' => 
       array (
         0 => 'void',
-        'callback' => 'callable',
+        'callback' => 'impure-callable',
         '...args=' => 'mixed',
       ),
     ),
@@ -562,7 +562,7 @@ return array (
     'ds\\deque::apply' => 
     array (
       0 => 'void',
-      'callback' => 'callable',
+      'callback' => 'impure-callable',
     ),
     'ds\\deque::clear' => 
     array (
@@ -606,7 +606,7 @@ return array (
     'ds\\deque::sort' => 
     array (
       0 => 'void',
-      'comparator=' => 'callable|null',
+      'comparator=' => 'impure-callable|null',
     ),
     'ds\\deque::sum' => 
     array (
@@ -680,7 +680,7 @@ return array (
     'ds\\vector::apply' => 
     array (
       0 => 'void',
-      'callback' => 'callable',
+      'callback' => 'impure-callable',
     ),
     'ds\\vector::clear' => 
     array (
@@ -719,7 +719,7 @@ return array (
     'ds\\vector::sort' => 
     array (
       0 => 'void',
-      'comparator=' => 'callable|null',
+      'comparator=' => 'impure-callable|null',
     ),
     'ds\\vector::sum' => 
     array (
