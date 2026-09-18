@@ -35,6 +35,7 @@ use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
 
 use function array_merge;
@@ -421,7 +422,15 @@ final class MethodCallAnalyzer extends CallAnalyzer
             $types = $class_type->getAtomicTypes();
 
             foreach ($types as $key => &$type) {
-                if (!$type instanceof TNamedObject && !$type instanceof TObject && !$type instanceof TConditional) {
+                // A type variable that survived here is a valid method-call
+                // receiver — the call landed on its inferred object bound — so
+                // it belongs with the concrete object types rather than being
+                // stripped as a non-object, which would leave nothing behind.
+                if (!$type instanceof TNamedObject
+                    && !$type instanceof TObject
+                    && !$type instanceof TConditional
+                    && !$type instanceof TTypeVariable
+                ) {
                     unset($types[$key]);
                 } else {
                     $type = $type->setFromDocblock(false);

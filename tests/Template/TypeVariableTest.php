@@ -84,6 +84,55 @@ final class TypeVariableTest extends TestCase
                         echo (string) $r[0][0];
                     }',
             ],
+            'methodCallOnTypeVariableArrayElement' => [
+                // a type variable that surfaces as an array value (here through
+                // a conditional `@return`) and is then read out and used as a
+                // method-call receiver must resolve to its object bound rather
+                // than crash the nullability-stripping that follows a call on a
+                // from-docblock receiver ("We must have some types here!").
+                'code' => '<?php
+                    /** @template TValue */
+                    final class XIter {
+                        /** @param array<TValue> $array */
+                        public function __construct(array $array = []) {}
+                        /**
+                         * @template TCallback as (callable(TValue): mixed)|null
+                         * @param TCallback $callback
+                         * @return array<string, (TCallback is null ? TValue : mixed)>
+                         */
+                        public function toAssocArray(?callable $callback = null): array {
+                            throw new \Exception("stub");
+                        }
+                    }
+
+                    final class OrgFilter {
+                        public function getIdStr(): string { return ""; }
+                    }
+
+                    /**
+                     * @param array<OrgFilter> $orgs
+                     * @return array<string, list<OrgFilter>>
+                     */
+                    function groupThem(array $orgs): array { throw new \Exception("stub"); }
+
+                    /**
+                     * @param array<OrgFilter> $orgs
+                     * @return list<string>
+                     */
+                    function run(array $orgs): array {
+                        $byType = groupThem($orgs);
+                        foreach ($byType as $type => $grp) {
+                            $byType[$type] = (new XIter($grp))->toAssocArray();
+                        }
+                        $out = [];
+                        foreach ($byType as $inFilter) {
+                            if (array_key_exists("x", $inFilter)) {
+                                $out[] = $inFilter["x"]->getIdStr();
+                            }
+                        }
+                        return $out;
+                    }',
+            ],
             'propertyFetchThenMethodCallOnElement' => [
                 // a type variable reached through a property fetch is the object
                 // it was inferred to be; the method call resolves through its
