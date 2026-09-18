@@ -34,12 +34,27 @@ Faithful automatic Hack → PHP+docblock translation isn't achievable, so instea
    commit, so new upstream cases can be hand-translated and added to `fixtures/`
    (verified with `run.php`) alongside a Psalm test.
 
-## Usage
+## Part of the unit suite
+
+`tests/HackConformanceTest.php` drives these fixtures through HHVM as ordinary
+PHPUnit tests (one per fixture, asserting HHVM's verdict matches `expect`). It
+**skips cleanly** when the harness cannot run here — no docker, no daemon, not
+Linux, or the pinned HHVM image is not already present locally (it never pulls a
+multi-hundred-MB image inside a unit-test shard). Pull the image once to enable
+the checks in a given environment:
 
 ```sh
-# Behaviour conformance (requires docker):
+docker pull "$(php -r 'echo json_decode(file_get_contents("bin/hack-conformance/manifest.json"),true)["hhvm_image"];')"
+vendor/bin/phpunit tests/HackConformanceTest.php
+```
+
+## Usage (standalone CLI)
+
+```sh
+# Behaviour conformance (requires docker; pulls the image if missing):
 php bin/hack-conformance/run.php            # ok/FAIL per fixture
 php bin/hack-conformance/run.php --verbose  # also print HHVM output
+php bin/hack-conformance/run.php --json     # machine-readable (what the test consumes)
 
 # Upstream drift (requires git):
 php bin/hack-conformance/track-upstream.php          # report changes
