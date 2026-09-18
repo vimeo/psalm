@@ -22,6 +22,7 @@ jobs:
     outputs:
       should_skip: ${{ steps.skip_check.outputs.should_skip }}
       versions: ${{ steps.versions.outputs.versions }}
+      tag_suffix: ${{ steps.tag.outputs.suffix }}
     steps:
       - id: skip_check
         uses: fkirc/skip-duplicate-actions@f75f66ce1886f00957d99748a42c724f4330bdcf # v5.3.1
@@ -40,6 +41,21 @@ jobs:
       # The PHP version matrix is derived from the single VERSIONS constant in the build script.
       - id: versions
         run: echo "versions=$(php bin/stubs/build_docker.php --versions)" >> "$GITHUB_OUTPUT"
+
+      # Canonical builds (the default branch, tags and releases) push the shared
+      # internal_stubs_<version> tag; every other branch gets a branch-scoped tag
+      # so concurrent branches never clobber each other's images.
+      - id: tag
+        env:
+          IS_CANONICAL: ${{ github.event_name == 'release' || github.ref_type == 'tag' || github.ref_name == github.event.repository.default_branch }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          if [ "$IS_CANONICAL" = "true" ]; then
+            suffix=""
+          else
+            suffix="$(printf '%s' "$REF_NAME" | tr -c 'A-Za-z0-9._-' '-')"
+          fi
+          echo "suffix=$suffix" >> "$GITHUB_OUTPUT"
 
   build-stubs-docker:
     permissions:
@@ -71,6 +87,7 @@ jobs:
         env:
           ACTOR: ${{ github.repository_owner }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_SUFFIX: ${{ needs.pre_job.outputs.tag_suffix }}
         run: |
           echo "$GITHUB_TOKEN" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
           php bin/stubs/build_docker.php ${{ matrix.version }}
@@ -79,7 +96,7 @@ jobs:
     permissions:
       contents: read
       packages: read
-    needs: build-stubs-docker
+    needs: [pre_job, build-stubs-docker]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
@@ -101,6 +118,7 @@ jobs:
       - name: Run composer build and check for a diff
         env:
           STUBS_IMAGE_OWNER: ${{ github.repository_owner }}
+          STUBS_IMAGE_TAG_SUFFIX: ${{ needs.pre_job.outputs.tag_suffix }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "$GITHUB_TOKEN" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin

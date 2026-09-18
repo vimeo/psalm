@@ -285,7 +285,18 @@ $phpBaseDigest = phpBaseDigest($version);
 $cacheKey = cacheKey($version, $extensions, $phpBaseDigest);
 echo "CACHEBUST = $cacheKey\n";
 
-$image = "ghcr.io/$actor/psalm:internal_stubs_$version";
+// Non-canonical builds (feature branches) push a branch-scoped tag so they never
+// clobber the shared canonical internal_stubs_<version> image that gen_callmap.sh
+// and other consumers pull. TAG_SUFFIX is empty for the canonical build.
+$tag = "internal_stubs_$version";
+$suffix = getenv('TAG_SUFFIX');
+if ($suffix !== false && $suffix !== '') {
+    $tag .= '-' . preg_replace('/[^A-Za-z0-9._-]+/', '-', $suffix);
+}
+$image = "ghcr.io/$actor/psalm:$tag";
+
+// The layer cache is intentionally shared across branches (it is content-addressed
+// via CACHEBUST), so branches reuse each other's compiled extension layers.
 $cacheRef = "ghcr.io/$actor/psalm:internal_stubs_{$version}_buildcache";
 
 // The Dockerfile is generated on the fly into a throwaway temp directory (never
