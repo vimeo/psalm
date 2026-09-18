@@ -87,6 +87,35 @@ final class TypeVariableTest extends TestCase
                         echo (string) $r[0][0];
                     }',
             ],
+            'arrayAccessOnNestedTypeVariableElement' => [
+                // a type variable whose bound is itself another type variable
+                // (the element of a `list<TValue>` whose TValue was inferred
+                // from an `array<string, TValue>` that already held a variable)
+                // must resolve through the whole chain to its concrete array
+                // bound, not stop one level short and be rejected as a non-array
+                // (InvalidArrayAccess).
+                'code' => '<?php
+                    /** @template TValue */
+                    final class XIter {
+                        /** @param array<TValue> $array */
+                        public function __construct(array $array = []) {}
+                        /** @param callable(TValue, TValue): mixed $func */
+                        public function sortBy(callable $func): void {}
+                        /** @return array<string, TValue> */
+                        public function toAssoc(): array { throw new \Exception("stub"); }
+                        /** @return list<TValue> */
+                        public function toList(): array { throw new \Exception("stub"); }
+                    }
+
+                    /** @param array<array{id: int}> $rows */
+                    function run(array $rows): void {
+                        $assoc = (new XIter($rows))->toAssoc();
+                        $list = (new XIter($assoc))->toList();
+                        foreach ($list as $row) {
+                            echo $row["id"];
+                        }
+                    }',
+            ],
             'methodCallOnTypeVariableArrayElement' => [
                 // a type variable that surfaces as an array value (here through
                 // a conditional `@return`) and is then read out and used as a

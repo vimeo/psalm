@@ -88,6 +88,17 @@ final class TypeVariableTracker
      */
     public static function resolveTypeVariables(Union $type, ?Codebase $codebase): Union
     {
+        return self::doResolveTypeVariables($type, $codebase, []);
+    }
+
+    /**
+     * @param array<string, true> $seen names currently being resolved, so a
+     *      cyclic bound (`_a` bounded by `_b` bounded by `_a`) stops instead of
+     *      recursing forever.
+     * @psalm-external-mutation-free
+     */
+    private static function doResolveTypeVariables(Union $type, ?Codebase $codebase, array $seen): Union
+    {
         $has_type_variable = false;
 
         foreach ($type->getAtomicTypes() as $atomic_type) {
@@ -106,7 +117,10 @@ final class TypeVariableTracker
         foreach ($type->getAtomicTypes() as $atomic_type) {
             $resolved = null;
 
-            if ($atomic_type instanceof TTypeVariable && $atomic_type->bounds) {
+            if ($atomic_type instanceof TTypeVariable
+                && $atomic_type->bounds
+                && !isset($seen[$atomic_type->name])
+            ) {
                 if ($atomic_type->bounds->lower_bounds) {
                     $resolved = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
                         $atomic_type->bounds->lower_bounds,
@@ -114,6 +128,18 @@ final class TypeVariableTracker
                     );
                 } elseif ($atomic_type->bounds->upper_bounds) {
                     $resolved = $atomic_type->bounds->upper_bounds[0]->type;
+                }
+
+                // A bound may itself be, or contain, another type variable
+                // (`_b` whose bound is `_a` whose bound is a concrete type).
+                // Resolve through to the concrete bound so a single call reaches
+                // a fixpoint, guarding against cyclic bounds.
+                if ($resolved) {
+                    $resolved = self::doResolveTypeVariables(
+                        $resolved,
+                        $codebase,
+                        $seen + [$atomic_type->name => true],
+                    );
                 }
             }
 
