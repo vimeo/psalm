@@ -41,7 +41,7 @@ final class TypeVariableTest extends TestCase
                      */
                     function filter(array $users): XIteratorOnArray {
                         return new XIteratorOnArray($users);
-                    }'
+                    }',
             ],
             'methodCallOnIteratorElement' => [
                 'code' => '<?php
