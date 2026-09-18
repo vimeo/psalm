@@ -3698,6 +3698,81 @@ return array (
         'value=' => '0|1|null',
       ),
     ),
+    'db2_fetch_array' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'stmt' => 'resource',
+        'row_number=' => 'int|null',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'stmt' => 'resource',
+        'row_number=' => 'int',
+      ),
+    ),
+    'db2_fetch_assoc' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'stmt' => 'resource',
+        'row_number=' => 'int|null',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'stmt' => 'resource',
+        'row_number=' => 'int',
+      ),
+    ),
+    'db2_fetch_both' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'stmt' => 'resource',
+        'row_number=' => 'int|null',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'stmt' => 'resource',
+        'row_number=' => 'int',
+      ),
+    ),
+    'db2_fetch_object' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|stdClass',
+        'stmt' => 'resource',
+        'row_number=' => 'int|null',
+      ),
+      'new' => 
+      array (
+        0 => 'false|stdClass',
+        'stmt' => 'resource',
+        'row_number=' => 'int',
+      ),
+    ),
+    'db2_fetch_row' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'stmt' => 'resource',
+        'row_number=' => 'int|null',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'stmt' => 'resource',
+        'row_number=' => 'int',
+      ),
+    ),
     'db2_pclose' => 
     array (
       'old' => 
