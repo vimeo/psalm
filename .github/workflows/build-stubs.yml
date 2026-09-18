@@ -17,9 +17,11 @@ jobs:
   pre_job:
     permissions:
       actions: write
+      contents: read
     runs-on: ubuntu-latest
     outputs:
       should_skip: ${{ steps.skip_check.outputs.should_skip }}
+      versions: ${{ steps.versions.outputs.versions }}
     steps:
       - id: skip_check
         uses: fkirc/skip-duplicate-actions@f75f66ce1886f00957d99748a42c724f4330bdcf # v5.3.1
@@ -27,25 +29,80 @@ jobs:
           cancel_others: true
           do_not_skip: '["release"]'
 
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@7c071dfe9dc99bdf297fa79cb49ea005b9fcadbc # v2
+        with:
+          php-version: '8.1'
+          coverage: none
+
+      # The PHP version matrix is derived from the single VERSIONS constant in the build script.
+      - id: versions
+        run: echo "versions=$(php bin/stubs/build_docker.php --versions)" >> "$GITHUB_OUTPUT"
+
   build-stubs-docker:
     permissions:
+      contents: read
       packages: write
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
+    strategy:
+      # A failure for one PHP version must not cancel the others, so every
+      # version that does build still gets pushed.
+      fail-fast: false
+      matrix:
+        version: ${{ fromJson(needs.pre_job.outputs.versions) }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@7c071dfe9dc99bdf297fa79cb49ea005b9fcadbc # v2
+        with:
+          php-version: '8.1'
+          coverage: none
 
       - name: Set up Docker Buildx
         id: buildx
         uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4
 
-      - name: Upload docker image
+      - name: Build and push docker image
         env:
-          EVENT_NAME: ${{ github.event_name }}
-          REF: ${{ github.ref }}
           ACTOR: ${{ github.repository_owner }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
-          bin/stubs/build_docker.sh
+          echo "$GITHUB_TOKEN" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+          php bin/stubs/build_docker.php ${{ matrix.version }}
 
+  composer-build:
+    permissions:
+      contents: read
+      packages: read
+    needs: build-stubs-docker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@7c071dfe9dc99bdf297fa79cb49ea005b9fcadbc # v2
+        with:
+          php-version: '8.1'
+          tools: composer:v2
+          coverage: none
+
+      - name: Install dependencies
+        run: |
+          composer update --no-install
+          composer install -o
+
+      # Regenerate the callmaps (from the images built above) and everything else
+      # `composer build` produces, and fail if any committed file is now out of date.
+      - name: Run composer build and check for a diff
+        env:
+          STUBS_IMAGE_OWNER: ${{ github.repository_owner }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "$GITHUB_TOKEN" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+          composer build
+          git diff --exit-code
