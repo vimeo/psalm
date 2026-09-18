@@ -20,6 +20,23 @@ final class TypeVariableTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'arrayAccess' => [
+                'code' => '<?php
+                    /** @template TTValue */
+                    final class a {
+                        /** @param non-empty-array<TTValue> $array */
+                        public function __construct(array $array = [0]) {}
+                        /** @param callable(TTValue, TTValue): mixed $func */
+                        public function sortBy(callable $func): void {}
+                        /** @return non-empty-list<TTValue> */
+                        public function toArray(): array { throw new \Exception("stub"); }
+                    }
+
+                    function match2(): void {
+                        $r = (new a([[1, 2]]))->toArray();
+                        echo (string) $r[0][0];
+                    }',
+            ],
             'unboundTemplateSolvesToClosureParam' => [
                 // an unbound `new Box()` never gets a lower bound, so the
                 // closure parameter only constrains the variable from above

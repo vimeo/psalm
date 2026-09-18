@@ -1148,6 +1148,21 @@ final class NewAnalyzer extends CallAnalyzer
      * property type is one that later code can still constrain, anything else can
      * only have been fixed at the construction site.
      *
+     * This over-approximates the "constrainable" set: `getTemplateTypes()` finds the
+     * template in *any* position of a parameter type, including read/consumer
+     * positions that no call can actually widen the object's template through — a
+     * template nested inside a callable parameter (`sortBy(callable(T, T): mixed)`)
+     * is handed T, it does not supply one, so it is not a real widening channel the
+     * way a directly contravariant `set(T $item)` is. Distinguishing them would need
+     * a variance walk of the parameter type; instead we err towards constrainable.
+     *
+     * The over-count is conservatively safe: it only mints a type variable where
+     * eager pinning to the construction-site inference would also have been correct.
+     * The variable still reconciles to that same inference, so diagnostics are
+     * unchanged — resolution is merely deferred, which is why consumers that need a
+     * concrete shape (array access, property reads, method returns) must resolve the
+     * variable through its bounds rather than assume the template was pinned.
+     *
      * @return array<string, true>
      */
     private static function getUnconstrainableTemplates(ClassLikeStorage $storage): array
@@ -1171,6 +1186,9 @@ final class NewAnalyzer extends CallAnalyzer
 
             foreach ($method_storage->params as $param) {
                 if ($param->type) {
+                    // getTemplateTypes() recurses into nested positions too, so this
+                    // over-counts read-only channels (a callable parameter) as
+                    // constraining ones; see the method docblock.
                     foreach ($param->type->getTemplateTypes() as $template_type) {
                         unset($unconstrainable[$template_type->param_name]);
                     }
