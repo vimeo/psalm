@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
-use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeStorage;
@@ -20,9 +19,9 @@ final class NoDiscardAnalyzer
      *
      * PHP 8.5's `#[\NoDiscard]` requires callers to use the return value. Unlike Psalm's
      * pure-call check this is independent of purity and of `findUnusedVariables`, matching the
-     * runtime behaviour. It is gated on PHP 8.5, where the attribute is enforced and the
-     * `(void)` escape hatch parses; below that the attribute is inert and `@psalm-suppress`
-     * stays the only way to silence a report.
+     * runtime behaviour. The check is not gated on the analysis PHP version: the attribute is a
+     * static contract that is routinely polyfilled onto older codebases, so it is enforced on
+     * any version. `@psalm-suppress` silences a report.
      *
      * `(void)` needs no special case here: it analyses its operand with `inside_general_use`,
      * so `$context->insideUse()` is already true by the time the call is reached.
@@ -30,14 +29,12 @@ final class NoDiscardAnalyzer
      * @param ?ClassLikeStorage $class_storage the class the call resolved through, for methods
      */
     public static function isDiscardReported(
-        Codebase $codebase,
         Context $context,
         FunctionLikeStorage $storage,
         bool $is_first_class_callable,
         ?ClassLikeStorage $class_storage = null,
     ): bool {
         if (!$storage->no_discard
-            || $codebase->analysis_php_version_id < 8_05_00
             || $is_first_class_callable
             || $context->collect_initializations
             || $context->collect_mutations

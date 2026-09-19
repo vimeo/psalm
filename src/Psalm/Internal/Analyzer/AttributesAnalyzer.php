@@ -125,7 +125,6 @@ final class AttributesAnalyzer
             // to discard (a fatal error for void/never native return types). Below 8.5 the
             // attribute class does not exist, and Psalm already reports it as unknown.
             if ($fq_attribute_name === 'NoDiscard'
-                && $codebase->analysis_php_version_id >= 8_05_00
                 && $storage instanceof FunctionLikeStorage
                 && $storage->signature_return_type !== null
                 && ($storage->signature_return_type->isVoid() || $storage->signature_return_type->isNever())

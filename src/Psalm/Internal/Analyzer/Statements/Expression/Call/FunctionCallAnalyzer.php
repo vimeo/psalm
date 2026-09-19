@@ -1144,7 +1144,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         if ($function_call_info->function_id === null
             || $function_call_info->function_storage === null
             || !NoDiscardAnalyzer::isDiscardReported(
-                $statements_analyzer->getCodebase(),
                 $context,
                 $function_call_info->function_storage,
                 $stmt->isFirstClassCallable(),

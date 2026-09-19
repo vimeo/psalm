@@ -441,17 +441,11 @@ final class FunctionLikeNodeScanner
 
             if ($docblock_info) {
                 if ($docblock_info->since_php_major_version && !$this->aliases->namespace) {
-                    $analysis_major_php_version = $this->codebase->getMajorAnalysisPhpVersion();
-                    $analysis_minor_php_version = $this->codebase->getMinorAnalysisPhpVersion();
-                    if ($docblock_info->since_php_major_version > $analysis_major_php_version) {
-                        return false;
-                    }
-
-                    if ($docblock_info->since_php_major_version === $analysis_major_php_version
-                        && $docblock_info->since_php_minor_version > $analysis_minor_php_version
-                    ) {
-                        return false;
-                    }
+                    // Keep the stubbed signature loaded on every version for analysis, but record
+                    // the version that introduced the function so its use is reported as undefined
+                    // when analysing an older PHP version without a polyfill.
+                    $storage->since_php_version_id = $docblock_info->since_php_major_version * 10_000
+                        + $docblock_info->since_php_minor_version * 100;
                 }
 
                 if ($stmt instanceof PhpParser\Node\Expr\Closure
@@ -1019,7 +1013,11 @@ final class FunctionLikeNodeScanner
                     return false;
                 }
 
-                // skip methods based on @since docblock tag
+                // skip methods based on @since docblock tag: version-specific stubs declare the
+                // same method more than once with per-version signatures, and only the one whose
+                // @since matches the analysed version must be registered (registering the others
+                // would collide). Unlike classes/functions, this is signature selection rather
+                // than an availability gate.
                 $doc_comment = $stmt->getDocComment();
 
                 if ($doc_comment) {
