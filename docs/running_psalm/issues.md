@@ -312,6 +312,7 @@
  - [UnusedConstructor](issues/UnusedConstructor.md)
  - [UnusedDocblockParam](issues/UnusedDocblockParam.md)
  - [UnusedForeachValue](issues/UnusedForeachValue.md)
+ - [UnusedFunction](issues/UnusedFunction.md)
  - [UnusedFunctionCall](issues/UnusedFunctionCall.md)
  - [UnusedIssueHandlerSuppression](issues/UnusedIssueHandlerSuppression.md)
  - [UnusedMethod](issues/UnusedMethod.md)

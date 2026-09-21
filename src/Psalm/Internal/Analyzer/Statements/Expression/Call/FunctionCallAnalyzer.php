@@ -165,6 +165,16 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             }
         }
 
+        // must run before the first-class-callable early return below, so that
+        // `foo(...)` counts as a use of foo()
+        self::recordNamedFunctionReference(
+            $statements_analyzer,
+            $codebase,
+            $function_name,
+            $function_call_info,
+            $context,
+        );
+
         $set_inside_conditional = false;
 
         if ($function_name instanceof PhpParser\Node\Name
@@ -444,6 +454,35 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         }
 
         return true;
+    }
+
+    /**
+     * Records that a named function is referenced, so dead-code analysis sees it
+     * is used. Covers ordinary calls and `foo(...)` first-class callables;
+     * callable-string/array references are recorded through the callable-argument
+     * analysis. In-call-map (internal) functions are never reported, so skipped.
+     *
+     * @psalm-external-mutation-free
+     */
+    private static function recordNamedFunctionReference(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        PhpParser\Node\Name|PhpParser\Node\Expr $function_name,
+        FunctionCallInfo $function_call_info,
+        Context $context,
+    ): void {
+        if ($function_name instanceof PhpParser\Node\Name
+            && $function_call_info->function_id !== null
+            && !$function_call_info->in_call_map
+            && !$context->collect_initializations
+            && !$context->collect_mutations
+        ) {
+            $codebase->addReferenceToFunctionLike(
+                strtolower($function_call_info->function_id),
+                new CodeLocation($statements_analyzer->getSource(), $function_name),
+                $context,
+            );
+        }
     }
 
     private static function handleNamedFunction(
