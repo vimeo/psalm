@@ -160,6 +160,8 @@ final class HackConformanceTest extends TestCase
     /**
      * The value if it is a string, otherwise the fallback — used to read a
      * field out of the untyped JSON the runner emits.
+     *
+     * @psalm-pure
      */
     private static function stringOr(mixed $value, string $default): string
     {
@@ -168,6 +170,8 @@ final class HackConformanceTest extends TestCase
 
     /**
      * @return array<array-key, mixed>
+     *
+     * @psalm-pure
      */
     private static function toArray(mixed $value): array
     {

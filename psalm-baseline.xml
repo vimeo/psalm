@@ -3415,20 +3415,6 @@
       <code><![CDATA[FileManipulationTestCase]]></code>
     </MutableDependency>
   </file>
-  <file src="tests/HackConformanceTest.php">
-    <MixedArgumentTypeCoercion>
-      <code><![CDATA[$lines]]></code>
-    </MixedArgumentTypeCoercion>
-    <MixedAssignment>
-      <code><![CDATA[$actual]]></code>
-      <code><![CDATA[$output]]></code>
-      <code><![CDATA[$rawResults]]></code>
-      <code><![CDATA[$reason]]></code>
-    </MixedAssignment>
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[glob(self::HARNESS_DIR . '/fixtures/*.hack')]]></code>
-    </RiskyTruthyFalsyComparison>
-  </file>
   <file src="tests/Internal/Codebase/InternalCallMapHandlerTest.php">
     <MixedReturnStatement>
       <code><![CDATA[ReflectionMethod::createFromMethodName($functionName)]]></code>
