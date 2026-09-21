@@ -489,7 +489,6 @@ final class ArgumentsAnalyzer
                         if (isset($replaced_type_part->params[$closure_param_offset]->type)) {
                             $replaced_param_type = $replaced_type_part->params[$closure_param_offset]->type;
 
-                            if (!$param_storage->type || $param_type_inferred) {
                                 // an untyped closure param inferred from the expected callable
                                 // must receive a concrete type: resolve any type variables
                                 // through their construction-site bounds (`_0 >: Item` -> `Item`)
@@ -503,7 +502,6 @@ final class ArgumentsAnalyzer
                                 // from the expected type when the param is untyped.
                                 $type_variable_resolver = new TypeVariableResolver($codebase);
                                 $type_variable_resolver->traverse($replaced_param_type);
-                            }
 
                             if ($replaced_param_type->hasTemplate()) {
                                 $replaced_param_type = TypeExpander::expandUnion(
