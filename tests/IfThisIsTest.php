@@ -401,6 +401,14 @@ final class IfThisIsTest extends TestCase
                     $numbers = $list->compact();',
                 'error_message' => 'IfThisIsMismatch',
             ],
+            'unparseableTypeIsReportedInsteadOfCrashing' => [
+                'code' => '<?php
+                    class A {
+                        /** @psalm-if-this-is garbage<<< */
+                        public function t(): void {}
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
         ];
     }
 }
