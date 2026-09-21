@@ -178,12 +178,7 @@ final class MethodCallAnalyzer extends CallAnalyzer
         if (!$class_type) {
             $class_type = Type::getMixed();
         }
-
-        // A class-template type variable used as a method-call receiver (e.g. an
-        // element read out of a `list<TValue>` return) is the object it was
-        // inferred to be, so resolve it through its bounds — as Hack does, calling
-        // the method on the concrete class — instead of rejecting the bare
-        // variable as a non-object.
+        
         $class_type = TypeVariableTracker::resolveTypeVariables($class_type, $codebase);
 
         $lhs_types = $class_type->getAtomicTypes();

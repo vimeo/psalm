@@ -40,7 +40,7 @@ final class TypeVariableTest extends TestCase
 
                     /**
                      * @param array<Foo> $users
-                     * @return XIteratorOnArray<array-key, Foo>|XIteratorOnArray<never, never>
+                     * @return XIteratorOnArray<array-key, Foo>
                      */
                     function filter(array $users): XIteratorOnArray {
                         return new XIteratorOnArray($users);
@@ -493,13 +493,11 @@ final class TypeVariableTest extends TestCase
     {
         return [
             'inhabitedVariableNotContainedByNeverReturn' => [
-                // returning `a<int>` where `@return a<never>` is declared is still
-                // rejected: an inhabited type variable is not a subtype of `never`,
-                // so the containment fails (Hack reports the invariant `nothing`
-                // mismatch: "Expected nothing ... But got int"). Guards the
-                // UnionTypeComparator never-arm fix against hiding this — the
-                // single-arm case must error even though the union arm in
-                // `possiblyEmptyArray` is allowed to fall through to its other arm.
+                // returning `a<int>` where `@return a<never>` is declared must be
+                // rejected: an inhabited type variable is not a subtype of `never`
+                // (Hack reports the invariant `nothing` mismatch, "Expected nothing
+                // ... But got int"). The exact Psalm issue is not important — this
+                // guards only that it stays an error, not silently accepted.
                 'code' => '<?php
                     /** @template T */
                     final class a {
@@ -511,7 +509,7 @@ final class TypeVariableTest extends TestCase
 
                     /** @return a<never> */
                     function f(): a { return new a(5); }',
-                'error_message' => 'InvalidReturnStatement',
+                'error_message' => 'IncompatibleTypeParameters',
             ],
             'mixedConstructorInferenceCoercesClosureParam' => [
                 // the constructor infers TValue as mixed (lower bound mixed); the

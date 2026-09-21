@@ -46,7 +46,9 @@ final class HackConformanceTest extends TestCase
      */
     public function provideFixtures(): iterable
     {
-        foreach (glob(self::HARNESS_DIR . '/fixtures/*.hack') ?: [] as $path) {
+        $paths = glob(self::HARNESS_DIR . '/fixtures/*.hack');
+
+        foreach ($paths === false ? [] : $paths as $path) {
             $src = (string) file_get_contents($path);
             preg_match('#^////\s*expect:\s*(\S+)#m', $src, $expectMatch);
             preg_match('#^////\s*psalm-test:\s*(.+)$#m', $src, $testMatch);
@@ -65,6 +67,15 @@ final class HackConformanceTest extends TestCase
      */
     public function testHhvmAgreesWithPsalmTest(string $fixture, string $expect, string $psalmTest): void
     {
+        // A malformed fixture header must fail loudly rather than be compared as
+        // an empty string; check it before the availability skip so it is caught
+        // even where the harness itself cannot run.
+        $this->assertContains(
+            $expect,
+            ['no-errors', 'error'],
+            "Fixture $fixture is missing a valid `//// expect: no-errors|error` header",
+        );
+
         $harness = self::harness();
 
         if (!$harness['available']) {
@@ -79,9 +90,17 @@ final class HackConformanceTest extends TestCase
             "The harness produced no HHVM result for $fixture",
         );
 
+        $actual = $results[$fixture]['actual'];
+
+        $this->assertContains(
+            $actual,
+            ['no-errors', 'error'],
+            "HHVM produced an unrecognised verdict for $fixture:\n" . $results[$fixture]['output'],
+        );
+
         $this->assertSame(
             $expect,
-            $results[$fixture]['actual'],
+            $actual,
             "HHVM disagrees with $psalmTest for $fixture:\n" . $results[$fixture]['output'],
         );
     }
@@ -99,6 +118,7 @@ final class HackConformanceTest extends TestCase
         $lines = [];
         exec($cmd, $lines);
 
+        /** @var list<string> $lines */
         $decoded = json_decode(implode("\n", $lines), true);
 
         if (!is_array($decoded) || !isset($decoded['available']) || !is_bool($decoded['available'])) {
@@ -110,31 +130,24 @@ final class HackConformanceTest extends TestCase
         }
 
         if ($decoded['available'] === false) {
-            $reason = $decoded['reason'] ?? 'harness unavailable';
-
             return self::$harness = [
                 'available' => false,
-                'reason' => is_string($reason) ? $reason : 'harness unavailable',
+                'reason' => self::stringOr($decoded['reason'] ?? null, 'harness unavailable'),
                 'results' => [],
             ];
         }
 
         $results = [];
-        $rawResults = $decoded['results'] ?? [];
 
-        if (is_array($rawResults)) {
-            foreach ($rawResults as $name => $row) {
-                if (!is_string($name) || !is_array($row)) {
-                    continue;
-                }
-
-                $actual = $row['actual'] ?? '';
-                $output = $row['output'] ?? '';
-                $results[$name] = [
-                    'actual' => is_string($actual) ? $actual : '',
-                    'output' => is_string($output) ? $output : '',
-                ];
+        foreach (self::toArray($decoded['results'] ?? null) as $name => $row) {
+            if (!is_string($name) || !is_array($row)) {
+                continue;
             }
+
+            $results[$name] = [
+                'actual' => self::stringOr($row['actual'] ?? null, ''),
+                'output' => self::stringOr($row['output'] ?? null, ''),
+            ];
         }
 
         return self::$harness = [
@@ -142,5 +155,22 @@ final class HackConformanceTest extends TestCase
             'reason' => '',
             'results' => $results,
         ];
+    }
+
+    /**
+     * The value if it is a string, otherwise the fallback — used to read a
+     * field out of the untyped JSON the runner emits.
+     */
+    private static function stringOr(mixed $value, string $default): string
+    {
+        return is_string($value) ? $value : $default;
+    }
+
+    /**
+     * @return array<array-key, mixed>
+     */
+    private static function toArray(mixed $value): array
+    {
+        return is_array($value) ? $value : [];
     }
 }
