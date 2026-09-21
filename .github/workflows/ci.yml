@@ -189,3 +189,57 @@ jobs:
 
       - name: Run unit tests
         run: bin/ci/tests-github-actions.sh
+
+  hack-conformance:
+    name: Hack conformance
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up PHP
+        uses: shivammathur/setup-php@7c071dfe9dc99bdf297fa79cb49ea005b9fcadbc # v2
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+          coverage: none
+        env:
+          fail-fast: true
+
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Get Composer Cache Directories
+        id: composer-cache
+        run: |
+          echo "files_cache=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+          echo "vcs_cache=$(composer config cache-vcs-dir)" >> $GITHUB_OUTPUT
+
+      - name: Generate composer.lock
+        run: composer update --no-install
+        env:
+          COMPOSER_ROOT_VERSION: dev-master
+
+      - name: Cache composer cache
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
+        with:
+          path: |
+            ${{ steps.composer-cache.outputs.files_cache }}
+            ${{ steps.composer-cache.outputs.vcs_cache }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Run composer install
+        run: composer install -o
+        env:
+          COMPOSER_ROOT_VERSION: dev-master
+
+      # docker is preinstalled on ubuntu runners; pull the pinned HHVM image so
+      # the conformance test runs for real instead of skipping.
+      - name: Pull pinned HHVM image
+        run: |
+          image=$(php -r 'echo json_decode(file_get_contents("bin/hack-conformance/manifest.json"), true)["hhvm_image"];')
+          echo "Pulling $image"
+          docker pull "$image"
+
+      # --fail-on-skipped guarantees the harness actually ran (a skip here would
+      # mean docker/HHVM was unavailable, which must fail rather than pass silently).
+      - name: Run Hack conformance tests
+        run: vendor/bin/phpunit tests/HackConformanceTest.php --fail-on-skipped

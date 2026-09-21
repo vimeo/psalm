@@ -94,7 +94,7 @@ final class Review
                 : escapeshellarg(getenv('PHPSTORM') ?: 'phpstorm')
                 ). ' --line ' . escapeshellarg((string) $line) . " --column {$column} " . escapeshellarg($file),
 
-            'code' => static fn(string $file, int $line, int $column)
+            'code', 'vscode' => static fn(string $file, int $line, int $column)
                  => 'code --goto ' . escapeshellarg($file) . ':' .
                  escapeshellarg((string) $line) . ':' .
                  escapeshellarg((string) $column),

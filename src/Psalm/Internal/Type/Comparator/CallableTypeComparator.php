@@ -30,7 +30,6 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_merge;
 use function array_slice;
 use function count;
 use function end;
@@ -182,10 +181,10 @@ final class CallableTypeComparator
     }
 
     /**
-     * Compares a contravariant parameter position, recording type-variable
-     * bounds flipped: a lower bound recorded on the param comparison is an
-     * upper bound on the variable, and vice versa. On a failed comparison
-     * the bounds are dropped with the rest of the result.
+     * Compares a contravariant parameter position: the container's parameter
+     * type must be contained by the input's. Any type-variable bound recorded
+     * by the comparison is already in the correct direction (see the note in
+     * the body).
      */
     private static function isParamContainedBy(
         Codebase $codebase,
@@ -193,6 +192,13 @@ final class CallableTypeComparator
         Union $input_param_type,
         ?TypeComparisonResult $atomic_comparison_result,
     ): bool {
+        // Contravariant position: the container's parameter type must be
+        // contained by the input's. Passing them to isContainedBy in this
+        // order already records any type-variable bound in the correct
+        // direction — a variable in the container's parameter is in input
+        // position here, so `callable(`_0):_` against `callable(Item):_`
+        // records `_0 <: Item`, which is exactly the constraint the value
+        // imposes. No post-hoc flip is needed.
         if (!$atomic_comparison_result) {
             return UnionTypeComparator::isContainedBy(
                 $codebase,
@@ -201,10 +207,7 @@ final class CallableTypeComparator
             );
         }
 
-        $lower_bound_count = count($atomic_comparison_result->type_variable_lower_bounds);
-        $upper_bound_count = count($atomic_comparison_result->type_variable_upper_bounds);
-
-        $contained = UnionTypeComparator::isContainedBy(
+        return UnionTypeComparator::isContainedBy(
             $codebase,
             $container_param_type,
             $input_param_type,
@@ -212,39 +215,6 @@ final class CallableTypeComparator
             false,
             $atomic_comparison_result,
         );
-
-        $new_lower_bounds = array_slice(
-            $atomic_comparison_result->type_variable_lower_bounds,
-            $lower_bound_count,
-        );
-        $new_upper_bounds = array_slice(
-            $atomic_comparison_result->type_variable_upper_bounds,
-            $upper_bound_count,
-        );
-
-        $atomic_comparison_result->type_variable_lower_bounds = array_slice(
-            $atomic_comparison_result->type_variable_lower_bounds,
-            0,
-            $lower_bound_count,
-        );
-        $atomic_comparison_result->type_variable_upper_bounds = array_slice(
-            $atomic_comparison_result->type_variable_upper_bounds,
-            0,
-            $upper_bound_count,
-        );
-
-        if ($contained) {
-            $atomic_comparison_result->type_variable_lower_bounds = array_merge(
-                $atomic_comparison_result->type_variable_lower_bounds,
-                $new_upper_bounds,
-            );
-            $atomic_comparison_result->type_variable_upper_bounds = array_merge(
-                $atomic_comparison_result->type_variable_upper_bounds,
-                $new_lower_bounds,
-            );
-        }
-
-        return $contained;
     }
 
     public static function isNotExplicitlyCallableTypeCallable(

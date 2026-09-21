@@ -27,6 +27,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\Issue\EmptyArrayAccess;
 use Psalm\Issue\InvalidArrayAccess;
 use Psalm\Issue\InvalidArrayAssignment;
@@ -85,6 +86,7 @@ use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTrue;
+use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\MutableUnion;
 use Psalm\Type\Union;
 use UnexpectedValueException;
@@ -608,6 +610,26 @@ final class ArrayFetchAnalyzer
         foreach ($types as $type_string => $type) {
             $original_type_real = $type;
             $original_type = $type;
+
+            if ($type instanceof TTypeVariable) {
+                // A type variable minted for a class template at its construction
+                // site (Hack's `new Foo<_>(...)`) prints as, and is fetched
+                // through, the bound its constructor arguments inferred — just as
+                // the TTemplateParam branch below reads through `as`. Resolve it to
+                // that bound so `$var[0]` reaches the inferred element type; without
+                // this the bare variable falls through every array branch and is
+                // reported as a non-array despite printing like one.
+                $resolved = TypeVariableTracker::resolveTypeVariables(
+                    new Union([$type]),
+                    $codebase,
+                );
+
+                if ($resolved->isSingle()) {
+                    $type = $resolved->getSingleAtomic();
+                    $original_type = $type;
+                    $original_type_real = $type;
+                }
+            }
 
             if ($type instanceof TMixed
                 || $type instanceof TTemplateParam

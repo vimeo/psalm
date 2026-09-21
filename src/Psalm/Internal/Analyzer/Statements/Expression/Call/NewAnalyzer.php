@@ -1143,10 +1143,30 @@ final class NewAnalyzer extends CallAnalyzer
     }
 
     /**
-     * Returns the set of class templates with no public mutation channel: a template
-     * named in a public non-constructor method parameter or a public non-readonly
-     * property type is one that later code can still constrain, anything else can
-     * only have been fixed at the construction site.
+     * Returns the set of class templates with no public channel that can constrain
+     * them: a template named anywhere in a public non-constructor method parameter
+     * or a public non-readonly property type is one that later code can still
+     * constrain, anything else can only have been fixed at the construction site and
+     * so is pinned eagerly rather than minted as a type variable.
+     *
+     * Any appearance in such a parameter constrains the variable, whichever way the
+     * position points, so `getTemplateTypes()` finding it in *any* nested position is
+     * correct — it is not an over-count. A value position (`set(T $item)`) records a
+     * lower bound that widens the type argument; a callable-parameter position
+     * (`each(callable(T): mixed)`) records an upper bound (`T <: the callback's
+     * parameter`). The upper bound is a real constraint, not a no-op: on an otherwise
+     * unbound construction it is what resolves the variable (to the callback's
+     * parameter type rather than `mixed`, matching Hack — see the
+     * `unboundTemplateSolvesToClosureParam` test), and it conflicts with a lower
+     * bound recorded elsewhere when the two cannot hold together (see
+     * `constructorBoundThenClosureParamConflict`). Pinning such a template eagerly
+     * instead would lose both behaviours, so every appearance must mint a variable.
+     *
+     * The set is only ever over-approximated per construction site: the channel may
+     * never be exercised (the method is not called), in which case the variable
+     * simply reconciles to its construction-site bound — which is why a variable that
+     * survives into an expression must be resolved through its bounds by consumers
+     * (array access, property reads, method returns) rather than assumed pinned.
      *
      * @return array<string, true>
      */
