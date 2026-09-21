@@ -393,7 +393,7 @@ final class TypeVariableTest extends TestCase
                     $table->column(static function (array $ctx): string {
                         /** @psalm-check-type-exact $ctx = array{a: array<int, int>, b: array<string, string>} */;
                         return "";
-                    });'
+                    });',
             ],
             'unboundConstructorTemplate' => [
                 'code' => '<?php
