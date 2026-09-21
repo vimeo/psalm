@@ -67,7 +67,10 @@ use Psalm\IssueBuffer;
 use Psalm\NodeTypeProvider;
 use Psalm\Plugin\EventHandler\Event\AfterStatementAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\BeforeStatementAnalysisEvent;
+use Psalm\Storage\Mutations;
 use Psalm\Type;
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_change_key_case;
@@ -1000,6 +1003,9 @@ final class StatementsAnalyzer extends SourceAnalyzer
                         $original_location,
                     );
                 } else {
+                    if ($this->hasImpureDestructor($context->vars_in_scope[$var_id] ?? null, $codebase)) {
+                        continue;
+                    }
                     $issue = new UnusedVariable(
                         $var_id . ' is never referenced or the value is not used',
                         $original_location,
@@ -1028,6 +1034,41 @@ final class StatementsAnalyzer extends SourceAnalyzer
                 );
             }
         }
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    private function hasImpureDestructor(?Union $type, Codebase $codebase): bool
+    {
+        if ($type === null) {
+            return false;
+        }
+
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TNamedObject) {
+                continue;
+            }
+
+            $class_storage = $codebase->classlikes->getStorageFor($atomic_type->value);
+            while ($class_storage !== null) {
+                $destructor = $class_storage->methods['__destruct'] ?? null;
+                if ($destructor !== null) {
+                    if ($destructor->has_mutations_annotation
+                        && $destructor->allowed_mutations >= Mutations::LEVEL_EXTERNAL) {
+                        return true;
+                    }
+
+                    break;
+                }
+
+                $class_storage = $class_storage->parent_class === null
+                    ? null
+                    : $codebase->classlikes->getStorageFor($class_storage->parent_class);
+            }
+        }
+
+        return false;
     }
 
     /**
