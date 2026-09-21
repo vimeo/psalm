@@ -170,7 +170,6 @@ final class HackConformanceTest extends TestCase
 
     /**
      * @return array<array-key, mixed>
-     *
      * @psalm-pure
      */
     private static function toArray(mixed $value): array
