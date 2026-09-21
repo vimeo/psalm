@@ -489,19 +489,8 @@ final class ArgumentsAnalyzer
                         if (isset($replaced_type_part->params[$closure_param_offset]->type)) {
                             $replaced_param_type = $replaced_type_part->params[$closure_param_offset]->type;
 
-                                // an untyped closure param inferred from the expected callable
-                                // must receive a concrete type: resolve any type variables
-                                // through their construction-site bounds (`_0 >: Item` -> `Item`)
-                                // so the param is usable as its bound (e.g. property fetches).
-                                //
-                                // A param the closure types itself is compared against the
-                                // variable instead, so it constrains the variable from above
-                                // (`_0 <: DateTime`) rather than being overwritten by whatever
-                                // the construction inferred so far (`never` for an empty
-                                // `new Collection()`), as Hack only infers a lambda param
-                                // from the expected type when the param is untyped.
-                                $type_variable_resolver = new TypeVariableResolver($codebase);
-                                $type_variable_resolver->traverse($replaced_param_type);
+                            $type_variable_resolver = new TypeVariableResolver($codebase);
+                            $type_variable_resolver->traverse($replaced_param_type);
 
                             if ($replaced_param_type->hasTemplate()) {
                                 $replaced_param_type = TypeExpander::expandUnion(
