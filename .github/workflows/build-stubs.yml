@@ -127,7 +127,7 @@ jobs:
           composer build
           if ! git diff --quiet; then
             git diff > composer-build.patch
-            echo "::error::composer build produced uncommitted changes. Download the 'composer-build-patch' artifact and apply it from the repo root with: git apply composer-build.patch"
+            echo "::error::composer build produced uncommitted changes. Apply it from the repo root with: bin/ci/apply-composer-build-patch.sh"
             exit 1
           fi
 
