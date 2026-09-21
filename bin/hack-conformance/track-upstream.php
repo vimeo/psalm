@@ -1,4 +1,4 @@
-<?php
+<?php // phpcs:disable PSR1.Files.SideEffects.FoundWithSymbols
 
 /**
  * Tracks the Hack (facebook/hhvm) test directories that are relevant to Psalm's
