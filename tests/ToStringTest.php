@@ -208,6 +208,16 @@ final class ToStringTest extends TestCase
 
                     echo implode(":", [new Bar()]);',
             ],
+            'resourceOrFalseToString' => [
+                'code' => '<?php
+                    $a = fopen("php://memory", "r");
+                    if (rand(0, 1)) {
+                        $a = [];
+                    }
+
+                    // b = "Array"|""|"Resource id #1"
+                    $b = (string) $a;',
+            ],
         ];
     }
 
@@ -313,15 +323,6 @@ final class ToStringTest extends TestCase
                     $a = fopen("php://memory", "r");
                     takesString($a);',
                 'error_message' => 'InvalidArgument',
-            ],
-            'resourceOrFalseToString' => [
-                'code' => '<?php
-                    $a = fopen("php://memory", "r");
-                    if (rand(0, 1)) {
-                        $a = [];
-                    }
-                    $b = (string) $a;',
-                'error_message' => 'PossiblyInvalidCast',
             ],
             'cannotCastInsideString' => [
                 'code' => '<?php
