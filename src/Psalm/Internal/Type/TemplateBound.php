@@ -54,4 +54,12 @@ final class TemplateBound
      * it are reported at the call site, not the construction site.
      */
     public bool $from_argument_requirement = false;
+
+    /**
+     * True for a bound merged from several arms of a union container that all
+     * matched the same input (`Foo<`_0>` against `Foo<int>|Foo<string>`): the
+     * arms are alternatives the value need only satisfy one of, so the merged
+     * bound is the union of the arm bounds and is never an equality bound.
+     */
+    public bool $from_union_alternatives = false;
 }

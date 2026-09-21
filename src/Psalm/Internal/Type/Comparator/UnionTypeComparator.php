@@ -8,6 +8,7 @@ use Psalm\Codebase;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TCallable;
@@ -146,6 +147,14 @@ final class UnionTypeComparator
             $some_type_coerced_from_mixed = false;
 
             $some_missing_shape_fields = null;
+
+            /**
+             * type-variable bounds recorded by each container arm this input
+             * part matched, one entry per matching arm
+             *
+             * @var list<array{list<array{string, TemplateBound}>, list<array{string, TemplateBound}>}>
+             */
+            $matched_arm_bounds = [];
 
             if ($input_type_part instanceof TArrayKey
                 && ($container_type->hasInt() && $container_type->hasString())
@@ -362,16 +371,14 @@ final class UnionTypeComparator
                             $all_to_string_cast = false;
                         }
 
-                        if ($union_comparison_result) {
-                            $union_comparison_result->type_variable_lower_bounds = array_merge(
-                                $union_comparison_result->type_variable_lower_bounds,
+                        if ($union_comparison_result
+                            && ($atomic_comparison_result->type_variable_lower_bounds
+                                || $atomic_comparison_result->type_variable_upper_bounds)
+                        ) {
+                            $matched_arm_bounds[] = [
                                 $atomic_comparison_result->type_variable_lower_bounds,
-                            );
-
-                            $union_comparison_result->type_variable_upper_bounds = array_merge(
-                                $union_comparison_result->type_variable_upper_bounds,
                                 $atomic_comparison_result->type_variable_upper_bounds,
-                            );
+                            ];
                         }
                     }
 
@@ -379,6 +386,23 @@ final class UnionTypeComparator
                     $all_type_coerced_from_as_mixed = false;
                     $all_type_coerced = false;
                 }
+            }
+
+            if ($union_comparison_result && $matched_arm_bounds) {
+                [$arm_lower_bounds, $arm_upper_bounds] = self::mergeAlternativeArmBounds(
+                    $codebase,
+                    $matched_arm_bounds,
+                );
+
+                $union_comparison_result->type_variable_lower_bounds = array_merge(
+                    $union_comparison_result->type_variable_lower_bounds,
+                    $arm_lower_bounds,
+                );
+
+                $union_comparison_result->type_variable_upper_bounds = array_merge(
+                    $union_comparison_result->type_variable_upper_bounds,
+                    $arm_upper_bounds,
+                );
             }
 
             if ($union_comparison_result) {
@@ -579,6 +603,97 @@ final class UnionTypeComparator
         }
 
         return false;
+    }
+
+    /**
+     * When one input part matches several arms of a union container that each
+     * constrain the same type variable (`Foo<`_0>` against `Foo<int>|Foo<string>`
+     * records `_0 <: int` from one arm and `_0 <: string` from the other), the
+     * arms are alternatives the value need only satisfy one of. Recording both
+     * as-is would demand the variable satisfy every arm at once. Bounds on the
+     * same variable from different arms are merged into one bound whose type is
+     * the union of the arm types, the way Hack localizes `(Foo<int> | Foo<string>)`
+     * to `Foo<(int | string)>` for a covariant Foo.
+     *
+     * @param non-empty-list<array{list<array{string, TemplateBound}>, list<array{string, TemplateBound}>}> $arm_bounds
+     * @return array{list<array{string, TemplateBound}>, list<array{string, TemplateBound}>}
+     */
+    private static function mergeAlternativeArmBounds(Codebase $codebase, array $arm_bounds): array
+    {
+        if (count($arm_bounds) === 1) {
+            return $arm_bounds[0];
+        }
+
+        $arm_lower_bounds = [];
+        $arm_upper_bounds = [];
+
+        foreach ($arm_bounds as [$lower_bounds, $upper_bounds]) {
+            $arm_lower_bounds[] = $lower_bounds;
+            $arm_upper_bounds[] = $upper_bounds;
+        }
+
+        return [
+            self::mergeAlternativeArmSideBounds($codebase, $arm_lower_bounds),
+            self::mergeAlternativeArmSideBounds($codebase, $arm_upper_bounds),
+        ];
+    }
+
+    /**
+     * Merges one side (lower or upper) of the bounds recorded by the matching
+     * arms: a variable constrained by several arms gets a single bound whose
+     * type is the union of the arm bounds.
+     *
+     * @param list<list<array{string, TemplateBound}>> $arm_side_bounds one entry per matching arm
+     * @return list<array{string, TemplateBound}>
+     */
+    private static function mergeAlternativeArmSideBounds(Codebase $codebase, array $arm_side_bounds): array
+    {
+        /** @var array<string, non-empty-list<TemplateBound>> */
+        $bounds_by_name = [];
+        /** @var array<string, array<int, true>> arms that constrained each variable */
+        $arms_by_name = [];
+
+        foreach ($arm_side_bounds as $arm_i => $bounds) {
+            foreach ($bounds as [$name, $bound]) {
+                $bounds_by_name[$name][] = $bound;
+                $arms_by_name[$name][$arm_i] = true;
+            }
+        }
+
+        $merged = [];
+
+        foreach ($bounds_by_name as $name => $bounds) {
+            if (count($arms_by_name[$name]) < 2) {
+                foreach ($bounds as $bound) {
+                    $merged[] = [$name, $bound];
+                }
+
+                continue;
+            }
+
+            $type = null;
+            $all_mirrors = true;
+            $all_requirements = true;
+
+            foreach ($bounds as $bound) {
+                $type = $type ? Type::combineUnionTypes($type, $bound->type, $codebase) : $bound->type;
+                $all_mirrors = $all_mirrors && $bound->from_invariant_argument_mirror;
+                $all_requirements = $all_requirements && $bound->from_argument_requirement;
+            }
+
+            $merged_bound = new TemplateBound(
+                $type,
+                $bounds[0]->appearance_depth,
+                $bounds[0]->arg_offset,
+            );
+            $merged_bound->from_union_alternatives = true;
+            $merged_bound->from_invariant_argument_mirror = $all_mirrors;
+            $merged_bound->from_argument_requirement = $all_requirements;
+
+            $merged[] = [$name, $merged_bound];
+        }
+
+        return $merged;
     }
 
     /**

@@ -81,6 +81,8 @@ function hc_unavailable_reason(string $image, bool $allow_pull): ?string
 /**
  * Typecheck every fixture in its own isolated Hack project (fixtures reuse class
  * names, so they cannot share one project) in a single container invocation.
+ * A fixture may carry `//// hhconfig: <key> = <value>` header lines; each is
+ * written verbatim into that fixture's `.hhconfig`.
  *
  * @param array<string, array{expect: string, psalm_test: string, path: string}> $expected
  * @return array<string, array{expect: string, actual: string, psalm_test: string, output: string}>
@@ -92,7 +94,9 @@ set -e
 for f in /fixtures/*.hack; do
   name=$(basename "$f")
   dir=$(mktemp -d)
-  : > "$dir/.hhconfig"
+  # Per-fixture typechecker options: every `//// hhconfig: key = value` header
+  # line becomes a line of the project's .hhconfig (e.g. union type hints).
+  sed -nE 's#^////[[:space:]]*hhconfig:[[:space:]]*##p' "$f" > "$dir/.hhconfig"
   cp "$f" "$dir/test.hack"
   echo "@@@BEGIN@@@ $name"
   (cd "$dir" && hh_client --no-load 2>&1 | grep -vE 'daemon|launched|hh_server|waiting-client|Running in') || true
