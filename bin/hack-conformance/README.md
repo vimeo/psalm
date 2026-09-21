@@ -69,7 +69,9 @@ The blobless Hack checkout is cached in `.hack-cache/` (gitignored).
 1. Add a Psalm case to `tests/Template/TypeVariableTest.php` (or the relevant
    test), verified with `vendor/bin/phpunit`.
 2. Add the Hack analogue to `fixtures/<name>.hack` with `//// psalm-test:` and
-   `//// expect:` headers.
+   `//// expect:` headers. If the case needs a typechecker option (e.g. union
+   type hints), add `//// hhconfig: <key> = <value>` lines; each becomes a line
+   of that fixture's `.hhconfig`.
 3. `php bin/hack-conformance/run.php` — confirm HHVM agrees.
 
 Fixtures reuse class names across files, so the runner typechecks each one in its

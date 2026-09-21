@@ -46,6 +46,64 @@ final class TypeVariableTest extends TestCase
                         return new XIteratorOnArray($users);
                     }',
             ],
+            'multipleReturnTypes' => [
+                'code' => '<?php
+                    /** @template-covariant TKey */
+                    class It {
+                        /** @param array<TKey, mixed> $array */
+                        public function __construct(array $array = []) {}
+                        /**
+                         * @param callable(TKey): mixed $func
+                         * @psalm-suppress InvalidTemplateParam
+                         */
+                        public function sortBy(callable $func): void {}
+                    }
+
+                    /** @return It<string>|It<int> */
+                    function takeNew(): It {
+                        return random_int(0, 1) === 0 ? new It([0]) : new It(["hello"]);
+                    }',
+            ],
+            'multipleReturnTypesNotCovariant' => [
+                'code' => '<?php
+                    /** @template TKey */
+                    class It {
+                        /** @param array<TKey, mixed> $array */
+                        public function __construct(array $array = []) {}
+                        /**
+                         * @param callable(TKey): mixed $func
+                         */
+                        public function sortBy(callable $func): void {}
+                    }
+
+                    /** @return It<string>|It<int> */
+                    function takeNew(): It {
+                        return random_int(0, 1) === 0 ? new It([0]) : new It(["hello"]);
+                    }',
+            ],
+            'emptyConstructionAgainstUnionKeyReturn' => [
+                // an empty `new It()` returned where the declared type is a
+                // union of two key instantiations (It<string>|It<int>). Hack
+                // accepts this: it localizes the declared union to
+                // It<string|int> (covariant), so the variable only gains an
+                // upper bound.
+                'code' => '<?php
+                    /** @template-covariant TKey */
+                    class It {
+                        /** @param array<TKey, mixed> $array */
+                        public function __construct(array $array = []) {}
+                        /**
+                         * @param callable(TKey): mixed $func
+                         * @psalm-suppress InvalidTemplateParam
+                         */
+                        public function sortBy(callable $func): void {}
+                    }
+
+                    /** @return It<string>|It<int> */
+                    function takeNew(): It {
+                        return new It();
+                    }',
+            ],
             'methodCallOnIteratorElement' => [
                 'code' => '<?php
                     final class User {
@@ -296,6 +354,53 @@ final class TypeVariableTest extends TestCase
                         $c->each(static function ($item): string {
                             return (string) $item->id;
                         });
+                    }',
+            ],
+            'typedClosureParamAgainstEmptyConstruction' => [
+                // an empty `new ArrayCollection()` assigned to a
+                // `ArrayCollection<int, DateTime>` property, then given a closure
+                // whose param is typed `DateTime`: the typed param constrains the
+                // variable from above (`_0 <: DateTime`), it is not overwritten by
+                // the `never` the empty construction inferred (which reported
+                // ParadoxicalCondition / InvalidScalarArgument). Hack accepts it.
+                'code' => '<?php
+                    class Test
+                    {
+                        /** @var ArrayCollection<int, DateTime> */
+                        private $c;
+
+                        public function __construct()
+                        {
+                            $this->c = new ArrayCollection();
+                            $this->c->filter(function (DateTime $dt): bool {
+                                return $dt === $dt;
+                            });
+                        }
+                    }
+
+                    /**
+                     * @psalm-template TKey of array-key
+                     * @psalm-template T
+                     */
+                    class ArrayCollection
+                    {
+                        /** @var array<TKey, T> */
+                        private $elements = [];
+
+                        /** @psalm-param array<TKey,T> $elements */
+                        public function __construct(array $elements = [])
+                        {
+                            $this->elements = $elements;
+                        }
+
+                        /**
+                         * @param Closure(T): bool $p
+                         * @return ArrayCollection<TKey, T>
+                         */
+                        public function filter(Closure $p)
+                        {
+                            return new self(array_filter($this->elements, $p));
+                        }
                     }',
             ],
             'unboundConstructorTemplate' => [
