@@ -389,6 +389,8 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                     $context,
                     $config,
                     $result,
+                    $template_result,
+                    $class_template_params ?? [],
                 );
             }
 

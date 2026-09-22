@@ -33,7 +33,7 @@ final class DocComment
         'ignore-falsable-return', 'variadic', 'pure',
         'ignore-variable-method', 'ignore-variable-property', 'internal',
         'taint-sink', 'taint-source', 'assert-untainted', 'scope-this',
-        'mutation-free', 'external-mutation-free', 'immutable', 'readonly',
+        'mutation-free', 'external-mutation-free', 'immutable', 'readonly', 'purity-from', 'purity-from-template',
         'allow-private-mutation', 'readonly-allow-private-mutation',
         'yield', 'trace', 'import-type', 'flow', 'taint-specialize', 'taint-escape',
         'taint-unescape', 'self-out', 'consistent-constructor', 'stub-override',

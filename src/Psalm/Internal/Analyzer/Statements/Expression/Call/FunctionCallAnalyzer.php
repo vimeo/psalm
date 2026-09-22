@@ -677,10 +677,27 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
             $var_atomic_types = $stmt_name_type->getAtomicTypes();
 
+            // A closure the enclosing function-like inherits its purity from
+            // (`@psalm-purity-from $param` / `@psalm-purity-from-template T`): calling it in the
+            // body is not counted as impurity here — the effective purity is resolved at each call
+            // site of the enclosing function from the closures actually passed.
+            $source = $statements_analyzer->getSource();
+            $enclosing_storage = $source instanceof FunctionLikeAnalyzer
+                ? $source->getFunctionLikeStorage($statements_analyzer)
+                : null;
+            $purity_from_params = $enclosing_storage->purity_from_params ?? [];
+            $purity_from_templates = $enclosing_storage->purity_from_templates ?? [];
+            $is_purity_from_template = false;
+
             while ($var_atomic_types) {
                 $var_type_part = array_shift($var_atomic_types);
 
                 if ($var_type_part instanceof TTemplateParam) {
+                    if ($purity_from_templates !== []
+                        && in_array($var_type_part->param_name, $purity_from_templates, true)
+                    ) {
+                        $is_purity_from_template = true;
+                    }
                     $var_atomic_types = array_merge($var_atomic_types, $var_type_part->as->getAtomicTypes());
                     continue;
                 }
@@ -688,7 +705,10 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
 
                 if ($var_type_part instanceof TClosure || $var_type_part instanceof TCallable) {
-                    $source = $statements_analyzer->getSource();
+                    $is_purity_from_param = $purity_from_params !== []
+                        && $function_name instanceof PhpParser\Node\Expr\Variable
+                        && is_string($function_name->name)
+                        && in_array($function_name->name, $purity_from_params, true);
 
                     if ($function_name instanceof PhpParser\Node\Expr\Variable
                         && is_string($function_name->name)
@@ -696,7 +716,9 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                         && $source->getRecursiveVarId() === '$' . $function_name->name
                     ) {
                         // a recursive call of the closure being analysed: not a mutation of its own
-                    } elseif ($statements_analyzer->signalMutation(
+                    } elseif (!$is_purity_from_param
+                        && !$is_purity_from_template
+                        && $statements_analyzer->signalMutation(
                         $var_type_part->allowed_mutations,
                         $context,
                         'function call on ' . $var_type_part->getId(),

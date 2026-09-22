@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 namespace Psalm\Storage;
 
+use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TClosure;
+use Psalm\Type\Union;
+
+use function max;
+
 /**
  * @psalm-immutable
  * @api
@@ -68,4 +74,24 @@ final class Mutations
         self::LEVEL_INTERNAL_READ_WRITE => 'psalm-external-mutation-free',
         self::LEVEL_EXTERNAL => 'psalm-impure',
     ];
+
+    /**
+     * The worst (highest) mutation level among the closure/callable atomics of a type,
+     * or LEVEL_NONE if it contains none. Used to derive a function-like's effective
+     * purity from a closure it inherits its purity from (`@psalm-purity-from`).
+     *
+     * @return self::LEVEL_*
+     */
+    public static function getClosureLevel(Union $type): int
+    {
+        $level = self::LEVEL_NONE;
+
+        foreach ($type->getAtomicTypes() as $atomic) {
+            if ($atomic instanceof TClosure || $atomic instanceof TCallable) {
+                $level = max($level, $atomic->allowed_mutations);
+            }
+        }
+
+        return $level;
+    }
 }

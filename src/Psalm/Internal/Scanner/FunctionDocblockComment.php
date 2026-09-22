@@ -164,6 +164,25 @@ final class FunctionDocblockComment
 
     public bool $has_mutations_annotation = false;
 
+    /**
+     * Names (without leading `$`) of closure/callable params from which this
+     * function-like inherits its purity: the effective mutation level of a call
+     * is the worst of the declared level and the levels of the closures passed
+     * to these params. Populated from `@psalm-purity-from $param`.
+     *
+     * @var list<string>
+     */
+    public array $purity_from_params = [];
+
+    /**
+     * Names of template params (method-level or class-level) whose bound
+     * closure/callable type this function-like inherits its purity from.
+     * Populated from `@psalm-purity-from-template T`.
+     *
+     * @var list<string>
+     */
+    public array $purity_from_templates = [];
+
     public bool $no_named_args = false;
 
     public bool $stub_override = false;

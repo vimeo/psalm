@@ -590,6 +590,28 @@ final class FunctionLikeDocblockParser
             $info->has_mutations_annotation = true;
         }
 
+        if (isset($parsed_docblock->tags['psalm-purity-from'])) {
+            foreach ($parsed_docblock->tags['psalm-purity-from'] as $param) {
+                foreach (preg_split('/[\s,]+/', trim($param)) ?: [] as $token) {
+                    if ($token === '' || $token === '$') {
+                        continue;
+                    }
+                    $info->purity_from_params[] = ltrim($token, '$');
+                }
+            }
+        }
+
+        if (isset($parsed_docblock->tags['psalm-purity-from-template'])) {
+            foreach ($parsed_docblock->tags['psalm-purity-from-template'] as $param) {
+                foreach (preg_split('/[\s,]+/', trim($param)) ?: [] as $token) {
+                    if ($token === '') {
+                        continue;
+                    }
+                    $info->purity_from_templates[] = $token;
+                }
+            }
+        }
+
         if (isset($parsed_docblock->tags['no-named-arguments'])) {
             $info->no_named_args = true;
         }

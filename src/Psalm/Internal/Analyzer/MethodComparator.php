@@ -36,6 +36,7 @@ use Psalm\Storage\AttributeStorage;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -378,8 +379,10 @@ final class MethodComparator
             );
         }
 
-        if ($guide_method_storage->isExternalMutationFree()
-            && !$implementer_method_storage->isExternalMutationFree()
+        // For a method with `@psalm-purity-from`(`-template`), its purity for inheritance is
+        // the worst possible over the params/templates it inherits purity from.
+        if ($guide_method_storage->getWorstCaseAllowedMutations() <= Mutations::LEVEL_INTERNAL_READ_WRITE
+            && $implementer_method_storage->getWorstCaseAllowedMutations() > Mutations::LEVEL_INTERNAL_READ_WRITE
             && !$guide_method_storage->mutation_free_assumed
             && $prevent_method_signature_mismatch
         ) {

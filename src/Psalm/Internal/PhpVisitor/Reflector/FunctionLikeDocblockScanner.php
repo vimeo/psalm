@@ -140,6 +140,8 @@ final class FunctionLikeDocblockScanner
             $storage->allowed_mutations,
         );
         $storage->has_mutations_annotation = $docblock_info->has_mutations_annotation;
+        $storage->purity_from_params = $docblock_info->purity_from_params;
+        $storage->purity_from_templates = $docblock_info->purity_from_templates;
 
         if ($docblock_info->allowed_mutations === Mutations::LEVEL_NONE
             || $docblock_info->specialize_call

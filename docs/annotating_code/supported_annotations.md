@@ -503,6 +503,91 @@ Used to annotate a function that is not pure (nor mutation free, nor externally 
 - `@psalm-external-mutation-free`
 - `@psalm-impure`
 
+### `@psalm-purity-from`
+
+Used to make a function-like's purity *polymorphic* in one or more of its
+closure/callable parameters: instead of a fixed level, the effective purity of
+each call is the worst of the declared level and the purity of the closures
+actually passed to those parameters. It can only ever make a call *less* pure
+than its own annotation, never more.
+
+Inside the body, calling one of the referenced closure parameters is not counted
+as impurity — the responsibility is deferred to each call site.
+
+```php
+<?php
+
+class Collection {
+    /**
+     * @psalm-external-mutation-free
+     * @psalm-purity-from $callback
+     * @param Closure(int): int $callback
+     */
+    public function map(Closure $callback): void {
+        // ...
+    }
+}
+
+/**
+ * @psalm-external-mutation-free
+ */
+function usePure(Collection $c): void {
+    // OK: the closure is pure, so the map() call stays external-mutation-free.
+    $c->map(fn(int $x): int => $x + 1);
+}
+```
+
+Passing an impure closure from a mutation-free/pure context is reported as an
+`ImpureMethodCall`/`ImpureFunctionCall`, because the call becomes impure.
+
+For inheritance and other contract checks, a method annotated with
+`@psalm-purity-from` is assumed to have the worst purity its referenced
+parameters' declared closure types allow.
+
+### `@psalm-purity-from-template`
+
+Like `@psalm-purity-from`, but the purity is taken from a template parameter
+(method-level **or** class-level) whose bound type contains the closure, rather
+than from a value parameter. This is resolved from the closure the caller
+actually supplies for that template, like a conditional return type.
+
+```php
+<?php
+
+/**
+ * @template T of callable(): void
+ */
+class Deferred {
+    /** @var T */
+    private $callback;
+
+    /**
+     * @param T $callback
+     * @psalm-external-mutation-free
+     */
+    public function __construct($callback) {
+        $this->callback = $callback;
+    }
+
+    /**
+     * @psalm-external-mutation-free
+     * @psalm-purity-from-template T
+     */
+    public function run(): void {
+        ($this->callback)();
+    }
+}
+
+/**
+ * @psalm-external-mutation-free
+ * @param Deferred<pure-Closure(): void> $deferred
+ */
+function runPure(Deferred $deferred): void {
+    // OK: T is a pure closure, so run() is treated as external-mutation-free here.
+    $deferred->run();
+}
+```
+
 ### `@psalm-allow-private-mutation`
 
 Used to annotate readonly properties that can be mutated in a private context. With this, public properties can be read from another class but only be mutated within a method of its own class.
