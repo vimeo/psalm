@@ -2710,6 +2710,40 @@ final class PropertyTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'nullsafePropertyFetchIdenticalConstAssertsNotNull' => [
+                'code' => '<?php
+                    class Foo {
+                        public ?string $source = null;
+                    }
+
+                    function test(?Foo $v): Foo {
+                        if ("db20" === $v?->source) {
+                            return $v;
+                        }
+
+                        return new Foo();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafePropertyFetchIdenticalConstReversedAssertsNotNull' => [
+                'code' => '<?php
+                    class Foo {
+                        public ?string $source = null;
+                    }
+
+                    function test(?Foo $v): Foo {
+                        if ($v?->source === "db20") {
+                            return $v;
+                        }
+
+                        return new Foo();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'impossibleIntersection' => [
                 'code' => '<?php
                     class Foo {}
