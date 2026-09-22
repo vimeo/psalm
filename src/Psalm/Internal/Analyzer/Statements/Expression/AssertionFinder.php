@@ -3544,6 +3544,7 @@ final class AssertionFinder
             $other_operand_type = $source->node_data->getType($other_operand);
 
             if ($other_operand_type
+                && $identical
                 && !$other_operand_type->isNullable()
                 && !$other_operand_type->isMixed()
             ) {

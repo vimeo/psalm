@@ -2794,6 +2794,23 @@ final class PropertyTypeTest extends TestCase
                     (new A)->foo = "cool";',
                 'error_message' => 'UndefinedPropertyAssignment',
             ],
+            'nullsafePropertyFetchLooselyEqualDoesNotAssertNotNull' => [
+                'code' => '<?php
+                    class Foo {
+                        public ?string $source = null;
+                    }
+
+                    function test(?Foo $v): Foo {
+                        if (0 == $v?->source) {
+                            return $v;
+                        }
+
+                        return new Foo();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'undefinedPropertyFetch' => [
                 'code' => '<?php
                     class A {
