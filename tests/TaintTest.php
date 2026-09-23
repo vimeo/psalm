@@ -7,6 +7,7 @@ namespace Psalm\Tests;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
+use Psalm\Internal\Analyzer\DataFlowNodeData;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\IssueBuffer;
 use Psalm\Type\TaintKind;
@@ -15,6 +16,7 @@ use function array_filter;
 use function array_flip;
 use function array_map;
 use function array_values;
+use function count;
 use function in_array;
 use function preg_quote;
 use function strpos;
@@ -3491,6 +3493,178 @@ final class TaintTest extends TestCase
                 'expectedIssueTypes' => [
                     'TaintedShell{ function runCmd(string $cmd): void {} }',
                     'TaintedShell{ function runCmd(string $cmd): void {} }',
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * Every distinct flow into a sink is a finding of its own, so the issues are pinned by the
+     * endpoints of their traces (origin and last node before the sink) rather than by type only.
+     *
+     * @param list<string> $expectedTraces
+     * @test
+     * @dataProvider everyTaintFlowIntoASinkIsReportedDataProvider
+     */
+    public function everyTaintFlowIntoASinkIsReported(string $code, array $expectedTraces): void
+    {
+        // disables issue exceptions - we need all, not just the first
+        $this->testConfig->throw_exception = false;
+        $filePath = self::$src_dir_path . 'somefile.php';
+        $this->addFile($filePath, $code);
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->analyzeFile($filePath, new Context(), false);
+
+        $actualTraces = [];
+
+        foreach (IssueBuffer::getIssuesDataForFile($filePath) as $issue) {
+            if (in_array($issue->type, self::IGNORE, true)) {
+                continue;
+            }
+
+            $nodes = array_values(array_filter(
+                $issue->taint_trace ?? [],
+                static fn(DataFlowNodeData|array $node): bool => $node instanceof DataFlowNodeData,
+            ));
+
+            self::assertNotEmpty($nodes, $issue->type . ' has no trace');
+
+            $first = $nodes[0];
+            $last = $nodes[count($nodes) - 1];
+
+            $actualTraces[] = $issue->type
+                . ': ' . $first->label . '@' . $first->line_from
+                . ' ... ' . $last->label . '@' . $last->line_from;
+        }
+
+        self::assertSame($expectedTraces, $actualTraces);
+    }
+
+    /**
+     * @return array<string, array{code: string, expectedTraces: list<string>}>
+     * @psalm-pure
+     */
+    public function everyTaintFlowIntoASinkIsReportedDataProvider(): array
+    {
+        return [
+            // The two flows share the wrapper's parameter and return nodes, and one of them
+            // gets there a round later than the other.
+            'twoFlowsThroughASharedWrapperIntoTheSameSink' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-flow ($value) -> return
+                     * @psalm-taint-specialize
+                     */
+                    function relay(string $value): string { return $value; }
+
+                    /**
+                     * @psalm-flow ($value) -> return
+                     */
+                    function relayTwice(string $value): string { return $value; }
+
+                    /**
+                     * @psalm-taint-sink shell $cmd
+                     */
+                    function runCmd(string $cmd): void {}
+
+                    runCmd(relay((string)($_GET["a"] ?? "")));
+                    runCmd(relay(relayTwice((string)($_GET["b"] ?? ""))));
+                ',
+                'expectedTraces' => [
+                    'TaintedShell: $_GET@18 ... call to runCmd@18',
+                    'TaintedShell: $_GET@19 ... call to runCmd@19',
+                ],
+            ],
+            // Same as above without @psalm-taint-specialize. This pins a known limitation: the
+            // wrapper's nodes are then shared by all of its call sites, and the resolver only
+            // propagates the first flow to reach a shared node (with a given taint mask) through
+            // it. So $_GET["b"], which gets there a round later, is never traced to the sink, and
+            // the two findings both come from $_GET["a"] -- once per call site of the wrapper,
+            // since taint entering an unspecialized function at one call site leaves at every
+            // call site (see docs/security_analysis/avoiding_false_positives.md). Propagating
+            // every flow separately would report each source once per call site instead, which
+            // is quadratic on a wrapper with many callers; $_GET["b"] surfaces once the $_GET["a"]
+            // flow is fixed.
+            'twoFlowsThroughAnUnspecializedSharedWrapperIntoTheSameSink' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-flow ($value) -> return
+                     */
+                    function relay(string $value): string { return $value; }
+
+                    /**
+                     * @psalm-flow ($value) -> return
+                     */
+                    function relayTwice(string $value): string { return $value; }
+
+                    /**
+                     * @psalm-taint-sink shell $cmd
+                     */
+                    function runCmd(string $cmd): void {}
+
+                    runCmd(relay((string)($_GET["a"] ?? "")));
+                    runCmd(relay(relayTwice((string)($_GET["b"] ?? ""))));
+                ',
+                'expectedTraces' => [
+                    'TaintedShell: $_GET@17 ... call to runCmd@17',
+                    'TaintedShell: $_GET@17 ... call to runCmd@18',
+                ],
+            ],
+            // One source, two paths of equal length into the sink.
+            'twoPathsFromOneSourceIntoTheSameSink' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-flow ($value) -> return
+                     */
+                    function relayA(string $value): string { return $value; }
+
+                    /**
+                     * @psalm-flow ($value) -> return
+                     */
+                    function relayB(string $value): string { return $value; }
+
+                    /**
+                     * @psalm-taint-sink shell $cmd
+                     */
+                    function runCmd(string $cmd): void {}
+
+                    $x = (string)($_GET["x"] ?? "");
+                    runCmd(relayA($x));
+                    runCmd(relayB($x));
+                ',
+                'expectedTraces' => [
+                    'TaintedShell: $_GET@17 ... call to runCmd@18',
+                    'TaintedShell: $_GET@17 ... call to runCmd@19',
+                ],
+            ],
+            // One source node (a taint-source method return is not specialized per call site),
+            // two paths of different length into the sink.
+            'twoPathsOfDifferentLengthFromOneSourceIntoTheSameSink' => [
+                'code' => '<?php
+                    class Request {
+                        /**
+                         * @psalm-taint-source input
+                         */
+                        public static function get(): string { return ""; }
+                    }
+
+                    /**
+                     * @psalm-flow ($value) -> return
+                     */
+                    function relay(string $value): string { return $value; }
+
+                    /**
+                     * @psalm-taint-sink shell $cmd
+                     */
+                    function runCmd(string $cmd): void {}
+
+                    runCmd(Request::get());
+                    runCmd(relay(Request::get()));
+                ',
+                'expectedTraces' => [
+                    'TaintedShell: Request::get@6 ... call to runCmd@19',
+                    'TaintedShell: Request::get@6 ... call to runCmd@20',
                 ],
             ],
         ];
