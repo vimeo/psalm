@@ -1,0 +1,10 @@
+<?php
+namespace Foo;
+
+interface StubbedInterface
+{
+    /**
+     * @param int $x
+     */
+    public function run_stubbed($x): float;
+}
