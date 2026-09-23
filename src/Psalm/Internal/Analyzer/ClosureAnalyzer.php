@@ -12,10 +12,10 @@ use Psalm\Internal\Codebase\CodeUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\PhpVisitor\ShortClosureVisitor;
 use Psalm\Issue\DuplicateParam;
-use Psalm\Issue\ImpureFunctionCall;
 use Psalm\Issue\PossiblyUndefinedVariable;
 use Psalm\Issue\UndefinedVariable;
 use Psalm\IssueBuffer;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
@@ -239,14 +239,11 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
             $context->vars_in_scope[$key] = $value;
         }
         
-        $statements_analyzer->signalMutation(
-            $closure_analyzer->inferred_mutations,
-            $context,
-            'closure',
-            ImpureFunctionCall::class,
-            $stmt,
-            null,
-            false,
+        // creating a closure is not an effect: its capabilities are carried by its type and are
+        // required where it is called or passed. Only the purity inference of the enclosing
+        // function-like still follows the closure's final level, as if it were called.
+        $statements_analyzer->signalMutationOnlyInferred(
+            Capabilities::NONE,
             $closure_analyzer->storage,
             false,
             $closure_analyzer->getMutationNodeId(),

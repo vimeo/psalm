@@ -11,6 +11,7 @@ use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\FileManipulation;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallProhibitionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NoDiscardAnalyzer;
@@ -288,18 +289,23 @@ final class ExistingAtomicStaticCallAnalyzer
                 );
             }
 
-            if (!$context->inside_throw) {
-                $statements_analyzer->signalMutation(
-                    $method_storage->allowed_mutations,
-                    $context,
-                    'method',
-                    ImpureMethodCall::class,
-                    $stmt,
-                    null,
-                    false,
+            $statements_analyzer->signalMutation(
+                CallPurityResolver::getCallCapabilities(
+                    $statements_analyzer,
+                    $codebase,
                     $method_storage,
-                );
-            }
+                    $method_storage->capabilities,
+                    $template_result,
+                    $found_generic_params ?? [],
+                ),
+                $context,
+                'method ' . $cased_method_id,
+                ImpureMethodCall::class,
+                $stmt,
+                $method_storage->capabilities,
+                false,
+                $method_storage,
+            );
 
             if (NoDiscardAnalyzer::isDiscardReported(
                 $codebase,

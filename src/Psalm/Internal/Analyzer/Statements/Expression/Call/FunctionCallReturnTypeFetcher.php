@@ -89,7 +89,7 @@ final class FunctionCallReturnTypeFetcher
                 $stmt_type = new Union([new TClosure(
                     $candidate_callable->params,
                     $candidate_callable->return_type,
-                    $candidate_callable->allowed_mutations,
+                    $candidate_callable->purity,
                     callable_id: strtolower($function_id),
                 )]);
             } else {

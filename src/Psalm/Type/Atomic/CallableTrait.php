@@ -10,8 +10,8 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeParameter;
-use Psalm\Storage\Mutations;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
@@ -31,8 +31,12 @@ trait CallableTrait
 
     public ?Union $return_type = null;
 
-    /** @var Mutations::LEVEL_* */
-    public int $allowed_mutations = Mutations::LEVEL_ALL;
+    /**
+     * The purity of the callable: a capability set ({@see TCapabilities}), or a purity template
+     * parameter ({@see TTemplateParam} bound by `@psalm-purity-template`) that is resolved from
+     * the closure actually passed at each call site.
+     */
+    public Union $purity;
 
 
     /**
@@ -50,17 +54,79 @@ trait CallableTrait
         return $cloned;
     }
     /**
-     * @param Mutations::LEVEL_* $allowed_mutations
      * @return static
      */
-    public function setAllowedMutations(int $allowed_mutations): self
+    public function setPurity(int|Union $purity): self
     {
-        if ($this->allowed_mutations === $allowed_mutations) {
+        $purity = self::purityFrom($purity);
+        if ($this->purity === $purity || $this->purity->getId() === $purity->getId()) {
             return $this;
         }
         $cloned = clone $this;
-        $cloned->allowed_mutations = $allowed_mutations;
+        $cloned->purity = $purity;
         return $cloned;
+    }
+
+    /**
+     * The capabilities this callable needs from its caller. An unresolved purity template
+     * counts as its upper bound (any capability): use {@see CallPurityResolver} where the
+     * enclosing function-like's own purity templates must be taken into account.
+     *
+     * @psalm-mutation-free
+     */
+    public function getCapabilities(): int
+    {
+        return Capabilities::fromType($this->purity);
+    }
+
+    /**
+     * Whether the purity is fixed (no purity template involved).
+     *
+     * @psalm-mutation-free
+     */
+    public function hasFixedPurity(): bool
+    {
+        foreach ($this->purity->getAtomicTypes() as $atomic) {
+            if (!$atomic instanceof TCapabilities) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    public static function purityFrom(int|Union $purity): Union
+    {
+        if ($purity instanceof Union) {
+            return $purity;
+        }
+
+        return new Union([new TCapabilities($purity)]);
+    }
+
+    /**
+     * The `pure-`/`impure-` prefix or `<...>` purity suffix of the callable keyword.
+     *
+     * @psalm-mutation-free
+     */
+    private function getPurityString(): string
+    {
+        if ($this->hasFixedPurity()) {
+            $capabilities = $this->getCapabilities();
+
+            if ($capabilities === Capabilities::NONE) {
+                return 'pure-' . $this->value;
+            }
+
+            if ($capabilities === Capabilities::ALL) {
+                return 'impure-' . $this->value;
+            }
+        }
+
+        return $this->value . '<' . $this->purity->getId() . '>';
     }
 
     public function getParamString(): string
@@ -101,14 +167,7 @@ trait CallableTrait
         $param_string = $this->getParamString();
         $return_type_string = $this->getReturnTypeString();
 
-        $prefix = match ($this->allowed_mutations) {
-            Mutations::LEVEL_NONE => 'pure-',
-            Mutations::LEVEL_INTERNAL_READ => 'self-accessing-',
-            Mutations::LEVEL_INTERNAL_READ_WRITE => 'self-mutating-',
-            Mutations::LEVEL_EXTERNAL => 'impure-',
-        };
-
-        return $prefix . $this->value . $param_string . $return_type_string;
+        return $this->getPurityString() . $param_string . $return_type_string;
     }
 
     /**
@@ -125,12 +184,7 @@ trait CallableTrait
             return $this->value;
         }
 
-        $prefix = match ($this->allowed_mutations) {
-            Mutations::LEVEL_NONE => 'pure-',
-            Mutations::LEVEL_INTERNAL_READ => 'self-accessing-',
-            Mutations::LEVEL_INTERNAL_READ_WRITE => 'self-mutating-',
-            Mutations::LEVEL_EXTERNAL => 'impure-',
-        };
+        $prefix = $this->getPurityString();
 
         $param_string = '';
         $return_type_string = '';
@@ -162,7 +216,7 @@ trait CallableTrait
             ) . ($return_type_multiple ? ')' : '');
         }
 
-        return $prefix . $this->value . $param_string . $return_type_string;
+        return $prefix . $param_string . $return_type_string;
     }
 
     /**
@@ -207,18 +261,11 @@ trait CallableTrait
                 . $this->return_type->getId($exact) . ($return_type_multiple ? ')' : '');
         }
 
-        $prefix = match ($this->allowed_mutations) {
-            Mutations::LEVEL_NONE => 'pure-',
-            Mutations::LEVEL_INTERNAL_READ => 'self-accessing-',
-            Mutations::LEVEL_INTERNAL_READ_WRITE => 'self-mutating-',
-            Mutations::LEVEL_EXTERNAL => 'impure-',
-        };
-        return $prefix
-            . $this->value . $param_string . $return_type_string;
+        return $this->getPurityString() . $param_string . $return_type_string;
     }
 
     /**
-     * @return array{list<FunctionLikeParameter>|null, Union|null}|null
+     * @return array{list<FunctionLikeParameter>|null, Union|null, Union}|null
      */
     protected function replaceCallableTemplateTypesWithStandins(
         TemplateResult $template_result,
@@ -286,15 +333,32 @@ trait CallableTrait
             $replaced = $replaced || $this->return_type !== $return_type;
         }
 
+        // the purity of the passed closure binds the purity template, if any
+        $purity = TemplateStandinTypeReplacer::replace(
+            $this->purity,
+            $template_result,
+            $codebase,
+            $statements_analyzer,
+            $input_type instanceof TCallable || $input_type instanceof TClosure
+                ? $input_type->purity
+                : null,
+            $input_arg_offset,
+            $calling_class,
+            $calling_function,
+            $replace,
+            $add_lower_bound,
+        );
+        $replaced = $replaced || $this->purity !== $purity;
+
         if ($replaced) {
-            return [$params, $return_type];
+            return [$params, $return_type, $purity];
         }
         return null;
     }
 
 
     /**
-     * @return array{list<FunctionLikeParameter>|null, Union|null}|null
+     * @return array{list<FunctionLikeParameter>|null, Union|null, Union}|null
      */
     protected function replaceCallableTemplateTypesWithArgTypes(
         TemplateResult $template_result,
@@ -326,8 +390,16 @@ trait CallableTrait
             );
             $replaced = $replaced || $return_type !== $this->return_type;
         }
+
+        $purity = TemplateInferredTypeReplacer::replace(
+            $this->purity,
+            $template_result,
+            $codebase,
+        );
+        $replaced = $replaced || $purity !== $this->purity;
+
         if ($replaced) {
-            return [$params, $return_type];
+            return [$params, $return_type, $purity];
         }
         return null;
     }
@@ -338,6 +410,6 @@ trait CallableTrait
      */
     protected function getCallableChildNodeKeys(): array
     {
-        return ['params', 'return_type'];
+        return ['params', 'return_type', 'purity'];
     }
 }

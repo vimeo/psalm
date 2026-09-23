@@ -22,7 +22,7 @@ use Psalm\Issue\UndefinedGlobalVariable;
 use Psalm\Issue\UndefinedVariable;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
-use Psalm\Storage\Mutations;
+use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TBool;
@@ -120,7 +120,7 @@ final class VariableFetchAnalyzer
             }
 
             $statements_analyzer->signalMutation(
-                Mutations::LEVEL_INTERNAL_READ,
+                Capabilities::READ_PROPS,
                 $context,
                 '$this',
                 ImpureVariable::class,
@@ -157,7 +157,7 @@ final class VariableFetchAnalyzer
             $var_name = '$' . $stmt->name;
 
             $statements_analyzer->signalMutation(
-                Mutations::LEVEL_EXTERNAL,
+                Capabilities::READ_GLOBALS,
                 $context,
                 "superglobal $var_name",
                 ImpureGlobalVariable::class,
@@ -194,7 +194,7 @@ final class VariableFetchAnalyzer
 
         if (!is_string($stmt->name)) {
             $statements_analyzer->signalMutation(
-                Mutations::LEVEL_INTERNAL_READ,
+                Capabilities::READ_PROPS,
                 $context,
                 'unknown variable',
                 ImpureVariable::class,

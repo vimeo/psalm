@@ -70,7 +70,12 @@ final class CallableTypeComparator
         }
         assert($input_type_part instanceof TClosure || $input_type_part instanceof TCallable);
 
-        if ($container_type_part->allowed_mutations < $input_type_part->allowed_mutations) {
+        // a callable needing fewer capabilities fits where more are allowed, never the reverse
+        if (!UnionTypeComparator::isContainedBy(
+            $codebase,
+            $input_type_part->purity,
+            $container_type_part->purity,
+        )) {
             if ($atomic_comparison_result) {
                 $atomic_comparison_result->type_coerced = true;
             }
@@ -364,7 +369,7 @@ final class CallableTypeComparator
                 return new TCallable(
                     $params,
                     $return_type,
-                    $function_storage->allowed_mutations,
+                    $function_storage->capabilities,
                 );
             } catch (UnexpectedValueException) {
                 if (InternalCallMapHandler::inCallMap($input_type_part->value)) {
@@ -395,8 +400,8 @@ final class CallableTypeComparator
 
                     $must_use = false;
 
-                    $matching_callable = $matching_callable->setAllowedMutations(
-                        $codebase->functions->getCallMapFunctionMutations(
+                    $matching_callable = $matching_callable->setPurity(
+                        $codebase->functions->getCallMapFunctionCapabilities(
                             $statements_analyzer,
                             $context,
                             $codebase,
@@ -431,7 +436,7 @@ final class CallableTypeComparator
                     return new TCallable(
                         $method_storage->params,
                         $converted_return_type,
-                        $method_storage->allowed_mutations,
+                        $method_storage->capabilities,
                     );
                 } catch (UnexpectedValueException) {
                     // do nothing
@@ -498,7 +503,7 @@ final class CallableTypeComparator
                     $callable = new TCallable(
                         $method_storage->params,
                         $converted_return_type,
-                        $method_storage->allowed_mutations,
+                        $method_storage->capabilities,
                     );
 
                     if ($template_result) {

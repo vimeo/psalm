@@ -39,7 +39,7 @@ use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualMethodCall;
 use Psalm\Node\VirtualIdentifier;
 use Psalm\Storage\Assertion;
-use Psalm\Storage\Mutations;
+use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
@@ -531,7 +531,7 @@ final class ForeachAnalyzer
                 );
 
                 $statements_analyzer->signalMutation(
-                    Mutations::LEVEL_ALL,
+                    Capabilities::ALL,
                     $context,
                     'possibly-mutating iterator',
                     ImpureMethodCall::class,
@@ -596,7 +596,7 @@ final class ForeachAnalyzer
                 $has_valid_iterator = true;
 
                 $statements_analyzer->signalMutation(
-                    Mutations::LEVEL_ALL,
+                    Capabilities::ALL,
                     $context,
                     'possibly-mutating Traversable::getIterator',
                     ImpureMethodCall::class,
@@ -639,7 +639,7 @@ final class ForeachAnalyzer
                 }
 
                 $statements_analyzer->signalMutation(
-                    Mutations::LEVEL_ALL,
+                    Capabilities::ALL,
                     $context,
                     'possibly-mutating iterator',
                     ImpureMethodCall::class,

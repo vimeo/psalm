@@ -35,12 +35,12 @@ use Psalm\Storage\Assertion\IsNotType;
 use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\Assertion\NonEmpty;
 use Psalm\Storage\Assertion\Truthy;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
-use Psalm\Storage\Mutations;
 use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
@@ -57,7 +57,6 @@ use function array_values;
 use function count;
 use function explode;
 use function in_array;
-use function min;
 use function preg_last_error_msg;
 use function preg_match;
 use function preg_replace;
@@ -100,14 +99,11 @@ final class FunctionLikeDocblockScanner
 
         $config = Config::getInstance();
 
-        $storage->allowed_mutations = min(
-            $docblock_info->allowed_mutations,
-            $storage->allowed_mutations,
-        );
+        $storage->capabilities = $docblock_info->capabilities & $storage->capabilities;
         $storage->has_mutations_annotation = $docblock_info->has_mutations_annotation;
         
         if ($storage instanceof MethodStorage
-            && $docblock_info->allowed_mutations <= Mutations::LEVEL_INTERNAL_READ
+            && Capabilities::allows(Capabilities::MUTATION_FREE, $docblock_info->capabilities)
         ) {
             // If we explicitly marked this as mutation free, it's not inferred anymore.
             $storage->mutation_free_assumed = false;
@@ -135,15 +131,11 @@ final class FunctionLikeDocblockScanner
             $storage->variadic = true;
         }
 
-        $storage->allowed_mutations = min(
-            $docblock_info->allowed_mutations,
-            $storage->allowed_mutations,
-        );
+        $storage->capabilities = $docblock_info->capabilities & $storage->capabilities;
         $storage->has_mutations_annotation = $docblock_info->has_mutations_annotation;
-        $storage->purity_from_params = $docblock_info->purity_from_params;
         $storage->purity_from_templates = $docblock_info->purity_from_templates;
 
-        if ($docblock_info->allowed_mutations === Mutations::LEVEL_NONE
+        if ($docblock_info->capabilities === Capabilities::NONE
             || $docblock_info->specialize_call
         ) {
             $storage->specialize_call = true;
@@ -238,6 +230,28 @@ final class FunctionLikeDocblockScanner
                 $stmt,
                 $cased_function_id,
             );
+        }
+
+        foreach ($storage->purity_from_templates as $purity_template) {
+            $bounds = $storage->template_types[$purity_template]
+                ?? ($classlike_storage->template_types[$purity_template] ?? null);
+
+            $is_purity_source = $bounds !== null;
+
+            foreach ($bounds ?? [] as $bound) {
+                if (!Capabilities::isPurityType($bound) && !$bound->hasCallableType()) {
+                    $is_purity_source = false;
+                }
+            }
+
+            if (!$is_purity_source) {
+                $storage->docblock_issues[] = new InvalidDocblock(
+                    '@psalm-purity-from-template ' . $purity_template . ' must name a template declared with'
+                    . ' @psalm-purity-template, or a template bound to a closure or callable type, in '
+                    . $cased_function_id,
+                    new CodeLocation($file_scanner, $stmt, null, true),
+                );
+            }
         }
 
         self::handleAssertions(

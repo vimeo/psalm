@@ -14,7 +14,7 @@ use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeAlias\LinkableTypeAlias;
 use Psalm\Internal\TypeVisitor\ClasslikeReplacer;
-use Psalm\Storage\Mutations;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
@@ -23,6 +23,7 @@ use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
+use Psalm\Type\Atomic\TCapabilities;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TClosedResource;
@@ -237,19 +238,24 @@ abstract class Atomic implements TypeNode, Stringable
 
             case 'pure-callable':
                 return new TCallable(
-                    allowed_mutations: Mutations::LEVEL_NONE,
-                );
-            case 'self-mutating-callable':
-                return new TCallable(
-                    allowed_mutations: Mutations::LEVEL_INTERNAL_READ_WRITE,
-                );
-            case 'self-accessing-callable':
-                return new TCallable(
-                    allowed_mutations: Mutations::LEVEL_INTERNAL_READ,
+                    purity: Capabilities::NONE,
                 );
             case 'impure-callable':
             case 'callable':
                 return new TCallable();
+
+            case 'pure':
+            case 'impure':
+            case 'mutation-free':
+            case 'external-mutation-free':
+            case 'read-props':
+            case 'write-this-props':
+            case 'write-props':
+            case 'read-globals':
+            case 'write-globals':
+            case 'write-refs':
+            case 'io':
+                return new TCapabilities(Capabilities::NAMES[$value], $from_docblock);
 
             case 'array':
             case 'associative-array':
@@ -419,15 +425,7 @@ abstract class Atomic implements TypeNode, Stringable
 
             case 'pure-Closure':
                 return new TClosure(
-                    allowed_mutations: Mutations::LEVEL_NONE,
-                );
-            case 'self-mutating-Closure':
-                return new TClosure(
-                    allowed_mutations: Mutations::LEVEL_INTERNAL_READ_WRITE,
-                );
-            case 'self-accessing-Closure':
-                return new TClosure(
-                    allowed_mutations: Mutations::LEVEL_INTERNAL_READ,
+                    purity: Capabilities::NONE,
                 );
             case 'impure-Closure':
             case 'Closure':

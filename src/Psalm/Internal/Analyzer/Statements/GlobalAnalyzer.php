@@ -16,7 +16,7 @@ use Psalm\Internal\ReferenceConstraint;
 use Psalm\Issue\ImpureGlobalVariable;
 use Psalm\Issue\InvalidGlobal;
 use Psalm\IssueBuffer;
-use Psalm\Storage\Mutations;
+use Psalm\Storage\Capabilities;
 
 use function is_string;
 
@@ -48,7 +48,7 @@ final class GlobalAnalyzer
             : null;
 
         $statements_analyzer->signalMutation(
-            Mutations::LEVEL_EXTERNAL,
+            Capabilities::READ_GLOBALS | Capabilities::WRITE_GLOBALS,
             $context,
             'global variable',
             ImpureGlobalVariable::class,

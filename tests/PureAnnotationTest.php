@@ -708,7 +708,7 @@ final class PureAnnotationTest extends TestCase
                 'code' => '<?php
                     namespace Bar;
 
-                    /** @psalm-external-mutation-free */
+                    /** @psalm-capabilities write-globals */
                     function impure() : ?string {
                         /** @var int */
                         static $i = 0;

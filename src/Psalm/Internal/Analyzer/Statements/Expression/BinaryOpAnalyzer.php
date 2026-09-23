@@ -25,7 +25,7 @@ use Psalm\Issue\RedundantConditionGivenDocblockType;
 use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
-use Psalm\Storage\Mutations;
+use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -341,7 +341,7 @@ final class BinaryOpAnalyzer
             if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
                 && $stmt_left_type
                 && $stmt_right_type
-                && ($context->allowed_mutations !== Mutations::LEVEL_ALL
+                && ($context->capabilities !== Capabilities::ALL
                     || $codebase->alter_code
                 )
             ) {
@@ -488,7 +488,7 @@ final class BinaryOpAnalyzer
                     );
 
                     $statements_analyzer->signalMutation(
-                        $storage->allowed_mutations,
+                        $storage->capabilities,
                         $context,
                         'possibly-mutating method '
                                     . $atomic_type->value . '::__toString',
@@ -521,7 +521,7 @@ final class BinaryOpAnalyzer
                     );
 
                     $statements_analyzer->signalMutation(
-                        $storage->allowed_mutations,
+                        $storage->capabilities,
                         $context,
                         'possibly-mutating method '
                                     . $atomic_type->value . '::__toString',

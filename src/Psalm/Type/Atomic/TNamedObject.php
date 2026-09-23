@@ -8,7 +8,7 @@ use Override;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
-use Psalm\Storage\Mutations;
+use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 
@@ -267,7 +267,7 @@ class TNamedObject extends Atomic
         bool $from_docblock = false,
     ): TNamedObject {
         if ($value === 'Closure') {
-            return new TClosure(null, null, Mutations::LEVEL_ALL, [], $extra_types, $from_docblock);
+            return new TClosure(null, null, Capabilities::ALL, [], $extra_types, $from_docblock);
         }
 
         return new TNamedObject($value, $is_static, $definite_class, $extra_types, $from_docblock);

@@ -14,7 +14,7 @@ use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Scanner\ParsedDocblock;
-use Psalm\Storage\Mutations;
+use Psalm\Storage\Capabilities;
 
 use function array_key_exists;
 use function array_reduce;
@@ -83,8 +83,8 @@ final class FunctionDocblockManipulator
     /** @var array<string, array{int, int}> */
     private array $param_typehint_offsets = [];
 
-    /** @var ?Mutations::LEVEL_* */
-    private ?int $allowed_mutations = null;
+    /** A bitmask of {@see Capabilities} constants */
+    private ?int $capabilities = null;
 
     /** @var list<string> */
     private array $throwsExceptions = [];
@@ -411,15 +411,17 @@ final class FunctionDocblockManipulator
             $old_phpdoc_return_type = reset($parsed_docblock->tags['return']);
         }
 
-        if ($this->allowed_mutations !== null) {
+        if ($this->capabilities !== null) {
             $modified_docblock = true;
             unset($parsed_docblock->tags['psalm-pure']);
             unset($parsed_docblock->tags['psalm-mutation-free']);
             unset($parsed_docblock->tags['psalm-external-mutation-free']);
             unset($parsed_docblock->tags['psalm-impure']);
-            $parsed_docblock->tags[
-                Mutations::TO_ATTRIBUTE_FUNCTIONLIKE[$this->allowed_mutations]
-            ] = [''];
+            unset($parsed_docblock->tags['psalm-capabilities']);
+            $annotation = Capabilities::toFunctionAnnotation($this->capabilities);
+            $space = strpos($annotation, ' ');
+            $tag = $space === false ? $annotation : substr($annotation, 0, $space);
+            $parsed_docblock->tags[$tag] = [$space === false ? '' : substr($annotation, $space + 1)];
         }
         if (count($this->throwsExceptions) > 0) {
             $modified_docblock = true;
@@ -517,7 +519,7 @@ final class FunctionDocblockManipulator
             if (!$manipulator->new_php_return_type
                 || !$manipulator->return_type_is_php_compatible
                 || $manipulator->docblock_start !== $manipulator->docblock_end
-                || $manipulator->allowed_mutations !== null
+                || $manipulator->capabilities !== null
             ) {
                 $file_manipulations[$manipulator->docblock_start] = new FileManipulation(
                     $manipulator->docblock_start,
@@ -565,12 +567,12 @@ final class FunctionDocblockManipulator
     }
 
     /**
-     * @param Mutations::LEVEL_* $allowed_mutations
+     * @param int $capabilities a bitmask of {@see Capabilities} constants
      * @psalm-external-mutation-free
      */
-    public function setAllowedMutations(int $allowed_mutations): void
+    public function setCapabilities(int $capabilities): void
     {
-        $this->allowed_mutations = $allowed_mutations;
+        $this->capabilities = $capabilities;
     }
 
     /**

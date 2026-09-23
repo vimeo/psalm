@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Scanner;
 
-use Psalm\Storage\Mutations;
+use Psalm\Storage\Capabilities;
 
 /**
  * @internal
@@ -159,24 +159,13 @@ final class FunctionDocblockComment
 
     public bool $inheritdoc = false;
 
-    /** @var Mutations::LEVEL_* */
-    public int $allowed_mutations = Mutations::LEVEL_ALL;
+    /** A bitmask of {@see Capabilities} constants */
+    public int $capabilities = Capabilities::ALL;
 
     public bool $has_mutations_annotation = false;
 
     /**
-     * Names (without leading `$`) of closure/callable params from which this
-     * function-like inherits its purity: the effective mutation level of a call
-     * is the worst of the declared level and the levels of the closures passed
-     * to these params. Populated from `@psalm-purity-from $param`.
-     *
-     * @var list<string>
-     */
-    public array $purity_from_params = [];
-
-    /**
-     * Names of template params (method-level or class-level) whose bound
-     * closure/callable type this function-like inherits its purity from.
+     * Names of the templates this function-like inherits its purity from.
      * Populated from `@psalm-purity-from-template T`.
      *
      * @var list<string>

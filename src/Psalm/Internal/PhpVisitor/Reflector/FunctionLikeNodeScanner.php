@@ -40,13 +40,13 @@ use Psalm\Issue\MissingDocblockType;
 use Psalm\Issue\ParseError;
 use Psalm\Issue\PrivateFinalMethod;
 use Psalm\IssueBuffer;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\MethodStorage;
-use Psalm\Storage\Mutations;
 use Psalm\Storage\Possibilities;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
@@ -64,7 +64,6 @@ use function end;
 use function explode;
 use function in_array;
 use function is_string;
-use function min;
 use function spl_object_id;
 use function str_contains;
 use function str_starts_with;
@@ -102,7 +101,6 @@ final class FunctionLikeNodeScanner
 
     /**
      * @param  bool $fake_method in the case of @method annotations we do something a little strange
-     * @psalm-suppress ComplexMethod
      */
     public function start(
         PhpParser\Node\FunctionLike $stmt,
@@ -248,10 +246,7 @@ final class FunctionLikeNodeScanner
                     && $classlike_storage->properties[$property_name]->type
                     && !$classlike_storage->properties[$property_name]->hook_get
                 ) {
-                    $storage->allowed_mutations = min(
-                        Mutations::LEVEL_INTERNAL_READ,
-                        $storage->allowed_mutations,
-                    );
+                    $storage->capabilities = Capabilities::MUTATION_FREE & $storage->capabilities;
                     $storage->mutation_free_assumed = !$stmt->isFinal() && !$classlike_storage->final;
 
                     $classlike_storage->properties[$property_name]->getter_method = strtolower($stmt->name->name);
@@ -704,7 +699,7 @@ final class FunctionLikeNodeScanner
                     || $attribute->fq_class_name === 'JetBrains\\PhpStorm\\Pure'
                 ) {
                     $storage->specialize_call = true;
-                    $storage->allowed_mutations = Mutations::LEVEL_NONE;
+                    $storage->capabilities = Capabilities::NONE;
                     $storage->has_mutations_annotation = true;
                 }
 
@@ -726,10 +721,7 @@ final class FunctionLikeNodeScanner
                 if ($attribute->fq_class_name === 'Psalm\\ExternalMutationFree'
                     && $storage instanceof MethodStorage
                 ) {
-                    $storage->allowed_mutations = min(
-                        $storage->allowed_mutations,
-                        Mutations::LEVEL_INTERNAL_READ_WRITE,
-                    );
+                    $storage->capabilities = $storage->capabilities & Capabilities::EXTERNAL_MUTATION_FREE;
                     $storage->has_mutations_annotation = true;
                 }
 
@@ -852,10 +844,7 @@ final class FunctionLikeNodeScanner
             return;
         }
 
-        $storage->allowed_mutations = min(
-            Mutations::LEVEL_INTERNAL_READ_WRITE,
-            $storage->allowed_mutations,
-        );
+        $storage->capabilities = Capabilities::EXTERNAL_MUTATION_FREE & $storage->capabilities;
 
         $storage->mutation_free_assumed = true;
 

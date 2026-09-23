@@ -67,7 +67,7 @@ use Psalm\IssueBuffer;
 use Psalm\NodeTypeProvider;
 use Psalm\Plugin\EventHandler\Event\AfterStatementAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\BeforeStatementAnalysisEvent;
-use Psalm\Storage\Mutations;
+use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
@@ -1055,7 +1055,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                 $destructor = $class_storage->methods['__destruct'] ?? null;
                 if ($destructor !== null) {
                     if ($destructor->has_mutations_annotation
-                        && $destructor->allowed_mutations >= Mutations::LEVEL_EXTERNAL) {
+                        && $destructor->capabilities === Capabilities::ALL) {
                         return true;
                     }
 

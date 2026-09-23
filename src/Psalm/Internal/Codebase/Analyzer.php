@@ -27,7 +27,6 @@ use Psalm\Internal\Provider\StatementsProvider;
 use Psalm\IssueBuffer;
 use Psalm\Progress\Phase;
 use Psalm\Progress\Progress;
-use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\Union;
 use SebastianBergmann\Diff\Differ;
@@ -85,7 +84,7 @@ use const PHP_INT_MAX;
  *      unused_suppressions: array<string, array<int, int>>,
  *      used_suppressions: array<string, array<int, bool>>,
  *      function_docblock_manipulators: array<string, array<int, FunctionDocblockManipulator>>,
- *      mutable_classes: array<string, Mutations::LEVEL_*>,
+ *      mutable_classes: array<string, int>,
  *      issue_handlers: array{type: string, index: int, count: int}[],
  * }
  */
@@ -173,7 +172,7 @@ final class Analyzer
     public array $possible_method_param_types = [];
 
     /**
-     * @var array<string, Mutations::LEVEL_*>
+     * @var array<string, int>
      */
     public array $mutable_classes = [];
 
@@ -1374,19 +1373,18 @@ final class Analyzer
     }
 
     /**
-     * @param Mutations::LEVEL_* $allowed_mutations
      * @psalm-external-mutation-free
      */
-    public function addMutableClass(string $fqcln, int $allowed_mutations): void
+    public function addMutableClass(string $fqcln, int $capabilities): void
     {
         $fqcln = strtolower($fqcln);
         if (array_key_exists($fqcln, $this->mutable_classes)) {
             $this->mutable_classes[$fqcln] = max(
                 $this->mutable_classes[$fqcln],
-                $allowed_mutations,
+                $capabilities,
             );
         } else {
-            $this->mutable_classes[$fqcln] = $allowed_mutations;
+            $this->mutable_classes[$fqcln] = $capabilities;
         }
     }
 

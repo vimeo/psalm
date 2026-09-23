@@ -14,6 +14,12 @@ final class CallableTree extends ParseTree
     public bool $terminated = false;
 
     /**
+     * The purity given as `Closure<...>(...)`/`callable<...>(...)`: a capability set or a
+     * purity template, if any.
+     */
+    public ?ParseTree $purity = null;
+
+    /**
      * @psalm-mutation-free
      */
     public function __construct(public string $value, ?ParseTree $parent = null)

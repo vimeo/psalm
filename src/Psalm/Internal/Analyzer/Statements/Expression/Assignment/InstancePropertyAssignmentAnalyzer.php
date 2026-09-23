@@ -65,8 +65,8 @@ use Psalm\Node\Scalar\VirtualString;
 use Psalm\Node\VirtualArg;
 use Psalm\Node\VirtualIdentifier;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
-use Psalm\Storage\Mutations;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -424,12 +424,12 @@ final class InstancePropertyAssignmentAnalyzer
             && isset($context->vars_in_scope[$lhs_var_id])
         ) {
             $real = $lhs_var_id === '$this'
-                ? Mutations::LEVEL_INTERNAL_READ_WRITE
-                : Mutations::LEVEL_EXTERNAL;
+                ? Capabilities::NAMES['write-this-props']
+                : Capabilities::NAMES['write-props'];
             $mut = $can_set_readonly_property ?
                 ($property_var_pure_compatible
-                    ? Mutations::LEVEL_NONE
-                    : Mutations::LEVEL_INTERNAL_READ
+                    ? Capabilities::NONE
+                    : Capabilities::READ_PROPS
                 ) : $real;
             $statements_analyzer->signalMutation(
                 $mut,
@@ -451,7 +451,7 @@ final class InstancePropertyAssignmentAnalyzer
             // e.g. the property of an array element: the class is still being mutated from outside
             $codebase->analyzer->addMutableClass(
                 $declaring_class_storage->name,
-                Mutations::LEVEL_EXTERNAL,
+                Capabilities::ALL,
             );
         }
     }

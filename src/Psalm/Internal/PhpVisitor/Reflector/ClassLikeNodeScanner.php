@@ -57,12 +57,12 @@ use Psalm\Issue\MissingPropertyType;
 use Psalm\Issue\ParseError;
 use Psalm\IssueBuffer;
 use Psalm\Storage\AttributeStorage;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassConstantStorage;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\EnumCaseStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\MethodStorage;
-use Psalm\Storage\Mutations;
 use Psalm\Storage\PropertyHookStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
@@ -82,7 +82,6 @@ use function assert;
 use function count;
 use function implode;
 use function ltrim;
-use function min;
 use function preg_match;
 use function preg_split;
 use function sprintf;
@@ -709,10 +708,7 @@ final class ClassLikeNodeScanner
                 }
             }
 
-            $storage->allowed_mutations = min(
-                $docblock_info->allowed_mutations,
-                $storage->allowed_mutations,
-            );
+            $storage->capabilities = $docblock_info->capabilities & $storage->capabilities;
             $storage->has_mutations_annotation = $docblock_info->has_mutations_annotation;
             $storage->specialize_instance = $docblock_info->taint_specialize;
 
@@ -802,18 +798,12 @@ final class ClassLikeNodeScanner
                 if ($attribute->fq_class_name === 'Psalm\\Immutable'
                     || $attribute->fq_class_name === 'JetBrains\\PhpStorm\\Immutable'
                 ) {
-                    $storage->allowed_mutations = min(
-                        Mutations::LEVEL_INTERNAL_READ,
-                        $storage->allowed_mutations,
-                    );
+                    $storage->capabilities = Capabilities::MUTATION_FREE & $storage->capabilities;
                     $storage->has_mutations_annotation = true;
                 }
 
                 if ($attribute->fq_class_name === 'Psalm\\ExternalMutationFree') {
-                    $storage->allowed_mutations = min(
-                        Mutations::LEVEL_INTERNAL_READ_WRITE,
-                        $storage->allowed_mutations,
-                    );
+                    $storage->capabilities = Capabilities::EXTERNAL_MUTATION_FREE & $storage->capabilities;
                     $storage->has_mutations_annotation = true;
                 }
 
@@ -1247,7 +1237,7 @@ final class ClassLikeNodeScanner
         $storage->cased_name = '__construct';
         $storage->defining_fqcln = $class_storage->name;
 
-        $storage->allowed_mutations = Mutations::LEVEL_NONE;
+        $storage->capabilities = Capabilities::NONE;
         $storage->mutation_free_assumed = true;
 
         $class_storage->declaring_method_ids['__construct'] = new MethodIdentifier(

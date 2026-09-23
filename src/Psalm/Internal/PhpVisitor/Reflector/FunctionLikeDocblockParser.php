@@ -17,7 +17,8 @@ use Psalm\Internal\Scanner\FunctionDocblockComment;
 use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\IssueBuffer;
-use Psalm\Storage\Mutations;
+use Psalm\Storage\Capabilities;
+use Psalm\Storage\CapabilitiesParseException;
 
 use function array_keys;
 use function array_shift;
@@ -482,6 +483,20 @@ final class FunctionLikeDocblockParser
         }
 
         $templates = [];
+
+        if (isset($parsed_docblock->tags['psalm-purity-template'])) {
+            // a purity template is a template whose values are capability sets
+            foreach ($parsed_docblock->tags['psalm-purity-template'] as $purity_template_line) {
+                foreach (preg_split('/[\s,]+/', trim($purity_template_line)) ?: [] as $template_name) {
+                    if ($template_name === '') {
+                        continue;
+                    }
+
+                    $templates[$template_name]['psalm'] = [$template_name, 'of', 'impure', false];
+                }
+            }
+        }
+
         if (isset($parsed_docblock->combined_tags['template'])) {
             foreach ($parsed_docblock->combined_tags['template'] as $offset => $template_line) {
                 $template_type = preg_split('/[\s]+/', CommentAnalyzer::sanitizeDocblockType($template_line));
@@ -577,26 +592,26 @@ final class FunctionLikeDocblockParser
             || isset($parsed_docblock->tags['phpstan-pure'])
             || isset($parsed_docblock->tags['pure'])
         ) {
-            $info->allowed_mutations = Mutations::LEVEL_NONE;
+            $info->capabilities = Capabilities::NONE;
             $info->has_mutations_annotation = true;
         } elseif (isset($parsed_docblock->tags['psalm-mutation-free'])) {
-            $info->allowed_mutations = Mutations::LEVEL_INTERNAL_READ;
+            $info->capabilities = Capabilities::MUTATION_FREE;
             $info->has_mutations_annotation = true;
         } elseif (isset($parsed_docblock->tags['psalm-external-mutation-free'])) {
-            $info->allowed_mutations = Mutations::LEVEL_INTERNAL_READ_WRITE;
+            $info->capabilities = Capabilities::EXTERNAL_MUTATION_FREE;
             $info->has_mutations_annotation = true;
         } elseif (isset($parsed_docblock->tags['psalm-impure'])) {
-            $info->allowed_mutations = Mutations::LEVEL_ALL;
+            $info->capabilities = Capabilities::ALL;
             $info->has_mutations_annotation = true;
-        }
+        } elseif (isset($parsed_docblock->tags['psalm-capabilities'])) {
+            $info->capabilities = Capabilities::NONE;
+            $info->has_mutations_annotation = true;
 
-        if (isset($parsed_docblock->tags['psalm-purity-from'])) {
-            foreach ($parsed_docblock->tags['psalm-purity-from'] as $param) {
-                foreach (preg_split('/[\s,]+/', trim($param)) ?: [] as $token) {
-                    if ($token === '' || $token === '$') {
-                        continue;
-                    }
-                    $info->purity_from_params[] = ltrim($token, '$');
+            foreach ($parsed_docblock->tags['psalm-capabilities'] as $capabilities_line) {
+                try {
+                    $info->capabilities |= Capabilities::fromList($capabilities_line);
+                } catch (CapabilitiesParseException $e) {
+                    throw new IncorrectDocblockException('Invalid @psalm-capabilities tag: ' . $e->getMessage());
                 }
             }
         }

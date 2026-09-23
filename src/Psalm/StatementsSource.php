@@ -7,7 +7,6 @@ namespace Psalm;
 use PhpParser\Node;
 use Psalm\Issue\CodeIssue;
 use Psalm\Storage\FunctionLikeStorage;
-use Psalm\Storage\Mutations;
 use Psalm\Type\Union;
 
 /**
@@ -83,7 +82,6 @@ interface StatementsSource extends FileSource
      * dependency is recorded and resolved after analysis instead (see
      * \Psalm\Internal\Codebase\MutationLevelResolver).
      *
-     * @param Mutations::LEVEL_* $mutation_level
      * @param bool $callee_internal_mutations_ok whether mutations of the callee's own instance
      *        (e.g. of a freshly constructed object) are fine for the caller
      * @param ?string $callee_id the graph node of the callee, when it can't be derived from its storage (closures)
@@ -96,10 +94,8 @@ interface StatementsSource extends FileSource
     ): void;
 
     /**
-     * @param Mutations::LEVEL_* $mutation_level
      * @param non-empty-string $msg
      * @param class-string<CodeIssue> $class
-     * @param ?Mutations::LEVEL_* $inferred_mutation_level
      */
     public function signalMutation(
         int $mutation_level,

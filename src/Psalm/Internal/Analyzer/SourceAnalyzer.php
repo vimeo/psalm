@@ -15,12 +15,10 @@ use Psalm\Issue\CodeIssue;
 use Psalm\IssueBuffer;
 use Psalm\NodeTypeProvider;
 use Psalm\StatementsSource;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
-use Psalm\Storage\Mutations;
 use Psalm\Type\Union;
-
-use function max;
 
 /**
  * @internal
@@ -255,8 +253,7 @@ abstract class SourceAnalyzer implements StatementsSource
                 // direct recursion
                 return;
             }
-            if ($mutation_level === Mutations::LEVEL_INTERNAL_READ_WRITE
-                && $src->storage instanceof MethodStorage
+            if ($src->storage instanceof MethodStorage
                 && (
                     // Allow constructors to mutate (override immutability)
                     $src->storage->cased_name === '__construct'
@@ -265,11 +262,15 @@ abstract class SourceAnalyzer implements StatementsSource
                     || $src->storage->mutation_free_assumed
                 )
             ) {
-                return;
+                $mutation_level &= ~(Capabilities::WRITE_THIS_PROPS | Capabilities::WRITE_REFS);
+
+                if ($mutation_level === Capabilities::NONE) {
+                    return;
+                }
             }
 
             // the level known at this point, used for the types of closures
-            $src->inferred_mutations = max($src->inferred_mutations, $mutation_level);
+            $src->inferred_capabilities |= $mutation_level;
 
             if ($storage !== null
                 && !$storage->has_mutations_annotation
@@ -288,22 +289,20 @@ abstract class SourceAnalyzer implements StatementsSource
                 }
             }
 
-            $src->intrinsic_mutations = max($src->intrinsic_mutations, $mutation_level);
+            $src->intrinsic_capabilities |= $mutation_level;
 
             if ($src->storage instanceof MethodStorage
                 && $src->storage->defining_fqcln !== null
             ) {
                 $src->getCodebase()->analyzer->addMutableClass(
                     $src->storage->defining_fqcln,
-                    $src->intrinsic_mutations,
+                    $src->intrinsic_capabilities,
                 );
             }
         }
     }
 
     /**
-     * @param Mutations::LEVEL_* $mutation_level
-     * @param ?Mutations::LEVEL_* $inferred_mutation_level
      * @param non-empty-string $msg
      * @param class-string<CodeIssue> $class
      */
@@ -331,7 +330,7 @@ abstract class SourceAnalyzer implements StatementsSource
             $callee_id,
         );
 
-        if ($context->allowed_mutations < $mutation_level
+        if (!Capabilities::allows($context->capabilities, $mutation_level)
 
             // These are secondary scan modes that shouldn't report this issue
             && !$context->collect_mutations

@@ -74,10 +74,10 @@ use Psalm\Node\VirtualArg;
 use Psalm\Node\VirtualIdentifier;
 use Psalm\Plugin\EventHandler\Event\AfterClassLikeAnalysisEvent;
 use Psalm\StatementsSource;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
-use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -1492,18 +1492,17 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 }
             }
 
-            if ($storage->allowed_mutations < $trait_storage->allowed_mutations) {
+            if (!Capabilities::allows($storage->capabilities, $trait_storage->capabilities)) {
                 IssueBuffer::maybeAdd(
                     new MutableDependency(
-                        $storage->name . ' is marked '.Mutations::TO_ATTRIBUTE_CLASSLIKE[
-                            $storage->allowed_mutations
-                        ].' but ' . $fq_trait_name . ' is not',
+                        $storage->name . ' is marked ' . Capabilities::toClassAnnotation($storage->capabilities)
+                            . ' but ' . $fq_trait_name . ' is not',
                         new CodeLocation($previous_trait_analyzer ?? $this, $trait_name),
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
                 );
             }
-            $codebase->analyzer->addMutableClass($storage->name, $trait_storage->allowed_mutations);
+            $codebase->analyzer->addMutableClass($storage->name, $trait_storage->capabilities);
 
             $trait_file_analyzer = $project_analyzer->getFileAnalyzerForClassLike($fq_trait_name_resolved);
             $trait_node = $codebase->classlikes->getTraitNode($fq_trait_name_resolved);
@@ -2213,14 +2212,11 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 );
             }
 
-            if ($interface_storage->allowed_mutations
-                < $storage->allowed_mutations
-            ) {
+            if (!Capabilities::allows($interface_storage->capabilities, $storage->capabilities)) {
                 IssueBuffer::maybeAdd(
                     new ImmutableDependency(
-                        $fq_interface_name . ' is marked with @'.Mutations::TO_ATTRIBUTE_CLASSLIKE[
-                            $interface_storage->allowed_mutations
-                        ].', but '
+                        $fq_interface_name . ' is marked with @'
+                            . Capabilities::toClassAnnotation($interface_storage->capabilities) . ', but '
                         . $fq_class_name . ' is not',
                         $code_location,
                     ),
@@ -2230,7 +2226,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
 
             $codebase->analyzer->addMutableClass(
                 $storage->name,
-                $interface_storage->allowed_mutations,
+                $interface_storage->capabilities,
             );
 
             foreach ($interface_storage->methods as $interface_method_name_lc => $interface_method_storage) {
@@ -2460,34 +2456,28 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 );
             }
 
-            if ($parent_class_storage->allowed_mutations
-                < $storage->allowed_mutations
-            ) {
+            if (!Capabilities::allows($parent_class_storage->capabilities, $storage->capabilities)) {
                 IssueBuffer::maybeAdd(
                     new ImmutableDependency(
-                        $parent_fq_class_name . ' is marked with @'.Mutations::TO_ATTRIBUTE_CLASSLIKE[
-                            $parent_class_storage->allowed_mutations
-                        ].', but '
+                        $parent_fq_class_name . ' is marked with @'
+                            . Capabilities::toClassAnnotation($parent_class_storage->capabilities) . ', but '
                         . $fq_class_name . ' is not',
                         $code_location,
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
                 );
-            } elseif ($parent_class_storage->allowed_mutations
-                > $storage->allowed_mutations
-            ) {
+            } elseif (!Capabilities::allows($storage->capabilities, $parent_class_storage->capabilities)) {
                 IssueBuffer::maybeAdd(
                     new MutableDependency(
-                        $fq_class_name . ' is marked with @'.Mutations::TO_ATTRIBUTE_CLASSLIKE[
-                            $storage->allowed_mutations
-                        ].', but parent class '
+                        $fq_class_name . ' is marked with @'
+                            . Capabilities::toClassAnnotation($storage->capabilities) . ', but parent class '
                         . $parent_fq_class_name . ' is not',
                         $code_location,
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
                 );
             }
-            $codebase->analyzer->addMutableClass($storage->name, $parent_class_storage->allowed_mutations);
+            $codebase->analyzer->addMutableClass($storage->name, $parent_class_storage->capabilities);
 
             if ($codebase->store_node_types) {
                 $codebase->analyzer->addNodeReference(

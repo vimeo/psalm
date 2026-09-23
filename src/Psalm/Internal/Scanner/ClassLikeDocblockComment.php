@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Scanner;
 
 use PhpParser\Node\Stmt\ClassMethod;
-use Psalm\Storage\Mutations;
+use Psalm\Storage\Capabilities;
 
 /**
  * @internal
@@ -74,8 +74,9 @@ final class ClassLikeDocblockComment
 
     public bool $override_method_visibility = false;
 
-    /** @var Mutations::LEVEL_* */
-    public int $allowed_mutations = Mutations::LEVEL_ALL;
+    /** @var int */
+    /** A bitmask of {@see Capabilities} constants */
+    public int $capabilities = Capabilities::ALL;
 
     public bool $has_mutations_annotation = false;
 

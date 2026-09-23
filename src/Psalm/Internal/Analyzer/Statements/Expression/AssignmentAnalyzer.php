@@ -78,7 +78,7 @@ use Psalm\Node\Expr\BinaryOp\VirtualShiftRight;
 use Psalm\Node\Expr\VirtualAssign;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\Assertion\Falsy;
-use Psalm\Storage\Mutations;
+use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TFalse;
@@ -190,7 +190,7 @@ final class AssignmentAnalyzer
             if (VariableFetchAnalyzer::isSuperGlobal($root_var_name)) {
                 $root_is_superglobal = true;
                 $statements_analyzer->signalMutation(
-                    Mutations::LEVEL_EXTERNAL,
+                    Capabilities::READ_GLOBALS | Capabilities::WRITE_GLOBALS,
                     $context,
                     'superglobal ' . $root_var_name,
                     ImpureGlobalVariable::class,
@@ -198,7 +198,7 @@ final class AssignmentAnalyzer
                 );
             } elseif (isset($context->references_to_external_scope[$root_var_name])) {
                 $statements_analyzer->signalMutation(
-                    Mutations::LEVEL_EXTERNAL,
+                    Capabilities::WRITE_REFS,
                     $context,
                     'variable ' . $root_var_name . ' from outer scope',
                     ImpureByReferenceAssignment::class,
@@ -206,7 +206,7 @@ final class AssignmentAnalyzer
                 );
             } elseif (isset($context->referenced_globals[$root_var_name])) {
                 $statements_analyzer->signalMutation(
-                    Mutations::LEVEL_EXTERNAL,
+                    Capabilities::READ_GLOBALS | Capabilities::WRITE_GLOBALS,
                     $context,
                     'global variable ' . $root_var_name,
                     ImpureGlobalVariable::class,
@@ -324,7 +324,7 @@ final class AssignmentAnalyzer
         if ($extended_var_id && isset($context->vars_in_scope[$extended_var_id])) {
             if ($context->vars_in_scope[$extended_var_id]->by_ref) {
                 $statements_analyzer->signalMutation(
-                    Mutations::LEVEL_INTERNAL_READ_WRITE,
+                    Capabilities::WRITE_REFS,
                     $context,
                     'variable ' . $extended_var_id . ' passed by reference',
                     ImpureByReferenceAssignment::class,
@@ -1685,11 +1685,11 @@ final class AssignmentAnalyzer
         $isThis = $assign_var->var instanceof PhpParser\Node\Expr\Variable
             && $assign_var->var->name === 'this';
         
-        $mutations = $isThis ? Mutations::LEVEL_INTERNAL_READ_WRITE : Mutations::LEVEL_EXTERNAL;
+        $mutations = $isThis ? Capabilities::NAMES['write-this-props'] : Capabilities::NAMES['write-props'];
 
         // prevents writing to any properties in a mutation-free context
         $statements_analyzer->signalMutation(
-            $pureCompat ? Mutations::LEVEL_NONE : $mutations,
+            $pureCompat ? Capabilities::NONE : $mutations,
             $context,
             'property assignment',
             ImpurePropertyAssignment::class,

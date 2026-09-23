@@ -40,6 +40,16 @@ use function substr;
  */
 final class ParseTreeCreator
 {
+    private const CALLABLE_KEYWORDS = [
+        'callable',
+        'pure-callable',
+        'impure-callable',
+        'Closure',
+        '\\Closure',
+        'pure-Closure',
+        'impure-Closure',
+    ];
+
     private ParseTree $parse_tree;
 
     private ParseTree $current_leaf;
@@ -368,6 +378,38 @@ final class ParseTreeCreator
     {
         if ($this->current_leaf instanceof Value) {
             throw new TypeParseTreeException('Unrecognised token (');
+        }
+
+        if ($this->current_leaf instanceof GenericTree
+            && $this->current_leaf->terminated
+            && in_array($this->current_leaf->value, self::CALLABLE_KEYWORDS, true)
+        ) {
+            // `Closure<purity>(params): return`: the generic part only carries the purity
+            $generic_leaf = $this->current_leaf;
+
+            if (count($generic_leaf->children) !== 1) {
+                throw new TypeParseTreeException(
+                    $generic_leaf->value . '<...> must be given exactly one purity',
+                );
+            }
+
+            $parent = $generic_leaf->parent;
+            $callable_leaf = new CallableTree($generic_leaf->value, $parent);
+            $callable_leaf->purity = $generic_leaf->children[0];
+
+            if ($parent) {
+                foreach ($parent->children as $i => $child) {
+                    if ($child === $generic_leaf) {
+                        $parent->children[$i] = $callable_leaf;
+                    }
+                }
+            } else {
+                $this->parse_tree = $callable_leaf;
+            }
+
+            $this->current_leaf = $callable_leaf;
+
+            return;
         }
 
         $new_parent = !$this->current_leaf instanceof Root ? $this->current_leaf : null;
@@ -910,8 +952,8 @@ final class ParseTreeCreator
                 } else {
                     throw new TypeParseTreeException(
                         'Parenthesis must be preceded by “Closure”, "pure-Closure", "impure-Closure",'
-                        . ' "self-mutating-Closure", "callable”, "pure-callable", "self-mutating-callable",'
-                        . ' "impure-callable" or a valid @method name',
+                        . ' "Closure<purity>", "callable”, "pure-callable", "impure-callable",'
+                        . ' "callable<purity>" or a valid @method name',
                     );
                 }
 

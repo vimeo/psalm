@@ -10,6 +10,7 @@ use Psalm\Codebase;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
+use Psalm\Internal\Type\ParseTree;
 use Psalm\Internal\Type\ParseTree\CallableParamTree;
 use Psalm\Internal\Type\ParseTree\CallableTree;
 use Psalm\Internal\Type\ParseTree\CallableWithReturnTypeTree;
@@ -27,8 +28,8 @@ use Psalm\Internal\Type\ParseTree\NullableTree;
 use Psalm\Internal\Type\ParseTree\TemplateAsTree;
 use Psalm\Internal\Type\ParseTree\UnionTree;
 use Psalm\Internal\Type\ParseTree\Value;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeParameter;
-use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
@@ -1062,6 +1063,30 @@ final class TypeParser
             return new TIntRange($min_bound, $max_bound, $from_docblock);
         }
 
+        if (in_array($generic_type_value, ['Closure', '\\Closure', 'pure-Closure', 'impure-Closure'], true)
+            || in_array($generic_type_value, ['callable', 'pure-callable', 'impure-callable'], true)
+        ) {
+            // `Closure<purity>` / `callable<purity>` without a parameter list
+            if (count($parse_tree->children) !== 1) {
+                throw new TypeParseTreeException($generic_type_value . '<...> must be given exactly one purity');
+            }
+
+            [$n, $purity] = self::getCallablePurity(
+                $generic_type_value,
+                $parse_tree->children[0],
+                $codebase,
+                $template_type_map,
+                $type_aliases,
+                $from_docblock,
+            );
+
+            if (in_array(strtolower($n), ['closure', '\\closure'], true)) {
+                return new TClosure(null, null, $purity, [], [], $from_docblock);
+            }
+
+            return new TCallable(null, null, $purity, $from_docblock);
+        }
+
         if (isset(TypeTokenizer::PSALM_RESERVED_WORDS[$generic_type_value])
             && $generic_type_value !== 'self'
             && $generic_type_value !== 'static'
@@ -1324,28 +1349,73 @@ final class TypeParser
             $params[] = $param;
         }
 
-        $allowed_mutations = Mutations::LEVEL_EXTERNAL;
-
-        $n = $parse_tree->value;
-        if (str_starts_with($n, 'impure-')) {
-            $allowed_mutations = Mutations::LEVEL_EXTERNAL;
-            $n = substr($n, strlen('impure-'));
-        } elseif (str_starts_with($n, 'self-accessing-')) {
-            $allowed_mutations = Mutations::LEVEL_INTERNAL_READ;
-            $n = substr($n, strlen('self-accessing-'));
-        } elseif (str_starts_with($n, 'self-mutating-')) {
-            $allowed_mutations = Mutations::LEVEL_INTERNAL_READ_WRITE;
-            $n = substr($n, strlen('self-mutating-'));
-        } elseif (str_starts_with($n, 'pure-')) {
-            $allowed_mutations = Mutations::LEVEL_NONE;
-            $n = substr($n, strlen('pure-'));
-        }
+        [$n, $purity] = self::getCallablePurity(
+            $parse_tree->value,
+            $parse_tree->purity,
+            $codebase,
+            $template_type_map,
+            $type_aliases,
+            $from_docblock,
+        );
 
         if (in_array(strtolower($n), ['closure', '\closure'], true)) {
-            return new TClosure($params, null, $allowed_mutations, [], [], $from_docblock);
+            return new TClosure($params, null, $purity, [], [], $from_docblock);
         }
 
-        return new TCallable($params, null, $allowed_mutations, $from_docblock);
+        return new TCallable($params, null, $purity, $from_docblock);
+    }
+
+    /**
+     * Resolves the purity of a `Closure`/`callable` keyword: from its `pure-`/`impure-` prefix or from
+     * the `<...>` purity given after it, which must be a capability set or a purity template.
+     *
+     * @param  array<string, array<string, Union>> $template_type_map
+     * @param  array<string, TypeAlias> $type_aliases
+     * @return array{string, int|Union} the bare keyword and the purity
+     * @throws TypeParseTreeException
+     */
+    private static function getCallablePurity(
+        string $keyword,
+        ?ParseTree $purity_tree,
+        Codebase $codebase,
+        array $template_type_map,
+        array $type_aliases,
+        bool $from_docblock,
+    ): array {
+        $purity = Capabilities::ALL;
+
+        if (str_starts_with($keyword, 'impure-')) {
+            $keyword = substr($keyword, strlen('impure-'));
+        } elseif (str_starts_with($keyword, 'pure-')) {
+            $purity = Capabilities::NONE;
+            $keyword = substr($keyword, strlen('pure-'));
+        }
+
+        if ($purity_tree === null) {
+            return [$keyword, $purity];
+        }
+
+        $purity_type = self::getTypeFromTree(
+            $purity_tree,
+            $codebase,
+            null,
+            $template_type_map,
+            $type_aliases,
+            $from_docblock,
+        );
+
+        $purity_type = $purity_type instanceof Union
+            ? $purity_type
+            : new Union([$purity_type], ['from_docblock' => $from_docblock]);
+
+        if (!Capabilities::isPurityType($purity_type)) {
+            throw new TypeParseTreeException(
+                $keyword . '<' . $purity_type->getId() . '> is not valid: the purity of a callable must be'
+                . ' a capability set (e.g. pure, write-props|io) or a template declared with @psalm-purity-template',
+            );
+        }
+
+        return [$keyword, $purity_type];
     }
 
     /**

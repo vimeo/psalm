@@ -15,6 +15,7 @@ use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
+use Psalm\Type\Atomic\TCapabilities;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TEmptyMixed;
@@ -963,6 +964,17 @@ final class TypeCombiner
                 $combination->floats = null;
                 $combination->value_types['float'] = $type;
             }
+
+            return null;
+        }
+
+        if ($type instanceof TCapabilities) {
+            // a union of capability sets is the capability set allowing all of them
+            $existing = $combination->value_types['capabilities'] ?? null;
+            $combination->value_types['capabilities'] = new TCapabilities(
+                $type->capabilities | ($existing instanceof TCapabilities ? $existing->capabilities : 0),
+                $type->from_docblock,
+            );
 
             return null;
         }

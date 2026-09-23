@@ -33,10 +33,10 @@ use Psalm\Issue\ParamNameMismatch;
 use Psalm\Issue\TraitMethodSignatureMismatch;
 use Psalm\IssueBuffer;
 use Psalm\Storage\AttributeStorage;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
-use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -379,19 +379,27 @@ final class MethodComparator
             );
         }
 
-        // For a method with `@psalm-purity-from`(`-template`), its purity for inheritance is
-        // the worst possible over the params/templates it inherits purity from.
-        if ($guide_method_storage->getWorstCaseAllowedMutations() <= Mutations::LEVEL_INTERNAL_READ_WRITE
-            && $implementer_method_storage->getWorstCaseAllowedMutations() > Mutations::LEVEL_INTERNAL_READ_WRITE
+        // an override may need fewer capabilities than the overridden method, never more. For a
+        // method with `@psalm-purity-from-template`, the purity is the worst possible over the
+        // templates it inherits purity from.
+        $guide_capabilities = $guide_method_storage->getWorstCaseCapabilities(
+            $guide_classlike_storage->template_types ?? [],
+        );
+        $implementer_capabilities = $implementer_method_storage->getWorstCaseCapabilities(
+            $implementer_classlike_storage->template_types ?? [],
+        );
+
+        if (!Capabilities::allows($guide_capabilities, $implementer_capabilities)
             && !$guide_method_storage->mutation_free_assumed
             && $prevent_method_signature_mismatch
         ) {
             IssueBuffer::maybeAdd(
                 new ImmutableDependency(
-                    $cased_guide_method_id . ' is marked at least @psalm-external-mutation-free, but '
+                    $cased_guide_method_id . ' is ' . Capabilities::toString($guide_capabilities) . ', but '
                         . $implementer_classlike_storage->name . '::'
                         . ($guide_method_storage->cased_name ?: '')
-                        . ' is not marked @psalm-external-mutation-free',
+                        . ' additionally requires '
+                        . Capabilities::toString($implementer_capabilities & ~$guide_capabilities),
                     $code_location,
                 ),
                 $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
@@ -1198,6 +1206,7 @@ final class MethodComparator
 
     /**
      * @param  array<string, array<string, Union>>  $template_extended_params
+     * @psalm-external-mutation-free
      */
     private static function transformTemplates(
         array $template_extended_params,

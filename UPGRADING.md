@@ -2,6 +2,16 @@
 
 ## Changed
 
+- [BC] Purity is now tracked as a bitmask of capabilities (`Psalm\Storage\Capabilities`) instead of the four ordered levels of `Psalm\Storage\Mutations`, which was removed. Every `$allowed_mutations` property/parameter became `$capabilities` (`Psalm\Context`, `Psalm\Storage\FunctionLikeStorage`, `Psalm\Storage\ClassLikeStorage`, `Psalm\Plugin\DynamicFunctionStorage`, docblock manipulators), `MethodStorage#$containing_class_allowed_mutations` became `$containing_class_capabilities`, and `StatementsSource#signalMutation()`/`signalMutationOnlyInferred()` take the required capabilities.
+- [BC] `Psalm\Type\Atomic\TCallable#$allowed_mutations` and `Psalm\Type\Atomic\TClosure#$allowed_mutations` were replaced with a `$purity` union type (a `Psalm\Type\Atomic\TCapabilities` set, or a purity template), with `getCapabilities()`/`setPurity()` helpers; the constructors take an `int|Union $purity`.
+- [BC] The `self-accessing-callable`, `self-accessing-Closure`, `self-mutating-callable` and `self-mutating-Closure` types were removed: use `Closure<mutation-free>(...)` and `Closure<external-mutation-free>(...)` (or any other capability set). `pure`, `impure`, `mutation-free`, `external-mutation-free`, `read-props`, `write-this-props`, `write-props`, `read-globals`, `write-globals`, `write-refs` and `io` are now reserved type names.
+- [BC] `@psalm-purity-from $param` was removed: declare a purity template (`@psalm-purity-template P`), type the parameter as `Closure<P>(...)` and use `@psalm-purity-from-template P`. `@psalm-purity-from-template` works for functions, static methods and constructors too.
+- [BC] `@psalm-external-mutation-free` no longer allows reading or writing static properties, nor `static` variables: use `@psalm-capabilities write-globals` (or `read-globals`).
+- [BC] Creating a closure is no longer an effect of the enclosing function: a pure function may build and return an impure closure. Calling or passing it still requires its capabilities.
+- [BC] A method override may never require more capabilities than the overridden method, at every level (previously only impure overrides of external-mutation-free methods were reported).
+- [BC] `clone` (`__clone`), string interpolation and `(string)` casts (`__toString`), `$object()` (`__invoke`), `ArrayAccess` and `__get` calls, `throw new` (the exception constructor), parameter default values, literal callable strings and `call_user_func` are now checked for purity; unknown callable strings and arrays count as impure. `Exception::__construct` and `Error::__construct` are external-mutation-free.
+- [BC] Impure builtin functions (`mt_rand`, `time`, `file_put_contents`, …) now require the `io` capability rather than everything.
+
 - Backwards compatibility for the plugin API is now covered by a separate metapackage, [psalm/psalm-plugin-api](https://packagist.org/packages/psalm/psalm-plugin-api).  
 
   This is a separate, empty metapackage: its major version will be bumped every time a breaking change occurs within Psalm's plugin API; minors will also be bumped when adding new features to Psalm's plugin API.  

@@ -165,8 +165,7 @@ final class ClassLikeStorage implements HasAttributesInterface
 
     public bool $is_enum = false;
 
-    /** @var Mutations::LEVEL_* */
-    public int $allowed_mutations = Mutations::LEVEL_ALL;
+    public int $capabilities = Capabilities::ALL;
 
     public bool $has_mutations_annotation = false;
 
@@ -405,7 +404,7 @@ final class ClassLikeStorage implements HasAttributesInterface
      */
     public function isPure(): bool
     {
-        return $this->allowed_mutations <= Mutations::LEVEL_NONE;
+        return Capabilities::allows(Capabilities::NONE, $this->capabilities);
     }
 
     /**
@@ -413,7 +412,7 @@ final class ClassLikeStorage implements HasAttributesInterface
      */
     public function isMutationFree(): bool
     {
-        return $this->allowed_mutations <= Mutations::LEVEL_INTERNAL_READ;
+        return Capabilities::allows(Capabilities::MUTATION_FREE, $this->capabilities);
     }
 
     /**
@@ -421,7 +420,7 @@ final class ClassLikeStorage implements HasAttributesInterface
      */
     public function isExternalMutationFree(): bool
     {
-        return $this->allowed_mutations <= Mutations::LEVEL_INTERNAL_READ_WRITE;
+        return Capabilities::allows(Capabilities::EXTERNAL_MUTATION_FREE, $this->capabilities);
     }
 
     /**

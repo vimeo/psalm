@@ -12,22 +12,19 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer as AssignmentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NoDiscardAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateResult;
-use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\UnusedMethodCall;
 use Psalm\IssueBuffer;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
-use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
-use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\Union;
-
-use function max;
 
 /**
  * @internal
@@ -52,144 +49,24 @@ final class MethodCallPurityAnalyzer
     }
 
     /**
-     * @return Mutations::LEVEL_*
+     * The capabilities a call of a method requires from its caller, given the receiver: reading
+     * the receiver's own state is like passing it as an argument, and mutating it is fine when
+     * the receiver is pure-compatible, external-mutation-free or `$this`.
      */
-    public static function getMethodAllowedMutations(
+    public static function getMethodCapabilities(
         StatementsAnalyzer $statements_analyzer,
         Expr $var,
         MethodIdentifier $method_id,
         MethodStorage $method_storage,
         Context $context,
     ): int {
-        $method_allowed_mutations = $method_storage->allowed_mutations;
-        
-        if ($method_allowed_mutations === Mutations::LEVEL_INTERNAL_READ_WRITE
-            && self::receiverAllowsInternalMutations($statements_analyzer, $var, $method_id, $context)
-        ) {
-            // If the method allows internal mutations,
-            // and either:
-            //
-            // - The receiver is pure
-            // - The receiver is free from references (pureCompatible)
-            // - The receiver is free from external mutations
-            // - The method is called on $this or self
-            //
-            // then we must treat the method as if it was pure.
-            $method_allowed_mutations = Mutations::LEVEL_NONE;
-        } elseif ($method_allowed_mutations === Mutations::LEVEL_INTERNAL_READ) {
-            // If the method allows internal reads,
-            // then we must treat the method as if it was pure,
-            // (in a way, the receiver is "passed as an argument" to the method)
-            $method_allowed_mutations = Mutations::LEVEL_NONE;
+        $capabilities = $method_storage->capabilities & ~Capabilities::READ_PROPS;
+
+        if (self::receiverAllowsInternalMutations($statements_analyzer, $var, $method_id, $context)) {
+            $capabilities &= ~Capabilities::RECEIVER_LOCAL;
         }
 
-        return $method_allowed_mutations;
-    }
-
-    /**
-     * Worst (highest) mutation level implied by the closures actually supplied to the
-     * callee's `@psalm-purity-from` params and `@psalm-purity-from-template` templates.
-     * Params use the argument's closure type; templates are resolved from the call's
-     * method-level bindings or the receiver's class-level template params.
-     *
-     * @param list<PhpParser\Node\Arg> $args
-     * @param array<string, array<string, Union>> $class_template_params
-     * @return Mutations::LEVEL_*
-     */
-    private static function getPurityFromParamsLevel(
-        StatementsAnalyzer $statements_analyzer,
-        Codebase $codebase,
-        array $args,
-        FunctionLikeStorage $storage,
-        ?TemplateResult $template_result,
-        array $class_template_params,
-    ): int {
-        $level = Mutations::LEVEL_NONE;
-
-        foreach ($storage->purity_from_params as $param_name) {
-            $type = self::getArgTypeForParam($statements_analyzer, $args, $storage, $param_name);
-
-            if ($type !== null) {
-                $level = max($level, Mutations::getClosureLevel($type));
-            }
-        }
-
-        foreach ($storage->purity_from_templates as $template_name) {
-            $type = self::resolveTemplateType($template_name, $template_result, $class_template_params, $codebase);
-
-            if ($type !== null) {
-                $level = max($level, Mutations::getClosureLevel($type));
-            }
-        }
-
-        return $level;
-    }
-
-    /**
-     * @param list<PhpParser\Node\Arg> $args
-     */
-    private static function getArgTypeForParam(
-        StatementsAnalyzer $statements_analyzer,
-        array $args,
-        FunctionLikeStorage $storage,
-        string $param_name,
-    ): ?Union {
-        $param_offset = null;
-        foreach ($storage->params as $offset => $param) {
-            if ($param->name === $param_name) {
-                $param_offset = $offset;
-                break;
-            }
-        }
-
-        foreach ($args as $offset => $arg) {
-            $matches = $arg->name !== null
-                ? $arg->name->name === $param_name
-                : $offset === $param_offset;
-
-            if ($matches) {
-                return $statements_analyzer->node_data->getType($arg->value);
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * @param array<string, array<string, Union>> $class_template_params
-     * @psalm-external-mutation-free
-     */
-    private static function resolveTemplateType(
-        string $template_name,
-        ?TemplateResult $template_result,
-        array $class_template_params,
-        Codebase $codebase,
-    ): ?Union {
-        if ($template_result !== null && isset($template_result->lower_bounds[$template_name])) {
-            $bounds = [];
-            foreach ($template_result->lower_bounds[$template_name] as $bound_list) {
-                foreach ($bound_list as $bound) {
-                    $bounds[] = $bound;
-                }
-            }
-
-            if ($bounds !== []) {
-                return TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds($bounds, $codebase);
-            }
-        }
-
-        if (isset($class_template_params[$template_name])) {
-            $type = null;
-            foreach ($class_template_params[$template_name] as $bound_type) {
-                $type = $type === null
-                    ? $bound_type
-                    : Type::combineUnionTypes($type, $bound_type, $codebase);
-            }
-
-            return $type;
-        }
-
-        return null;
+        return $capabilities;
     }
 
     /**
@@ -210,7 +87,7 @@ final class MethodCallPurityAnalyzer
         ?TemplateResult $template_result = null,
         array $class_template_params = [],
     ): void {
-        $method_allowed_mutations = self::getMethodAllowedMutations(
+        $method_capabilities = self::getMethodCapabilities(
             $statements_analyzer,
             $stmt->var,
             $method_id,
@@ -218,30 +95,26 @@ final class MethodCallPurityAnalyzer
             $context,
         );
 
-        if ($method_storage->purity_from_params !== [] || $method_storage->purity_from_templates !== []) {
-            // @psalm-purity-from(-template): the effective level is the worst of the declared
-            // level and the levels of the closures actually passed to those params/templates.
-            // It can only make the call *less* pure, never more.
-            $method_allowed_mutations = max(
-                $method_allowed_mutations,
-                self::getPurityFromParamsLevel(
-                    $statements_analyzer,
-                    $codebase,
-                    $stmt->getArgs(),
-                    $method_storage,
-                    $template_result,
-                    $class_template_params,
-                ),
-            );
-        }
+        // @psalm-purity-from-template: the call also needs the capabilities of the closures the
+        // templates are bound to here; this can only make the call less pure, never more
+        $method_capabilities = CallPurityResolver::getCallCapabilities(
+            $statements_analyzer,
+            $codebase,
+            $method_storage,
+            $method_capabilities,
+            $template_result,
+            $class_template_params,
+        );
 
         $statements_analyzer->signalMutation(
-            $method_allowed_mutations,
+            $method_capabilities,
             $context,
             'method ' . $cased_method_id,
             ImpureMethodCall::class,
-            $stmt,
-            $method_storage->allowed_mutations,
+            // implicit calls (__get, __invoke, offsetGet, ...) are virtual nodes without a
+            // location of their own, but their name points at the expression that triggers them
+            $stmt->getAttribute('startFilePos') !== null ? $stmt : $stmt->name,
+            $method_storage->capabilities,
             false,
             // the level of an unannotated method is inferred from its body, which only
             // describes the method actually called if it can't be overridden elsewhere
@@ -260,7 +133,7 @@ final class MethodCallPurityAnalyzer
             if ((!$method_storage->mutation_free_assumed
                     || $method_storage->final
                     || $method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE)
-                && ($method_storage->containing_class_allowed_mutations === Mutations::LEVEL_INTERNAL_READ
+                && ($method_storage->containing_class_capabilities === Capabilities::MUTATION_FREE
                     || $config->remember_property_assignments_after_call
                 )
             ) {
@@ -270,7 +143,7 @@ final class MethodCallPurityAnalyzer
                 ) {
                     $stmt->setAttribute('memoizable', true);
 
-                    if ($method_storage->containing_class_allowed_mutations === Mutations::LEVEL_INTERNAL_READ) {
+                    if ($method_storage->containing_class_capabilities === Capabilities::MUTATION_FREE) {
                         $stmt->setAttribute('pure', true);
                     }
                 }
@@ -325,11 +198,11 @@ final class MethodCallPurityAnalyzer
         }
 
         if (!$config->remember_property_assignments_after_call
-            && $method_allowed_mutations >= Mutations::LEVEL_INTERNAL_READ_WRITE
+            && ($method_capabilities & (Capabilities::WRITE_PROPS | Capabilities::WRITE_THIS_PROPS)) !== 0
         ) {
             $context->removeMutableObjectVars();
         } elseif ($method_storage->this_property_mutations) {
-            if ($method_allowed_mutations >= Mutations::LEVEL_INTERNAL_READ) {
+            if ($method_capabilities !== Capabilities::NONE) {
                 $context->removeMutableObjectVars(true);
             }
 

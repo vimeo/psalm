@@ -23,7 +23,7 @@ use Psalm\Node\Expr\VirtualPropertyFetch;
 use Psalm\Node\Expr\VirtualStaticPropertyFetch;
 use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Node\Name\VirtualFullyQualified;
-use Psalm\Storage\Mutations;
+use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TLiteralString;
@@ -194,9 +194,9 @@ final class StaticPropertyFetchAnalyzer
         }
 
         $statements_analyzer->signalMutation(
-            Mutations::LEVEL_INTERNAL_READ_WRITE,
+            Capabilities::READ_GLOBALS,
             $context,
-            'static property',
+            'reading a static property',
             ImpureStaticProperty::class,
             $stmt,
         );

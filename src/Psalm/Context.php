@@ -12,8 +12,8 @@ use Psalm\Internal\Scope\CaseScope;
 use Psalm\Internal\Scope\FinallyScope;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\Internal\Type\AssertionReconciler;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeStorage;
-use Psalm\Storage\Mutations;
 use Psalm\Type\Atomic\DependentType;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TNull;
@@ -310,8 +310,11 @@ final class Context
 
     public bool $ignore_variable_method = false;
 
-    /** @var Mutations::LEVEL_* */
-    public int $allowed_mutations = Mutations::LEVEL_ALL;
+    /**
+     * The capabilities (side effects) the code being analysed may use,
+     * a bitmask of {@see Capabilities} constants.
+     */
+    public int $capabilities = Capabilities::ALL;
 
     public bool $error_suppressing = false;
 
@@ -350,7 +353,7 @@ final class Context
      */
     public function isMutationFree(): bool
     {
-        return $this->allowed_mutations <= Mutations::LEVEL_INTERNAL_READ;
+        return Capabilities::allows(Capabilities::MUTATION_FREE, $this->capabilities);
     }
 
     /**
@@ -358,7 +361,7 @@ final class Context
      */
     public function isExternalMutationFree(): bool
     {
-        return $this->allowed_mutations <= Mutations::LEVEL_INTERNAL_READ_WRITE;
+        return Capabilities::allows(Capabilities::EXTERNAL_MUTATION_FREE, $this->capabilities);
     }
 
     /**
@@ -367,7 +370,7 @@ final class Context
      */
     public function isPure(): bool
     {
-        return $this->allowed_mutations <= Mutations::LEVEL_NONE;
+        return Capabilities::allows(Capabilities::NONE, $this->capabilities);
     }
 
     /**
@@ -906,25 +909,16 @@ final class Context
     /**
      * @psalm-mutation-free
      */
-    public function getImpureMessage(string $expression, int $levelB): string
+    public function getImpureMessage(string $expression, int $required_capabilities): string
     {
-        if ($this->allowed_mutations === $levelB) {
-            throw new InvalidArgumentException('Levels are the same');
-        }
-        $a = match ($this->allowed_mutations) {
-            Mutations::LEVEL_NONE => 'is pure',
-            Mutations::LEVEL_INTERNAL_READ => 'allows only reading instance state',
-            Mutations::LEVEL_INTERNAL_READ_WRITE => 'allows only reading and mutating instance state',
-            Mutations::LEVEL_EXTERNAL => 'is impure',
-        };
-        $b = match ($levelB) {
-            Mutations::LEVEL_NONE => 'is pure',
-            Mutations::LEVEL_INTERNAL_READ => 'is reading instance state',
-            Mutations::LEVEL_INTERNAL_READ_WRITE => 'is mutating instance state',
-            Mutations::LEVEL_EXTERNAL => 'is impure',
-        };
+        $missing = $required_capabilities & ~$this->capabilities;
 
-        return "The context $a but $expression $b";
+        if ($missing === Capabilities::NONE) {
+            throw new InvalidArgumentException('The context allows the required capabilities');
+        }
+
+        return 'The context is ' . Capabilities::toString($this->capabilities) . ' but '
+            . $expression . ' requires ' . Capabilities::toString($required_capabilities);
     }
 
     /**

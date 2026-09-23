@@ -15,10 +15,10 @@ use Psalm\Issue\CircularReference;
 use Psalm\Issue\UndefinedTrait;
 use Psalm\IssueBuffer;
 use Psalm\Progress\Progress;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassConstantStorage;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
-use Psalm\Storage\Mutations;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TNonEmptyString;
@@ -36,7 +36,6 @@ use function array_splice;
 use function count;
 use function in_array;
 use function key;
-use function min;
 use function reset;
 use function strpos;
 use function strtolower;
@@ -189,15 +188,12 @@ final class Populator
             }
         }
 
-        if ($storage->allowed_mutations !== Mutations::LEVEL_ALL) {
+        if ($storage->capabilities !== Capabilities::ALL) {
             foreach ($storage->methods as $method) {
                 if (!$method->has_mutations_annotation) {
-                    $method->allowed_mutations = min(
-                        $storage->allowed_mutations,
-                        $method->allowed_mutations,
-                    );
+                    $method->capabilities = $storage->capabilities & $method->capabilities;
                 }
-                $method->containing_class_allowed_mutations = $storage->allowed_mutations;
+                $method->containing_class_capabilities = $storage->capabilities;
             }
 
             if ($storage->isMutationFree()) {
@@ -403,7 +399,7 @@ final class Populator
                     $declaring_method_storage->overridden_somewhere = true;
 
                     if ($declaring_method_storage->mutation_free_assumed) {
-                        $declaring_method_storage->allowed_mutations = Mutations::LEVEL_ALL;
+                        $declaring_method_storage->capabilities = Capabilities::ALL;
                         $declaring_method_storage->mutation_free_assumed = false;
                     }
 

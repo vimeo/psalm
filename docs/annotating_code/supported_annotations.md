@@ -338,6 +338,37 @@ echo $b->s;
 $b->s = "boo"; // disallowed
 ```
 
+### Purity and capabilities
+
+Psalm tracks which side effects a function, method or closure may have as a set of
+**capabilities**. A function-like may only perform an operation, or call another function-like,
+when its own capabilities include every capability the operation or callee requires. Code without
+a purity annotation has every capability.
+
+| Capability         | Allows                                                                                                 |
+|--------------------|--------------------------------------------------------------------------------------------------------|
+| `read-props`       | reading instance properties of mutable objects, including `$this` (immutable objects never need it)    |
+| `write-this-props` | writing or unsetting properties of `$this` (implies `read-props`)                                      |
+| `write-props`      | writing or unsetting properties of any object (implies `write-this-props`)                             |
+| `read-globals`     | reading static properties, superglobals and `global` variables                                         |
+| `write-globals`    | writing them, and using `static` variables (implies `read-globals`)                                    |
+| `write-refs`       | writing through by-reference parameters and references to an outer scope                              |
+| `io`               | `echo`, `print`, `exit` with a message, and the builtin functions with side effects (`mt_rand`, `time`, `file_put_contents`, …) |
+
+The named purity levels are shorthands for capability sets:
+
+| Annotation                       | Capabilities                                   |
+|----------------------------------|------------------------------------------------|
+| `@psalm-pure`                    | none (`pure`)                                  |
+| `@psalm-mutation-free`           | `read-props` (`mutation-free`)                 |
+| `@psalm-external-mutation-free`  | `write-this-props`, `write-refs` (`external-mutation-free`) |
+| `@psalm-impure`                  | all (`impure`)                                 |
+
+Any other combination can be given with `@psalm-capabilities`. Calling a method also has a
+special rule: reading and mutating the receiver's own state is not an effect of the caller when
+the receiver is `$this`, was just created, or is itself external-mutation-free, so a pure
+function may call an `@psalm-external-mutation-free` method on an object it created.
+
 ### `@psalm-mutation-free`
 
 Used to annotate a class method that does not mutate state, either internally or externally of the class's scope.
@@ -372,7 +403,9 @@ class D {
 
 ### `@psalm-external-mutation-free`
 
-Used to annotate a class method that does not mutate state externally of the class's scope.  
+Used to annotate a class method that does not mutate state externally of the class's scope: it may
+only write the properties of `$this` (and by-reference parameters). Static properties, `static`
+variables and other global state are external state and need `write-globals`.
 
 Can also be used on classes to propagate the same annotation to all of its methods.
 
@@ -479,9 +512,18 @@ echo Arithmetic::addCumulative(3); // outputs 3
 echo Arithmetic::addCumulative(3); // outputs 6
 ```
 
-On the other hand, `pure-callable` can be used to denote a callable which needs to be pure.
+Everything a pure function does is checked, including what happens implicitly: `clone` calls
+`__clone`, string interpolation and casts call `__toString`, `$object()` calls `__invoke`, array
+access on objects calls the `ArrayAccess` methods, `throw new` calls the exception's constructor,
+and parameter default values are evaluated with the function's own capabilities. A callable
+string or array whose target is not known may do anything, so a pure function may not call one.
+
+Creating a closure is never an effect: a pure function may build and return an impure closure. The
+closure's capabilities are carried by its type (see [callable types](type_syntax/callable_types.md#pure-callables))
+and are required where it is called or passed:
 
 ```php
+<?php
 /**
  * @param pure-callable(mixed): int $callback
  */
@@ -496,60 +538,136 @@ foo(
 
 ### `@psalm-impure`
 
-Used to annotate a function that is not pure (nor mutation free, nor externally mutation free): this is the default, but Psalm always asks to explicitly annotate **abstract** methods with one of these four annotations:
+Used to annotate a function that is not pure (nor mutation free, nor externally mutation free): this is the default, but Psalm always asks to explicitly annotate **abstract** methods with one of these annotations:
 
 - `@psalm-pure`
 - `@psalm-mutation-free`
 - `@psalm-external-mutation-free`
 - `@psalm-impure`
+- `@psalm-capabilities`
 
-### `@psalm-purity-from`
+### `@psalm-capabilities`
 
-Used to make a function-like's purity *polymorphic* in one or more of its
-closure/callable parameters: instead of a fixed level, the effective purity of
-each call is the worst of the declared level and the purity of the closures
-actually passed to those parameters. It can only ever make a call *less* pure
-than its own annotation, never more.
+Used to give a function, method or class exactly the capabilities it needs, when none of the named
+levels fits. Capabilities are separated by commas or `|`; the named levels (`pure`, `mutation-free`,
+`external-mutation-free`, `impure`) can be used as capabilities too.
 
-Inside the body, calling one of the referenced closure parameters is not counted
-as impurity — the responsibility is deferred to each call site.
+```php
+<?php
+final class Counter {
+    public static int $count = 0;
+}
+
+/** @psalm-capabilities read-globals */
+function currentCount(): int {
+    return Counter::$count;
+}
+
+/** @psalm-capabilities write-globals */
+function increment(): int {
+    Counter::$count++;
+    return currentCount(); // ok: write-globals includes read-globals
+}
+
+/** @psalm-capabilities write-props */
+function reset(Counter $c): void {
+    increment(); // error: write-props does not include write-globals
+    echo "reset"; // error: io is required
+}
+```
+
+A method may need fewer capabilities than the method it overrides, never more.
+
+### `@psalm-purity-template`
+
+Declares a **purity template**: a template parameter whose values are capability sets rather
+than types. It is used as the purity of a closure type (`Closure<P>(int): int`,
+`callable<P>(): void`) and as a class template argument (`Doer<pure>`, `Doer<P>`). Purity
+templates are covariant: a `Doer<pure>` can be used where a `Doer<io>` is expected.
+
+Together with `@psalm-purity-from-template`, it makes a function-like's purity depend on the
+closures it is given, like Hack's `[ctx $f]` contexts.
+
+### `@psalm-purity-from-template`
+
+Used to make a function-like's purity depend on one or more templates: each call needs the
+function-like's own capabilities plus those of the closures the templates are bound to at that
+call. Inside the body, calling a closure whose purity is one of these templates is not an effect
+of its own; the responsibility is deferred to each caller. The templates can be purity templates
+of the function-like or of its class, or type templates bound to a closure or callable type.
 
 ```php
 <?php
 
-class Collection {
-    /**
-     * @psalm-external-mutation-free
-     * @psalm-purity-from $callback
-     * @param Closure(int): int $callback
-     */
-    public function map(Closure $callback): void {
-        // ...
-    }
+/**
+ * @psalm-pure
+ * @psalm-purity-template P
+ * @param Closure<P>(int): int $callback
+ * @psalm-purity-from-template P
+ */
+function apply(Closure $callback): int {
+    return $callback(1);
 }
 
-/**
- * @psalm-external-mutation-free
- */
-function usePure(Collection $c): void {
-    // OK: the closure is pure, so the map() call stays external-mutation-free.
-    $c->map(fn(int $x): int => $x + 1);
+/** @psalm-pure */
+function usePure(): int {
+    return apply(fn(int $x): int => $x + 1); // ok: the closure is pure
+}
+
+/** @psalm-capabilities io */
+function useIo(): int {
+    return apply(function (int $x): int { echo $x; return $x; }); // ok: the call needs io
+}
+
+/** @psalm-pure */
+function bad(): int {
+    return apply(function (int $x): int { echo $x; return $x; }); // ImpureFunctionCall
 }
 ```
 
-Passing an impure closure from a mutation-free/pure context is reported as an
-`ImpureMethodCall`/`ImpureFunctionCall`, because the call becomes impure.
+The same works for static methods and constructors. A class-level purity template describes
+classes whose purity is decided by their subclasses, or by what they are constructed with:
 
-For inheritance and other contract checks, a method annotated with
-`@psalm-purity-from` is assumed to have the worst purity its referenced
-parameters' declared closure types allow.
+```php
+<?php
 
-### `@psalm-purity-from-template`
+/** @psalm-purity-template C */
+abstract class Task {
+    /**
+     * @psalm-mutation-free
+     * @psalm-purity-from-template C
+     */
+    abstract public function run(): int;
+}
 
-Like `@psalm-purity-from`, but the purity is taken from a template parameter
-(method-level **or** class-level) whose bound type contains the closure, rather
-than from a value parameter. This is resolved from the closure the caller
-actually supplies for that template, like a conditional return type.
+/** @extends Task<pure> */
+final class Sum extends Task {
+    /** @psalm-pure */
+    public function run(): int { return 1; }
+}
+
+/** @extends Task<io> */
+final class Printer extends Task {
+    /** @psalm-capabilities io */
+    public function run(): int { echo "x"; return 1; }
+}
+
+/** @psalm-pure */
+function runSum(Sum $t): int { return $t->run(); } // ok
+
+/** @psalm-pure */
+function runAny(Task $t): int { return $t->run(); } // ImpureMethodCall: an unbound C is impure
+
+/**
+ * @psalm-pure
+ * @psalm-purity-template P
+ * @param Task<P> $t
+ * @psalm-purity-from-template P
+ */
+function runDependent(Task $t): int { return $t->run(); } // ok: pure when given a Sum, io when given a Printer
+```
+
+A type template bound to a closure type carries the closure's purity, so this also works:
 
 ```php
 <?php
@@ -583,8 +701,7 @@ class Deferred {
  * @param Deferred<pure-Closure(): void> $deferred
  */
 function runPure(Deferred $deferred): void {
-    // OK: T is a pure closure, so run() is treated as external-mutation-free here.
-    $deferred->run();
+    $deferred->run(); // OK: T is a pure closure
 }
 ```
 

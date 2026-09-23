@@ -40,6 +40,7 @@ use Psalm\Issue\UnsafeGenericInstantiation;
 use Psalm\Issue\UnsafeInstantiation;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\Possibilities;
@@ -458,22 +459,26 @@ final class NewAnalyzer extends CallAnalyzer
                     );
                 }
 
-                if (!$context->inside_throw &&
-                    !$method_storage->isExternalMutationFree()
-                ) {
-                    $statements_analyzer->signalMutation(
-                        $method_storage->allowed_mutations,
-                        $context,
-                        'constructor ' . $codebase->methods->getCasedMethodId($declaring_method_id),
-                        ImpureMethodCall::class,
-                        $stmt,
-                        null,
-                        false,
-                        $method_storage,
-                        // the constructor only mutates the new object
-                        true,
-                    );
-                }
+                // the constructor only mutates the new object: what it does to it is fine
+                $constructor_capabilities = CallPurityResolver::getCallCapabilities(
+                    $statements_analyzer,
+                    $codebase,
+                    $method_storage,
+                    $method_storage->capabilities & ~Capabilities::RECEIVER_LOCAL,
+                    $template_result,
+                );
+
+                $statements_analyzer->signalMutation(
+                    $constructor_capabilities,
+                    $context,
+                    'constructor ' . $codebase->methods->getCasedMethodId($declaring_method_id),
+                    ImpureMethodCall::class,
+                    $stmt,
+                    null,
+                    false,
+                    $method_storage,
+                    true,
+                );
 
                 if ($method_storage->assertions && $stmt->class instanceof PhpParser\Node\Name) {
                     self::applyAssertionsToContext(

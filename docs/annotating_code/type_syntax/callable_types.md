@@ -28,20 +28,20 @@ echo $adder(true);
 
 ## Pure callables
 
-For situations where the `callable` needs to be pure, mutation-free or externally mutation-free, the following subtypes are available:
+A callable type carries the capabilities (see [purity and capabilities](../supported_annotations.md#purity-and-capabilities))
+the callable may use, given in angle brackets after the keyword:
 
-* Pure (no mutations or even read property accesses allowed), equivalent to marking functions or methods with `@psalm-pure` 
-  * `pure-callable`
-  * `pure-Closure`
-* Mutation-free (only internal property reads on `$this` are allowed for methods), equivalent to marking functions or methods with `@psalm-mutation-free`
-  * `self-accessing-callable`
-  * `self-accessing-Closure`
-* Externally mutation-free (internal property reads and writes on `$this` and `self` are allowed for methods), equivalent to marking functions or methods with `@psalm-external-mutation-free`
-  * `self-mutating-callable`
-  * `self-mutating-Closure`
-* Impure (the default behavior, all mutations allowed); functions or methods can also be explicitly marked as impure with `@psalm-impure`
-  * `impure-callable` (an alias to `callable`)
-  * `impure-Closure` (an alias to `Closure`)
+* `Closure<pure>(int): int` / `callable<pure>(int): int` - a pure callable, also written `pure-Closure(int): int` / `pure-callable(int): int`
+* `Closure<mutation-free>(): int`, `Closure<external-mutation-free>(): void` - the named purity levels
+* `Closure<write-props|io>(): void` - any combination of capabilities
+* `Closure<P>(): void` - a purity template declared with `@psalm-purity-template`
+* `Closure(): void` / `callable(): void` - an impure callable (the default), also written `impure-Closure(): void` / `impure-callable(): void`
+
+The parameter list may be left out: `Closure<pure>` is any pure closure.
+
+A callable needing fewer capabilities fits where more are allowed: a `pure-Closure` can be passed
+for a `Closure<io>` parameter, but not the other way round. A closure's capabilities are inferred
+from its body, so its type carries what it actually does.
 
 This can be useful when the `callable` is used in a function marked with `@psalm-pure` or `@psalm-mutation-free` or `@psalm-external-mutation-free`, for example:
 

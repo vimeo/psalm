@@ -35,9 +35,9 @@ use Psalm\Issue\UndefinedMethod;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualMethodCall;
 use Psalm\Node\Expr\VirtualVariable;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\MethodStorage;
-use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClassString;
@@ -248,7 +248,7 @@ final class AtomicStaticCallAnalyzer
                             $return_type_candidate = new Union([new TClosure(
                                 $method_storage->params,
                                 $method_storage->return_type,
-                                $method_storage->allowed_mutations,
+                                $method_storage->capabilities,
                             )]);
                         }
                     }
@@ -488,7 +488,7 @@ final class AtomicStaticCallAnalyzer
                 $return_type_candidate = new Union([new TClosure(
                     $method_storage->params,
                     $method_storage->return_type,
-                    $method_storage->allowed_mutations,
+                    $method_storage->capabilities,
                 )]);
             } else {
                 $method_exists = $naive_method_exists
@@ -502,7 +502,7 @@ final class AtomicStaticCallAnalyzer
                     $return_type_candidate = new Union([new TClosure(
                         array_values($codebase->getMethodParams($method_id)),
                         $codebase->getMethodReturnType($method_id, $fq_class_name),
-                        $codebase->methods->getStorage($declaring_method_id)->allowed_mutations,
+                        $codebase->methods->getStorage($declaring_method_id)->capabilities,
                     )]);
                 } elseif ($codebase->methodExists(
                     $call_static_method_id = new MethodIdentifier($method_id->fq_class_name, '__callstatic'),
@@ -513,7 +513,7 @@ final class AtomicStaticCallAnalyzer
                     $return_type_candidate = new Union([new TClosure(
                         null,
                         $codebase->getMethodReturnType($call_static_method_id, $fq_class_name),
-                        $codebase->methods->getStorage($call_static_method_id)->allowed_mutations,
+                        $codebase->methods->getStorage($call_static_method_id)->capabilities,
                     )]);
                 } else {
                     if (IssueBuffer::accepts(
@@ -602,10 +602,10 @@ final class AtomicStaticCallAnalyzer
             if ($callstatic_method_exists) {
                 $callstatic_declaring_id = $codebase->methods->getDeclaringMethodId($callstatic_id);
                 assert($callstatic_declaring_id !== null);
-                $callstatic_mutations = Mutations::LEVEL_ALL;
+                $callstatic_mutations = Capabilities::ALL;
                 if ($codebase->methods->hasStorage($callstatic_declaring_id)) {
                     $callstatic_storage = $codebase->methods->getStorage($callstatic_declaring_id);
-                    $callstatic_mutations = $callstatic_storage->allowed_mutations;
+                    $callstatic_mutations = $callstatic_storage->capabilities;
                 }
                 if ($codebase->methods->return_type_provider->has($fq_class_name)) {
                     $return_type_candidate = $codebase->methods->return_type_provider->getReturnType(
@@ -653,7 +653,7 @@ final class AtomicStaticCallAnalyzer
                         return false;
                     }
 
-                    if (!$context->inside_throw) {
+                    {
                         $statements_analyzer->signalMutation(
                             $callstatic_mutations,
                             $context,
