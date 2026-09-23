@@ -9,7 +9,7 @@
 - [BC] `@psalm-external-mutation-free` no longer allows reading or writing static properties, nor `static` variables: use `@psalm-capabilities write-globals` (or `read-globals`).
 - [BC] Creating a closure is no longer an effect of the enclosing function: a pure function may build and return an impure closure. Calling or passing it still requires its capabilities.
 - [BC] A method override may never require more capabilities than the overridden method, at every level (previously only impure overrides of external-mutation-free methods were reported).
-- [BC] `clone` (`__clone`), string interpolation and `(string)` casts (`__toString`), `$object()` (`__invoke`), `ArrayAccess` and `__get` calls, `throw new` (the exception constructor), parameter default values, literal callable strings and `call_user_func` are now checked for purity; unknown callable strings and arrays count as impure. `Exception::__construct` and `Error::__construct` are external-mutation-free.
+- [BC] `clone` (`__clone`), string interpolation and `(string)` casts (`__toString`), `$object()` (`__invoke`), `ArrayAccess` and `__get` calls, `throw new` (when the exception constructor is annotated), parameter default values, literal callable strings and `call_user_func` are now checked for purity; unknown callable strings and arrays count as impure. `Exception::__construct` and `Error::__construct` are external-mutation-free.
 - [BC] Impure builtin functions (`mt_rand`, `time`, `file_put_contents`, …) now require the `io` capability rather than everything.
 
 - Backwards compatibility for the plugin API is now covered by a separate metapackage, [psalm/psalm-plugin-api](https://packagist.org/packages/psalm/psalm-plugin-api).  

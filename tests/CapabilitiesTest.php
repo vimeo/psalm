@@ -519,6 +519,7 @@ final class CapabilitiesTest extends TestCase
             'throwingWithImpureConstructor' => [
                 'code' => '<?php
                     final class MyException extends Exception {
+                        /** @psalm-capabilities io */
                         public function __construct() {
                             echo "created";
                             parent::__construct("x");

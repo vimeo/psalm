@@ -352,7 +352,7 @@ a purity annotation has every capability.
 | `write-props`      | writing or unsetting properties of any object (implies `write-this-props`)                             |
 | `read-globals`     | reading static properties, superglobals and `global` variables                                         |
 | `write-globals`    | writing them, and using `static` variables (implies `read-globals`)                                    |
-| `write-refs`       | writing through by-reference parameters and references to an outer scope                              |
+| `write-refs`       | writing through by-reference parameters                                                                |
 | `io`               | `echo`, `print`, `exit` with a message, and the builtin functions with side effects (`mt_rand`, `time`, `file_put_contents`, …) |
 
 The named purity levels are shorthands for capability sets:
@@ -514,8 +514,9 @@ echo Arithmetic::addCumulative(3); // outputs 6
 
 Everything a pure function does is checked, including what happens implicitly: `clone` calls
 `__clone`, string interpolation and casts call `__toString`, `$object()` calls `__invoke`, array
-access on objects calls the `ArrayAccess` methods, `throw new` calls the exception's constructor,
-and parameter default values are evaluated with the function's own capabilities. A callable
+access on objects calls the `ArrayAccess` methods, `throw new` calls the exception's constructor
+(when that constructor carries a purity annotation), and parameter default values are evaluated
+with the function's own capabilities. A callable
 string or array whose target is not known may do anything, so a pure function may not call one.
 
 Creating a closure is never an effect: a pure function may build and return an impure closure. The

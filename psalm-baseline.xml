@@ -57,9 +57,6 @@
       <code><![CDATA[self::$stubbed_constants]]></code>
       <code><![CDATA[self::$stubbed_constants]]></code>
     </ImpureStaticProperty>
-    <MissingPureAnnotation>
-      <code><![CDATA[getMethodReturnTypeLocation]]></code>
-    </MissingPureAnnotation>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$function_name]]></code>
       <code><![CDATA[$aliases->namespace]]></code>
@@ -176,9 +173,6 @@
     </MissingInterfaceImmutableAnnotation>
   </file>
   <file src="src/Psalm/Internal/Algebra.php">
-    <MissingPureAnnotation>
-      <code><![CDATA[getTruthsFromFormula]]></code>
-    </MissingPureAnnotation>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$creating_conditional_id]]></code>
       <code><![CDATA[$creating_conditional_id]]></code>
@@ -405,6 +399,9 @@
       <code><![CDATA[$implementer_signature_return_type]]></code>
       <code><![CDATA[$implementer_signature_return_type]]></code>
     </ImplicitToStringCast>
+    <ImpureByReferenceAssignment>
+      <code><![CDATA[$templated_type]]></code>
+    </ImpureByReferenceAssignment>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$guide_classlike_storage->template_types]]></code>
       <code><![CDATA[$guide_method_storage->cased_name]]></code>
@@ -859,13 +856,6 @@
       <code><![CDATA[$operand1 ^ $operand2]]></code>
       <code><![CDATA[$operand1 | $operand2]]></code>
     </InvalidOperand>
-    <MissingPureAnnotation>
-      <code><![CDATA[analyzeModBetweenIntRange]]></code>
-      <code><![CDATA[analyzeMulBetweenIntRange]]></code>
-      <code><![CDATA[analyzeOperandsBetweenIntRange]]></code>
-      <code><![CDATA[analyzeOperandsBetweenIntRangeAndInt]]></code>
-      <code><![CDATA[analyzePowBetweenIntRange]]></code>
-    </MissingPureAnnotation>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$invalid_left_messages[0]]]></code>
       <code><![CDATA[$invalid_right_messages[0]]]></code>
@@ -1276,9 +1266,6 @@
       <code><![CDATA[$array_type]]></code>
       <code><![CDATA[$offset_type]]></code>
     </ImplicitToStringCast>
-    <MissingPureAnnotation>
-      <code><![CDATA[handleArrayAccessOnClassStringMap]]></code>
-    </MissingPureAnnotation>
     <ReferenceConstraintViolation>
       <code><![CDATA[$stmt_type]]></code>
       <code><![CDATA[$stmt_type]]></code>
@@ -1503,9 +1490,6 @@
     <InvalidScalarArgument>
       <code><![CDATA[$options['f'] ?? null]]></code>
     </InvalidScalarArgument>
-    <MissingPureAnnotation>
-      <code><![CDATA[syncShortOptions]]></code>
-    </MissingPureAnnotation>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$config->error_baseline]]></code>
       <code><![CDATA[!$paths_to_check]]></code>
@@ -1526,9 +1510,6 @@
     <InvalidReturnType>
       <code><![CDATA[list<ClassLoader>]]></code>
     </InvalidReturnType>
-    <MissingPureAnnotation>
-      <code><![CDATA[syncShortOptions]]></code>
-    </MissingPureAnnotation>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$paths_to_check]]></code>
     </RiskyTruthyFalsyComparison>
@@ -1688,9 +1669,6 @@
       <code><![CDATA[$method_id]]></code>
       <code><![CDATA[$method_id]]></code>
     </ImplicitToStringCast>
-    <MissingPureAnnotation>
-      <code><![CDATA[getMethodReturnTypeLocation]]></code>
-    </MissingPureAnnotation>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$calling_class_name]]></code>
       <code><![CDATA[!$extends]]></code>
@@ -1752,11 +1730,6 @@
     <ImmutableDependency>
       <code><![CDATA[DataFlowGraph]]></code>
     </ImmutableDependency>
-    <MissingPureAnnotation>
-      <code><![CDATA[getSinkReachableNodes]]></code>
-      <code><![CDATA[linkSpecialization]]></code>
-      <code><![CDATA[linkSpecializationByField]]></code>
-    </MissingPureAnnotation>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[end($path_types)]]></code>
     </RiskyTruthyFalsyComparison>
@@ -1768,15 +1741,6 @@
     <ImmutableDependency>
       <code><![CDATA[DataFlowGraph]]></code>
     </ImmutableDependency>
-    <MissingImmutableAnnotation>
-      <code><![CDATA[VariableUseGraph]]></code>
-    </MissingImmutableAnnotation>
-    <MissingPureAnnotation>
-      <code><![CDATA[getChildNodes]]></code>
-      <code><![CDATA[getOriginLocations]]></code>
-      <code><![CDATA[getParentNodes]]></code>
-      <code><![CDATA[isVariableUsed]]></code>
-    </MissingPureAnnotation>
   </file>
   <file src="src/Psalm/Internal/Composer.php">
     <RiskyTruthyFalsyComparison>
@@ -2674,10 +2638,6 @@
     </MissingImmutableAnnotation>
   </file>
   <file src="src/Psalm/Internal/Type/SimpleAssertionReconciler.php">
-    <MissingPureAnnotation>
-      <code><![CDATA[reconcileClassConstant]]></code>
-      <code><![CDATA[reconcileHasArrayKey]]></code>
-    </MissingPureAnnotation>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$array_atomic_type->properties[0]]]></code>
       <code><![CDATA[$properties[0]]]></code>
@@ -2761,6 +2721,9 @@
     <ComplexMethod>
       <code><![CDATA[handleTemplateParamStandin]]></code>
     </ComplexMethod>
+    <ImpureByReferenceAssignment>
+      <code><![CDATA[$container_type_params_covariant]]></code>
+    </ImpureByReferenceAssignment>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$bracket_pos = strpos($input_key, '<')]]></code>
       <code><![CDATA[$bracket_pos = strpos($key, '<')]]></code>
@@ -2845,9 +2808,6 @@
     <InvalidOperand>
       <code><![CDATA[$property_key - 1]]></code>
     </InvalidOperand>
-    <MissingPureAnnotation>
-      <code><![CDATA[getGenericParamClass]]></code>
-    </MissingPureAnnotation>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$const_name]]></code>
       <code><![CDATA[$const_name]]></code>
@@ -2886,11 +2846,6 @@
       <code><![CDATA[strpos($string_type_token[0], '$')]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
-  <file src="src/Psalm/Internal/TypeVisitor/ClasslikeReplacer.php">
-    <MissingPureAnnotation>
-      <code><![CDATA[enterNode]]></code>
-    </MissingPureAnnotation>
-  </file>
   <file src="src/Psalm/Internal/TypeVisitor/TypeChecker.php">
     <ImmutableDependency>
       <code><![CDATA[#[Override]]]></code>
@@ -2905,11 +2860,6 @@
     <ImmutableDependency>
       <code><![CDATA[#[Override]]]></code>
     </ImmutableDependency>
-  </file>
-  <file src="src/Psalm/Internal/TypeVisitor/TypeVariableResolver.php">
-    <MissingPureAnnotation>
-      <code><![CDATA[enterNode]]></code>
-    </MissingPureAnnotation>
   </file>
   <file src="src/Psalm/Issue/ArgumentIssue.php">
     <RiskyTruthyFalsyComparison>

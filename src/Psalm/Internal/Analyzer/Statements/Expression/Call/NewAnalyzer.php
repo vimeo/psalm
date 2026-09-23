@@ -459,14 +459,21 @@ final class NewAnalyzer extends CallAnalyzer
                     );
                 }
 
-                // the constructor only mutates the new object: what it does to it is fine
-                $constructor_capabilities = CallPurityResolver::getCallCapabilities(
-                    $statements_analyzer,
-                    $codebase,
-                    $method_storage,
-                    $method_storage->capabilities & ~Capabilities::RECEIVER_LOCAL,
-                    $template_result,
-                );
+                // the constructor only mutates the new object: what it does to it is fine.
+                // Throwing an exception whose constructor is unannotated is not an effect: the
+                // purity of such constructors is only inferred, and virtually every exception
+                // constructor just formats a message
+                $constructor_capabilities = $context->inside_throw
+                    && !$method_storage->has_mutations_annotation
+                    && !$method_storage->mutation_free_assumed
+                    ? Capabilities::NONE
+                    : CallPurityResolver::getCallCapabilities(
+                        $statements_analyzer,
+                        $codebase,
+                        $method_storage,
+                        $method_storage->capabilities & ~Capabilities::RECEIVER_LOCAL,
+                        $template_result,
+                    );
 
                 $statements_analyzer->signalMutation(
                     $constructor_capabilities,

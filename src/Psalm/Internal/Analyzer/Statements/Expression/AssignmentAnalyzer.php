@@ -198,7 +198,7 @@ final class AssignmentAnalyzer
                 );
             } elseif (isset($context->references_to_external_scope[$root_var_name])) {
                 $statements_analyzer->signalMutation(
-                    Capabilities::WRITE_REFS,
+                    Capabilities::ALL,
                     $context,
                     'variable ' . $root_var_name . ' from outer scope',
                     ImpureByReferenceAssignment::class,

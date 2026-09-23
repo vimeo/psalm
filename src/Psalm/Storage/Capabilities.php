@@ -50,7 +50,7 @@ final class Capabilities
     /** Writing static properties, superglobals, `global` variables, and using `static` variables. */
     public const WRITE_GLOBALS = 1 << 4;
 
-    /** Writing through by-reference parameters or references to an outer scope. */
+    /** Writing through by-reference parameters. Writing a variable captured by reference from an outer scope is impure. */
     public const WRITE_REFS = 1 << 5;
 
     /** Input/output and other side effects: `echo`, `print`, `exit` with a message, impure builtins. */
