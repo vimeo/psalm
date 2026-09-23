@@ -3534,7 +3534,7 @@ final class AssertionFinder
                 $source,
             );
 
-            if (!$nullsafe_var_name) {
+            if ($nullsafe_var_name === null) {
                 continue;
             }
 
