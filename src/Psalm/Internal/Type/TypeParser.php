@@ -61,6 +61,7 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TPropertiesOf;
+use Psalm\Type\Atomic\TRecursivePropertiesOf;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateIndexedAccess;
 use Psalm\Type\Atomic\TTemplateKeyOf;
@@ -886,6 +887,17 @@ final class TypeParser
             return new TPropertiesOf(
                 $param_union_types[0],
                 TPropertiesOf::filterForTokenName($generic_type_value),
+                $from_docblock,
+            );
+        }
+
+        if ($generic_type_value === 'recursive-properties-of') {
+            if (count($generic_params) !== 1) {
+                throw new TypeParseTreeException('recursive-properties-of requires exactly one parameter.');
+            }
+
+            return new TRecursivePropertiesOf(
+                $generic_params[0],
                 $from_docblock,
             );
         }
