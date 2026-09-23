@@ -3066,6 +3066,50 @@ final class AssertAnnotationTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'assertIfTruePropertyOnNonVariableArgument' => [
+                'code' => '<?php
+                    /**
+                     * @param object{hasFoo: bool} $obj
+                     * @psalm-assert-if-true true $obj->hasFoo
+                     */
+                    function validateFoo(object $obj): bool {
+                        return $obj->hasFoo;
+                    }
+
+                    $arr = [(object) ["hasFoo" => true]];
+                    validateFoo($arr[0]);',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'assertIfFalsePropertyOnNonVariableArgument' => [
+                'code' => '<?php
+                    /**
+                     * @param object{hasFoo: bool} $obj
+                     * @psalm-assert-if-false true $obj->hasFoo
+                     */
+                    function validateFoo(object $obj): bool {
+                        return $obj->hasFoo;
+                    }
+
+                    $arr = [(object) ["hasFoo" => true]];
+                    validateFoo($arr[0]);',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'assertPropertyOnNonVariableArgument' => [
+                'code' => '<?php
+                    /**
+                     * @param object{hasFoo: bool} $obj
+                     * @psalm-assert true $obj->hasFoo
+                     */
+                    function validateFoo(object $obj): void {
+                        if ($obj->hasFoo !== true) {
+                            throw new \Exception();
+                        }
+                    }
+
+                    $arr = [(object) ["hasFoo" => true]];
+                    validateFoo($arr[0]);',
+                'error_message' => 'InvalidDocblock',
+            ],
             'assertInstanceOfMultipleInterfaces' => [
                 'code' => '<?php
                     class A {
