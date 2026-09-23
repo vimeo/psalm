@@ -318,9 +318,12 @@ final class MethodCallReturnTypeFetcher
         );
 
         $method_call_node = null;
+        $specialized = false;
         if ($method_storage->specialize_call
             && $taint_flow_graph
         ) {
+            $specialized = true;
+
             if ($var_id && isset($context->vars_in_scope[$var_id])) {
                 $parent_nodes = $context->vars_in_scope[$var_id]->parent_nodes;
 
@@ -513,9 +516,17 @@ final class MethodCallReturnTypeFetcher
 
             $graph->addNode($method_call_node);
 
-            $return_type_candidate = $return_type_candidate->setParentNodes([
-                $method_call_node->id => $method_call_node,
-            ]);
+            // When the call was specialized above, the return type already carries the
+            // per-call-site nodes and must keep them: the unspecialized node is the method
+            // body's own return node, so putting it here as well would connect *every* call
+            // site's result to taint flowing out of the body, defeating the specialization
+            // (and, for an inherited method, would replace the only nodes that are connected
+            // at all). Usage tracking works through the specialized nodes just the same.
+            if (!$specialized) {
+                $return_type_candidate = $return_type_candidate->setParentNodes([
+                    $method_call_node->id => $method_call_node,
+                ]);
+            }
         }
 
         if (!$taint_flow_graph || !$method_call_node) {

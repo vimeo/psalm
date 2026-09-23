@@ -239,6 +239,14 @@ final class TaintFlowGraph extends DataFlowGraph
     {
         $progress->startPhase(Phase::TAINT_GRAPH_RESOLUTION);
 
+        // Keyed by (node id, specialized_calls, taints): everything a node's onward
+        // propagation depends on. The specialized_calls set decides which specializations
+        // a flow is allowed to re-enter, so two flows reaching one node under different
+        // sets continue differently and must not be merged -- `$c->m($_GET['a'])` on a
+        // subclass and `$d->m($_GET['b'])` on the declaring class meet at the declaring
+        // parameter node with different sets, and merging them there would drop the
+        // second flow (and its own call site's issue) altogether. The same key is used
+        // for the per-round frontier, so a state is expanded at most once overall.
         $visited_source_ids = [];
 
         // Traces already reported on, see getChildNodes().
@@ -285,8 +293,9 @@ final class TaintFlowGraph extends DataFlowGraph
         }
 
         // Resolution runs to a fixed point (rather than for a fixed number of
-        // rounds): the (id, taints) visited guard below makes the state space
-        // finite, so the loop is guaranteed to terminate on its own. Combined
+        // rounds): the (id, specialized calls, taints) visited guard below makes
+        // the state space finite, so the loop is guaranteed to terminate on its
+        // own. Combined
         // with the sink-reachability pruning above, this converges quickly enough
         // that no artificial nesting limit is needed.
         //
@@ -300,7 +309,9 @@ final class TaintFlowGraph extends DataFlowGraph
             foreach ($sources as $source) {
                 $source_taints = $source->taints;
 
-                $visited_source_ids[$source->id][$source_taints] = true;
+                $specialized_calls_key = json_encode($source->specialized_calls, JSON_THROW_ON_ERROR);
+
+                $visited_source_ids[$source->id][$specialized_calls_key][$source_taints] = true;
 
                 // If we have one or more edges starting at this node,
                 // process destinations of those edges.
@@ -563,7 +574,7 @@ final class TaintFlowGraph extends DataFlowGraph
     /**
      * @param array<DataFlowNode> $sinks
      * @param array<string, DataFlowNode> $new_sources
-     * @param array<string, array<int, true>> $visited_source_ids
+     * @param array<string, array<string, array<int, true>>> $visited_source_ids
      * @param array<string, true> $reported_flows
      * @param array<string, true> $sink_reachable
      * @param-out array<string, DataFlowNode> $new_sources
@@ -583,7 +594,7 @@ final class TaintFlowGraph extends DataFlowGraph
     ): void {
         // $generated_source->specialized_calls is constant across all of this node's outgoing
         // edges, so encode it once here rather than re-serialising it for every edge in the
-        // frontier-dedup key below (this is the hottest loop in taint resolution).
+        // visited and frontier keys below (this is the hottest loop in taint resolution).
         $specialized_calls_key = json_encode($generated_source->specialized_calls, JSON_THROW_ON_ERROR);
 
         foreach ($this->forward_edges[$generated_source->id] as $to_id => $path) {
@@ -599,13 +610,13 @@ final class TaintFlowGraph extends DataFlowGraph
 
             $new_taints = ($source_taints | $path->added_taints) & ~$path->removed_taints;
 
-            // A node that has already been propagated from with these taints has had everything
+            // A node that has already been propagated from in this state has had everything
             // downstream of it, sinks included, handled already; dropping the edge here is what
-            // makes resolution terminate. Two flows meeting at a node are thereby merged, and only
-            // the first one to get there is traced onwards. That is why a sink parameter gets a
-            // node per call site (see ArgumentsAnalyzer): flows into different call sites of a
-            // sink are separate findings and must not merge.
-            if (isset($visited_source_ids[$to_id][$new_taints])) {
+            // makes resolution terminate. Two flows meeting at a node in the same state are
+            // thereby merged, and only the first one to get there is traced onwards. That is
+            // why a sink parameter gets a node per call site (see ArgumentsAnalyzer): flows into
+            // different call sites of a sink are separate findings and must not merge.
+            if (isset($visited_source_ids[$to_id][$specialized_calls_key][$new_taints])) {
                 continue;
             }
 

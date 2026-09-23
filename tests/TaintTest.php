@@ -3697,6 +3697,65 @@ final class TaintTest extends TestCase
                     'TaintedSql: $_GET@18 ... call to ChildDb::query@18',
                 ],
             ],
+            // Two calls of a specialized method through one receiver, one of them a hop longer,
+            // reach the shared body parameter in different rounds under different call-site
+            // contexts and are both traced: both sink call sites are reported, and the value
+            // returned by the second, inherited call flows on through the body to echo,
+            // attributed to its own call site.
+            'twoCallsOfAnInheritedSpecializedMethodAndItsReturnFlow' => [
+                'code' => '<?php
+                    class Db {
+                        /**
+                         * @psalm-taint-sink sql $sql
+                         * @psalm-taint-specialize
+                         */
+                        public function query(string $sql): string { return $sql; }
+                    }
+
+                    class ChildDb extends Db {}
+
+                    /**
+                     * @psalm-flow ($value) -> return
+                     */
+                    function relay(string $value): string { return $value; }
+
+                    $db = new ChildDb();
+                    $db->query((string)($_GET["a"] ?? ""));
+                    echo $db->query(relay((string)($_GET["b"] ?? "")));
+                ',
+                'expectedTraces' => [
+                    'TaintedSql: $_GET@18 ... call to ChildDb::query@18',
+                    'TaintedSql: $_GET@19 ... call to ChildDb::query@19',
+                    'TaintedHtml: $_GET@19 ... call to echo@19',
+                    'TaintedTextWithQuotes: $_GET@19 ... call to echo@19',
+                ],
+            ],
+            // Call sites of a specialized method stay apart whether the method is called on the
+            // declaring class or inherited: the result of the safe calls is not tainted by the
+            // unsafe ones. (Fresh instances, so no taint is carried over through the receiver.)
+            'specializedMethodCallSitesStayApartWhenInherited' => [
+                'code' => '<?php
+                    class Renderer {
+                        /**
+                         * @psalm-taint-specialize
+                         */
+                        public function render(string $s): string { return $s; }
+                    }
+
+                    class ChildRenderer extends Renderer {}
+
+                    echo (new Renderer())->render((string)($_GET["a"] ?? ""));
+                    echo (new Renderer())->render("safe");
+                    echo (new ChildRenderer())->render((string)($_GET["b"] ?? ""));
+                    echo (new ChildRenderer())->render("safe");
+                ',
+                'expectedTraces' => [
+                    'TaintedHtml: $_GET@11 ... call to echo@11',
+                    'TaintedTextWithQuotes: $_GET@11 ... call to echo@11',
+                    'TaintedHtml: $_GET@13 ... call to echo@13',
+                    'TaintedTextWithQuotes: $_GET@13 ... call to echo@13',
+                ],
+            ],
         ];
     }
 }
