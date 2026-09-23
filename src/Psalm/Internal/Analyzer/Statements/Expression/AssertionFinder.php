@@ -1292,9 +1292,14 @@ final class AssertionFinder
                             ),
                         );
                     } elseif ($atomic_type instanceof TClassString && $atomic_type->as !== 'object') {
-                        $literal_class_strings[] = new IsType(
-                            $atomic_type->as_type ?: new TNamedObject($atomic_type->as),
-                        );
+                        $as_type = $atomic_type->as_type ?: new TNamedObject($atomic_type->as);
+                        // an interface class-string can hold any implementor, so this is is_a, not a
+                        // fixed type, and must not read as redundant (#11076)
+                        if ($source->getCodebase()->interfaceExists($atomic_type->as)) {
+                            $literal_class_strings[] = new IsAClass($as_type, false);
+                        } else {
+                            $literal_class_strings[] = new IsType($as_type);
+                        }
                     }
                 }
 
