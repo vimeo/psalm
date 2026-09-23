@@ -3510,6 +3510,9 @@ final class TaintTest extends TestCase
     {
         // disables issue exceptions - we need all, not just the first
         $this->testConfig->throw_exception = false;
+        // The CLI tracks unused variables by default, which gives method calls a second data-flow
+        // graph; the tests below cover call-site handling that once differed between the two.
+        $this->project_analyzer->getCodebase()->find_unused_variables = true;
         $filePath = self::$src_dir_path . 'somefile.php';
         $this->addFile($filePath, $code);
         $this->project_analyzer->trackTaintedInputs();
@@ -3665,6 +3668,33 @@ final class TaintTest extends TestCase
                 'expectedTraces' => [
                     'TaintedShell: Request::get@6 ... call to runCmd@19',
                     'TaintedShell: Request::get@6 ... call to runCmd@20',
+                ],
+            ],
+            // A sink method that is not specialized still has a sink node per call site, so two
+            // calls through one receiver, one of them a hop longer, are two findings.
+            'twoCallsOfAnInheritedSinkMethod' => [
+                'code' => '<?php
+                    class Db {
+                        /**
+                         * @psalm-taint-sink sql $sql
+                         */
+                        public function query(string $sql): string { return $sql; }
+                    }
+
+                    class ChildDb extends Db {}
+
+                    /**
+                     * @psalm-flow ($value) -> return
+                     */
+                    function relay(string $value): string { return $value; }
+
+                    $db = new ChildDb();
+                    $db->query((string)($_GET["a"] ?? ""));
+                    $db->query(relay((string)($_GET["b"] ?? "")));
+                ',
+                'expectedTraces' => [
+                    'TaintedSql: $_GET@17 ... call to ChildDb::query@17',
+                    'TaintedSql: $_GET@18 ... call to ChildDb::query@18',
                 ],
             ],
         ];

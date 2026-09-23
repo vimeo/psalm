@@ -599,17 +599,13 @@ final class TaintFlowGraph extends DataFlowGraph
 
             $new_taints = ($source_taints | $path->added_taints) & ~$path->removed_taints;
 
-            // A node that has already been propagated from with these taints must not be queued
-            // again -- that is what makes resolution terminate. It can still be the endpoint of a
-            // *different* flow arriving in a later round, though (`sink(src()); sink(relay(src()));`
-            // reaches the sink once directly and once through the wrapper), and that flow is a
-            // finding of its own. So a visited *sink* still runs the reporting below -- which
-            // deduplicates on the trace -- and only skips the enqueue at the bottom; for anything
-            // else the edge is dead and is dropped right here, keeping the hot path as cheap as
-            // before.
-            $already_visited = isset($visited_source_ids[$to_id][$new_taints]);
-
-            if ($already_visited && !isset($sinks[$to_id])) {
+            // A node that has already been propagated from with these taints has had everything
+            // downstream of it, sinks included, handled already; dropping the edge here is what
+            // makes resolution terminate. Two flows meeting at a node are thereby merged, and only
+            // the first one to get there is traced onwards. That is why a sink parameter gets a
+            // node per call site (see ArgumentsAnalyzer): flows into different call sites of a
+            // sink are separate findings and must not merge.
+            if (isset($visited_source_ids[$to_id][$new_taints])) {
                 continue;
             }
 
@@ -643,10 +639,9 @@ final class TaintFlowGraph extends DataFlowGraph
                     . ' -> ' . $this->getSuccessorPath($sink);
 
                     // The same flow can arrive at a sink more than once along the very same
-                    // path when the resolver re-expands it under a different specialized_calls
-                    // set; that is one finding, not two, so report each trace once. Two
-                    // different paths into the sink (see above) have different traces and are
-                    // both kept.
+                    // path when the resolver re-expands it under different specialized_calls
+                    // sets; that is one finding, not two, so report each trace once. Different
+                    // paths into the sink have different traces and are all kept.
                     $flow_key = $path . "\0" . $matching_taints;
 
                     if (!isset($reported_flows[$flow_key])) {
@@ -655,10 +650,6 @@ final class TaintFlowGraph extends DataFlowGraph
                         $this->reportFlow($generated_source, $sink, $matching_taints, $path, $config, $codebase);
                     }
                 }
-            }
-
-            if ($already_visited) {
-                continue;
             }
 
             $key = $to_id . ' ' . $specialized_calls_key . ' ' . $new_taints;

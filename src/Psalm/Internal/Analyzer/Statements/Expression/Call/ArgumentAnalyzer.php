@@ -1956,6 +1956,27 @@ final class ArgumentAnalyzer
             $removed_taints,
         );
 
+        // A sink parameter of an unspecialized function has a sink node per call site next to
+        // the shared parameter node (see ArgumentsAnalyzer); $method_node is the latter, so the
+        // argument is wired into the former here. A specialized call needs no extra edge: there
+        // $method_node is already per call site and is the sink node itself.
+        if ($taint_flow_graph && $function_storage && $function_param->sinks && !$specialize_taint) {
+            $call_site_sink = DataFlowNode::getForMethodArgument(
+                $cased_method_id,
+                DataFlowNode::getParameterOffset($function_storage, $function_param, $argument_offset),
+                $function_storage,
+                $function_call_location,
+            );
+
+            $taint_flow_graph->addPath(
+                $argument_value_node,
+                $call_site_sink,
+                'arg',
+                $added_taints,
+                $removed_taints,
+            );
+        }
+
         foreach ($input_type->parent_nodes as $parent_node) {
             $graph->addNode($method_node);
             $graph->addPath(
