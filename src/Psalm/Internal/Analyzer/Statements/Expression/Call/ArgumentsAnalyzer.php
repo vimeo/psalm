@@ -942,7 +942,14 @@ final class ArgumentsAnalyzer
                                     $code_location,
                                     $function_param->sinks,
                                 );
-                        } elseif ($function_storage->specialize_call) {
+                        } else {
+                            // One sink node per call site, whether or not the function itself is
+                            // specialized: the taint resolver merges flows that meet at a node and
+                            // traces only the first onwards, so a sink node shared by every call
+                            // of the function would report just one of the calls that receive
+                            // tainted input. For an unspecialized function this node stands next
+                            // to the shared parameter node the body is entered through; the
+                            // argument is wired into both (see ArgumentAnalyzer::processTaintedness).
                             $sink = DataFlowNode::getForMethodArgument(
                                 $cased_method_id,
                                 DataFlowNode::getParameterOffset(
@@ -952,17 +959,6 @@ final class ArgumentsAnalyzer
                                 ),
                                 $function_storage,
                                 $code_location,
-                            );
-                        } else {
-                            $sink = DataFlowNode::getForMethodArgument(
-                                $cased_method_id,
-                                DataFlowNode::getParameterOffset(
-                                    $function_storage,
-                                    $function_param,
-                                    $argument_offset,
-                                ),
-                                $function_storage,
-                                null,
                             );
                         }
 

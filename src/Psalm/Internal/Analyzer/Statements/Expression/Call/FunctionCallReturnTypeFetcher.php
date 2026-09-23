@@ -666,12 +666,29 @@ final class FunctionCallReturnTypeFetcher
                 );
                 $graph->addNode($param_node);
 
-                if ($param->sinks) {
-                    $graph->addSink($param_node);
-                }
-
                 foreach ($arg_type->parent_nodes as $parent_node) {
                     $graph->addPath($parent_node, $param_node, 'arg');
+                }
+
+                if ($param->sinks) {
+                    // One sink node per call site, as for a named call (see ArgumentsAnalyzer);
+                    // for a specialized callable this is $param_node itself.
+                    $sink_node = $storage->specialize_call
+                        ? $param_node
+                        : DataFlowNode::getForMethodArgument(
+                            $callable_id,
+                            $i,
+                            $storage,
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        );
+
+                    $graph->addSink($sink_node);
+
+                    if ($sink_node !== $param_node) {
+                        foreach ($arg_type->parent_nodes as $parent_node) {
+                            $graph->addPath($parent_node, $sink_node, 'arg');
+                        }
+                    }
                 }
             }
         }

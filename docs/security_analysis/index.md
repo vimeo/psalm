@@ -84,6 +84,8 @@ $html = "
 
 To avoid these issues, use Parameterised Queries for SQL and Commands (e.g. `exec`); and a context-aware templating engine for HTML. Then use the [literal-string](https://psalm.dev/docs/annotating_code/type_syntax/scalar_types/#literal-string) type to ensure sensitive strings are defined in your application (i.e. have been written by a developer).
 
+Psalm reports every flow that reaches a sink, but flows that merge on the way there are traced only once. Inside a function that is not [specialized](avoiding_false_positives.md#specializing-taints-in-functions), taint from all call sites shares the same nodes, so when two sources pass through such a function on their way to the same sink, only the first one to get there is reported. The second surfaces once the first flow is fixed. Marking the function with `@psalm-taint-specialize` keeps the flows apart and reports both straight away.
+
 ## Using Baseline With Taint Analysis
 
 Since taint analysis is performed separately from other static code analysis, it makes sense to use a separate baseline for it.

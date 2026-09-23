@@ -1921,11 +1921,17 @@ final class ArgumentAnalyzer
 
             if ($declaring_method_id && (string) $declaring_method_id !== (string) $method_id) {
                 $declaring_storage = $codebase->methods->getStorage($declaring_method_id);
+                // Specialized like $method_node: a specialized node with an outgoing edge is
+                // expanded as-is, without recording its call site, so an edge from the specialized
+                // called-class node straight into the *unspecialized* declaring parameter would
+                // let the flow into the body with no call-site context and out through every
+                // caller's return. Entering the body through the declaring node's own
+                // specialization records the call site, as it does for a direct call.
                 $new_sink = DataFlowNode::getForMethodArgument(
                     $codebase->methods->getCasedMethodId($declaring_method_id),
                     DataFlowNode::getParameterOffset($declaring_storage, $function_param, $argument_offset),
                     $declaring_storage,
-                    null,
+                    $specialization_location,
                 );
 
                 $taint_flow_graph->addNode($new_sink);
@@ -1955,6 +1961,27 @@ final class ArgumentAnalyzer
             $added_taints,
             $removed_taints,
         );
+
+        // A sink parameter of an unspecialized function has a sink node per call site next to
+        // the shared parameter node (see ArgumentsAnalyzer); $method_node is the latter, so the
+        // argument is wired into the former here. A specialized call needs no extra edge: there
+        // $method_node is already per call site and is the sink node itself.
+        if ($taint_flow_graph && $function_storage && $function_param->sinks && !$specialize_taint) {
+            $call_site_sink = DataFlowNode::getForMethodArgument(
+                $cased_method_id,
+                DataFlowNode::getParameterOffset($function_storage, $function_param, $argument_offset),
+                $function_storage,
+                $function_call_location,
+            );
+
+            $taint_flow_graph->addPath(
+                $argument_value_node,
+                $call_site_sink,
+                'arg',
+                $added_taints,
+                $removed_taints,
+            );
+        }
 
         foreach ($input_type->parent_nodes as $parent_node) {
             $graph->addNode($method_node);
