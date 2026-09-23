@@ -152,16 +152,30 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 // a literal callable string: from here on it is a call of the named function
                 $function_name = $function_call_info->new_function_name;
 
-                $function_call_info = self::handleNamedFunction(
+                if ($codebase->functions->functionExists(
                     $statements_analyzer,
-                    $stmt,
-                    $function_name,
-                    $context,
-                    $code_location,
-                );
+                    strtolower(implode('\\', $function_name->getParts())),
+                )) {
+                    $function_call_info = self::handleNamedFunction(
+                        $statements_analyzer,
+                        $stmt,
+                        $function_name,
+                        $context,
+                        $code_location,
+                    );
 
-                if (!$function_call_info->function_exists) {
-                    return true;
+                    if (!$function_call_info->function_exists) {
+                        return true;
+                    }
+                } else {
+                    // an unknown function may do anything
+                    $statements_analyzer->signalMutation(
+                        Capabilities::ALL,
+                        $context,
+                        'function call on unknown function',
+                        ImpureFunctionCall::class,
+                        $stmt,
+                    );
                 }
             }
         } else {
