@@ -153,6 +153,14 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
     public bool $no_discard = false;
 
     /**
+     * The `analysis_php_version_id` at which this native function/method became available, if it
+     * comes from a version-specific stub or carries an `@since x.y` tag (e.g. 8_05_00). Used to
+     * report it as undefined when analysing an older PHP version without a polyfill, while still
+     * keeping its stubbed signature for analysis. Null when unversioned/user-defined.
+     */
+    public ?int $since_php_version_id = null;
+
+    /**
      * Whether or not the function output is dependent solely on input - a function can be
      * impure but still have this property (e.g. var_export). Useful for taint analysis.
      */

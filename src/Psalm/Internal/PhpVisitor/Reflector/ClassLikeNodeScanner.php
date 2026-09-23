@@ -34,6 +34,7 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scanner\ClassLikeDocblockComment;
 use Psalm\Internal\Scanner\FileScanner;
+use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeAlias\ClassTypeAlias;
@@ -81,13 +82,16 @@ use function assert;
 use function count;
 use function implode;
 use function ltrim;
+use function pathinfo;
 use function preg_match;
 use function preg_split;
+use function reset;
 use function sprintf;
 use function strtolower;
 use function trim;
 use function usort;
 
+use const PATHINFO_EXTENSION;
 use const PREG_SPLIT_DELIM_CAPTURE;
 use const PREG_SPLIT_NO_EMPTY;
 
@@ -362,6 +366,18 @@ final class ClassLikeNodeScanner
                     $e->getMessage() . ' in docblock for ' . $fq_classlike_name,
                     $name_location ?? $class_location,
                 );
+            }
+
+            // Keep the stubbed definition loaded on every version for analysis, but record the
+            // version that introduced the class (from an `@since x.y` tag in a stub file) so its
+            // use is reported as undefined when analysing an older PHP version without a polyfill.
+            if ($docblock_info
+                && $docblock_info->since_php_major_version
+                && $this->codebase->register_stub_files
+                && pathinfo($this->file_path, PATHINFO_EXTENSION) === 'phpstub'
+            ) {
+                $storage->since_php_version_id = $docblock_info->since_php_major_version * 10_000
+                    + $docblock_info->since_php_minor_version * 100;
             }
         }
 
@@ -1249,6 +1265,30 @@ final class ClassLikeNodeScanner
         $storage->visibility = ClassLikeAnalyzer::VISIBILITY_PUBLIC;
     }
 
+    /**
+     * Parses a PHP-version `@since` tag (e.g. `@since 8.1`) from a stub member docblock into an
+     * `analysis_php_version_id`, or null when absent or not a PHP version. Restricted to stub
+     * files, since `@since` on project code usually means the project version, not the PHP one.
+     */
+    private function parseSincePhpVersionId(ParsedDocblock $comments): ?int
+    {
+        if (!isset($comments->tags['since'])
+            || pathinfo($this->file_path, PATHINFO_EXTENSION) !== 'phpstub'
+        ) {
+            return null;
+        }
+
+        $since = trim((string) reset($comments->tags['since']));
+
+        if (preg_match('/^([4578])\.(\d)(\.\d+)?(\s+PHP)?$/i', $since, $matches)
+            && isset($matches[1], $matches[2])
+        ) {
+            return (int) $matches[1] * 10_000 + (int) $matches[2] * 100;
+        }
+
+        return null;
+    }
+
     private function visitClassConstDeclaration(
         PhpParser\Node\Stmt\ClassConst $stmt,
         ClassLikeStorage $storage,
@@ -1268,6 +1308,7 @@ final class ClassLikeNodeScanner
         $var_comment = null;
         $deprecated = false;
         $description = null;
+        $since_php_version_id = null;
         $config = $this->config;
 
         if ($comment && $comment->getText() && ($config->use_docblock_types || $config->use_docblock_property_types)) {
@@ -1276,6 +1317,8 @@ final class ClassLikeNodeScanner
             if (isset($comments->tags['deprecated'])) {
                 $deprecated = true;
             }
+
+            $since_php_version_id = $this->parseSincePhpVersionId($comments);
 
             $description = $comments->description;
 
@@ -1411,6 +1454,7 @@ final class ClassLikeNodeScanner
                 $attributes,
                 $suppressed_issues,
                 $description,
+                $since_php_version_id,
             );
 
             if ($this->codebase->analysis_php_version_id >= 8_03_00
@@ -1670,6 +1714,9 @@ final class ClassLikeNodeScanner
             $property_storage->stmt_location = new CodeLocation($this->file_scanner, $stmt);
             $property_storage->has_default = (bool)$property->default;
             $property_storage->deprecated = $var_comment ? $var_comment->deprecated : false;
+            $property_storage->since_php_version_id = $comment
+                ? $this->parseSincePhpVersionId(DocComment::parsePreservingLength($comment))
+                : null;
             $property_storage->suppressed_issues = $var_comment ? $var_comment->suppressed_issues : [];
             $property_storage->internal = $var_comment ? $var_comment->psalm_internal : [];
             if (count($property_storage->internal) === 0 && $var_comment && $var_comment->internal) {

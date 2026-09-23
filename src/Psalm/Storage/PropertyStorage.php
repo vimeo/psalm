@@ -39,6 +39,13 @@ final class PropertyStorage implements HasAttributesInterface
 
     public bool $deprecated = false;
 
+    /**
+     * The `analysis_php_version_id` at which this property became available (from its own `@since`
+     * tag). Null unless explicitly versioned; the owning class's
+     * {@see ClassLikeStorage::$since_php_version_id} applies otherwise.
+     */
+    public ?int $since_php_version_id = null;
+
     public bool $readonly = false;
 
     /**

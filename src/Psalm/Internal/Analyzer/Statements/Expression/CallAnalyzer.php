@@ -624,6 +624,30 @@ abstract class CallAnalyzer
             }
         }
 
+        // The function is known to Psalm (its stubbed signature is always loaded so analysis is
+        // unaffected), but a native function introduced in a later PHP version is undefined when
+        // analysing an older version without a polyfill. The issue is reported without treating
+        // the call as unknown, so its stubbed signature is still used for the rest of analysis.
+        try {
+            $function_storage = $codebase->functions->getStorage($statements_analyzer, $function_id);
+        } catch (UnexpectedValueException) {
+            return true;
+        }
+
+        if ($function_storage->since_php_version_id !== null
+            && $codebase->analysis_php_version_id < $function_storage->since_php_version_id
+        ) {
+            IssueBuffer::maybeAdd(
+                new UndefinedFunction(
+                    'Function ' . $cased_function_id . ' '
+                        . $codebase->getUnavailableSymbolMessageSuffix($function_storage->since_php_version_id),
+                    $code_location,
+                    $function_id,
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
+
         return true;
     }
 

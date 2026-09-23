@@ -2287,14 +2287,17 @@ final class Config
             $core_generic_files[] = $stringable_path;
         }
 
-        if (PHP_VERSION_ID < 8_05_00 && $codebase->analysis_php_version_id >= 8_05_00) {
-            $stringable_path = dirname(__DIR__, 2) . '/stubs/Php85.phpstub';
+        // Genuinely-new classes from every version live in PhpVersionedClasses.phpstub (always
+        // loaded via internal_stubs). When the running PHP is older than the newest of them, its
+        // reflection cannot provide them, so preload the file too.
+        if (PHP_VERSION_ID < 8_05_00) {
+            $versioned_classes_path = dirname(__DIR__, 2) . '/stubs/PhpVersionedClasses.phpstub';
 
-            if (!file_exists($stringable_path)) {
-                throw new UnexpectedValueException('Cannot locate PHP 8.5 classes');
+            if (!file_exists($versioned_classes_path)) {
+                throw new UnexpectedValueException('Cannot locate versioned PHP classes');
             }
 
-            $core_generic_files[] = $stringable_path;
+            $core_generic_files[] = $versioned_classes_path;
         }
 
         $stub_files = array_merge($core_generic_files, $this->preloaded_stub_files);
@@ -2341,6 +2344,13 @@ final class Config
             $stubsDir . 'Reflection.phpstub',
             $stubsDir . 'SPL.phpstub',
             $stubsDir . 'CoreGenericAttributes.phpstub',
+            // Genuinely-new classes introduced by a specific PHP version. Loaded on every analysis
+            // version so they are known to analysis; each carries an `@since` tag, so a use is
+            // reported as undefined (via the since_php_version_id check at each reference site) when
+            // analysing an older PHP version without a polyfill. Version-specific *refinements* of
+            // pre-existing symbols (the Php8X.phpstub files below) stay version gated so they are
+            // not applied early.
+            $stubsDir . 'PhpVersionedClasses.phpstub',
         ];
 
         if ($codebase->analysis_php_version_id >= 7_04_00) {
@@ -2349,6 +2359,8 @@ final class Config
 
         if ($codebase->analysis_php_version_id >= 8_00_00) {
             $this->internal_stubs[] = $stubsDir . 'Php80.phpstub';
+            $this->internal_stubs[] = $stubsDir . 'Php80Functions.phpstub';
+            $this->internal_stubs[] = $stubsDir . 'Php80Attribute.phpstub';
         }
 
         if ($codebase->analysis_php_version_id >= 8_01_00) {
@@ -2357,15 +2369,12 @@ final class Config
 
         if ($codebase->analysis_php_version_id >= 8_02_00) {
             $this->internal_stubs[] = $stubsDir . 'Php82.phpstub';
+            $this->internal_stubs[] = $stubsDir . 'Php82Functions.phpstub';
             $this->php_extensions['random'] = true; // random is a part of the PHP core starting from PHP 8.2
         }
 
         if ($codebase->analysis_php_version_id >= 8_04_00) {
             $this->internal_stubs[] = $stubsDir . 'Php84.phpstub';
-        }
-
-        if ($codebase->analysis_php_version_id >= 8_05_00) {
-            $this->internal_stubs[] = $stubsDir . 'Php85.phpstub';
         }
 
         $ext_stubs_dir = $dir_lvl_2 . DIRECTORY_SEPARATOR . "stubs" . DIRECTORY_SEPARATOR . "extensions";

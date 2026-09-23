@@ -2208,4 +2208,29 @@ final class Codebase
     {
         return intdiv($php_version_id, $div);
     }
+
+    /**
+     * Renders a php_version_id (e.g. 8_05_00) as a `major.minor` string for messages.
+     */
+    public static function getPhpVersionString(int $php_version_id): string
+    {
+        return self::transformPhpVersionId($php_version_id, 10_000)
+            . '.' . self::transformPhpVersionId($php_version_id % 10_000, 100);
+    }
+
+    /**
+     * The tail shared by the Undefined* messages reported when a native symbol (introduced in
+     * `$since_php_version_id`) is used on an older analysed PHP version without a polyfill. Prefix
+     * it with the symbol, e.g. "Function foo ". `symfony/polyfill-php<major><minor>` is the polyfill
+     * package for that version (e.g. symfony/polyfill-php81).
+     */
+    public function getUnavailableSymbolMessageSuffix(int $since_php_version_id): string
+    {
+        $since = self::getPhpVersionString($since_php_version_id);
+
+        return 'is not defined for the analysed PHP version '
+            . self::getPhpVersionString($this->analysis_php_version_id)
+            . ' (it was introduced in PHP ' . $since . '); install symfony/polyfill-php'
+            . str_replace('.', '', $since) . ', define a polyfill, or raise the analysed PHP version';
+    }
 }
