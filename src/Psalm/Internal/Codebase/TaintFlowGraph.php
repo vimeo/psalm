@@ -245,8 +245,12 @@ final class TaintFlowGraph extends DataFlowGraph
         // sets continue differently and must not be merged -- `$c->m($_GET['a'])` on a
         // subclass and `$d->m($_GET['b'])` on the declaring class meet at the declaring
         // parameter node with different sets, and merging them there would drop the
-        // second flow (and its own call site's issue) altogether. The same key is used
-        // for the per-round frontier, so a state is expanded at most once overall.
+        // second flow (and its own call site's issue) altogether.
+        //
+        // A state is marked when it is *queued* (see getChildNodes()), not when it is
+        // expanded, so that it is queued at most once overall. Marking on expansion would
+        // let a state be queued a second time by a longer path arriving in the round in
+        // which the first copy is being expanded, and both copies would then be expanded.
         $visited_source_ids = [];
 
         // Traces already reported on, see getChildNodes().
@@ -578,6 +582,7 @@ final class TaintFlowGraph extends DataFlowGraph
      * @param array<string, true> $reported_flows
      * @param array<string, true> $sink_reachable
      * @param-out array<string, DataFlowNode> $new_sources
+     * @param-out array<string, array<string, array<int, true>>> $visited_source_ids
      * @param-out array<string, true> $reported_flows
      */
     private function getChildNodes(
@@ -585,7 +590,7 @@ final class TaintFlowGraph extends DataFlowGraph
         DataFlowNode $generated_source,
         int $source_taints,
         array $sinks,
-        array $visited_source_ids,
+        array &$visited_source_ids,
         array &$reported_flows,
         array $sink_reachable,
         Config $config,
@@ -610,13 +615,20 @@ final class TaintFlowGraph extends DataFlowGraph
 
             $new_taints = ($source_taints | $path->added_taints) & ~$path->removed_taints;
 
-            // A node that has already been propagated from in this state has had everything
-            // downstream of it, sinks included, handled already; dropping the edge here is what
-            // makes resolution terminate. Two flows meeting at a node in the same state are
-            // thereby merged, and only the first one to get there is traced onwards. That is
-            // why a sink parameter gets a node per call site (see ArgumentsAnalyzer): flows into
-            // different call sites of a sink are separate findings and must not merge.
-            if (isset($visited_source_ids[$to_id][$specialized_calls_key][$new_taints])) {
+            // A node that has already been queued in this state must not be queued again --
+            // that is what makes resolution terminate. Two flows meeting at a node in the same
+            // state are thereby merged, and only the first one to get there is traced onwards;
+            // that is why a sink parameter gets a node per call site (see ArgumentsAnalyzer),
+            // so that flows into different call sites never merge. A sink can still be the
+            // endpoint of two distinct flows in different rounds, though, when it has more than
+            // one direct predecessor (a callable-valued invocation wires each parent node of the
+            // argument straight into it), and each of them is a finding of its own. So a visited
+            // *sink* still runs the reporting below -- which deduplicates on the trace -- and
+            // only skips the enqueue at the bottom; for anything else the edge is dead and is
+            // dropped right here, keeping the hot path as cheap as before.
+            $already_visited = isset($visited_source_ids[$to_id][$specialized_calls_key][$new_taints]);
+
+            if ($already_visited && !isset($sinks[$to_id])) {
                 continue;
             }
 
@@ -663,11 +675,13 @@ final class TaintFlowGraph extends DataFlowGraph
                 }
             }
 
-            $key = $to_id . ' ' . $specialized_calls_key . ' ' . $new_taints;
-
-            if (isset($new_sources[$key])) {
+            if ($already_visited) {
                 continue;
             }
+
+            $visited_source_ids[$to_id][$specialized_calls_key][$new_taints] = true;
+
+            $key = $to_id . ' ' . $specialized_calls_key . ' ' . $new_taints;
 
             $old = $this->nodes[$to_id];
             $path_types = $generated_source->path_types;

@@ -3756,6 +3756,34 @@ final class TaintTest extends TestCase
                     'TaintedTextWithQuotes: $_GET@13 ... call to echo@13',
                 ],
             ],
+            // A callable-valued invocation wires each parent node of the argument straight into
+            // the sink, so two sources feeding one call site converge on its sink node without
+            // meeting anywhere before it; the one arriving a round later is a finding of its own.
+            // The relayed flow reaches relay's return node twice (through the @psalm-flow edge and
+            // through the body's return), a round apart; only one of them is queued, so it is
+            // reported once.
+            'twoFlowsConvergingOnTheSinkOfACallableValuedInvocation' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-taint-sink shell $cmd
+                     */
+                    function runCmd(string $cmd): void {}
+
+                    /**
+                     * @psalm-flow ($value) -> return
+                     */
+                    function relay(string $value): string { return $value; }
+
+                    $f = runCmd(...);
+                    $f(rand(0, 1) ? (string)($_GET["a"] ?? "") : relay((string)($_GET["b"] ?? "")));
+                    $f((string)($_GET["c"] ?? ""));
+                ',
+                'expectedTraces' => [
+                    'TaintedShell: $_GET@13 ... string-cast@13',
+                    'TaintedShell: $_GET@14 ... string-cast@14',
+                    'TaintedShell: $_GET@13 ... relay@10',
+                ],
+            ],
         ];
     }
 }
