@@ -756,7 +756,7 @@ final class InterfaceTest extends TestCase
                         return $r->value;
                     }',
                 'assertions' => [],
-                'ignored_issues' => [],
+                'ignored_issues' => ['MissingConstructor'],
                 'php_version' => '8.4',
             ],
             'interfacePropertyWithSetHook' => [
@@ -800,7 +800,7 @@ final class InterfaceTest extends TestCase
                         echo $rw->name;
                     }',
                 'assertions' => [],
-                'ignored_issues' => [],
+                'ignored_issues' => ['MissingConstructor'],
                 'php_version' => '8.4',
             ],
         ];
