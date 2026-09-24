@@ -467,6 +467,7 @@ final class TypeParser
         Union &$as,
         string $defining_class,
         bool $from_docblock = false,
+        bool $allow_skip_invalid_type = false,
     ): TTemplateParamClass {
         if ($as->hasMixed()) {
             return new TTemplateParamClass(
@@ -477,6 +478,8 @@ final class TypeParser
                 $from_docblock,
             );
         }
+
+        $last_invalid_type = null;
 
         foreach ($as->getAtomicTypes() as $t) {
             if ($t instanceof TObject) {
@@ -527,6 +530,11 @@ final class TypeParser
             }
 
             if (!$t instanceof TNamedObject) {
+                if ($allow_skip_invalid_type) {
+                    $last_invalid_type = $t;
+                    continue;
+                }
+
                 throw new TypeParseTreeException(
                     'Invalid templated classname \'' . $t->getId() . '\'',
                 );
@@ -538,6 +546,12 @@ final class TypeParser
                 $t,
                 $defining_class,
                 $from_docblock,
+            );
+        }
+
+        if ($last_invalid_type !== null) {
+            throw new TypeParseTreeException(
+                'Invalid templated classname \'' . $last_invalid_type->getId() . '\'',
             );
         }
 
@@ -775,6 +789,7 @@ final class TypeParser
                     $template_type_map[$class_name][$first_class],
                     $first_class,
                     $from_docblock,
+                    true,
                 );
             }
 
