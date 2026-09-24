@@ -1265,6 +1265,24 @@ final class TypeAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'duplicateTypeInDocblockParamUnion' => [
+                'code' => '<?php
+                    /**
+                     * @param string|string $foo
+                     */
+                    function bar(string $foo): void {}',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'duplicateTypeInDocblockReturnUnion' => [
+                'code' => '<?php
+                    /**
+                     * @return list|list
+                     */
+                    function bar(): array {
+                        return [];
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
         ];
     }
 }
