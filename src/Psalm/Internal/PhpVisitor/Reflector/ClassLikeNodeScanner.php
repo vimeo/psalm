@@ -506,21 +506,23 @@ final class ClassLikeNodeScanner
                             continue;
                         }
 
+                        $lower_capabilities = Capabilities::fromType($lower);
+
                         if (!Capabilities::isPurityType($lower)
                             || ($bound !== null
-                                && !Capabilities::allows(Capabilities::fromType($bound), Capabilities::fromType($lower)))
+                                && !Capabilities::allows(Capabilities::fromType($bound), $lower_capabilities))
                         ) {
                             $storage->docblock_issues[] = new InvalidDocblock(
-                                'The lower bound of the purity template ' . $purity_template . ' must be a set of'
-                                . ' capabilities within its upper bound, ' . $lower->getId() . ' given, in docblock for '
-                                . $fq_classlike_name,
+                                'The lower bound of the purity template ' . $purity_template . ' must be a set'
+                                . ' of capabilities within its upper bound, ' . $lower->getId()
+                                . ' given, in docblock for ' . $fq_classlike_name,
                                 $name_location ?? $class_location,
                             );
 
                             continue;
                         }
 
-                        $storage->template_lower_bounds[$purity_template] = Capabilities::fromType($lower);
+                        $storage->template_lower_bounds[$purity_template] = $lower_capabilities;
                     }
 
                     if (!isset($docblock_info->purity_template_defaults[$purity_template])) {

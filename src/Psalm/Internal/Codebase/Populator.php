@@ -119,6 +119,9 @@ final class Populator
         $storage->capabilities_type = null;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     private function resolveCapabilitiesType(Union $type, int $depth = 0): int
     {
         $capabilities = Capabilities::NONE;
@@ -137,7 +140,7 @@ final class Populator
 
                 $alias = $alias_storage->type_aliases[$atomic->alias_name] ?? null;
 
-                if (!$alias instanceof ClassTypeAlias) {
+                if (!$alias instanceof ClassTypeAlias || $alias->replacement_atomic_types === []) {
                     return Capabilities::ALL;
                 }
 
