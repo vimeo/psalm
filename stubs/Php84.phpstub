@@ -55,4 +55,19 @@ namespace {
          */
         public function resetAsLazyProxy(object $object, callable $factory, int $options = 0): void {}
     }
+
+    class ReflectionProperty implements Reflector
+    {
+        /** @psalm-pure */
+        public function isPublicSet(): bool {}
+
+        /** @psalm-pure */
+        public function isProtectedSet(): bool {}
+
+        /** @psalm-pure */
+        public function isPrivateSet(): bool {}
+
+        /** @psalm-pure */
+        public function isFinal(): bool {}
+    }
 }

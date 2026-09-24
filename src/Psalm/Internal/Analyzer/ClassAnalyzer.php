@@ -54,6 +54,7 @@ use Psalm\Issue\MutableDependency;
 use Psalm\Issue\NoEnumProperties;
 use Psalm\Issue\NonInvariantDocblockPropertyType;
 use Psalm\Issue\NonInvariantPropertyType;
+use Psalm\Issue\OverriddenFinalProperty;
 use Psalm\Issue\OverriddenPropertyAccess;
 use Psalm\Issue\ParseError;
 use Psalm\Issue\PropertyNotSetInConstructor;
@@ -76,6 +77,7 @@ use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -701,6 +703,39 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                                     . ' has different access level than '
                                     . $guide_class_name . '::$' . $property_name,
                                 $property_storage->location,
+                            ),
+                        );
+                    } elseif ($property_storage->set_visibility > $guide_property_storage->set_visibility
+                        && $property_storage->location
+                    ) {
+                        IssueBuffer::maybeAdd(
+                            new OverriddenPropertyAccess(
+                                'Property ' . $fq_class_name . '::$' . $property_name
+                                    . ' has a more restrictive set visibility ('
+                                    . PropertyStorage::getVisibilityText($property_storage->set_visibility)
+                                    . '(set)) than '
+                                    . $guide_class_name . '::$' . $property_name . ' ('
+                                    . PropertyStorage::getVisibilityText($guide_property_storage->set_visibility)
+                                    . '(set))',
+                                $property_storage->location,
+                            ),
+                        );
+                    }
+
+                    if ($guide_property_storage->is_final
+                        && $property_class_name === $fq_class_name
+                        && $property_storage->location
+                    ) {
+                        IssueBuffer::maybeAdd(
+                            new OverriddenFinalProperty(
+                                'Property ' . $fq_class_name . '::$' . $property_name
+                                    . ' cannot override final property '
+                                    . $guide_class_name . '::$' . $property_name
+                                    . ($guide_property_storage->set_visibility === self::VISIBILITY_PRIVATE
+                                        ? ' (private(set) properties are implicitly final)'
+                                        : ''),
+                                $property_storage->location,
+                                $guide_class_name . '::$' . $property_name,
                             ),
                         );
                     }
