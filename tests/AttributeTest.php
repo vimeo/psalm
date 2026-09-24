@@ -466,6 +466,30 @@ final class AttributeTest extends TestCase
                     }
                 ',
             ],
+            'abstractConstructImplementerOverrideIsValid' => [
+                'code' => '<?php
+                    trait B {
+                        abstract public function __construct();
+                    }
+
+                    final class A {
+                        use B;
+
+                        #[Override]
+                        public function __construct() {}
+                    }',
+            ],
+            'abstractConstructTraitImplementerOverrideIsValid' => [
+                'code' => '<?php
+                    abstract class B {
+                        abstract public function __construct();
+                    }
+
+                    final class A {
+                        #[Override]
+                        public function __construct() {}
+                    }',
+            ],
         ];
     }
 
