@@ -8,6 +8,7 @@ use Psalm\Context;
 use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\IssueBuffer;
+use Psalm\Test\Config\Plugin\Hook\TaintTestMethodReturnTypeProvider;
 
 use function array_map;
 use function preg_quote;
@@ -62,6 +63,39 @@ final class TaintTest extends TestCase
         );
 
         $this->project_analyzer->trackTaintedInputs();
+
+        $this->analyzeFile($file_path, new Context(), false);
+    }
+
+    public function testTaintSourcePreservedWhenMethodReturnTypeProviderActive(): void
+    {
+        require_once __DIR__ . '/Config/Plugin/Hook/TaintTestMethodReturnTypeProvider.php';
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessageMatches('/TaintedHtml/');
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                class MyService {
+                    /**
+                     * @psalm-taint-source input
+                     */
+                    public function getUserInput(): string {
+                        return "safe";
+                    }
+                }
+
+                $svc = new MyService();
+                echo $svc->getUserInput();',
+        );
+
+        $this->project_analyzer->trackTaintedInputs();
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->methods->return_type_provider->registerClass(TaintTestMethodReturnTypeProvider::class);
 
         $this->analyzeFile($file_path, new Context(), false);
     }
