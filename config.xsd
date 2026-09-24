@@ -389,6 +389,7 @@
             <xs:element name="NullPropertyFetch" type="PropertyIssueHandlerType" minOccurs="0" />
             <xs:element name="NullReference" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="OverriddenFinalConstant" type="ClassConstantIssueHandlerType" minOccurs="0" />
+            <xs:element name="OverriddenFinalProperty" type="PropertyIssueHandlerType" minOccurs="0" />
             <xs:element name="OverriddenInterfaceConstant" type="ClassConstantIssueHandlerType" minOccurs="0" />
             <xs:element name="OverriddenMethodAccess" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="OverriddenPropertyAccess" type="PropertyIssueHandlerType" minOccurs="0" />

@@ -1760,15 +1760,16 @@ final class ClassLikeNodeScanner
                 $property_storage->type->queueClassLikesForScanning($this->codebase, $this->file_storage);
             }
 
-            if ($stmt->isPublic()) {
-                $property_storage->visibility = ClassLikeAnalyzer::VISIBILITY_PUBLIC;
-            } elseif ($stmt->isProtected()) {
-                $property_storage->visibility = ClassLikeAnalyzer::VISIBILITY_PROTECTED;
-            } elseif ($stmt->isPrivate()) {
-                $property_storage->visibility = ClassLikeAnalyzer::VISIBILITY_PRIVATE;
-            }
-
             $property_id = $fq_classlike_name . '::$' . $property->name->name;
+
+            PropertyVisibilityResolver::resolve(
+                $this->codebase,
+                $storage,
+                $property_storage,
+                $stmt->flags,
+                new CodeLocation($this->file_scanner, $stmt, null, true),
+                $property_id,
+            );
 
             $storage->declaring_property_ids[$property->name->name] = $fq_classlike_name;
             $storage->appearing_property_ids[$property->name->name] = $property_id;
