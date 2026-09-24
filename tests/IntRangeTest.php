@@ -1034,6 +1034,39 @@ final class IntRangeTest extends TestCase
                     '$z' => 'int<min, 9223372036854775807>|null',
                 ],
             ],
+            'assertGreaterOrEqualNarrowsToIntRange' => [
+                'code' => '<?php
+                    /**
+                     * @param int<0, max> $min
+                     * @return int<0, max>
+                     */
+                    function f(int $min, int $max): int {
+                        assert($max >= $min);
+                        return $max;
+                    }',
+            ],
+            'assertGreaterThanNarrowsToIntRange' => [
+                'code' => '<?php
+                    /**
+                     * @param int<0, max> $min
+                     * @return int<0, max>
+                     */
+                    function f(int $min, int $max): int {
+                        assert($max > $min);
+                        return $max;
+                    }',
+            ],
+            'assertLessThanOrEqualNarrowsToIntRange' => [
+                'code' => '<?php
+                    /**
+                     * @param int<min, 10> $max
+                     * @return int<min, 10>
+                     */
+                    function f(int $min, int $max): int {
+                        assert($min <= $max);
+                        return $min;
+                    }',
+            ],
         ];
     }
 
