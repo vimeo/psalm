@@ -166,6 +166,8 @@ final class FunctionDocblockComment
 
     public bool $no_named_args = false;
 
+    public bool $only_named_args = false;
+
     public bool $stub_override = false;
 
     public int $since_php_major_version = 0;

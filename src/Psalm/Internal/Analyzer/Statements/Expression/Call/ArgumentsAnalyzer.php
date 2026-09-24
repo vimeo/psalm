@@ -726,6 +726,7 @@ final class ArgumentsAnalyzer
                             $template_result,
                             $function_storage->specialize_call ?? true,
                             $in_call_map,
+                            $function_storage->require_named_arg_calls ?? false,
                         );
                     }
                 }
@@ -906,6 +907,7 @@ final class ArgumentsAnalyzer
                     $template_result,
                     $function_storage->specialize_call ?? true,
                     $in_call_map,
+                    $function_storage->require_named_arg_calls ?? false,
                 ) === false) {
                     return false;
                 }
