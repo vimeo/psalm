@@ -30,6 +30,7 @@ use Psalm\Internal\Analyzer\Statements\EchoAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ClassConstAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\DestructorAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
@@ -638,6 +639,21 @@ final class StatementsAnalyzer extends SourceAnalyzer
             ) === false) {
                 return false;
             }
+
+            if ($stmt->expr instanceof PhpParser\Node\Expr\New_) {
+                $new_type = $statements_analyzer->node_data->getType($stmt->expr);
+
+                if ($new_type !== null) {
+                    // nothing holds the new object: it dies right away
+                    DestructorAnalyzer::chargeDestruction(
+                        $statements_analyzer,
+                        $context,
+                        $new_type,
+                        'the discarded new object',
+                        $stmt->expr,
+                    );
+                }
+            }
         } elseif ($stmt instanceof PhpParser\Node\Stmt\InlineHTML) {
             // do nothing
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Global_) {
@@ -1050,21 +1066,16 @@ final class StatementsAnalyzer extends SourceAnalyzer
                 continue;
             }
 
-            $class_storage = $codebase->classlikes->getStorageFor($atomic_type->value);
-            while ($class_storage !== null) {
-                $destructor = $class_storage->methods['__destruct'] ?? null;
-                if ($destructor !== null) {
-                    if ($destructor->has_mutations_annotation
-                        && $destructor->capabilities === Capabilities::ALL) {
-                        return true;
-                    }
+            $destructor_id = DestructorAnalyzer::getDestructorId($codebase, $atomic_type->value);
 
-                    break;
-                }
+            if ($destructor_id === null) {
+                continue;
+            }
 
-                $class_storage = $class_storage->parent_class === null
-                    ? null
-                    : $codebase->classlikes->getStorageFor($class_storage->parent_class);
+            $destructor = $codebase->methods->getStorage($destructor_id);
+
+            if ($destructor->has_mutations_annotation && $destructor->capabilities === Capabilities::ALL) {
+                return true;
             }
         }
 

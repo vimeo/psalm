@@ -17,6 +17,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentMapPopulator;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodVisibilityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\NewAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
@@ -654,6 +655,12 @@ final class AtomicStaticCallAnalyzer
                     }
 
                     {
+                        $stmt->setAttribute(
+                            NewAnalyzer::CALLEE_CAPABILITIES_ATTRIBUTE,
+                            ($stmt->getAttribute(NewAnalyzer::CALLEE_CAPABILITIES_ATTRIBUTE) ?? Capabilities::NONE)
+                                | $callstatic_mutations,
+                        );
+
                         $statements_analyzer->signalMutation(
                             $callstatic_mutations,
                             $context,

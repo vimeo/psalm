@@ -78,6 +78,12 @@ use function strtolower;
  */
 final class NewAnalyzer extends CallAnalyzer
 {
+    /**
+     * The node attribute holding the capabilities a `new` or static call required from its caller,
+     * used to decide whether the callee may have changed refined properties or statics.
+     */
+    public const CALLEE_CAPABILITIES_ATTRIBUTE = 'callee_capabilities';
+
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\New_ $stmt,
@@ -301,7 +307,11 @@ final class NewAnalyzer extends CallAnalyzer
         }
 
         if (!$config->remember_property_assignments_after_call && !$context->collect_initializations) {
-            $context->removeMutableObjectVars();
+            // a constructor that cannot write properties or globals leaves every refinement in place
+            $context->removeMutableObjectVars(
+                false,
+                $stmt->getAttribute(self::CALLEE_CAPABILITIES_ATTRIBUTE) ?? Capabilities::ALL,
+            );
         }
 
         return true;
@@ -468,6 +478,8 @@ final class NewAnalyzer extends CallAnalyzer
                     $method_storage->capabilities & ~Capabilities::RECEIVER_LOCAL,
                     $template_result,
                 );
+
+                $stmt->setAttribute(self::CALLEE_CAPABILITIES_ATTRIBUTE, $constructor_capabilities);
 
                 $statements_analyzer->signalMutation(
                     $constructor_capabilities,
@@ -829,14 +841,18 @@ final class NewAnalyzer extends CallAnalyzer
 
             $method_storage = $codebase->methods->getStorage($declaring_method_id);
 
+            $constructor_capabilities = CallPurityResolver::getCallCapabilities(
+                $statements_analyzer,
+                $codebase,
+                $method_storage,
+                $method_storage->capabilities & ~Capabilities::RECEIVER_LOCAL,
+                null,
+            );
+
+            $stmt->setAttribute(self::CALLEE_CAPABILITIES_ATTRIBUTE, $constructor_capabilities);
+
             $statements_analyzer->signalMutation(
-                CallPurityResolver::getCallCapabilities(
-                    $statements_analyzer,
-                    $codebase,
-                    $method_storage,
-                    $method_storage->capabilities & ~Capabilities::RECEIVER_LOCAL,
-                    null,
-                ),
+                $constructor_capabilities,
                 $context,
                 'constructor ' . $codebase->methods->getCasedMethodId($declaring_method_id),
                 ImpureMethodCall::class,

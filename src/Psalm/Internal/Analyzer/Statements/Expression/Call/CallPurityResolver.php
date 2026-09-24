@@ -196,6 +196,8 @@ final class CallPurityResolver
             $type = null;
 
             foreach ($class_template_params[$template_name] as $bound_type) {
+                $bound_type = self::resolveStandins($bound_type, $class_template_params, $codebase);
+
                 $type = $type === null
                     ? $bound_type
                     : Type::combineUnionTypes($type, $bound_type, $codebase);
@@ -205,5 +207,28 @@ final class CallPurityResolver
         }
 
         return null;
+    }
+
+    /**
+     * A class implementing a templated interface has the interface's template bound to its own
+     * (`Iterator<TKey, TValue, TPurity>` on `Generator`): the collected params then map the
+     * interface's template to a standin for the class's, which this resolves to what the class
+     * binds it to.
+     *
+     * @param array<string, array<string, Union>> $class_template_params
+     * @psalm-external-mutation-free
+     */
+    private static function resolveStandins(Union $type, array $class_template_params, Codebase $codebase): Union
+    {
+        $resolved = [];
+
+        foreach ($type->getAtomicTypes() as $atomic) {
+            $resolved[] = $atomic instanceof TTemplateParam
+                && isset($class_template_params[$atomic->param_name][$atomic->defining_class])
+                ? $class_template_params[$atomic->param_name][$atomic->defining_class]
+                : new Union([$atomic]);
+        }
+
+        return Type::combineUnionTypeArray($resolved, $codebase);
     }
 }

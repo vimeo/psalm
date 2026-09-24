@@ -23,6 +23,7 @@ use Psalm\Issue\NonStaticSelfCall;
 use Psalm\Issue\ParentNotFound;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
@@ -48,6 +49,9 @@ final class StaticCallAnalyzer extends CallAnalyzer
         $lhs_type = null;
 
         $codebase = $statements_analyzer->getCodebase();
+
+        // collected by the atomic analyzers; a call nothing describes may do anything
+        $stmt->setAttribute(NewAnalyzer::CALLEE_CAPABILITIES_ATTRIBUTE, null);
         $source = $statements_analyzer->getSource();
 
         $config = $codebase->config;
@@ -245,7 +249,11 @@ final class StaticCallAnalyzer extends CallAnalyzer
         }
 
         if (!$config->remember_property_assignments_after_call && !$context->collect_initializations) {
-            $context->removeMutableObjectVars();
+            // a method that cannot write properties or globals leaves every refinement in place
+            $context->removeMutableObjectVars(
+                false,
+                $stmt->getAttribute(NewAnalyzer::CALLEE_CAPABILITIES_ATTRIBUTE) ?? Capabilities::ALL,
+            );
         }
 
         if (!$statements_analyzer->node_data->getType($stmt)) {

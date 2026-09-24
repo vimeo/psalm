@@ -206,7 +206,8 @@ final class TypeChecker extends TypeVisitor
         $template_type_count = count($expected_type_params);
         $template_param_count = count($atomic->type_params);
 
-        if ($template_type_count > $template_param_count) {
+        // trailing purity templates with a default need not be given
+        if ($class_storage->getRequiredTemplateParamCount() > $template_param_count) {
             IssueBuffer::maybeAdd(
                 new MissingTemplateParam(
                     $atomic->value . ' has missing template params, expecting '

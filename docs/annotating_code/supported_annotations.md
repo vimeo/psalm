@@ -542,9 +542,26 @@ echo Arithmetic::addCumulative(3); // outputs 6
 Everything a pure function does is checked, including what happens implicitly: `clone` calls
 `__clone`, string interpolation and casts call `__toString`, `$object()` calls `__invoke`, array
 access on objects calls the `ArrayAccess` methods, `throw new` and `new $className` call the
-constructor (an unknown class may do anything), and parameter default values are evaluated
-with the function's own capabilities. A callable
-string or array whose target is not known may do anything, so a pure function may not call one.
+constructor (an unknown class may do anything), and `foreach` over an object calls its `Iterator`
+methods (`rewind`, `valid`, `current`, `key`, `next`), or `getIterator()` and then the methods of
+the iterator it returns, which counts as freshly created (see
+[iterators and generators](#iterators-and-generators)). A callable string or array whose target
+is not known may do anything, so a pure function may not call one.
+
+Destroying an object calls its destructor, where the object dies: a pure function may not hold, in
+a local variable, an object it created with `new` whose `__destruct` has effects, unless the object
+leaves the function (returned, stored, passed on, captured), nor `unset()` a variable holding such
+an object, nor discard one (`new Guard();`).
+
+Parameter default values are evaluated like in Hack, with no capabilities at all, or with the
+globals when the function-like may write them (`@psalm-capabilities write-globals`), whatever
+else the function-like may do; only function-likes without a purity annotation may use anything
+in a default value, so `new` in the defaults of unannotated code stays free.
+
+With `rememberPropertyAssignmentsAfterCall="false"`, what is known about the properties and static
+properties of the objects in scope survives a call to a function-like that cannot write properties
+(for the former) or globals (for the latter): a call of a pure, `read-globals` or `mutation-free`
+function-like, constructor or static method keeps every refinement.
 
 Creating a closure is never an effect: a pure function may build and return an impure closure. The
 closure's capabilities are carried by its type (see [callable types](type_syntax/callable_types.md#pure-callables))
@@ -716,6 +733,53 @@ function apply(Closure $callback): int {
     return $callback(1);
 }
 ```
+
+### Iterators and generators
+
+`Traversable`, `Iterator`, `IteratorAggregate` and `Generator` carry a purity template after
+their key and value templates, `TPurity`, which says what iterating over the object may do:
+`Iterator<int, string, pure>` can be iterated by a pure function, `Generator<int, int, mixed, void, io>`
+prints when consumed. It defaults to `impure`, so `Iterator<int, string>` still means an iterator
+about which nothing is known. Iterating costs the iterator's `TPurity` plus, unless the iterator
+is `$this` or was just created, moving it along (`write-this-props`, as for any other method that
+changes an object): a pure function may consume a generator it just obtained from a pure
+generator function, an external-mutation-free one may also consume one it was given.
+
+A generator function-like with a purity annotation binds the `TPurity` of the `Generator`
+(or `Iterator`, `Traversable`) it returns to its own capabilities, and to its purity templates,
+which every call resolves: consuming the generator costs what running its body costs.
+
+```php
+<?php
+/**
+ * @psalm-pure
+ * @param Closure<_>(): int $f
+ * @return Generator<int, int>
+ */
+function map(Closure $f): Generator { yield $f(); return 0; }
+
+/** @psalm-pure */
+function sum(): int {
+    $total = 0;
+    foreach (map(fn(): int => 1) as $x) { // Generator<int, int, mixed, mixed, pure>
+        $total += $x;
+    }
+    return $total;
+}
+
+/** @psalm-pure */
+function print(): int {
+    $g = map(function (): int { echo "x"; return 1; }); // Generator<int, int, mixed, mixed, io>
+    foreach ($g as $x) {} // error: iterating over the generator requires io
+    return 0;
+}
+```
+
+A class implementing `Iterator` or `IteratorAggregate` may bind `TPurity` in its `@implements`
+(`@implements Iterator<int, string, pure>`), in which case its iteration methods (or its
+`getIterator()` and what that returns) must fit the binding. A class that does not bind it gets
+it from those methods, so `MyIterator` is accepted where `Iterator<int, string, pure>` is expected
+exactly when its iteration methods are pure.
 
 ### `@psalm-purity-from-template`
 

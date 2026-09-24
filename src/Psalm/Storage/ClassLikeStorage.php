@@ -18,7 +18,10 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
+use function array_keys;
+use function array_reverse;
 use function array_values;
+use function count;
 use function in_array;
 
 /**
@@ -478,6 +481,27 @@ final class ClassLikeStorage implements HasAttributesInterface
         }
 
         return false;
+    }
+
+    /**
+     * How many template params a use of this class must give: all of them, except trailing purity
+     * templates with a default, which need not be given.
+     *
+     * @psalm-mutation-free
+     */
+    public function getRequiredTemplateParamCount(): int
+    {
+        $required_param_count = count($this->template_types ?? []);
+
+        foreach (array_reverse(array_keys($this->template_types ?? [])) as $template_name) {
+            if (!isset($this->template_defaults[$template_name])) {
+                break;
+            }
+
+            $required_param_count--;
+        }
+
+        return $required_param_count;
     }
 
     /**

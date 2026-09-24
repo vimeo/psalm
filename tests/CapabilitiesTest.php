@@ -5,8 +5,13 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Config;
+use Psalm\Context;
+use Psalm\Exception\CodeException;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use const DIRECTORY_SEPARATOR;
 
 /**
  * The capability model: `@psalm-capabilities`, what each named purity level allows, closure
@@ -524,6 +529,282 @@ final class CapabilitiesTest extends TestCase
                     function writesGlobal(): void {
                         global $g;
                         $g = 1;
+                    }',
+            ],
+            'foreachCallsTheIteratorMethodsOfAFreshIterator' => [
+                'code' => '<?php
+                    /**
+                     * @implements Iterator<int, int>
+                     * @psalm-external-mutation-free
+                     */
+                    final class Counter implements Iterator {
+                        private int $i = 0;
+                        public function current(): int { return $this->i; }
+                        public function key(): int { return $this->i; }
+                        public function next(): void { $this->i++; }
+                        public function rewind(): void { $this->i = 0; }
+                        public function valid(): bool { return $this->i < 3; }
+                    }
+
+                    /** @psalm-pure */
+                    function sum(): int {
+                        $s = 0;
+                        foreach (new Counter() as $x) {
+                            $s += $x;
+                        }
+                        return $s;
+                    }
+
+                    /** @psalm-external-mutation-free */
+                    function sumGiven(Counter $c): int {
+                        $s = 0;
+                        foreach ($c as $x) {
+                            $s += $x;
+                        }
+                        return $s;
+                    }',
+            ],
+            'foreachOverAGeneratorACallProducedIsPure' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @return Generator<int, int>
+                     */
+                    function gen(): Generator {
+                        yield 1;
+                        yield 2;
+                        return 0;
+                    }
+
+                    /**
+                     * @implements IteratorAggregate<int, int>
+                     */
+                    final class Bag implements IteratorAggregate {
+                        /**
+                         * @psalm-mutation-free
+                         * @return Generator<int, int>
+                         */
+                        public function getIterator(): Generator {
+                            yield 3;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function sum(Bag $bag): int {
+                        $s = 0;
+                        foreach (gen() as $x) {
+                            $s += $x;
+                        }
+                        foreach ($bag as $x) {
+                            $s += $x;
+                        }
+                        return $s;
+                    }',
+            ],
+            'paramDefaultsMayUseTheGlobalsOfAWriteGlobalsFunction' => [
+                'code' => '<?php
+                    final class Box {
+                        /** @psalm-capabilities read-globals */
+                        public function __construct() {}
+                    }
+
+                    /** @psalm-capabilities write-globals */
+                    function make(Box $b = new Box()): Box {
+                        return $b;
+                    }',
+            ],
+            'paramDefaultsOfUnannotatedFunctionsAreFree' => [
+                'code' => '<?php
+                    final class Box {
+                        public function __construct() { echo "made"; }
+                    }
+
+                    function make(Box $b = new Box()): Box {
+                        return $b;
+                    }',
+            ],
+            'objectsWithADestructorThatLeaveTheFunctionAreNotDestroyedThere' => [
+                'code' => '<?php
+                    final class Guard {
+                        /** @psalm-pure */
+                        public function __construct() {}
+                        public function __destruct() { echo "released"; }
+                    }
+
+                    /** @psalm-pure */
+                    function make(): Guard {
+                        $g = new Guard();
+                        return $g;
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param list<Guard> $guards
+                     * @return list<Guard>
+                     */
+                    function keep(array $guards): array {
+                        $g = new Guard();
+                        $guards[] = $g;
+                        return $guards;
+                    }
+
+                    /** @psalm-pure */
+                    function given(Guard $g): int {
+                        return 1;
+                    }',
+            ],
+            'generatorPurityTemplateIsBoundByTheGeneratorFunction' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @return Generator<int, int>
+                     */
+                    function pureGen(): Generator { yield 1; return 0; }
+
+                    /**
+                     * @psalm-capabilities io
+                     * @return Generator<int, int>
+                     */
+                    function ioGen(): Generator { echo "x"; yield 1; return 0; }
+
+                    /** @psalm-pure */
+                    function sumFresh(): int {
+                        $s = 0;
+                        foreach (pureGen() as $x) {
+                            $s += $x;
+                        }
+                        return $s;
+                    }
+
+                    /** @psalm-pure */
+                    function sumHeld(): int {
+                        $g = pureGen();
+                        $s = 0;
+                        foreach ($g as $x) {
+                            $s += $x;
+                        }
+                        $g->rewind();
+                        return $s;
+                    }
+
+                    /**
+                     * @psalm-external-mutation-free
+                     * @param Generator<int, int, mixed, mixed, pure> $g
+                     */
+                    function sumGiven(Generator $g): int {
+                        $s = 0;
+                        foreach ($g as $x) {
+                            $s += $x;
+                        }
+                        return $s;
+                    }
+
+                    /**
+                     * @psalm-capabilities external-mutation-free|io
+                     * @param Traversable<int, int, io> $t
+                     */
+                    function sumAny(Traversable $t): int {
+                        $s = 0;
+                        foreach ($t as $x) {
+                            $s += $x;
+                        }
+                        return $s;
+                    }
+
+                    /** @psalm-capabilities external-mutation-free|io */
+                    function pass(): int {
+                        return sumGiven(pureGen()) + sumAny(pureGen()) + sumAny(ioGen());
+                    }',
+            ],
+            'generatorPurityTemplateFollowsThePurityTemplatesOfTheGeneratorFunction' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @param Closure<_>(): int $f
+                     * @return Generator<int, int>
+                     */
+                    function polyGen(Closure $f): Generator { yield $f(); return 0; }
+
+                    /**
+                     * @psalm-external-mutation-free
+                     * @param Generator<int, int, mixed, mixed, pure> $g
+                     */
+                    function sumGiven(Generator $g): int {
+                        $s = 0;
+                        foreach ($g as $x) {
+                            $s += $x;
+                        }
+                        return $s;
+                    }
+
+                    /** @psalm-external-mutation-free */
+                    function pass(): int {
+                        return sumGiven(polyGen(fn(): int => 1));
+                    }',
+            ],
+            'generatorClosureBindsThePurityTemplateToItsOwnPurity' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function sum(): int {
+                        $gen = function (): Generator { yield 1; return 0; };
+                        $s = 0;
+                        foreach ($gen() as $x) {
+                            $s += $x;
+                        }
+                        return $s;
+                    }',
+            ],
+            'iteratorPurityTemplateIsBoundFromTheIterationMethods' => [
+                'code' => '<?php
+                    /**
+                     * @implements Iterator<int, int>
+                     * @psalm-external-mutation-free
+                     */
+                    final class Counter implements Iterator {
+                        private int $i = 0;
+                        public function current(): int { return $this->i; }
+                        public function key(): int { return $this->i; }
+                        public function next(): void { $this->i++; }
+                        public function rewind(): void { $this->i = 0; }
+                        public function valid(): bool { return $this->i < 3; }
+                    }
+
+                    /** @implements IteratorAggregate<int, int> */
+                    final class Bag implements IteratorAggregate {
+                        /**
+                         * @psalm-mutation-free
+                         * @return Generator<int, int>
+                         */
+                        public function getIterator(): Generator { yield 3; return 0; }
+                    }
+
+                    /**
+                     * @psalm-external-mutation-free
+                     * @param Iterator<int, int, external-mutation-free> $it
+                     */
+                    function sumCounter(Iterator $it): int {
+                        $s = 0;
+                        foreach ($it as $x) {
+                            $s += $x;
+                        }
+                        return $s;
+                    }
+
+                    /**
+                     * @psalm-external-mutation-free
+                     * @param IteratorAggregate<int, int, pure> $bag
+                     */
+                    function sumBag(IteratorAggregate $bag): int {
+                        $s = 0;
+                        foreach ($bag as $x) {
+                            $s += $x;
+                        }
+                        return $s;
+                    }
+
+                    /** @psalm-external-mutation-free */
+                    function pass(Counter $c, Bag $b): int {
+                        return sumCounter($c) + sumBag($b) + sumCounter($b->getIterator());
                     }',
             ],
         ];
@@ -1236,6 +1517,347 @@ final class CapabilitiesTest extends TestCase
                     }',
                 'error_message' => 'ImpureMethodCall',
             ],
+            'foreachCallsTheIteratorMethodsOfAGivenIterator' => [
+                'code' => '<?php
+                    /**
+                     * @implements Iterator<int, int>
+                     * @psalm-external-mutation-free
+                     */
+                    final class Counter implements Iterator {
+                        private int $i = 0;
+                        public function current(): int { return $this->i; }
+                        public function key(): int { return $this->i; }
+                        public function next(): void { $this->i++; }
+                        public function rewind(): void { $this->i = 0; }
+                        public function valid(): bool { return $this->i < 3; }
+                    }
+
+                    /** @psalm-pure */
+                    function sum(Counter $c): int {
+                        $s = 0;
+                        foreach ($c as $x) {
+                            $s += $x;
+                        }
+                        return $s;
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:18:34 - The context is pure but iterating over Counter requires',
+            ],
+            'foreachOverAnIteratorWithImpureMethods' => [
+                'code' => '<?php
+                    /**
+                     * @implements Iterator<int, int>
+                     */
+                    final class Reader implements Iterator {
+                        /** @psalm-mutation-free */
+                        public function current(): int { return 1; }
+                        /** @psalm-mutation-free */
+                        public function key(): int { return 1; }
+                        /** @psalm-capabilities io */
+                        public function next(): void { echo "read"; }
+                        /** @psalm-mutation-free */
+                        public function rewind(): void {}
+                        /** @psalm-mutation-free */
+                        public function valid(): bool { return false; }
+                    }
+
+                    /** @psalm-capabilities write-props */
+                    function sum(): int {
+                        $s = 0;
+                        foreach (new Reader() as $x) {
+                            $s += $x;
+                        }
+                        return $s;
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:21:34 - The context is write-props but iterating over Reader requires io',
+            ],
+            'paramDefaultsOfAnnotatedFunctionsArePure' => [
+                'code' => '<?php
+                    final class Box {
+                        /** @psalm-capabilities io */
+                        public function __construct() { echo "made"; }
+                    }
+
+                    /** @psalm-capabilities io */
+                    function make(Box $b = new Box()): Box {
+                        return $b;
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:44 - Parameter default values are pure but constructor Box::__construct requires io',
+            ],
+            'anObjectDroppedWhenTheFunctionEndsRunsItsDestructor' => [
+                'code' => '<?php
+                    final class Guard {
+                        /** @psalm-pure */
+                        public function __construct() {}
+                        public function __destruct() { echo "released"; }
+                    }
+
+                    /** @psalm-pure */
+                    function guarded(): int {
+                        $g = new Guard();
+                        return 1;
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:30 - The context is pure but destroying $g (Guard::__destruct) requires',
+            ],
+            'anUnsetObjectRunsItsDestructor' => [
+                'code' => '<?php
+                    final class Guard {
+                        public function __destruct() { echo "released"; }
+                    }
+
+                    /** @psalm-pure */
+                    function release(Guard $g): int {
+                        unset($g);
+                        return 1;
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:25 - The context is pure but destroying $g (Guard::__destruct) requires',
+            ],
+            'generatorWithoutAKnownPurityIsImpureToIterate' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @param Generator<int, int> $g
+                     */
+                    function sum(Generator $g): int {
+                        $s = 0;
+                        foreach ($g as $x) {
+                            $s += $x;
+                        }
+                        return $s;
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:34 - The context is pure but iterating over Generator<int, int, mixed, mixed> requires impure',
+            ],
+            'callingAGeneratorFunctionCostsItsBody' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-capabilities io
+                     * @return Generator<int, int>
+                     */
+                    function ioGen(): Generator { echo "x"; yield 1; return 0; }
+
+                    /** @psalm-capabilities write-globals */
+                    function make(): Generator {
+                        return ioGen();
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:32 - The context is write-globals but function call on iogen requires io',
+            ],
+            'iteratingAnIoGeneratorNeedsIo' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-external-mutation-free
+                     * @param Generator<int, int, mixed, mixed, io> $g
+                     */
+                    function sum(Generator $g): int {
+                        $s = 0;
+                        foreach ($g as $x) {
+                            $s += $x;
+                        }
+                        return $s;
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:34 - The context is external-mutation-free but iterating over Generator<int, int, mixed, mixed, io> requires',
+            ],
+            'resumingAnIoGeneratorNeedsIo' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-external-mutation-free
+                     * @param Generator<int, int, mixed, mixed, io> $g
+                     */
+                    function step(Generator $g): void {
+                        $g->next();
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25 - The context is external-mutation-free but method Generator::next requires',
+            ],
+            'generatorPurityTemplateIsCovariant' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @param Closure<_>(): int $f
+                     * @return Generator<int, int>
+                     */
+                    function polyGen(Closure $f): Generator { yield $f(); return 0; }
+
+                    /**
+                     * @psalm-external-mutation-free
+                     * @param Generator<int, int, mixed, mixed, pure> $g
+                     */
+                    function sumGiven(Generator $g): int {
+                        $s = 0;
+                        foreach ($g as $x) {
+                            $s += $x;
+                        }
+                        return $s;
+                    }
+
+                    /** @psalm-capabilities io */
+                    function pass(): int {
+                        return sumGiven(polyGen(function (): int { echo "y"; return 1; }));
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:23:41 - Argument 1 of sumGiven expects Generator<int, int, mixed, mixed, pure>, but Generator<int, int, mixed, mixed, io> provided',
+            ],
+            'iteratorMethodsMustFitTheBoundPurityTemplate' => [
+                'code' => '<?php
+                    /** @implements Iterator<int, int, pure> */
+                    final class Reader implements Iterator {
+                        /** @psalm-mutation-free */
+                        public function current(): int { return 1; }
+                        /** @psalm-mutation-free */
+                        public function key(): int { return 1; }
+                        public function next(): void { echo "read"; }
+                        /** @psalm-mutation-free */
+                        public function rewind(): void {}
+                        /** @psalm-mutation-free */
+                        public function valid(): bool { return false; }
+                    }',
+                'error_message' => 'ImmutableDependency - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:33 - Iterator::next is external-mutation-free, but Reader::next additionally requires',
+            ],
+            'iteratorPurityBoundFromTheMethodsIsUsedForSubtyping' => [
+                'code' => '<?php
+                    /**
+                     * @implements Iterator<int, int>
+                     * @psalm-external-mutation-free
+                     */
+                    final class Counter implements Iterator {
+                        private int $i = 0;
+                        public function current(): int { return $this->i; }
+                        public function key(): int { return $this->i; }
+                        public function next(): void { $this->i++; }
+                        public function rewind(): void { $this->i = 0; }
+                        public function valid(): bool { return $this->i < 3; }
+                    }
+
+                    /**
+                     * @psalm-external-mutation-free
+                     * @param Iterator<int, int, pure> $it
+                     */
+                    function sum(Iterator $it): int {
+                        $s = 0;
+                        foreach ($it as $x) {
+                            $s += $x;
+                        }
+                        return $s;
+                    }
+
+                    /** @psalm-external-mutation-free */
+                    function pass(Counter $c): int {
+                        return sum($c);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:29:36 - Argument 1 of sum expects Iterator<int, int, pure>, but Counter provided',
+            ],
+            'aDiscardedNewObjectRunsItsDestructor' => [
+                'code' => '<?php
+                    final class Guard {
+                        /** @psalm-pure */
+                        public function __construct() {}
+                        public function __destruct() { echo "released"; }
+                    }
+
+                    /** @psalm-pure */
+                    function guarded(): int {
+                        new Guard();
+                        return 1;
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:25 - The context is pure but destroying the discarded new object (Guard::__destruct) requires',
+            ],
         ];
+    }
+
+    public function testPureNewAndStaticCallsKeepPropertyRefinements(): void
+    {
+        Config::getInstance()->remember_property_assignments_after_call = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                final class A { public ?int $x = null; }
+
+                final class S {
+                    /** @psalm-pure */
+                    public function __construct() {}
+                    /** @psalm-pure */
+                    public static function s(): int { return 1; }
+                }
+
+                /** @psalm-capabilities write-globals */
+                function touchGlobals(): void {}
+
+                function keepNew(A $a): int {
+                    if ($a->x === null) {
+                        return 0;
+                    }
+                    new S();
+                    return $a->x;
+                }
+
+                function keepStatic(A $a): int {
+                    if ($a->x === null) {
+                        return 0;
+                    }
+                    S::s();
+                    return $a->x;
+                }
+
+                function keepAfterGlobals(A $a): int {
+                    if ($a->x === null) {
+                        return 0;
+                    }
+                    touchGlobals();
+                    return $a->x;
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testWriteGlobalsCallForgetsStaticPropertyRefinements(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('NullableReturnStatement');
+        Config::getInstance()->remember_property_assignments_after_call = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                final class A { public static ?int $x = null; }
+
+                /** @psalm-capabilities write-globals */
+                function touchGlobals(): void { A::$x = null; }
+
+                function forget(): int {
+                    if (A::$x === null) {
+                        return 0;
+                    }
+                    touchGlobals();
+                    return A::$x;
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testWritePropsStaticCallForgetsPropertyRefinements(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('NullableReturnStatement');
+        Config::getInstance()->remember_property_assignments_after_call = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                final class A { public ?int $x = null; }
+
+                final class S {
+                    /** @psalm-capabilities write-props */
+                    public static function w(A $a): void { $a->x = null; }
+                }
+
+                function forget(A $a): int {
+                    if ($a->x === null) {
+                        return 0;
+                    }
+                    S::w($a);
+                    return $a->x;
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
     }
 }

@@ -978,11 +978,6 @@
       <code><![CDATA[$var_id]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
-  <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/CallPurityResolver.php">
-    <MissingImmutableAnnotation>
-      <code><![CDATA[CallPurityResolver]]></code>
-    </MissingImmutableAnnotation>
-  </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/ClassTemplateParamCollector.php">
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$template_types]]></code>
@@ -2721,9 +2716,6 @@
     <ComplexMethod>
       <code><![CDATA[handleTemplateParamStandin]]></code>
     </ComplexMethod>
-    <ImpureByReferenceAssignment>
-      <code><![CDATA[$container_type_params_covariant]]></code>
-    </ImpureByReferenceAssignment>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$bracket_pos = strpos($input_key, '<')]]></code>
       <code><![CDATA[$bracket_pos = strpos($key, '<')]]></code>

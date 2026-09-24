@@ -332,6 +332,18 @@ final class Context
      */
     public int $capabilities = Capabilities::ALL;
 
+    /**
+     * Whether a parameter default value is being analysed: $capabilities then holds what a default
+     * value may use rather than what the function-like may.
+     */
+    public bool $inside_param_default = false;
+
+    /**
+     * Whether a virtual call is being analysed only for its return type, its effects being
+     * accounted for elsewhere (the Iterator methods foreach calls, charged as a whole).
+     */
+    public bool $inside_type_only_call = false;
+
     public bool $error_suppressing = false;
 
     public bool $has_returned = false;
@@ -745,13 +757,30 @@ final class Context
         }
     }
 
-    public function removeMutableObjectVars(bool $methods_only = false): void
-    {
+    /**
+     * Forgets what is known about property and static property expressions after a call, since the
+     * callee may have changed them: property expressions when the callee may write properties, static
+     * property expressions when it may write globals. A callee that may do neither, e.g. a pure or
+     * read-globals function, leaves every refinement in place.
+     */
+    public function removeMutableObjectVars(
+        bool $methods_only = false,
+        int $callee_capabilities = Capabilities::ALL,
+    ): void {
+        $forget_properties
+            = ($callee_capabilities & (Capabilities::WRITE_PROPS | Capabilities::WRITE_THIS_PROPS)) !== 0;
+        $forget_statics = ($callee_capabilities & Capabilities::WRITE_GLOBALS) !== 0;
+
+        if (!$forget_properties && !$forget_statics) {
+            return;
+        }
+
         $vars_to_remove = [];
 
         foreach ($this->vars_in_scope as $var_id => $type) {
             if ($type->has_mutations
-                && (str_contains($var_id, '->') || str_contains($var_id, '::'))
+                && (($forget_properties && str_contains($var_id, '->'))
+                    || ($forget_statics && str_contains($var_id, '::')))
                 && (!$methods_only || strpos($var_id, '()'))
             ) {
                 $vars_to_remove[] = $var_id;
@@ -772,7 +801,8 @@ final class Context
             $abandon_clause = false;
 
             foreach ($clause->possibilities as $key => $_) {
-                if ((str_contains($key, '->') || str_contains($key, '::'))
+                if ((($forget_properties && str_contains($key, '->'))
+                        || ($forget_statics && str_contains($key, '::')))
                     && (!$methods_only || strpos($key, '()'))
                 ) {
                     $abandon_clause = true;
@@ -931,6 +961,11 @@ final class Context
 
         if ($missing === Capabilities::NONE) {
             throw new InvalidArgumentException('The context allows the required capabilities');
+        }
+
+        if ($this->inside_param_default) {
+            return 'Parameter default values are ' . Capabilities::toString($this->capabilities) . ' but '
+                . $expression . ' requires ' . Capabilities::toString($required_capabilities);
         }
 
         return 'The context is ' . Capabilities::toString($this->capabilities) . ' but '

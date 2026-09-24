@@ -15,6 +15,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\ByRefArgumentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallProhibitionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\NewAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NoDiscardAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
@@ -309,6 +310,12 @@ final class ExistingAtomicStaticCallAnalyzer
                 $call_args,
             );
 
+            $stmt->setAttribute(
+                NewAnalyzer::CALLEE_CAPABILITIES_ATTRIBUTE,
+                ($stmt->getAttribute(NewAnalyzer::CALLEE_CAPABILITIES_ATTRIBUTE) ?? Capabilities::NONE)
+                    | $call_capabilities,
+            );
+
             $statements_analyzer->signalMutation(
                 $call_capabilities,
                 $context,
@@ -471,6 +478,11 @@ final class ExistingAtomicStaticCallAnalyzer
             $template_result,
             $context,
         );
+
+        if ($method_storage?->has_yield && !$stmt->isFirstClassCallable()) {
+            // a generator method always returns a new generator: nothing else holds it
+            $return_type_candidate = $return_type_candidate->setProperties(['reference_free' => true]);
+        }
 
         $stmt_type = $statements_analyzer->node_data->getType($stmt);
         $statements_analyzer->node_data->setType(

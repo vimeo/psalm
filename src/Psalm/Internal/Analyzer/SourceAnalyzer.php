@@ -319,7 +319,7 @@ abstract class SourceAnalyzer implements StatementsSource
         bool $callee_internal_mutations_ok = false,
         ?string $callee_id = null,
     ): void {
-        if ($context->inside_attribute) {
+        if ($context->inside_attribute || $context->inside_type_only_call) {
             return;
         }
 

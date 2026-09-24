@@ -20,6 +20,7 @@ use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFetcher;
+use Psalm\Internal\Analyzer\Statements\Expression\DestructorAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Codebase\CodeUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -30,6 +31,7 @@ use Psalm\Internal\PhpVisitor\NodeCounterVisitor;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\IterationPurity;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
@@ -378,7 +380,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             );
         }
 
-        // parameter defaults are evaluated with the function-like's own capabilities
         $context->capabilities = $storage->capabilities;
         if ($storage instanceof MethodStorage) {
             if (
@@ -522,6 +523,17 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         }
 
         $statements_analyzer->analyze($function_stmts, $context, $global_context);
+
+        // the objects created here that are still held when the function-like ends die with it
+        $param_ids = [];
+
+        foreach ($this->function->params as $param) {
+            if ($param->var instanceof PhpParser\Node\Expr\Variable && is_string($param->var->name)) {
+                $param_ids['$' . $param->var->name] = true;
+            }
+        }
+
+        DestructorAnalyzer::chargeDroppedObjects($statements_analyzer, $context, $function_stmts, $param_ids);
 
         if ($statements_analyzer->owns_type_variable_tracker) {
             $statements_analyzer->type_variable_tracker->reconcile(
@@ -757,6 +769,18 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     new TCapabilities($this->inferred_capabilities),
                     ...array_values($this->used_purity_templates),
                 ]);
+
+                // consuming the generator a generator closure returns runs its body; the generator
+                // is a new one at every call
+                if ($storage->has_yield && $new_closure_return_type !== null) {
+                    $new_closure_return_type = IterationPurity::bindGenerators(
+                        $new_closure_return_type,
+                        new Union([
+                            new TCapabilities($this->inferred_capabilities & ~Capabilities::READ_PROPS),
+                            ...array_values($this->used_purity_templates),
+                        ]),
+                    )->setProperties(['reference_free' => true]);
+                }
 
                 // a closure is a fresh object: its enclosing scope may call it freely
                 $statements_analyzer->node_data->setType(
@@ -1108,6 +1132,44 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
      * @param list<FunctionLikeParameter> $params
      * @param list<Param> $param_stmts
      */
+    /**
+     * Analyses a parameter default value. Like in Hack, a default value is evaluated with no
+     * capabilities, or with the globals when the function-like may write them, whatever the
+     * function-like may otherwise do. Function-likes without a purity annotation are not
+     * restricted, so `new` in the defaults of unannotated code stays free.
+     */
+    private static function analyzeParamDefault(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $default,
+        Context $context,
+    ): void {
+        $capabilities = $context->capabilities;
+
+        $context->capabilities = self::getParamDefaultCapabilities($capabilities);
+        $context->inside_param_default = true;
+
+        ExpressionAnalyzer::analyze($statements_analyzer, $default, $context);
+
+        $context->inside_param_default = false;
+        $context->capabilities = $capabilities;
+    }
+
+    /**
+     * The capabilities the parameter default values of a function-like with $capabilities may use.
+     *
+     * @psalm-pure
+     */
+    public static function getParamDefaultCapabilities(int $capabilities): int
+    {
+        if ($capabilities === Capabilities::ALL) {
+            return Capabilities::ALL;
+        }
+
+        return ($capabilities & Capabilities::WRITE_GLOBALS) !== 0
+            ? Capabilities::READ_GLOBALS | Capabilities::WRITE_GLOBALS
+            : Capabilities::NONE;
+    }
+
     private function processParams(
         StatementsAnalyzer $statements_analyzer,
         FunctionLikeStorage $storage,
@@ -1283,7 +1345,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
             if (!$function_param->type_location || !$function_param->location) {
                 if ($parser_param && $parser_param->default) {
-                    ExpressionAnalyzer::analyze($statements_analyzer, $parser_param->default, $context);
+                    self::analyzeParamDefault($statements_analyzer, $parser_param->default, $context);
                 }
 
                 continue;
@@ -1334,7 +1396,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
 
             if ($parser_param && $parser_param->default) {
-                ExpressionAnalyzer::analyze($statements_analyzer, $parser_param->default, $context);
+                self::analyzeParamDefault($statements_analyzer, $parser_param->default, $context);
 
                 $default_type = $statements_analyzer->node_data->getType($parser_param->default);
 

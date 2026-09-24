@@ -12,6 +12,7 @@ use Psalm\Internal\PhpVisitor\Reflector\FunctionLikeDocblockScanner;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
+use Psalm\Internal\Type\IterationPurity;
 use Psalm\Internal\Type\TypeAlias\ClassTypeAlias;
 use Psalm\Issue\CircularReference;
 use Psalm\Issue\UndefinedTrait;
@@ -22,9 +23,13 @@ use Psalm\Storage\ClassConstantStorage;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyStorage;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TCapabilities;
+use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -37,6 +42,7 @@ use function array_flip;
 use function array_intersect_key;
 use function array_keys;
 use function array_merge;
+use function array_search;
 use function array_splice;
 use function count;
 use function in_array;
@@ -52,6 +58,13 @@ use function strtolower;
  */
 final class Populator
 {
+    /**
+     * The classes whose Traversable purity template has been bound (see bindIterationPurity)
+     *
+     * @var array<string, true>
+     */
+    private array $iteration_purity_bound = [];
+
     /**
      * @var array<lowercase-string, list<ClassLikeStorage>>
      */
@@ -75,6 +88,21 @@ final class Populator
 
         foreach ($this->classlike_storage_provider->getNew() as $class_storage) {
             $this->populateClassLikeStorage($class_storage);
+        }
+
+        // a class populated before its parents were scanned is populated again, and bound again
+        $this->iteration_purity_bound = [];
+
+        // every method's capabilities are known now: bind what consuming the generators they
+        // return, and iterating the iterators their classes are, may do
+        foreach ($this->classlike_storage_provider->getNew() as $class_storage) {
+            foreach ($class_storage->methods as $method_storage) {
+                $this->populateGeneratorPurity($method_storage, $class_storage);
+            }
+        }
+
+        foreach ($this->classlike_storage_provider->getNew() as $class_storage) {
+            $this->bindIterationPurity($class_storage);
         }
 
         $this->progress->debug('ClassLikeStorage is populated' . "\n");
@@ -117,6 +145,202 @@ final class Populator
 
         $storage->capabilities = $this->resolveCapabilitiesType($storage->capabilities_type) & $storage->capabilities;
         $storage->capabilities_type = null;
+    }
+
+    /**
+     * Binds the purity template of the Generator (or Iterator, Traversable) a generator function-like
+     * returns to what running its body may do: its own capabilities, less reading properties, plus
+     * the purity templates it inherits its purity from, which each call binds. A generator
+     * function-like without a purity annotation keeps the default, impure.
+     */
+    private function populateGeneratorPurity(FunctionLikeStorage $storage, ?ClassLikeStorage $class_storage): void
+    {
+        if (!$storage->has_yield
+            || $storage->return_type === null
+            || $storage->capabilities === Capabilities::ALL
+        ) {
+            return;
+        }
+
+        $purity_types = [new TCapabilities($storage->capabilities & ~Capabilities::READ_PROPS)];
+
+        foreach ($storage->purity_from_templates as $template_name) {
+            $bounds = $storage->template_types[$template_name]
+                ?? $class_storage?->template_types[$template_name]
+                ?? [];
+
+            foreach ($bounds as $defining_class => $bound) {
+                $purity_types[] = new TTemplateParam($template_name, $bound, $defining_class);
+            }
+        }
+
+        $storage->return_type = IterationPurity::bindGenerators($storage->return_type, new Union($purity_types));
+    }
+
+    /**
+     * Binds the purity template of Traversable for a class implementing Iterator or IteratorAggregate
+     * that does not bind it itself, to what iterating it may do: the capabilities of its Iterator
+     * methods, or of getIterator() and of the iterator that returns. The subtyping
+     * `MyIterator <: Iterator<K, V, pure>` and the override check of the Iterator methods rely on it.
+     */
+    private function bindIterationPurity(ClassLikeStorage $storage, int $depth = 0): void
+    {
+        if (isset($this->iteration_purity_bound[$storage->name]) || $depth > 5) {
+            return;
+        }
+
+        $this->iteration_purity_bound[$storage->name] = true;
+
+        if ($storage->is_trait
+            || !isset($storage->template_extended_params['Traversable']['TPurity'])
+            || $this->bindsIterationPurityItself($storage)
+        ) {
+            return;
+        }
+
+        if (isset($storage->template_extended_params['Iterator'])) {
+            $purity = Capabilities::NONE;
+
+            foreach (['rewind', 'valid', 'current', 'key', 'next'] as $method_name) {
+                $purity |= $this->getIterationMethodCapabilities($storage, $method_name);
+            }
+        } elseif (isset($storage->template_extended_params['IteratorAggregate'])) {
+            $purity = $this->getIterationMethodCapabilities($storage, 'getiterator');
+
+            $iterator_type = $this->getDeclaringMethodStorage($storage, 'getiterator')?->return_type;
+
+            if ($iterator_type === null) {
+                $purity = Capabilities::ALL;
+            } else {
+                foreach ($iterator_type->getAtomicTypes() as $iterator_atomic_type) {
+                    $purity |= $this->getIterationPurityOfType($iterator_atomic_type, $depth + 1);
+                }
+            }
+        } else {
+            // a Traversable the engine implements
+            return;
+        }
+
+        foreach ($storage->template_extended_params as $parent_name => $type_map) {
+            if (isset($type_map['TPurity']) && $this->isTraversableLike($parent_name)) {
+                $storage->template_extended_params[$parent_name]['TPurity']
+                    = new Union([new TCapabilities($purity)]);
+            }
+        }
+    }
+
+    /**
+     * Whether the class binds the purity template of an iterator interface in its own
+     * `@implements`/`@extends`.
+     *
+     * @psalm-mutation-free
+     */
+    private function bindsIterationPurityItself(ClassLikeStorage $storage): bool
+    {
+        foreach ($storage->template_extended_offsets ?? [] as $parent_name => $type_params) {
+            if (!$this->isTraversableLike($parent_name)) {
+                continue;
+            }
+
+            $parent_storage = $this->classlike_storage_provider->get($parent_name);
+            $index = array_search('TPurity', array_keys($parent_storage->template_types ?? []), true);
+
+            if ($index !== false && isset($type_params[$index])) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    private function isTraversableLike(string $fq_class_name): bool
+    {
+        if (strtolower($fq_class_name) === 'traversable') {
+            return true;
+        }
+
+        if (!$this->classlike_storage_provider->has($fq_class_name)) {
+            return false;
+        }
+
+        $storage = $this->classlike_storage_provider->get($fq_class_name);
+
+        return isset($storage->parent_interfaces['traversable']) || isset($storage->class_implements['traversable']);
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    private function getDeclaringMethodStorage(ClassLikeStorage $storage, string $method_name): ?MethodStorage
+    {
+        $declaring_method_id = $storage->declaring_method_ids[$method_name] ?? null;
+
+        if ($declaring_method_id === null
+            || !$this->classlike_storage_provider->has($declaring_method_id->fq_class_name)
+        ) {
+            return null;
+        }
+
+        return $this->classlike_storage_provider->get($declaring_method_id->fq_class_name)
+            ->methods[$declaring_method_id->method_name] ?? null;
+    }
+
+    /**
+     * What calling one of the methods foreach calls implicitly may do beyond the iterator itself:
+     * reading its properties is like reading an argument. A method that is missing, or whose
+     * purity depends on templates, counts for the worst.
+     *
+     * @psalm-mutation-free
+     */
+    private function getIterationMethodCapabilities(ClassLikeStorage $storage, string $method_name): int
+    {
+        $declaring_method_id = $storage->declaring_method_ids[$method_name] ?? null;
+        $method_storage = $this->getDeclaringMethodStorage($storage, $method_name);
+
+        if ($declaring_method_id === null || $method_storage === null) {
+            return Capabilities::ALL;
+        }
+
+        $declaring_class_storage = $this->classlike_storage_provider->get($declaring_method_id->fq_class_name);
+
+        return $method_storage->getWorstCaseCapabilities($declaring_class_storage->template_types ?? [])
+            & ~Capabilities::READ_PROPS;
+    }
+
+    /**
+     * What iterating over a value of a type getIterator() returns may do: the purity template of a
+     * Generator/Iterator type, or the one bound for a class, or anything for the rest.
+     */
+    private function getIterationPurityOfType(Atomic $iterator_atomic_type, int $depth): int
+    {
+        if (!$iterator_atomic_type instanceof TNamedObject
+            || !$this->classlike_storage_provider->has($iterator_atomic_type->value)
+        ) {
+            return Capabilities::ALL;
+        }
+
+        $iterator_storage = $this->classlike_storage_provider->get($iterator_atomic_type->value);
+
+        $this->bindIterationPurity($iterator_storage, $depth);
+
+        if (isset($iterator_storage->template_types['TPurity'])) {
+            $index = array_search('TPurity', array_keys($iterator_storage->template_types), true);
+
+            if ($iterator_atomic_type instanceof TGenericObject && isset($iterator_atomic_type->type_params[$index])) {
+                return Capabilities::fromType($iterator_atomic_type->type_params[$index]);
+            }
+
+            return Capabilities::ALL;
+        }
+
+        if (isset($iterator_storage->template_extended_params['Traversable']['TPurity'])) {
+            return Capabilities::fromType($iterator_storage->template_extended_params['Traversable']['TPurity']);
+        }
+
+        return Capabilities::ALL;
     }
 
     /**
@@ -699,6 +923,17 @@ final class Populator
                     }
                 }
 
+                // trailing purity templates left out are bound to their default
+                foreach ($parent_storage->template_types as $template_name => $_) {
+                    if (!isset($storage->template_extended_params[$parent_storage->name][$template_name])
+                        && isset($parent_storage->template_defaults[$template_name])
+                    ) {
+                        $storage->template_extended_params[$parent_storage->name][$template_name]
+                            = $parent_storage->template_defaults[$template_name]
+                                ->setProperties(['from_docblock' => false]);
+                    }
+                }
+
                 if ($parent_storage->template_extended_params) {
                     foreach ($parent_storage->template_extended_params as $t_storage_class => $type_map) {
                         foreach ($type_map as $i => $type) {
@@ -823,6 +1058,7 @@ final class Populator
 
         foreach ($storage->functions as $function_storage) {
             $this->resolveDeferredCapabilities($function_storage);
+            $this->populateGeneratorPurity($function_storage, null);
         }
 
         $file_path_lc = strtolower($storage->file_path);

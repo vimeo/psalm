@@ -282,6 +282,11 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             $template_result,
         );
 
+        if ($method_storage?->has_yield && !$is_first_class_callable) {
+            // a generator method always returns a new generator: nothing else holds it
+            $return_type_candidate = $return_type_candidate->setProperties(['reference_free' => true]);
+        }
+
         if ($is_first_class_callable) {
             return $return_type_candidate;
         }

@@ -235,8 +235,13 @@ final class MethodCallPurityAnalyzer
         if (!$config->remember_property_assignments_after_call
             && ($method_capabilities & (Capabilities::WRITE_PROPS | Capabilities::WRITE_THIS_PROPS)) !== 0
         ) {
-            $context->removeMutableObjectVars();
+            $context->removeMutableObjectVars(false, $method_capabilities);
         } elseif ($method_storage->this_property_mutations) {
+            if (!$config->remember_property_assignments_after_call) {
+                // the method cannot write properties here, but may still write static ones
+                $context->removeMutableObjectVars(false, $method_capabilities);
+            }
+
             if ($method_capabilities !== Capabilities::NONE) {
                 $context->removeMutableObjectVars(true);
             }

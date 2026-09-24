@@ -290,6 +290,11 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 $context,
             );
 
+            if ($function_call_info->function_storage?->has_yield) {
+                // a generator function always returns a new generator: nothing else holds it
+                $stmt_type = $stmt_type->setProperties(['reference_free' => true]);
+            }
+
             $statements_analyzer->node_data->setType($real_stmt, $stmt_type);
 
             if ($stmt_type->isNever()) {
@@ -1246,10 +1251,8 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                         'function ' . ($function_call_info->function_id ?? 'unknown function'),
                     );
                 }
-                if (($mutations & (Capabilities::WRITE_PROPS | Capabilities::WRITE_THIS_PROPS)) !== 0
-                    && !$config->remember_property_assignments_after_call
-                ) {
-                    $context->removeMutableObjectVars();
+                if (!$config->remember_property_assignments_after_call) {
+                    $context->removeMutableObjectVars(false, $mutations);
                 }
             }
             if ($function_call_info->function_id
