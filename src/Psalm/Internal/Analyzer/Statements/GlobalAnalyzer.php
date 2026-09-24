@@ -47,22 +47,14 @@ final class GlobalAnalyzer
             ? $source->getFunctionLikeStorage($statements_analyzer)
             : null;
 
+        // binding a global reads global state; writing through it is charged at the write
         $statements_analyzer->signalMutation(
-            Capabilities::READ_GLOBALS | Capabilities::WRITE_GLOBALS,
+            Capabilities::READ_GLOBALS,
             $context,
             'global variable',
             ImpureGlobalVariable::class,
             $stmt,
         );
-        if ($context->isMutationFree()) {
-            IssueBuffer::maybeAdd(
-                new ImpureGlobalVariable(
-                    'Cannot use a global variable in a mutation-free context',
-                    new CodeLocation($statements_analyzer, $stmt),
-                ),
-                $statements_analyzer->getSuppressedIssues(),
-            );
-        }
 
         foreach ($stmt->vars as $var) {
             if (!$var instanceof PhpParser\Node\Expr\Variable) {

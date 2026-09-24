@@ -740,6 +740,14 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                         $closure_capabilities &= ~Capabilities::RECEIVER_LOCAL;
                     }
 
+                    $closure_capabilities = ByRefArgumentAnalyzer::adjustCapabilities(
+                        $statements_analyzer,
+                        $context,
+                        $closure_capabilities,
+                        $var_type_part->params,
+                        $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
+                    );
+
                     if (!$stmt->isFirstClassCallable()) {
                         if (($closure_capabilities & Capabilities::READ_GLOBALS) !== 0) {
                             $stmt->setAttribute(GlobalStateAnalyzer::ATTRIBUTE, true);
@@ -1205,6 +1213,14 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     : null);
 
             if ($mutations !== null) {
+                $mutations = ByRefArgumentAnalyzer::adjustCapabilities(
+                    $statements_analyzer,
+                    $context,
+                    $mutations,
+                    $function_call_info->function_params,
+                    $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
+                );
+
                 $statements_analyzer->signalMutation(
                     $mutations,
                     $context,

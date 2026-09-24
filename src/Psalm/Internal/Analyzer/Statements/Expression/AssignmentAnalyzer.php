@@ -109,7 +109,7 @@ final class AssignmentAnalyzer
     /**
      * The capabilities writing a variable needs on top of a local write, for what the variable
      * may be shared with: a superglobal or a `global` variable, a variable captured by reference
-     * from an enclosing scope, a by-reference parameter, or a reference into another scope.
+     * from an enclosing scope, or a reference into another scope (a by-reference parameter).
      *
      * @psalm-mutation-free
      */
@@ -131,7 +131,7 @@ final class AssignmentAnalyzer
             // `global $x`, or a reference into another scope
             return isset($context->vars_in_scope[$var_id]) && $context->vars_in_scope[$var_id]->from_global_state
                 ? Capabilities::READ_GLOBALS | Capabilities::WRITE_GLOBALS
-                : Capabilities::ALL;
+                : Capabilities::WRITE_REFS;
         }
 
         return Capabilities::NONE;
@@ -268,8 +268,9 @@ final class AssignmentAnalyzer
                         $root_expr,
                     );
                 } else {
+                    // a reference into another scope: writing through it is what write-refs is
                     $statements_analyzer->signalMutation(
-                        Capabilities::ALL,
+                        Capabilities::WRITE_REFS,
                         $context,
                         'variable ' . $root_var_name . ' from outer scope',
                         ImpureByReferenceAssignment::class,

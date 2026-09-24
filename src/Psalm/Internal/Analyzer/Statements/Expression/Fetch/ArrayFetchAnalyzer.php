@@ -18,6 +18,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -97,6 +98,7 @@ use function count;
 use function implode;
 use function in_array;
 use function is_int;
+use function spl_object_id;
 use function strlen;
 use function strtolower;
 
@@ -1981,6 +1983,19 @@ final class ArrayFetchAnalyzer
 
                 if ($context->inside_unset) {
                     $call_array_access_type = Type::getVoid();
+                } elseif ($context->inside_isset && $context->isset_root_id === spl_object_id($stmt)) {
+                    // a plain isset() never calls offsetGet: only its declared type is of interest
+                    $call_array_access_type = Type::getMixed();
+                    $get_method_id = new MethodIdentifier($type->value, 'offsetget');
+
+                    if ($codebase->methods->methodExists($codebase, $get_method_id)) {
+                        $self_class = $type->value;
+                        $call_array_access_type = $codebase->methods->getMethodReturnType(
+                            $codebase,
+                            $get_method_id,
+                            $self_class,
+                        ) ?? Type::getMixed();
+                    }
                 } else {
                     $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 

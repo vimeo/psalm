@@ -350,9 +350,9 @@ a purity annotation has every capability.
 | `read-props`       | reading instance properties of mutable objects, including `$this` (immutable objects never need it)    |
 | `write-this-props` | writing or unsetting properties of `$this` (implies `read-props`)                                      |
 | `write-props`      | writing or unsetting properties of any object (implies `write-this-props`)                             |
-| `read-globals`     | reading static properties, superglobals and `global` variables (the values reached this way can only be mutated with `write-globals`) |
-| `write-globals`    | writing them, and using `static` variables (implies `read-globals`)                                    |
-| `write-refs`       | writing through by-reference parameters                                                                |
+| `read-globals`     | reading static properties, superglobals and binding `global` variables (the values reached this way can only be mutated with `write-globals`) |
+| `write-globals`    | writing them, including through a bound `global` variable, and using `static` variables (implies `read-globals`) |
+| `write-refs`       | writing through by-reference parameters and other references into another scope; calling a function that writes its by-reference parameters costs what the argument is: nothing for a local, `write-refs` for a by-reference parameter, `write-props` for a property, `write-globals` for global state |
 | `io`               | `echo`, `print`, `exit` with a message, and the builtin functions with side effects (`time`, `random_int`, `file_put_contents`, …); the builtins touching process-wide state (`mt_rand`, `ini_set`, `spl_autoload_register`, …) need `write-globals` instead |
 
 Values reached from global state stay bound to it: an object read from a static property, a

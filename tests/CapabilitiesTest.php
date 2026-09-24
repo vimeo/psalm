@@ -353,8 +353,7 @@ final class CapabilitiesTest extends TestCase
                         private array $a = [];
                         /** @psalm-mutation-free */
                         public function offsetExists($o): bool { return isset($this->a[$o]); }
-                        /** @psalm-mutation-free */
-                        public function offsetGet($o): int { return $this->a[$o]; }
+                        public function offsetGet($o): int { echo "get"; return $this->a[$o]; }
                         public function offsetSet($o, $v): void { echo "set"; }
                         /** @psalm-external-mutation-free */
                         public function offsetUnset($o): void { unset($this->a[$o]); }
@@ -454,6 +453,75 @@ final class CapabilitiesTest extends TestCase
 
                     /** @psalm-capabilities write-globals */
                     function setGlobal(): void {
+                        global $g;
+                        $g = 1;
+                    }',
+            ],
+            'byReferenceArgumentsCostWhatTheyWrite' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 0;
+                        /** @var list<int> */
+                        public array $items = [];
+
+                        /** @psalm-external-mutation-free */
+                        public function bump(): void {
+                            $this->n++;
+                        }
+
+                        /** @psalm-external-mutation-free */
+                        public function sortItems(): void {
+                            sort($this->items);
+                        }
+                    }
+
+                    /** @psalm-capabilities write-props */
+                    function viaMethod(Counter $c): void {
+                        $c->bump();
+                    }
+
+                    /** @psalm-capabilities write-props */
+                    function sortProperty(Counter $c): void {
+                        sort($c->items);
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param list<int> $a
+                     * @return list<int>
+                     */
+                    function sortLocal(array $a): array {
+                        sort($a);
+                        return $a;
+                    }
+
+                    /** @psalm-capabilities write-refs */
+                    function setRef(int &$x): void {
+                        $x = 1;
+                    }
+
+                    /** @psalm-pure */
+                    function passesLocal(): int {
+                        $x = 0;
+                        setRef($x);
+                        return $x;
+                    }
+
+                    /** @psalm-capabilities write-refs */
+                    function passesOwnByRefParam(int &$x): void {
+                        setRef($x);
+                    }',
+            ],
+            'bindingGlobalOnlyReadsIt' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-globals */
+                    function readsGlobal(): int {
+                        global $g;
+                        return is_int($g) ? $g : 0;
+                    }
+
+                    /** @psalm-capabilities write-globals */
+                    function writesGlobal(): void {
                         global $g;
                         $g = 1;
                     }',
@@ -1112,6 +1180,61 @@ final class CapabilitiesTest extends TestCase
                         $set();
                     }',
                 'error_message' => 'ImpureFunctionCall',
+            ],
+            'byReferenceArgumentOnPropertyNeedsWriteProps' => [
+                'code' => '<?php
+                    final class Counter {
+                        /** @var list<int> */
+                        public array $items = [];
+                    }
+
+                    /** @psalm-mutation-free */
+                    function sortProperty(Counter $c): void {
+                        sort($c->items);
+                    }',
+                'error_message' => 'ImpurePropertyAssignment',
+            ],
+            'byReferenceArgumentOnOwnByRefParamNeedsWriteRefs' => [
+                'code' => '<?php
+                    /** @psalm-capabilities write-refs */
+                    function setRef(int &$x): void {
+                        $x = 1;
+                    }
+
+                    /** @psalm-pure */
+                    function passesOwnByRefParam(int &$x): int {
+                        setRef($x);
+                        return $x;
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+            ],
+            'writingBoundGlobalNeedsWriteGlobals' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-globals */
+                    function writesGlobal(): void {
+                        global $g;
+                        $g = 1;
+                    }',
+                'error_message' => 'ImpureGlobalVariable',
+            ],
+            'coalesceOnArrayAccessCallsOffsetGet' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<int, int> */
+                    final class Vec implements ArrayAccess {
+                        /** @psalm-mutation-free */
+                        public function offsetExists($o): bool { return true; }
+                        public function offsetGet($o): int { echo "get"; return 1; }
+                        /** @psalm-external-mutation-free */
+                        public function offsetSet($o, $v): void {}
+                        /** @psalm-external-mutation-free */
+                        public function offsetUnset($o): void {}
+                    }
+
+                    /** @psalm-mutation-free */
+                    function first(Vec $v): int {
+                        return $v[0] ?? 2;
+                    }',
+                'error_message' => 'ImpureMethodCall',
             ],
         ];
     }

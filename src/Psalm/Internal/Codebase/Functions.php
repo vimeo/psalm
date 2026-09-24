@@ -554,6 +554,8 @@ final class Functions
 
             if ($param->by_ref && isset($args[$i])) {
                 $must_use = false;
+                // what this costs depends on the argument: see ByRefArgumentAnalyzer
+                $mutations |= Capabilities::WRITE_REFS;
             }
         }
 

@@ -686,6 +686,7 @@ final class PreloaderList {
         \Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentMapPopulator::class,
         \Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer::class,
         \Psalm\Internal\Analyzer\Statements\Expression\Call\ArrayFunctionArgumentsAnalyzer::class,
+        \Psalm\Internal\Analyzer\Statements\Expression\Call\ByRefArgumentAnalyzer::class,
         \Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver::class,
         \Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector::class,
         \Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallAnalyzer::class,

@@ -11,6 +11,7 @@ use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\FileManipulation;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ByRefArgumentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallProhibitionAnalyzer;
@@ -291,13 +292,21 @@ final class ExistingAtomicStaticCallAnalyzer
                 );
             }
 
-            $call_capabilities = CallPurityResolver::getCallCapabilities(
+            $call_args = $stmt->isFirstClassCallable() ? [] : $stmt->getArgs();
+
+            $call_capabilities = ByRefArgumentAnalyzer::adjustCapabilities(
                 $statements_analyzer,
-                $codebase,
-                $method_storage,
-                $method_storage->capabilities,
-                $template_result,
-                $found_generic_params ?? [],
+                $context,
+                CallPurityResolver::getCallCapabilities(
+                    $statements_analyzer,
+                    $codebase,
+                    $method_storage,
+                    $method_storage->capabilities,
+                    $template_result,
+                    $found_generic_params ?? [],
+                ),
+                $method_storage->params,
+                $call_args,
             );
 
             $statements_analyzer->signalMutation(
@@ -318,7 +327,7 @@ final class ExistingAtomicStaticCallAnalyzer
             GlobalStateAnalyzer::checkArguments(
                 $statements_analyzer,
                 $context,
-                $stmt->getArgs(),
+                $call_args,
                 $call_capabilities,
                 ImpureMethodCall::class,
                 'method ' . $cased_method_id,

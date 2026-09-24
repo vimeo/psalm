@@ -12,6 +12,7 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer as AssignmentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ByRefArgumentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NoDiscardAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
@@ -117,6 +118,16 @@ final class MethodCallPurityAnalyzer
             $class_template_params,
         );
 
+        $args = $stmt->isFirstClassCallable() ? [] : $stmt->getArgs();
+
+        $method_capabilities = ByRefArgumentAnalyzer::adjustCapabilities(
+            $statements_analyzer,
+            $context,
+            $method_capabilities,
+            $method_storage->params,
+            $args,
+        );
+
         $statements_analyzer->signalMutation(
             $method_capabilities,
             $context,
@@ -145,7 +156,7 @@ final class MethodCallPurityAnalyzer
         GlobalStateAnalyzer::checkArguments(
             $statements_analyzer,
             $context,
-            $stmt->getArgs(),
+            $args,
             $method_capabilities,
             ImpureMethodCall::class,
             'method ' . $cased_method_id,

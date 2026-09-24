@@ -120,6 +120,12 @@ final class Context
     public bool $inside_isset = false;
 
     /**
+     * The object id of the expression a plain `isset()` is checking (0 outside one): unlike
+     * `??`, `isset($object[$key])` calls only `offsetExists`.
+     */
+    public int $isset_root_id = 0;
+
+    /**
      * Whether or not we're inside an unset call, where
      * we don't care about possibly undefined variables
      */
