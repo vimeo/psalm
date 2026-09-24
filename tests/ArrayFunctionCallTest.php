@@ -824,6 +824,130 @@ final class ArrayFunctionCallTest extends TestCase
                     '$b' => 'int',
                 ],
             ],
+            'arrayPopListSingleRequired' => [
+                'code' => '<?php
+                    /** @var list{0: "a"} */
+                    $array = ["a"];
+                    $popped1 = array_pop($array);
+                    $popped2 = array_pop($array);',
+                'assertions' => [
+                    '$popped1===' => "'a'",
+                    '$array===' => 'array<never, never>',
+                    '$popped2===' => 'null',
+                ],
+            ],
+            'arrayPopListSingleOptional' => [
+                'code' => '<?php
+                    /** @var list{0?: "a"} */
+                    $array = ["a"];
+                    $popped1 = array_pop($array);
+                    $popped2 = array_pop($array);',
+                'assertions' => [
+                    '$popped1===' => "'a'|null",
+                    '$array===' => 'array<never, never>',
+                    '$popped2===' => 'null',
+                ],
+            ],
+            'arrayPopListTwoRequired' => [
+                'code' => '<?php
+                    /** @var list{0: "a", 1: "b"} */
+                    $array = ["a", "b"];
+                    $popped1 = array_pop($array);
+                    $array2 = $array;
+                    $popped2 = array_pop($array);
+                    $popped3 = array_pop($array);',
+                'assertions' => [
+                    '$popped1===' => "'b'",
+                    '$array2===' => "list{'a'}",
+                    '$popped2===' => "'a'",
+                    '$array===' => 'array<never, never>',
+                    '$popped3===' => 'null',
+                ],
+            ],
+            'arrayPopListRequiredThenOptional' => [
+                'code' => '<?php
+                    /** @var list{0: "a", 1?: "b"} */
+                    $array = ["a", "b"];
+                    $popped1 = array_pop($array);
+                    $array2 = $array;
+                    $popped2 = array_pop($array);
+                    $popped3 = array_pop($array);',
+                'assertions' => [
+                    '$popped1===' => "'a'|'b'",
+                    '$array2===' => "list{0?: 'a'}",
+                    '$popped2===' => "'a'|null",
+                    '$array===' => 'array<never, never>',
+                    '$popped3===' => 'null',
+                ],
+            ],
+            'arrayPopListMultipleOptional' => [
+                'code' => '<?php
+                    /** @var list{0: "a", 1: "b", 2?: "c", 3?: "d"} */
+                    $array = ["a", "b", "c", "d"];
+                    $popped1 = array_pop($array);
+                    $array2 = $array;
+                    $popped2 = array_pop($array);
+                    $array3 = $array;
+                    $popped3 = array_pop($array);
+                    $array4 = $array;
+                    $popped4 = array_pop($array);
+                    $popped5 = array_pop($array);',
+                'assertions' => [
+                    '$popped1===' => "'b'|'c'|'d'",
+                    '$array2===' => "list{0: 'a', 1?: 'b', 2?: 'c'}",
+                    '$popped2===' => "'a'|'b'|'c'",
+                    '$array3===' => "list{0?: 'a', 1?: 'b'}",
+                    '$popped3===' => "'a'|'b'|null",
+                    '$array4===' => "list{0?: 'a'}",
+                    '$popped4===' => "'a'|null",
+                    '$array===' => 'array<never, never>',
+                    '$popped5===' => 'null',
+                ],
+            ],
+            'arrayPopKeyedArrayAllRequired' => [
+                'code' => '<?php
+                    /** @var array{hello: "world", 1: "b", x: "y"} */
+                    $array = ["hello" => "world", 1 => "b", "x" => "y"];
+                    $popped1 = array_pop($array);
+                    $array2 = $array;
+                    $popped2 = array_pop($array);
+                    $popped3 = array_pop($array);',
+                'assertions' => [
+                    '$popped1===' => "'b'|'world'|'y'",
+                    '$array2===' => "array{1?: 'b', hello?: 'world', x?: 'y'}",
+                    '$popped2===' => "'b'|'world'|'y'|null",
+                    '$array===' => "array{1?: 'b', hello?: 'world', x?: 'y'}",
+                    '$popped3===' => "'b'|'world'|'y'|null",
+                ],
+            ],
+            'arrayPopKeyedArrayWithOptional' => [
+                'code' => '<?php
+                    /** @var array{hello: "world", 1?: "b", x: "y"} */
+                    $array = ["hello" => "world", 1 => "b", "x" => "y"];
+                    $popped1 = array_pop($array);
+                    $array2 = $array;
+                    $popped2 = array_pop($array);',
+                'assertions' => [
+                    '$popped1===' => "'b'|'world'|'y'",
+                    '$array2===' => "array{1?: 'b', hello?: 'world', x?: 'y'}",
+                    '$array===' => "array{1?: 'b', hello?: 'world', x?: 'y'}",
+                    '$popped2===' => "'b'|'world'|'y'|null",
+                ],
+            ],
+            'arrayPopKeyedArrayAllOptional' => [
+                'code' => '<?php
+                    /** @var array{hello?: "world", 1?: "b", x?: "y"} */
+                    $array = ["hello" => "world", 1 => "b", "x" => "y"];
+                    $popped1 = array_pop($array);
+                    $array2 = $array;
+                    $popped2 = array_pop($array);',
+                'assertions' => [
+                    '$popped1===' => "'b'|'world'|'y'|null",
+                    '$array2===' => "array{1?: 'b', hello?: 'world', x?: 'y'}",
+                    '$array===' => "array{1?: 'b', hello?: 'world', x?: 'y'}",
+                    '$popped2===' => "'b'|'world'|'y'|null",
+                ],
+            ],
             'SKIPPED-arrayPopNonEmptyAfterMixedArrayAddition' => [
                 'code' => '<?php
                     /** @var array */

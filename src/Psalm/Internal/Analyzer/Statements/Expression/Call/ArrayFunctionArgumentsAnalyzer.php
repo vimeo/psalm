@@ -43,6 +43,7 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_filter;
+use function array_key_last;
 use function array_pop;
 use function array_shift;
 use function array_unshift;
@@ -50,6 +51,7 @@ use function assert;
 use function count;
 use function explode;
 use function in_array;
+use function is_int;
 use function is_numeric;
 use function str_contains;
 use function strtolower;
@@ -635,7 +637,8 @@ final class ArrayFunctionArgumentsAnalyzer
 
                 foreach ($context->vars_in_scope[$var_id]->getAtomicTypes() as $array_atomic_type) {
                     if ($array_atomic_type instanceof TKeyedArray) {
-                        if ($is_array_shift && $array_atomic_type->is_list
+                        if ($is_array_shift
+                            && $array_atomic_type->is_list
                             && !$context->inside_loop
                         ) {
                             $array_properties = $array_atomic_type->properties;
@@ -650,18 +653,79 @@ final class ArrayFunctionArgumentsAnalyzer
                                 $array_atomic_types []= $array_atomic_type->setProperties($array_properties);
                             }
                             continue;
-                        } elseif (!$is_array_shift && $array_atomic_type->is_list
+                        } elseif (!$is_array_shift
+                            && $array_atomic_type->is_list
                             && !$array_atomic_type->fallback_params
                             && !$context->inside_loop
                         ) {
                             $array_properties = $array_atomic_type->properties;
 
-                            array_pop($array_properties);
+                            $last_key = array_key_last($array_properties);
+                            $last_value = $array_properties[$last_key];
 
-                            if (!$array_properties) {
-                                $array_atomic_types []= Type::getEmptyArrayAtomic();
+                            if (!$last_value->possibly_undefined) {
+                                // Last key is not optional - just remove it
+                                array_pop($array_properties);
+
+                                if (!$array_properties) {
+                                    $array_atomic_types[] = Type::getEmptyArrayAtomic();
+                                } else {
+                                    $array_atomic_types[] = $array_atomic_type->setProperties($array_properties);
+                                }
                             } else {
-                                $array_atomic_types []= $array_atomic_type->setProperties($array_properties);
+                                // Last key is optional - remove it and make the 2nd to last optional
+                                array_pop($array_properties);
+
+                                if (!$array_properties) {
+                                    $array_atomic_types[] = Type::getEmptyArrayAtomic();
+                                } else {
+                                    // Get the new last key (was 2nd to last)
+                                    $new_last_key = array_key_last($array_properties);
+                                    $new_last_value = $array_properties[$new_last_key];
+
+                                    if (!$new_last_value->possibly_undefined) {
+                                        $array_properties[$new_last_key] = $new_last_value->setPossiblyUndefined(true);
+                                    } elseif (is_int($new_last_key)) {
+                                        // It's already optional, find the closest non-optional key and make it optional
+                                        for ($i = $new_last_key - 1; $i >= 0; $i--) {
+                                            if (!isset($array_properties[$i])
+                                                || $array_properties[$i]->possibly_undefined) {
+                                                continue;
+                                            }
+
+                                            $array_properties[$i] = $array_properties[$i]->setPossiblyUndefined(true);
+                                            break;
+                                        }
+                                    }
+
+                                    $array_atomic_types[] = $array_atomic_type->setProperties($array_properties);
+                                }
+                            }
+                            continue;
+                        } elseif (!$is_array_shift && !$array_atomic_type->is_list
+                            && !$context->inside_loop
+                        ) {
+                            // Regular keyed array
+                            $array_properties = $array_atomic_type->properties;
+
+                            $all_optional = true;
+                            foreach ($array_properties as $property) {
+                                if (!$property->possibly_undefined) {
+                                    $all_optional = false;
+                                    break;
+                                }
+                            }
+
+                            if (!$all_optional) {
+                                // Make all keys optional
+                                $new_properties = [];
+                                foreach ($array_properties as $key => $property) {
+                                    $new_properties[$key] = $property->setPossiblyUndefined(true);
+                                }
+                                $array_atomic_types[] = $array_atomic_type->setProperties($new_properties);
+                            } else {
+                                // All keys are already optional - keep the keyed array structure
+                                $array_atomic_types[] = $array_atomic_type;
                             }
                             continue;
                         }
