@@ -487,12 +487,16 @@ final class FunctionLikeDocblockParser
         if (isset($parsed_docblock->tags['psalm-purity-template'])) {
             // a purity template is a template whose values are capability sets
             foreach ($parsed_docblock->tags['psalm-purity-template'] as $purity_template_line) {
-                foreach (preg_split('/[\s,]+/', trim($purity_template_line)) ?: [] as $template_name) {
-                    if ($template_name === '') {
-                        continue;
+                foreach (PurityTemplateParser::parse($purity_template_line) as $purity_template) {
+                    if ($purity_template['default'] !== null) {
+                        throw new IncorrectDocblockException(
+                            'Only the purity templates of a class can have a default',
+                        );
                     }
 
-                    $templates[$template_name]['psalm'] = [$template_name, 'of', 'impure', false];
+                    $templates[$purity_template['name']]['psalm']
+                        = [$purity_template['name'], 'of', $purity_template['bound'], false];
+                    $info->purity_templates[] = $purity_template['name'];
                 }
             }
         }
@@ -610,8 +614,9 @@ final class FunctionLikeDocblockParser
             foreach ($parsed_docblock->tags['psalm-capabilities'] as $capabilities_line) {
                 try {
                     $info->capabilities |= Capabilities::fromList($capabilities_line);
-                } catch (CapabilitiesParseException $e) {
-                    throw new IncorrectDocblockException('Invalid @psalm-capabilities tag: ' . $e->getMessage());
+                } catch (CapabilitiesParseException) {
+                    // a purity type, possibly through type aliases: resolved by the scanner
+                    $info->capabilities_expressions[] = trim($capabilities_line);
                 }
             }
         }

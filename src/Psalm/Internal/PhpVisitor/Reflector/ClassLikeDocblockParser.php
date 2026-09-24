@@ -71,18 +71,19 @@ final class ClassLikeDocblockParser
         if (isset($parsed_docblock->tags['psalm-purity-template'])) {
             // a purity template is a covariant template whose values are capability sets
             foreach ($parsed_docblock->tags['psalm-purity-template'] as $offset => $purity_template_line) {
-                foreach (preg_split('/[\s,]+/', trim($purity_template_line)) ?: [] as $template_name) {
-                    if ($template_name === '') {
-                        continue;
-                    }
-
-                    $templates[$template_name]['psalm'] = [
-                        $template_name,
+                foreach (PurityTemplateParser::parse($purity_template_line) as $purity_template) {
+                    $templates[$purity_template['name']]['psalm'] = [
+                        $purity_template['name'],
                         'of',
-                        'impure',
+                        $purity_template['bound'],
                         true,
                         $offset - $comment->getStartFilePos(),
                     ];
+                    $info->purity_templates[] = $purity_template['name'];
+
+                    if ($purity_template['default'] !== null) {
+                        $info->purity_template_defaults[$purity_template['name']] = $purity_template['default'];
+                    }
                 }
             }
         }
@@ -307,8 +308,9 @@ final class ClassLikeDocblockParser
             foreach ($parsed_docblock->tags['psalm-capabilities'] as $capabilities_line) {
                 try {
                     $info->capabilities |= Capabilities::fromList($capabilities_line);
-                } catch (CapabilitiesParseException $e) {
-                    throw new IncorrectDocblockException('Invalid @psalm-capabilities tag: ' . $e->getMessage());
+                } catch (CapabilitiesParseException) {
+                    // a purity type, possibly through type aliases: resolved by the scanner
+                    $info->capabilities_expressions[] = trim($capabilities_line);
                 }
             }
         }

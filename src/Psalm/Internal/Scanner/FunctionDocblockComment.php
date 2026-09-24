@@ -172,6 +172,22 @@ final class FunctionDocblockComment
      */
     public array $purity_from_templates = [];
 
+    /**
+     * The names of the templates declared with `@psalm-purity-template`, whose values are
+     * capability sets.
+     *
+     * @var list<string>
+     */
+    public array $purity_templates = [];
+
+    /**
+     * The values of `@psalm-capabilities` tags that are not plain capability lists: purity
+     * types, resolved once the type aliases in scope are known.
+     *
+     * @var list<string>
+     */
+    public array $capabilities_expressions = [];
+
     public bool $no_named_args = false;
 
     public bool $stub_override = false;

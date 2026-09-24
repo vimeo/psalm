@@ -14,6 +14,7 @@ use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
@@ -733,6 +734,27 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                         $statements_analyzer,
                     );
 
+                    // a closure created in this scope: what it does to the variables it captured
+                    // by reference, and through its by-reference parameters, stays in this scope
+                    if ($statements_analyzer->node_data->isPureCompatible($function_name)) {
+                        $closure_capabilities &= ~Capabilities::RECEIVER_LOCAL;
+                    }
+
+                    if (!$stmt->isFirstClassCallable()) {
+                        if (($closure_capabilities & Capabilities::READ_GLOBALS) !== 0) {
+                            $stmt->setAttribute(GlobalStateAnalyzer::ATTRIBUTE, true);
+                        }
+
+                        GlobalStateAnalyzer::checkArguments(
+                            $statements_analyzer,
+                            $context,
+                            $stmt->getArgs(),
+                            $closure_capabilities,
+                            ImpureFunctionCall::class,
+                            'the closure',
+                        );
+                    }
+
                     if ($function_name instanceof PhpParser\Node\Expr\Variable
                         && is_string($function_name->name)
                         && $source instanceof ClosureAnalyzer
@@ -1193,6 +1215,21 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     false,
                     $function_call_info->function_storage,
                 );
+
+                if (!$stmt->isFirstClassCallable()) {
+                    if (($mutations & Capabilities::READ_GLOBALS) !== 0) {
+                        $stmt->setAttribute(GlobalStateAnalyzer::ATTRIBUTE, true);
+                    }
+
+                    GlobalStateAnalyzer::checkArguments(
+                        $statements_analyzer,
+                        $context,
+                        $stmt->getArgs(),
+                        $mutations,
+                        ImpureFunctionCall::class,
+                        'function ' . ($function_call_info->function_id ?? 'unknown function'),
+                    );
+                }
                 if (($mutations & (Capabilities::WRITE_PROPS | Capabilities::WRITE_THIS_PROPS)) !== 0
                     && !$config->remember_property_assignments_after_call
                 ) {

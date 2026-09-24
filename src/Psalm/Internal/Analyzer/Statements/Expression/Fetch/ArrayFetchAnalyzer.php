@@ -1889,6 +1889,13 @@ final class ArrayFetchAnalyzer
                 $statements_analyzer->addSuppressedIssues(['MixedMethodCall']);
             }
 
+            if (!in_array('PossiblyNullReference', $suppressed_issues, true)
+                && ($context->inside_isset || $context->inside_unset)
+            ) {
+                // a null receiver is what isset() and unset() are for
+                $statements_analyzer->addSuppressedIssues(['PossiblyNullReference']);
+            }
+
             if ($in_assignment) {
                 $old_node_data = $statements_analyzer->node_data;
 
@@ -1926,33 +1933,89 @@ final class ArrayFetchAnalyzer
             if ($stmt->dim) {
                 $old_node_data = $statements_analyzer->node_data;
 
-                $statements_analyzer->node_data = clone $statements_analyzer->node_data;
+                // `unset($a[$k])` calls offsetUnset, `isset($a[$k])` and `$a[$k] ?? ...` call
+                // offsetExists (the latter then offsetGet), everything else calls offsetGet
+                if ($context->inside_unset) {
+                    $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 
-                $fake_get_method_call = new VirtualMethodCall(
-                    $stmt->var,
-                    new VirtualIdentifier('offsetGet', $stmt->var->getAttributes()),
-                    [
-                        new VirtualArg(
-                            $stmt->dim,
-                        ),
-                    ],
-                );
+                    $fake_unset_method_call = new VirtualMethodCall(
+                        $stmt->var,
+                        new VirtualIdentifier('offsetUnset', $stmt->var->getAttributes()),
+                        [
+                            new VirtualArg(
+                                $stmt->dim,
+                            ),
+                        ],
+                    );
 
-                MethodCallAnalyzer::analyze(
-                    $statements_analyzer,
-                    $fake_get_method_call,
-                    $context,
-                );
+                    MethodCallAnalyzer::analyze(
+                        $statements_analyzer,
+                        $fake_unset_method_call,
+                        $context,
+                    );
 
-                $call_array_access_type =
-                    $statements_analyzer->node_data->getType($fake_get_method_call) ?? Type::getMixed();
+                    $statements_analyzer->node_data = $old_node_data;
+                }
 
-                $statements_analyzer->node_data = $old_node_data;
+                if ($context->inside_isset) {
+                    $statements_analyzer->node_data = clone $statements_analyzer->node_data;
+
+                    $fake_exists_method_call = new VirtualMethodCall(
+                        $stmt->var,
+                        new VirtualIdentifier('offsetExists', $stmt->var->getAttributes()),
+                        [
+                            new VirtualArg(
+                                $stmt->dim,
+                            ),
+                        ],
+                    );
+
+                    MethodCallAnalyzer::analyze(
+                        $statements_analyzer,
+                        $fake_exists_method_call,
+                        $context,
+                    );
+
+                    $statements_analyzer->node_data = $old_node_data;
+                }
+
+                if ($context->inside_unset) {
+                    $call_array_access_type = Type::getVoid();
+                } else {
+                    $statements_analyzer->node_data = clone $statements_analyzer->node_data;
+
+                    $fake_get_method_call = new VirtualMethodCall(
+                        $stmt->var,
+                        new VirtualIdentifier('offsetGet', $stmt->var->getAttributes()),
+                        [
+                            new VirtualArg(
+                                $stmt->dim,
+                            ),
+                        ],
+                    );
+
+                    MethodCallAnalyzer::analyze(
+                        $statements_analyzer,
+                        $fake_get_method_call,
+                        $context,
+                    );
+
+                    $call_array_access_type =
+                        $statements_analyzer->node_data->getType($fake_get_method_call) ?? Type::getMixed();
+
+                    $statements_analyzer->node_data = $old_node_data;
+                }
             } else {
                 $call_array_access_type = Type::getVoid();
             }
 
             $has_array_access = true;
+
+            if (!in_array('PossiblyNullReference', $suppressed_issues, true)
+                && ($context->inside_isset || $context->inside_unset)
+            ) {
+                $statements_analyzer->removeSuppressedIssues(['PossiblyNullReference']);
+            }
 
             if (!in_array('PossiblyInvalidMethodCall', $suppressed_issues, true)) {
                 $statements_analyzer->removeSuppressedIssues(['PossiblyInvalidMethodCall']);

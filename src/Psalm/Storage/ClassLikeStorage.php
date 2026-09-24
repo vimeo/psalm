@@ -167,6 +167,12 @@ final class ClassLikeStorage implements HasAttributesInterface
 
     public int $capabilities = Capabilities::ALL;
 
+    /**
+     * A `@psalm-capabilities` value that names imported type aliases, resolved into
+     * {@see self::$capabilities} by the populator once every class is scanned.
+     */
+    public ?Union $capabilities_type = null;
+
     public bool $has_mutations_annotation = false;
 
     public bool $specialize_instance = false;
@@ -286,6 +292,14 @@ final class ClassLikeStorage implements HasAttributesInterface
      * @var array<int, bool>|null
      */
     public ?array $template_covariants = null;
+
+    /**
+     * The default value of each purity template that has one (`@psalm-purity-template C of io = pure`):
+     * what a subclass that does not bind the template gets.
+     *
+     * @var array<string, Union>
+     */
+    public array $template_defaults = [];
 
     /**
      * A map of which generic classlikes are extended or implemented by this class or interface.

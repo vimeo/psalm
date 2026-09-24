@@ -37,6 +37,7 @@ use UnexpectedValueException;
 
 use function array_keys;
 use function array_pop;
+use function array_reverse;
 use function array_search;
 use function count;
 use function explode;
@@ -696,7 +697,18 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             ? 0
             : count($parent_storage->template_types);
 
-        if ($expected_param_count > $given_param_count) {
+        // trailing purity templates with a default need not be given
+        $required_param_count = $expected_param_count;
+
+        foreach (array_reverse(array_keys($parent_storage->template_types ?? [])) as $template_name) {
+            if (!isset($parent_storage->template_defaults[$template_name])) {
+                break;
+            }
+
+            $required_param_count--;
+        }
+
+        if ($required_param_count > $given_param_count) {
             IssueBuffer::maybeAdd(
                 new MissingTemplateParam(
                     $storage->name . ' has missing template params when extending ' . $parent_storage->name

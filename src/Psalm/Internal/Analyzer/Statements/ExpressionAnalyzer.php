@@ -31,6 +31,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\InstancePropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\StaticPropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\IncDecExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\IncludeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\InstanceofAnalyzer;
@@ -101,6 +102,8 @@ final class ExpressionAnalyzer
         ) === false) {
             return false;
         }
+
+        GlobalStateAnalyzer::propagate($statements_analyzer, $stmt, $context);
 
         if (!$context->inside_conditional
             && ($stmt instanceof PhpParser\Node\Expr\BinaryOp

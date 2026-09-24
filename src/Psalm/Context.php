@@ -87,6 +87,16 @@ final class Context
     public array $referenced_globals = [];
 
     /**
+     * The variables the closure being analysed captured by reference (`use (&$x)`): state it
+     * shares with the enclosing scope, read like a property of its own and written like one.
+     * The value is what the enclosing scope itself needs to write the variable (nothing for a
+     * local of its own, write-refs for a by-reference parameter, ...), which the closure needs too.
+     *
+     * @var array<string, int>
+     */
+    public array $captured_by_ref = [];
+
+    /**
      * A set of references that might still be in scope from a scope likely to cause confusion. This applies
      * to references set inside a loop or if statement, since it's easy to forget about PHP's weird scope
      * rules, and assigning to a reference will change the referenced variable rather than shadowing it.

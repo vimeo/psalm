@@ -420,6 +420,10 @@ final class InstancePropertyAssignmentAnalyzer
             }
         }
         
+        // writing the property of an object reached from global state writes global state
+        $var_type = $statements_analyzer->node_data->getType($stmt->var);
+        $on_global_state = $var_type !== null && $var_type->from_global_state;
+
         if ($lhs_var_id !== null
             && isset($context->vars_in_scope[$lhs_var_id])
         ) {
@@ -431,10 +435,17 @@ final class InstancePropertyAssignmentAnalyzer
                     ? Capabilities::NONE
                     : Capabilities::READ_PROPS
                 ) : $real;
+
+            if ($on_global_state) {
+                $real |= Capabilities::WRITE_GLOBALS;
+                $mut |= Capabilities::WRITE_GLOBALS;
+            }
+
             $statements_analyzer->signalMutation(
                 $mut,
                 $context,
-                'property assignment to ' . $property_id,
+                'property assignment to ' . $property_id
+                    . ($on_global_state ? ' on an object reached from global state' : ''),
                 ImpurePropertyAssignment::class,
                 $stmt,
                 // We must not emit errors if the property is readonly
@@ -448,6 +459,16 @@ final class InstancePropertyAssignmentAnalyzer
                 $mut,
             );
         } else {
+            if ($on_global_state) {
+                $statements_analyzer->signalMutation(
+                    Capabilities::NAMES['write-props'] | Capabilities::WRITE_GLOBALS,
+                    $context,
+                    'property assignment to ' . $property_id . ' on an object reached from global state',
+                    ImpurePropertyAssignment::class,
+                    $stmt,
+                );
+            }
+
             // e.g. the property of an array element: the class is still being mutated from outside
             $codebase->analyzer->addMutableClass(
                 $declaring_class_storage->name,

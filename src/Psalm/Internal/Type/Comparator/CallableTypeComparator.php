@@ -366,10 +366,22 @@ final class CallableTypeComparator
                     $params = $function_storage->params;
                 }
 
+                // builtin functions are pure unless listed as impure, whatever their reflected or
+                // stubbed storage says: the same rule direct calls follow
+                $purity = InternalCallMapHandler::inCallMap($input_type_part->value)
+                    ? $codebase->functions->getCallMapFunctionCapabilities(
+                        $statements_analyzer,
+                        $context,
+                        $codebase,
+                        $input_type_part->value,
+                        null,
+                    )
+                    : $function_storage->capabilities;
+
                 return new TCallable(
                     $params,
                     $return_type,
-                    $function_storage->capabilities,
+                    $purity,
                 );
             } catch (UnexpectedValueException) {
                 if (InternalCallMapHandler::inCallMap($input_type_part->value)) {

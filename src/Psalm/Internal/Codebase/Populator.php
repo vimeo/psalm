@@ -11,6 +11,7 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
+use Psalm\Internal\Type\TypeAlias\ClassTypeAlias;
 use Psalm\Issue\CircularReference;
 use Psalm\Issue\UndefinedTrait;
 use Psalm\IssueBuffer;
@@ -19,11 +20,14 @@ use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassConstantStorage;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
+use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\PropertyStorage;
+use Psalm\Type\Atomic\TCapabilities;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Union;
 use UnitEnum;
 
@@ -98,6 +102,55 @@ final class Populator
 
         ClassLikeStorageProvider::populated();
         FileStorageProvider::populated();
+    }
+
+    /**
+     * Applies a `@psalm-capabilities` value naming imported type aliases, which the scanner
+     * could not resolve because the declaring class may not have been scanned yet.
+     */
+    private function resolveDeferredCapabilities(ClassLikeStorage|FunctionLikeStorage $storage): void
+    {
+        if ($storage->capabilities_type === null) {
+            return;
+        }
+
+        $storage->capabilities = $this->resolveCapabilitiesType($storage->capabilities_type) & $storage->capabilities;
+        $storage->capabilities_type = null;
+    }
+
+    private function resolveCapabilitiesType(Union $type, int $depth = 0): int
+    {
+        $capabilities = Capabilities::NONE;
+
+        foreach ($type->getAtomicTypes() as $atomic) {
+            if ($atomic instanceof TCapabilities) {
+                $capabilities |= $atomic->capabilities;
+            } elseif ($atomic instanceof TTemplateParam) {
+                $capabilities |= $this->resolveCapabilitiesType($atomic->as, $depth);
+            } elseif ($atomic instanceof TTypeAlias && $depth < 10) {
+                try {
+                    $alias_storage = $this->classlike_storage_provider->get($atomic->declaring_fq_classlike_name);
+                } catch (InvalidArgumentException) {
+                    return Capabilities::ALL;
+                }
+
+                $alias = $alias_storage->type_aliases[$atomic->alias_name] ?? null;
+
+                if (!$alias instanceof ClassTypeAlias) {
+                    return Capabilities::ALL;
+                }
+
+                $capabilities |= $this->resolveCapabilitiesType(
+                    new Union($alias->replacement_atomic_types),
+                    $depth + 1,
+                );
+            } else {
+                // not a set of capabilities: the most conservative reading
+                return Capabilities::ALL;
+            }
+        }
+
+        return $capabilities;
     }
 
     private function populateClassLikeStorage(ClassLikeStorage $storage, array $dependent_classlikes = []): void
@@ -186,6 +239,12 @@ final class Populator
             foreach ($storage->used_traits as $used_trait_lc => $_) {
                 $this->file_reference_provider->addFileInheritanceToClass($file_path, $used_trait_lc);
             }
+        }
+
+        $this->resolveDeferredCapabilities($storage);
+
+        foreach ($storage->methods as $method) {
+            $this->resolveDeferredCapabilities($method);
         }
 
         if ($storage->capabilities !== Capabilities::ALL) {
@@ -646,7 +705,9 @@ final class Populator
             } else {
                 foreach ($parent_storage->template_types as $template_name => $template_type_map) {
                     foreach ($template_type_map as $template_type) {
-                        $default_param = $template_type->setProperties(['from_docblock' => false]);
+                        // a purity template with a default is bound to it, others to their bound
+                        $default_param = ($parent_storage->template_defaults[$template_name] ?? $template_type)
+                            ->setProperties(['from_docblock' => false]);
                         $storage->template_extended_params[$parent_storage->name][$template_name] = $default_param;
                     }
                 }
@@ -751,6 +812,10 @@ final class Populator
     {
         if ($storage->populated) {
             return;
+        }
+
+        foreach ($storage->functions as $function_storage) {
+            $this->resolveDeferredCapabilities($function_storage);
         }
 
         $file_path_lc = strtolower($storage->file_path);

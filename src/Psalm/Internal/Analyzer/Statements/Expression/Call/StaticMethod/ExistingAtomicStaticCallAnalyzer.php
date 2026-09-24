@@ -17,6 +17,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallProhibit
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NoDiscardAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\AssertionsFromInheritanceResolver;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
@@ -32,6 +33,7 @@ use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\UnusedMethodCall;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AfterMethodCallAnalysisEvent;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\Possibilities;
 use Psalm\Type;
@@ -289,15 +291,17 @@ final class ExistingAtomicStaticCallAnalyzer
                 );
             }
 
+            $call_capabilities = CallPurityResolver::getCallCapabilities(
+                $statements_analyzer,
+                $codebase,
+                $method_storage,
+                $method_storage->capabilities,
+                $template_result,
+                $found_generic_params ?? [],
+            );
+
             $statements_analyzer->signalMutation(
-                CallPurityResolver::getCallCapabilities(
-                    $statements_analyzer,
-                    $codebase,
-                    $method_storage,
-                    $method_storage->capabilities,
-                    $template_result,
-                    $found_generic_params ?? [],
-                ),
+                $call_capabilities,
                 $context,
                 'method ' . $cased_method_id,
                 ImpureMethodCall::class,
@@ -305,6 +309,19 @@ final class ExistingAtomicStaticCallAnalyzer
                 $method_storage->capabilities,
                 false,
                 $method_storage,
+            );
+
+            if (($method_storage->capabilities & Capabilities::READ_GLOBALS) !== 0) {
+                $stmt->setAttribute(GlobalStateAnalyzer::ATTRIBUTE, true);
+            }
+
+            GlobalStateAnalyzer::checkArguments(
+                $statements_analyzer,
+                $context,
+                $stmt->getArgs(),
+                $call_capabilities,
+                ImpureMethodCall::class,
+                'method ' . $cased_method_id,
             );
 
             if (NoDiscardAnalyzer::isDiscardReported(

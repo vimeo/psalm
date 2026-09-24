@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodVisibilityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -459,21 +460,14 @@ final class NewAnalyzer extends CallAnalyzer
                     );
                 }
 
-                // the constructor only mutates the new object: what it does to it is fine.
-                // Throwing an exception whose constructor is unannotated is not an effect: the
-                // purity of such constructors is only inferred, and virtually every exception
-                // constructor just formats a message
-                $constructor_capabilities = $context->inside_throw
-                    && !$method_storage->has_mutations_annotation
-                    && !$method_storage->mutation_free_assumed
-                    ? Capabilities::NONE
-                    : CallPurityResolver::getCallCapabilities(
-                        $statements_analyzer,
-                        $codebase,
-                        $method_storage,
-                        $method_storage->capabilities & ~Capabilities::RECEIVER_LOCAL,
-                        $template_result,
-                    );
+                // the constructor only mutates the new object: what it does to it is fine
+                $constructor_capabilities = CallPurityResolver::getCallCapabilities(
+                    $statements_analyzer,
+                    $codebase,
+                    $method_storage,
+                    $method_storage->capabilities & ~Capabilities::RECEIVER_LOCAL,
+                    $template_result,
+                );
 
                 $statements_analyzer->signalMutation(
                     $constructor_capabilities,
@@ -485,6 +479,20 @@ final class NewAnalyzer extends CallAnalyzer
                     false,
                     $method_storage,
                     true,
+                );
+
+                if (($constructor_capabilities & Capabilities::READ_GLOBALS) !== 0) {
+                    // the constructor may have stored global state in the new object
+                    $stmt->setAttribute(GlobalStateAnalyzer::ATTRIBUTE, true);
+                }
+
+                GlobalStateAnalyzer::checkArguments(
+                    $statements_analyzer,
+                    $context,
+                    $stmt->getArgs(),
+                    $constructor_capabilities,
+                    ImpureMethodCall::class,
+                    'constructor ' . $codebase->methods->getCasedMethodId($declaring_method_id),
                 );
 
                 if ($method_storage->assertions && $stmt->class instanceof PhpParser\Node\Name) {
@@ -797,6 +805,60 @@ final class NewAnalyzer extends CallAnalyzer
         }
     }
 
+    /**
+     * `new $class_name()` calls the constructor of the class the class-string stands for, which
+     * may be anything when the class is not known.
+     */
+    private static function checkDynamicConstructorPurity(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        Context $context,
+        PhpParser\Node\Expr\New_ $stmt,
+        ?string $fq_class_name,
+    ): void {
+        if ($fq_class_name !== null
+            && $codebase->classlikes->classOrInterfaceOrEnumExists($fq_class_name)
+        ) {
+            $method_id = new MethodIdentifier($fq_class_name, '__construct');
+            $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+
+            if ($declaring_method_id === null) {
+                // no constructor: nothing is run
+                return;
+            }
+
+            $method_storage = $codebase->methods->getStorage($declaring_method_id);
+
+            $statements_analyzer->signalMutation(
+                CallPurityResolver::getCallCapabilities(
+                    $statements_analyzer,
+                    $codebase,
+                    $method_storage,
+                    $method_storage->capabilities & ~Capabilities::RECEIVER_LOCAL,
+                    null,
+                ),
+                $context,
+                'constructor ' . $codebase->methods->getCasedMethodId($declaring_method_id),
+                ImpureMethodCall::class,
+                $stmt,
+                null,
+                false,
+                $method_storage,
+                true,
+            );
+
+            return;
+        }
+
+        $statements_analyzer->signalMutation(
+            Capabilities::ALL,
+            $context,
+            'the constructor of an unknown class',
+            ImpureMethodCall::class,
+            $stmt,
+        );
+    }
+
     private static function analyzeConstructorExpression(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
@@ -994,6 +1056,14 @@ final class NewAnalyzer extends CallAnalyzer
                     );
                 }
 
+                self::checkDynamicConstructorPurity(
+                    $statements_analyzer,
+                    $codebase,
+                    $context,
+                    $stmt,
+                    $lhs_type_part->as_type?->value,
+                );
+
                 continue;
             }
 
@@ -1049,6 +1119,14 @@ final class NewAnalyzer extends CallAnalyzer
 
                     if ($lhs_type_part instanceof TClassString) {
                         $can_extend = true;
+
+                        self::checkDynamicConstructorPurity(
+                            $statements_analyzer,
+                            $codebase,
+                            $context,
+                            $stmt,
+                            $lhs_type_part->as_type?->value,
+                        );
                     }
 
                     if ($generated_type instanceof TObject) {

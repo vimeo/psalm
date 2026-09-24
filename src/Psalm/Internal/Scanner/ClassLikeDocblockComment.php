@@ -45,6 +45,29 @@ final class ClassLikeDocblockComment
     public array $templates = [];
 
     /**
+     * The names of the templates declared with `@psalm-purity-template`, whose values are
+     * capability sets.
+     *
+     * @var list<string>
+     */
+    public array $purity_templates = [];
+
+    /**
+     * The default of each purity template that has one, for subclasses that do not bind it.
+     *
+     * @var array<string, string>
+     */
+    public array $purity_template_defaults = [];
+
+    /**
+     * The values of `@psalm-capabilities` tags that are not plain capability lists: purity
+     * types, resolved once the type aliases in scope are known.
+     *
+     * @var list<string>
+     */
+    public array $capabilities_expressions = [];
+
+    /**
      * @var array<int, string>
      */
     public array $template_extends = [];

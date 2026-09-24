@@ -8,6 +8,7 @@ use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCapabilities;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Union;
 
 use function array_keys;
@@ -268,6 +269,7 @@ final class Capabilities
                 // a type template bound to a closure type carries the closure's purity
                 $capabilities |= self::fromType($atomic->purity);
             } else {
+                // including a type alias that has not been expanded yet
                 $capabilities |= self::ALL;
             }
         }
@@ -285,6 +287,11 @@ final class Capabilities
     {
         foreach ($type->getAtomicTypes() as $atomic) {
             if ($atomic instanceof TCapabilities) {
+                continue;
+            }
+
+            // an imported type alias (`@psalm-import-type`), resolved when the type is expanded
+            if ($atomic instanceof TTypeAlias) {
                 continue;
             }
 

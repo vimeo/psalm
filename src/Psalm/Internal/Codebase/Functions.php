@@ -30,6 +30,7 @@ use function count;
 use function end;
 use function explode;
 use function implode;
+use function in_array;
 use function is_bool;
 use function max;
 use function rtrim;
@@ -416,8 +417,10 @@ final class Functions
         ?array $args,
         bool &$must_use = true,
     ): int {
-        if (ImpureFunctionsList::isImpure($function_id)) {
-            return Capabilities::IO;
+        $listed_capabilities = ImpureFunctionsList::getCapabilities($function_id);
+
+        if ($listed_capabilities !== Capabilities::NONE) {
+            return $listed_capabilities;
         }
 
         $type_provider = $statements_analyzer?->node_data;
@@ -438,6 +441,17 @@ final class Functions
         }
 
         if (($function_id === 'var_export' || $function_id === 'print_r') && !isset($args[1])) {
+            return Capabilities::IO;
+        }
+
+        // the date functions read the clock when no timestamp is given
+        if (in_array($function_id, ['date', 'gmdate', 'idate', 'strtotime', 'localtime', 'getdate'], true)
+            && !isset($args[1])
+        ) {
+            return Capabilities::IO;
+        }
+
+        if (($function_id === 'mktime' || $function_id === 'gmmktime') && !isset($args[5])) {
             return Capabilities::IO;
         }
 

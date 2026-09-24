@@ -1632,10 +1632,10 @@
   </file>
   <file src="src/Psalm/Internal/Codebase/ImpureFunctionsList.php">
     <ImpureStaticProperty>
-      <code><![CDATA[self::$impure_functions_list]]></code>
-      <code><![CDATA[self::$impure_functions_list]]></code>
-      <code><![CDATA[self::$impure_functions_list]]></code>
-      <code><![CDATA[self::$impure_functions_list]]></code>
+      <code><![CDATA[self::$capabilities]]></code>
+      <code><![CDATA[self::$capabilities]]></code>
+      <code><![CDATA[self::$capabilities]]></code>
+      <code><![CDATA[self::$capabilities]]></code>
     </ImpureStaticProperty>
   </file>
   <file src="src/Psalm/Internal/Codebase/InternalCallMapHandler.php">

@@ -28,6 +28,7 @@ use Psalm\Internal\Type\ParseTree\NullableTree;
 use Psalm\Internal\Type\ParseTree\TemplateAsTree;
 use Psalm\Internal\Type\ParseTree\UnionTree;
 use Psalm\Internal\Type\ParseTree\Value;
+use Psalm\Internal\Type\PurityWildcard;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
@@ -1393,6 +1394,12 @@ final class TypeParser
 
         if ($purity_tree === null) {
             return [$keyword, $purity];
+        }
+
+        // `Closure<_>`: a purity template of the enclosing function-like, bound when the
+        // parameter the closure belongs to is known
+        if ($purity_tree instanceof Value && $purity_tree->value === PurityWildcard::NAME) {
+            return [$keyword, PurityWildcard::placeholder($from_docblock)];
         }
 
         $purity_type = self::getTypeFromTree(

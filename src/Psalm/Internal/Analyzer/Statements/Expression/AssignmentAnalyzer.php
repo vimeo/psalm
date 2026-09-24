@@ -17,6 +17,7 @@ use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\IncorrectDocblockException;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
+use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
@@ -105,6 +106,37 @@ use function strtolower;
  */
 final class AssignmentAnalyzer
 {
+    /**
+     * The capabilities writing a variable needs on top of a local write, for what the variable
+     * may be shared with: a superglobal or a `global` variable, a variable captured by reference
+     * from an enclosing scope, a by-reference parameter, or a reference into another scope.
+     *
+     * @psalm-mutation-free
+     */
+    public static function getExternalWriteCapabilities(Context $context, string $var_id): int
+    {
+        if (VariableFetchAnalyzer::isSuperGlobal($var_id) || isset($context->referenced_globals[$var_id])) {
+            return Capabilities::READ_GLOBALS | Capabilities::WRITE_GLOBALS;
+        }
+
+        if (isset($context->captured_by_ref[$var_id])) {
+            return Capabilities::NAMES['write-this-props'] | $context->captured_by_ref[$var_id];
+        }
+
+        if (isset($context->vars_in_scope[$var_id]) && $context->vars_in_scope[$var_id]->by_ref) {
+            return Capabilities::WRITE_REFS;
+        }
+
+        if (isset($context->references_to_external_scope[$var_id])) {
+            // `global $x`, or a reference into another scope
+            return isset($context->vars_in_scope[$var_id]) && $context->vars_in_scope[$var_id]->from_global_state
+                ? Capabilities::READ_GLOBALS | Capabilities::WRITE_GLOBALS
+                : Capabilities::ALL;
+        }
+
+        return Capabilities::NONE;
+    }
+
     /**
      * @param  PhpParser\Node\Expr|null $assign_value  This has to be null to support list destructuring
      */
@@ -196,11 +228,19 @@ final class AssignmentAnalyzer
                     ImpureGlobalVariable::class,
                     $root_expr,
                 );
-            } elseif (isset($context->references_to_external_scope[$root_var_name])) {
+            } elseif (isset($context->captured_by_ref[$root_var_name])) {
+                // `use (&$x)`: the closure writes state it shares with the enclosing scope, like
+                // a property of its own, plus whatever the enclosing scope needs to write it
+                $closure = $statements_analyzer->getSource();
+
+                if ($closure instanceof ClosureAnalyzer) {
+                    $closure->captured_by_ref_writes[$root_var_name] = true;
+                }
+
                 $statements_analyzer->signalMutation(
-                    Capabilities::ALL,
+                    Capabilities::NAMES['write-this-props'] | $context->captured_by_ref[$root_var_name],
                     $context,
-                    'variable ' . $root_var_name . ' from outer scope',
+                    'variable ' . $root_var_name . ' captured by reference',
                     ImpureByReferenceAssignment::class,
                     $root_expr,
                 );
@@ -212,6 +252,30 @@ final class AssignmentAnalyzer
                     ImpureGlobalVariable::class,
                     $root_expr,
                 );
+            } elseif (isset($context->references_to_external_scope[$root_var_name])
+                && !(isset($context->vars_in_scope[$root_var_name]) && $context->vars_in_scope[$root_var_name]->by_ref)
+            ) {
+                // a reference into another scope: a by-reference parameter is charged below
+                if (isset($context->vars_in_scope[$root_var_name])
+                    && $context->vars_in_scope[$root_var_name]->from_global_state
+                ) {
+                    // `global $x`
+                    $statements_analyzer->signalMutation(
+                        Capabilities::READ_GLOBALS | Capabilities::WRITE_GLOBALS,
+                        $context,
+                        'global variable ' . $root_var_name,
+                        ImpureGlobalVariable::class,
+                        $root_expr,
+                    );
+                } else {
+                    $statements_analyzer->signalMutation(
+                        Capabilities::ALL,
+                        $context,
+                        'variable ' . $root_var_name . ' from outer scope',
+                        ImpureByReferenceAssignment::class,
+                        $root_expr,
+                    );
+                }
             }
         }
 
@@ -322,7 +386,9 @@ final class AssignmentAnalyzer
         }
 
         if ($extended_var_id && isset($context->vars_in_scope[$extended_var_id])) {
-            if ($context->vars_in_scope[$extended_var_id]->by_ref) {
+            if ($context->vars_in_scope[$extended_var_id]->by_ref
+                && !isset($context->captured_by_ref[$extended_var_id])
+            ) {
                 $statements_analyzer->signalMutation(
                     Capabilities::WRITE_REFS,
                     $context,

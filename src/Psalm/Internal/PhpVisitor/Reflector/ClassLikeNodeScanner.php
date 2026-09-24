@@ -471,6 +471,60 @@ final class ClassLikeNodeScanner
                 }
 
                 $this->class_template_types = $storage->template_types;
+
+                foreach ($docblock_info->purity_templates as $purity_template) {
+                    $bound = $storage->template_types[$purity_template][$fq_classlike_name] ?? null;
+
+                    if ($bound !== null && !Capabilities::isPurityType($bound)) {
+                        $storage->docblock_issues[] = new InvalidDocblock(
+                            'The bound of the purity template ' . $purity_template . ' must be a set of'
+                            . ' capabilities (e.g. write-props|io), ' . $bound->getId() . ' given, in docblock for '
+                            . $fq_classlike_name,
+                            $name_location ?? $class_location,
+                        );
+                    }
+
+                    if (!isset($docblock_info->purity_template_defaults[$purity_template])) {
+                        continue;
+                    }
+
+                    try {
+                        $default = TypeParser::parseTokens(
+                            TypeTokenizer::getFullyQualifiedTokens(
+                                $docblock_info->purity_template_defaults[$purity_template],
+                                $this->aliases,
+                                $storage->template_types,
+                                $this->type_aliases,
+                            ),
+                            null,
+                            $storage->template_types,
+                            $this->type_aliases,
+                        );
+                    } catch (TypeParseTreeException $e) {
+                        $storage->docblock_issues[] = new InvalidDocblock(
+                            $e->getMessage() . ' in docblock for ' . $fq_classlike_name,
+                            $name_location ?? $class_location,
+                        );
+
+                        continue;
+                    }
+
+                    if (!Capabilities::isPurityType($default)
+                        || ($bound !== null
+                            && !Capabilities::allows(Capabilities::fromType($bound), Capabilities::fromType($default)))
+                    ) {
+                        $storage->docblock_issues[] = new InvalidDocblock(
+                            'The default of the purity template ' . $purity_template . ' must be a set of'
+                            . ' capabilities within its bound, ' . $default->getId() . ' given, in docblock for '
+                            . $fq_classlike_name,
+                            $name_location ?? $class_location,
+                        );
+
+                        continue;
+                    }
+
+                    $storage->template_defaults[$purity_template] = $default;
+                }
             }
 
             foreach ($docblock_info->template_extends as $extended_class_name) {
@@ -708,7 +762,43 @@ final class ClassLikeNodeScanner
                 }
             }
 
-            $storage->capabilities = $docblock_info->capabilities & $storage->capabilities;
+            $deferred_capabilities = [];
+
+            foreach ($docblock_info->capabilities_expressions as $capabilities_expression) {
+                try {
+                    $resolved = CapabilitiesExpressionResolver::resolve(
+                        $capabilities_expression,
+                        $this->aliases,
+                        $storage->template_types ?? [],
+                        $this->type_aliases,
+                        $fq_classlike_name,
+                    );
+
+                    if ($resolved instanceof Union) {
+                        $deferred_capabilities[] = $resolved;
+                    } else {
+                        $docblock_info->capabilities |= $resolved;
+                    }
+                } catch (TypeParseTreeException $e) {
+                    $storage->docblock_issues[] = new InvalidDocblock(
+                        'Invalid @psalm-capabilities tag: ' . $e->getMessage() . ' in docblock for '
+                        . $fq_classlike_name,
+                        $name_location ?? $class_location,
+                    );
+                }
+            }
+
+            $docblock_info->capabilities_expressions = [];
+
+            if ($deferred_capabilities !== []) {
+                // imported type aliases: the populator applies them to $storage->capabilities
+                $storage->capabilities_type = CapabilitiesExpressionResolver::deferred(
+                    $docblock_info->capabilities,
+                    $deferred_capabilities,
+                );
+            } else {
+                $storage->capabilities = $docblock_info->capabilities & $storage->capabilities;
+            }
             $storage->has_mutations_annotation = $docblock_info->has_mutations_annotation;
             $storage->specialize_instance = $docblock_info->taint_specialize;
 

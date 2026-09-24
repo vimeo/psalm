@@ -46,6 +46,7 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTrue;
+use Psalm\Type\Atomic\TTypeAlias;
 
 use function array_filter;
 use function array_unique;
@@ -486,6 +487,21 @@ trait UnionTrait
     {
         foreach ($this->types as $t) {
             if ($t->hasArrayAccessInterface($codebase)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Whether the union names a type alias that has not been expanded yet.
+     *
+     * @psalm-mutation-free
+     */
+    public function hasTypeAlias(): bool
+    {
+        foreach ($this->types as $t) {
+            if ($t instanceof TTypeAlias) {
                 return true;
             }
         }

@@ -350,10 +350,37 @@ a purity annotation has every capability.
 | `read-props`       | reading instance properties of mutable objects, including `$this` (immutable objects never need it)    |
 | `write-this-props` | writing or unsetting properties of `$this` (implies `read-props`)                                      |
 | `write-props`      | writing or unsetting properties of any object (implies `write-this-props`)                             |
-| `read-globals`     | reading static properties, superglobals and `global` variables                                         |
+| `read-globals`     | reading static properties, superglobals and `global` variables (the values reached this way can only be mutated with `write-globals`) |
 | `write-globals`    | writing them, and using `static` variables (implies `read-globals`)                                    |
 | `write-refs`       | writing through by-reference parameters                                                                |
-| `io`               | `echo`, `print`, `exit` with a message, and the builtin functions with side effects (`mt_rand`, `time`, `file_put_contents`, …) |
+| `io`               | `echo`, `print`, `exit` with a message, and the builtin functions with side effects (`time`, `random_int`, `file_put_contents`, …); the builtins touching process-wide state (`mt_rand`, `ini_set`, `spl_autoload_register`, …) need `write-globals` instead |
+
+Values reached from global state stay bound to it: an object read from a static property, a
+superglobal or a `global` variable, returned by a function that may read globals, or fetched from
+such an object, can only have its properties written, its mutating methods called, or be passed
+to a function that may write properties, by code that has `write-globals`. This is what makes
+`read-globals` a read-only view of global state, like Hack's `readonly` values:
+
+```php
+<?php
+final class Config {
+    public string $env = "prod";
+    public static ?Config $instance = null;
+}
+
+/** @psalm-capabilities read-globals */
+function config(): ?Config {
+    return Config::$instance;
+}
+
+/** @psalm-capabilities read-globals|write-props */
+function tamper(): void {
+    $c = config();
+    if ($c !== null) {
+        $c->env = "dev"; // error: mutating an object reached from global state requires write-globals
+    }
+}
+```
 
 The named purity levels are shorthands for capability sets:
 
@@ -514,8 +541,8 @@ echo Arithmetic::addCumulative(3); // outputs 6
 
 Everything a pure function does is checked, including what happens implicitly: `clone` calls
 `__clone`, string interpolation and casts call `__toString`, `$object()` calls `__invoke`, array
-access on objects calls the `ArrayAccess` methods, `throw new` calls the exception's constructor
-(when that constructor carries a purity annotation), and parameter default values are evaluated
+access on objects calls the `ArrayAccess` methods, `throw new` and `new $className` call the
+constructor (an unknown class may do anything), and parameter default values are evaluated
 with the function's own capabilities. A callable
 string or array whose target is not known may do anything, so a pure function may not call one.
 
@@ -535,6 +562,37 @@ foo(
     /** @param mixed $p */
     fn($p) => random_int(1, 2)
 );
+```
+
+A closure that captures a variable by reference (`use (&$x)`) shares it with the enclosing
+scope: reading it needs `read-props` and writing it `write-this-props`, as if it were a property
+of the closure, so such a closure is not pure. The enclosing scope may still call it freely,
+since the variable is its own, and only needs a capability when the variable is shared further:
+`write-refs` for a by-reference parameter, `write-globals` for a global.
+
+```php
+<?php
+/**
+ * @psalm-pure
+ * @param list<int> $xs
+ */
+function sum(array $xs): int {
+    $total = 0;
+    $add = function (int $v) use (&$total): void { $total += $v; };
+    foreach ($xs as $x) {
+        $add($x); // fine: $total belongs to sum()
+    }
+    return $total;
+}
+
+/** @param Closure<pure>(int): void $f */
+function each(Closure $f): void {}
+
+/** @psalm-pure */
+function leak(): void {
+    $total = 0;
+    each(function (int $v) use (&$total): void { $total += $v; }); // error: the closure is write-this-props
+}
 ```
 
 ### `@psalm-impure`
@@ -579,6 +637,31 @@ function reset(Counter $c): void {
 
 A method may need fewer capabilities than the method it overrides, never more.
 
+A capability set can be named once with a type alias and used in `@psalm-capabilities` and in
+closure types, like Hack's context constants; aliases of other classes are imported with
+`@psalm-import-type`:
+
+```php
+<?php
+/** @psalm-type Storage = write-props|io */
+final class Repo {
+    /** @psalm-capabilities Storage */
+    public function save(): void { echo "saved"; }
+}
+
+/** @psalm-import-type Storage from Repo */
+final class Service {
+    /**
+     * @psalm-capabilities Storage
+     * @param Closure<Storage>(): void $after
+     */
+    public function run(Repo $repo, Closure $after): void {
+        $repo->save();
+        $after();
+    }
+}
+```
+
 ### `@psalm-purity-template`
 
 Declares a **purity template**: a template parameter whose values are capability sets rather
@@ -588,6 +671,41 @@ templates are covariant: a `Doer<pure>` can be used where a `Doer<io>` is expect
 
 Together with `@psalm-purity-from-template`, it makes a function-like's purity depend on the
 closures it is given, like Hack's `[ctx $f]` contexts.
+
+A purity template may have an upper bound, the most a value of it may require (`impure` when
+omitted), and a class purity template a default for the subclasses that do not bind it:
+
+```php
+<?php
+/** @psalm-purity-template C of write-props = pure */
+abstract class Doer {
+    /**
+     * @psalm-mutation-free
+     * @psalm-purity-from-template C
+     */
+    abstract public function run(): int;
+}
+
+/** @extends Doer<write-globals> */
+final class GlobalDoer extends Doer {} // InvalidTemplateParam: beyond the bound
+
+final class PureDoer extends Doer {} // C is pure
+```
+
+The common case, a function whose purity depends on one closure parameter, needs no template
+of its own: `Closure<_>(...)` (or `callable<_>(...)`) in a parameter's type declares one and makes
+the function inherit its purity from that parameter, like Hack's `(function()[_]: T) $f`:
+
+```php
+<?php
+/**
+ * @psalm-pure
+ * @param Closure<_>(int): int $callback
+ */
+function apply(Closure $callback): int {
+    return $callback(1);
+}
+```
 
 ### `@psalm-purity-from-template`
 

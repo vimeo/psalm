@@ -585,16 +585,23 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     || $storage->throws
                 )
             ) {
-                $this->signalMutation(
-                    Capabilities::MUTATION_FREE,
-                    $context,
-                    'pure functions cannot have void return type'
-                    .' (at least one non-empty return statement or @throws annotation is required)',
-                    ImpureFunctionCall::class,
-                    $this->function,
-                    null,
-                    true,
-                );
+                // a function that may neither read state nor have an effect (no write, no
+                // by-reference write, no IO) and returns nothing is useless: not pure by intent
+                $this->signalMutationOnlyInferred(Capabilities::MUTATION_FREE);
+
+                if (Capabilities::allows(Capabilities::READ_GLOBALS, $context->capabilities)
+                    && !$context->collect_mutations
+                    && !$context->collect_initializations
+                ) {
+                    IssueBuffer::maybeAdd(
+                        new ImpureFunctionCall(
+                            'pure functions cannot have void return type'
+                            . ' (at least one non-empty return statement or @throws annotation is required)',
+                            new CodeLocation($this, $this->function),
+                        ),
+                        $this->getSuppressedIssues(),
+                    );
+                }
             }
 
             if ($this->function->stmts === null) {
@@ -751,6 +758,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     ...array_values($this->used_purity_templates),
                 ]);
 
+                // a closure is a fresh object: its enclosing scope may call it freely
                 $statements_analyzer->node_data->setType(
                     $this->function,
                     new Union([
@@ -762,7 +770,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                             $closure_atomic->extra_types,
                             $closure_atomic->from_docblock,
                         ),
-                    ]),
+                    ], ['reference_free' => true]),
                 );
             }
         }
@@ -2243,7 +2251,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $this->function,
                 new Union([
                     $closure_type,
-                ]),
+                ], ['reference_free' => true]),
             );
         } else {
             throw new UnexpectedValueException('Impossible');

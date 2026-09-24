@@ -151,6 +151,12 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
     public bool $has_mutations_annotation = false;
 
     /**
+     * A `@psalm-capabilities` value that names imported type aliases, resolved into
+     * {@see self::$capabilities} by the populator once every class is scanned.
+     */
+    public ?Union $capabilities_type = null;
+
+    /**
      * Names of the templates (function-level or class-level) this function-like inherits
      * its purity from (`@psalm-purity-from-template T`): purity templates declared with
      * `@psalm-purity-template`, or type templates bound to a closure/callable type. The

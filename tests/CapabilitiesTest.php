@@ -45,7 +45,7 @@ final class CapabilitiesTest extends TestCase
                     function io(): int {
                         echo "x";
                         print "y";
-                        return mt_rand();
+                        return time();
                     }',
             ],
             'writePropsOnAnyObject' => [
@@ -240,6 +240,224 @@ final class CapabilitiesTest extends TestCase
                         return $o->n;
                     }',
             ],
+            'globalStateMayBeReadAndFreshObjectsMutated' => [
+                'code' => '<?php
+                    final class Box {
+                        public int $x = 0;
+                        public static ?Box $g = null;
+                    }
+
+                    /** @psalm-capabilities read-globals|write-props */
+                    function f(): int {
+                        $b = Box::$g;
+                        $fresh = new Box();
+                        $fresh->x = 1;
+                        return $b !== null ? $b->x + $fresh->x : 0;
+                    }
+
+                    /** @psalm-capabilities write-globals|write-props */
+                    function g(): void {
+                        $b = Box::$g;
+                        if ($b !== null) {
+                            $b->x = 1;
+                        }
+                    }',
+            ],
+            'builtinFirstClassCallableCarriesItsCapabilities' => [
+                'code' => '<?php
+                    /** @psalm-capabilities write-globals */
+                    function roll(): int {
+                        $r = mt_rand(...);
+                        return $r();
+                    }
+
+                    /** @psalm-pure */
+                    function len(string $s): int {
+                        $f = strlen(...);
+                        return $f($s);
+                    }',
+            ],
+            'dynamicNewOfPureConstructor' => [
+                'code' => '<?php
+                    final class Pure {
+                        /** @psalm-pure */
+                        public function __construct() {}
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param class-string<Pure> $c
+                     */
+                    function make(string $c): Pure {
+                        return new $c();
+                    }',
+            ],
+            'throwingExceptionWithPureConstructor' => [
+                'code' => '<?php
+                    final class MyException extends Exception {
+                        /** @psalm-external-mutation-free */
+                        public function __construct(int $code) {
+                            parent::__construct("failed", $code);
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function fail(int $i): int {
+                        if ($i > 9000) {
+                            throw new MyException($i);
+                        }
+                        return $i;
+                    }',
+            ],
+            'capabilitiesAlias' => [
+                'code' => '<?php
+                    /** @psalm-type Storage = write-props|io */
+                    final class Repo {
+                        /** @psalm-capabilities Storage */
+                        public function save(): void {
+                            echo "saved";
+                        }
+                    }
+
+                    /** @psalm-import-type Storage from Repo */
+                    final class Service {
+                        /** @psalm-capabilities Storage */
+                        public function run(Repo $r): void {
+                            $r->save();
+                        }
+
+                        /** @psalm-capabilities Storage, read-globals */
+                        public function runAndRead(Repo $r): int {
+                            $r->save();
+                            return Counter::$n;
+                        }
+
+                        /**
+                         * @psalm-capabilities Storage
+                         * @param Closure<Storage>(): void $f
+                         */
+                        public function call(Closure $f): void {
+                            $f();
+                        }
+                    }
+
+                    final class Counter {
+                        public static int $n = 0;
+                    }',
+            ],
+            'issetAndUnsetOnArrayAccessCallTheirOwnMethods' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<int, int> */
+                    final class Vec implements ArrayAccess {
+                        /** @var array<int, int> */
+                        private array $a = [];
+                        /** @psalm-mutation-free */
+                        public function offsetExists($o): bool { return isset($this->a[$o]); }
+                        /** @psalm-mutation-free */
+                        public function offsetGet($o): int { return $this->a[$o]; }
+                        public function offsetSet($o, $v): void { echo "set"; }
+                        /** @psalm-external-mutation-free */
+                        public function offsetUnset($o): void { unset($this->a[$o]); }
+                    }
+
+                    /** @psalm-mutation-free */
+                    function has(Vec $v): bool {
+                        return isset($v[0]);
+                    }
+
+                    /** @psalm-external-mutation-free */
+                    function drop(): Vec {
+                        $v = new Vec();
+                        unset($v[0]);
+                        return $v;
+                    }',
+            ],
+            'closureCapturingByReferenceStaysLocalToItsScope' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @param list<int> $xs
+                     */
+                    function sum(array $xs): int {
+                        $total = 0;
+                        $add = function (int $v) use (&$total): void {
+                            $total += $v;
+                        };
+                        foreach ($xs as $x) {
+                            $add($x);
+                        }
+                        return $total;
+                    }
+
+                    /** @psalm-pure */
+                    function readLater(): int {
+                        $x = 1;
+                        $get = function () use (&$x): int {
+                            return $x;
+                        };
+                        $x = 2;
+                        return $get();
+                    }
+
+                    /** @psalm-pure */
+                    function nested(): int {
+                        $x = 1;
+                        $outer = function () use (&$x): int {
+                            $inner = function () use (&$x): void {
+                                $x = 3;
+                            };
+                            $inner();
+                            return $x;
+                        };
+                        return $outer();
+                    }
+
+                    /** @psalm-pure */
+                    function factorial(int $n): int {
+                        $fact = function (int $n) use (&$fact): int {
+                            /** @var Closure(int): int $fact */
+                            return $n <= 1 ? 1 : $n * $fact($n - 1);
+                        };
+                        return $fact($n);
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param Closure<pure>(): int $f
+                     */
+                    function takesPure(Closure $f): int {
+                        return $f();
+                    }
+
+                    /** @psalm-pure */
+                    function byValue(): int {
+                        $x = 1;
+                        return takesPure(function () use ($x): int {
+                            return $x;
+                        });
+                    }',
+            ],
+            'closureWritingByRefParamNeedsWriteRefsFromTheEnclosingScope' => [
+                'code' => '<?php
+                    /** @psalm-capabilities write-refs */
+                    function set(int &$x): void {
+                        $write = function () use (&$x): void {
+                            $x = 1;
+                        };
+                        $write();
+                    }
+
+                    /** @psalm-capabilities write-refs */
+                    function setDirectly(int &$x): void {
+                        $x = 1;
+                    }
+
+                    /** @psalm-capabilities write-globals */
+                    function setGlobal(): void {
+                        global $g;
+                        $g = 1;
+                    }',
+            ],
         ];
     }
 
@@ -338,7 +556,7 @@ final class CapabilitiesTest extends TestCase
                     function f(): int {
                         return 1;
                     }',
-                'error_message' => 'MissingDocblockType',
+                'error_message' => 'InvalidDocblock',
             ],
             'closureWithCapabilitiesPassedWhereFewerExpected' => [
                 'code' => '<?php
@@ -596,6 +814,304 @@ final class CapabilitiesTest extends TestCase
                         return 1;
                     }',
                 'error_message' => 'ImpureMethodCall',
+            ],
+            'readGlobalsCannotMutateGlobalObject' => [
+                'code' => '<?php
+                    final class Box {
+                        public int $x = 0;
+                        public static ?Box $g = null;
+                    }
+
+                    /** @psalm-capabilities read-globals|write-props */
+                    function leak(): void {
+                        $b = Box::$g;
+                        if ($b !== null) {
+                            $b->x = 1;
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyAssignment',
+            ],
+            'readGlobalsGetterResultCannotBeMutated' => [
+                'code' => '<?php
+                    final class Box {
+                        public int $x = 0;
+                        public static ?Box $g = null;
+                    }
+
+                    /** @psalm-capabilities read-globals */
+                    function get(): ?Box {
+                        return Box::$g;
+                    }
+
+                    /** @psalm-capabilities read-globals|write-props */
+                    function leak(): void {
+                        $b = get();
+                        if ($b !== null) {
+                            $b->x = 1;
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyAssignment',
+            ],
+            'mutatingMethodOnGlobalObjectNeedsWriteGlobals' => [
+                'code' => '<?php
+                    final class Box {
+                        public int $x = 0;
+                        public static ?Box $g = null;
+
+                        /** @psalm-external-mutation-free */
+                        public function bump(): void {
+                            $this->x++;
+                        }
+                    }
+
+                    /** @psalm-capabilities read-globals|external-mutation-free|write-props */
+                    function leak(): void {
+                        $b = Box::$g;
+                        if ($b !== null) {
+                            $b->bump();
+                        }
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'globalObjectReachedThroughPropertyCannotBeMutated' => [
+                'code' => '<?php
+                    final class Box {
+                        public int $x = 0;
+                        public ?Box $child = null;
+                        public static ?Box $g = null;
+                    }
+
+                    /** @psalm-capabilities read-globals|write-props */
+                    function leak(): void {
+                        $b = Box::$g;
+                        if ($b !== null && $b->child !== null) {
+                            $b->child->x = 1;
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyAssignment',
+            ],
+            'passingGlobalObjectToMutatorNeedsWriteGlobals' => [
+                'code' => '<?php
+                    final class Box {
+                        public int $x = 0;
+                        public static ?Box $g = null;
+                    }
+
+                    /** @psalm-capabilities write-props */
+                    function mutate(Box $b): void {
+                        $b->x = 1;
+                    }
+
+                    /** @psalm-capabilities read-globals|write-props */
+                    function leak(): void {
+                        $b = Box::$g;
+                        if ($b !== null) {
+                            mutate($b);
+                        }
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+            ],
+            'superglobalObjectCannotBeMutated' => [
+                'code' => '<?php
+                    final class Box {
+                        public int $x = 0;
+                    }
+
+                    /**
+                     * @psalm-capabilities read-globals|write-props
+                     * @psalm-suppress MixedAssignment
+                     */
+                    function leak(): void {
+                        $b = $GLOBALS["box"];
+                        if ($b instanceof Box) {
+                            $b->x = 1;
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyAssignment',
+            ],
+            'builtinFirstClassCallableIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function roll(): int {
+                        $r = mt_rand(...);
+                        return $r();
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+            ],
+            'dynamicNewChecksConstructor' => [
+                'code' => '<?php
+                    final class Noisy {
+                        public function __construct() {
+                            echo "created";
+                        }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param class-string<Noisy> $c
+                     */
+                    function make(string $c): Noisy {
+                        return new $c();
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'dynamicNewOfUnknownClassIsImpure' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @param class-string $c
+                     */
+                    function make(string $c): object {
+                        return new $c();
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'throwingExceptionWithUnannotatedImpureConstructor' => [
+                'code' => '<?php
+                    final class MyException extends Exception {
+                        public function __construct() {
+                            echo "created";
+                            parent::__construct("x");
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function fail(): int {
+                        throw new MyException();
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'capabilitiesAliasMustDenoteCapabilities' => [
+                'code' => '<?php
+                    /** @psalm-type Count = int */
+                    final class Repo {
+                        /** @psalm-capabilities Count */
+                        public function save(): void {}
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'capabilitiesAliasIsEnforced' => [
+                'code' => '<?php
+                    /** @psalm-type Storage = write-props|io */
+                    final class Repo {
+                        public static int $n = 0;
+
+                        /** @psalm-capabilities Storage */
+                        public function save(): void {
+                            self::$n++;
+                        }
+                    }',
+                'error_message' => 'ImpureStaticProperty',
+            ],
+            'importedCapabilitiesAliasIsEnforced' => [
+                'code' => '<?php
+                    /** @psalm-type Storage = write-props|io */
+                    final class Repo {
+                        public static int $n = 0;
+                    }
+
+                    /** @psalm-import-type Storage from Repo */
+                    final class Service {
+                        /** @psalm-capabilities Storage */
+                        public function run(): void {
+                            Repo::$n++;
+                        }
+                    }',
+                'error_message' => 'ImpureStaticProperty',
+            ],
+            'unsetOnArrayAccessCallsOffsetUnset' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<int, int> */
+                    final class Vec implements ArrayAccess {
+                        /** @psalm-mutation-free */
+                        public function offsetExists($o): bool { return true; }
+                        /** @psalm-mutation-free */
+                        public function offsetGet($o): int { return 1; }
+                        /** @psalm-external-mutation-free */
+                        public function offsetSet($o, $v): void {}
+                        public function offsetUnset($o): void { echo "unset"; }
+                    }
+
+                    /** @psalm-external-mutation-free */
+                    function drop(Vec $v): void {
+                        unset($v[0]);
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'issetOnArrayAccessCallsOffsetExists' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<int, int> */
+                    final class Vec implements ArrayAccess {
+                        public function offsetExists($o): bool { echo "exists"; return true; }
+                        /** @psalm-mutation-free */
+                        public function offsetGet($o): int { return 1; }
+                        /** @psalm-external-mutation-free */
+                        public function offsetSet($o, $v): void {}
+                        /** @psalm-external-mutation-free */
+                        public function offsetUnset($o): void {}
+                    }
+
+                    /** @psalm-mutation-free */
+                    function has(Vec $v): bool {
+                        return isset($v[0]);
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'closureWritingCapturedVariableIsNotPure' => [
+                'code' => '<?php
+                    /** @param Closure<pure>(int): void $f */
+                    function takesPure(Closure $f): void {}
+
+                    /** @psalm-pure */
+                    function escape(): void {
+                        $total = 0;
+                        $add = function (int $v) use (&$total): void {
+                            $total += $v;
+                        };
+                        takesPure($add);
+                    }',
+                'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'closureReadingCapturedVariableIsNotPure' => [
+                'code' => '<?php
+                    /** @param Closure<pure>(): int $f */
+                    function takesPure(Closure $f): void {}
+
+                    /** @psalm-pure */
+                    function escape(): void {
+                        $x = 0;
+                        $get = function () use (&$x): int {
+                            return $x;
+                        };
+                        takesPure($get);
+                    }',
+                'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'closureWritingByRefParamChargesTheEnclosingScope' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function set(int &$x): void {
+                        $write = function () use (&$x): void {
+                            $x = 1;
+                        };
+                        $write();
+                    }',
+                'error_message' => 'ImpureByReferenceAssignment',
+            ],
+            'closureMutatingCapturedObjectNeedsWriteProps' => [
+                'code' => '<?php
+                    final class Box {
+                        public int $x = 0;
+                    }
+
+                    /** @psalm-pure */
+                    function f(Box $b): void {
+                        $set = function () use ($b): void {
+                            $b->x = 1;
+                        };
+                        $set();
+                    }',
+                'error_message' => 'ImpureFunctionCall',
             ],
         ];
     }

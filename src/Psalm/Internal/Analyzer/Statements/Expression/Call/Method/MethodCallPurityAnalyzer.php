@@ -14,6 +14,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer as AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NoDiscardAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateResult;
@@ -61,6 +62,16 @@ final class MethodCallPurityAnalyzer
         Context $context,
     ): int {
         $capabilities = $method_storage->capabilities & ~Capabilities::READ_PROPS;
+
+        $receiver_type = $statements_analyzer->node_data->getType($var);
+
+        if ($receiver_type !== null
+            && $receiver_type->from_global_state
+            && ($method_storage->capabilities & (Capabilities::WRITE_THIS_PROPS | Capabilities::WRITE_PROPS)) !== 0
+        ) {
+            // mutating an object reached from global state mutates global state
+            return $capabilities | Capabilities::WRITE_GLOBALS;
+        }
 
         if (self::receiverAllowsInternalMutations($statements_analyzer, $var, $method_id, $context)) {
             $capabilities &= ~Capabilities::RECEIVER_LOCAL;
@@ -125,6 +136,19 @@ final class MethodCallPurityAnalyzer
                 ? $method_storage
                 : null,
             self::receiverAllowsInternalMutations($statements_analyzer, $stmt->var, $method_id, $context),
+        );
+
+        if (($method_storage->capabilities & Capabilities::READ_GLOBALS) !== 0) {
+            $stmt->setAttribute(GlobalStateAnalyzer::ATTRIBUTE, true);
+        }
+
+        GlobalStateAnalyzer::checkArguments(
+            $statements_analyzer,
+            $context,
+            $stmt->getArgs(),
+            $method_capabilities,
+            ImpureMethodCall::class,
+            'method ' . $cased_method_id,
         );
         
         if (!$context->inside_unset
