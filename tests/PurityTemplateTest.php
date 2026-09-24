@@ -490,6 +490,34 @@ final class PurityTemplateTest extends TestCase
                         }
                     }',
             ],
+            'classPurityTemplateLowerBound' => [
+                'code' => '<?php
+                    final class Box {
+                        public int $x = 0;
+                    }
+
+                    /** @psalm-purity-template C of write-props|io super write-props = write-props */
+                    abstract class Doer {
+                        /**
+                         * @psalm-mutation-free
+                         * @psalm-purity-from-template C
+                         */
+                        public function run(Box $b): int {
+                            $b->x = 1;
+                            return $b->x;
+                        }
+                    }
+
+                    /** @extends Doer<write-props|io> */
+                    final class IoDoer extends Doer {}
+
+                    final class DefaultDoer extends Doer {}
+
+                    /** @psalm-capabilities write-props */
+                    function useDefault(DefaultDoer $d, Box $b): int {
+                        return $d->run($b);
+                    }',
+            ],
         ];
     }
 
@@ -1012,6 +1040,70 @@ final class PurityTemplateTest extends TestCase
                         return fn(): int => 1;
                     }',
                 'error_message' => 'InvalidDocblock',
+            ],
+            'classPurityTemplateLowerBoundRejectsSmallerExtends' => [
+                'code' => '<?php
+                    /** @psalm-purity-template C super write-props */
+                    abstract class Doer {
+                        /**
+                         * @psalm-mutation-free
+                         * @psalm-purity-from-template C
+                         */
+                        abstract public function run(): int;
+                    }
+
+                    /** @extends Doer<pure> */
+                    final class PureDoer extends Doer {
+                        /** @psalm-pure */
+                        public function run(): int {
+                            return 1;
+                        }
+                    }',
+                'error_message' => 'InvalidTemplateParam',
+            ],
+            'classPurityTemplateLowerBoundIsPaidByCallers' => [
+                'code' => '<?php
+                    /** @psalm-purity-template C super write-props = write-props */
+                    abstract class Doer {
+                        /**
+                         * @psalm-mutation-free
+                         * @psalm-purity-from-template C
+                         */
+                        abstract public function run(): int;
+                    }
+
+                    final class DefaultDoer extends Doer {
+                        /** @psalm-capabilities write-props */
+                        public function run(): int {
+                            return 1;
+                        }
+                    }
+
+                    /** @psalm-mutation-free */
+                    function useDefault(DefaultDoer $d): int {
+                        return $d->run();
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'classPurityTemplateLowerBoundMustFitUpperBound' => [
+                'code' => '<?php
+                    /** @psalm-purity-template C of read-globals super write-props */
+                    abstract class Doer {}',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'classPurityTemplateDefaultMustFitLowerBound' => [
+                'code' => '<?php
+                    /** @psalm-purity-template C super write-props = pure */
+                    abstract class Doer {}',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'functionPurityTemplateCannotHaveLowerBound' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-purity-template P super write-props
+                     */
+                    function f(): void {}',
+                'error_message' => 'MissingDocblockType',
             ],
         ];
     }

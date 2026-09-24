@@ -84,6 +84,10 @@ final class ClassLikeDocblockParser
                     if ($purity_template['default'] !== null) {
                         $info->purity_template_defaults[$purity_template['name']] = $purity_template['default'];
                     }
+
+                    if ($purity_template['lower'] !== null) {
+                        $info->purity_template_lower_bounds[$purity_template['name']] = $purity_template['lower'];
+                    }
                 }
             }
         }

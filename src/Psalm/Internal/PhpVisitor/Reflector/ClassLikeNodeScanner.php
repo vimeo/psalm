@@ -484,6 +484,45 @@ final class ClassLikeNodeScanner
                         );
                     }
 
+                    if (isset($docblock_info->purity_template_lower_bounds[$purity_template])) {
+                        try {
+                            $lower = TypeParser::parseTokens(
+                                TypeTokenizer::getFullyQualifiedTokens(
+                                    $docblock_info->purity_template_lower_bounds[$purity_template],
+                                    $this->aliases,
+                                    $storage->template_types,
+                                    $this->type_aliases,
+                                ),
+                                null,
+                                $storage->template_types,
+                                $this->type_aliases,
+                            );
+                        } catch (TypeParseTreeException $e) {
+                            $storage->docblock_issues[] = new InvalidDocblock(
+                                $e->getMessage() . ' in docblock for ' . $fq_classlike_name,
+                                $name_location ?? $class_location,
+                            );
+
+                            continue;
+                        }
+
+                        if (!Capabilities::isPurityType($lower)
+                            || ($bound !== null
+                                && !Capabilities::allows(Capabilities::fromType($bound), Capabilities::fromType($lower)))
+                        ) {
+                            $storage->docblock_issues[] = new InvalidDocblock(
+                                'The lower bound of the purity template ' . $purity_template . ' must be a set of'
+                                . ' capabilities within its upper bound, ' . $lower->getId() . ' given, in docblock for '
+                                . $fq_classlike_name,
+                                $name_location ?? $class_location,
+                            );
+
+                            continue;
+                        }
+
+                        $storage->template_lower_bounds[$purity_template] = Capabilities::fromType($lower);
+                    }
+
                     if (!isset($docblock_info->purity_template_defaults[$purity_template])) {
                         continue;
                     }
@@ -512,10 +551,14 @@ final class ClassLikeNodeScanner
                     if (!Capabilities::isPurityType($default)
                         || ($bound !== null
                             && !Capabilities::allows(Capabilities::fromType($bound), Capabilities::fromType($default)))
+                        || !Capabilities::allows(
+                            Capabilities::fromType($default),
+                            $storage->template_lower_bounds[$purity_template] ?? Capabilities::NONE,
+                        )
                     ) {
                         $storage->docblock_issues[] = new InvalidDocblock(
                             'The default of the purity template ' . $purity_template . ' must be a set of'
-                            . ' capabilities within its bound, ' . $default->getId() . ' given, in docblock for '
+                            . ' capabilities within its bounds, ' . $default->getId() . ' given, in docblock for '
                             . $fq_classlike_name,
                             $name_location ?? $class_location,
                         );

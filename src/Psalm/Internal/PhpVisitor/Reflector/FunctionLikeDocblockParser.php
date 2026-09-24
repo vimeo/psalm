@@ -488,9 +488,9 @@ final class FunctionLikeDocblockParser
             // a purity template is a template whose values are capability sets
             foreach ($parsed_docblock->tags['psalm-purity-template'] as $purity_template_line) {
                 foreach (PurityTemplateParser::parse($purity_template_line) as $purity_template) {
-                    if ($purity_template['default'] !== null) {
+                    if ($purity_template['default'] !== null || $purity_template['lower'] !== null) {
                         throw new IncorrectDocblockException(
-                            'Only the purity templates of a class can have a default',
+                            'Only the purity templates of a class can have a default or a lower bound',
                         );
                     }
 

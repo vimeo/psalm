@@ -673,23 +673,33 @@ Together with `@psalm-purity-from-template`, it makes a function-like's purity d
 closures it is given, like Hack's `[ctx $f]` contexts.
 
 A purity template may have an upper bound, the most a value of it may require (`impure` when
-omitted), and a class purity template a default for the subclasses that do not bind it:
+omitted). A class purity template may also have a lower bound, the least every value requires,
+which the methods depending on the template may then use unconditionally (like Hack's
+`abstract const ctx C as [write_props]`), and a default for the subclasses that do not bind it:
 
 ```php
 <?php
-/** @psalm-purity-template C of write-props = pure */
+/** @psalm-purity-template C of write-props|io super write-this-props = write-this-props */
 abstract class Doer {
+    public int $runs = 0;
+
     /**
      * @psalm-mutation-free
      * @psalm-purity-from-template C
      */
-    abstract public function run(): int;
+    public function run(): int {
+        $this->runs++; // fine: every C includes write-this-props
+        return $this->runs;
+    }
 }
 
 /** @extends Doer<write-globals> */
-final class GlobalDoer extends Doer {} // InvalidTemplateParam: beyond the bound
+final class GlobalDoer extends Doer {} // InvalidTemplateParam: beyond the upper bound
 
-final class PureDoer extends Doer {} // C is pure
+/** @extends Doer<pure> */
+final class PureDoer extends Doer {} // InvalidTemplateParam: below the lower bound
+
+final class DefaultDoer extends Doer {} // C is write-this-props
 ```
 
 The common case, a function whose purity depends on one closure parameter, needs no template

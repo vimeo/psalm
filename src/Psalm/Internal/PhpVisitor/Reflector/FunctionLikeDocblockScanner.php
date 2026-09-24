@@ -452,6 +452,10 @@ final class FunctionLikeDocblockScanner
             }
         }
 
+        if ($classlike_storage !== null) {
+            self::applyPurityTemplateLowerBounds($classlike_storage, $storage);
+        }
+
         foreach ($storage->purity_from_templates as $purity_template) {
             $bounds = $storage->template_types[$purity_template]
                 ?? ($classlike_storage->template_types[$purity_template] ?? null);
@@ -498,6 +502,25 @@ final class FunctionLikeDocblockScanner
         }
 
         $storage->public_api = $docblock_info->public_api;
+    }
+
+    /**
+     * A class purity template with a lower bound (`@psalm-purity-template C super write-props`)
+     * always requires at least that much, so a method depending on it may use those capabilities
+     * unconditionally: they become fixed capabilities of the method, which callers pay anyway
+     * as part of the template.
+     */
+    public static function applyPurityTemplateLowerBounds(
+        ClassLikeStorage $classlike_storage,
+        FunctionLikeStorage $storage,
+    ): void {
+        foreach ($storage->purity_from_templates as $purity_template) {
+            if (isset($classlike_storage->template_lower_bounds[$purity_template])
+                && !isset($storage->template_types[$purity_template])
+            ) {
+                $storage->capabilities |= $classlike_storage->template_lower_bounds[$purity_template];
+            }
+        }
     }
 
     /**

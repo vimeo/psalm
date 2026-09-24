@@ -14,17 +14,18 @@ use function substr;
 use function trim;
 
 /**
- * Parses the value of a `@psalm-purity-template` tag, e.g. `P`, `P, Q`, `P of write-props|io`
- * or `C of write-props = pure`: `of` gives the upper bound (the most a value of the template
- * may require, `impure` when omitted) and `=` the default of a class template, for the
- * subclasses that do not bind it.
+ * Parses the value of a `@psalm-purity-template` tag, e.g. `P`, `P, Q`, `P of write-props|io`,
+ * `C of write-props = pure` or `C super write-this-props`: `of` gives the upper bound (the most
+ * a value of the template may require, `impure` when omitted), `super` the lower bound of a
+ * class template (the least every value requires, which the methods depending on the template
+ * may use), and `=` the default of a class template, for the subclasses that do not bind it.
  *
  * @internal
  */
 final class PurityTemplateParser
 {
     /**
-     * @return list<array{name: string, bound: string, default: ?string}>
+     * @return list<array{name: string, bound: string, lower: ?string, default: ?string}>
      * @throws IncorrectDocblockException
      * @psalm-pure
      */
@@ -54,9 +55,10 @@ final class PurityTemplateParser
         while ($tokens !== []) {
             $name = array_shift($tokens);
             $bound = 'impure';
+            $lower = null;
             $default = null;
 
-            if (strtolower($name) === 'of' || $name === '=') {
+            if (strtolower($name) === 'of' || strtolower($name) === 'super' || $name === '=') {
                 throw new IncorrectDocblockException(
                     '@psalm-purity-template expects a template name before ' . $name,
                 );
@@ -64,6 +66,11 @@ final class PurityTemplateParser
 
             if (isset($tokens[0], $tokens[1]) && strtolower($tokens[0]) === 'of') {
                 $bound = $tokens[1];
+                $tokens = array_slice($tokens, 2);
+            }
+
+            if (isset($tokens[0], $tokens[1]) && strtolower($tokens[0]) === 'super') {
+                $lower = $tokens[1];
                 $tokens = array_slice($tokens, 2);
             }
 
@@ -76,13 +83,15 @@ final class PurityTemplateParser
                 $tokens = array_slice($tokens, 1);
             }
 
-            if (isset($tokens[0]) && (strtolower($tokens[0]) === 'of' || $tokens[0] === '=')) {
+            if (isset($tokens[0])
+                && (strtolower($tokens[0]) === 'of' || strtolower($tokens[0]) === 'super' || $tokens[0] === '=')
+            ) {
                 throw new IncorrectDocblockException(
                     '@psalm-purity-template ' . $name . ' has an incomplete bound or default',
                 );
             }
 
-            $templates[] = ['name' => $name, 'bound' => $bound, 'default' => $default];
+            $templates[] = ['name' => $name, 'bound' => $bound, 'lower' => $lower, 'default' => $default];
         }
 
         return $templates;

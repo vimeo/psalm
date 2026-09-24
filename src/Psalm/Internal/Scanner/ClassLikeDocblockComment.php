@@ -60,6 +60,13 @@ final class ClassLikeDocblockComment
     public array $purity_template_defaults = [];
 
     /**
+     * The lower bound of each purity template that has one: what every value of it requires.
+     *
+     * @var array<string, string>
+     */
+    public array $purity_template_lower_bounds = [];
+
+    /**
      * The values of `@psalm-capabilities` tags that are not plain capability lists: purity
      * types, resolved once the type aliases in scope are known.
      *

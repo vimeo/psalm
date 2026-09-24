@@ -302,6 +302,15 @@ final class ClassLikeStorage implements HasAttributesInterface
     public array $template_defaults = [];
 
     /**
+     * The lower bound of each purity template that has one (`@psalm-purity-template C super write-props`):
+     * what every value of the template requires, so the methods depending on it get these
+     * capabilities unconditionally, and subclasses may not bind it to less.
+     *
+     * @var array<string, int>
+     */
+    public array $template_lower_bounds = [];
+
+    /**
      * A map of which generic classlikes are extended or implemented by this class or interface.
      *
      * This is only used in the populator, which poulates the $template_extended_params property below.

@@ -8,6 +8,7 @@ use BackedEnum;
 use InvalidArgumentException;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\PhpVisitor\Reflector\FunctionLikeDocblockScanner;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
@@ -244,7 +245,10 @@ final class Populator
         $this->resolveDeferredCapabilities($storage);
 
         foreach ($storage->methods as $method) {
-            $this->resolveDeferredCapabilities($method);
+            if ($method->capabilities_type !== null) {
+                $this->resolveDeferredCapabilities($method);
+                FunctionLikeDocblockScanner::applyPurityTemplateLowerBounds($storage, $method);
+            }
         }
 
         if ($storage->capabilities !== Capabilities::ALL) {

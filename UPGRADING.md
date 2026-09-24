@@ -17,7 +17,7 @@
 - [BC] Binding a `global $x` needs `read-globals` only; writing `$x` afterwards needs `write-globals`. The extra "Cannot use a global variable in a mutation-free context" message is gone.
 - A plain `isset($object[$key])` on an `ArrayAccess` object now calls only `offsetExists`; `??` still calls `offsetExists` then `offsetGet`.
 - [BC] An override of a method with `@psalm-purity-from-template` may not need more capabilities unconditionally than the overridden method does.
-- `@psalm-purity-template` accepts an upper bound (`P of write-props`) and, on classes, a default (`C of write-props = pure`); `Closure<_>(...)` in a parameter's type declares an implicit purity template; `@psalm-capabilities` accepts type aliases (`@psalm-type`, `@psalm-import-type`). An unknown capability name is now reported as `InvalidDocblock` rather than `MissingDocblockType`.
+- `@psalm-purity-template` accepts an upper bound (`P of write-props`) and, on classes, a lower bound (`C super write-this-props`, which the methods depending on `C` may use unconditionally) and a default (`C of write-props = pure`); `Closure<_>(...)` in a parameter's type declares an implicit purity template; `@psalm-capabilities` accepts type aliases (`@psalm-type`, `@psalm-import-type`). An unknown capability name is now reported as `InvalidDocblock` rather than `MissingDocblockType`.
 
 - Backwards compatibility for the plugin API is now covered by a separate metapackage, [psalm/psalm-plugin-api](https://packagist.org/packages/psalm/psalm-plugin-api).  
 

@@ -29,6 +29,7 @@ use Psalm\Issue\UndefinedDocblockClass;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AfterClassLikeExistenceCheckEvent;
 use Psalm\StatementsSource;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -840,12 +841,28 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                             null,
                         );
 
+                        $lower_bound = $parent_storage->template_lower_bounds[$template_name] ?? null;
+
                         if (!UnionTypeComparator::isContainedBy($codebase, $extended_type, $template_type_copy)) {
                             IssueBuffer::maybeAdd(
                                 new InvalidTemplateParam(
                                     'Extended template param ' . $template_name
                                         . ' expects type ' . $template_type_copy->getId()
                                         . ', type ' . $extended_type->getId() . ' given',
+                                    $code_location,
+                                ),
+                                $storage->suppressed_issues + $this->getSuppressedIssues(),
+                            );
+                        } elseif ($lower_bound !== null
+                            && Capabilities::isPurityType($extended_type)
+                            && !Capabilities::allows(Capabilities::fromType($extended_type), $lower_bound)
+                        ) {
+                            // a purity template with a lower bound: the value must require at least that
+                            IssueBuffer::maybeAdd(
+                                new InvalidTemplateParam(
+                                    'Extended template param ' . $template_name
+                                        . ' must include at least ' . Capabilities::toString($lower_bound)
+                                        . ', ' . $extended_type->getId() . ' given',
                                     $code_location,
                                 ),
                                 $storage->suppressed_issues + $this->getSuppressedIssues(),
