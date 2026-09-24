@@ -31,6 +31,9 @@ use function strpos;
 use function strtolower;
 use function substr;
 
+use const PHP_MAJOR_VERSION;
+use const PHP_MINOR_VERSION;
+
 /**
  * @internal
  *
@@ -50,9 +53,14 @@ final class InternalCallMapHandler
     private static ?array $call_map = null;
 
     /**
-     * @var array<string, non-empty-list<TCallable>>|null
+     * @var array<string, non-empty-list<TCallable>>
      */
-    private static ?array $call_map_callables = [];
+    private static array $call_map_callables = [];
+
+    /**
+     * @var non-empty-array<lowercase-string, array<int|string, string>>|null
+     */
+    private static ?array $runtime_call_map = null;
 
     /**
      * @var non-empty-array<string, non-empty-list<list<TaintKind::*>>>|null
@@ -333,10 +341,27 @@ final class InternalCallMapHandler
      * @return non-empty-array<string, array<int|string, string>>
      * @psalm-assert !null self::$taint_sink_map
      * @psalm-assert !null self::$call_map
+     * @psalm-assert !null self::$runtime_call_map
      * @psalm-suppress UnresolvableInclude
      */
     public static function getCallMap(): array
     {
+        if (self::$runtime_call_map === null) {
+            $runtime_version_int = min(
+                self::MAX_CALLMAP_VERSION,
+                max(
+                    self::MIN_CALLMAP_VERSION,
+                    (int) (PHP_MAJOR_VERSION . PHP_MINOR_VERSION),
+                ),
+            );
+
+            /** @var non-empty-array<lowercase-string, array<int|string, string>> */
+            $runtime_call_map = require(dirname(__DIR__, 4) . '/dictionaries/CallMap_' . $runtime_version_int . '.php');
+            self::$runtime_call_map = $runtime_call_map;
+
+            assert(!empty(self::$runtime_call_map));
+        }
+
         $codebase = ProjectAnalyzer::getInstance()->getCodebase();
         $analyzer_major_version = $codebase->getMajorAnalysisPhpVersion();
         $analyzer_minor_version = $codebase->getMinorAnalysisPhpVersion();
@@ -346,6 +371,11 @@ final class InternalCallMapHandler
             && $analyzer_minor_version === self::$loaded_php_minor_version
         ) {
             return self::$call_map;
+        } elseif (self::$call_map !== null) {
+            // reset it since the PHP version analyzed changed
+            self::clearCache();
+            Functions::clearCache();
+            Reflection::clearCache();
         }
 
         $analyzer_version_int = min(
@@ -385,6 +415,35 @@ final class InternalCallMapHandler
     public static function inCallMap(string $key): bool
     {
         return isset(self::getCallMap()[strtolower($key)]);
+    }
+
+    public static function allowReflection(string $function_id): bool
+    {
+        // make sure it's populated and correct for the currently checked versions everytime
+        self::getCallMap();
+
+        $function_id_lc = strtolower($function_id);
+
+        // allow reflection if it's not an internal function at all
+        if (
+            !isset(self::$runtime_call_map[$function_id_lc]) &&
+            !isset(self::$call_map[$function_id_lc])
+        ) {
+            return true;
+        }
+
+        // allow reflection if the current PHP version's callmap signature is identical to the analyzed version
+        if (
+            isset(self::$runtime_call_map[$function_id_lc]) &&
+            isset(self::$call_map[$function_id_lc]) &&
+            self::$runtime_call_map[$function_id_lc] === self::$call_map[$function_id_lc]
+        ) {
+            return true;
+        }
+
+        // e.g. running psalm with PHP 8.3 but with --php-version=7.4
+        // or vice versa psalm run with 8.1 and --php-version 8.2
+        return false;
     }
 
     public static function clearCache(): void
