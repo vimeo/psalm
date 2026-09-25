@@ -500,11 +500,17 @@ final class TypeCombiner
             && (isset($combination->named_object_types['Traversable'])
                 || isset($combination->builtin_type_params['Traversable']))
         ) {
+            // an iterable has a key and a value, not what iterating it may do (TPurity)
+            $traversable_params = $combination->builtin_type_params['Traversable'] ?? null;
+            $traversable_params = isset($traversable_params[1])
+                ? [$traversable_params[0], $traversable_params[1]]
+                : null;
+
             if (!isset($combination->builtin_type_params['iterable'])) {
                 $combination->builtin_type_params['iterable']
-                    = $combination->builtin_type_params['Traversable'] ?? [Type::getMixed(), Type::getMixed()];
-            } elseif (isset($combination->builtin_type_params['Traversable'])) {
-                foreach ($combination->builtin_type_params['Traversable'] as $i => $array_type_param) {
+                    = $traversable_params ?? [Type::getMixed(), Type::getMixed()];
+            } elseif ($traversable_params !== null) {
+                foreach ($traversable_params as $i => $array_type_param) {
                     $iterable_type_param = $combination->builtin_type_params['iterable'][$i];
                     /** @psalm-suppress PropertyTypeCoercion */
                     $combination->builtin_type_params['iterable'][$i] = Type::combineUnionTypes(
@@ -627,6 +633,11 @@ final class TypeCombiner
             || ($type instanceof TArray && $type_key === 'iterable')
         ) {
             foreach ($type->type_params as $i => $type_param) {
+                // an iterable has a key and a value, not what iterating it may do (TPurity)
+                if ($type_key === 'iterable' && $i > 1) {
+                    break;
+                }
+
                 /** @psalm-suppress PropertyTypeCoercion */
                 $combination->builtin_type_params[$type_key][$i] = Type::combineUnionTypes(
                     $combination->builtin_type_params[$type_key][$i] ?? null,

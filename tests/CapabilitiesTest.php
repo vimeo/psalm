@@ -29,6 +29,18 @@ final class CapabilitiesTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'traversableWithPurityCombinesWithIterable' => [
+                'code' => '<?php
+                    /**
+                     * @param Traversable<int, int, pure> $b
+                     * @param iterable<int, int> $a
+                     */
+                    function g(bool $c, iterable $a, Traversable $b): iterable {
+                        $x = $c ? $b : $a;
+                        return $x;
+                    }',
+                'assertions' => [],
+            ],
             'readGlobals' => [
                 'code' => '<?php
                     final class S { public static int $n = 0; }
