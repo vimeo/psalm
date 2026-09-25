@@ -83,7 +83,7 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                     /**
                      * @psalm-suppress ImmutableDependency
                      *
-                     * @psalm-external-mutation-free
+                     * @psalm-capabilities write-this-props|write-refs
                      */
                     class MutableImplementation extends SomethingImmutable {
                         private int $counter = 0;
@@ -319,7 +319,7 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                     }',
                 'output' => '<?php
                     /**
-                     * @psalm-external-mutation-free
+                     * @psalm-capabilities write-this-props|write-refs
                      */
                     final class A {
                         private array $data;

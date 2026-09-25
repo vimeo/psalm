@@ -82,7 +82,6 @@ final class Json
     /** @psalm-pure */
     private static function scrub(array $data): array
     {
-        /** @psalm-suppress ImpureFunctionCall */
         array_walk_recursive(
             $data,
             /**

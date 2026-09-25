@@ -10,7 +10,7 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 
 /**
  * @internal
- * @psalm-external-mutation-free
+ * @psalm-capabilities write-props|write-refs
  */
 final class CombinedFlowGraph extends DataFlowGraph
 {
@@ -23,7 +23,7 @@ final class CombinedFlowGraph extends DataFlowGraph
     ) {
     }
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     #[Override]
     public function addNode(DataFlowNode $node): void
@@ -32,7 +32,7 @@ final class CombinedFlowGraph extends DataFlowGraph
         $this->taint_flow_graph->addNode($node);
     }
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     #[Override]
     public function addPath(
@@ -47,7 +47,7 @@ final class CombinedFlowGraph extends DataFlowGraph
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function addSource(DataFlowNode $node): void
     {
@@ -55,7 +55,7 @@ final class CombinedFlowGraph extends DataFlowGraph
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function addSink(DataFlowNode $node): void
     {

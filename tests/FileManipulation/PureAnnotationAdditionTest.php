@@ -45,7 +45,7 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
 
                     class H extends G {
                         /**
-                         * @psalm-mutation-free
+                         * @psalm-capabilities read-props
                          */
                         public function m(): F {
                             return $this;
@@ -402,7 +402,7 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                 'output' => '<?php
                     class A {
                         /**
-                         * @psalm-mutation-free
+                         * @psalm-capabilities read-props
                          */
                         public function foo(string $s, int $v): string {
                             if ($v > 5) {
@@ -480,7 +480,7 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                 'output' => '<?php
                     class A {
                         /**
-                         * @psalm-mutation-free
+                         * @psalm-capabilities read-props
                          */
                         public function foo(int $ex): int {
                             if ($ex === 0) {
@@ -591,7 +591,7 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                         /**
                          * @internal
                          *
-                         * @psalm-external-mutation-free
+                         * @psalm-capabilities write-this-props|write-refs
                          */
                         public function addParam(FunctionLikeParameter $param, ?bool $lookup_value = null): void
                         {
@@ -710,7 +710,7 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                         public int $a = 5;
 
                         /**
-                         * @psalm-mutation-free
+                         * @psalm-capabilities read-props
                          */
                         public function foo() : self {
                             return $this;
@@ -780,7 +780,7 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                         public int $a = 5;
 
                         /**
-                         * @psalm-mutation-free
+                         * @psalm-capabilities read-props
                          */
                         public function foo(string $s) : string {
                             return $string . $this->a;

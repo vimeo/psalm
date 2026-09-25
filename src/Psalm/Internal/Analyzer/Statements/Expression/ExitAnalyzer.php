@@ -14,8 +14,8 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\ImpureFunctionCall;
 use Psalm\IssueBuffer;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeParameter;
-use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TString;
@@ -117,7 +117,7 @@ final class ExitAnalyzer
         if ($expr_type && !$expr_type->isInt()) {
             $function_name = $stmt->getAttribute('kind') === Exit_::KIND_DIE ? 'die' : 'exit';
             $statements_analyzer->signalMutation(
-                Mutations::LEVEL_EXTERNAL,
+                Capabilities::IO,
                 $context,
                 $function_name . ' with a non-integer argument',
                 ImpureFunctionCall::class,

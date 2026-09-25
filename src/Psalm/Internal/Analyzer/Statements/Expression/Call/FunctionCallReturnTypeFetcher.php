@@ -89,7 +89,7 @@ final class FunctionCallReturnTypeFetcher
                 $stmt_type = new Union([new TClosure(
                     $candidate_callable->params,
                     $candidate_callable->return_type,
-                    $candidate_callable->allowed_mutations,
+                    $candidate_callable->purity,
                     callable_id: strtolower($function_id),
                 )]);
             } else {
@@ -960,7 +960,7 @@ final class FunctionCallReturnTypeFetcher
 
     /**
      * @param array<PhpParser\Node\Arg>   $args
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public static function taintUsingFlows(
         FunctionLikeStorage $function_storage,
@@ -1008,7 +1008,7 @@ final class FunctionCallReturnTypeFetcher
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public static function taintUsingStorage(
         FunctionLikeStorage $function_storage,

@@ -68,6 +68,9 @@ final class VariableUseGraph extends DataFlowGraph
         $this->forward_edges[$from_id][$to_id] = new Path($path_type, $length);
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
     public function isVariableUsed(DataFlowNode $assignment_node): bool
     {
         $visited_source_ids = [];
@@ -97,6 +100,7 @@ final class VariableUseGraph extends DataFlowGraph
 
     /**
      * @return list<CodeLocation>
+     * @psalm-capabilities write-this-props|write-refs
      */
     public function getOriginLocations(DataFlowNode $assignment_node): array
     {
@@ -143,6 +147,7 @@ final class VariableUseGraph extends DataFlowGraph
      * @param array<string, bool> $visited_source_ids
      * @param array<string, DataFlowNode> $child_nodes
      * @param-out array<string, DataFlowNode> $child_nodes
+     * @psalm-capabilities write-refs|read-props
      */
     private function getChildNodes(
         array &$child_nodes,
@@ -200,6 +205,7 @@ final class VariableUseGraph extends DataFlowGraph
      * @param array<string, bool> $visited_source_ids
      * @param list<DataFlowNode> $new_parent_nodes
      * @param-out list<DataFlowNode> $new_parent_nodes
+     * @psalm-capabilities write-refs|read-props
      */
     private function getParentNodes(
         array &$new_parent_nodes,

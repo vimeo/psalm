@@ -20,6 +20,7 @@ use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFetcher;
+use Psalm\Internal\Analyzer\Statements\Expression\DestructorAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Codebase\CodeUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -30,6 +31,7 @@ use Psalm\Internal\PhpVisitor\NodeCounterVisitor;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\IterationPurity;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
@@ -58,14 +60,15 @@ use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Node\Stmt\VirtualWhile;
 use Psalm\Node\VirtualNode;
 use Psalm\Plugin\EventHandler\Event\AfterFunctionLikeAnalysisEvent;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\MethodStorage;
-use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TCapabilities;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TMixed;
@@ -83,11 +86,9 @@ use function array_search;
 use function array_values;
 use function count;
 use function end;
-use function implode;
 use function in_array;
 use function is_string;
 use function krsort;
-use function max;
 use function mb_strpos;
 use function md5;
 use function microtime;
@@ -134,16 +135,13 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
     public bool $track_mutations = false;
 
-    /** @var Mutations::LEVEL_* */
-    public int $inferred_mutations = Mutations::LEVEL_NONE;
+    public int $inferred_capabilities = Capabilities::NONE;
 
     /**
      * The mutations performed by this function-like itself, excluding those of
      * the unannotated callees in $deferred_callees.
-     *
-     * @var Mutations::LEVEL_*
      */
-    public int $intrinsic_mutations = Mutations::LEVEL_NONE;
+    public int $intrinsic_capabilities = Capabilities::NONE;
 
     /**
      * The unannotated project function-likes called by this function-like
@@ -153,6 +151,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
      * @var array<string, bool>
      */
     public array $deferred_callees = [];
+
+    /**
+     * The purity templates of the enclosing scopes this closure called closures of: its purity
+     * depends on them, so its type carries them (name => template).
+     *
+     * @var array<string, TTemplateParam>
+     */
+    public array $used_purity_templates = [];
 
     /**
      * Holds param nodes for functions with func_get_args calls
@@ -374,6 +380,19 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             );
         }
 
+        $context->capabilities = $storage->capabilities;
+        if ($storage instanceof MethodStorage) {
+            if (
+                // Allow constructors to mutate (override immutability)
+                str_ends_with((string) $storage->cased_name, '__construct')
+
+                // ???
+                || $storage->mutation_free_assumed
+            ) {
+                $context->capabilities |= Capabilities::EXTERNAL_MUTATION_FREE;
+            }
+        }
+
         $check_stmts = $this->processParams(
             $statements_analyzer,
             $storage,
@@ -408,23 +427,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $context->vars_in_scope[$var_id] = $ref_context->vars_in_scope[$var_id];
             }
         }
-
-        $context->allowed_mutations = $storage->allowed_mutations;
-        if ($storage instanceof MethodStorage) {
-            if (
-                // Allow constructors to mutate (override immutability)
-                str_ends_with((string) $storage->cased_name, '__construct')
-
-                // ???
-                || $storage->mutation_free_assumed
-            ) {
-                $context->allowed_mutations = max(
-                    $context->allowed_mutations,
-                    Mutations::LEVEL_INTERNAL_READ_WRITE,
-                );
-            }
-        }
-
 
         foreach ($storage->unused_docblock_parameters as $param_name => $param_location) {
             if ($storage->has_undertyped_native_parameters) {
@@ -522,6 +524,22 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         $statements_analyzer->analyze($function_stmts, $context, $global_context);
 
+        // the objects created here that are still held when the function-like ends die with it
+        $param_ids = [];
+
+        foreach ($this->function->params as $param) {
+            if ($param->var instanceof PhpParser\Node\Expr\Variable && is_string($param->var->name)) {
+                $param_ids['$' . $param->var->name] = true;
+            }
+        }
+
+        DestructorAnalyzer::chargeDroppedObjects(
+            $statements_analyzer,
+            $context,
+            array_values($function_stmts),
+            $param_ids,
+        );
+
         if ($statements_analyzer->owns_type_variable_tracker) {
             $statements_analyzer->type_variable_tracker->reconcile(
                 $codebase,
@@ -540,16 +558,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         ) {
             if ($storage instanceof MethodStorage
                 && $storage->has_mutations_annotation
-                && $storage->containing_class_allowed_mutations < $storage->allowed_mutations
+                && !Capabilities::allows($storage->containing_class_capabilities, $storage->capabilities)
             ) {
                 IssueBuffer::maybeAdd(
                     new ImpureFunctionCall(
-                        $storage->cased_name . ' is marked @'.Mutations::TO_ATTRIBUTE_FUNCTIONLIKE[
-                            $storage->allowed_mutations
-                        ].' but its containing class is marked with a lower level of allowed mutations'
-                        .', @'.Mutations::TO_ATTRIBUTE_CLASSLIKE[
-                            $storage->containing_class_allowed_mutations
-                        ],
+                        $storage->cased_name . ' is marked @'
+                            . Capabilities::toFunctionAnnotation($storage->capabilities)
+                            . ' but its containing class allows fewer capabilities'
+                        .', @'.Capabilities::toClassAnnotation($storage->containing_class_capabilities),
                         $storage->location,
                     ),
                     $storage->suppressed_issues,
@@ -586,25 +602,28 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     || $storage->throws
                 )
             ) {
-                $this->signalMutation(
-                    Mutations::LEVEL_INTERNAL_READ,
-                    $context,
-                    'pure functions cannot have void return type'
-                    .' (at least one non-empty return statement or @throws annotation is required)',
-                    ImpureFunctionCall::class,
-                    $this->function,
-                    null,
-                    true,
-                );
+                // a function that may neither read state nor have an effect (no write, no
+                // by-reference write, no IO) and returns nothing is useless: not pure by intent
+                $this->signalMutationOnlyInferred(Capabilities::MUTATION_FREE);
+
+                if (Capabilities::allows(Capabilities::READ_GLOBALS, $context->capabilities)) {
+                    IssueBuffer::maybeAdd(
+                        new ImpureFunctionCall(
+                            'pure functions cannot have void return type'
+                            . ' (at least one non-empty return statement or @throws annotation is required)',
+                            new CodeLocation($this, $this->function),
+                        ),
+                        $this->getSuppressedIssues(),
+                    );
+                }
             }
 
             if ($this->function->stmts === null) {
                 if (!$storage->has_mutations_annotation && $storage->location) {
                     IssueBuffer::maybeAdd(
                         new MissingAbstractPureAnnotation(
-                            $storage->cased_name . ' must be marked with one of @'
-                            .implode(', @', Mutations::TO_ATTRIBUTE_FUNCTIONLIKE)
-                            .' to aid security analysis',
+                            $storage->cased_name . ' must be marked with one of @psalm-pure,'
+                            . ' @psalm-capabilities or @psalm-impure to aid security analysis',
                             $storage->location,
                         ),
                         $storage->suppressed_issues,
@@ -614,8 +633,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 // the final level depends on the callees' levels: resolved after analysis,
                 // which reports MissingPureAnnotation and queues the fix (see MutationLevelResolver)
                 $codebase->code_use_graph->addMutationInfo($node_id, [
-                    'intrinsic' => $this->intrinsic_mutations,
-                    'allowed' => $storage->allowed_mutations,
+                    'intrinsic' => $this->intrinsic_capabilities,
+                    'allowed' => $storage->capabilities,
                     'callees' => $this->deferred_callees,
                     'location' => $storage->location,
                     'cased_name' => $storage->cased_name ?? '{closure}',
@@ -744,18 +763,38 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     $new_closure_return_type = $closure_return_type;
                 }
 
+                // the closure's purity: what its body does, plus the purity templates of the
+                // enclosing scopes it relies on
+                $closure_purity = new Union([
+                    new TCapabilities($this->inferred_capabilities),
+                    ...array_values($this->used_purity_templates),
+                ]);
+
+                // consuming the generator a generator closure returns runs its body; the generator
+                // is a new one at every call
+                if ($storage->has_yield && $new_closure_return_type !== null) {
+                    $new_closure_return_type = IterationPurity::bindGenerators(
+                        $new_closure_return_type,
+                        new Union([
+                            new TCapabilities($this->inferred_capabilities & ~Capabilities::READ_PROPS),
+                            ...array_values($this->used_purity_templates),
+                        ]),
+                    )->setProperties(['reference_free' => true]);
+                }
+
+                // a closure is a fresh object: its enclosing scope may call it freely
                 $statements_analyzer->node_data->setType(
                     $this->function,
                     new Union([
                         new TClosure(
                             $closure_atomic->params,
                             $new_closure_return_type,
-                            $this->inferred_mutations,
+                            $closure_purity,
                             $closure_atomic->byref_uses,
                             $closure_atomic->extra_types,
                             $closure_atomic->from_docblock,
                         ),
-                    ]),
+                    ], ['reference_free' => true]),
                 );
             }
         }
@@ -1093,6 +1132,48 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
      * @param list<FunctionLikeParameter> $params
      * @param list<Param> $param_stmts
      */
+    /**
+     * Analyses a parameter default value. Like in Hack, a default value is evaluated with no
+     * capabilities, or with the globals when the function-like may write them, whatever the
+     * function-like may otherwise do. Function-likes without a purity annotation are not
+     * restricted, so `new` in the defaults of unannotated code stays free.
+     */
+    private static function analyzeParamDefault(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $default,
+        Context $context,
+    ): void {
+        $capabilities = $context->capabilities;
+
+        $context->capabilities = self::getParamDefaultCapabilities($capabilities);
+        $context->inside_param_default = true;
+
+        ExpressionAnalyzer::analyze($statements_analyzer, $default, $context);
+
+        $context->inside_param_default = false;
+        $context->capabilities = $capabilities;
+    }
+
+    /**
+     * The capabilities the parameter default values of a function-like with $capabilities may use.
+     *
+     * @psalm-pure
+     */
+    public static function getParamDefaultCapabilities(int $capabilities): int
+    {
+        if ($capabilities === Capabilities::ALL) {
+            return Capabilities::ALL;
+        }
+
+        return ($capabilities & Capabilities::WRITE_GLOBALS) !== 0
+            ? Capabilities::READ_GLOBALS | Capabilities::WRITE_GLOBALS
+            : Capabilities::NONE;
+    }
+
+    /**
+     * @param list<FunctionLikeParameter> $params
+     * @param list<Param> $param_stmts
+     */
     private function processParams(
         StatementsAnalyzer $statements_analyzer,
         FunctionLikeStorage $storage,
@@ -1268,7 +1349,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
             if (!$function_param->type_location || !$function_param->location) {
                 if ($parser_param && $parser_param->default) {
-                    ExpressionAnalyzer::analyze($statements_analyzer, $parser_param->default, $context);
+                    self::analyzeParamDefault($statements_analyzer, $parser_param->default, $context);
                 }
 
                 continue;
@@ -1319,7 +1400,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
 
             if ($parser_param && $parser_param->default) {
-                ExpressionAnalyzer::analyze($statements_analyzer, $parser_param->default, $context);
+                self::analyzeParamDefault($statements_analyzer, $parser_param->default, $context);
 
                 $default_type = $statements_analyzer->node_data->getType($parser_param->default);
 
@@ -1747,6 +1828,16 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         }
 
         return $this->getClosureId();
+    }
+
+    /**
+     * The storage this analyzer was created with (the one of the function-like being analysed).
+     *
+     * @psalm-mutation-free
+     */
+    public function getStorage(): FunctionLikeStorage
+    {
+        return $this->storage;
     }
 
     public function getFunctionLikeStorage(?StatementsAnalyzer $statements_analyzer = null): FunctionLikeStorage
@@ -2218,7 +2309,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $closure_type = new TClosure(
                 $storage->params,
                 $closure_return_type,
-                $storage->allowed_mutations,
+                $storage->capabilities,
                 $storage instanceof FunctionStorage ? $storage->byref_uses : [],
             );
 
@@ -2226,7 +2317,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $this->function,
                 new Union([
                     $closure_type,
-                ]),
+                ], ['reference_free' => true]),
             );
         } else {
             throw new UnexpectedValueException('Impossible');

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Scanner;
 
-use Psalm\Storage\Mutations;
+use Psalm\Storage\Capabilities;
 
 /**
  * @internal
@@ -159,10 +159,34 @@ final class FunctionDocblockComment
 
     public bool $inheritdoc = false;
 
-    /** @var Mutations::LEVEL_* */
-    public int $allowed_mutations = Mutations::LEVEL_ALL;
+    /** A bitmask of {@see Capabilities} constants */
+    public int $capabilities = Capabilities::ALL;
 
     public bool $has_mutations_annotation = false;
+
+    /**
+     * Names of the templates this function-like inherits its purity from.
+     * Populated from `@psalm-purity-from-template T`.
+     *
+     * @var list<string>
+     */
+    public array $purity_from_templates = [];
+
+    /**
+     * The names of the templates declared with `@psalm-purity-template`, whose values are
+     * capability sets.
+     *
+     * @var list<string>
+     */
+    public array $purity_templates = [];
+
+    /**
+     * The values of `@psalm-capabilities` tags that are not plain capability lists: purity
+     * types, resolved once the type aliases in scope are known.
+     *
+     * @var list<string>
+     */
+    public array $capabilities_expressions = [];
 
     public bool $no_named_args = false;
 

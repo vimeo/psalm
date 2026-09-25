@@ -16,7 +16,7 @@ use Psalm\Internal\ReferenceConstraint;
 use Psalm\Issue\ImpureGlobalVariable;
 use Psalm\Issue\InvalidGlobal;
 use Psalm\IssueBuffer;
-use Psalm\Storage\Mutations;
+use Psalm\Storage\Capabilities;
 
 use function is_string;
 
@@ -47,22 +47,14 @@ final class GlobalAnalyzer
             ? $source->getFunctionLikeStorage($statements_analyzer)
             : null;
 
+        // binding a global reads global state; writing through it is charged at the write
         $statements_analyzer->signalMutation(
-            Mutations::LEVEL_EXTERNAL,
+            Capabilities::READ_GLOBALS,
             $context,
             'global variable',
             ImpureGlobalVariable::class,
             $stmt,
         );
-        if ($context->isMutationFree()) {
-            IssueBuffer::maybeAdd(
-                new ImpureGlobalVariable(
-                    'Cannot use a global variable in a mutation-free context',
-                    new CodeLocation($statements_analyzer, $stmt),
-                ),
-                $statements_analyzer->getSuppressedIssues(),
-            );
-        }
 
         foreach ($stmt->vars as $var) {
             if (!$var instanceof PhpParser\Node\Expr\Variable) {
@@ -115,8 +107,9 @@ final class GlobalAnalyzer
                 $var_id,
                 new CodeLocation($statements_analyzer, $var),
             );
-            $context->vars_in_scope[$var_id] = $context->vars_in_scope[$var_id]->setParentNodes([
-                $assignment_node->id => $assignment_node,
+            $context->vars_in_scope[$var_id] = $context->vars_in_scope[$var_id]->setProperties([
+                'parent_nodes' => [$assignment_node->id => $assignment_node],
+                'from_global_state' => true,
             ]);
             $context->references_to_external_scope[$var_id] = true;
 

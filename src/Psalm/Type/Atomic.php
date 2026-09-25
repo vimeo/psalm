@@ -14,7 +14,7 @@ use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeAlias\LinkableTypeAlias;
 use Psalm\Internal\TypeVisitor\ClasslikeReplacer;
-use Psalm\Storage\Mutations;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
@@ -23,6 +23,7 @@ use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
+use Psalm\Type\Atomic\TCapabilities;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TClosedResource;
@@ -237,19 +238,22 @@ abstract class Atomic implements TypeNode, Stringable
 
             case 'pure-callable':
                 return new TCallable(
-                    allowed_mutations: Mutations::LEVEL_NONE,
-                );
-            case 'self-mutating-callable':
-                return new TCallable(
-                    allowed_mutations: Mutations::LEVEL_INTERNAL_READ_WRITE,
-                );
-            case 'self-accessing-callable':
-                return new TCallable(
-                    allowed_mutations: Mutations::LEVEL_INTERNAL_READ,
+                    purity: Capabilities::NONE,
                 );
             case 'impure-callable':
             case 'callable':
                 return new TCallable();
+
+            case 'pure':
+            case 'impure':
+            case 'read-props':
+            case 'write-this-props':
+            case 'write-props':
+            case 'read-globals':
+            case 'write-globals':
+            case 'write-refs':
+            case 'io':
+                return new TCapabilities(Capabilities::NAMES[$value], $from_docblock);
 
             case 'array':
             case 'associative-array':
@@ -419,15 +423,7 @@ abstract class Atomic implements TypeNode, Stringable
 
             case 'pure-Closure':
                 return new TClosure(
-                    allowed_mutations: Mutations::LEVEL_NONE,
-                );
-            case 'self-mutating-Closure':
-                return new TClosure(
-                    allowed_mutations: Mutations::LEVEL_INTERNAL_READ_WRITE,
-                );
-            case 'self-accessing-Closure':
-                return new TClosure(
-                    allowed_mutations: Mutations::LEVEL_INTERNAL_READ,
+                    purity: Capabilities::NONE,
                 );
             case 'impure-Closure':
             case 'Closure':
@@ -542,10 +538,12 @@ abstract class Atomic implements TypeNode, Stringable
         if ($this->hasTraversableInterface($codebase)) {
             if (strtolower($this->value) === "traversable") {
                 if ($this instanceof TGenericObject) {
-                    if (count($this->type_params) > 2) {
-                        throw new InvalidArgumentException('Too many templates!');
+                    // the key and value types: what iterating it may do (TPurity) is not part of
+                    // an iterable
+                    if (count($this->type_params) > 3 || !isset($this->type_params[1])) {
+                        throw new InvalidArgumentException('Wrong number of templates!');
                     }
-                    return new TIterable($this->type_params);
+                    return new TIterable([$this->type_params[0], $this->type_params[1]]);
                 }
                 return new TIterable([Type::getMixed(), Type::getMixed()]);
             }
@@ -553,12 +551,17 @@ abstract class Atomic implements TypeNode, Stringable
             $implemented_traversable_templates = TemplateStandinTypeReplacer::getMappedGenericTypeParams(
                 $codebase,
                 $this,
-                new TGenericObject("Traversable", [Type::getMixed(), Type::getMixed()]),
+                new TGenericObject(
+                    "Traversable",
+                    [Type::getMixed(), Type::getMixed(), new Union([new TCapabilities(Capabilities::ALL)])],
+                ),
             );
-            if (count($implemented_traversable_templates) > 2) {
-                throw new InvalidArgumentException('Too many templates!');
+            if (count($implemented_traversable_templates) > 3
+                || !isset($implemented_traversable_templates[0], $implemented_traversable_templates[1])
+            ) {
+                throw new InvalidArgumentException('Wrong number of templates!');
             }
-            return new TIterable($implemented_traversable_templates);
+            return new TIterable([$implemented_traversable_templates[0], $implemented_traversable_templates[1]]);
         }
         throw new InvalidArgumentException("{$this->getId()} is not an iterable");
     }

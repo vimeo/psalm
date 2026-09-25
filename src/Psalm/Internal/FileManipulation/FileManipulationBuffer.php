@@ -20,7 +20,7 @@ use function substr_replace;
 
 /**
  * @internal
- * @psalm-external-mutation-free
+ * @psalm-capabilities write-props|write-refs
  */
 final class FileManipulationBuffer
 {
@@ -87,7 +87,7 @@ final class FileManipulationBuffer
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public static function addForCodeLocation(
         CodeLocation $code_location,
@@ -123,7 +123,7 @@ final class FileManipulationBuffer
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public static function addVarAnnotationToRemove(DocblockTypeLocation $code_location): void
     {
@@ -192,7 +192,7 @@ final class FileManipulationBuffer
 
     /**
      * @return array<string, FileManipulation[]>
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public static function getMigrationManipulations(FileProvider $file_provider): array
     {

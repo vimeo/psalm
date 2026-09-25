@@ -11,11 +11,11 @@ use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassConstantStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\MethodStorage;
-use Psalm\Storage\Mutations;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 use Psalm\Type\Union;
@@ -279,9 +279,9 @@ final class Reflection
         $storage->abstract = $method->isAbstract();
 
         if ($method_name_lc === '__construct' && $fq_class_name_lc === 'datetimezone') {
-            $storage->allowed_mutations = Mutations::LEVEL_NONE;
+            $storage->capabilities = Capabilities::NONE;
         } else {
-            $storage->allowed_mutations = Mutations::LEVEL_ALL;
+            $storage->capabilities = Capabilities::ALL;
         }
 
         $class_storage->declaring_method_ids[$method_name_lc] = new MethodIdentifier(
@@ -409,7 +409,7 @@ final class Reflection
                 }
             }
 
-            $storage->allowed_mutations = Mutations::LEVEL_NONE;
+            $storage->capabilities = Capabilities::NONE;
 
             $storage->required_param_count = 0;
 

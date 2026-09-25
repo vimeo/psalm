@@ -42,7 +42,6 @@ final class YieldFromAnalyzer
             $always_non_empty_array = true;
             if (ForeachAnalyzer::checkIteratorType(
                 $statements_analyzer,
-                $stmt,
                 $stmt->expr,
                 $stmt_expr_type,
                 $statements_analyzer->getCodebase(),

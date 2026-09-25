@@ -38,7 +38,7 @@ final class PluginRegistrationSocket implements RegistrationInterface
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     #[Override]
     public function addStubFile(string $file_name): void

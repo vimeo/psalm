@@ -73,7 +73,7 @@ final class MethodCallReturnTypeFetcher
                 return new Union([new TClosure(
                     $method_storage->params,
                     $method_storage->return_type,
-                    $method_storage->allowed_mutations,
+                    $method_storage->capabilities,
                 )]);
             }
 

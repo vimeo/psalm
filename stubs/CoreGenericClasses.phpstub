@@ -4,8 +4,14 @@
  * Interface to detect if a class is traversable using &foreach;.
  * @link http://php.net/manual/en/class.traversable.php
  *
+ * TPurity is what iterating over the object may do (the capabilities of the Iterator methods
+ * foreach calls, or of getIterator() and of the iterator it returns): `Iterator<int, string, pure>`
+ * can be iterated by a pure function. Classes implementing Iterator or IteratorAggregate that do not
+ * bind it get it from their own methods.
+ *
  * @template-covariant TKey
  * @template-covariant TValue
+ * @psalm-purity-template TPurity(impure)
  */
 interface Traversable {
 }
@@ -15,42 +21,61 @@ interface Traversable {
  * @template-covariant TValue
  * @template TSend
  * @template-covariant TReturn
+ * @psalm-purity-template TPurity(impure)
  *
- * @template-implements Traversable<TKey, TValue>
+ * @template-implements Iterator<TKey, TValue, TPurity>
+ *
+ * TPurity is what running the generator body may do: a generator function binds it to its own
+ * capabilities (and purity templates) in its return type, so consuming the generator costs what
+ * the body costs and nothing else: its position is internal engine state, not an effect.
  */
-class Generator implements Traversable {
+final class Generator implements Iterator {
     /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @psalm-ignore-nullable-return
      * @return ?TValue Can return any type.
      */
     public function current() {}
 
     /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @return void Any returned value is ignored.
      */
     public function next() {}
 
     /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @return TKey scalar on success, or null on failure.
      */
     public function key() {}
 
     /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @return bool The return value will be casted to boolean and then evaluated.
      */
     public function valid() {}
 
     /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @return void Any returned value is ignored.
      */
     public function rewind() {}
 
     /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @return TReturn Can return any type.
      */
     public function getReturn() {}
 
     /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @param TSend $value
      * @psalm-ignore-nullable-return
      * @return ?TValue Can return any type.
@@ -58,6 +83,8 @@ class Generator implements Traversable {
     public function send($value) {}
 
     /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @psalm-ignore-nullable-return
      * @return ?TValue Can return any type.
      */

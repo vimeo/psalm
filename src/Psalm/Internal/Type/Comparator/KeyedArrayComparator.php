@@ -346,7 +346,7 @@ final class KeyedArrayComparator
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public static function coerceToObjectWithProperties(
         Codebase $codebase,

@@ -1,0 +1,3 @@
+[submodule "psalm-plugin-api"]
+	path = psalm-plugin-api
+	url = https://github.com/psalm/psalm-plugin-api

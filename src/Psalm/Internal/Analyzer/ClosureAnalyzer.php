@@ -8,14 +8,16 @@ use Override;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Codebase\CodeUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\PhpVisitor\ShortClosureVisitor;
 use Psalm\Issue\DuplicateParam;
-use Psalm\Issue\ImpureFunctionCall;
+use Psalm\Issue\ImpureByReferenceAssignment;
 use Psalm\Issue\PossiblyUndefinedVariable;
 use Psalm\Issue\UndefinedVariable;
 use Psalm\IssueBuffer;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
@@ -69,6 +71,13 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
      * The variable this closure is assigned to and captures by reference, if
      * any: calls through it from the closure body are recursive calls.
      */
+    /**
+     * The variables captured by reference that the closure body writes.
+     *
+     * @var array<string, true>
+     */
+    public array $captured_by_ref_writes = [];
+
     public function getRecursiveVarId(): ?string
     {
         /** @var mixed $var_id */
@@ -157,6 +166,8 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
             }
         }
 
+        $was_by_ref = [];
+
         if ($stmt instanceof PhpParser\Node\Expr\Closure) {
             foreach ($stmt->uses as $use) {
                 if (!is_string($use->var->name)) {
@@ -185,9 +196,16 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
                     : Type::getMixed();
 
                 if ($use->byRef) {
+                    $was_by_ref[$use_var_id] = $context->hasVariable($use_var_id)
+                        && $context->vars_in_scope[$use_var_id]->by_ref;
+
                     $use_context->vars_in_scope[$use_var_id] =
                         $use_context->vars_in_scope[$use_var_id]->setProperties(['by_ref' => true]);
                     $use_context->references_to_external_scope[$use_var_id] = true;
+
+                    // shared with the enclosing scope, plus what that scope needs to write it
+                    $use_context->captured_by_ref[$use_var_id]
+                        = AssignmentAnalyzer::getExternalWriteCapabilities($context, $use_var_id);
                 }
 
                 $use_context->vars_possibly_in_scope[$use_var_id] = true;
@@ -236,17 +254,34 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
         $closure_analyzer->analyze($use_context, $statements_analyzer->node_data, $context, false, $byref_vars);
 
         foreach ($byref_vars as $key => $value) {
-            $context->vars_in_scope[$key] = $value;
+            // the variable is shared with the closure, but is still this scope's own unless it
+            // was a reference already
+            $context->vars_in_scope[$key] = $value->setByRef($was_by_ref[$key] ?? false);
+        }
+
+        // the closure writes variables it shares with this scope: when such a variable is
+        // itself shared with somewhere else, this scope is what lets the closure write there
+        foreach ($closure_analyzer->captured_by_ref_writes as $var_id => $_) {
+            $required = $use_context->captured_by_ref[$var_id] ?? Capabilities::NONE;
+
+            if ($required === Capabilities::NONE) {
+                continue;
+            }
+
+            $statements_analyzer->signalMutation(
+                $required,
+                $context,
+                'variable ' . $var_id . ' captured by reference, written by the closure,',
+                ImpureByReferenceAssignment::class,
+                $stmt,
+            );
         }
         
-        $statements_analyzer->signalMutation(
-            $closure_analyzer->inferred_mutations,
-            $context,
-            'closure',
-            ImpureFunctionCall::class,
-            $stmt,
-            null,
-            false,
+        // creating a closure is not an effect: its capabilities are carried by its type and are
+        // required where it is called or passed. Only the purity inference of the enclosing
+        // function-like still follows the closure's final level, as if it were called.
+        $statements_analyzer->signalMutationOnlyInferred(
+            Capabilities::NONE,
             $closure_analyzer->storage,
             false,
             $closure_analyzer->getMutationNodeId(),

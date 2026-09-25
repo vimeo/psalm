@@ -14,6 +14,7 @@ use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
@@ -25,6 +26,7 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Issue\DeprecatedFunction;
 use Psalm\Issue\ImpureFunctionCall;
+use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InvalidFunctionCall;
 use Psalm\Issue\MixedFunctionCall;
 use Psalm\Issue\NullFunctionCall;
@@ -39,9 +41,9 @@ use Psalm\Node\VirtualArg;
 use Psalm\Node\VirtualIdentifier;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\Event\AfterEveryFunctionCallAnalysisEvent;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionStorage;
-use Psalm\Storage\Mutations;
 use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -73,7 +75,6 @@ use function explode;
 use function implode;
 use function in_array;
 use function is_string;
-use function max;
 use function preg_replace;
 use function reset;
 use function spl_object_id;
@@ -149,7 +150,34 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             }
 
             if ($function_call_info->new_function_name) {
+                // a literal callable string: from here on it is a call of the named function
                 $function_name = $function_call_info->new_function_name;
+
+                if ($codebase->functions->functionExists(
+                    $statements_analyzer,
+                    strtolower(implode('\\', $function_name->getParts())),
+                )) {
+                    $function_call_info = self::handleNamedFunction(
+                        $statements_analyzer,
+                        $stmt,
+                        $function_name,
+                        $context,
+                        $code_location,
+                    );
+
+                    if (!$function_call_info->function_exists) {
+                        return true;
+                    }
+                } else {
+                    // an unknown function may do anything
+                    $statements_analyzer->signalMutation(
+                        Capabilities::ALL,
+                        $context,
+                        'function call on unknown function',
+                        ImpureFunctionCall::class,
+                        $stmt,
+                    );
+                }
             }
         } else {
             $function_call_info = self::handleNamedFunction(
@@ -262,6 +290,11 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 $context,
             );
 
+            if ($function_call_info->function_storage?->has_yield) {
+                // a generator function always returns a new generator: nothing else holds it
+                $stmt_type = $stmt_type->setProperties(['reference_free' => true]);
+            }
+
             $statements_analyzer->node_data->setType($real_stmt, $stmt_type);
 
             if ($stmt_type->isNever()) {
@@ -301,7 +334,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                         $closure_types[] = new TClosure(
                             $candidate_callable->params,
                             $candidate_callable->return_type,
-                            $candidate_callable->allowed_mutations,
+                            $candidate_callable->purity,
                         );
                     }
                 }
@@ -370,6 +403,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             $function_name,
             $function_call_info,
             $context,
+            $template_result,
         );
 
         self::checkFunctionNoDiscard(
@@ -677,18 +711,62 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
             $var_atomic_types = $stmt_name_type->getAtomicTypes();
 
+            $source = $statements_analyzer->getSource();
+
             while ($var_atomic_types) {
                 $var_type_part = array_shift($var_atomic_types);
 
                 if ($var_type_part instanceof TTemplateParam) {
+                    // a type template the enclosing function-like inherits its purity from
+                    // (`@psalm-purity-from-template T`): calling it is deferred to the callers
+                    if (in_array(
+                        $var_type_part->param_name,
+                        CallPurityResolver::getEnclosingPurityTemplates($statements_analyzer),
+                        true,
+                    )) {
+                        continue;
+                    }
+
                     $var_atomic_types = array_merge($var_atomic_types, $var_type_part->as->getAtomicTypes());
                     continue;
                 }
 
-
-
                 if ($var_type_part instanceof TClosure || $var_type_part instanceof TCallable) {
-                    $source = $statements_analyzer->getSource();
+                    // the purity of the closure, where a purity template the enclosing function-like
+                    // inherits its purity from requires nothing: that is deferred to its callers
+                    $closure_capabilities = CallPurityResolver::resolvePurity(
+                        $var_type_part->purity,
+                        $statements_analyzer,
+                    );
+
+                    // a closure created in this scope: what it does to the variables it captured
+                    // by reference, and through its by-reference parameters, stays in this scope
+                    if ($statements_analyzer->node_data->isPureCompatible($function_name)) {
+                        $closure_capabilities &= ~Capabilities::RECEIVER_LOCAL;
+                    }
+
+                    $closure_capabilities = ByRefArgumentAnalyzer::adjustCapabilities(
+                        $statements_analyzer,
+                        $context,
+                        $closure_capabilities,
+                        $var_type_part->params,
+                        $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
+                    );
+
+                    if (!$stmt->isFirstClassCallable()) {
+                        if (($closure_capabilities & Capabilities::READ_GLOBALS) !== 0) {
+                            $stmt->setAttribute(GlobalStateAnalyzer::ATTRIBUTE, true);
+                        }
+
+                        GlobalStateAnalyzer::checkArguments(
+                            $statements_analyzer,
+                            $context,
+                            $stmt->getArgs(),
+                            $closure_capabilities,
+                            ImpureFunctionCall::class,
+                            'the closure',
+                        );
+                    }
 
                     if ($function_name instanceof PhpParser\Node\Expr\Variable
                         && is_string($function_name->name)
@@ -697,7 +775,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     ) {
                         // a recursive call of the closure being analysed: not a mutation of its own
                     } elseif ($statements_analyzer->signalMutation(
-                        $var_type_part->allowed_mutations,
+                        $closure_capabilities,
                         $context,
                         'function call on ' . $var_type_part->getId(),
                         ImpureFunctionCall::class,
@@ -710,11 +788,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                             $function_call_info->function_storage = new FunctionStorage();
                         }
 
-                        $function_call_info->function_storage->allowed_mutations
-                            = max(
-                                $function_call_info->function_storage->allowed_mutations,
-                                $var_type_part->allowed_mutations,
-                            );
+                        $function_call_info->function_storage->capabilities |= $closure_capabilities;
                     }
 
                     $function_call_info->function_params = $var_type_part->params;
@@ -775,8 +849,16 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     || ($var_type_part instanceof TNamedObject && $var_type_part->value === 'Closure')
                     || ($var_type_part instanceof TObjectWithProperties && isset($var_type_part->methods['__invoke']))
                 ) {
-                    // this is fine
+                    // this is fine, but the callee is unknown, so it may do anything
                     $has_valid_function_call_type = true;
+
+                    $statements_analyzer->signalMutation(
+                        Capabilities::ALL,
+                        $context,
+                        'function call on ' . $var_type_part->getId(),
+                        ImpureFunctionCall::class,
+                        $stmt,
+                    );
                 } elseif ($var_type_part instanceof TString
                     || $var_type_part instanceof TArray
                     || ($var_type_part instanceof TKeyedArray
@@ -826,6 +908,30 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
                     // this is also kind of fine
                     $has_valid_function_call_type = true;
+
+                    if ($potential_method_id && $codebase->methods->hasStorage($potential_method_id)) {
+                        $potential_method_storage = $codebase->methods->getStorage($potential_method_id);
+
+                        $statements_analyzer->signalMutation(
+                            $potential_method_storage->capabilities,
+                            $context,
+                            'method ' . (string) $potential_method_id,
+                            ImpureMethodCall::class,
+                            $stmt,
+                            null,
+                            false,
+                            $potential_method_storage,
+                        );
+                    } elseif (!$function_call_info->new_function_name) {
+                        // a callable string or array whose target is unknown may do anything
+                        $statements_analyzer->signalMutation(
+                            Capabilities::ALL,
+                            $context,
+                            'function call on ' . $var_type_part->getId(),
+                            ImpureFunctionCall::class,
+                            $stmt,
+                        );
+                    }
                 } elseif ($var_type_part instanceof TNull) {
                     // handled above
                 } elseif (!$var_type_part instanceof TNamedObject
@@ -1076,6 +1182,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         PhpParser\Node $function_name,
         FunctionCallInfo $function_call_info,
         Context $context,
+        ?TemplateResult $template_result,
     ): void {
         $config = $codebase->config;
 
@@ -1090,7 +1197,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             $must_use = true;
 
             $mutations = $function_call_info->function_id && $function_call_info->in_call_map
-                ? $codebase->functions->getCallMapFunctionMutations(
+                ? $codebase->functions->getCallMapFunctionCapabilities(
                     $statements_analyzer,
                     $context,
                     $codebase,
@@ -1100,10 +1207,28 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 )
                 : (!$function_call_info->in_call_map
                     && $function_call_info->function_storage
-                    ? $function_call_info->function_storage->allowed_mutations
+                    // @psalm-purity-from-template: plus the capabilities of the closures passed
+                    ? CallPurityResolver::getCallCapabilities(
+                        $statements_analyzer,
+                        $codebase,
+                        $function_call_info->function_storage,
+                        $function_call_info->function_storage->capabilities,
+                        $template_result,
+                    )
                     : null);
 
             if ($mutations !== null) {
+                // what this call reads, not what it writes through its by-reference arguments
+                $reads_globals = ($mutations & Capabilities::READ_GLOBALS) !== 0;
+
+                $mutations = ByRefArgumentAnalyzer::adjustCapabilities(
+                    $statements_analyzer,
+                    $context,
+                    $mutations,
+                    $function_call_info->function_params,
+                    $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
+                );
+
                 $statements_analyzer->signalMutation(
                     $mutations,
                     $context,
@@ -1114,15 +1239,28 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     false,
                     $function_call_info->function_storage,
                 );
-                if ($mutations > Mutations::LEVEL_INTERNAL_READ
-                    && !$config->remember_property_assignments_after_call
-                ) {
-                    $context->removeMutableObjectVars();
+
+                if (!$stmt->isFirstClassCallable()) {
+                    if ($reads_globals) {
+                        $stmt->setAttribute(GlobalStateAnalyzer::ATTRIBUTE, true);
+                    }
+
+                    GlobalStateAnalyzer::checkArguments(
+                        $statements_analyzer,
+                        $context,
+                        $stmt->getArgs(),
+                        $mutations,
+                        ImpureFunctionCall::class,
+                        'function ' . ($function_call_info->function_id ?? 'unknown function'),
+                    );
+                }
+                if (!$config->remember_property_assignments_after_call) {
+                    $context->removeMutableObjectVars(false, $mutations);
                 }
             }
             if ($function_call_info->function_id
                 && $must_use
-                && $mutations === Mutations::LEVEL_NONE
+                && $mutations === Capabilities::NONE
                 && !$function_call_info->function_storage?->assertions
                 && $codebase->find_unused_variables
                 && !$context->inside_conditional

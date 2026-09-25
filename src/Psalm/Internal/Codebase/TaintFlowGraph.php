@@ -456,6 +456,7 @@ final class TaintFlowGraph extends DataFlowGraph
      * @param array<string, DataFlowNode> $sources
      * @param array<string, DataFlowNode> $sinks
      * @return array<string, true>
+     * @psalm-capabilities read-props
      */
     private function getSinkReachableNodes(array $sources, array $sinks): array
     {
@@ -518,6 +519,7 @@ final class TaintFlowGraph extends DataFlowGraph
      *
      * @param array<string, array<string, true>> $reverse
      * @param-out array<string, array<string, true>> $reverse
+     * @psalm-capabilities write-refs|read-props
      */
     private function linkSpecialization(array &$reverse, string $id): void
     {
@@ -541,6 +543,7 @@ final class TaintFlowGraph extends DataFlowGraph
      *
      * @param array<string, array<string, true>> $reverse
      * @param-out array<string, array<string, true>> $reverse
+     * @psalm-capabilities write-refs|read-props
      */
     private function linkSpecializationByField(array &$reverse, DataFlowNode $node): void
     {

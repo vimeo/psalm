@@ -9,11 +9,12 @@ use Psalm\DocComment;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Scanner\ParsedDocblock;
-use Psalm\Storage\Mutations;
+use Psalm\Storage\Capabilities;
 
 use function ltrim;
 use function str_replace;
 use function strlen;
+use function strpos;
 use function strrpos;
 use function substr;
 
@@ -31,10 +32,8 @@ final class ClassDocblockManipulator
 
     private readonly int $docblock_end;
 
-    /**
-     * @var Mutations::LEVEL_*|null
-     */
-    private ?int $allowed_mutations = null;
+    /** A bitmask of {@see Capabilities} constants */
+    private ?int $capabilities = null;
 
     private readonly string $indentation;
 
@@ -75,12 +74,12 @@ final class ClassDocblockManipulator
     }
 
     /**
-     * @param Mutations::LEVEL_* $allowed_mutations
+     * @param int $capabilities a bitmask of {@see Capabilities} constants
      * @psalm-external-mutation-free
      */
-    public function setAllowedMutations(int $allowed_mutations): void
+    public function setCapabilities(int $capabilities): void
     {
-        $this->allowed_mutations = $allowed_mutations;
+        $this->capabilities = $capabilities;
     }
 
     /**
@@ -99,23 +98,19 @@ final class ClassDocblockManipulator
 
         $modified_docblock = false;
 
-        if ($this->allowed_mutations !== null) {
+        if ($this->capabilities !== null) {
             $modified_docblock = true;
 
             unset($parsed_docblock->tags['psalm-pure']);
             unset($parsed_docblock->tags['psalm-immutable']);
+            unset($parsed_docblock->tags['psalm-mutation-free']);
             unset($parsed_docblock->tags['psalm-external-mutation-free']);
             unset($parsed_docblock->tags['psalm-mutable']);
-
-            if ($this->allowed_mutations === Mutations::LEVEL_NONE) {
-                $parsed_docblock->tags['psalm-pure'] = [''];
-            } elseif ($this->allowed_mutations === Mutations::LEVEL_INTERNAL_READ) {
-                $parsed_docblock->tags['psalm-immutable'] = [''];
-            } elseif ($this->allowed_mutations === Mutations::LEVEL_INTERNAL_READ_WRITE) {
-                $parsed_docblock->tags['psalm-external-mutation-free'] = [''];
-            } else {
-                $parsed_docblock->tags['psalm-mutable'] = [''];
-            }
+            unset($parsed_docblock->tags['psalm-capabilities']);
+            $annotation = Capabilities::toClassAnnotation($this->capabilities);
+            $space = strpos($annotation, ' ');
+            $tag = $space === false ? $annotation : substr($annotation, 0, $space);
+            $parsed_docblock->tags[$tag] = [$space === false ? '' : substr($annotation, $space + 1)];
         }
 
         if (!$modified_docblock) {
@@ -137,7 +132,7 @@ final class ClassDocblockManipulator
         $file_manipulations = [];
 
         foreach (self::$manipulators[$file_path] as $manipulator) {
-            if ($manipulator->allowed_mutations !== null) {
+            if ($manipulator->capabilities !== null) {
                 $file_manipulations[$manipulator->docblock_start] = new FileManipulation(
                     $manipulator->docblock_start,
                     $manipulator->docblock_end,

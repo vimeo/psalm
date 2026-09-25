@@ -9,6 +9,7 @@ use PhpParser\Node\Arg;
 use PhpParser\Node\Expr\Closure as ClosureNode;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
@@ -19,8 +20,8 @@ use Psalm\Internal\Provider\FunctionParamsProvider;
 use Psalm\Internal\Provider\FunctionReturnTypeProvider;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\StatementsSource;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionStorage;
-use Psalm\Storage\Mutations;
 use Psalm\Type\Atomic\TNamedObject;
 use UnexpectedValueException;
 
@@ -29,8 +30,8 @@ use function count;
 use function end;
 use function explode;
 use function implode;
+use function in_array;
 use function is_bool;
-use function max;
 use function rtrim;
 use function str_contains;
 use function str_ends_with;
@@ -70,7 +71,7 @@ final class Functions
 
     /**
      * @param non-empty-lowercase-string $function_id
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function getStorage(
         ?StatementsAnalyzer $statements_analyzer,
@@ -385,7 +386,7 @@ final class Functions
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public static function isVariadic(Codebase $codebase, string $function_id, string $file_path): bool
     {
@@ -406,9 +407,8 @@ final class Functions
 
     /**
      * @param ?list<Arg> $args
-     * @return Mutations::LEVEL_*
      */
-    public function getCallMapFunctionMutations(
+    public function getCallMapFunctionCapabilities(
         ?StatementsAnalyzer $statements_analyzer,
         ?Context $context,
         Codebase $codebase,
@@ -416,8 +416,10 @@ final class Functions
         ?array $args,
         bool &$must_use = true,
     ): int {
-        if (ImpureFunctionsList::isImpure($function_id)) {
-            return Mutations::LEVEL_ALL;
+        $listed_capabilities = ImpureFunctionsList::getCapabilities($function_id);
+
+        if ($listed_capabilities !== Capabilities::NONE) {
+            return $listed_capabilities;
         }
 
         $type_provider = $statements_analyzer?->node_data;
@@ -425,29 +427,48 @@ final class Functions
             $serialize_type = $type_provider->getType($args[0]->value);
 
             if ($serialize_type && $serialize_type->canContainObjectType($codebase)) {
-                return Mutations::LEVEL_ALL;
+                return Capabilities::IO;
             }
         }
 
         if (str_starts_with($function_id, 'image')) {
-            return Mutations::LEVEL_ALL;
+            return Capabilities::IO;
         }
 
         if (str_starts_with($function_id, 'readline')) {
-            return Mutations::LEVEL_ALL;
+            return Capabilities::IO;
         }
 
         if (($function_id === 'var_export' || $function_id === 'print_r') && !isset($args[1])) {
-            return Mutations::LEVEL_ALL;
+            return Capabilities::IO;
+        }
+
+        // the date functions read the clock when no timestamp is given
+        if (in_array($function_id, ['date', 'gmdate', 'idate', 'strtotime', 'localtime', 'getdate'], true)
+            && !isset($args[1])
+        ) {
+            return Capabilities::IO;
+        }
+
+        if (($function_id === 'mktime' || $function_id === 'gmmktime') && !isset($args[5])) {
+            return Capabilities::IO;
         }
 
         if ($function_id === 'assert') {
             $must_use = false;
-            return Mutations::LEVEL_NONE;
+            return Capabilities::NONE;
         }
 
         if ($function_id === 'func_num_args' || $function_id === 'func_get_args') {
-            return Mutations::LEVEL_NONE;
+            return Capabilities::NONE;
+        }
+
+        // they write the array they are given by reference only to move its internal pointer,
+        // engine state that is not an effect (like where a generator is paused); a call made only
+        // to move it is not unused either
+        if (in_array($function_id, ['reset', 'end', 'next', 'prev'], true)) {
+            $must_use = false;
+            return Capabilities::NONE;
         }
 
         if ((
@@ -462,7 +483,7 @@ final class Functions
             $count_type = $type_provider->getType($var);
 
             if ($count_type) {
-                $mutations = Mutations::LEVEL_NONE;
+                $mutations = Capabilities::NONE;
                 foreach ($count_type->getAtomicTypes() as $atomic_count_type) {
                     if ($atomic_count_type instanceof TNamedObject) {
                         $count_method_id = new MethodIdentifier(
@@ -475,22 +496,18 @@ final class Functions
                         } catch (Exception) {
                             continue;
                         }
-                        $mutations = max($mutations, MethodCallPurityAnalyzer::getMethodAllowedMutations(
+                        $mutations |= MethodCallPurityAnalyzer::getMethodCapabilities(
                             $statements_analyzer,
                             $var,
-                            $count_method_id,
                             $storage,
-                            $context,
-                        ));
+                        );
 
                         $statements_analyzer->signalMutationOnlyInferred(
-                            $storage->allowed_mutations,
+                            $storage->capabilities,
                             $storage,
                             MethodCallPurityAnalyzer::receiverAllowsInternalMutations(
                                 $statements_analyzer,
                                 $var,
-                                $count_method_id,
-                                $context,
                             ),
                         );
                     }
@@ -510,13 +527,13 @@ final class Functions
             || ($args !== null && count($args) === 0)
             || ($function_callable->return_type && $function_callable->return_type->isVoid())
         ) {
-            return Mutations::LEVEL_ALL;
+            return Capabilities::ALL;
         }
 
         $must_use = $function_id !== 'array_map'
             || (isset($args[0]) && !$args[0]->value instanceof ClosureNode);
 
-        $mutations = Mutations::LEVEL_NONE;
+        $mutations = Capabilities::NONE;
         foreach ($function_callable->params as $i => $param) {
             if ($type_provider && $param->type && $param->type->hasCallableType() && isset($args[$i])) {
                 $arg_type = $type_provider->getType($args[$i]->value);
@@ -528,8 +545,11 @@ final class Functions
                             $possible_callable,
                         );
 
-                        if ($possible_callable && $possible_callable->allowed_mutations !== Mutations::LEVEL_NONE) {
-                            $mutations = max($mutations, $possible_callable->allowed_mutations);
+                        if ($possible_callable) {
+                            // a purity template the caller inherits its purity from requires nothing here
+                            $mutations |= $statements_analyzer
+                                ? CallPurityResolver::resolvePurity($possible_callable->purity, $statements_analyzer)
+                                : $possible_callable->getCapabilities();
                         }
                     }
                 }
@@ -537,6 +557,8 @@ final class Functions
 
             if ($param->by_ref && isset($args[$i])) {
                 $must_use = false;
+                // what this costs depends on the argument: see ByRefArgumentAnalyzer
+                $mutations |= Capabilities::WRITE_REFS;
             }
         }
 

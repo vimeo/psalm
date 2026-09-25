@@ -116,7 +116,7 @@ class TestCase extends BaseTestCase
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function addFile(string $file_path, string $contents): void
     {
@@ -125,7 +125,7 @@ class TestCase extends BaseTestCase
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function addStubFile(string $file_path, string $contents): void
     {

@@ -47,8 +47,8 @@ use Psalm\Node\Scalar\VirtualString;
 use Psalm\Node\VirtualArg;
 use Psalm\Node\VirtualIdentifier;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
-use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TEnumCase;
@@ -511,8 +511,8 @@ final class AtomicPropertyFetchAnalyzer
             if ($context->inside_unset) {
                 $statements_analyzer->signalMutation(
                     $stmt_var_id === '$this'
-                        ? Mutations::LEVEL_INTERNAL_READ_WRITE
-                        : Mutations::LEVEL_EXTERNAL,
+                        ? Capabilities::WRITE_THIS_PROPS
+                        : Capabilities::WRITE_PROPS,
                     $context,
                     'unsetting a property on a mutable object',
                     ImpurePropertyAssignment::class,
@@ -520,7 +520,7 @@ final class AtomicPropertyFetchAnalyzer
                 );
             } else {
                 $statements_analyzer->signalMutation(
-                    Mutations::LEVEL_INTERNAL_READ,
+                    Capabilities::READ_PROPS,
                     $context,
                     'accessing a property on a mutable object',
                     ImpurePropertyFetch::class,
@@ -1081,7 +1081,7 @@ final class AtomicPropertyFetchAnalyzer
     ): void {
         if ($context->inside_isset || $context->collect_initializations) {
             $statements_analyzer->signalMutation(
-                Mutations::LEVEL_INTERNAL_READ, // Strange but matches previous code
+                Capabilities::READ_PROPS, // Strange but matches previous code
                 $context,
                 'accessing a property on a mutable object',
                 ImpurePropertyFetch::class,

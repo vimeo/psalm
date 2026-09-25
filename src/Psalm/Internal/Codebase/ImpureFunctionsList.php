@@ -4,39 +4,45 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Codebase;
 
+use Psalm\Storage\Capabilities;
+
 use function dirname;
 use function strtolower;
 
 /**
+ * The capabilities of the builtin functions with side effects (dictionaries/ImpureFunctionsList.php).
+ *
  * @internal
  * @psalm-external-mutation-free
  */
 final class ImpureFunctionsList
 {
-    /** @var null|array<string, true> */
-    private static ?array $impure_functions_list = null;
+    /** @var null|array<string, int> */
+    private static ?array $capabilities = null;
 
     /**
-     * @psalm-assert !null self::$impure_functions_list
+     * @psalm-assert !null self::$capabilities
      * @psalm-external-mutation-free
      */
     private static function load(): void
     {
-        if (self::$impure_functions_list !== null) {
+        if (self::$capabilities !== null) {
             return;
         }
 
-        /** @var array<string, true> */
-        self::$impure_functions_list = require(dirname(__DIR__, 4) . '/dictionaries/ImpureFunctionsList.php');
+        /** @var array<string, int> */
+        self::$capabilities = require(dirname(__DIR__, 4) . '/dictionaries/ImpureFunctionsList.php');
     }
 
     /**
+     * The capabilities a builtin function requires: none for a function that is not listed.
+     *
      * @psalm-external-mutation-free
      */
-    public static function isImpure(string $function_id): bool
+    public static function getCapabilities(string $function_id): int
     {
         self::load();
 
-        return isset(self::$impure_functions_list[strtolower($function_id)]);
+        return self::$capabilities[strtolower($function_id)] ?? Capabilities::NONE;
     }
 }

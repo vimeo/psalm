@@ -18,12 +18,14 @@ use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\ImplicitToStringCast;
+use Psalm\Issue\ImpureStaticProperty;
 use Psalm\Issue\InvalidPropertyAssignmentValue;
 use Psalm\Issue\MixedPropertyTypeCoercion;
 use Psalm\Issue\PossiblyInvalidPropertyAssignmentValue;
 use Psalm\Issue\PropertyTypeCoercion;
 use Psalm\Issue\UndefinedPropertyAssignment;
 use Psalm\IssueBuffer;
+use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TNamedObject;
@@ -51,6 +53,14 @@ final class StaticPropertyAssignmentAnalyzer
             $stmt,
             $context->self,
             $statements_analyzer,
+        );
+
+        $statements_analyzer->signalMutation(
+            Capabilities::READ_GLOBALS | Capabilities::WRITE_GLOBALS,
+            $context,
+            'writing a static property',
+            ImpureStaticProperty::class,
+            $stmt,
         );
 
         $lhs_type = $statements_analyzer->node_data->getType($stmt->class);

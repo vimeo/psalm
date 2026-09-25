@@ -298,7 +298,7 @@ final class GeneratorTest extends TestCase
                     $_a = function() { return new RuntimeException(yield "a"); };
                     ',
                 'assertions' => [
-                    '$_a' => 'pure-Closure():Generator<int, string, mixed, RuntimeException>',
+                    '$_a' => 'pure-Closure():Generator<int, string, mixed, RuntimeException, pure>',
                 ],
             ],
             'detectYieldInArray' => [
@@ -307,7 +307,7 @@ final class GeneratorTest extends TestCase
                     $_a = function() { return [yield "a"]; };
                     ',
                 'assertions' => [
-                    '$_a' => 'pure-Closure():Generator<int, string, mixed, list{string}>',
+                    '$_a' => 'pure-Closure():Generator<int, string, mixed, list{string}, pure>',
                 ],
             ],
         ];

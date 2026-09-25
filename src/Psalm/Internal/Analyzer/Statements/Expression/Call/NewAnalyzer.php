@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodVisibilityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -40,6 +41,7 @@ use Psalm\Issue\UnsafeGenericInstantiation;
 use Psalm\Issue\UnsafeInstantiation;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\Possibilities;
@@ -67,6 +69,7 @@ use function array_map;
 use function array_values;
 use function count;
 use function in_array;
+use function is_int;
 use function preg_match;
 use function reset;
 use function strtolower;
@@ -76,6 +79,12 @@ use function strtolower;
  */
 final class NewAnalyzer extends CallAnalyzer
 {
+    /**
+     * The node attribute holding the capabilities a `new` or static call required from its caller,
+     * used to decide whether the callee may have changed refined properties or statics.
+     */
+    public const CALLEE_CAPABILITIES_ATTRIBUTE = 'callee_capabilities';
+
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\New_ $stmt,
@@ -299,7 +308,11 @@ final class NewAnalyzer extends CallAnalyzer
         }
 
         if (!$config->remember_property_assignments_after_call && !$context->collect_initializations) {
-            $context->removeMutableObjectVars();
+            // a constructor that cannot write properties or globals leaves every refinement in place
+            $context->removeMutableObjectVars(
+                false,
+                self::getCalleeCapabilities($stmt) ?? Capabilities::ALL,
+            );
         }
 
         return true;
@@ -458,22 +471,15 @@ final class NewAnalyzer extends CallAnalyzer
                     );
                 }
 
-                if (!$context->inside_throw &&
-                    !$method_storage->isExternalMutationFree()
-                ) {
-                    $statements_analyzer->signalMutation(
-                        $method_storage->allowed_mutations,
-                        $context,
-                        'constructor ' . $codebase->methods->getCasedMethodId($declaring_method_id),
-                        ImpureMethodCall::class,
-                        $stmt,
-                        null,
-                        false,
-                        $method_storage,
-                        // the constructor only mutates the new object
-                        true,
-                    );
-                }
+                self::analyzeConstructorPurity(
+                    $statements_analyzer,
+                    $codebase,
+                    $context,
+                    $stmt,
+                    $declaring_method_id,
+                    $method_storage,
+                    $template_result,
+                );
 
                 if ($method_storage->assertions && $stmt->class instanceof PhpParser\Node\Name) {
                     self::applyAssertionsToContext(
@@ -785,6 +791,128 @@ final class NewAnalyzer extends CallAnalyzer
         }
     }
 
+    /**
+     * `new $class_name()` calls the constructor of the class the class-string stands for, which
+     * may be anything when the class is not known.
+     */
+    /**
+     * The capabilities recorded in the CALLEE_CAPABILITIES_ATTRIBUTE of a `new` or static call,
+     * null when none were.
+     */
+    public static function getCalleeCapabilities(PhpParser\Node $stmt): ?int
+    {
+        if (!is_int($stmt->getAttribute(self::CALLEE_CAPABILITIES_ATTRIBUTE))) {
+            return null;
+        }
+
+        return (int) $stmt->getAttribute(self::CALLEE_CAPABILITIES_ATTRIBUTE);
+    }
+
+    /**
+     * What calling a constructor costs: its capabilities (with those of the closures its purity
+     * templates are bound to), less what it does to the new object, with its by-reference
+     * parameters costing what the arguments passed to them are.
+     */
+    private static function analyzeConstructorPurity(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        Context $context,
+        PhpParser\Node\Expr\New_ $stmt,
+        MethodIdentifier $declaring_method_id,
+        MethodStorage $method_storage,
+        ?TemplateResult $template_result,
+    ): void {
+        $cased_method_id = 'constructor ' . $codebase->methods->getCasedMethodId($declaring_method_id);
+
+        // the constructor only mutates the new object: what it does to it is fine
+        $resolved_capabilities = CallPurityResolver::getCallCapabilities(
+            $statements_analyzer,
+            $codebase,
+            $method_storage,
+            $method_storage->capabilities & ~(Capabilities::READ_PROPS | Capabilities::WRITE_THIS_PROPS),
+            $template_result,
+        );
+
+        $args = $stmt->getArgs();
+
+        $constructor_capabilities = ByRefArgumentAnalyzer::adjustCapabilities(
+            $statements_analyzer,
+            $context,
+            $resolved_capabilities,
+            $method_storage->params,
+            $args,
+        );
+
+        $stmt->setAttribute(self::CALLEE_CAPABILITIES_ATTRIBUTE, $constructor_capabilities);
+
+        $statements_analyzer->signalMutation(
+            $constructor_capabilities,
+            $context,
+            $cased_method_id,
+            ImpureMethodCall::class,
+            $stmt,
+            null,
+            false,
+            $method_storage,
+            true,
+        );
+
+        // the constructor may have stored global state in the new object: what it reads, not
+        // what it writes through its by-reference arguments
+        if (($resolved_capabilities & Capabilities::READ_GLOBALS) !== 0) {
+            $stmt->setAttribute(GlobalStateAnalyzer::ATTRIBUTE, true);
+        }
+
+        GlobalStateAnalyzer::checkArguments(
+            $statements_analyzer,
+            $context,
+            $args,
+            $constructor_capabilities,
+            ImpureMethodCall::class,
+            $cased_method_id,
+        );
+    }
+
+    private static function checkDynamicConstructorPurity(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        Context $context,
+        PhpParser\Node\Expr\New_ $stmt,
+        ?string $fq_class_name,
+    ): void {
+        if ($fq_class_name !== null
+            && $codebase->classlikes->classOrInterfaceOrEnumExists($fq_class_name)
+        ) {
+            $method_id = new MethodIdentifier($fq_class_name, '__construct');
+            $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+
+            if ($declaring_method_id === null) {
+                // no constructor: nothing is run
+                return;
+            }
+
+            self::analyzeConstructorPurity(
+                $statements_analyzer,
+                $codebase,
+                $context,
+                $stmt,
+                $declaring_method_id,
+                $codebase->methods->getStorage($declaring_method_id),
+                null,
+            );
+
+            return;
+        }
+
+        $statements_analyzer->signalMutation(
+            Capabilities::ALL,
+            $context,
+            'the constructor of an unknown class',
+            ImpureMethodCall::class,
+            $stmt,
+        );
+    }
+
     private static function analyzeConstructorExpression(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
@@ -982,6 +1110,14 @@ final class NewAnalyzer extends CallAnalyzer
                     );
                 }
 
+                self::checkDynamicConstructorPurity(
+                    $statements_analyzer,
+                    $codebase,
+                    $context,
+                    $stmt,
+                    $lhs_type_part->as_type?->value,
+                );
+
                 continue;
             }
 
@@ -1037,6 +1173,14 @@ final class NewAnalyzer extends CallAnalyzer
 
                     if ($lhs_type_part instanceof TClassString) {
                         $can_extend = true;
+
+                        self::checkDynamicConstructorPurity(
+                            $statements_analyzer,
+                            $codebase,
+                            $context,
+                            $stmt,
+                            $lhs_type_part->as_type?->value,
+                        );
                     }
 
                     if ($generated_type instanceof TObject) {

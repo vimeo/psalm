@@ -8,13 +8,13 @@ use Psalm\Internal\Provider\ClassLikeStorageProvider;
 
 /**
  * @internal
- * @psalm-external-mutation-free
+ * @psalm-capabilities write-props|write-refs
  */
 final class ReferenceMapGenerator
 {
     /**
      * @return array<string, string>
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public static function getReferenceMap(
         ClassLikeStorageProvider $classlike_storage_provider,

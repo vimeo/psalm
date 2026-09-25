@@ -3,13 +3,16 @@
 /**
  * @template-covariant TKey
  * @template-covariant TValue
+ * @psalm-purity-template TPurity(impure)
  *
- * @template-extends Traversable<TKey, TValue>
+ * @template-extends Traversable<TKey, TValue, TPurity>
  */
 interface IteratorAggregate extends Traversable {
 
     /**
-     * @return Traversable<TKey, TValue> An instance of an object implementing Iterator or Traversable
+     * @psalm-capabilities read-props
+     * @psalm-purity-from-template TPurity
+     * @return Traversable<TKey, TValue, TPurity> An instance of an object implementing Iterator or Traversable
      */
     public function getIterator();
 }
@@ -17,35 +20,46 @@ interface IteratorAggregate extends Traversable {
 /**
  * @template-covariant TKey
  * @template-covariant TValue
+ * @psalm-purity-template TPurity(impure)
  *
- * @template-extends Traversable<TKey, TValue>
+ * @template-extends Traversable<TKey, TValue, TPurity>
  */
 interface Iterator extends Traversable {
 
     /**
+     * @psalm-capabilities read-props
+     * @psalm-purity-from-template TPurity
      * @return TValue|null returns current value or null when iterator is drained
      * @psalm-ignore-nullable-return
      */
     public function current();
 
     /**
+     * @psalm-capabilities read-props
+     * @psalm-purity-from-template TPurity
      * @return void Any returned value is ignored.
      */
     public function next();
 
     /**
+     * @psalm-capabilities read-props
+     * @psalm-purity-from-template TPurity
      * @return TKey|null current key or null when iterator is drained
      * @psalm-ignore-nullable-return
      */
     public function key();
 
     /**
+     * @psalm-capabilities read-props
+     * @psalm-purity-from-template TPurity
      * @return bool The return value will be casted to boolean and then evaluated.
      *              Returns true on success or false on failure.
      */
     public function valid();
 
     /**
+     * @psalm-capabilities read-props
+     * @psalm-purity-from-template TPurity
      * @return void Any returned value is ignored.
      */
     public function rewind();
@@ -54,8 +68,9 @@ interface Iterator extends Traversable {
 /**
  * @template-covariant TKey
  * @template-covariant TValue
+ * @psalm-purity-template TPurity(impure)
  *
- * @template-extends Iterator<TKey, TValue>
+ * @template-extends Iterator<TKey, TValue, TPurity>
  */
 interface OuterIterator extends Iterator {
     /**
@@ -67,8 +82,9 @@ interface OuterIterator extends Iterator {
 /**
  * @template-covariant TKey
  * @template-covariant TValue
+ * @psalm-purity-template TPurity(impure)
  *
- * @template-extends Iterator<TKey, TValue>
+ * @template-extends Iterator<TKey, TValue, TPurity>
  */
 interface RecursiveIterator extends Iterator {
 
@@ -86,7 +102,8 @@ interface RecursiveIterator extends Iterator {
 /**
  * @template-covariant TKey
  * @template-covariant TValue
- * @template-extends Iterator<TKey, TValue>
+ * @psalm-purity-template TPurity(impure)
+ * @template-extends Iterator<TKey, TValue, TPurity>
  */
 interface SeekableIterator extends Iterator {
     /**

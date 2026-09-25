@@ -17,12 +17,11 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\FileManipulation\FunctionDocblockManipulator;
 use Psalm\Issue\MissingPureAnnotation;
 use Psalm\IssueBuffer;
-use Psalm\Storage\Mutations;
+use Psalm\Storage\Capabilities;
 use Throwable;
 
 use function array_keys;
 use function array_pop;
-use function max;
 
 /**
  * Infers the level of mutations (purity) of every analysed function-like once
@@ -37,8 +36,8 @@ use function max;
  * mutual, or through closures) all converge.
  *
  * @psalm-type MutationInfo = array{
- *     intrinsic: Mutations::LEVEL_*,
- *     allowed: Mutations::LEVEL_*,
+ *     intrinsic: int,
+ *     allowed: int,
  *     callees: array<string, bool>,
  *     location: CodeLocation,
  *     cased_name: string,
@@ -57,7 +56,7 @@ final class MutationLevelResolver
      * mutation info: node id => level.
      *
      * @param array<string, MutationInfo> $infos
-     * @return array<string, Mutations::LEVEL_*>
+     * @return array<string, int> node id => bitmask of {@see Capabilities} constants
      * @psalm-pure
      */
     public static function resolveLevels(array $infos): array
@@ -83,14 +82,14 @@ final class MutationLevelResolver
 
             foreach ($infos[$node_id]['callees'] as $callee_id => $internal_mutations_ok) {
                 // a callee that was never analysed (e.g. skipped) could do anything
-                $callee_level = $levels[$callee_id] ?? Mutations::LEVEL_ALL;
+                $callee_level = $levels[$callee_id] ?? Capabilities::ALL;
 
-                if ($internal_mutations_ok && $callee_level <= Mutations::LEVEL_INTERNAL_READ_WRITE) {
-                    // mutations of the callee's own instance don't leak to the caller
-                    $callee_level = Mutations::LEVEL_NONE;
+                if ($internal_mutations_ok) {
+                    // what the callee does to its own instance doesn't leak to the caller
+                    $callee_level &= ~Capabilities::RECEIVER_LOCAL;
                 }
 
-                $level = max($level, $callee_level);
+                $level |= $callee_level;
             }
 
             if ($level !== $levels[$node_id]) {
@@ -140,13 +139,20 @@ final class MutationLevelResolver
 
             $graph->markMutationInfoStale($node_id);
 
-            if (!$info['report'] || $level >= $info['allowed']) {
+            // suggestions are made at the granularity of the named purity levels: only when a
+            // stricter one than the current annotation applies
+            $level = Capabilities::toNamedLevel($level);
+
+            if (!$info['report']
+                || !Capabilities::allows($info['allowed'], $level)
+                || $level === Capabilities::toNamedLevel($info['allowed'])
+            ) {
                 continue;
             }
 
             IssueBuffer::maybeAdd(
                 new MissingPureAnnotation(
-                    $info['cased_name'] . ' must be marked @' . Mutations::TO_ATTRIBUTE_FUNCTIONLIKE[$level]
+                    $info['cased_name'] . ' must be marked @' . Capabilities::toFunctionAnnotation($level)
                     . ' to aid security analysis'
                     . ', run with --alter --issues=MissingPureAnnotation to fix this',
                     $info['location'],
@@ -164,7 +170,7 @@ final class MutationLevelResolver
                         $project_analyzer,
                         $file_path,
                         $stmt,
-                    )->setAllowedMutations($level);
+                    )->setCapabilities($level);
                 }
             }
         }

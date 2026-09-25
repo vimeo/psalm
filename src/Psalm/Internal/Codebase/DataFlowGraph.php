@@ -17,7 +17,7 @@ use function substr;
 
 /**
  * @internal
- * @psalm-external-mutation-free
+ * @psalm-capabilities write-props|write-refs
  */
 abstract class DataFlowGraph
 {
@@ -27,7 +27,8 @@ abstract class DataFlowGraph
     abstract public function addNode(DataFlowNode $node): void;
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
+     * @psalm-suppress MissingPureAnnotation CombinedFlowGraph::addPath writes the graphs it combines
      */
     public function addPath(
         DataFlowNode $from,

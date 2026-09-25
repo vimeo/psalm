@@ -33,6 +33,7 @@ use Psalm\Issue\ParamNameMismatch;
 use Psalm\Issue\TraitMethodSignatureMismatch;
 use Psalm\IssueBuffer;
 use Psalm\Storage\AttributeStorage;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
@@ -378,17 +379,49 @@ final class MethodComparator
             );
         }
 
-        if ($guide_method_storage->isExternalMutationFree()
-            && !$implementer_method_storage->isExternalMutationFree()
+        // an override may need fewer capabilities than the overridden method, never more. For a
+        // method with `@psalm-purity-from-template`, the capabilities it needs unconditionally
+        // must fit those the overridden method needs unconditionally (a caller passing pure
+        // closures gets a call as pure as the overridden method promises), and the worst case
+        // over the templates must fit the overridden method's worst case.
+        $guide_capabilities = $guide_method_storage->capabilities;
+        $implementer_capabilities = $implementer_method_storage->capabilities;
+
+        // a class-level purity template the implementer's class binds (`@extends Doer<io>`)
+        // is part of what the overridden method needs unconditionally in that class
+        foreach ($guide_method_storage->purity_from_templates as $template_name) {
+            if (!isset($guide_classlike_storage->template_types[$template_name])) {
+                continue;
+            }
+
+            $bound_type = $implementer_classlike_storage
+                ->template_extended_params[$guide_classlike_storage->name][$template_name] ?? null;
+
+            if ($bound_type !== null) {
+                $guide_capabilities |= Capabilities::fromType($bound_type);
+            }
+        }
+
+        if (Capabilities::allows($guide_capabilities, $implementer_capabilities)) {
+            $guide_capabilities = $guide_method_storage->getWorstCaseCapabilities(
+                $guide_classlike_storage->template_types ?? [],
+            );
+            $implementer_capabilities = $implementer_method_storage->getWorstCaseCapabilities(
+                $implementer_classlike_storage->template_types ?? [],
+            );
+        }
+
+        if (!Capabilities::allows($guide_capabilities, $implementer_capabilities)
             && !$guide_method_storage->mutation_free_assumed
             && $prevent_method_signature_mismatch
         ) {
             IssueBuffer::maybeAdd(
                 new ImmutableDependency(
-                    $cased_guide_method_id . ' is marked at least @psalm-external-mutation-free, but '
+                    $cased_guide_method_id . ' is ' . Capabilities::toString($guide_capabilities) . ', but '
                         . $implementer_classlike_storage->name . '::'
                         . ($guide_method_storage->cased_name ?: '')
-                        . ' is not marked @psalm-external-mutation-free',
+                        . ' additionally requires '
+                        . Capabilities::toString($implementer_capabilities, $guide_capabilities),
                     $code_location,
                 ),
                 $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
@@ -1195,6 +1228,7 @@ final class MethodComparator
 
     /**
      * @param  array<string, array<string, Union>>  $template_extended_params
+     * @psalm-capabilities write-props|write-refs
      */
     private static function transformTemplates(
         array $template_extended_params,

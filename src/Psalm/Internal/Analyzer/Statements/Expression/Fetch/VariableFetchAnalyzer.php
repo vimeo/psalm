@@ -8,6 +8,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -22,7 +23,7 @@ use Psalm\Issue\UndefinedGlobalVariable;
 use Psalm\Issue\UndefinedVariable;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
-use Psalm\Storage\Mutations;
+use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TBool;
@@ -120,7 +121,7 @@ final class VariableFetchAnalyzer
             }
 
             $statements_analyzer->signalMutation(
-                Mutations::LEVEL_INTERNAL_READ,
+                Capabilities::READ_PROPS,
                 $context,
                 '$this',
                 ImpureVariable::class,
@@ -157,7 +158,7 @@ final class VariableFetchAnalyzer
             $var_name = '$' . $stmt->name;
 
             $statements_analyzer->signalMutation(
-                Mutations::LEVEL_EXTERNAL,
+                Capabilities::READ_GLOBALS,
                 $context,
                 "superglobal $var_name",
                 ImpureGlobalVariable::class,
@@ -194,7 +195,7 @@ final class VariableFetchAnalyzer
 
         if (!is_string($stmt->name)) {
             $statements_analyzer->signalMutation(
-                Mutations::LEVEL_INTERNAL_READ,
+                Capabilities::READ_PROPS,
                 $context,
                 'unknown variable',
                 ImpureVariable::class,
@@ -364,6 +365,22 @@ final class VariableFetchAnalyzer
             }
         } else {
             $stmt_type = $context->vars_in_scope[$var_name];
+
+            if (isset($context->captured_by_ref[$var_name])) {
+                // `use (&$x)`: the enclosing scope may change it between calls, so reading it is
+                // reading state, like a property; a recursive closure reading itself is not
+                $source = $statements_analyzer->getSource();
+
+                if (!$source instanceof ClosureAnalyzer || $source->getRecursiveVarId() !== $var_name) {
+                    $statements_analyzer->signalMutation(
+                        Capabilities::READ_PROPS,
+                        $context,
+                        'variable ' . $var_name . ' captured by reference',
+                        ImpureVariable::class,
+                        $stmt,
+                    );
+                }
+            }
 
             self::taintVariable($statements_analyzer, $context, $var_name, $stmt_type, $stmt);
 

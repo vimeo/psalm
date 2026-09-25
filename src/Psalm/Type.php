@@ -698,6 +698,10 @@ abstract class Type
                 $combined_type->explicit_never = true;
             }
 
+            if ($type_1->from_global_state || $type_2->from_global_state) {
+                $combined_type->from_global_state = true;
+            }
+
             if ($type_1->had_template && $type_2->had_template) {
                 $combined_type->had_template = true;
             }

@@ -19,6 +19,7 @@ use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\Scanner\FunctionDocblockComment;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\PurityWildcard;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
@@ -35,15 +36,16 @@ use Psalm\Storage\Assertion\IsNotType;
 use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\Assertion\NonEmpty;
 use Psalm\Storage\Assertion\Truthy;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
-use Psalm\Storage\Mutations;
 use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TCapabilities;
 use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNull;
@@ -57,7 +59,6 @@ use function array_values;
 use function count;
 use function explode;
 use function in_array;
-use function min;
 use function preg_last_error_msg;
 use function preg_match;
 use function preg_replace;
@@ -100,14 +101,47 @@ final class FunctionLikeDocblockScanner
 
         $config = Config::getInstance();
 
-        $storage->allowed_mutations = min(
-            $docblock_info->allowed_mutations,
-            $storage->allowed_mutations,
-        );
+        $deferred_capabilities = [];
+
+        foreach ($docblock_info->capabilities_expressions as $capabilities_expression) {
+            try {
+                $resolved = CapabilitiesExpressionResolver::resolve(
+                    $capabilities_expression,
+                    $aliases,
+                    $classlike_storage->template_types ?? [],
+                    $type_aliases,
+                    $classlike_storage?->name,
+                );
+
+                if ($resolved instanceof Union) {
+                    $deferred_capabilities[] = $resolved;
+                } else {
+                    $docblock_info->capabilities |= $resolved;
+                }
+            } catch (TypeParseTreeException $e) {
+                $storage->docblock_issues[] = new InvalidDocblock(
+                    'Invalid @psalm-capabilities tag: ' . $e->getMessage() . ' in docblock for ' . $cased_function_id,
+                    new CodeLocation($file_scanner, $stmt, null, true),
+                );
+            }
+        }
+
+        $docblock_info->capabilities_expressions = [];
+
+        if ($deferred_capabilities !== []) {
+            // imported type aliases: the populator applies them to $storage->capabilities
+            $storage->capabilities_type = CapabilitiesExpressionResolver::deferred(
+                $docblock_info->capabilities,
+                $deferred_capabilities,
+            );
+        } else {
+            $storage->capabilities = $docblock_info->capabilities & $storage->capabilities;
+        }
+
         $storage->has_mutations_annotation = $docblock_info->has_mutations_annotation;
         
         if ($storage instanceof MethodStorage
-            && $docblock_info->allowed_mutations <= Mutations::LEVEL_INTERNAL_READ
+            && Capabilities::allows(Capabilities::MUTATION_FREE, $docblock_info->capabilities)
         ) {
             // If we explicitly marked this as mutation free, it's not inferred anymore.
             $storage->mutation_free_assumed = false;
@@ -135,13 +169,14 @@ final class FunctionLikeDocblockScanner
             $storage->variadic = true;
         }
 
-        $storage->allowed_mutations = min(
-            $docblock_info->allowed_mutations,
-            $storage->allowed_mutations,
-        );
-        $storage->has_mutations_annotation = $docblock_info->has_mutations_annotation;
+        if ($storage->capabilities_type === null) {
+            $storage->capabilities = $docblock_info->capabilities & $storage->capabilities;
+        }
 
-        if ($docblock_info->allowed_mutations === Mutations::LEVEL_NONE
+        $storage->has_mutations_annotation = $docblock_info->has_mutations_annotation;
+        $storage->purity_from_templates = $docblock_info->purity_from_templates;
+
+        if ($docblock_info->capabilities === Capabilities::NONE
             || $docblock_info->specialize_call
         ) {
             $storage->specialize_call = true;
@@ -236,6 +271,19 @@ final class FunctionLikeDocblockScanner
                 $stmt,
                 $cased_function_id,
             );
+
+            foreach ($docblock_info->purity_templates as $purity_template) {
+                foreach ($storage->template_types[$purity_template] ?? [] as $bound) {
+                    if (!Capabilities::isPurityType($bound)) {
+                        $storage->docblock_issues[] = new InvalidDocblock(
+                            'The bound of the purity template ' . $purity_template . ' must be a set of'
+                            . ' capabilities (e.g. write-props|io), ' . $bound->getId() . ' given, in docblock for '
+                            . $cased_function_id,
+                            new CodeLocation($file_scanner, $stmt, null, true),
+                        );
+                    }
+                }
+            }
         }
 
         self::handleAssertions(
@@ -404,6 +452,32 @@ final class FunctionLikeDocblockScanner
             }
         }
 
+        if ($classlike_storage !== null) {
+            self::applyPurityTemplateLowerBounds($classlike_storage, $storage);
+        }
+
+        foreach ($storage->purity_from_templates as $purity_template) {
+            $bounds = $storage->template_types[$purity_template]
+                ?? ($classlike_storage->template_types[$purity_template] ?? null);
+
+            $is_purity_source = $bounds !== null;
+
+            foreach ($bounds ?? [] as $bound) {
+                if (!Capabilities::isPurityType($bound) && !$bound->hasCallableType()) {
+                    $is_purity_source = false;
+                }
+            }
+
+            if (!$is_purity_source) {
+                $storage->docblock_issues[] = new InvalidDocblock(
+                    '@psalm-purity-from-template ' . $purity_template . ' must name a template declared with'
+                    . ' @psalm-purity-template, or a template bound to a closure or callable type, in '
+                    . $cased_function_id,
+                    new CodeLocation($file_scanner, $stmt, null, true),
+                );
+            }
+        }
+
         if ($docblock_info->return_type !== null) {
             self::handleReturn(
                 $codebase,
@@ -428,6 +502,25 @@ final class FunctionLikeDocblockScanner
         }
 
         $storage->public_api = $docblock_info->public_api;
+    }
+
+    /**
+     * A class purity template with a lower bound (`@psalm-purity-template write-props <= C`)
+     * always requires at least that much, so a method depending on it may use those capabilities
+     * unconditionally: they become fixed capabilities of the method, which callers pay anyway
+     * as part of the template.
+     */
+    public static function applyPurityTemplateLowerBounds(
+        ClassLikeStorage $classlike_storage,
+        FunctionLikeStorage $storage,
+    ): void {
+        foreach ($storage->purity_from_templates as $purity_template) {
+            if (isset($classlike_storage->template_lower_bounds[$purity_template])
+                && !isset($storage->template_types[$purity_template])
+            ) {
+                $storage->capabilities |= $classlike_storage->template_lower_bounds[$purity_template];
+            }
+        }
     }
 
     /**
@@ -812,6 +905,33 @@ final class FunctionLikeDocblockScanner
                 continue;
             }
 
+            if (PurityWildcard::contains($new_param_type)) {
+                // `Closure<_>`: the function-like inherits its purity from this parameter,
+                // through a purity template of its own
+                $wildcard_template = PurityWildcard::templateName($param_name);
+                $defining_id = 'fn-' . strtolower($cased_method_id);
+
+                if (isset($storage->template_types[$wildcard_template])
+                    && !isset($storage->template_types[$wildcard_template][$defining_id])
+                ) {
+                    $storage->docblock_issues[] = new InvalidDocblock(
+                        'The template ' . $wildcard_template . ' clashes with the purity of $' . $param_name
+                        . ' in docblock for ' . $cased_method_id,
+                        $docblock_type_location,
+                    );
+                } else {
+                    $wildcard_bound = new Union([new TCapabilities(Capabilities::ALL)]);
+                    $storage->template_types[$wildcard_template] = [$defining_id => $wildcard_bound];
+                    $function_template_types[$wildcard_template] = [$defining_id => $wildcard_bound];
+
+                    if (!in_array($wildcard_template, $storage->purity_from_templates, true)) {
+                        $storage->purity_from_templates[] = $wildcard_template;
+                    }
+
+                    $new_param_type = PurityWildcard::bind($new_param_type, $wildcard_template, $defining_id);
+                }
+            }
+
             $storage_param->has_docblock_type = true;
 
             /** @psalm-suppress UnusedMethodCall */
@@ -987,6 +1107,16 @@ final class FunctionLikeDocblockScanner
                 $type_aliases,
                 true,
             );
+
+            if (PurityWildcard::contains($storage->return_type)) {
+                $storage->docblock_issues[] = new InvalidDocblock(
+                    'The purity `_` can only be used in the type of a parameter, in docblock for '
+                    . $cased_function_id,
+                    new CodeLocation($file_scanner, $stmt, null, true),
+                );
+
+                $storage->return_type = PurityWildcard::strip($storage->return_type);
+            }
 
             if ($storage instanceof MethodStorage) {
                 $storage->has_docblock_return_type = true;

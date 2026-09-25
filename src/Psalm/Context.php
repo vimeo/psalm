@@ -12,8 +12,8 @@ use Psalm\Internal\Scope\CaseScope;
 use Psalm\Internal\Scope\FinallyScope;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\Internal\Type\AssertionReconciler;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeStorage;
-use Psalm\Storage\Mutations;
 use Psalm\Type\Atomic\DependentType;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TNull;
@@ -87,6 +87,16 @@ final class Context
     public array $referenced_globals = [];
 
     /**
+     * The variables the closure being analysed captured by reference (`use (&$x)`): state it
+     * shares with the enclosing scope, read like a property of its own and written like one.
+     * The value is what the enclosing scope itself needs to write the variable (nothing for a
+     * local of its own, write-refs for a by-reference parameter, ...), which the closure needs too.
+     *
+     * @var array<string, int>
+     */
+    public array $captured_by_ref = [];
+
+    /**
      * A set of references that might still be in scope from a scope likely to cause confusion. This applies
      * to references set inside a loop or if statement, since it's easy to forget about PHP's weird scope
      * rules, and assigning to a reference will change the referenced variable rather than shadowing it.
@@ -108,6 +118,12 @@ final class Context
      * Inside issets Psalm is more lenient about certain things
      */
     public bool $inside_isset = false;
+
+    /**
+     * The object id of the expression a plain `isset()` is checking (0 outside one): unlike
+     * `??`, `isset($object[$key])` calls only `offsetExists`.
+     */
+    public int $isset_root_id = 0;
 
     /**
      * Whether or not we're inside an unset call, where
@@ -310,8 +326,23 @@ final class Context
 
     public bool $ignore_variable_method = false;
 
-    /** @var Mutations::LEVEL_* */
-    public int $allowed_mutations = Mutations::LEVEL_ALL;
+    /**
+     * The capabilities (side effects) the code being analysed may use,
+     * a bitmask of {@see Capabilities} constants.
+     */
+    public int $capabilities = Capabilities::ALL;
+
+    /**
+     * Whether a parameter default value is being analysed: $capabilities then holds what a default
+     * value may use rather than what the function-like may.
+     */
+    public bool $inside_param_default = false;
+
+    /**
+     * Whether a virtual call is being analysed only for its return type, its effects being
+     * accounted for elsewhere (the Iterator methods foreach calls, charged as a whole).
+     */
+    public bool $inside_type_only_call = false;
 
     public bool $error_suppressing = false;
 
@@ -350,7 +381,7 @@ final class Context
      */
     public function isMutationFree(): bool
     {
-        return $this->allowed_mutations <= Mutations::LEVEL_INTERNAL_READ;
+        return Capabilities::allows(Capabilities::MUTATION_FREE, $this->capabilities);
     }
 
     /**
@@ -358,7 +389,7 @@ final class Context
      */
     public function isExternalMutationFree(): bool
     {
-        return $this->allowed_mutations <= Mutations::LEVEL_INTERNAL_READ_WRITE;
+        return Capabilities::allows(Capabilities::EXTERNAL_MUTATION_FREE, $this->capabilities);
     }
 
     /**
@@ -367,7 +398,7 @@ final class Context
      */
     public function isPure(): bool
     {
-        return $this->allowed_mutations <= Mutations::LEVEL_NONE;
+        return Capabilities::allows(Capabilities::NONE, $this->capabilities);
     }
 
     /**
@@ -726,13 +757,30 @@ final class Context
         }
     }
 
-    public function removeMutableObjectVars(bool $methods_only = false): void
-    {
+    /**
+     * Forgets what is known about property and static property expressions after a call, since the
+     * callee may have changed them: property expressions when the callee may write properties, static
+     * property expressions when it may write globals. A callee that may do neither, e.g. a pure or
+     * read-globals function, leaves every refinement in place.
+     */
+    public function removeMutableObjectVars(
+        bool $methods_only = false,
+        int $callee_capabilities = Capabilities::ALL,
+    ): void {
+        $forget_properties
+            = ($callee_capabilities & (Capabilities::WRITE_PROPS | Capabilities::WRITE_THIS_PROPS)) !== 0;
+        $forget_statics = ($callee_capabilities & Capabilities::WRITE_GLOBALS) !== 0;
+
+        if (!$forget_properties && !$forget_statics) {
+            return;
+        }
+
         $vars_to_remove = [];
 
         foreach ($this->vars_in_scope as $var_id => $type) {
             if ($type->has_mutations
-                && (str_contains($var_id, '->') || str_contains($var_id, '::'))
+                && (($forget_properties && str_contains($var_id, '->'))
+                    || ($forget_statics && str_contains($var_id, '::')))
                 && (!$methods_only || strpos($var_id, '()'))
             ) {
                 $vars_to_remove[] = $var_id;
@@ -753,7 +801,8 @@ final class Context
             $abandon_clause = false;
 
             foreach ($clause->possibilities as $key => $_) {
-                if ((str_contains($key, '->') || str_contains($key, '::'))
+                if ((($forget_properties && str_contains($key, '->'))
+                        || ($forget_statics && str_contains($key, '::')))
                     && (!$methods_only || strpos($key, '()'))
                 ) {
                     $abandon_clause = true;
@@ -906,25 +955,21 @@ final class Context
     /**
      * @psalm-mutation-free
      */
-    public function getImpureMessage(string $expression, int $levelB): string
+    public function getImpureMessage(string $expression, int $required_capabilities): string
     {
-        if ($this->allowed_mutations === $levelB) {
-            throw new InvalidArgumentException('Levels are the same');
-        }
-        $a = match ($this->allowed_mutations) {
-            Mutations::LEVEL_NONE => 'is pure',
-            Mutations::LEVEL_INTERNAL_READ => 'allows only reading instance state',
-            Mutations::LEVEL_INTERNAL_READ_WRITE => 'allows only reading and mutating instance state',
-            Mutations::LEVEL_EXTERNAL => 'is impure',
-        };
-        $b = match ($levelB) {
-            Mutations::LEVEL_NONE => 'is pure',
-            Mutations::LEVEL_INTERNAL_READ => 'is reading instance state',
-            Mutations::LEVEL_INTERNAL_READ_WRITE => 'is mutating instance state',
-            Mutations::LEVEL_EXTERNAL => 'is impure',
-        };
+        $missing = $required_capabilities & ~$this->capabilities;
 
-        return "The context $a but $expression $b";
+        if ($missing === Capabilities::NONE) {
+            throw new InvalidArgumentException('The context allows the required capabilities');
+        }
+
+        if ($this->inside_param_default) {
+            return 'Parameter default values are ' . Capabilities::toString($this->capabilities) . ' but '
+                . $expression . ' requires ' . Capabilities::toString($required_capabilities);
+        }
+
+        return 'The context is ' . Capabilities::toString($this->capabilities) . ' but '
+            . $expression . ' requires ' . Capabilities::toString($required_capabilities);
     }
 
     /**
