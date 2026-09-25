@@ -31,6 +31,7 @@ use function str_replace;
 /**
  * Represents an 'object-like array' - an array with known keys.
  *
+ * @psalm-api
  * @psalm-immutable
  */
 class TKeyedArray extends Atomic
@@ -88,6 +89,22 @@ class TKeyedArray extends Atomic
             }
         }
         parent::__construct($from_docblock);
+    }
+
+    /**
+     * @psalm-pure
+     * @param non-empty-array<string|int, Union> $properties
+     * @param array<string, bool> $class_strings
+     * @param array{Union, Union}|null $fallback_params
+     */
+    public static function make(
+        array $properties,
+        ?array $class_strings = null,
+        ?array $fallback_params = null,
+        bool $is_list = false,
+        bool $from_docblock = false,
+    ): self {
+        return new self($properties, $class_strings, $fallback_params, $is_list, $from_docblock);
     }
 
     /**
