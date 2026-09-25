@@ -1286,6 +1286,47 @@ final class ArrayFunctionCallTest extends TestCase
                     '$b===' => 'string',
                 ],
             ],
+            'implodeNonEmptySeparatorAndPossiblyEmptyElements' => [
+                'code' => '<?php
+                    /** @return non-empty-list<string> */
+                    function getStrings(): array {
+                        return [""];
+                    }
+                    /** @return non-empty-list<non-empty-string> */
+                    function getNonEmptyStrings(): array {
+                        return ["a"];
+                    }
+                    /** @return non-empty-list<int> */
+                    function getInts(): array {
+                        return [0];
+                    }
+                    /** @return non-empty-list<?string> */
+                    function getNullableStrings(): array {
+                        return [null];
+                    }
+                    /** @return non-empty-string */
+                    function getSeparator(): string {
+                        return ",";
+                    }
+                    $a = implode(":", [""]);
+                    $b = implode(":", ["a", ""]);
+                    $c = implode(":", getStrings());
+                    $d = implode(getSeparator(), getStrings());
+                    $e = implode(":", getNonEmptyStrings());
+                    $f = implode(":", getInts());
+                    $g = implode(":", getNullableStrings());
+                    $h = join(":", getStrings());',
+                'assertions' => [
+                    '$a===' => 'literal-string',
+                    '$b===' => 'literal-string',
+                    '$c===' => 'string',
+                    '$d===' => 'string',
+                    '$e===' => 'non-empty-string',
+                    '$f===' => 'non-empty-string',
+                    '$g===' => 'string',
+                    '$h===' => 'string',
+                ],
+            ],
             'key' => [
                 'code' => '<?php
                     $a = ["one" => 1, "two" => 3];
