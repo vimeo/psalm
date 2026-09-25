@@ -492,9 +492,7 @@ final class Functions
                         $mutations = max($mutations, MethodCallPurityAnalyzer::getMethodCapabilities(
                             $statements_analyzer,
                             $var,
-                            $count_method_id,
                             $storage,
-                            $context,
                         ));
 
                         $statements_analyzer->signalMutationOnlyInferred(
@@ -503,8 +501,6 @@ final class Functions
                             MethodCallPurityAnalyzer::receiverAllowsInternalMutations(
                                 $statements_analyzer,
                                 $var,
-                                $count_method_id,
-                                $context,
                             ),
                         );
                     }

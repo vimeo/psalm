@@ -13,6 +13,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Issue\ImpureVariable;
 use Psalm\IssueBuffer;
+use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TIntRange;
@@ -63,7 +64,8 @@ final class UnsetAnalyzer
                 ) {
                     IssueBuffer::maybeAdd(
                         new ImpureVariable(
-                            'Cannot modify global ' . $var_id . ' in a mutation-free context',
+                            'Cannot modify global ' . $var_id . ' in a '
+                                . Capabilities::toString($context->capabilities) . ' context',
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
                         $statements_analyzer->getSuppressedIssues(),

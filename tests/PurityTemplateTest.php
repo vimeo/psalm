@@ -343,7 +343,7 @@ final class PurityTemplateTest extends TestCase
                         }
 
                         /**
-                         * @psalm-external-mutation-free
+                         * @psalm-mutation-free
                          * @psalm-purity-from-template T
                          */
                         public function run(): void {
@@ -352,7 +352,7 @@ final class PurityTemplateTest extends TestCase
                     }
 
                     /**
-                     * @psalm-external-mutation-free
+                     * @psalm-mutation-free
                      * @param Deferred<pure-Closure(): void> $deferred
                      */
                     function runPure(Deferred $deferred): void {
@@ -381,7 +381,7 @@ final class PurityTemplateTest extends TestCase
                 'code' => '<?php
                     /**
                      * @psalm-pure
-                     * @psalm-purity-template P of read-globals
+                     * @psalm-purity-template P <= read-globals
                      * @param Closure<P>(): int $f
                      * @psalm-purity-from-template P
                      */
@@ -400,7 +400,7 @@ final class PurityTemplateTest extends TestCase
             ],
             'classPurityTemplateDefault' => [
                 'code' => '<?php
-                    /** @psalm-purity-template C of write-props = pure */
+                    /** @psalm-purity-template C(pure) <= write-props */
                     abstract class Doer {
                         /**
                          * @psalm-mutation-free
@@ -496,7 +496,7 @@ final class PurityTemplateTest extends TestCase
                         public int $x = 0;
                     }
 
-                    /** @psalm-purity-template C of write-props|io super write-props = write-props */
+                    /** @psalm-purity-template write-props <= C(write-props) <= write-props|io */
                     abstract class Doer {
                         /**
                          * @psalm-mutation-free
@@ -927,7 +927,7 @@ final class PurityTemplateTest extends TestCase
                 'code' => '<?php
                     /**
                      * @psalm-pure
-                     * @psalm-purity-template P of read-globals
+                     * @psalm-purity-template P <= read-globals
                      * @param Closure<P>(): int $f
                      * @psalm-purity-from-template P
                      */
@@ -945,7 +945,7 @@ final class PurityTemplateTest extends TestCase
             ],
             'classPurityTemplateBoundRejectsWiderExtends' => [
                 'code' => '<?php
-                    /** @psalm-purity-template C of write-props */
+                    /** @psalm-purity-template C <= write-props */
                     abstract class Doer {
                         /**
                          * @psalm-mutation-free
@@ -963,7 +963,7 @@ final class PurityTemplateTest extends TestCase
             'purityTemplateBoundMustBeCapabilities' => [
                 'code' => '<?php
                     /**
-                     * @psalm-purity-template P of int
+                     * @psalm-purity-template P <= int
                      */
                     function f(): void {}',
                 'error_message' => 'InvalidDocblock',
@@ -971,14 +971,14 @@ final class PurityTemplateTest extends TestCase
             'functionPurityTemplateCannotHaveDefault' => [
                 'code' => '<?php
                     /**
-                     * @psalm-purity-template P = pure
+                     * @psalm-purity-template P(pure)
                      */
                     function f(): void {}',
                 'error_message' => 'MissingDocblockType',
             ],
             'classPurityTemplateDefaultMustFitBound' => [
                 'code' => '<?php
-                    /** @psalm-purity-template C of read-globals = io */
+                    /** @psalm-purity-template C(io) <= read-globals */
                     abstract class Doer {}',
                 'error_message' => 'InvalidDocblock',
             ],
@@ -1043,7 +1043,7 @@ final class PurityTemplateTest extends TestCase
             ],
             'classPurityTemplateLowerBoundRejectsSmallerExtends' => [
                 'code' => '<?php
-                    /** @psalm-purity-template C super write-props */
+                    /** @psalm-purity-template write-props <= C */
                     abstract class Doer {
                         /**
                          * @psalm-mutation-free
@@ -1063,7 +1063,7 @@ final class PurityTemplateTest extends TestCase
             ],
             'classPurityTemplateLowerBoundIsPaidByCallers' => [
                 'code' => '<?php
-                    /** @psalm-purity-template C super write-props = write-props */
+                    /** @psalm-purity-template write-props <= C(write-props) */
                     abstract class Doer {
                         /**
                          * @psalm-mutation-free
@@ -1087,20 +1087,37 @@ final class PurityTemplateTest extends TestCase
             ],
             'classPurityTemplateLowerBoundMustFitUpperBound' => [
                 'code' => '<?php
-                    /** @psalm-purity-template C of read-globals super write-props */
+                    /** @psalm-purity-template write-props <= C <= read-globals */
                     abstract class Doer {}',
                 'error_message' => 'InvalidDocblock',
             ],
             'classPurityTemplateDefaultMustFitLowerBound' => [
                 'code' => '<?php
-                    /** @psalm-purity-template C super write-props = pure */
+                    /** @psalm-purity-template write-props <= C(pure) */
                     abstract class Doer {}',
                 'error_message' => 'InvalidDocblock',
             ],
             'functionPurityTemplateCannotHaveLowerBound' => [
                 'code' => '<?php
                     /**
-                     * @psalm-purity-template P super write-props
+                     * @psalm-purity-template write-props <= P
+                     */
+                    function f(): void {}',
+                'error_message' => 'MissingDocblockType',
+            ],
+            'classPurityTemplateCapabilityNameBeforeTemplateIsLowerBound' => [
+                'code' => '<?php
+                    /** @psalm-purity-template io <= C */
+                    abstract class Doer {}
+
+                    /** @extends Doer<pure> */
+                    final class PureDoer extends Doer {}',
+                'error_message' => 'InvalidTemplateParam',
+            ],
+            'purityTemplateRejectsKeywordBounds' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-purity-template P of io
                      */
                     function f(): void {}',
                 'error_message' => 'MissingDocblockType',

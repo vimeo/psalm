@@ -120,7 +120,7 @@ final class AssignmentAnalyzer
         }
 
         if (isset($context->captured_by_ref[$var_id])) {
-            return Capabilities::NAMES['write-this-props'] | $context->captured_by_ref[$var_id];
+            return Capabilities::WRITE_THIS_PROPS | $context->captured_by_ref[$var_id];
         }
 
         if (isset($context->vars_in_scope[$var_id]) && $context->vars_in_scope[$var_id]->by_ref) {
@@ -238,7 +238,7 @@ final class AssignmentAnalyzer
                 }
 
                 $statements_analyzer->signalMutation(
-                    Capabilities::NAMES['write-this-props'] | $context->captured_by_ref[$root_var_name],
+                    Capabilities::WRITE_THIS_PROPS | $context->captured_by_ref[$root_var_name],
                     $context,
                     'variable ' . $root_var_name . ' captured by reference',
                     ImpureByReferenceAssignment::class,
@@ -1752,7 +1752,7 @@ final class AssignmentAnalyzer
         $isThis = $assign_var->var instanceof PhpParser\Node\Expr\Variable
             && $assign_var->var->name === 'this';
         
-        $mutations = $isThis ? Capabilities::NAMES['write-this-props'] : Capabilities::NAMES['write-props'];
+        $mutations = $isThis ? Capabilities::WRITE_THIS_PROPS : Capabilities::WRITE_PROPS;
 
         // prevents writing to any properties in a mutation-free context
         $statements_analyzer->signalMutation(

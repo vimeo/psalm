@@ -24,8 +24,7 @@ final class MutableChild extends ImmutableParent {
 // we might actually be passing around a MutableChild.  
 ```
 
-Will also be emitted for classes marked `@psalm-pure`, `@psalm-mutation-free`, `@psalm-external-mutation-free`
-or `@psalm-capabilities`, and for a method override that needs more capabilities than the method it overrides:
+Will also be emitted for classes marked `@psalm-pure` or `@psalm-capabilities`, and for a method override that needs more capabilities than the method it overrides:
 
 ```php
 <?php
@@ -36,7 +35,7 @@ abstract class Parent_ {
 }
 
 final class Child extends Parent_ {
-    /** @psalm-external-mutation-free */
+    /** @psalm-capabilities write-this-props */
     public function get(): int { return 1; } // needs more than the pure method it overrides
 }
 ```

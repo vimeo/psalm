@@ -505,7 +505,7 @@ final class FunctionLikeDocblockScanner
     }
 
     /**
-     * A class purity template with a lower bound (`@psalm-purity-template C super write-props`)
+     * A class purity template with a lower bound (`@psalm-purity-template write-props <= C`)
      * always requires at least that much, so a method depending on it may use those capabilities
      * unconditionally: they become fixed capabilities of the method, which callers pay anyway
      * as part of the template.

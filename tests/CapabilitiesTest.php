@@ -1653,7 +1653,7 @@ final class CapabilitiesTest extends TestCase
                         }
                         return $s;
                     }',
-                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:34 - The context is external-mutation-free but iterating over Generator<int, int, mixed, mixed, io> requires',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:34 - The context is write-this-props|write-refs but iterating over Generator<int, int, mixed, mixed, io> requires io',
             ],
             'resumingAnIoGeneratorNeedsIo' => [
                 'code' => '<?php
@@ -1664,7 +1664,7 @@ final class CapabilitiesTest extends TestCase
                     function step(Generator $g): void {
                         $g->next();
                     }',
-                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25 - The context is external-mutation-free but method Generator::next requires',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25 - The context is write-this-props|write-refs but method Generator::next requires io',
             ],
             'generatorPurityTemplateIsCovariant' => [
                 'code' => '<?php
@@ -1707,7 +1707,7 @@ final class CapabilitiesTest extends TestCase
                         /** @psalm-mutation-free */
                         public function valid(): bool { return false; }
                     }',
-                'error_message' => 'ImmutableDependency - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:33 - Iterator::next is external-mutation-free, but Reader::next additionally requires',
+                'error_message' => 'ImmutableDependency - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:33 - Iterator::next is write-this-props|write-refs, but Reader::next additionally requires',
             ],
             'iteratorPurityBoundFromTheMethodsIsUsedForSubtyping' => [
                 'code' => '<?php

@@ -297,7 +297,7 @@ final class ClassLikeStorage implements HasAttributesInterface
     public ?array $template_covariants = null;
 
     /**
-     * The default value of each purity template that has one (`@psalm-purity-template C of io = pure`):
+     * The default value of each purity template that has one (`@psalm-purity-template C(pure) <= io`):
      * what a subclass that does not bind the template gets.
      *
      * @var array<string, Union>
@@ -305,7 +305,7 @@ final class ClassLikeStorage implements HasAttributesInterface
     public array $template_defaults = [];
 
     /**
-     * The lower bound of each purity template that has one (`@psalm-purity-template C super write-props`):
+     * The lower bound of each purity template that has one (`@psalm-purity-template write-props <= C`):
      * what every value of the template requires, so the methods depending on it get these
      * capabilities unconditionally, and subclasses may not bind it to less.
      *

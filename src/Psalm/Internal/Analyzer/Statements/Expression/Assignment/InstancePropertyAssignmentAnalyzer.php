@@ -428,8 +428,8 @@ final class InstancePropertyAssignmentAnalyzer
             && isset($context->vars_in_scope[$lhs_var_id])
         ) {
             $real = $lhs_var_id === '$this'
-                ? Capabilities::NAMES['write-this-props']
-                : Capabilities::NAMES['write-props'];
+                ? Capabilities::WRITE_THIS_PROPS
+                : Capabilities::WRITE_PROPS;
             $mut = $can_set_readonly_property ?
                 ($property_var_pure_compatible
                     ? Capabilities::NONE
@@ -461,7 +461,7 @@ final class InstancePropertyAssignmentAnalyzer
         } else {
             if ($on_global_state) {
                 $statements_analyzer->signalMutation(
-                    Capabilities::NAMES['write-props'] | Capabilities::WRITE_GLOBALS,
+                    Capabilities::WRITE_PROPS | Capabilities::WRITE_GLOBALS,
                     $context,
                     'property assignment to ' . $property_id . ' on an object reached from global state',
                     ImpurePropertyAssignment::class,

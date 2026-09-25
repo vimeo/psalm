@@ -68,7 +68,7 @@ final class Capabilities
 
     /**
      * The capabilities a method call still requires from its caller when the receiver's own state
-     * may be mutated freely (the receiver is `$this`, freshly created, or otherwise pure-compatible):
+     * may be mutated freely (the receiver is freshly created or otherwise pure-compatible):
      * everything except what only concerns the receiver.
      */
     public const RECEIVER_LOCAL = self::READ_PROPS | self::WRITE_THIS_PROPS | self::WRITE_REFS;
@@ -183,12 +183,11 @@ final class Capabilities
         $names = [];
         $covered = self::NONE;
 
-        // the widest names first, so that e.g. write-props is not spelt out as three names
+        // the widest names first, so that e.g. write-props is not spelt out as three names; the
+        // aliases `mutation-free` and `external-mutation-free` are only accepted, never printed
         $ordered_names = [
-            'external-mutation-free',
             'write-props',
             'write-this-props',
-            'mutation-free',
             'write-globals',
             'read-globals',
             'write-refs',
@@ -216,7 +215,8 @@ final class Capabilities
     }
 
     /**
-     * The docblock annotation describing a capability set, without the leading `@`.
+     * The docblock annotation describing a capability set, without the leading `@`:
+     * `@psalm-mutation-free` and `@psalm-external-mutation-free` are only accepted.
      *
      * @return non-empty-string
      * @psalm-pure
@@ -225,8 +225,6 @@ final class Capabilities
     {
         return match ($capabilities) {
             self::NONE => 'psalm-pure',
-            self::MUTATION_FREE => 'psalm-mutation-free',
-            self::EXTERNAL_MUTATION_FREE => 'psalm-external-mutation-free',
             self::ALL => 'psalm-impure',
             default => 'psalm-capabilities ' . self::toString($capabilities),
         };
@@ -242,8 +240,8 @@ final class Capabilities
     {
         return match ($capabilities) {
             self::NONE => 'psalm-pure',
+            // also makes the properties readonly
             self::MUTATION_FREE => 'psalm-immutable',
-            self::EXTERNAL_MUTATION_FREE => 'psalm-external-mutation-free',
             self::ALL => 'psalm-mutable',
             default => 'psalm-capabilities ' . self::toString($capabilities),
         };

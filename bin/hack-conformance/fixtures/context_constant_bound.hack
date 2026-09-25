@@ -1,7 +1,7 @@
 //// psalm-test: Psalm\Tests\PurityTemplateTest::classPurityTemplateBoundRejectsWiderExtends
 //// expect: error
 //// note: `super [write_props]` caps what a subclass may require: Psalm's
-////       `@psalm-purity-template C of write-props` is the same upper bound, checked on
+////       `@psalm-purity-template C <= write-props` is the same upper bound, checked on
 ////       `@extends`.
 
 abstract class Doer {

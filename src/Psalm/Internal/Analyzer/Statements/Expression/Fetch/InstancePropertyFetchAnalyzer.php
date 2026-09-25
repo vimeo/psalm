@@ -476,8 +476,8 @@ final class InstancePropertyFetchAnalyzer
                         if ($context->inside_unset) {
                             $statements_analyzer->signalMutation(
                                 $stmt_var_id === '$this'
-                                    ? Capabilities::NAMES['write-this-props']
-                                    : Capabilities::NAMES['write-props'],
+                                    ? Capabilities::WRITE_THIS_PROPS
+                                    : Capabilities::WRITE_PROPS,
                                 $context,
                                 'unsetting a property on a mutable object',
                                 ImpurePropertyAssignment::class,

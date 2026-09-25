@@ -125,8 +125,8 @@ final class ByRefArgumentAnalyzer
             $on_global_state = $object_type !== null && $object_type->from_global_state;
 
             $capabilities = $root->var instanceof Expr\Variable && $root->var->name === 'this'
-                ? Capabilities::NAMES['write-this-props']
-                : Capabilities::NAMES['write-props'];
+                ? Capabilities::WRITE_THIS_PROPS
+                : Capabilities::WRITE_PROPS;
 
             return $on_global_state ? $capabilities | Capabilities::WRITE_GLOBALS : $capabilities;
         }

@@ -845,7 +845,12 @@ final class ClassLikeNodeScanner
                 $storage->capabilities = $docblock_info->capabilities & $storage->capabilities;
             }
             $storage->has_mutations_annotation = $docblock_info->has_mutations_annotation;
-            $storage->specialize_instance = $docblock_info->taint_specialize;
+            // `@psalm-capabilities pure` and `@psalm-capabilities read-props` are specialized like
+            // the `@psalm-pure` and `@psalm-mutation-free` they spell
+            $storage->specialize_instance = $docblock_info->taint_specialize
+                || ($docblock_info->has_mutations_annotation
+                    && $deferred_capabilities === []
+                    && Capabilities::allows(Capabilities::MUTATION_FREE, $docblock_info->capabilities));
 
             $storage->override_property_visibility = $docblock_info->override_property_visibility;
             $storage->override_method_visibility = $docblock_info->override_method_visibility;

@@ -5,25 +5,31 @@ declare(strict_types=1);
 namespace Psalm\Internal\PhpVisitor\Reflector;
 
 use Psalm\Exception\IncorrectDocblockException;
+use Psalm\Storage\Capabilities;
 
-use function array_shift;
-use function array_slice;
-use function preg_split;
+use function count;
+use function explode;
+use function preg_match;
 use function strtolower;
-use function substr;
 use function trim;
 
 /**
- * Parses the value of a `@psalm-purity-template` tag, e.g. `P`, `P, Q`, `P of write-props|io`,
- * `C of write-props = pure` or `C super write-this-props`: `of` gives the upper bound (the most
- * a value of the template may require, `impure` when omitted), `super` the lower bound of a
- * class template (the least every value requires, which the methods depending on the template
- * may use), and `=` the default of a class template, for the subclasses that do not bind it.
+ * Parses the value of a `@psalm-purity-template` tag: a comma-separated list of templates, each
+ * written as a chain `lower <= Name(default) <= upper` where every part but the name is optional,
+ * e.g. `P`, `P, Q`, `P <= write-props|io`, `write-this-props <= C(write-this-props) <= io`.
+ * The upper bound is the most a value of the template may require (`impure` when omitted), the
+ * lower bound of a class template the least every value requires (which the methods depending on
+ * the template may use), and the default of a class template what the subclasses that do not
+ * bind it get.
  *
  * @internal
  */
 final class PurityTemplateParser
 {
+    private const NAME_PATTERN = '/^([A-Za-z_][A-Za-z0-9_]*)\s*(?:\(([^()]*)\))?$/';
+
+    private const SYNTAX = '`lower <= Name(default) <= upper`';
+
     /**
      * @return list<array{name: string, bound: string, lower: ?string, default: ?string}>
      * @throws IncorrectDocblockException
@@ -31,69 +37,75 @@ final class PurityTemplateParser
      */
     public static function parse(string $line): array
     {
-        $tokens = [];
-
-        foreach (preg_split('/\s+/', trim($line)) ?: [] as $token) {
-            if ($token === '') {
-                continue;
-            }
-
-            // `P, Q` and `P,Q`
-            foreach (preg_split('/,/', $token) ?: [] as $part) {
-                if ($part !== '') {
-                    $tokens[] = $part;
-                }
-            }
-        }
-
-        if ($tokens === []) {
+        if (trim($line) === '') {
             throw new IncorrectDocblockException('Empty @psalm-purity-template tag');
         }
 
         $templates = [];
 
-        while ($tokens !== []) {
-            $name = array_shift($tokens);
-            $bound = 'impure';
-            $lower = null;
-            $default = null;
+        foreach (explode(',', $line) as $entry) {
+            $parts = explode('<=', $entry);
 
-            if (strtolower($name) === 'of' || strtolower($name) === 'super' || $name === '=') {
-                throw new IncorrectDocblockException(
-                    '@psalm-purity-template expects a template name before ' . $name,
-                );
+            foreach ($parts as $i => $part) {
+                $parts[$i] = trim($part);
+
+                if ($parts[$i] === '') {
+                    throw self::invalid($entry);
+                }
             }
 
-            if (isset($tokens[0], $tokens[1]) && strtolower($tokens[0]) === 'of') {
-                $bound = $tokens[1];
-                $tokens = array_slice($tokens, 2);
+            if (count($parts) === 1) {
+                [$lower, $name, $upper] = [null, $parts[0], null];
+            } elseif (count($parts) === 2) {
+                // `P <= io` or `write-props <= C`: the name is the side that is not a capability
+                [$lower, $name, $upper] = self::isTemplate($parts[0]) || !self::isTemplate($parts[1])
+                    ? [null, $parts[0], $parts[1]]
+                    : [$parts[0], $parts[1], null];
+            } elseif (count($parts) === 3) {
+                [$lower, $name, $upper] = $parts;
+            } else {
+                throw self::invalid($entry);
             }
 
-            if (isset($tokens[0], $tokens[1]) && strtolower($tokens[0]) === 'super') {
-                $lower = $tokens[1];
-                $tokens = array_slice($tokens, 2);
+            if (!preg_match(self::NAME_PATTERN, $name, $matches)) {
+                throw self::invalid($entry);
             }
 
-            if (isset($tokens[0], $tokens[1]) && $tokens[0] === '=') {
-                $default = $tokens[1];
-                $tokens = array_slice($tokens, 2);
-            } elseif (isset($tokens[0]) && $tokens[0][0] === '=') {
-                // `= pure` written as `=pure`
-                $default = substr($tokens[0], 1);
-                $tokens = array_slice($tokens, 1);
+            $default = isset($matches[2]) ? trim($matches[2]) : null;
+
+            if ($default === '') {
+                throw self::invalid($entry);
             }
 
-            if (isset($tokens[0])
-                && (strtolower($tokens[0]) === 'of' || strtolower($tokens[0]) === 'super' || $tokens[0] === '=')
-            ) {
-                throw new IncorrectDocblockException(
-                    '@psalm-purity-template ' . $name . ' has an incomplete bound or default',
-                );
-            }
-
-            $templates[] = ['name' => $name, 'bound' => $bound, 'lower' => $lower, 'default' => $default];
+            $templates[] = [
+                'name' => $matches[1],
+                'bound' => $upper ?? 'impure',
+                'lower' => $lower,
+                'default' => $default,
+            ];
         }
 
         return $templates;
+    }
+
+    /**
+     * Whether one side of a two-part chain is the template rather than a bound: it has a default,
+     * or it is a single name that is not a capability. A type alias used as the lower bound
+     * therefore needs the upper bound written too (`Alias <= C <= impure`).
+     *
+     * @psalm-pure
+     */
+    private static function isTemplate(string $part): bool
+    {
+        return preg_match(self::NAME_PATTERN, $part, $matches) === 1
+            && (isset($matches[2]) || !isset(Capabilities::NAMES[strtolower($matches[1])]));
+    }
+
+    /** @psalm-pure */
+    private static function invalid(string $entry): IncorrectDocblockException
+    {
+        return new IncorrectDocblockException(
+            '@psalm-purity-template expects ' . self::SYNTAX . ', got `' . trim($entry) . '`',
+        );
     }
 }

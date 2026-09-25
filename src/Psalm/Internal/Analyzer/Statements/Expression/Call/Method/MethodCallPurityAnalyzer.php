@@ -34,33 +34,36 @@ use Psalm\Type\Union;
 final class MethodCallPurityAnalyzer
 {
     /**
-     * Whether mutations of the receiver's own state are fine for the caller:
-     * the receiver is pure, free from references or external mutations, or $this.
+     * Whether mutations of the receiver's own state are fine for the caller: the receiver is
+     * pure-compatible or external-mutation-free, so nobody else can see it change. `$this` never
+     * is, even where its type is reference-free: mutating it mutates the caller's own instance.
      */
     public static function receiverAllowsInternalMutations(
         StatementsAnalyzer $statements_analyzer,
         Expr $var,
-        MethodIdentifier $method_id,
-        Context $context,
     ): bool {
+        if (self::isThis($var)) {
+            return false;
+        }
+
         // Already checked in isPureCompatible below
         // $stmt->var->getAttribute('pure', false)
         return $statements_analyzer->node_data->isPureCompatible($var)
-            || $var->getAttribute('external_mutation_free', false)
-            || $method_id->fq_class_name === $context->self;
+            || $var->getAttribute('external_mutation_free', false);
     }
 
     /**
      * The capabilities a call of a method requires from its caller, given the receiver: reading
-     * the receiver's own state is like passing it as an argument, and mutating it is fine when
-     * the receiver is pure-compatible, external-mutation-free or `$this`.
+     * the receiver's own state is like passing it as an argument. Mutating it is free when the
+     * receiver is pure-compatible or external-mutation-free, needs write-this-props when it is
+     * `$this` and write-props otherwise, as writing its properties directly would. Callers that
+     * know the receiver to be fresh by other means say so with $receiver_is_fresh.
      */
     public static function getMethodCapabilities(
         StatementsAnalyzer $statements_analyzer,
         Expr $var,
-        MethodIdentifier $method_id,
         MethodStorage $method_storage,
-        Context $context,
+        bool $receiver_is_fresh = false,
     ): int {
         $capabilities = $method_storage->capabilities & ~Capabilities::READ_PROPS;
 
@@ -74,11 +77,20 @@ final class MethodCallPurityAnalyzer
             return $capabilities | Capabilities::WRITE_GLOBALS;
         }
 
-        if (self::receiverAllowsInternalMutations($statements_analyzer, $var, $method_id, $context)) {
+        if ($receiver_is_fresh || self::receiverAllowsInternalMutations($statements_analyzer, $var)) {
             $capabilities &= ~Capabilities::RECEIVER_LOCAL;
+        } elseif (($capabilities & Capabilities::WRITE_THIS_PROPS) !== 0 && !self::isThis($var)) {
+            // the callee's `$this` is not the caller's
+            $capabilities |= Capabilities::WRITE_PROPS;
         }
 
         return $capabilities;
+    }
+
+    /** @psalm-pure */
+    public static function isThis(Expr $var): bool
+    {
+        return $var instanceof Expr\Variable && $var->name === 'this';
     }
 
     /**
@@ -102,9 +114,7 @@ final class MethodCallPurityAnalyzer
         $method_capabilities = self::getMethodCapabilities(
             $statements_analyzer,
             $stmt->var,
-            $method_id,
             $method_storage,
-            $context,
         );
 
         // @psalm-purity-from-template: the call also needs the capabilities of the closures the
@@ -136,7 +146,8 @@ final class MethodCallPurityAnalyzer
             // implicit calls (__get, __invoke, offsetGet, ...) are virtual nodes without a
             // location of their own, but their name points at the expression that triggers them
             $stmt->getAttribute('startFilePos') !== null ? $stmt : $stmt->name,
-            $method_storage->capabilities,
+            // mutating a receiver other than `$this` writes another object's properties
+            $method_storage->capabilities | ($method_capabilities & Capabilities::WRITE_PROPS),
             false,
             // the level of an unannotated method is inferred from its body, which only
             // describes the method actually called if it can't be overridden elsewhere
@@ -146,7 +157,7 @@ final class MethodCallPurityAnalyzer
                 || $method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
                 ? $method_storage
                 : null,
-            self::receiverAllowsInternalMutations($statements_analyzer, $stmt->var, $method_id, $context),
+            self::receiverAllowsInternalMutations($statements_analyzer, $stmt->var),
         );
 
         if (($method_storage->capabilities & Capabilities::READ_GLOBALS) !== 0) {

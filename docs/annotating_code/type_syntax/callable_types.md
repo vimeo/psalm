@@ -32,7 +32,6 @@ A callable type carries the capabilities (see [purity and capabilities](../suppo
 the callable may use, given in angle brackets after the keyword:
 
 * `Closure<pure>(int): int` / `callable<pure>(int): int` - a pure callable, also written `pure-Closure(int): int` / `pure-callable(int): int`
-* `Closure<mutation-free>(): int`, `Closure<external-mutation-free>(): void` - the named purity levels
 * `Closure<write-props|io>(): void` - any combination of capabilities
 * `Closure<P>(): void` - a purity template declared with `@psalm-purity-template`
 * `Closure<_>(): void` - in a parameter's type only: the function inherits its purity from that parameter (see [`@psalm-purity-template`](../supported_annotations.md#psalm-purity-template))
@@ -44,7 +43,7 @@ A callable needing fewer capabilities fits where more are allowed: a `pure-Closu
 for a `Closure<io>` parameter, but not the other way round. A closure's capabilities are inferred
 from its body, so its type carries what it actually does.
 
-This can be useful when the `callable` is used in a function marked with `@psalm-pure` or `@psalm-mutation-free` or `@psalm-external-mutation-free`, for example:
+This can be useful when the `callable` is used in a function with few capabilities (see [`@psalm-capabilities`](../supported_annotations.md#psalm-capabilities)), for example:
 
 ```php
 <?php
@@ -55,7 +54,7 @@ class intList {
     
     /**
      * @param pure-callable(int, int): int $callback
-     * @psalm-mutation-free
+     * @psalm-capabilities read-props
      */
     public function walk(callable $callback): int {
         return array_reduce($this->items, $callback, 0);

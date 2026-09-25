@@ -343,7 +343,7 @@ $b->s = "boo"; // disallowed
 Psalm tracks which side effects a function, method or closure may have as a set of
 **capabilities**. A function-like may only perform an operation, or call another function-like,
 when its own capabilities include every capability the operation or callee requires. Code without
-a purity annotation has every capability.
+a `@psalm-capabilities` annotation has every capability.
 
 | Capability         | Allows                                                                                                 |
 |--------------------|--------------------------------------------------------------------------------------------------------|
@@ -352,8 +352,13 @@ a purity annotation has every capability.
 | `write-props`      | writing or unsetting properties of any object (implies `write-this-props`)                             |
 | `read-globals`     | reading static properties, superglobals and binding `global` variables (the values reached this way can only be mutated with `write-globals`) |
 | `write-globals`    | writing them, including through a bound `global` variable, and using `static` variables (implies `read-globals`) |
-| `write-refs`       | writing through by-reference parameters and other references into another scope; calling a function that writes its by-reference parameters costs what the argument is: nothing for a local, `write-refs` for a by-reference parameter, `write-props` for a property, `write-globals` for global state |
+| `write-refs`       | writing through by-reference parameters and other references into another scope                        |
 | `io`               | `echo`, `print`, `exit` with a message, and the builtin functions with side effects (`time`, `random_int`, `file_put_contents`, …); the builtins touching process-wide state (`mt_rand`, `ini_set`, `spl_autoload_register`, …) need `write-globals` instead |
+
+Two names stand for the extremes: `pure` is the empty set, a
+[pure function](https://en.wikipedia.org/wiki/Pure_function) whose result depends only on its
+arguments, and `impure` is every capability. They have annotations of their own, `@psalm-pure`
+and `@psalm-impure`.
 
 Values reached from global state stay bound to it: an object read from a static property, a
 superglobal or a `global` variable, returned by a function that may read globals, or fetched from
@@ -382,164 +387,74 @@ function tamper(): void {
 }
 ```
 
-The named purity levels are shorthands for capability sets:
+### `@psalm-capabilities`
 
-| Annotation                       | Capabilities                                   |
-|----------------------------------|------------------------------------------------|
-| `@psalm-pure`                    | none (`pure`)                                  |
-| `@psalm-mutation-free`           | `read-props` (`mutation-free`)                 |
-| `@psalm-external-mutation-free`  | `write-this-props`, `write-refs` (`external-mutation-free`) |
-| `@psalm-impure`                  | all (`impure`)                                 |
-
-Any other combination can be given with `@psalm-capabilities`. Calling a method also has a
-special rule: reading and mutating the receiver's own state is not an effect of the caller when
-the receiver is `$this`, was just created, or is itself external-mutation-free, so a pure
-function may call an `@psalm-external-mutation-free` method on an object it created.
-
-### `@psalm-mutation-free`
-
-Used to annotate a class method that does not mutate state, either internally or externally of the class's scope.
-This requires that the return value depend only on the instance's properties. For example, `random_int` is considered
-mutating here because it mutates the random number generator's internal state.
+`@psalm-capabilities` gives a function, method or closure the capabilities it may use, separated
+by commas or `|`. `@psalm-pure` gives it none, and `@psalm-impure` every capability (the default,
+spelled out):
 
 ```php
 <?php
-class D {
-  private string $s;
-
-  public function __construct(string $s) {
-    $this->s = $s;
-  }
-
-  /**
-   * @psalm-mutation-free
-   */
-  public function getShort() : string {
-    return substr($this->s, 0, 5);
-  }
-
-  /**
-   * @psalm-mutation-free
-   */
-  public function getShortMutating() : string {
-    $this->s .= "hello"; // this is a bug
-    return substr($this->s, 0, 5);
-  }
-}
-```
-
-### `@psalm-external-mutation-free`
-
-Used to annotate a class method that does not mutate state externally of the class's scope: it may
-only write the properties of `$this` (and by-reference parameters). Static properties, `static`
-variables and other global state are external state and need `write-globals`.
-
-Can also be used on classes to propagate the same annotation to all of its methods.
-
-```php
-<?php
-class E {
-  private string $s;
-
-  public function __construct(string $s) {
-    $this->s = $s;
-  }
-
-  /**
-   * @psalm-external-mutation-free
-   */
-  public function getShortMutating() : string {
-    $this->s .= "hello"; // this is fine
-    return substr($this->s, 0, 5);
-  }
-
-  /**
-   * @psalm-external-mutation-free
-   */
-  public function save() : void {
-    file_put_contents("foo.txt", $this->s); // this is a bug
-  }
-}
-```
-
-### `@psalm-immutable`
-
-Used to annotate a class where every property is treated by consumers as `@psalm-readonly` and every instance method is treated as `@psalm-mutation-free`.
-
-```php
-<?php
-/**
- * @psalm-immutable
- */
-abstract class Foo
-{
-    public string $baz;
-
-    abstract public function bar(): int;
+final class Counter {
+    public static int $count = 0;
 }
 
-/**
- * @psalm-immutable
- */
-final class ChildClass extends Foo
-{
-    public function __construct(string $baz)
-    {
-        $this->baz = $baz;
-    }
-
-    public function bar(): int
-    {
-        return 0;
-    }
-}
-
-$anonymous = new /** @psalm-immutable */ class extends Foo
-{
-    public string $baz = "B";
-
-    public function bar(): int
-    {
-        return 1;
-    }
-};
-```
-
-### `@psalm-mutable`
-
-Used to annotate a class where at least one property is mutable: this is the default behavior, but it can be explicitly marked for clarity.
-
-### `@psalm-pure`
-
-Used to annotate a [pure function](https://en.wikipedia.org/wiki/Pure_function) - one whose output is just a function of its input.  
-
-Can also be used on classes to auotmatically annotate all of its methods as pure and ban the usage of properties.  
-
-```php
-<?php
-class Arithmetic {
-  /** @psalm-pure */
-  public static function add(int $left, int $right) : int {
+/** @psalm-pure */
+function add(int $left, int $right): int {
     return $left + $right;
-  }
-
-  /** @psalm-pure - this is wrong */
-  public static function addCumulative(int $left) : int {
-    /** @var int */
-    static $i = 0; // this is a side effect, and thus a bug
-    $i += $left;
-    return $i;
-  }
 }
 
-echo Arithmetic::add(40, 2);
-echo Arithmetic::add(40, 2); // same value is emitted
+/** @psalm-capabilities read-globals */
+function currentCount(): int {
+    return Counter::$count;
+}
 
-echo Arithmetic::addCumulative(3); // outputs 3
-echo Arithmetic::addCumulative(3); // outputs 6
+/** @psalm-capabilities write-globals */
+function increment(): int {
+    Counter::$count++;
+    return currentCount(); // ok: write-globals includes read-globals
+}
+
+/** @psalm-capabilities write-props */
+function reset(Counter $c): void {
+    increment(); // error: write-props does not include write-globals
+    echo "reset"; // error: io is required
+}
 ```
 
-Everything a pure function does is checked, including what happens implicitly: `clone` calls
+On a class, it applies to every method of the class. `@psalm-pure` on a class also
+bans the use of properties.
+
+Abstract methods, and the methods of interfaces, have no body to infer their capabilities from,
+so Psalm asks for them to be annotated explicitly (use `@psalm-impure` for one that
+may do anything). A method may need fewer capabilities than the method it overrides, never more.
+
+A capability set can be named once with a type alias and used in `@psalm-capabilities` and in
+closure types, like Hack's context constants; aliases of other classes are imported with
+`@psalm-import-type`:
+
+```php
+<?php
+/** @psalm-type Storage = write-props|io */
+final class Repo {
+    /** @psalm-capabilities Storage */
+    public function save(): void { echo "saved"; }
+}
+
+/** @psalm-import-type Storage from Repo */
+final class Service {
+    /**
+     * @psalm-capabilities Storage
+     * @param Closure<Storage>(): void $after
+     */
+    public function run(Repo $repo, Closure $after): void {
+        $repo->save();
+        $after();
+    }
+}
+```
+
+Everything a function-like does is checked, including what happens implicitly: `clone` calls
 `__clone`, string interpolation and casts call `__toString`, `$object()` calls `__invoke`, array
 access on objects calls the `ArrayAccess` methods, `throw new` and `new $className` call the
 constructor (an unknown class may do anything), and `foreach` over an object calls its `Iterator`
@@ -554,14 +469,14 @@ leaves the function (returned, stored, passed on, captured), nor `unset()` a var
 an object, nor discard one (`new Guard();`).
 
 Parameter default values are evaluated like in Hack, with no capabilities at all, or with the
-globals when the function-like may write them (`@psalm-capabilities write-globals`), whatever
-else the function-like may do; only function-likes without a purity annotation may use anything
-in a default value, so `new` in the defaults of unannotated code stays free.
+globals when the function-like may write them (`write-globals`), whatever else the function-like
+may do; only function-likes without a `@psalm-capabilities` annotation may use anything in a
+default value, so `new` in the defaults of unannotated code stays free.
 
 With `rememberPropertyAssignmentsAfterCall="false"`, what is known about the properties and static
 properties of the objects in scope survives a call to a function-like that cannot write properties
-(for the former) or globals (for the latter): a call of a pure, `read-globals` or `mutation-free`
-function-like, constructor or static method keeps every refinement.
+(for the former) or globals (for the latter): a call of a function-like, constructor or static
+method with no more than `read-props|read-globals` keeps every refinement.
 
 Creating a closure is never an effect: a pure function may build and return an impure closure. The
 closure's capabilities are carried by its type (see [callable types](type_syntax/callable_types.md#pure-callables))
@@ -612,72 +527,117 @@ function leak(): void {
 }
 ```
 
-### `@psalm-impure`
+A caller normally needs every capability of the functions it calls, with two differences.
 
-Used to annotate a function that is not pure (nor mutation free, nor externally mutation free): this is the default, but Psalm always asks to explicitly annotate **abstract** methods with one of these annotations:
-
-- `@psalm-pure`
-- `@psalm-mutation-free`
-- `@psalm-external-mutation-free`
-- `@psalm-impure`
-- `@psalm-capabilities`
-
-### `@psalm-capabilities`
-
-Used to give a function, method or class exactly the capabilities it needs, when none of the named
-levels fits. Capabilities are separated by commas or `|`; the named levels (`pure`, `mutation-free`,
-`external-mutation-free`, `impure`) can be used as capabilities too.
+A method writes the properties of its own `$this`, which is not always the caller's. Calling a
+method that needs `write-this-props` needs `write-this-props` when the receiver is the caller's
+`$this`, `write-props` when it is any other object, and nothing when it is an object the caller
+created itself from a class whose methods need at most `write-this-props|write-refs`, which
+nobody else can see change. So a pure function may create such an object and call its mutating
+methods:
 
 ```php
 <?php
+/** @psalm-capabilities write-this-props */
 final class Counter {
-    public static int $count = 0;
-}
+    private int $n = 0;
 
-/** @psalm-capabilities read-globals */
-function currentCount(): int {
-    return Counter::$count;
-}
+    public function inc(): void {
+        $this->n++;
+    }
 
-/** @psalm-capabilities write-globals */
-function increment(): int {
-    Counter::$count++;
-    return currentCount(); // ok: write-globals includes read-globals
-}
-
-/** @psalm-capabilities write-props */
-function reset(Counter $c): void {
-    increment(); // error: write-props does not include write-globals
-    echo "reset"; // error: io is required
-}
-```
-
-A method may need fewer capabilities than the method it overrides, never more.
-
-A capability set can be named once with a type alias and used in `@psalm-capabilities` and in
-closure types, like Hack's context constants; aliases of other classes are imported with
-`@psalm-import-type`:
-
-```php
-<?php
-/** @psalm-type Storage = write-props|io */
-final class Repo {
-    /** @psalm-capabilities Storage */
-    public function save(): void { echo "saved"; }
-}
-
-/** @psalm-import-type Storage from Repo */
-final class Service {
-    /**
-     * @psalm-capabilities Storage
-     * @param Closure<Storage>(): void $after
-     */
-    public function run(Repo $repo, Closure $after): void {
-        $repo->save();
-        $after();
+    public function get(): int {
+        return $this->n;
     }
 }
+
+/** @psalm-pure */
+function countTwice(): int {
+    $c = new Counter();
+    $c->inc(); // fine: $c was created here, nobody else can see it change
+    $c->inc();
+    return $c->get();
+}
+
+/** @psalm-pure */
+function bump(Counter $c): int {
+    $c->inc(); // error: $c belongs to the caller, writing it needs write-props
+    return 0;
+}
 ```
+
+A call to a function with `write-refs` does not need `write-refs` itself. Instead, each argument
+passed by reference needs what writing that argument directly would need: nothing for a local
+variable, `write-refs` for one of the caller's own by-reference parameters, `write-this-props` for a
+property of `$this`, `write-props` for any other property, `write-globals` for global state. The
+callee still only has `write-refs`:
+
+```php
+<?php
+final class Stats {
+    public static int $n = 0;
+}
+
+/** @psalm-capabilities write-refs */
+function inc(int &$i): void {
+    $i++;
+}
+
+/** @psalm-capabilities write-refs */
+function f(int &$r): void {
+    $local = 0;
+    inc($local);    // fine: $local belongs to f()
+    inc($r);        // fine: like writing $r directly, needs write-refs
+    inc(Stats::$n); // error: like writing Stats::$n directly, needs read-globals and write-globals
+}
+```
+
+### `@psalm-immutable`
+
+Used to annotate a class where every property is treated by consumers as `@psalm-readonly` and every instance method is treated as `@psalm-capabilities read-props`.
+
+```php
+<?php
+/**
+ * @psalm-immutable
+ */
+abstract class Foo
+{
+    public string $baz;
+
+    abstract public function bar(): int;
+}
+
+/**
+ * @psalm-immutable
+ */
+final class ChildClass extends Foo
+{
+    public function __construct(string $baz)
+    {
+        $this->baz = $baz;
+    }
+
+    public function bar(): int
+    {
+        return 0;
+    }
+}
+
+$anonymous = new /** @psalm-immutable */ class extends Foo
+{
+    public string $baz = "B";
+
+    public function bar(): int
+    {
+        return 1;
+    }
+};
+```
+
+### `@psalm-mutable`
+
+Used to annotate a class where at least one property is mutable: this is the default behavior, but it can be explicitly marked for clarity.
 
 ### `@psalm-purity-template`
 
@@ -689,19 +649,31 @@ templates are covariant: a `Doer<pure>` can be used where a `Doer<io>` is expect
 Together with `@psalm-purity-from-template`, it makes a function-like's purity depend on the
 closures it is given, like Hack's `[ctx $f]` contexts.
 
-A purity template may have an upper bound, the most a value of it may require (`impure` when
-omitted). A class purity template may also have a lower bound, the least every value requires,
-which the methods depending on the template may then use unconditionally (like Hack's
-`abstract const ctx C as [write_props]`), and a default for the subclasses that do not bind it:
+The bounds of a purity template are written as a chain around its name,
+`lower <= Name(default) <= upper`, where every part but the name may be omitted:
+
+- the upper bound is the most a value of the template may require (`impure` when omitted):
+  `P <= write-props|io`;
+- a class purity template may also have a lower bound, the least every value requires, which the
+  methods depending on the template may then use unconditionally: `write-this-props <= C`;
+- and a default in parentheses, for the subclasses that do not bind it: `C(pure)`.
+
+Several templates can be declared in one tag, separated by commas (`P <= io, Q`). In a chain with
+a single bound, the side that is a capability is the bound: `io <= C` is a lower bound and `C <= io`
+an upper bound. A type alias used as a lower bound needs the upper bound written out as well
+(`Alias <= C <= impure`).
+
+In Hack these are the bounds and default of a context constant, with the keywords reversed as
+contexts are types: `abstract const ctx C super [write_props, io] as [write_this_props] = [write_this_props]`.
 
 ```php
 <?php
-/** @psalm-purity-template C of write-props|io super write-this-props = write-this-props */
+/** @psalm-purity-template write-this-props <= C(write-this-props) <= write-props|io */
 abstract class Doer {
     public int $runs = 0;
 
     /**
-     * @psalm-mutation-free
+     * @psalm-capabilities read-props
      * @psalm-purity-from-template C
      */
     public function run(): int {
@@ -740,10 +712,12 @@ function apply(Closure $callback): int {
 their key and value templates, `TPurity`, which says what iterating over the object may do:
 `Iterator<int, string, pure>` can be iterated by a pure function, `Generator<int, int, mixed, void, io>`
 prints when consumed. It defaults to `impure`, so `Iterator<int, string>` still means an iterator
-about which nothing is known. Iterating costs the iterator's `TPurity` plus, unless the iterator
-is `$this` or was just created, moving it along (`write-this-props`, as for any other method that
-changes an object): a pure function may consume a generator it just obtained from a pure
-generator function, an external-mutation-free one may also consume one it was given.
+about which nothing is known. Consuming a generator costs its `TPurity` and nothing else, since
+where a generator is paused is internal engine state: a pure function may consume any
+`Generator<int, int, mixed, mixed, pure>`, including one it was given. Iterating any other
+iterator also costs moving it along, as calling any method that changes an object does: nothing
+when the iterator was just created, `write-this-props` when it is `$this`, `write-props`
+otherwise.
 
 A generator function-like with a purity annotation binds the `TPurity` of the `Generator`
 (or `Iterator`, `Traversable`) it returns to its own capabilities, and to its purity templates,
@@ -827,7 +801,7 @@ classes whose purity is decided by their subclasses, or by what they are constru
 /** @psalm-purity-template C */
 abstract class Task {
     /**
-     * @psalm-mutation-free
+     * @psalm-capabilities read-props
      * @psalm-purity-from-template C
      */
     abstract public function run(): int;
@@ -874,14 +848,14 @@ class Deferred {
 
     /**
      * @param T $callback
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-this-props
      */
     public function __construct($callback) {
         $this->callback = $callback;
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props
      * @psalm-purity-from-template T
      */
     public function run(): void {
@@ -890,7 +864,7 @@ class Deferred {
 }
 
 /**
- * @psalm-external-mutation-free
+ * @psalm-capabilities read-props
  * @param Deferred<pure-Closure(): void> $deferred
  */
 function runPure(Deferred $deferred): void {

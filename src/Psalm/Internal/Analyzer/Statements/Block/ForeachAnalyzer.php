@@ -1191,7 +1191,9 @@ final class ForeachAnalyzer
             // on top of moving it along unless it is fresh
             $capabilities = $receiver_is_fresh
                 ? Capabilities::NONE
-                : Capabilities::WRITE_THIS_PROPS | Capabilities::WRITE_REFS;
+                : (MethodCallPurityAnalyzer::isThis($expr)
+                    ? Capabilities::WRITE_THIS_PROPS
+                    : Capabilities::WRITE_PROPS) | Capabilities::WRITE_REFS;
 
             $traversable_storage = $codebase->classlike_storage_provider->get($fq_class_name);
             $purity_index = array_search('TPurity', array_keys($traversable_storage->template_types ?? []), true);
@@ -1232,14 +1234,9 @@ final class ForeachAnalyzer
         $capabilities = MethodCallPurityAnalyzer::getMethodCapabilities(
             $statements_analyzer,
             $expr,
-            $declaring_method_id,
             $method_storage,
-            $context,
+            $receiver_is_fresh,
         );
-
-        if ($receiver_is_fresh) {
-            $capabilities &= ~Capabilities::RECEIVER_LOCAL;
-        }
 
         return CallPurityResolver::getCallCapabilities(
             $statements_analyzer,

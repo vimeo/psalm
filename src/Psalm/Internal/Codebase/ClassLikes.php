@@ -1073,8 +1073,8 @@ final class ClassLikes
             IssueBuffer::maybeAdd(
                 new MissingInterfaceImmutableAnnotation(
                     $storage->name
-                    . ' must be marked with either @psalm-pure, @psalm-immutable, @psalm-mutation-free,'
-                    . ' @psalm-external-mutation-free or @psalm-mutable to aid security analysis',
+                    . ' must be marked with either @psalm-pure, @psalm-immutable, @psalm-capabilities or @psalm-mutable'
+                    . ' to aid security analysis',
                     $storage->location,
                 ),
                 $storage->suppressed_issues,

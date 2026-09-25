@@ -620,10 +620,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 if (!$storage->has_mutations_annotation && $storage->location) {
                     IssueBuffer::maybeAdd(
                         new MissingAbstractPureAnnotation(
-                            $storage->cased_name . ' must be marked with one of @'
-                            . 'psalm-pure, @psalm-mutation-free, @psalm-external-mutation-free, @psalm-impure'
-                            . ' or @psalm-capabilities'
-                            .' to aid security analysis',
+                            $storage->cased_name . ' must be marked with one of @psalm-pure, @psalm-capabilities or @psalm-impure'
+                            . ' to aid security analysis',
                             $storage->location,
                         ),
                         $storage->suppressed_issues,

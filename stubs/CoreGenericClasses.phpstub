@@ -11,7 +11,7 @@
  *
  * @template-covariant TKey
  * @template-covariant TValue
- * @psalm-purity-template TPurity = impure
+ * @psalm-purity-template TPurity(impure)
  */
 interface Traversable {
 }
@@ -21,17 +21,17 @@ interface Traversable {
  * @template-covariant TValue
  * @template TSend
  * @template-covariant TReturn
- * @psalm-purity-template TPurity = impure
+ * @psalm-purity-template TPurity(impure)
  *
  * @template-implements Iterator<TKey, TValue, TPurity>
  *
  * TPurity is what running the generator body may do: a generator function binds it to its own
  * capabilities (and purity templates) in its return type, so consuming the generator costs what
- * the body costs, plus mutating the generator itself unless it is freshly created.
+ * the body costs and nothing else: its position is internal engine state, not an effect.
  */
 final class Generator implements Iterator {
     /**
-     * @psalm-external-mutation-free
+     * @psalm-pure
      * @psalm-purity-from-template TPurity
      * @psalm-ignore-nullable-return
      * @return ?TValue Can return any type.
@@ -39,42 +39,42 @@ final class Generator implements Iterator {
     public function current() {}
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-pure
      * @psalm-purity-from-template TPurity
      * @return void Any returned value is ignored.
      */
     public function next() {}
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-pure
      * @psalm-purity-from-template TPurity
      * @return TKey scalar on success, or null on failure.
      */
     public function key() {}
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-pure
      * @psalm-purity-from-template TPurity
      * @return bool The return value will be casted to boolean and then evaluated.
      */
     public function valid() {}
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-pure
      * @psalm-purity-from-template TPurity
      * @return void Any returned value is ignored.
      */
     public function rewind() {}
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-pure
      * @psalm-purity-from-template TPurity
      * @return TReturn Can return any type.
      */
     public function getReturn() {}
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-pure
      * @psalm-purity-from-template TPurity
      * @param TSend $value
      * @psalm-ignore-nullable-return
@@ -83,7 +83,7 @@ final class Generator implements Iterator {
     public function send($value) {}
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-pure
      * @psalm-purity-from-template TPurity
      * @psalm-ignore-nullable-return
      * @return ?TValue Can return any type.
