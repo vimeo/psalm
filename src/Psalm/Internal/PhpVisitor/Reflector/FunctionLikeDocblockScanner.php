@@ -316,6 +316,23 @@ final class FunctionLikeDocblockScanner
             );
         }
 
+        foreach ($docblock_info->params_closure_this as $docblock_param_closure_this) {
+            self::handleParamClosureThis(
+                $docblock_param_closure_this,
+                $aliases,
+                $function_template_types,
+                $class_template_types,
+                $type_aliases,
+                $cased_function_id,
+                $file_scanner,
+                $stmt,
+                $storage,
+                $codebase,
+                $file_storage,
+                $classlike_storage,
+            );
+        }
+
         if ($docblock_info->self_out
             && $storage instanceof MethodStorage) {
             try {
@@ -1404,18 +1421,120 @@ final class FunctionLikeDocblockScanner
         Codebase $codebase,
         FileStorage $file_storage,
     ): void {
+        $out_type = self::parseParamTagType(
+            $docblock_param_out['type'],
+            $aliases,
+            $function_template_types,
+            $class_template_types,
+            $type_aliases,
+            $cased_function_id,
+            $file_scanner,
+            $stmt,
+            $storage,
+            $codebase,
+            $file_storage,
+            null,
+        );
+
+        if ($out_type === null) {
+            return;
+        }
+
         $param_name = substr($docblock_param_out['name'], 1);
 
+        foreach ($storage->params as $param_storage) {
+            if ($param_storage->name === $param_name) {
+                $param_storage->out_type = $out_type;
+            }
+        }
+    }
+
+    /**
+     * @param array<string, TypeAlias> $type_aliases
+     * @param array<string, array<string, Union>> $function_template_types
+     * @param array<string, non-empty-array<string, Union>> $class_template_types
+     * @param  array{name:string, type:string, line_number: int} $docblock_param_closure_this
+     */
+    private static function handleParamClosureThis(
+        array $docblock_param_closure_this,
+        Aliases $aliases,
+        array $function_template_types,
+        array $class_template_types,
+        array $type_aliases,
+        string $cased_function_id,
+        FileScanner $file_scanner,
+        PhpParser\Node\FunctionLike $stmt,
+        FunctionLikeStorage $storage,
+        Codebase $codebase,
+        FileStorage $file_storage,
+        ?ClassLikeStorage $classlike_storage,
+    ): void {
+        $closure_this_type = self::parseParamTagType(
+            $docblock_param_closure_this['type'],
+            $aliases,
+            $function_template_types,
+            $class_template_types,
+            $type_aliases,
+            $cased_function_id,
+            $file_scanner,
+            $stmt,
+            $storage,
+            $codebase,
+            $file_storage,
+            $classlike_storage,
+        );
+
+        if ($closure_this_type === null) {
+            return;
+        }
+
+        $param_name = substr($docblock_param_closure_this['name'], 1);
+
+        foreach ($storage->params as $param_storage) {
+            if ($param_storage->name === $param_name) {
+                $param_storage->closure_this_type = $closure_this_type;
+            }
+        }
+    }
+
+    /**
+     * Parses the type of a `@param-out` or `@param-closure-this` tag and queues the classes it
+     * names for scanning. Returns null when the type does not parse, recording the reason on
+     * `$storage`.
+     *
+     * @param array<string, TypeAlias> $type_aliases
+     * @param array<string, array<string, Union>> $function_template_types
+     * @param array<string, non-empty-array<string, Union>> $class_template_types
+     * @param ?ClassLikeStorage $classlike_storage set to resolve `self` and `parent` in the type
+     */
+    private static function parseParamTagType(
+        string $type,
+        Aliases $aliases,
+        array $function_template_types,
+        array $class_template_types,
+        array $type_aliases,
+        string $cased_function_id,
+        FileScanner $file_scanner,
+        PhpParser\Node\FunctionLike $stmt,
+        FunctionLikeStorage $storage,
+        Codebase $codebase,
+        FileStorage $file_storage,
+        ?ClassLikeStorage $classlike_storage,
+    ): ?Union {
+        $template_types = $function_template_types + $class_template_types;
+
         try {
-            $out_type = TypeParser::parseTokens(
+            $parsed_type = TypeParser::parseTokens(
                 TypeTokenizer::getFullyQualifiedTokens(
-                    $docblock_param_out['type'],
+                    $type,
                     $aliases,
-                    $function_template_types + $class_template_types,
+                    $template_types,
                     $type_aliases,
+                    $classlike_storage->name ?? null,
+                    $classlike_storage->parent_class ?? null,
                 ),
                 null,
-                $function_template_types + $class_template_types,
+                $template_types,
                 $type_aliases,
             );
         } catch (TypeParseTreeException $e) {
@@ -1424,21 +1543,17 @@ final class FunctionLikeDocblockScanner
                 new CodeLocation($file_scanner, $stmt, null, true),
             );
 
-            return;
+            return null;
         }
 
         /** @psalm-suppress UnusedMethodCall */
-        $out_type->queueClassLikesForScanning(
+        $parsed_type->queueClassLikesForScanning(
             $codebase,
             $file_storage,
-            $storage->template_types ?: [],
+            $storage->template_types ?? [],
         );
 
-        foreach ($storage->params as $param_storage) {
-            if ($param_storage->name === $param_name) {
-                $param_storage->out_type = $out_type;
-            }
-        }
+        return $parsed_type;
     }
 
     /**
