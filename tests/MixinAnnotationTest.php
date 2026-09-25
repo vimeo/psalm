@@ -622,6 +622,202 @@ final class MixinAnnotationTest extends TestCase
                     '$c' => 'B',
                 ],
             ],
+            'nestedMixinResolvesTransitiveMethod' => [
+                'code' => '<?php
+                    namespace T;
+
+                    class QueryB {
+                        public function whereNull(string $c): static { return $this; }
+                    }
+
+                    /** @mixin \T\QueryB */
+                    class EloquentB {}
+
+                    /** @mixin \T\EloquentB */
+                    class ClassHost {}
+
+                    /** @mixin \T\EloquentB */
+                    interface IfaceContract {}
+
+                    function direct(EloquentB $q): void   { $q->whereNull("x"); }
+                    function viaClass(ClassHost $q): void { $q->whereNull("x"); }
+                    function viaIface(IfaceContract $q): void { $q->whereNull("x"); }',
+            ],
+            'nestedMixinResolvesReturnType' => [
+                'code' => '<?php
+                    namespace T;
+
+                    class Base {
+                        public function value(): int { return 1; }
+                    }
+
+                    /** @mixin \T\Base */
+                    class Middle {}
+
+                    /** @mixin \T\Middle */
+                    class Top {}
+
+                    $top = new Top();
+                    $result = $top->value();',
+                'assertions' => [
+                    '$result' => 'int',
+                ],
+            ],
+            'nestedMixinDirectShadowsTransitive' => [
+                'code' => '<?php
+                    namespace T;
+
+                    class Deep {
+                        public function foo(): int { return 1; }
+                    }
+
+                    /** @mixin \T\Deep */
+                    class Near {
+                        public function foo(): string { return ""; }
+                    }
+
+                    /** @mixin \T\Near */
+                    class Host {}
+
+                    $host = new Host();
+                    $result = $host->foo();',
+                'assertions' => [
+                    '$result' => 'string',
+                ],
+            ],
+            'mutualMixinsDoNotRecurseInfinitely' => [
+                'code' => '<?php
+                    namespace T;
+
+                    /** @mixin \T\Pong */
+                    class Ping {
+                        public function ping(): void {}
+                    }
+
+                    /** @mixin \T\Ping */
+                    class Pong {
+                        public function pong(): void {}
+                    }
+
+                    function test(Ping $p): void {
+                        $p->ping();
+                        $p->pong();
+                    }',
+            ],
+            'nestedMixinStaticCall' => [
+                'code' => '<?php
+                    namespace T;
+
+                    class StaticBase {
+                        public static function make(): int { return 1; }
+                    }
+
+                    /** @mixin \T\StaticBase */
+                    class StaticMiddle {}
+
+                    /** @mixin \T\StaticMiddle */
+                    class StaticTop {}
+
+                    $result = StaticTop::make();',
+                'assertions' => [
+                    '$result' => 'int',
+                ],
+            ],
+            'nestedMixinPropertyFetch' => [
+                'code' => '<?php
+                    namespace T;
+
+                    class PropBase {
+                        public int $count = 0;
+                    }
+
+                    /** @mixin \T\PropBase */
+                    class PropMiddle {}
+
+                    /** @mixin \T\PropMiddle */
+                    class PropTop {}
+
+                    $top = new PropTop();
+                    $result = $top->count;',
+                'assertions' => [
+                    '$result' => 'int',
+                ],
+            ],
+            'nestedMixinDiamondResolvesSharedTarget' => [
+                'code' => '<?php
+                    namespace T;
+
+                    class Shared {
+                        public function shared(): int { return 1; }
+                    }
+
+                    /** @mixin \T\Shared */
+                    class LeftArm {}
+
+                    /** @mixin \T\Shared */
+                    class RightArm {}
+
+                    /**
+                     * @mixin \T\LeftArm
+                     * @mixin \T\RightArm
+                     */
+                    class Diamond {}
+
+                    $d = new Diamond();
+                    $result = $d->shared();',
+                'assertions' => [
+                    '$result' => 'int',
+                ],
+            ],
+            'nestedMixinTargetInheritsMixinFromParent' => [
+                'code' => '<?php
+                    namespace T;
+
+                    class GrandChildMethods {
+                        public function deep(): int { return 1; }
+                    }
+
+                    /** @mixin \T\GrandChildMethods */
+                    class MixinParent {}
+
+                    class MixinChild extends MixinParent {}
+
+                    /** @mixin \T\MixinChild */
+                    class HostDeclaredFirst {}
+
+                    $host = new HostDeclaredFirst();
+                    $result = $host->deep();',
+                'assertions' => [
+                    '$result' => 'int',
+                ],
+            ],
+            'nestedMixinLaterSiblingWinsAtSameDepth' => [
+                'code' => '<?php
+                    namespace T;
+
+                    class SibTargetA { public function val(): int { return 1; } }
+                    class SibTargetB { public function val(): string { return ""; } }
+
+                    /** @mixin \T\SibTargetA */
+                    class SibLeft {}
+
+                    /** @mixin \T\SibTargetB */
+                    class SibRight {}
+
+                    /**
+                     * @mixin \T\SibLeft
+                     * @mixin \T\SibRight
+                     */
+                    class SibHost {}
+
+                    $host = new SibHost();
+                    $result = $host->val();',
+                'assertions' => [
+                    // SibRight is declared after SibLeft, so its transitively mixed-in val() wins, matching
+                    // the analyzers last-match-wins precedence for same-depth mixins.
+                    '$result' => 'string',
+                ],
+            ],
         ];
     }
 
@@ -634,6 +830,32 @@ final class MixinAnnotationTest extends TestCase
                     /** @mixin B */
                     class A {}',
                 'error_message' => 'UndefinedDocblockClass',
+            ],
+            'nestedGenericMixinChainIsNotFollowed' => [
+                // Transitive flattening only follows named (non-templated) mixins. A generic mixin hop
+                // would need per-hop template binding, so a method reachable only through one stays
+                // unresolved rather than leaking an unbound template param into the host.
+                'code' => '<?php
+                    namespace T;
+
+                    /** @template TItem */
+                    class GenInner {
+                        /** @return TItem */
+                        public function item() { throw new \Exception(); }
+                    }
+
+                    /**
+                     * @template TMid
+                     * @mixin \T\GenInner<TMid>
+                     */
+                    class GenMiddle {}
+
+                    /** @mixin \T\GenMiddle<string> */
+                    class GenHost {}
+
+                    $host = new GenHost();
+                    $host->item();',
+                'error_message' => 'UndefinedMethod',
             ],
             'undefinedMixinClassWithPropertyFetch' => [
                 'code' => '<?php

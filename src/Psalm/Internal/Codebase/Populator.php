@@ -19,7 +19,9 @@ use Psalm\Storage\ClassConstantStorage;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\PropertyStorage;
+use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -31,10 +33,12 @@ use function array_flip;
 use function array_intersect_key;
 use function array_keys;
 use function array_merge;
+use function array_shift;
 use function array_splice;
 use function count;
 use function in_array;
 use function key;
+use function krsort;
 use function reset;
 use function strpos;
 use function strtolower;
@@ -67,6 +71,8 @@ final class Populator
         foreach ($this->classlike_storage_provider->getNew() as $class_storage) {
             $this->populateClassLikeStorage($class_storage);
         }
+
+        $this->populateTransitiveMixins();
 
         $this->progress->debug('ClassLikeStorage is populated' . "\n");
 
@@ -562,6 +568,133 @@ final class Populator
         }
 
         $parent_storage->has_children = true;
+    }
+
+    /**
+     * Second populate pass: flatten transitive `@mixin` chains.
+     *
+     * A class/interface only stores the mixins declared directly on it, yet the analyzers iterate
+     * `namedMixins` a single level deep. A method or property living on a mixin-of-a-mixin (depth >= 2)
+     * is therefore invisible. Here we flatten the transitive closure into each host's `namedMixins` so
+     * the existing one-hop lookups resolve the whole chain with no analyzer changes.
+     *
+     * This runs after every class has been populated, so each mixin target's `namedMixins` already
+     * contains any mixins propagated from its own parent class. Closures are computed against the
+     * pre-flatten lists and applied only afterwards, which keeps the result independent of the order in
+     * which classes were populated.
+     */
+    private function populateTransitiveMixins(): void
+    {
+        $updates = [];
+
+        foreach ($this->classlike_storage_provider->getNew() as $storage) {
+            if (!$storage->namedMixins) {
+                continue;
+            }
+
+            $flattened = $this->resolveTransitiveMixins($storage);
+
+            if ($flattened !== null) {
+                $updates[] = [$storage, $flattened];
+            }
+        }
+
+        foreach ($updates as [$storage, $flattened]) {
+            $storage->namedMixins = $flattened;
+        }
+    }
+
+    /**
+     * Walk the transitive `@mixin` chain of a single host and return its flattened `namedMixins`, or
+     * null when nothing beyond the directly declared mixins is reachable.
+     *
+     * Only named (non-templated) mixins are followed; templated mixin chains require per-hop template
+     * binding and are left untouched. A legal mutual `@mixin` (A mixes B, B mixes A) terminates via the
+     * visited set. The breadth-first walk reads each target's current `namedMixins`; because the caller
+     * defers all writes until the walk of every host is complete, those reads always see the original
+     * (unflattened) lists.
+     *
+     * @return list<TNamedObject>|null
+     */
+    private function resolveTransitiveMixins(ClassLikeStorage $storage): ?array
+    {
+        $storage_name_lc = strtolower($storage->name);
+
+        $direct = [];
+        foreach ($storage->namedMixins as $mixin) {
+            $direct[strtolower($this->classlikes->getUnAliasedName($mixin->value))] = true;
+        }
+
+        // Breadth-first walk of the chain. Mixins beyond the directly declared ones are collected and
+        // grouped by hop distance so precedence can be reconstructed afterwards. $queue holds
+        // [mixin, depth] pairs; direct mixins start at depth 1.
+        $by_depth = [];
+        $visited = [$storage_name_lc => true];
+        $queue = [];
+        foreach ($storage->namedMixins as $mixin) {
+            $queue[] = [$mixin, 1];
+        }
+
+        while ($queue) {
+            [$mixin, $depth] = array_shift($queue);
+
+            // Generic mixins (e.g. `@mixin Collection<T>`) need their template arguments bound per hop;
+            // following them here would carry unbound template params into the host. Leave them to the
+            // existing single-hop templated handling and neither descend into nor collect them.
+            if ($mixin instanceof TGenericObject) {
+                continue;
+            }
+
+            $mixin_name_lc = strtolower($this->classlikes->getUnAliasedName($mixin->value));
+
+            if (isset($visited[$mixin_name_lc])) {
+                continue;
+            }
+            $visited[$mixin_name_lc] = true;
+
+            try {
+                $mixin_storage = $this->classlike_storage_provider->get($mixin_name_lc);
+            } catch (InvalidArgumentException) {
+                // A missing mixin target is reported elsewhere (UndefinedDocblockClass); unlike a missing
+                // parent it must not be recorded as an invalid dependency, or the host would downgrade
+                // every method call to MixedMethodCall instead of the expected UndefinedMethod.
+                $this->progress->debug('Populator could not find mixin dependency (' . __LINE__ . ")\n");
+
+                continue;
+            }
+
+            $mixin_storage->dependent_classlikes[$storage_name_lc] = true;
+
+            if ($storage->location) {
+                $this->file_reference_provider->addFileInheritanceToClass(
+                    $storage->location->file_path,
+                    $mixin_name_lc,
+                );
+            }
+
+            if (!isset($direct[$mixin_name_lc])) {
+                $by_depth[$depth][] = $mixin;
+            }
+
+            foreach ($mixin_storage->namedMixins as $deeper_mixin) {
+                $queue[] = [$deeper_mixin, $depth + 1];
+            }
+        }
+
+        if (!$by_depth) {
+            return null;
+        }
+
+        // The instance method-call and property-fetch mixin loops are last-match-wins, so directly
+        // declared mixins must keep priority over transitively inherited ones, and nearer hops over
+        // deeper ones. Emit the deepest hop first (lowest priority) while preserving declaration order
+        // within each hop, then the declared mixins last (highest priority). (The static-call path
+        // instead forwards a union of every namedMixin once any one matches, so a method declared at
+        // several depths widens to a union there; that asymmetry is pre-existing and not introduced by
+        // flattening the chain.)
+        krsort($by_depth);
+
+        return [...array_merge(...$by_depth), ...$storage->namedMixins];
     }
 
     private function populateInterfaceData(
