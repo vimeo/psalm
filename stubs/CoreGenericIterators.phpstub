@@ -10,7 +10,7 @@
 interface IteratorAggregate extends Traversable {
 
     /**
-     * @psalm-mutation-free
+     * @psalm-capabilities read-props
      * @psalm-purity-from-template TPurity
      * @return Traversable<TKey, TValue, TPurity> An instance of an object implementing Iterator or Traversable
      */
@@ -27,7 +27,7 @@ interface IteratorAggregate extends Traversable {
 interface Iterator extends Traversable {
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props
      * @psalm-purity-from-template TPurity
      * @return TValue|null returns current value or null when iterator is drained
      * @psalm-ignore-nullable-return
@@ -35,14 +35,14 @@ interface Iterator extends Traversable {
     public function current();
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props
      * @psalm-purity-from-template TPurity
      * @return void Any returned value is ignored.
      */
     public function next();
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props
      * @psalm-purity-from-template TPurity
      * @return TKey|null current key or null when iterator is drained
      * @psalm-ignore-nullable-return
@@ -50,7 +50,7 @@ interface Iterator extends Traversable {
     public function key();
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props
      * @psalm-purity-from-template TPurity
      * @return bool The return value will be casted to boolean and then evaluated.
      *              Returns true on success or false on failure.
@@ -58,7 +58,7 @@ interface Iterator extends Traversable {
     public function valid();
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props
      * @psalm-purity-from-template TPurity
      * @return void Any returned value is ignored.
      */

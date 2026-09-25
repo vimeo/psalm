@@ -180,6 +180,20 @@ final class Capabilities
             return 'impure';
         }
 
+        // a set may lack the bits its widest capability implies (write-props without read-props):
+        // named by the capabilities it has, which imply those
+        if (($capabilities & self::WRITE_PROPS) !== 0) {
+            $capabilities |= self::WRITE_THIS_PROPS;
+        }
+
+        if (($capabilities & self::WRITE_THIS_PROPS) !== 0) {
+            $capabilities |= self::READ_PROPS;
+        }
+
+        if (($capabilities & self::WRITE_GLOBALS) !== 0) {
+            $capabilities |= self::READ_GLOBALS;
+        }
+
         $names = [];
         $covered = self::NONE;
 

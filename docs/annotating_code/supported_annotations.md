@@ -712,11 +712,12 @@ function apply(Closure $callback): int {
 their key and value templates, `TPurity`, which says what iterating over the object may do:
 `Iterator<int, string, pure>` can be iterated by a pure function, `Generator<int, int, mixed, void, io>`
 prints when consumed. It defaults to `impure`, so `Iterator<int, string>` still means an iterator
-about which nothing is known. Consuming a generator costs its `TPurity` and nothing else, since
-where a generator is paused is internal engine state: a pure function may consume any
-`Generator<int, int, mixed, mixed, pure>`, including one it was given. Iterating any other
-iterator also costs moving it along, as calling any method that changes an object does: nothing
-when the iterator was just created, `write-this-props` when it is `$this`, `write-props`
+about which nothing is known. Iterating a value known only by one of these types costs its
+`TPurity` and nothing else: a pure function may consume any `Iterator<int, string, pure>` or
+`Generator<int, int, mixed, mixed, pure>`, including one it was given (where a generator is paused
+is internal engine state). Iterating a value of an iterator class calls that class's own methods,
+so it costs what they do like any other method call: writing the iterator's properties costs
+nothing when it was just created, `write-this-props` when it is `$this` and `write-props`
 otherwise.
 
 A generator function-like with a purity annotation binds the `TPurity` of the `Generator`
@@ -752,8 +753,9 @@ function print(): int {
 A class implementing `Iterator` or `IteratorAggregate` may bind `TPurity` in its `@implements`
 (`@implements Iterator<int, string, pure>`), in which case its iteration methods (or its
 `getIterator()` and what that returns) must fit the binding. A class that does not bind it gets
-it from those methods, so `MyIterator` is accepted where `Iterator<int, string, pure>` is expected
-exactly when its iteration methods are pure.
+it from those methods, as whoever iterates it sees them: a method writing the iterator's own
+properties makes it `write-props`. So `MyIterator` is accepted where `Iterator<int, string, pure>`
+is expected exactly when its iteration methods are pure.
 
 ### `@psalm-purity-from-template`
 

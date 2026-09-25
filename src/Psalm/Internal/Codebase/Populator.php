@@ -306,8 +306,16 @@ final class Populator
 
         $declaring_class_storage = $this->classlike_storage_provider->get($declaring_method_id->fq_class_name);
 
-        return $method_storage->getWorstCaseCapabilities($declaring_class_storage->template_types ?? [])
+        $capabilities = $method_storage->getWorstCaseCapabilities($declaring_class_storage->template_types ?? [])
             & ~Capabilities::READ_PROPS;
+
+        // what iterating a value of the class may do to whoever iterates it, for whom the
+        // iterator's `$this` is another object
+        if (($capabilities & Capabilities::WRITE_THIS_PROPS) !== 0) {
+            $capabilities |= Capabilities::WRITE_PROPS;
+        }
+
+        return $capabilities;
     }
 
     /**

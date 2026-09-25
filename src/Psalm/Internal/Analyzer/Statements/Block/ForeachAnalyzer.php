@@ -654,7 +654,9 @@ final class ForeachAnalyzer
                         $iterator_atomic_type,
                         $expr,
                         $context,
-                        $expr instanceof PhpParser\Node\Expr\Variable && $expr->name === 'this',
+                        // freshly created iterators are recognised by their type; `$this` is not
+                        // fresh, moving it along needs write-this-props
+                        false,
                     ),
                     $context,
                     'iterating over ' . $iterator_atomic_type->getId(),
@@ -1119,7 +1121,6 @@ final class ForeachAnalyzer
                 $expr,
                 $declaring_method_id,
                 $method_storage,
-                $context,
                 $receiver_is_fresh,
             );
 
@@ -1178,7 +1179,6 @@ final class ForeachAnalyzer
                     $expr,
                     $declaring_method_id,
                     $codebase->methods->getStorage($declaring_method_id),
-                    $context,
                     $receiver_is_fresh,
                 );
             }
@@ -1187,14 +1187,7 @@ final class ForeachAnalyzer
         }
 
         if (strtolower($fq_class_name) === 'traversable') {
-            // an iterator of unknown kind, whose purity template says what iterating it may do,
-            // on top of moving it along unless it is fresh
-            $capabilities = $receiver_is_fresh
-                ? Capabilities::NONE
-                : (MethodCallPurityAnalyzer::isThis($expr)
-                    ? Capabilities::WRITE_THIS_PROPS
-                    : Capabilities::WRITE_PROPS) | Capabilities::WRITE_REFS;
-
+            // an iterator of unknown kind, whose purity template says all that iterating it may do
             $traversable_storage = $codebase->classlike_storage_provider->get($fq_class_name);
             $purity_index = array_search('TPurity', array_keys($traversable_storage->template_types ?? []), true);
 
@@ -1205,7 +1198,7 @@ final class ForeachAnalyzer
                 return Capabilities::ALL;
             }
 
-            return $capabilities | CallPurityResolver::resolvePurity(
+            return CallPurityResolver::resolvePurity(
                 $iterator_atomic_type->type_params[$purity_index],
                 $statements_analyzer,
             );
@@ -1228,15 +1221,15 @@ final class ForeachAnalyzer
         PhpParser\Node\Expr $expr,
         MethodIdentifier $declaring_method_id,
         MethodStorage $method_storage,
-        Context $context,
         bool $receiver_is_fresh,
     ): int {
+        // foreach passes no arguments, so writing by-reference parameters costs nothing
         $capabilities = MethodCallPurityAnalyzer::getMethodCapabilities(
             $statements_analyzer,
             $expr,
             $method_storage,
             $receiver_is_fresh,
-        );
+        ) & ~Capabilities::WRITE_REFS;
 
         return CallPurityResolver::getCallCapabilities(
             $statements_analyzer,

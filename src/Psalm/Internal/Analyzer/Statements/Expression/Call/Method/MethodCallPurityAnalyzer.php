@@ -88,7 +88,7 @@ final class MethodCallPurityAnalyzer
     }
 
     /** @psalm-pure */
-    public static function isThis(Expr $var): bool
+    private static function isThis(Expr $var): bool
     {
         return $var instanceof Expr\Variable && $var->name === 'this';
     }
@@ -128,6 +128,10 @@ final class MethodCallPurityAnalyzer
             $class_template_params,
         );
 
+        // whether the result may come from global state depends on what this call reads,
+        // not on what it writes through its by-reference arguments
+        $reads_globals = ($method_capabilities & Capabilities::READ_GLOBALS) !== 0;
+
         $args = $stmt->isFirstClassCallable() ? [] : $stmt->getArgs();
 
         $method_capabilities = ByRefArgumentAnalyzer::adjustCapabilities(
@@ -160,7 +164,7 @@ final class MethodCallPurityAnalyzer
             self::receiverAllowsInternalMutations($statements_analyzer, $stmt->var),
         );
 
-        if (($method_storage->capabilities & Capabilities::READ_GLOBALS) !== 0) {
+        if ($reads_globals) {
             $stmt->setAttribute(GlobalStateAnalyzer::ATTRIBUTE, true);
         }
 

@@ -369,7 +369,7 @@ final class CapabilitiesTest extends TestCase
                         return isset($v[0]);
                     }
 
-                    /** @psalm-external-mutation-free */
+                    /** @psalm-capabilities write-props */
                     function drop(): Vec {
                         $v = new Vec();
                         unset($v[0]);
@@ -555,7 +555,7 @@ final class CapabilitiesTest extends TestCase
                         return $s;
                     }
 
-                    /** @psalm-external-mutation-free */
+                    /** @psalm-capabilities write-props */
                     function sumGiven(Counter $c): int {
                         $s = 0;
                         foreach ($c as $x) {
@@ -758,7 +758,7 @@ final class CapabilitiesTest extends TestCase
                 'code' => '<?php
                     /**
                      * @implements Iterator<int, int>
-                     * @psalm-external-mutation-free
+                     * @psalm-capabilities write-this-props
                      */
                     final class Counter implements Iterator {
                         private int $i = 0;
@@ -779,8 +779,8 @@ final class CapabilitiesTest extends TestCase
                     }
 
                     /**
-                     * @psalm-external-mutation-free
-                     * @param Iterator<int, int, external-mutation-free> $it
+                     * @psalm-capabilities write-props
+                     * @param Iterator<int, int, write-props> $it
                      */
                     function sumCounter(Iterator $it): int {
                         $s = 0;
@@ -802,7 +802,7 @@ final class CapabilitiesTest extends TestCase
                         return $s;
                     }
 
-                    /** @psalm-external-mutation-free */
+                    /** @psalm-capabilities write-props */
                     function pass(Counter $c, Bag $b): int {
                         return sumCounter($c) + sumBag($b) + sumCounter($b->getIterator());
                     }',
@@ -1707,7 +1707,7 @@ final class CapabilitiesTest extends TestCase
                         /** @psalm-mutation-free */
                         public function valid(): bool { return false; }
                     }',
-                'error_message' => 'ImmutableDependency - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:33 - Iterator::next is write-this-props|write-refs, but Reader::next additionally requires',
+                'error_message' => 'ImmutableDependency - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:33 - Iterator::next is read-props, but Reader::next additionally requires write-props|write-globals|write-refs|io',
             ],
             'iteratorPurityBoundFromTheMethodsIsUsedForSubtyping' => [
                 'code' => '<?php

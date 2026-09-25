@@ -295,17 +295,19 @@ final class ExistingAtomicStaticCallAnalyzer
 
             $call_args = $stmt->isFirstClassCallable() ? [] : $stmt->getArgs();
 
+            $resolved_capabilities = CallPurityResolver::getCallCapabilities(
+                $statements_analyzer,
+                $codebase,
+                $method_storage,
+                $method_storage->capabilities,
+                $template_result,
+                $found_generic_params ?? [],
+            );
+
             $call_capabilities = ByRefArgumentAnalyzer::adjustCapabilities(
                 $statements_analyzer,
                 $context,
-                CallPurityResolver::getCallCapabilities(
-                    $statements_analyzer,
-                    $codebase,
-                    $method_storage,
-                    $method_storage->capabilities,
-                    $template_result,
-                    $found_generic_params ?? [],
-                ),
+                $resolved_capabilities,
                 $method_storage->params,
                 $call_args,
             );
@@ -327,7 +329,8 @@ final class ExistingAtomicStaticCallAnalyzer
                 $method_storage,
             );
 
-            if (($method_storage->capabilities & Capabilities::READ_GLOBALS) !== 0) {
+            // what this call reads, not what it writes through its by-reference arguments
+            if (($resolved_capabilities & Capabilities::READ_GLOBALS) !== 0) {
                 $stmt->setAttribute(GlobalStateAnalyzer::ATTRIBUTE, true);
             }
 

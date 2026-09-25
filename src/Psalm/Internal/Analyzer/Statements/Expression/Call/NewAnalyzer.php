@@ -470,41 +470,14 @@ final class NewAnalyzer extends CallAnalyzer
                     );
                 }
 
-                // the constructor only mutates the new object: what it does to it is fine
-                $constructor_capabilities = CallPurityResolver::getCallCapabilities(
+                self::analyzeConstructorPurity(
                     $statements_analyzer,
                     $codebase,
-                    $method_storage,
-                    $method_storage->capabilities & ~Capabilities::RECEIVER_LOCAL,
-                    $template_result,
-                );
-
-                $stmt->setAttribute(self::CALLEE_CAPABILITIES_ATTRIBUTE, $constructor_capabilities);
-
-                $statements_analyzer->signalMutation(
-                    $constructor_capabilities,
                     $context,
-                    'constructor ' . $codebase->methods->getCasedMethodId($declaring_method_id),
-                    ImpureMethodCall::class,
                     $stmt,
-                    null,
-                    false,
+                    $declaring_method_id,
                     $method_storage,
-                    true,
-                );
-
-                if (($constructor_capabilities & Capabilities::READ_GLOBALS) !== 0) {
-                    // the constructor may have stored global state in the new object
-                    $stmt->setAttribute(GlobalStateAnalyzer::ATTRIBUTE, true);
-                }
-
-                GlobalStateAnalyzer::checkArguments(
-                    $statements_analyzer,
-                    $context,
-                    $stmt->getArgs(),
-                    $constructor_capabilities,
-                    ImpureMethodCall::class,
-                    'constructor ' . $codebase->methods->getCasedMethodId($declaring_method_id),
+                    $template_result,
                 );
 
                 if ($method_storage->assertions && $stmt->class instanceof PhpParser\Node\Name) {
@@ -821,6 +794,71 @@ final class NewAnalyzer extends CallAnalyzer
      * `new $class_name()` calls the constructor of the class the class-string stands for, which
      * may be anything when the class is not known.
      */
+    /**
+     * What calling a constructor costs: its capabilities (with those of the closures its purity
+     * templates are bound to), less what it does to the new object, with its by-reference
+     * parameters costing what the arguments passed to them are.
+     */
+    private static function analyzeConstructorPurity(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        Context $context,
+        PhpParser\Node\Expr\New_ $stmt,
+        MethodIdentifier $declaring_method_id,
+        MethodStorage $method_storage,
+        ?TemplateResult $template_result,
+    ): void {
+        $cased_method_id = 'constructor ' . $codebase->methods->getCasedMethodId($declaring_method_id);
+
+        // the constructor only mutates the new object: what it does to it is fine
+        $resolved_capabilities = CallPurityResolver::getCallCapabilities(
+            $statements_analyzer,
+            $codebase,
+            $method_storage,
+            $method_storage->capabilities & ~(Capabilities::READ_PROPS | Capabilities::WRITE_THIS_PROPS),
+            $template_result,
+        );
+
+        $args = $stmt->getArgs();
+
+        $constructor_capabilities = ByRefArgumentAnalyzer::adjustCapabilities(
+            $statements_analyzer,
+            $context,
+            $resolved_capabilities,
+            $method_storage->params,
+            $args,
+        );
+
+        $stmt->setAttribute(self::CALLEE_CAPABILITIES_ATTRIBUTE, $constructor_capabilities);
+
+        $statements_analyzer->signalMutation(
+            $constructor_capabilities,
+            $context,
+            $cased_method_id,
+            ImpureMethodCall::class,
+            $stmt,
+            null,
+            false,
+            $method_storage,
+            true,
+        );
+
+        // the constructor may have stored global state in the new object: what it reads, not
+        // what it writes through its by-reference arguments
+        if (($resolved_capabilities & Capabilities::READ_GLOBALS) !== 0) {
+            $stmt->setAttribute(GlobalStateAnalyzer::ATTRIBUTE, true);
+        }
+
+        GlobalStateAnalyzer::checkArguments(
+            $statements_analyzer,
+            $context,
+            $args,
+            $constructor_capabilities,
+            ImpureMethodCall::class,
+            $cased_method_id,
+        );
+    }
+
     private static function checkDynamicConstructorPurity(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
@@ -839,28 +877,14 @@ final class NewAnalyzer extends CallAnalyzer
                 return;
             }
 
-            $method_storage = $codebase->methods->getStorage($declaring_method_id);
-
-            $constructor_capabilities = CallPurityResolver::getCallCapabilities(
+            self::analyzeConstructorPurity(
                 $statements_analyzer,
                 $codebase,
-                $method_storage,
-                $method_storage->capabilities & ~Capabilities::RECEIVER_LOCAL,
-                null,
-            );
-
-            $stmt->setAttribute(self::CALLEE_CAPABILITIES_ATTRIBUTE, $constructor_capabilities);
-
-            $statements_analyzer->signalMutation(
-                $constructor_capabilities,
                 $context,
-                'constructor ' . $codebase->methods->getCasedMethodId($declaring_method_id),
-                ImpureMethodCall::class,
                 $stmt,
+                $declaring_method_id,
+                $codebase->methods->getStorage($declaring_method_id),
                 null,
-                false,
-                $method_storage,
-                true,
             );
 
             return;

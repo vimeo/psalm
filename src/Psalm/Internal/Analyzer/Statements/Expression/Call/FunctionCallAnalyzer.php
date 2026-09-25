@@ -1218,6 +1218,9 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     : null);
 
             if ($mutations !== null) {
+                // what this call reads, not what it writes through its by-reference arguments
+                $reads_globals = ($mutations & Capabilities::READ_GLOBALS) !== 0;
+
                 $mutations = ByRefArgumentAnalyzer::adjustCapabilities(
                     $statements_analyzer,
                     $context,
@@ -1238,7 +1241,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 );
 
                 if (!$stmt->isFirstClassCallable()) {
-                    if (($mutations & Capabilities::READ_GLOBALS) !== 0) {
+                    if ($reads_globals) {
                         $stmt->setAttribute(GlobalStateAnalyzer::ATTRIBUTE, true);
                     }
 
