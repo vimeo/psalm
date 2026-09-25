@@ -737,9 +737,15 @@ function rtrim(string $string, string $characters = " \t\n\r\0\x0B") : string {}
  * @return (
  *     $separator is non-empty-string
  *     ? ($array is non-empty-array
- *         ? ($array is array<literal-string|literal-int>
- *             ? ($separator is literal-string ? non-empty-literal-string : non-empty-string)
- *             : non-empty-string
+ *         ? ($array is array<non-empty-string|int|float>
+ *             ? ($array is array<non-empty-literal-string|literal-int>
+ *                 ? ($separator is literal-string ? non-empty-literal-string : non-empty-string)
+ *                 : non-empty-string
+ *             )
+ *             : ($array is array<literal-string|literal-int>
+ *                 ? ($separator is literal-string ? literal-string : string)
+ *                 : string
+ *             )
  *         )
  *         : string)
  *     : ($array is non-empty-array
@@ -764,9 +770,15 @@ function implode($separator, array $array = []) : string {}
  * @return (
  *     $separator is non-empty-string
  *     ? ($array is non-empty-array
- *         ? ($array is array<literal-string|literal-int>
- *             ? ($separator is literal-string ? non-empty-literal-string : non-empty-string)
- *             : non-empty-string
+ *         ? ($array is array<non-empty-string|int|float>
+ *             ? ($array is array<non-empty-literal-string|literal-int>
+ *                 ? ($separator is literal-string ? non-empty-literal-string : non-empty-string)
+ *                 : non-empty-string
+ *             )
+ *             : ($array is array<literal-string|literal-int>
+ *                 ? ($separator is literal-string ? literal-string : string)
+ *                 : string
+ *             )
  *         )
  *         : string)
  *     : ($array is non-empty-array
