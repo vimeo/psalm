@@ -578,9 +578,7 @@ final class TypeExpander
             );
 
             // the purity may name a type alias (`Closure<Storage>`)
-            if ($return_type->purity instanceof Union && !Capabilities::isPurityType($return_type->purity)
-                || ($return_type->purity instanceof Union && $return_type->purity->hasTypeAlias())
-            ) {
+            if (!Capabilities::isPurityType($return_type->purity) || $return_type->purity->hasTypeAlias()) {
                 $return_type = $return_type->setPurity(self::expandUnion(
                     $codebase,
                     $return_type->purity,

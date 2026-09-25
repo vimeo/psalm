@@ -505,6 +505,7 @@ final class Psalter
     /**
      * @param array<string, false|list<mixed>|string> $options
      * @param-out array<string, false|list<mixed>|string> $options
+     * @psalm-capabilities write-refs|read-props
      */
     private static function syncShortOptions(array &$options): void
     {

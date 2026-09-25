@@ -185,7 +185,7 @@ final class ClassLikes
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function addFullyQualifiedClassName(string $fq_class_name, ?string $file_path = null): void
     {
@@ -204,7 +204,7 @@ final class ClassLikes
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function addFullyQualifiedInterfaceName(string $fq_class_name, ?string $file_path = null): void
     {
@@ -223,7 +223,7 @@ final class ClassLikes
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function addFullyQualifiedTraitName(string $fq_class_name, ?string $file_path = null): void
     {
@@ -242,7 +242,7 @@ final class ClassLikes
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function addFullyQualifiedEnumName(string $fq_class_name, ?string $file_path = null): void
     {
@@ -261,7 +261,7 @@ final class ClassLikes
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function addFullyQualifiedClassLikeName(string $fq_class_name_lc, ?string $file_path = null): void
     {
@@ -324,7 +324,7 @@ final class ClassLikes
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function hasFullyQualifiedClassName(
         string $fq_class_name,
@@ -366,7 +366,7 @@ final class ClassLikes
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function hasFullyQualifiedInterfaceName(
         string $fq_class_name,
@@ -408,7 +408,7 @@ final class ClassLikes
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function hasFullyQualifiedEnumName(
         string $fq_class_name,
@@ -450,7 +450,7 @@ final class ClassLikes
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function hasFullyQualifiedTraitName(
         string $fq_class_name,
@@ -477,7 +477,7 @@ final class ClassLikes
     /**
      * Check whether a class/interface exists
      *
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function classOrInterfaceExists(
         string $fq_class_name,
@@ -491,7 +491,7 @@ final class ClassLikes
     /**
      * Check whether a class/interface exists
      *
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function classOrInterfaceOrEnumExists(
         string $fq_class_name,
@@ -506,7 +506,7 @@ final class ClassLikes
     /**
      * Determine whether or not a given class exists
      *
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function classExists(
         string $fq_class_name,
@@ -607,7 +607,7 @@ final class ClassLikes
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function interfaceExists(
         string $fq_interface_name,
@@ -626,7 +626,7 @@ final class ClassLikes
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function enumExists(
         string $fq_enum_name,
@@ -664,7 +664,7 @@ final class ClassLikes
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function traitExists(string $fq_trait_name, ?CodeLocation $location = null, ?Context $context = null): bool
     {
@@ -2478,7 +2478,7 @@ final class ClassLikes
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function removeClassLike(string $fq_class_name): void
     {

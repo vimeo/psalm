@@ -421,7 +421,7 @@ final class MethodComparator
                         . $implementer_classlike_storage->name . '::'
                         . ($guide_method_storage->cased_name ?: '')
                         . ' additionally requires '
-                        . Capabilities::toString($implementer_capabilities & ~$guide_capabilities),
+                        . Capabilities::toString($implementer_capabilities, $guide_capabilities),
                     $code_location,
                 ),
                 $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
@@ -1228,7 +1228,7 @@ final class MethodComparator
 
     /**
      * @param  array<string, array<string, Union>>  $template_extended_params
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     private static function transformTemplates(
         array $template_extended_params,

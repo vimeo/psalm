@@ -30,7 +30,7 @@ final class ByRefArgumentAnalyzer
      * The capabilities a call needs, with the callee's write-refs replaced by the cost of the
      * arguments actually passed by reference.
      *
-     * @param list<FunctionLikeParameter>|null $params the callee's parameters, null when unknown
+     * @param array<int, FunctionLikeParameter>|null $params the callee's parameters, null when unknown
      * @param list<Arg|PhpParser\Node\VariadicPlaceholder> $args
      */
     public static function adjustCapabilities(
@@ -40,7 +40,8 @@ final class ByRefArgumentAnalyzer
         ?array $params,
         array $args,
     ): int {
-        if (($capabilities & Capabilities::WRITE_REFS) === 0) {
+        // an impure callee may do anything, writing references it reaches some other way included
+        if (($capabilities & Capabilities::WRITE_REFS) === 0 || $capabilities === Capabilities::ALL) {
             return $capabilities;
         }
 
@@ -68,7 +69,7 @@ final class ByRefArgumentAnalyzer
     }
 
     /**
-     * @param list<FunctionLikeParameter> $params
+     * @param array<int, FunctionLikeParameter> $params
      * @psalm-mutation-free
      */
     private static function getParam(array $params, Arg $arg, int $index): ?FunctionLikeParameter
@@ -121,6 +122,11 @@ final class ByRefArgumentAnalyzer
         }
 
         if ($root instanceof Expr\PropertyFetch) {
+            // a property of an object nobody else holds, like a fresh clone, is like a local
+            if ($statements_analyzer->node_data->isPureCompatible($root->var)) {
+                return Capabilities::NONE;
+            }
+
             $object_type = $statements_analyzer->node_data->getType($root->var);
             $on_global_state = $object_type !== null && $object_type->from_global_state;
 

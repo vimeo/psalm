@@ -80,6 +80,7 @@ final class CapabilitiesExpressionResolver
      * resolved, for the populator.
      *
      * @param list<Union> $deferred
+     * @psalm-capabilities read-props
      */
     public static function deferred(int $capabilities, array $deferred): Union
     {

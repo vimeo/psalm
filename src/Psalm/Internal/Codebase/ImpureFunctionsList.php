@@ -45,12 +45,4 @@ final class ImpureFunctionsList
 
         return self::$capabilities[strtolower($function_id)] ?? Capabilities::NONE;
     }
-
-    /**
-     * @psalm-external-mutation-free
-     */
-    public static function isImpure(string $function_id): bool
-    {
-        return self::getCapabilities($function_id) !== Capabilities::NONE;
-    }
 }

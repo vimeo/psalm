@@ -314,7 +314,7 @@ final class ExistingAtomicStaticCallAnalyzer
 
             $stmt->setAttribute(
                 NewAnalyzer::CALLEE_CAPABILITIES_ATTRIBUTE,
-                ($stmt->getAttribute(NewAnalyzer::CALLEE_CAPABILITIES_ATTRIBUTE) ?? Capabilities::NONE)
+                (NewAnalyzer::getCalleeCapabilities($stmt) ?? Capabilities::NONE)
                     | $call_capabilities,
             );
 
@@ -656,7 +656,7 @@ final class ExistingAtomicStaticCallAnalyzer
     /**
      * Dumb way to determine whether a type contains "static" somewhere inside.
      *
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     private static function hasStaticInType(Type\TypeNode $type): bool
     {

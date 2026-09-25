@@ -533,7 +533,12 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
         }
 
-        DestructorAnalyzer::chargeDroppedObjects($statements_analyzer, $context, $function_stmts, $param_ids);
+        DestructorAnalyzer::chargeDroppedObjects(
+            $statements_analyzer,
+            $context,
+            array_values($function_stmts),
+            $param_ids,
+        );
 
         if ($statements_analyzer->owns_type_variable_tracker) {
             $statements_analyzer->type_variable_tracker->reconcile(
@@ -601,10 +606,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 // by-reference write, no IO) and returns nothing is useless: not pure by intent
                 $this->signalMutationOnlyInferred(Capabilities::MUTATION_FREE);
 
-                if (Capabilities::allows(Capabilities::READ_GLOBALS, $context->capabilities)
-                    && !$context->collect_mutations
-                    && !$context->collect_initializations
-                ) {
+                if (Capabilities::allows(Capabilities::READ_GLOBALS, $context->capabilities)) {
                     IssueBuffer::maybeAdd(
                         new ImpureFunctionCall(
                             'pure functions cannot have void return type'
@@ -620,8 +622,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 if (!$storage->has_mutations_annotation && $storage->location) {
                     IssueBuffer::maybeAdd(
                         new MissingAbstractPureAnnotation(
-                            $storage->cased_name . ' must be marked with one of @psalm-pure, @psalm-capabilities or @psalm-impure'
-                            . ' to aid security analysis',
+                            $storage->cased_name . ' must be marked with one of @psalm-pure,'
+                            . ' @psalm-capabilities or @psalm-impure to aid security analysis',
                             $storage->location,
                         ),
                         $storage->suppressed_issues,
@@ -1168,6 +1170,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             : Capabilities::NONE;
     }
 
+    /**
+     * @param list<FunctionLikeParameter> $params
+     * @param list<Param> $param_stmts
+     */
     private function processParams(
         StatementsAnalyzer $statements_analyzer,
         FunctionLikeStorage $storage,

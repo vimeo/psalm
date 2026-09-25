@@ -72,8 +72,6 @@ final class TypeTokenizer
         'impure-Closure' => true,
         'pure' => true,
         'impure' => true,
-        'mutation-free' => true,
-        'external-mutation-free' => true,
         'read-props' => true,
         'write-this-props' => true,
         'write-props' => true,

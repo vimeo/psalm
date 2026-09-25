@@ -38,7 +38,7 @@ interface StatementsSource extends FileSource
     public function getTemplateTypeMap(): ?array;
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function setRootFilePath(string $file_path, string $file_name): void;
 

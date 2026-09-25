@@ -23,6 +23,7 @@ use function trim;
  * bind it get.
  *
  * @internal
+ * @psalm-pure
  */
 final class PurityTemplateParser
 {
@@ -67,7 +68,7 @@ final class PurityTemplateParser
                 throw self::invalid($entry);
             }
 
-            if (!preg_match(self::NAME_PATTERN, $name, $matches)) {
+            if (!preg_match(self::NAME_PATTERN, $name, $matches) || !isset($matches[1])) {
                 throw self::invalid($entry);
             }
 
@@ -97,8 +98,11 @@ final class PurityTemplateParser
      */
     private static function isTemplate(string $part): bool
     {
-        return preg_match(self::NAME_PATTERN, $part, $matches) === 1
-            && (isset($matches[2]) || !isset(Capabilities::NAMES[strtolower($matches[1])]));
+        if (preg_match(self::NAME_PATTERN, $part, $matches) !== 1) {
+            return false;
+        }
+
+        return isset($matches[2]) || !isset(Capabilities::NAMES[strtolower($matches[1] ?? '')]);
     }
 
     /** @psalm-pure */

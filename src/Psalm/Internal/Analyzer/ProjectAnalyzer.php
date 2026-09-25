@@ -1101,7 +1101,7 @@ final class ProjectAnalyzer
     /**
      * @param array<string>  $diff_files
      * @return array<string, string>
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function getReferencedFilesFromDiff(array $diff_files, bool $include_referencing_files = true): array
     {

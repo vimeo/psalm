@@ -1268,7 +1268,7 @@ final class TemplateStandinTypeReplacer
     /**
      * @param TGenericObject|TNamedObject|TIterable $input_type_part
      * @param TGenericObject|TIterable $container_type_part
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      * @return list<Union>
      */
     public static function getMappedGenericTypeParams(

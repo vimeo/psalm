@@ -657,7 +657,7 @@ final class AtomicStaticCallAnalyzer
                     {
                         $stmt->setAttribute(
                             NewAnalyzer::CALLEE_CAPABILITIES_ATTRIBUTE,
-                            ($stmt->getAttribute(NewAnalyzer::CALLEE_CAPABILITIES_ATTRIBUTE) ?? Capabilities::NONE)
+                            (NewAnalyzer::getCalleeCapabilities($stmt) ?? Capabilities::NONE)
                                 | $callstatic_mutations,
                         );
 

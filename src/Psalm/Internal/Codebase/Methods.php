@@ -871,6 +871,9 @@ final class Methods
         return $this->getStorage($method_id)->returns_by_ref;
     }
 
+    /**
+     * @psalm-capabilities write-this-props|write-refs
+     */
     public function getMethodReturnTypeLocation(
         MethodIdentifier $method_id,
         ?CodeLocation &$defined_location = null,

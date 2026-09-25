@@ -76,7 +76,7 @@ final class Algebra
      *
      * @param list<Clause>  $clauses
      * @return list<Clause>
-     * @psalm-pure
+     * @psalm-capabilities write-refs
      */
     public static function simplifyCNF(array $clauses): array
     {
@@ -329,10 +329,11 @@ final class Algebra
      * doesn't infer the "unset" correctly
      *
      * @psalm-suppress MoreSpecificReturnType
-     * @param  list<Clause>  $clauses
-     * @param  array<string, bool> $cond_referenced_var_ids
-     * @param  array<string, array<int, array<int, Assertion>>> $active_truths
+     * @param list<Clause>  $clauses
+     * @param array<string, bool> $cond_referenced_var_ids
+     * @param array<string, array<int, array<int, Assertion>>> $active_truths
      * @return array<string, list<list<Assertion>>>
+     * @psalm-capabilities write-this-props|write-refs
      */
     public static function getTruthsFromFormula(
         array $clauses,

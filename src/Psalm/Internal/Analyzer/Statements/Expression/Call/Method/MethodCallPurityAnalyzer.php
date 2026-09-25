@@ -87,7 +87,7 @@ final class MethodCallPurityAnalyzer
         return $capabilities;
     }
 
-    /** @psalm-pure */
+    /** @psalm-capabilities read-props */
     private static function isThis(Expr $var): bool
     {
         return $var instanceof Expr\Variable && $var->name === 'this';

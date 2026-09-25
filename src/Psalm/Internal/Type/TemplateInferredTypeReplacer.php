@@ -47,7 +47,7 @@ final class TemplateInferredTypeReplacer
     /**
      * This replaces template types in unions with the inferred types they should be
      *
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public static function replace(
         Union $union,
@@ -246,7 +246,7 @@ final class TemplateInferredTypeReplacer
 
     /**
      * @param array<string, array<string, non-empty-list<TemplateBound>>> $inferred_lower_bounds
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     private static function replaceTemplateParam(
         ?Codebase $codebase,

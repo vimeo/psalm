@@ -139,6 +139,7 @@ final class AssignmentAnalyzer
 
     /**
      * @param  PhpParser\Node\Expr|null $assign_value  This has to be null to support list destructuring
+     * @psalm-suppress ComplexMethod dispatches on every kind of assignment target
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -277,6 +278,19 @@ final class AssignmentAnalyzer
                         $root_expr,
                     );
                 }
+            } elseif ($root_expr !== $assign_var
+                && isset($context->vars_in_scope[$root_var_name])
+                && $context->vars_in_scope[$root_var_name]->by_ref
+            ) {
+                // an element of a by-reference parameter: assigning the parameter itself is
+                // charged below
+                $statements_analyzer->signalMutation(
+                    Capabilities::WRITE_REFS,
+                    $context,
+                    'variable ' . $root_var_name . ' passed by reference',
+                    ImpureByReferenceAssignment::class,
+                    $root_expr,
+                );
             }
         }
 

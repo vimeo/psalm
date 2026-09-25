@@ -874,7 +874,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
 
     /**
      * @return array<string, string>
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public static function getClassesForFile(Codebase $codebase, string $file_path): array
     {

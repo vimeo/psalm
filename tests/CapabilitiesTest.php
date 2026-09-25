@@ -94,18 +94,18 @@ final class CapabilitiesTest extends TestCase
                         return both() + pipes();
                     }',
             ],
-            'namedLevelsAsCapabilities' => [
+            'legacyPurityAnnotations' => [
                 'code' => '<?php
                     final class Self_ {
                         public int $x = 0;
 
-                        /** @psalm-capabilities external-mutation-free */
+                        /** @psalm-external-mutation-free */
                         public function emf(): int {
                             $this->x = 1;
                             return $this->mf();
                         }
 
-                        /** @psalm-capabilities mutation-free */
+                        /** @psalm-mutation-free */
                         public function mf(): int {
                             return $this->x;
                         }
@@ -700,7 +700,7 @@ final class CapabilitiesTest extends TestCase
                     }
 
                     /**
-                     * @psalm-capabilities external-mutation-free|io
+                     * @psalm-capabilities write-this-props|io
                      * @param Traversable<int, int, io> $t
                      */
                     function sumAny(Traversable $t): int {
@@ -711,7 +711,7 @@ final class CapabilitiesTest extends TestCase
                         return $s;
                     }
 
-                    /** @psalm-capabilities external-mutation-free|io */
+                    /** @psalm-capabilities write-this-props|io */
                     function pass(): int {
                         return sumGiven(pureGen()) + sumAny(pureGen()) + sumAny(ioGen());
                     }',
@@ -817,6 +817,27 @@ final class CapabilitiesTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'writingAnElementOfAByReferenceParameterNeedsWriteRefs' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @param array<string, int> $a
+                     * @param-out array<string, int> $a
+                     */
+                    function f(array &$a): int {
+                        $a["k"] = 1;
+                        return 1;
+                    }',
+                'error_message' => 'ImpureByReferenceAssignment',
+            ],
+            'legacyPurityLevelsAreNotCapabilities' => [
+                'code' => '<?php
+                    /** @psalm-capabilities mutation-free */
+                    function f(): int {
+                        return 1;
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
             'externalMutationFreeCannotReadStatics' => [
                 'code' => '<?php
                     final class S { public static int $n = 0; }
@@ -1213,7 +1234,7 @@ final class CapabilitiesTest extends TestCase
                         }
                     }
 
-                    /** @psalm-capabilities read-globals|external-mutation-free|write-props */
+                    /** @psalm-capabilities read-globals|write-props|write-refs */
                     function leak(): void {
                         $b = Box::$g;
                         if ($b !== null) {

@@ -82,7 +82,7 @@ final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
 
     /**
      * @internal Should only be used by the MutableTypeVisitor.
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     #[Override]
     public function visit(TypeVisitor $visitor): bool

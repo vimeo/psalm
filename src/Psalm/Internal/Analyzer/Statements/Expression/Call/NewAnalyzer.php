@@ -69,6 +69,7 @@ use function array_map;
 use function array_values;
 use function count;
 use function in_array;
+use function is_int;
 use function preg_match;
 use function reset;
 use function strtolower;
@@ -310,7 +311,7 @@ final class NewAnalyzer extends CallAnalyzer
             // a constructor that cannot write properties or globals leaves every refinement in place
             $context->removeMutableObjectVars(
                 false,
-                $stmt->getAttribute(self::CALLEE_CAPABILITIES_ATTRIBUTE) ?? Capabilities::ALL,
+                self::getCalleeCapabilities($stmt) ?? Capabilities::ALL,
             );
         }
 
@@ -794,6 +795,19 @@ final class NewAnalyzer extends CallAnalyzer
      * `new $class_name()` calls the constructor of the class the class-string stands for, which
      * may be anything when the class is not known.
      */
+    /**
+     * The capabilities recorded in the CALLEE_CAPABILITIES_ATTRIBUTE of a `new` or static call,
+     * null when none were.
+     */
+    public static function getCalleeCapabilities(PhpParser\Node $stmt): ?int
+    {
+        if (!is_int($stmt->getAttribute(self::CALLEE_CAPABILITIES_ATTRIBUTE))) {
+            return null;
+        }
+
+        return (int) $stmt->getAttribute(self::CALLEE_CAPABILITIES_ATTRIBUTE);
+    }
+
     /**
      * What calling a constructor costs: its capabilities (with those of the closures its purity
      * templates are bound to), less what it does to the new object, with its by-reference

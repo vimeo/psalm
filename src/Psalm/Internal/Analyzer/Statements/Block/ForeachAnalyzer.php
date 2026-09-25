@@ -260,7 +260,6 @@ final class ForeachAnalyzer
         if ($iterator_type) {
             if (self::checkIteratorType(
                 $statements_analyzer,
-                $stmt,
                 $stmt->expr,
                 $iterator_type,
                 $codebase,
@@ -406,12 +405,10 @@ final class ForeachAnalyzer
     }
 
     /**
-     * @param PhpParser\Node\Stmt\Foreach_|PhpParser\Node\Expr\YieldFrom $stmt
      * @return false|null
      */
     public static function checkIteratorType(
         StatementsAnalyzer $statements_analyzer,
-        PhpParser\NodeAbstract $stmt,
         PhpParser\Node\Expr $expr,
         Union $iterator_type,
         Codebase $codebase,
@@ -1263,7 +1260,7 @@ final class ForeachAnalyzer
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     private static function classLikeIs(
         Codebase $codebase,

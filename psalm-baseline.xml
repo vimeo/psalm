@@ -399,9 +399,6 @@
       <code><![CDATA[$implementer_signature_return_type]]></code>
       <code><![CDATA[$implementer_signature_return_type]]></code>
     </ImplicitToStringCast>
-    <ImpureByReferenceAssignment>
-      <code><![CDATA[$templated_type]]></code>
-    </ImpureByReferenceAssignment>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$guide_classlike_storage->template_types]]></code>
       <code><![CDATA[$guide_method_storage->cased_name]]></code>
@@ -1912,7 +1909,6 @@
   <file src="src/Psalm/Internal/Json/Json.php">
     <ImpureByReferenceAssignment>
       <code><![CDATA[$value]]></code>
-      <code><![CDATA[$value]]></code>
     </ImpureByReferenceAssignment>
   </file>
   <file src="src/Psalm/Internal/LanguageServer/Client/Progress/LegacyProgress.php">
@@ -2536,9 +2532,6 @@
       <code><![CDATA[self::$shouldAddNewLineBetweenAnnotations]]></code>
       <code><![CDATA[self::$shouldAddNewLineBetweenAnnotations]]></code>
     </ImpureStaticProperty>
-    <MissingImmutableAnnotation>
-      <code><![CDATA[ParsedDocblock]]></code>
-    </MissingImmutableAnnotation>
   </file>
   <file src="src/Psalm/Internal/Scanner/PhpStormMetaScanner.php">
     <RiskyTruthyFalsyComparison>
@@ -2626,11 +2619,6 @@
       <code><![CDATA[$key]]></code>
       <code><![CDATA[$key]]></code>
     </RiskyTruthyFalsyComparison>
-  </file>
-  <file src="src/Psalm/Internal/Type/ParseTree.php">
-    <MissingImmutableAnnotation>
-      <code><![CDATA[ParseTree]]></code>
-    </MissingImmutableAnnotation>
   </file>
   <file src="src/Psalm/Internal/Type/SimpleAssertionReconciler.php">
     <PossiblyUndefinedIntArrayOffset>
@@ -3345,7 +3333,6 @@
   <file src="src/Psalm/Type/Atomic.php">
     <ImpureByReferenceAssignment>
       <code><![CDATA[$node]]></code>
-      <code><![CDATA[$node]]></code>
     </ImpureByReferenceAssignment>
     <ImpureMethodCall>
       <code><![CDATA[$codebase->classOrInterfaceExists($this->value)]]></code>
@@ -3358,7 +3345,10 @@
       <code><![CDATA[TemplateStandinTypeReplacer::getMappedGenericTypeParams(
                 $codebase,
                 $this,
-                new TGenericObject("Traversable", [Type::getMixed(), Type::getMixed()]),
+                new TGenericObject(
+                    "Traversable",
+                    [Type::getMixed(), Type::getMixed(), new Union([new TCapabilities(Capabilities::ALL)])],
+                ),
             )]]></code>
     </ImpureMethodCall>
     <ImpurePropertyAssignment>
@@ -3908,7 +3898,6 @@
   </file>
   <file src="src/Psalm/Type/Union.php">
     <ImpureByReferenceAssignment>
-      <code><![CDATA[$node]]></code>
       <code><![CDATA[$node]]></code>
     </ImpureByReferenceAssignment>
     <ImpureMethodCall>

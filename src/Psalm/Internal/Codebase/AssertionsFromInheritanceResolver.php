@@ -15,7 +15,7 @@ use function strtolower;
 
 /**
  * @internal
- * @psalm-external-mutation-free
+ * @psalm-capabilities write-props|write-refs
  */
 final class AssertionsFromInheritanceResolver
 {
@@ -29,7 +29,7 @@ final class AssertionsFromInheritanceResolver
 
     /**
      * @return array<int,Possibilities>
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function resolve(
         MethodStorage $method_storage,

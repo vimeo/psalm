@@ -246,8 +246,6 @@ abstract class Atomic implements TypeNode, Stringable
 
             case 'pure':
             case 'impure':
-            case 'mutation-free':
-            case 'external-mutation-free':
             case 'read-props':
             case 'write-this-props':
             case 'write-props':
@@ -540,10 +538,12 @@ abstract class Atomic implements TypeNode, Stringable
         if ($this->hasTraversableInterface($codebase)) {
             if (strtolower($this->value) === "traversable") {
                 if ($this instanceof TGenericObject) {
-                    if (count($this->type_params) > 2) {
-                        throw new InvalidArgumentException('Too many templates!');
+                    // the key and value types: what iterating it may do (TPurity) is not part of
+                    // an iterable
+                    if (count($this->type_params) > 3 || !isset($this->type_params[1])) {
+                        throw new InvalidArgumentException('Wrong number of templates!');
                     }
-                    return new TIterable($this->type_params);
+                    return new TIterable([$this->type_params[0], $this->type_params[1]]);
                 }
                 return new TIterable([Type::getMixed(), Type::getMixed()]);
             }
@@ -551,12 +551,17 @@ abstract class Atomic implements TypeNode, Stringable
             $implemented_traversable_templates = TemplateStandinTypeReplacer::getMappedGenericTypeParams(
                 $codebase,
                 $this,
-                new TGenericObject("Traversable", [Type::getMixed(), Type::getMixed()]),
+                new TGenericObject(
+                    "Traversable",
+                    [Type::getMixed(), Type::getMixed(), new Union([new TCapabilities(Capabilities::ALL)])],
+                ),
             );
-            if (count($implemented_traversable_templates) > 2) {
-                throw new InvalidArgumentException('Too many templates!');
+            if (count($implemented_traversable_templates) > 3
+                || !isset($implemented_traversable_templates[0], $implemented_traversable_templates[1])
+            ) {
+                throw new InvalidArgumentException('Wrong number of templates!');
             }
-            return new TIterable($implemented_traversable_templates);
+            return new TIterable([$implemented_traversable_templates[0], $implemented_traversable_templates[1]]);
         }
         throw new InvalidArgumentException("{$this->getId()} is not an iterable");
     }

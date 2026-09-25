@@ -252,7 +252,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
             // a method that cannot write properties or globals leaves every refinement in place
             $context->removeMutableObjectVars(
                 false,
-                $stmt->getAttribute(NewAnalyzer::CALLEE_CAPABILITIES_ATTRIBUTE) ?? Capabilities::ALL,
+                NewAnalyzer::getCalleeCapabilities($stmt) ?? Capabilities::ALL,
             );
         }
 

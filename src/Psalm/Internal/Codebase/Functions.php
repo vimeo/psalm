@@ -32,7 +32,6 @@ use function explode;
 use function implode;
 use function in_array;
 use function is_bool;
-use function max;
 use function rtrim;
 use function str_contains;
 use function str_ends_with;
@@ -72,7 +71,7 @@ final class Functions
 
     /**
      * @param non-empty-lowercase-string $function_id
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function getStorage(
         ?StatementsAnalyzer $statements_analyzer,
@@ -387,7 +386,7 @@ final class Functions
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public static function isVariadic(Codebase $codebase, string $function_id, string $file_path): bool
     {
@@ -464,6 +463,14 @@ final class Functions
             return Capabilities::NONE;
         }
 
+        // they write the array they are given by reference only to move its internal pointer,
+        // engine state that is not an effect (like where a generator is paused); a call made only
+        // to move it is not unused either
+        if (in_array($function_id, ['reset', 'end', 'next', 'prev'], true)) {
+            $must_use = false;
+            return Capabilities::NONE;
+        }
+
         if ((
                 $function_id === 'count'
                 || $function_id === 'sizeof'
@@ -489,11 +496,11 @@ final class Functions
                         } catch (Exception) {
                             continue;
                         }
-                        $mutations = max($mutations, MethodCallPurityAnalyzer::getMethodCapabilities(
+                        $mutations |= MethodCallPurityAnalyzer::getMethodCapabilities(
                             $statements_analyzer,
                             $var,
                             $storage,
-                        ));
+                        );
 
                         $statements_analyzer->signalMutationOnlyInferred(
                             $storage->capabilities,

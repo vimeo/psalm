@@ -360,7 +360,7 @@ final class Codebase
      * (or the top-level code of the file of $location).
      *
      * @param lowercase-string $fq_class_name_lc
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function addReferenceToClass(
         string $fq_class_name_lc,
@@ -383,7 +383,7 @@ final class Codebase
      *
      * @param lowercase-string $fq_class_name_lc
      * @param string $property_name without the leading `$`
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function addReferenceToProperty(
         string $fq_class_name_lc,
@@ -416,7 +416,7 @@ final class Codebase
      * return value as used too.
      *
      * @param lowercase-string $function_id
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function addReferenceToFunctionLike(
         string $function_id,
@@ -454,7 +454,7 @@ final class Codebase
      * referencing code is re-analysed if the method gets added.
      *
      * @param lowercase-string $method_id
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function addReferenceToMissingMethod(
         string $method_id,
@@ -477,7 +477,7 @@ final class Codebase
      *
      * @param lowercase-string $fq_class_name_lc
      * @param string $property_name without the leading `$`
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function addReferenceToMissingProperty(
         string $fq_class_name_lc,
@@ -498,7 +498,7 @@ final class Codebase
     /**
      * @param lowercase-string $fq_class_name_lc
      * @param string $const_name case-sensitive constant name
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function addReferenceToClassConstant(
         string $fq_class_name_lc,
@@ -521,7 +521,7 @@ final class Codebase
      * through a `use` import alias of the given file, so that it gets
      * re-analysed when the import changes.
      *
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function addReferenceToUseAlias(
         string $alias,
@@ -836,7 +836,7 @@ final class Codebase
 
     /**
      * @param array<string, string> $files_to_analyze
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function addFilesToAnalyze(array $files_to_analyze): void
     {
@@ -857,7 +857,7 @@ final class Codebase
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function getFileContents(string $file_path): string
     {
@@ -881,7 +881,7 @@ final class Codebase
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function createClassLikeStorage(string $fq_classlike_name): ClassLikeStorage
     {
@@ -924,7 +924,7 @@ final class Codebase
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function createFileStorageForPath(string $file_path): FileStorage
     {
@@ -1012,7 +1012,7 @@ final class Codebase
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function getClosureStorage(string $file_path, string $closure_id): FunctionStorage
     {
@@ -1070,7 +1070,7 @@ final class Codebase
     /**
      * Check whether a class/interface exists
      *
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function classOrInterfaceExists(
         string $fq_class_name,
@@ -1088,7 +1088,7 @@ final class Codebase
      * Check whether a class/interface exists
      *
      * @psalm-assert-if-true class-string|interface-string|enum-string $fq_class_name
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function classOrInterfaceOrEnumExists(
         string $fq_class_name,
@@ -1112,7 +1112,7 @@ final class Codebase
     /**
      * Determine whether or not a given class exists
      *
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function classExists(
         string $fq_class_name,
@@ -1149,7 +1149,7 @@ final class Codebase
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function interfaceExists(
         string $fq_interface_name,
@@ -1323,13 +1323,16 @@ final class Codebase
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function getMethodReturnsByRef(string|MethodIdentifier $method_id): bool
     {
         return $this->methods->getMethodReturnsByRef(MethodIdentifier::wrap($method_id));
     }
 
+    /**
+     * @psalm-capabilities write-props|write-refs
+     */
     public function getMethodReturnTypeLocation(
         string|MethodIdentifier $method_id,
         ?CodeLocation &$defined_location = null,
@@ -1380,7 +1383,7 @@ final class Codebase
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function invalidateInformationForFile(string $file_path): void
     {
@@ -1401,7 +1404,7 @@ final class Codebase
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function getFunctionStorageForSymbol(string $file_path, string $symbol): ?FunctionLikeStorage
     {
@@ -2564,7 +2567,7 @@ final class Codebase
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function addTemporaryFileChanges(string $file_path, string $new_content, ?int $version = null): void
     {
@@ -2572,7 +2575,7 @@ final class Codebase
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function removeTemporaryFileChanges(string $file_path): void
     {
@@ -2671,7 +2674,7 @@ final class Codebase
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function addTaintSource(
         Union $expr_type,
@@ -2695,7 +2698,7 @@ final class Codebase
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities write-props|write-refs
      */
     public function addTaintSink(
         string $taint_id,

@@ -400,6 +400,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
 
     /**
      * @return false|null
+     * @psalm-suppress ComplexMethod dispatches on every kind of statement
      */
     private static function analyzeStatement(
         StatementsAnalyzer $statements_analyzer,
