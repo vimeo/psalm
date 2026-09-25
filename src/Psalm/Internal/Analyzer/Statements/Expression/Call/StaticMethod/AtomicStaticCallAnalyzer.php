@@ -897,6 +897,13 @@ final class AtomicStaticCallAnalyzer
         MethodStorage $pseudo_method_storage,
         Context $context,
     ): ?bool {
+        if (!$context->isSuppressingExceptions($statements_analyzer)) {
+            $context->mergeFunctionExceptions(
+                $pseudo_method_storage,
+                new CodeLocation($statements_analyzer, $stmt),
+            );
+        }
+
         if (ArgumentsAnalyzer::analyze(
             $statements_analyzer,
             $args,
