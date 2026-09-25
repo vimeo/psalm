@@ -16,6 +16,7 @@ use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\InaccessibleProperty;
 use Psalm\Issue\InvalidClass;
 use Psalm\Issue\InvalidTemplateParam;
@@ -704,6 +705,17 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
 
                 if (isset($storage->template_extended_params[$parent_storage->name][$template_name])) {
                     $extended_type = $storage->template_extended_params[$parent_storage->name][$template_name];
+
+                    // Resolve `self`/`static` against the implementing class so the bound check
+                    // below treats `Holder<self>` and `Holder<ConcreteSelf>` as equivalent.
+                    $extended_type = TypeExpander::expandUnion(
+                        $codebase,
+                        $extended_type,
+                        $storage->name,
+                        $storage->name,
+                        $storage->parent_class,
+                        final: $storage->final,
+                    );
 
                     if (isset($parent_storage->template_covariants[$i])
                         && !$parent_storage->template_covariants[$i]
