@@ -67,6 +67,7 @@ final class Refactor
     public static function run(array $argv): void
     {
         CliUtils::checkRuntimeRequirements();
+        CliUtils::ensureFiberStackSize();
 
         gc_collect_cycles();
         gc_disable();

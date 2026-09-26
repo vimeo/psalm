@@ -31,6 +31,7 @@ use function file_put_contents;
 use function fwrite;
 use function implode;
 use function in_array;
+use function ini_get;
 use function ini_set;
 use function is_array;
 use function is_dir;
@@ -46,6 +47,7 @@ use function stream_get_meta_data;
 use function stream_set_blocking;
 use function strlen;
 use function strpos;
+use function strtolower;
 use function substr;
 use function substr_replace;
 use function trim;
@@ -63,6 +65,12 @@ use const STDIN;
  */
 final class CliUtils
 {
+    /**
+     * Fibers get their own C stack, sized by the `fiber.stack_size` ini setting, whose default
+     * (~2 MiB) is a fraction of the ~8 MiB the main thread usually gets.
+     */
+    public const MINIMUM_FIBER_STACK_SIZE = 16 * 1024 * 1024;
+
     public static function requireAutoloaders(
         string $current_dir,
         bool $has_explicit_root,
@@ -477,6 +485,60 @@ final class CliUtils
 
             ini_set('memory_limit', (string) $memoryLimit);
         }
+    }
+
+    /**
+     * Psalm runs recursive workloads (parsing, serializing ASTs into the cache, type resolution)
+     * inside Revolt event loop fibers: every parallel worker executes its task in one, and so does
+     * the language server. A fiber's C stack is capped by `fiber.stack_size`, which defaults to
+     * roughly a quarter of the main thread stack, so deeply nested code aborts the process with
+     * "Maximum call stack size of 2031616 bytes ... reached. Infinite recursion?" even though the
+     * very same file analyses fine in-process (#11967).
+     *
+     * Give fibers at least as much stack as the main thread has. Fiber stacks are mapped lazily,
+     * so the larger size costs address space rather than resident memory.
+     *
+     * Must run before the first fiber is created, as the size is read at fiber creation time.
+     */
+    public static function ensureFiberStackSize(): void
+    {
+        if (self::toBytes((string) ini_get('fiber.stack_size')) >= self::MINIMUM_FIBER_STACK_SIZE) {
+            return;
+        }
+
+        ini_set('fiber.stack_size', (string) self::MINIMUM_FIBER_STACK_SIZE);
+    }
+
+    /**
+     * Converts an ini shorthand value such as "64M" to bytes.
+     */
+    public static function toBytes(string $value): int
+    {
+        if (strlen($value) === 0) {
+            return 0;
+        }
+
+        $unit = strtolower($value[strlen($value) - 1]);
+
+        if (in_array($unit, ['g', 'm', 'k'], true)) {
+            $value = (int) $value;
+        } else {
+            $unit = '';
+            $value = (int) $value;
+        }
+
+        switch ($unit) {
+            case 'g':
+                $value *= 1024;
+                // no break
+            case 'm':
+                $value *= 1024;
+                // no break
+            case 'k':
+                $value *= 1024;
+        }
+
+        return $value;
     }
 
     public static function initPhpVersion(array $options, Config $config, ProjectAnalyzer $project_analyzer): void
