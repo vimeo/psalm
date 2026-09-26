@@ -10,6 +10,7 @@ use DirectoryIterator;
 use Psalm\Config;
 use Psalm\Internal\Provider\Providers;
 use RuntimeException;
+use Throwable;
 use Webmozart\Assert\Assert;
 
 use function assert;
@@ -128,7 +129,12 @@ final class Cache
                 $hashLen = unpack('V', $key)[1];
                 $hash = substr($key, 4, $hashLen);
                 $key = substr($key, 4+$hashLen);
-                Assert::notNull($this->getItem($key, $hash));
+                /** @psalm-suppress TypeDoesNotContainNull getItem() returns null on a cache miss */
+                if ($this->getItem($key, $hash) === null) {
+                    // Unreadable entry: leave the files alone instead of dropping them, the next
+                    // write for this key will replace them.
+                    continue;
+                }
                 unlink($f->getPathname());
                 unlink(substr($f->getPathname(), 0, -5));
             }
@@ -227,8 +233,15 @@ final class Cache
 
         fclose($fp);
 
-        /** @var T */
-        $content = $this->serializer->unserialize($content);
+        try {
+            /** @var T */
+            $content = $this->serializer->unserialize($content);
+        } catch (Throwable) {
+            // Treat an entry we cannot read back as a cache miss: it may be corrupt, or nested
+            // too deeply for the serializer to restore within the available call stack (#11967).
+            return null;
+        }
+
         if ($this->arrayCache) {
             $this->cache[$key] = [$hash, $content];
         }
@@ -246,6 +259,17 @@ final class Cache
             return;
         }
         if ($this->persistent) {
+            try {
+                $serialized = $this->serializer->serialize($item);
+            } catch (Throwable) {
+                // The cache is only an optimisation, so an item that cannot be serialized is
+                // skipped rather than aborting the whole run. This happens for ASTs nested deeply
+                // enough to exhaust the call stack of the native serializer (#11967).
+                // The item is not kept in the in-memory cache either, as consolidate() would then
+                // fail to persist any of it.
+                return;
+            }
+
             $path = $this->dir . hash('xxh128', $key);
             $f = fopen("$path.hash", 'w');
             Assert::notFalse($f);
@@ -254,7 +278,7 @@ final class Cache
             Assert::eq(fwrite($f, pack('V', strlen($hash))), 4);
             Assert::eq(fwrite($f, $hash), strlen($hash));
             Assert::eq(fwrite($f, $key), strlen($key));
-            file_put_contents($path, $this->serializer->serialize($item));
+            file_put_contents($path, $serialized);
             fflush($f);
             flock($f, LOCK_UN);
             fclose($f);
