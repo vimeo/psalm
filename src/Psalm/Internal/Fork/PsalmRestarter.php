@@ -6,6 +6,7 @@ namespace Psalm\Internal\Fork;
 
 use Composer\XdebugHandler\XdebugHandler;
 use Override;
+use Psalm\Internal\CliUtils;
 
 use function array_merge;
 use function array_splice;
@@ -19,8 +20,6 @@ use function in_array;
 use function ini_get;
 use function is_int;
 use function preg_replace;
-use function strlen;
-use function strtolower;
 
 /**
  * @internal
@@ -99,7 +98,7 @@ final class PsalmRestarter extends XdebugHandler
         foreach ($this->getEffectiveOpcacheSettings() as $ini_name => $required_value) {
             $value = (string) ini_get("opcache.$ini_name");
             if ($ini_name === 'jit_buffer_size') {
-                $value = self::toBytes($value);
+                $value = CliUtils::toBytes($value);
             } elseif ($ini_name === 'enable_cli') {
                 $value = in_array($value, ['1', 'true', true, 1]) ? 1 : 0;
             } elseif (is_int($required_value)) {
@@ -117,35 +116,6 @@ final class PsalmRestarter extends XdebugHandler
         }
 
         return $default || $this->required;
-    }
-
-    private static function toBytes(string $value): int
-    {
-        if (strlen($value) === 0) {
-            return 0;
-        }
-
-        $unit = strtolower($value[strlen($value) - 1]);
-
-        if (in_array($unit, ['g', 'm', 'k'], true)) {
-            $value = (int) $value;
-        } else {
-            $unit = '';
-            $value = (int) $value;
-        }
-
-        switch ($unit) {
-            case 'g':
-                $value *= 1024;
-                // no break
-            case 'm':
-                $value *= 1024;
-                // no break
-            case 'k':
-                $value *= 1024;
-        }
-
-        return $value;
     }
 
 
