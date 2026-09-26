@@ -235,11 +235,37 @@ final class TaintFlowGraph extends DataFlowGraph
         return $out;
     }
 
+    /**
+     * The id of the node the flow reaching $node started at: the root of its taintSource chain.
+     *
+     * Used to identify a flow for reporting purposes. The immediate predecessor of a sink is not
+     * enough -- two call sites of the same wrapper reach a sink through one shared (possibly
+     * de-specialized) predecessor node, and those are separate findings -- while the origin does
+     * distinguish them, and still collapses the same flow re-expanded under different
+     * specialized_calls sets into a single finding.
+     *
+     * @psalm-pure
+     */
+    private static function getFlowOrigin(DataFlowNode $node): string
+    {
+        while (($previous = $node->taintSource) !== null && $previous !== $node) {
+            $node = $previous;
+        }
+
+        return $node->id;
+    }
+
     public function connectSinksAndSources(Progress $progress): void
     {
         $progress->startPhase(Phase::TAINT_GRAPH_RESOLUTION);
 
         $visited_source_ids = [];
+
+        // (origin id, sink id, taints) triples already reported on. The visited guard below
+        // stops a node from being *propagated* from twice, but two distinct flows can reach the
+        // same sink with the same taints in different rounds, and each of them is a separate
+        // finding -- so reporting is deduplicated on the flow's own endpoints instead.
+        $reported_flows = [];
 
         $sources = $this->sources;
         $sinks = $this->sinks;
@@ -308,6 +334,7 @@ final class TaintFlowGraph extends DataFlowGraph
                         $source_taints,
                         $sinks,
                         $visited_source_ids,
+                        $reported_flows,
                         $sink_reachable,
                         $config,
                         $project_analyzer,
@@ -341,6 +368,7 @@ final class TaintFlowGraph extends DataFlowGraph
                         $source_taints,
                         $sinks,
                         $visited_source_ids,
+                        $reported_flows,
                         $sink_reachable,
                         $config,
                         $project_analyzer,
@@ -376,6 +404,7 @@ final class TaintFlowGraph extends DataFlowGraph
                                 $source_taints,
                                 $sinks,
                                 $visited_source_ids,
+                                $reported_flows,
                                 $sink_reachable,
                                 $config,
                                 $project_analyzer,
@@ -398,6 +427,7 @@ final class TaintFlowGraph extends DataFlowGraph
                                 $source_taints,
                                 $sinks,
                                 $visited_source_ids,
+                                $reported_flows,
                                 $sink_reachable,
                                 $config,
                                 $project_analyzer,
@@ -426,6 +456,7 @@ final class TaintFlowGraph extends DataFlowGraph
                                 $source_taints,
                                 $sinks,
                                 $visited_source_ids,
+                                $reported_flows,
                                 $sink_reachable,
                                 $config,
                                 $project_analyzer,
@@ -556,7 +587,9 @@ final class TaintFlowGraph extends DataFlowGraph
      * @param array<DataFlowNode> $sinks
      * @param array<string, DataFlowNode> $new_sources
      * @param array<string, true> $sink_reachable
+     * @param array<string, true> $reported_flows
      * @param-out array<string, DataFlowNode> $new_sources
+     * @param-out array<string, true> $reported_flows
      */
     private function getChildNodes(
         array &$new_sources,
@@ -564,6 +597,7 @@ final class TaintFlowGraph extends DataFlowGraph
         int $source_taints,
         array $sinks,
         array $visited_source_ids,
+        array &$reported_flows,
         array $sink_reachable,
         Config $config,
         ProjectAnalyzer $project_analyzer,
@@ -587,7 +621,14 @@ final class TaintFlowGraph extends DataFlowGraph
 
             $new_taints = ($source_taints | $path->added_taints) & ~$path->removed_taints;
 
-            if (isset($visited_source_ids[$to_id][$new_taints])) {
+            // A node that has already been propagated from with these taints must not be queued
+            // again -- that is what makes resolution terminate. It can still be the endpoint of a
+            // *different* flow arriving in a later round, though, and that flow is a finding of
+            // its own, so a visited *sink* still runs the reporting below; for anything else the
+            // edge is dead and is dropped right here, keeping the hot path as cheap as before.
+            $already_visited = isset($visited_source_ids[$to_id][$new_taints]);
+
+            if ($already_visited && !isset($sinks[$to_id])) {
                 continue;
             }
 
@@ -616,7 +657,19 @@ final class TaintFlowGraph extends DataFlowGraph
                 $sink = $sinks[$to_id];
                 $matching_taints = $sink->taints & $new_taints;
 
-                if ($matching_taints && $generated_source->code_location) {
+                // Keyed by where the flow started, not by the sink's immediate predecessor: the
+                // predecessor is shared by every call site that funnels through the same (possibly
+                // de-specialized) node, and those are distinct findings.
+                $flow_key = $matching_taints
+                    ? self::getFlowOrigin($generated_source) . "\0" . $to_id . "\0" . $new_taints
+                    : '';
+
+                if ($matching_taints
+                    && $generated_source->code_location
+                    && !isset($reported_flows[$flow_key])
+                ) {
+                    $reported_flows[$flow_key] = true;
+
                     if ($sink->code_location
                     && $config->reportIssueInFile('TaintedInput', $sink->code_location->file_path)
                     ) {
@@ -767,6 +820,10 @@ final class TaintFlowGraph extends DataFlowGraph
                         IssueBuffer::maybeAdd($issue);
                     }
                 }
+            }
+
+            if ($already_visited) {
+                continue;
             }
 
             $key = $to_id . ' ' . $specialized_calls_key . ' ' . $new_taints;
