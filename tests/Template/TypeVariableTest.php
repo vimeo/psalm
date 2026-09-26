@@ -297,6 +297,95 @@ final class TypeVariableTest extends TestCase
                         $box->add("nope");
                     }',
             ],
+            'constructedGenericObjectInfersCalleeTemplate' => [
+                // vimeo/psalm#11963: a type variable in an argument must still
+                // bind the callee's template, rather than leaving it at its
+                // constraint.
+                'code' => '<?php
+                    interface ObjectFactoryInterface
+                    {
+                        /**
+                         * @template T of object
+                         * @param ReflectionClass<T> $reflectionClass
+                         * @return T
+                         */
+                        public function create(ReflectionClass $reflectionClass): object;
+                    }
+
+                    final class Hydrator
+                    {
+                        public function __construct(private ObjectFactoryInterface $objectFactory) {}
+
+                        /**
+                         * @template T of object
+                         * @param class-string<T> $class
+                         * @return T
+                         */
+                        public function create(string $class): object
+                        {
+                            return $this->objectFactory->create(new ReflectionClass($class));
+                        }
+                    }',
+            ],
+            'constructedGenericObjectInfersCalleeTemplateThroughVariable' => [
+                'code' => '<?php
+                    interface ObjectFactoryInterface
+                    {
+                        /**
+                         * @template T of object
+                         * @param ReflectionClass<T> $reflectionClass
+                         * @return T
+                         */
+                        public function create(ReflectionClass $reflectionClass): object;
+                    }
+
+                    final class Hydrator
+                    {
+                        public function __construct(private ObjectFactoryInterface $objectFactory) {}
+
+                        /**
+                         * @template T of object
+                         * @param class-string<T> $class
+                         * @return T
+                         */
+                        public function create(string $class): object
+                        {
+                            $reflectionClass = new ReflectionClass($class);
+
+                            return $this->objectFactory->create($reflectionClass);
+                        }
+                    }',
+            ],
+            'propertyInitialisedFromTemplatedMethodCallInConstructor' => [
+                // vimeo/psalm#11963: the constructor initialisation pass must see
+                // `$this` as the generic self type, so a class-string<T> property
+                // still pins the type variable to T.
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     */
+                    final class ReflectionStubber
+                    {
+                        /** @var ReflectionClass<T> */
+                        private readonly ReflectionClass $reflectionStub;
+
+                        /** @param class-string<T> $stubbedClass */
+                        public function __construct(
+                            private readonly string $stubbedClass,
+                        ) {
+                            $this->reflectionStub = $this->getReflectionStub();
+                        }
+
+                        /** @return ReflectionClass<T> */
+                        private function getReflectionStub(): ReflectionClass
+                        {
+                            return new ReflectionClass($this->stubbedClass);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
