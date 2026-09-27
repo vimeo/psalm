@@ -50,6 +50,25 @@ final class ConditionalReturnTypeTest extends TestCase
                     '$c' => 'array<string, string>|string',
                 ],
             ],
+            'conditionalReturnParamTypedWithSameNamedClassTemplate' => [
+                'code' => '<?php
+                    /** @template TGeneratedFromParam0 of string */
+                    final class Box {
+                        /**
+                         * @param TGeneratedFromParam0|null $value
+                         * @return ($value is null ? int : string)
+                         */
+                        public function get($value) {
+                            return $value === null ? 1 : $value;
+                        }
+                    }
+
+                    /** @param Box<string> $box */
+                    function f(Box $box): void {
+                        $a = $box->get(null);
+                        /** @psalm-check-type-exact $a = int */
+                    }',
+            ],
             'nestedConditionalOnIntReturnType' => [
                 'code' => '<?php
                     /**
