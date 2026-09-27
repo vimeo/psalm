@@ -1282,6 +1282,29 @@ final class IntRangeTest extends TestCase
                         }
                     }',
             ],
+            'intRangeBoundComparisonIgnoresMagicProperties' => [
+                'code' => '<?php
+                    /**
+                     * @property-read int<5, 10> $magic
+                     */
+                    final class C {
+                        public int $value = 20;
+
+                        public function __get(string $name): int {
+                            $this->value = -100;
+                            return 5;
+                        }
+                    }
+
+                    function f(C $c): void {
+                        // reading $c->magic sets $c->value to -100
+                        if ($c->value > $c->magic) {
+                            if ($c->value < 0) {
+                                echo "reachable";
+                            }
+                        }
+                    }',
+            ],
             'literalLeftOperandNarrowsIntRangeRightOperand' => [
                 'code' => '<?php
                     /**
