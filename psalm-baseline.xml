@@ -2175,12 +2175,6 @@
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Type/Comparator/CallableTypeComparator.php">
-    <LessSpecificReturnStatement>
-      <code><![CDATA[$callable]]></code>
-    </LessSpecificReturnStatement>
-    <MoreSpecificReturnType>
-      <code><![CDATA[TCallable|TClosure|null]]></code>
-    </MoreSpecificReturnType>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$class_name]]></code>
       <code><![CDATA[$calling_method_id]]></code>
