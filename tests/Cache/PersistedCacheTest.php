@@ -20,8 +20,10 @@ use function glob;
 use function ini_get;
 use function ini_set;
 use function is_dir;
+use function preg_quote;
 use function rmdir;
 use function str_ends_with;
+use function str_repeat;
 use function sys_get_temp_dir;
 use function uniqid;
 use function unlink;
@@ -153,16 +155,22 @@ final class PersistedCacheTest extends TestCase
         }
     }
 
-    /** @return iterable<string, array{string, string}> */
+    /** @return iterable<string, array{string, string, string}> */
     public static function providerUnreadableItem(): iterable
     {
-        yield 'garbage' => ['', 'not a serialized value'];
-        yield 'empty, php serializer' => ['serializer="php" compressor="off"', ''];
-        yield 'empty, igbinary serializer' => ['serializer="igbinary" compressor="off"', ''];
+        yield 'garbage' => ['', 'not a serialized value', '--clear-cache'];
+        yield 'empty, php serializer' => ['serializer="php" compressor="off"', '', '--clear-cache'];
+        yield 'empty, igbinary serializer' => ['serializer="igbinary" compressor="off"', '', '--clear-cache'];
+        // would exhaust the call stack without a depth limit
+        yield 'too deep, php serializer' => [
+            'serializer="php" compressor="off"',
+            str_repeat('a:1:{i:0;', 200_000) . 'i:1;' . str_repeat('}', 200_000),
+            'unserialize_max_depth',
+        ];
     }
 
     /** @dataProvider providerUnreadableItem */
-    public function testUnreadableItemThrows(string $attributes, string $contents): void
+    public function testUnreadableItemThrows(string $attributes, string $contents, string $hint): void
     {
         $this->createCache($attributes)->saveItem('key', ['serializable'], 'hash1');
 
@@ -174,7 +182,7 @@ final class PersistedCacheTest extends TestCase
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessageMatches(
-            "/^Could not unserialize the cache entry for 'key' from .+\\. .+--clear-cache.+ Cause: ./",
+            "/^Could not unserialize the cache entry for 'key' from .+\\. .+" . preg_quote($hint, '/') . ".+ Cause: ./",
         );
 
         $this->createCache($attributes)->getItem('key', 'hash1');

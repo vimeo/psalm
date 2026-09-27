@@ -251,10 +251,13 @@ final class Cache
                 throw new SerializationException('Invalid data provided to unserialize');
             }
         } catch (Throwable $e) {
+            $cause = self::describeError($e);
+            $hint = str_contains($cause, 'Maximum depth')
+                ? 'The value is nested too deeply, raise the unserialize_max_depth ini setting to allow it.'
+                : 'The cache may be corrupt, run Psalm with --clear-cache to rebuild it.';
             throw new RuntimeException(
-                'Could not unserialize the cache entry for ' . self::describeKey($key) . " from $path."
-                . ' The cache may be corrupt, run Psalm with --clear-cache to rebuild it. Cause: '
-                . self::describeError($e),
+                'Could not unserialize the cache entry for ' . self::describeKey($key) . " from $path. $hint"
+                . " Cause: $cause",
                 0,
                 $e,
             );
