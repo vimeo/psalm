@@ -513,19 +513,14 @@ final class FunctionLikeDocblockScanner
                         if (!isset($param_type_mapping[$token_body])) {
                             $template_name = 'TGeneratedFromParam' . $j;
 
-                            $existing_wrap = null;
-                            if ($param_storage->type !== null) {
-                                foreach ($param_storage->type->getAtomicTypes() as $atomic) {
-                                    if ($atomic instanceof TTemplateParam
-                                        && $atomic->param_name === $template_name
-                                    ) {
-                                        $existing_wrap = $atomic;
-                                        break;
-                                    }
-                                }
-                            }
+                            $existing_wrap = $param_storage->type !== null && $param_storage->type->isSingle()
+                                ? $param_storage->type->getSingleAtomic()
+                                : null;
 
-                            if ($existing_wrap !== null) {
+                            if ($existing_wrap instanceof TTemplateParam
+                                && $existing_wrap->param_name === $template_name
+                                && $existing_wrap->defining_class === $template_function_id
+                            ) {
                                 // A prior handler in this scan (e.g. handleRemovedTaint vs
                                 // handleReturn) already wrapped this param. Re-wrapping would nest
                                 // TTemplateParam.as_type inside itself once per docblock annotation,
