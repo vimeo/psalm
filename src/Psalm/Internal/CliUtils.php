@@ -501,6 +501,8 @@ final class CliUtils
      * so the larger size costs address space rather than resident memory.
      *
      * Must run before the first fiber is created, as the size is read at fiber creation time.
+     * Unlike the opcache settings, `fiber.stack_size` can be changed at runtime, so this does not
+     * rely on PsalmRestarter and also covers runs that are not restarted. Forked workers inherit it.
      */
     public static function ensureFiberStackSize(): void
     {
