@@ -28,11 +28,13 @@ use function fgets;
 use function file_exists;
 use function file_get_contents;
 use function file_put_contents;
+use function function_exists;
 use function fwrite;
 use function getenv;
 use function implode;
 use function in_array;
 use function ini_get;
+use function ini_parse_quantity;
 use function ini_set;
 use function is_array;
 use function is_dir;
@@ -500,13 +502,17 @@ final class CliUtils
      * Give fibers at least as much stack as the main thread has. Fiber stacks are mapped lazily,
      * so the larger size costs address space rather than resident memory.
      *
-     * Must run before the first fiber is created, as the size is read at fiber creation time.
+     * Must run before the first fiber is started, as that is when its stack is allocated.
      * Unlike the opcache settings, `fiber.stack_size` can be changed at runtime, so this does not
      * rely on PsalmRestarter and also covers runs that are not restarted. Forked workers inherit it.
      */
     public static function ensureFiberStackSize(): void
     {
-        if (self::toBytes((string) ini_get('fiber.stack_size')) >= self::MINIMUM_FIBER_STACK_SIZE) {
+        $current = (string) ini_get('fiber.stack_size');
+        // ini_parse_quantity() also understands hex and octal values, but only exists on PHP 8.2+
+        $current = function_exists('ini_parse_quantity') ? ini_parse_quantity($current) : self::toBytes($current);
+
+        if ($current >= self::MINIMUM_FIBER_STACK_SIZE) {
             return;
         }
 
