@@ -9,11 +9,11 @@ use Override;
 use PHPUnit\Framework\TestCase;
 use PhpParser\ParserFactory;
 use Psalm\Internal\CliUtils;
+use Psalm\Internal\Fork\PhpSerializer;
 
 use function ini_get;
 use function ini_set;
 use function realpath;
-use function serialize;
 use function str_repeat;
 
 use const DIRECTORY_SEPARATOR;
@@ -164,21 +164,31 @@ final class CliUtilsTest extends TestCase
 
     /**
      * Deeply nested ASTs are serialized into the parser cache from inside an event loop fiber,
-     * which aborts the process once the fiber stack is exhausted.
+     * which aborts the process once the fiber stack is exhausted, and are read back from there.
      *
      * @see https://github.com/vimeo/psalm/issues/11967
      */
-    public function testDeeplyNestedAstCanBeSerializedInsideAFiber(): void
+    public function testDeeplyNestedAstSurvivesACacheRoundTripInsideAFiber(): void
     {
-        CliUtils::ensureFiberStackSize();
+        $previous = (string) ini_get('fiber.stack_size');
 
-        $code = '<?php return ' . str_repeat('array(', 1000) . '1' . str_repeat(')', 1000) . ';';
-        $stmts = (new ParserFactory())->createForHostVersion()->parse($code);
-        self::assertNotNull($stmts);
+        try {
+            CliUtils::ensureFiberStackSize();
 
-        $fiber = new Fiber(static fn(): string => serialize($stmts));
-        $fiber->start();
+            // deep enough to exceed both the default fiber stack and the default unserialize_max_depth
+            $code = '<?php return ' . str_repeat('array(', 1500) . '1' . str_repeat(')', 1500) . ';';
+            $stmts = (new ParserFactory())->createForHostVersion()->parse($code);
+            self::assertNotNull($stmts);
 
-        self::assertIsString($fiber->getReturn());
+            $serializer = new PhpSerializer();
+            $fiber = new Fiber(static fn(): mixed => $serializer->unserialize($serializer->serialize($stmts)));
+            $fiber->start();
+
+            $result = $fiber->getReturn();
+            self::assertIsArray($result);
+            self::assertCount(1, $result);
+        } finally {
+            ini_set('fiber.stack_size', $previous);
+        }
     }
 }
