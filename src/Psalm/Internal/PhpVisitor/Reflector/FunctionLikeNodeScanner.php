@@ -620,33 +620,28 @@ final class FunctionLikeNodeScanner
                 $property_storage->location = $param_storage->location;
                 $property_storage->stmt_location = new CodeLocation($this->file_scanner, $param);
                 $property_storage->has_default = (bool)$param->default;
-                $param_type_readonly = (bool)($param->flags & PhpParser\Modifiers::READONLY);
+                $param_type_readonly = (bool)($param->flags & Modifiers::READONLY);
                 $property_storage->readonly = $param_type_readonly ?: $var_comment_readonly;
                 $property_storage->allow_private_mutation = $var_comment_allow_private_mutation;
                 $param_storage->promoted_property = true;
                 $property_storage->is_promoted = true;
 
-                $property_id = $fq_classlike_name . '::$' . $param_storage->name;
-
-                switch ($param->flags & Modifiers::VISIBILITY_MASK) {
-                    case Modifiers::PUBLIC:
-                        $property_storage->visibility = ClassLikeAnalyzer::VISIBILITY_PUBLIC;
-                        $classlike_storage->inheritable_property_ids[$param_storage->name] = $property_id;
-                        break;
-
-                    case Modifiers::PROTECTED:
-                        $property_storage->visibility = ClassLikeAnalyzer::VISIBILITY_PROTECTED;
-                        $classlike_storage->inheritable_property_ids[$param_storage->name] = $property_id;
-                        break;
-
-                    case Modifiers::PRIVATE:
-                        $property_storage->visibility = ClassLikeAnalyzer::VISIBILITY_PRIVATE;
-                        break;
-                }
-
                 $fq_classlike_name = $classlike_storage->name;
 
                 $property_id = $fq_classlike_name . '::$' . $param_storage->name;
+
+                PropertyVisibilityResolver::resolve(
+                    $this->codebase,
+                    $classlike_storage,
+                    $property_storage,
+                    $param->flags,
+                    new CodeLocation($this->file_scanner, $param, null, true),
+                    $property_id,
+                );
+
+                if ($property_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE) {
+                    $classlike_storage->inheritable_property_ids[$param_storage->name] = $property_id;
+                }
 
                 $classlike_storage->declaring_property_ids[$param_storage->name] = $fq_classlike_name;
                 $classlike_storage->appearing_property_ids[$param_storage->name] = $property_id;

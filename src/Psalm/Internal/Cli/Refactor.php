@@ -80,7 +80,7 @@ final class Refactor
         $valid_short_options = ['f:', 'm', 'h', 'r:', 'c:'];
         $valid_long_options = [
             'help', 'debug', 'debug-by-line', 'debug-emitted-issues', 'config:', 'root:',
-            'scan-threads:', 'threads:', 'move:', 'into:', 'rename:', 'to:',
+            'scan-threads:', 'threads:', 'move:', 'into:', 'rename:', 'to:', 'no-progress',
         ];
 
         // get options from command line
@@ -140,6 +140,10 @@ final class Refactor
 
                 --debug, --debug-by-line, --debug-emitted-issues
                     Debug information
+
+                --no-progress
+                    Disable the progress indicator.
+                    Auto-enabled when an AI coding agent is driving the shell outside CI.
 
                 -c, --config=psalm.xml
                     Path to a psalm.xml configuration file. Run psalm --init to create one.
