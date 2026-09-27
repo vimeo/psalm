@@ -272,7 +272,7 @@ final class ArithmeticOpAnalyzer
             if ($has_string_increment && $statements_source) {
                 IssueBuffer::maybeAdd(
                     new StringIncrement(
-                        'Possibly unintended string increment',
+                        'Incrementing a non-numeric string is deprecated since PHP 8.5, use str_increment() instead',
                         new CodeLocation($statements_source, $left),
                     ),
                     $statements_source->getSuppressedIssues(),
