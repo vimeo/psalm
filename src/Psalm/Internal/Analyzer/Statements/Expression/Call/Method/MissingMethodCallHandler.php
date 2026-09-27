@@ -30,6 +30,7 @@ use Psalm\Type\Union;
 
 use function array_map;
 use function array_merge;
+use function array_reverse;
 
 /**
  * @internal
@@ -435,7 +436,12 @@ final class MissingMethodCallHandler
         }
 
         $ancestors = $static_class_storage->class_implements;
-        foreach ($static_class_storage->namedMixins as $namedObject) {
+        // First match wins here, so the nearest mixins come first.
+        $named_mixins = [
+            ...$static_class_storage->namedMixins,
+            ...array_reverse($static_class_storage->transitiveNamedMixins),
+        ];
+        foreach ($named_mixins as $namedObject) {
             $type = $namedObject->value;
             if ($type) {
                 $ancestors[$type] = true;

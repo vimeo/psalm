@@ -14,6 +14,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnal
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Provider\NodeDataProvider;
+use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Issue\FalseOperand;
 use Psalm\Issue\InvalidOperand;
@@ -45,6 +46,7 @@ use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
 
 use function array_diff_key;
@@ -353,6 +355,36 @@ final class ArithmeticOpAnalyzer
 
                 return null;
             }
+        }
+
+        if ($left_type_part instanceof TTypeVariable || $right_type_part instanceof TTypeVariable) {
+            // a type-variable operand flows through to the result and is
+            // constrained from above to int|float
+            foreach ([$left_type_part, $right_type_part] as $operand_type_part) {
+                if ($operand_type_part instanceof TTypeVariable) {
+                    $result_type = Type::combineUnionTypes(
+                        new Union([$operand_type_part]),
+                        $result_type,
+                    );
+
+                    if ($statements_source instanceof StatementsAnalyzer) {
+                        $statements_source->type_variable_tracker->addBounds(
+                            [],
+                            [[
+                                $operand_type_part->name,
+                                new TemplateBound(new Union([new TInt(), new TFloat()])),
+                            ],
+                            ],
+                            new CodeLocation($statements_source, $parent),
+                        );
+                    }
+                }
+            }
+
+            $has_valid_left_operand = true;
+            $has_valid_right_operand = true;
+
+            return null;
         }
 
         if ($left_type_part instanceof TNull || $right_type_part instanceof TNull) {

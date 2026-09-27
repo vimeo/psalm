@@ -106,6 +106,18 @@ final class TaintTest extends TestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'firstClassCallableOfTaintPropagatingFunction' => [
+                'code' => '<?php
+                    // CallLike::getArgs() asserts !isFirstClassCallable(); a taint-propagating
+                    // function referenced as a first-class callable must not reach it.
+                    $fn = strtolower(...);
+                    echo $fn("safe");',
+            ],
+            'firstClassCallableOfMultiArgTaintPropagatingFunction' => [
+                'code' => '<?php
+                    $fn = str_replace(...);
+                    echo $fn("a", "b", "safe");',
+            ],
             'taintedInputInCreatedArrayNotEchoed' => [
                 'code' => '<?php
                     $name = $_GET["name"] ?? "unknown";

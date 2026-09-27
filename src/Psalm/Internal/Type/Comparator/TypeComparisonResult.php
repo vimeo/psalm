@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Type\Comparator;
 
+use Psalm\Internal\Type\TemplateBound;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
@@ -43,4 +44,20 @@ final class TypeComparisonResult
 
     /** @var ?non-empty-list<int|string> */
     public ?array $missing_shape_fields = null;
+
+    /**
+     * Lower bounds recorded for type variables encountered in container
+     * position: `name >: input`.
+     *
+     * @var list<array{string, TemplateBound}>
+     */
+    public array $type_variable_lower_bounds = [];
+
+    /**
+     * Upper bounds recorded for type variables encountered in input position:
+     * `name <: container`.
+     *
+     * @var list<array{string, TemplateBound}>
+     */
+    public array $type_variable_upper_bounds = [];
 }

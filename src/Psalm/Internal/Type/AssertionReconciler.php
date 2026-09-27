@@ -12,6 +12,7 @@ use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\TemplateBound;
 use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\TypeDoesNotContainNull;
 use Psalm\Issue\TypeDoesNotContainType;
@@ -59,6 +60,7 @@ use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
@@ -123,6 +125,38 @@ final class AssertionReconciler extends Reconciler
         }
 
         $old_var_type_string = $existing_var_type->getId();
+
+        $type_variables = [];
+
+        foreach ($existing_var_type->getAtomicTypes() as $existing_atomic) {
+            if ($existing_atomic instanceof TTypeVariable) {
+                $type_variables[] = $existing_atomic;
+            }
+        }
+
+        if ($type_variables) {
+            // A type variable's constraints reconcile at the end of the
+            // surrounding function-like: asserting a simple type on it
+            // records that type as a lower bound and keeps the variable
+            // alive, rather than narrowing it away (which would report
+            // spurious contradictions). Other assertions (like instanceof
+            // checks, which can simply be false at runtime) leave its bounds
+            // alone.
+            if (!$is_negation
+                && ($assertion_atomic_type = $assertion->getAtomicType())
+                && $assertion_atomic_type instanceof Scalar
+            ) {
+                foreach ($type_variables as $type_variable) {
+                    $statements_analyzer->type_variable_tracker->addBounds(
+                        [[$type_variable->name, new TemplateBound(new Union([$assertion_atomic_type]))]],
+                        [],
+                        $code_location,
+                    );
+                }
+            }
+
+            return new Union($type_variables);
+        }
 
         if ($is_negation) {
             return NegatedAssertionReconciler::reconcile(
@@ -414,6 +448,8 @@ final class AssertionReconciler extends Reconciler
         } elseif (!$new_type_part instanceof TMixed) {
             $any_scalar_type_match_found = false;
 
+            $redundant_comparison_result = new TypeComparisonResult();
+
             if ($code_location
                 && $key
                 && !$assertion->hasEquality()
@@ -427,10 +463,16 @@ final class AssertionReconciler extends Reconciler
                     new Union([$new_type_part]),
                     false,
                     false,
-                    null,
+                    $redundant_comparison_result,
                     false,
                     false,
                 )
+                // a containment that recorded type-variable bounds is
+                // provisional (the variable's constraints reconcile at the
+                // end of the function-like), so it cannot prove the
+                // assertion redundant
+                && !$redundant_comparison_result->type_variable_lower_bounds
+                && !$redundant_comparison_result->type_variable_upper_bounds
             ) {
                 self::triggerIssueForImpossible(
                     $existing_var_type,
