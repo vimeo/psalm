@@ -6,11 +6,13 @@ namespace Psalm\Tests\Template;
 
 use Override;
 use Psalm\Tests\TestCase;
+use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 final class ConditionalReturnTypeTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
+    use InvalidCodeAnalysisTestTrait;
 
     #[Override]
     public function providerValidCodeParse(): iterable
@@ -1096,6 +1098,54 @@ final class ConditionalReturnTypeTest extends TestCase
                     '$nonEmptyLowercaseString2' => 'string',
                 ],
                 'ignored_issues' => [],
+            ],
+            'nestedConditionalReturnResolution' => [
+                'code' => '<?php
+                    /**
+                     * @template T as int
+                     * @param T $i
+                     * @return (T is 1 ? string : (T is 2 ? int : (T is 3 ? float : bool)))
+                     */
+                    function h(int $i) {
+                        if ($i === 1) { return "x"; }
+                        if ($i === 2) { return 5; }
+                        if ($i === 3) { return 1.5; }
+                        return true;
+                    }
+
+                    /** @return float */
+                    function t3() { return h(3); }
+                    /** @return int */
+                    function t2() { return h(2); }
+                    /** @return string */
+                    function t1() { return h(1); }
+
+                    $one = t1();
+                    $two = t2();
+                    $three = t3();',
+                'assertions' => [
+                    '$one' => 'string',
+                    '$two' => 'int',
+                    '$three' => 'float',
+                ],
+            ],
+        ];
+    }
+
+    #[Override]
+    public function providerInvalidCodeParse(): iterable
+    {
+        return [
+            'conditionalReturnTypeWithoutIsTypeIsReportedInsteadOfCrashing' => [
+                'code' => '<?php
+                    /**
+                     * @param ?int $key
+                     * @return ($key is ? int : string)
+                     */
+                    function f(?int $key = null) {
+                        return $key === null ? "a" : $key;
+                    }',
+                'error_message' => 'InvalidDocblock',
             ],
         ];
     }

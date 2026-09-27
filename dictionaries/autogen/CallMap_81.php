@@ -10165,31 +10165,31 @@ return array (
   array (
     0 => 'array<array-key, mixed>|false',
     'stmt' => 'mixed',
-    'row_number=' => 'int|null',
+    'row_number=' => 'int',
   ),
   'db2_fetch_assoc' => 
   array (
     0 => 'array<array-key, mixed>|false',
     'stmt' => 'mixed',
-    'row_number=' => 'int|null',
+    'row_number=' => 'int',
   ),
   'db2_fetch_both' => 
   array (
     0 => 'array<array-key, mixed>|false',
     'stmt' => 'mixed',
-    'row_number=' => 'int|null',
+    'row_number=' => 'int',
   ),
   'db2_fetch_object' => 
   array (
     0 => 'false|stdClass',
     'stmt' => 'mixed',
-    'row_number=' => 'int|null',
+    'row_number=' => 'int',
   ),
   'db2_fetch_row' => 
   array (
     0 => 'mixed',
     'stmt' => 'mixed',
-    'row_number=' => 'int|null',
+    'row_number=' => 'int',
   ),
   'db2_field_display_size' => 
   array (
@@ -28430,10 +28430,6 @@ return array (
     0 => 'void',
     'level=' => 'null|string',
   ),
-  'mongodb\\driver\\readconcern::__serialize' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
   'mongodb\\driver\\readconcern::__set_state' => 
   array (
     0 => 'MongoDB\\Driver\\ReadConcern',
@@ -28462,10 +28458,6 @@ return array (
     'mode' => 'string',
     'tagSets=' => 'array<array-key, mixed>|null',
     'options=' => 'array<array-key, mixed>|null',
-  ),
-  'mongodb\\driver\\readpreference::__serialize' => 
-  array (
-    0 => 'array<array-key, mixed>',
   ),
   'mongodb\\driver\\readpreference::__set_state' => 
   array (
@@ -28740,10 +28732,6 @@ return array (
     'w' => 'int|string',
     'wtimeout=' => 'int|null',
     'journal=' => 'bool|null',
-  ),
-  'mongodb\\driver\\writeconcern::__serialize' => 
-  array (
-    0 => 'array<array-key, mixed>',
   ),
   'mongodb\\driver\\writeconcern::__set_state' => 
   array (
