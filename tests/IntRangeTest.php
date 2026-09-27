@@ -1141,6 +1141,15 @@ final class IntRangeTest extends TestCase
                         return $min;
                     }',
             ],
+            'intRangeComparisonNearIntMinKeepsNull' => [
+                'code' => '<?php
+                    function f(?int $value): void {
+                        // null < PHP_INT_MIN is true
+                        if ($value < -9223372036854775807 - 1) {
+                            /** @psalm-check-type-exact $value = null */;
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -1148,6 +1157,15 @@ final class IntRangeTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'intRangeComparisonNearIntMaxRemovesNull' => [
+                'code' => '<?php
+                    function f(?int $value): void {
+                        if ($value > 9223372036854775807) {
+                            echo "impossible";
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
             'intRangeComparisonNearIntMaxIsContradiction' => [
                 'code' => '<?php
                     /**
