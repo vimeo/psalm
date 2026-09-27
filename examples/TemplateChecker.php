@@ -130,7 +130,7 @@ final class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
         );
 
         $view_context = new Context();
-        $view_context->self = Interner::internLower(self::VIEW_CLASS);
+        $view_context->self = Interner::intern(self::VIEW_CLASS);
 
         // add all $this-> vars to scope
         foreach ($this_context->vars_possibly_in_scope as $var => $_) {

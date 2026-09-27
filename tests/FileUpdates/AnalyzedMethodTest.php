@@ -174,22 +174,22 @@ final class AnalyzedMethodTest extends TestCase
                 ],
                 'initial_analyzed_methods' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
-                        'foo\a::foofoo' => 1,
-                        'foo\a::barbar' => 1,
+                        'Foo\A::fooFoo' => 1,
+                        'Foo\A::barBar' => 1,
                     ],
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
-                        'foo\b::foo' => 1,
-                        'foo\b::bar' => 1,
-                        'foo\b::noreturntype' => 1,
+                        'Foo\B::foo' => 1,
+                        'Foo\B::bar' => 1,
+                        'Foo\B::noReturnType' => 1,
                     ],
                 ],
                 'unaffected_analyzed_methods' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
-                        'foo\a::barbar' => 1,
+                        'Foo\A::barBar' => 1,
                     ],
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
-                        'foo\b::bar' => 1,
-                        'foo\b::noreturntype' => 1,
+                        'Foo\B::bar' => 1,
+                        'Foo\B::noReturnType' => 1,
                     ],
                 ],
                 [
@@ -241,13 +241,13 @@ final class AnalyzedMethodTest extends TestCase
                 ],
                 'initial_analyzed_methods' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
-                        'foo\b::foo' => 1,
-                        'foo\b::bar' => 1,
+                        'Foo\B::foo' => 1,
+                        'Foo\B::bar' => 1,
                     ],
                 ],
                 'unaffected_analyzed_methods' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
-                        'foo\b::bar' => 1,
+                        'Foo\B::bar' => 1,
                     ],
                 ],
             ],
@@ -296,13 +296,13 @@ final class AnalyzedMethodTest extends TestCase
                 ],
                 'initial_analyzed_methods' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
-                        'foo\b::foo' => 1,
-                        'foo\b::bar' => 1,
+                        'Foo\B::foo' => 1,
+                        'Foo\B::bar' => 1,
                     ],
                 ],
                 'unaffected_analyzed_methods' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
-                        'foo\b::bar' => 1,
+                        'Foo\B::bar' => 1,
                     ],
                 ],
             ],
@@ -351,13 +351,13 @@ final class AnalyzedMethodTest extends TestCase
                 ],
                 'initial_analyzed_methods' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
-                        'foo\b::foo' => 1,
-                        'foo\b::bar' => 1,
+                        'Foo\B::foo' => 1,
+                        'Foo\B::bar' => 1,
                     ],
                 ],
                 'unaffected_analyzed_methods' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
-                        'foo\b::bar' => 1,
+                        'Foo\B::bar' => 1,
                     ],
                 ],
             ],
@@ -404,13 +404,13 @@ final class AnalyzedMethodTest extends TestCase
                 ],
                 'initial_analyzed_methods' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
-                        'foo\b::foo' => 1,
-                        'foo\b::bar' => 1,
+                        'Foo\B::foo' => 1,
+                        'Foo\B::bar' => 1,
                     ],
                 ],
                 'unaffected_analyzed_methods' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
-                        'foo\b::bar' => 1,
+                        'Foo\B::bar' => 1,
                     ],
                 ],
             ],
@@ -481,25 +481,25 @@ final class AnalyzedMethodTest extends TestCase
                 ],
                 'initial_analyzed_methods' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'T.php' => [
-                        'foo\a::barbar&foo\t::barbar' => 1,
+                        'Foo\A::barBar&Foo\T::barBar' => 1,
                     ],
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
-                        'foo\a::foofoo' => 1,
+                        'Foo\A::fooFoo' => 1,
                     ],
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
-                        'foo\b::foo' => 1,
-                        'foo\b::bar' => 1,
-                        'foo\b::noreturntype' => 1,
+                        'Foo\B::foo' => 1,
+                        'Foo\B::bar' => 1,
+                        'Foo\B::noReturnType' => 1,
                     ],
                 ],
                 'unaffected_analyzed_methods' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'T.php' => [
-                        'foo\a::barbar&foo\t::barbar' => 1,
+                        'Foo\A::barBar&Foo\T::barBar' => 1,
                     ],
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [],
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
-                        'foo\b::bar' => 1,
-                        'foo\b::noreturntype' => 1,
+                        'Foo\B::bar' => 1,
+                        'Foo\B::noReturnType' => 1,
                     ],
                 ],
                 [
@@ -567,14 +567,14 @@ final class AnalyzedMethodTest extends TestCase
                 ],
                 'initial_analyzed_methods' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'T.php' => [
-                        'foo\a::barbar&foo\t::barbar' => 1,
+                        'Foo\A::barBar&Foo\T::barBar' => 1,
                     ],
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
-                        'foo\a::foofoo' => 1,
+                        'Foo\A::fooFoo' => 1,
                     ],
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
-                        'foo\b::foo' => 1,
-                        'foo\b::bar' => 1,
+                        'Foo\B::foo' => 1,
+                        'Foo\B::bar' => 1,
                     ],
                 ],
                 'unaffected_analyzed_methods' => [
@@ -648,14 +648,14 @@ final class AnalyzedMethodTest extends TestCase
                 ],
                 'initial_analyzed_methods' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'T.php' => [
-                        'foo\a::barbar&foo\t::barbar' => 1,
+                        'Foo\A::barBar&Foo\T::barBar' => 1,
                     ],
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
-                        'foo\a::foofoo' => 1,
+                        'Foo\A::fooFoo' => 1,
                     ],
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
-                        'foo\b::foo' => 1,
-                        'foo\b::bar' => 1,
+                        'Foo\B::foo' => 1,
+                        'Foo\B::bar' => 1,
                     ],
                 ],
                 'unaffected_analyzed_methods' => [
@@ -735,20 +735,20 @@ final class AnalyzedMethodTest extends TestCase
                 ],
                 'initial_analyzed_methods' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'T.php' => [
-                        'foo\a::barbar&foo\t::barbar' => 1,
-                        'foo\a::bat&foo\t::bat' => 1,
+                        'Foo\A::barBar&Foo\T::barBar' => 1,
+                        'Foo\A::bat&Foo\T::bat' => 1,
                     ],
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
-                        'foo\a::foofoo' => 1,
+                        'Foo\A::fooFoo' => 1,
                     ],
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
-                        'foo\b::foo' => 1,
-                        'foo\b::bar' => 1,
+                        'Foo\B::foo' => 1,
+                        'Foo\B::bar' => 1,
                     ],
                 ],
                 'unaffected_analyzed_methods' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'T.php' => [
-                        'foo\a::bat&foo\t::bat' => 1,
+                        'Foo\A::bat&Foo\T::bat' => 1,
                     ],
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [],
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [],
@@ -809,10 +809,10 @@ final class AnalyzedMethodTest extends TestCase
                 ],
                 'initial_analyzed_methods' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'T.php' => [
-                        'foo\a::barbar&foo\t::barbar' => 1,
+                        'Foo\A::barBar&Foo\T::barBar' => 1,
                     ],
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
-                        'foo\b::bar' => 1,
+                        'Foo\B::bar' => 1,
                     ],
                 ],
                 'unaffected_analyzed_methods' => [
@@ -866,16 +866,16 @@ final class AnalyzedMethodTest extends TestCase
 
                 'initial_analyzed_methods' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
-                        'foo\a::__construct' => 2,
-                        'foo\a::setfoo' => 1,
-                        'foo\a::reallysetfoo' => 1,
+                        'Foo\A::__construct' => 2,
+                        'Foo\A::setFoo' => 1,
+                        'Foo\A::reallySetFoo' => 1,
                     ],
                 ],
                 'unaffected_analyzed_methods' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
-                        'foo\a::__construct' => 2,
-                        'foo\a::setfoo' => 1,
-                        'foo\a::reallysetfoo' => 1,
+                        'Foo\A::__construct' => 2,
+                        'Foo\A::setFoo' => 1,
+                        'Foo\A::reallySetFoo' => 1,
                     ],
                 ],
             ],
@@ -924,14 +924,14 @@ final class AnalyzedMethodTest extends TestCase
                 ],
                 'initial_analyzed_methods' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
-                        'foo\a::__construct' => 2,
-                        'foo\a::setfoo' => 1,
-                        'foo\a::reallysetfoo' => 1,
+                        'Foo\A::__construct' => 2,
+                        'Foo\A::setFoo' => 1,
+                        'Foo\A::reallySetFoo' => 1,
                     ],
                 ],
                 'unaffected_analyzed_methods' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
-                        'foo\a::setfoo' => 1,
+                        'Foo\A::setFoo' => 1,
                     ],
                 ],
             ],
@@ -992,22 +992,22 @@ final class AnalyzedMethodTest extends TestCase
                 ],
                 'initial_analyzed_methods' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
-                        'foo\a::__construct' => 1,
-                        'foo\a::setfoo' => 1,
+                        'Foo\A::__construct' => 1,
+                        'Foo\A::setFoo' => 1,
                     ],
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => [
-                        'foo\achild::setfoo' => 1,
-                        'foo\achild::reallysetfoo' => 1,
-                        'foo\achild::__construct' => 2,
+                        'Foo\AChild::setFoo' => 1,
+                        'Foo\AChild::reallySetFoo' => 1,
+                        'Foo\AChild::__construct' => 2,
                     ],
                 ],
                 'unaffected_analyzed_methods' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
-                        'foo\a::__construct' => 1,
-                        'foo\a::setfoo' => 1,
+                        'Foo\A::__construct' => 1,
+                        'Foo\A::setFoo' => 1,
                     ],
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => [
-                        'foo\achild::setfoo' => 1,
+                        'Foo\AChild::setFoo' => 1,
                     ],
                 ],
             ],
@@ -1064,11 +1064,11 @@ final class AnalyzedMethodTest extends TestCase
                 ],
                 'initial_analyzed_methods' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
-                        'foo\a::__construct' => 2,
-                        'foo\a::setfoo' => 1,
+                        'Foo\A::__construct' => 2,
+                        'Foo\A::setFoo' => 1,
                     ],
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => [
-                        'foo\achild::__construct' => 2,
+                        'Foo\AChild::__construct' => 2,
                     ],
                 ],
                 'unaffected_analyzed_methods' => [
@@ -1125,10 +1125,10 @@ final class AnalyzedMethodTest extends TestCase
                 ],
                 'initial_analyzed_methods' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'T.php' => [
-                        'foo\a::setfoo&foo\t::setfoo' => 1,
+                        'Foo\A::setFoo&Foo\T::setFoo' => 1,
                     ],
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
-                        'foo\a::__construct' => 2,
+                        'Foo\A::__construct' => 2,
                     ],
                 ],
                 'unaffected_analyzed_methods' => [
@@ -1169,13 +1169,13 @@ final class AnalyzedMethodTest extends TestCase
                 ],
                 'initial_analyzed_methods' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
-                        'foo\a::__construct' => 2,
-                        'foo\a::bar' => 1,
+                        'Foo\A::__construct' => 2,
+                        'Foo\A::bar' => 1,
                     ],
                 ],
                 'unaffected_analyzed_methods' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
-                        'foo\a::__construct' => 2,
+                        'Foo\A::__construct' => 2,
                     ],
                 ],
                 [
@@ -1215,14 +1215,14 @@ final class AnalyzedMethodTest extends TestCase
                 ],
                 'initial_analyzed_methods' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
-                        'foo\a::__construct' => 2,
-                        'foo\a::bar' => 1,
+                        'Foo\A::__construct' => 2,
+                        'Foo\A::bar' => 1,
                     ],
                 ],
                 'unaffected_analyzed_methods' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
-                        'foo\a::__construct' => 2,
-                        'foo\a::bar' => 1,
+                        'Foo\A::__construct' => 2,
+                        'Foo\A::bar' => 1,
                     ],
                 ],
             ],
@@ -1257,14 +1257,14 @@ final class AnalyzedMethodTest extends TestCase
                 ],
                 'initial_analyzed_methods' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
-                        'foo\a::__construct' => 2,
-                        'foo\a::bar' => 1,
+                        'Foo\A::__construct' => 2,
+                        'Foo\A::bar' => 1,
                     ],
                 ],
                 'unaffected_analyzed_methods' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
-                        'foo\a::__construct' => 2,
-                        'foo\a::bar' => 1,
+                        'Foo\A::__construct' => 2,
+                        'Foo\A::bar' => 1,
                     ],
                 ],
             ],
@@ -1313,15 +1313,15 @@ final class AnalyzedMethodTest extends TestCase
                 ],
                 'initial_analyzed_methods' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
-                        'foo\a::__construct' => 2,
+                        'Foo\A::__construct' => 2,
                     ],
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => [
-                        'foo\achild::__construct' => 2,
+                        'Foo\AChild::__construct' => 2,
                     ],
                 ],
                 'unaffected_analyzed_methods' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
-                        'foo\a::__construct' => 2,
+                        'Foo\A::__construct' => 2,
                     ],
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => [],
                 ],

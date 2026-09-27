@@ -2227,6 +2227,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
         } elseif ($this instanceof FunctionAnalyzer) {
             $context->calling_function_id = $this->getFunctionId();
+            $cased_method_id = Interner::str($context->calling_function_id);
         } elseif ($this instanceof ClosureAnalyzer) {
             if ($storage->return_type) {
                 $closure_return_type = TypeExpander::expandUnion(

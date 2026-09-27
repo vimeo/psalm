@@ -150,7 +150,7 @@ final class ClosureTest extends TestCase
 
                             $arr = [5, 4, 3, 1, 2];
 
-                            usort($arr, "fooBar");
+                            usort($arr, "foobar");
                         }
                     }',
             ],

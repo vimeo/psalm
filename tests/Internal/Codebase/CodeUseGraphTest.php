@@ -27,7 +27,7 @@ final class CodeUseGraphTest extends TestCase
      */
     private static function method(string $fq_class_name, string $method_name): MethodIdentifier
     {
-        return new MethodIdentifier(Interner::intern($fq_class_name), Interner::internLower($method_name));
+        return new MethodIdentifier(Interner::intern($fq_class_name), Interner::intern($method_name));
     }
 
     public function testResolvesCyclesRecursively(): void

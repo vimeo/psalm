@@ -81,7 +81,7 @@ final class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface,
                 $statements_source instanceof StatementsAnalyzer
                     ? $statements_source
                     : null,
-                Interner::lower($function_id),
+                $function_id,
             );
 
             if ($function_storage->cased_name === null) {

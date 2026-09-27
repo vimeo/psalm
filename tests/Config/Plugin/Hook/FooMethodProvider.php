@@ -42,8 +42,8 @@ final class FooMethodProvider implements
     #[Override]
     public static function doesMethodExist(MethodExistenceProviderEvent $event): ?bool
     {
-        $method_name_lowercase = $event->getMethodNameLowercase();
-        if ($method_name_lowercase === StrId::magicmethod || $method_name_lowercase === StrId::magicmethod2) {
+        $method_name = $event->getMethodName();
+        if ($method_name === StrId::magicMethod || $method_name === StrId::magicMethod2) {
             return true;
         }
 
@@ -56,8 +56,8 @@ final class FooMethodProvider implements
     #[Override]
     public static function getMethodParams(MethodParamsProviderEvent $event): ?array
     {
-        $method_name_lowercase = $event->getMethodNameLowercase();
-        if ($method_name_lowercase === StrId::magicmethod || $method_name_lowercase === StrId::magicmethod2) {
+        $method_name = $event->getMethodName();
+        if ($method_name === StrId::magicMethod || $method_name === StrId::magicMethod2) {
             return [new FunctionLikeParameter(StrId::first, false, Type::getString(), Type::getString())];
         }
 
@@ -67,11 +67,11 @@ final class FooMethodProvider implements
     #[Override]
     public static function getMethodReturnType(MethodReturnTypeProviderEvent $event): ?Union
     {
-        $method_name_lowercase = $event->getMethodNameLowercase();
-        if ($method_name_lowercase === StrId::magicmethod) {
+        $method_name = $event->getMethodName();
+        if ($method_name === StrId::magicMethod) {
             return Type::getString();
         } else {
-            return new Union([new TNamedObject(Interner::intern('NS\\Foo2'))]);
+            return new Union([new TNamedObject(Interner::intern('Ns\\Foo2'))]);
         }
     }
 }

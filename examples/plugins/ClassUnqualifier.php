@@ -20,7 +20,6 @@ final class ClassUnqualifier implements AfterClassLikeExistenceCheckInterface
     ): void {
         $fq_class_name_id = $event->getFqClassName();
         $fq_class_name = Interner::str($fq_class_name_id);
-        $fq_class_name_lc = Interner::lower($fq_class_name_id);
         $code_location = $event->getCodeLocation();
         $statements_source = $event->getStatementsSource();
         $file_replacements = $event->getFileReplacements();
@@ -37,9 +36,9 @@ final class ClassUnqualifier implements AfterClassLikeExistenceCheckInterface
 
             foreach ($type_tokens as &$type_token) {
                 if ($type_token[0] === ('\\' . $fq_class_name)
-                    && isset($aliases[$fq_class_name_lc])
+                    && isset($aliases[$fq_class_name_id])
                 ) {
-                    $type_token[0] = Interner::str($aliases[$fq_class_name_lc]);
+                    $type_token[0] = Interner::str($aliases[$fq_class_name_id]);
                 }
             }
             unset($type_token);

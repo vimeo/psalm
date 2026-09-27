@@ -96,7 +96,7 @@ final class MethodMutationTest extends TestCase
         $method_context = new Context();
         $method_context->collect_mutations = true;
         $this->project_analyzer->getMethodMutations(
-            new MethodIdentifier(Interner::intern('FooController'), Interner::intern('barbar')),
+            new MethodIdentifier(Interner::intern('FooController'), Interner::intern('barBar')),
             $method_context,
             'somefile.php',
             'somefile.php',
@@ -140,7 +140,7 @@ final class MethodMutationTest extends TestCase
         $method_context = new Context();
         $method_context->collect_mutations = true;
         $this->project_analyzer->getMethodMutations(
-            new MethodIdentifier(Interner::intern('FooController'), Interner::intern('barbar')),
+            new MethodIdentifier(Interner::intern('FooController'), Interner::intern('barBar')),
             $method_context,
             'somefile.php',
             'somefile.php',

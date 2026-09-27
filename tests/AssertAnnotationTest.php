@@ -1171,7 +1171,7 @@ final class AssertAnnotationTest extends TestCase
                             $this->b = $b;
                         }
 
-                        /** @psalm-assert-if-true !null $this->b->getarray() */
+                        /** @psalm-assert-if-true !null $this->b->getArray() */
                         public function hasArray() : bool {
                             return $this->b->getArray() !== null;
                         }
@@ -1193,7 +1193,7 @@ final class AssertAnnotationTest extends TestCase
                             $this->arr = $arr;
                         }
 
-                        /** @psalm-assert-if-true !null $this->getarray() */
+                        /** @psalm-assert-if-true !null $this->getArray() */
                         public function hasArray() : bool {
                             return $this->arr !== null;
                         }

@@ -1,26 +1,6 @@
 # InvalidClass
 
-Emitted when referencing a class with the wrong casing
+Emitted by plugins (e.g. the example `StringChecker` plugin) when a class is referenced incorrectly.
 
-```php
-<?php
-
-class Foo {}
-(new foo());
-```
-
-Could also be an issue in the namespace even if the class has the correct casing
-```php
-<?php
-
-namespace OneTwo {
-    class Three {}
-}
-
-namespace {
-    use Onetwo\Three;
-    //     ^ ("t" instead of "T")
-
-    $three = new Three();
-}
-```
+Psalm itself no longer emits this issue: class names are resolved case-sensitively, so referencing a
+class with the wrong casing (e.g. `new foo()` for `class Foo {}`) is reported as `UndefinedClass`.

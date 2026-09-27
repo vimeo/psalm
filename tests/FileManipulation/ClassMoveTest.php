@@ -360,7 +360,7 @@ final class ClassMoveTest extends TestCase
 
                         /**
                          * @param ArrayObject<int, A> $a
-                         * @throws RunTimeException
+                         * @throws RuntimeException
                          */
                         public function foo(ArrayObject $a) : Exception {
                             foreach ($a as $b) {
@@ -395,7 +395,7 @@ final class ClassMoveTest extends TestCase
 
                         /**
                          * @param \ArrayObject<int, self> $a
-                         * @throws \RunTimeException
+                         * @throws \RuntimeException
                          */
                         public function foo(\ArrayObject $a) : Exception {
                             foreach ($a as $b) {

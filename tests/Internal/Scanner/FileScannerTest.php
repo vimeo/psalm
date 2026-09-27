@@ -75,7 +75,7 @@ final class FileScannerTest extends TestCase
             Interner::intern('some_function') => '/dir/file.php',
         ];
         $file_storage->referenced_classlikes = [
-            Interner::intern('globalclass') => Interner::intern('GlobalClass'),
+            Interner::intern('GlobalClass') => Interner::intern('GlobalClass'),
         ];
         yield 'referenceConfiguredGlobalClass' => [
             $config,

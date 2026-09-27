@@ -97,7 +97,7 @@ final class FileReferenceTest extends TestCase
         $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 
         self::assertNotSame([], $codebase->findReferencesToClassLike(Interner::intern('A')));
-        $codebase->code_use_graph->removeReferencesFrom(CodeUseGraph::functionLikeNode(new MethodIdentifier(Interner::intern('b'), Interner::intern('usea'))));
+        $codebase->code_use_graph->removeReferencesFrom(CodeUseGraph::functionLikeNode(new MethodIdentifier(Interner::intern('B'), Interner::intern('useA'))));
         self::assertSame([], $codebase->findReferencesToClassLike(Interner::intern('A')));
     }
 
@@ -270,50 +270,50 @@ final class FileReferenceTest extends TestCase
 
                     $a = new A();',
                 [
-                    'class foo\\a' => [
+                    'class Foo\\A' => [
                         'file /var/www/somefile.php' => true,
-                        'func foo\\b::__construct' => true,
-                        'func foo\\c::foo' => true,
+                        'func Foo\\B::__construct' => true,
+                        'func Foo\\C::foo' => true,
                     ],
-                    'class foo\\c' => [
-                        'func foo\\b::bar' => true,
+                    'class Foo\\C' => [
+                        'func Foo\\B::bar' => true,
                     ],
-                    'class foo\\d' => [
-                        'file /var/www/somefile.php' => true,
-                    ],
-                    'func foo\\a::bat' => [
-                        'func foo\\b::__construct' => true,
-                        'return foo\\a::bat' => true,
-                    ],
-                    'func foo\\c::foo' => [
-                        'func foo\\b::bar' => true,
-                    ],
-                    'func foo\\d::__construct' => [
-                        'return foo\\d::__construct' => true,
-                    ],
-                    'missing-method foo\\a::__construct' => [
-                        'file /var/www/somefile.php' => true,
-                        'func foo\\b::__construct' => true,
-                        'func foo\\c::foo' => true,
-                    ],
-                    'missing-method foo\\c::__construct' => [
-                        'func foo\\b::bar' => true,
-                    ],
-                    'property foo\\d::$foo' => [
+                    'class Foo\\D' => [
                         'file /var/www/somefile.php' => true,
                     ],
-                    'return foo\\a::bat' => [
-                        'func foo\\b::__construct' => true,
+                    'func Foo\\A::bat' => [
+                        'func Foo\\B::__construct' => true,
+                        'return Foo\\A::bat' => true,
                     ],
-                    'return foo\\d::__construct' => [
+                    'func Foo\\C::foo' => [
+                        'func Foo\\B::bar' => true,
+                    ],
+                    'func Foo\\D::__construct' => [
+                        'return Foo\\D::__construct' => true,
+                    ],
+                    'missing-method Foo\\A::__construct' => [
+                        'file /var/www/somefile.php' => true,
+                        'func Foo\\B::__construct' => true,
+                        'func Foo\\C::foo' => true,
+                    ],
+                    'missing-method Foo\\C::__construct' => [
+                        'func Foo\\B::bar' => true,
+                    ],
+                    'property Foo\\D::$foo' => [
+                        'file /var/www/somefile.php' => true,
+                    ],
+                    'return Foo\\A::bat' => [
+                        'func Foo\\B::__construct' => true,
+                    ],
+                    'return Foo\\D::__construct' => [
                         'file /var/www/somefile.php' => true,
                     ],
                     'use-alias use:A:d7863b8594fe57f85cb8183fe55a6c15' => [
-                        'func foo\\b::__construct' => true,
-                        'func foo\\c::foo' => true,
+                        'func Foo\\B::__construct' => true,
+                        'func Foo\\C::foo' => true,
                     ],
                     'use-alias use:C:d7863b8594fe57f85cb8183fe55a6c15' => [
-                        'func foo\\b::bar' => true,
+                        'func Foo\\B::bar' => true,
                     ],
                 ],
             ],
@@ -340,45 +340,45 @@ final class FileReferenceTest extends TestCase
                         }
                     }',
                 [
-                    'class foo\\a' => [
-                        'class foo\\b' => true,
-                        'func foo\\d::bat' => true,
+                    'class Foo\\A' => [
+                        'class Foo\\B' => true,
+                        'func Foo\\D::bat' => true,
                     ],
-                    'class foo\\b' => [
-                        'class foo\\c' => true,
+                    'class Foo\\B' => [
+                        'class Foo\\C' => true,
                     ],
-                    'class foo\\c' => [
-                        'func foo\\d::bat' => true,
+                    'class Foo\\C' => [
+                        'func Foo\\D::bat' => true,
                     ],
-                    'func foo\\a::__construct' => [
-                        'return foo\\a::__construct' => true,
+                    'func Foo\\A::__construct' => [
+                        'return Foo\\A::__construct' => true,
                     ],
-                    'func foo\\a::bar' => [
-                        'func foo\\d::bat' => true,
+                    'func Foo\\A::bar' => [
+                        'func Foo\\D::bat' => true,
                     ],
-                    'func foo\\b::__construct' => [
-                        'return foo\\b::__construct' => true,
+                    'func Foo\\B::__construct' => [
+                        'return Foo\\B::__construct' => true,
                     ],
-                    'func foo\\b::bar' => [
-                        'func foo\\d::bat' => true,
+                    'func Foo\\B::bar' => [
+                        'func Foo\\D::bat' => true,
                     ],
-                    'func foo\\c::__construct' => [
-                        'return foo\\c::__construct' => true,
+                    'func Foo\\C::__construct' => [
+                        'return Foo\\C::__construct' => true,
                     ],
-                    'func foo\\c::bar' => [
-                        'func foo\\d::bat' => true,
+                    'func Foo\\C::bar' => [
+                        'func Foo\\D::bat' => true,
                     ],
-                    'return foo\\a::__construct' => [
-                        'func foo\\d::bat' => true,
+                    'return Foo\\A::__construct' => [
+                        'func Foo\\D::bat' => true,
                     ],
-                    'return foo\\b::__construct' => [
-                        'func foo\\d::bat' => true,
+                    'return Foo\\B::__construct' => [
+                        'func Foo\\D::bat' => true,
                     ],
-                    'return foo\\c::__construct' => [
-                        'func foo\\d::bat' => true,
+                    'return Foo\\C::__construct' => [
+                        'func Foo\\D::bat' => true,
                     ],
                     'use-alias use:C:d7863b8594fe57f85cb8183fe55a6c15' => [
-                        'func foo\\d::bat' => true,
+                        'func Foo\\D::bat' => true,
                     ],
                 ],
             ],
@@ -402,13 +402,13 @@ final class FileReferenceTest extends TestCase
                         }
                     }',
                 [
-                    'class foo\\a' => [
-                        'func foo\\b::__construct' => true,
-                        'func foo\\c::foo' => true,
+                    'class Foo\\A' => [
+                        'func Foo\\B::__construct' => true,
+                        'func Foo\\C::foo' => true,
                     ],
-                    'const foo\\a::C' => [
-                        'func foo\\b::__construct' => true,
-                        'func foo\\c::foo' => true,
+                    'const Foo\\A::C' => [
+                        'func Foo\\B::__construct' => true,
+                        'func Foo\\C::foo' => true,
                     ],
                 ],
             ],
@@ -433,17 +433,17 @@ final class FileReferenceTest extends TestCase
                         }
                     }',
                 [
-                    'class foo\\a' => [
-                        'func foo\\b::__construct' => true,
-                        'func foo\\c::foo' => true,
+                    'class Foo\\A' => [
+                        'func Foo\\B::__construct' => true,
+                        'func Foo\\C::foo' => true,
                     ],
-                    'property foo\\a::$fooBar' => [
-                        'func foo\\b::__construct' => true,
-                        'func foo\\c::foo' => true,
+                    'property Foo\\A::$fooBar' => [
+                        'func Foo\\B::__construct' => true,
+                        'func Foo\\C::foo' => true,
                     ],
                     'use-alias use:A:d7863b8594fe57f85cb8183fe55a6c15' => [
-                        'func foo\\b::__construct' => true,
-                        'func foo\\c::foo' => true,
+                        'func Foo\\B::__construct' => true,
+                        'func Foo\\C::foo' => true,
                     ],
                 ],
             ],
@@ -468,21 +468,21 @@ final class FileReferenceTest extends TestCase
                         }
                     }',
                 [
-                    'class foo\\a' => [
-                        'func foo\\b::__construct' => true,
-                        'func foo\\c::foo' => true,
+                    'class Foo\\A' => [
+                        'func Foo\\B::__construct' => true,
+                        'func Foo\\C::foo' => true,
                     ],
-                    'missing-method foo\\a::__construct' => [
-                        'func foo\\b::__construct' => true,
-                        'func foo\\c::foo' => true,
+                    'missing-method Foo\\A::__construct' => [
+                        'func Foo\\B::__construct' => true,
+                        'func Foo\\C::foo' => true,
                     ],
-                    'property foo\\a::$fooBar' => [
-                        'func foo\\b::__construct' => true,
-                        'func foo\\c::foo' => true,
+                    'property Foo\\A::$fooBar' => [
+                        'func Foo\\B::__construct' => true,
+                        'func Foo\\C::foo' => true,
                     ],
                     'use-alias use:A:d7863b8594fe57f85cb8183fe55a6c15' => [
-                        'func foo\\b::__construct' => true,
-                        'func foo\\c::foo' => true,
+                        'func Foo\\B::__construct' => true,
+                        'func Foo\\C::foo' => true,
                     ],
                 ],
             ],
@@ -506,17 +506,17 @@ final class FileReferenceTest extends TestCase
                         use T;
                     }',
                 [
-                    'class ns\\a' => [
-                        'func ns\\c::bar' => true,
+                    'class Ns\\A' => [
+                        'func Ns\\C::bar' => true,
                     ],
-                    'class ns\\t' => [
-                        'class ns\\c' => true,
+                    'class Ns\\T' => [
+                        'class Ns\\C' => true,
                     ],
-                    'func ns\\a::foo' => [
-                        'func ns\\c::bar' => true,
+                    'func Ns\\A::foo' => [
+                        'func Ns\\C::bar' => true,
                     ],
                     'use-alias use:A:d7863b8594fe57f85cb8183fe55a6c15' => [
-                        'func ns\\c::bar' => true,
+                        'func Ns\\C::bar' => true,
                     ],
                 ],
             ],

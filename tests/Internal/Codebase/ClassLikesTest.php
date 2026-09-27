@@ -30,9 +30,9 @@ final class ClassLikesTest extends TestCase
         $this->classlikes->addClassAlias(Interner::intern('Foo'), Interner::intern('Bar'));
 
         $classStorage = new ClassLikeStorage(Interner::intern('Baz'));
-        $classStorage->class_implements[Interner::intern('bar')] = Interner::intern('Bar');
+        $classStorage->class_implements[Interner::intern('Bar')] = Interner::intern('Bar');
 
-        $this->storage_provider->addMore([Interner::intern('baz') => $classStorage]);
+        $this->storage_provider->addMore([Interner::intern('Baz') => $classStorage]);
 
         self::assertTrue($this->classlikes->classImplements(Interner::intern('Baz'), Interner::intern('Foo')));
     }

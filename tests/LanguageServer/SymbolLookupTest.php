@@ -139,7 +139,7 @@ final class SymbolLookupTest extends TestCase
         );
         $this->assertNotNull($information);
         $this->assertSame('function B\bar(): int', $information->code);
-        $this->assertSame('b\bar', $information->title);
+        $this->assertSame('B\bar', $information->title);
         $this->assertNull($information->description);
 
         $information = $this->codebase->getMarkupContentForSymbolByReference(
@@ -163,7 +163,7 @@ final class SymbolLookupTest extends TestCase
         );
         $this->assertNotNull($information);
         $this->assertSame("function B\baz(\n    int \$a\n): int", $information->code);
-        $this->assertSame('b\baz', $information->title);
+        $this->assertSame('B\baz', $information->title);
         $this->assertNull($information->description);
 
         $information = $this->codebase->getMarkupContentForSymbolByReference(
@@ -175,7 +175,7 @@ final class SymbolLookupTest extends TestCase
         );
         $this->assertNotNull($information);
         $this->assertSame("function B\qux(\n    int \$a,\n    int \$b\n): int", $information->code);
-        $this->assertSame('b\qux', $information->title);
+        $this->assertSame('B\qux', $information->title);
         $this->assertNull($information->description);
 
         $information = $this->codebase->getMarkupContentForSymbolByReference(
@@ -621,7 +621,7 @@ final class SymbolLookupTest extends TestCase
             [new Position(8, 40), 'B\A::foo', 0, 2],
             [new Position(8, 46), 'B\A::bar', 0, 1],
             [new Position(8, 47), 'B\A::foo', 0, 2],
-            [new Position(10, 40), 'B\A::staticfoo', 0, 1],
+            [new Position(10, 40), 'B\A::staticFoo', 0, 1],
             // [new Position(12, 28), 'B\foo', 0, 1],
             [new Position(14, 30), 'B\A::__construct', 0, 0],
             [new Position(16, 31), 'strlen', 0, 1],

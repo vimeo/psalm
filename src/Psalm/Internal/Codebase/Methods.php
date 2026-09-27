@@ -1024,9 +1024,7 @@ final class Methods
 
         $cased_name = Interner::str($storage->cased_name ?? $new_method_name);
 
-        if ($old_method_name === $new_method_name
-            && $old_fq_class_name !== $old_fq_class_name
-        ) {
+        if ($old_method_name === $new_method_name) {
             return Interner::$strings[$old_fq_class_name] . '::' . $cased_name;
         }
 

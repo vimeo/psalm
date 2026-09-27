@@ -513,7 +513,7 @@ final class ConfigTest extends TestCase
         $config = $this->project_analyzer->getConfig();
         $this->assertSame(
             Config::REPORT_SUPPRESS,
-            $config->getReportingLevelForFunction('UndefinedFunction', Interner::internLower('Some\Namespace\zzz')),
+            $config->getReportingLevelForFunction('UndefinedFunction', Interner::intern('Some\Namespace\zzz')),
         );
     }
 
@@ -730,15 +730,7 @@ final class ConfigTest extends TestCase
             'suppress',
             $config->getReportingLevelForFunction(
                 'UndefinedFunction',
-                Interner::internLower('fooBar'),
-            ),
-        );
-
-        $this->assertSame(
-            'suppress',
-            $config->getReportingLevelForFunction(
-                'UndefinedFunction',
-                Interner::internLower('foobar'),
+                Interner::intern('fooBar'),
             ),
         );
 
@@ -964,15 +956,7 @@ final class ConfigTest extends TestCase
             'suppress',
             $config->getReportingLevelForFunction(
                 'UndefinedFunction',
-                Interner::internLower('fooBar'),
-            ),
-        );
-
-        $this->assertSame(
-            'suppress',
-            $config->getReportingLevelForFunction(
-                'UndefinedFunction',
-                Interner::internLower('foobar'),
+                Interner::intern('fooBar'),
             ),
         );
 
@@ -1668,7 +1652,7 @@ final class ConfigTest extends TestCase
             ),
         );
 
-        $this->assertContains(StrId::datetime, $this->project_analyzer->getConfig()->getUniversalObjectCrates());
+        $this->assertContains(StrId::DateTime, $this->project_analyzer->getConfig()->getUniversalObjectCrates());
     }
 
     public function testInferPropertyTypesFromConstructorIsRead(): void
@@ -1988,7 +1972,7 @@ final class ConfigTest extends TestCase
                 new TooManyArguments(
                     'too many',
                     new Raw('aaa', 'aaa.php', 'aaa.php', 1, 2),
-                    MethodIdentifier::fromMethodIdReference('Foo\Bar::baZ'),
+                    MethodIdentifier::fromMethodIdReference('Foo\Bar::baz'),
                 ),
             ),
         );
@@ -2018,7 +2002,7 @@ final class ConfigTest extends TestCase
                 new UndefinedFunction(
                     'Function Foo\Bar\baz does not exist',
                     new Raw('aaa', 'aaa.php', 'aaa.php', 1, 2),
-                    Interner::intern('foo\bar\baz'),
+                    Interner::intern('Foo\Bar\baz'),
                 ),
             ),
         );

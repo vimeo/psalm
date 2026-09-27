@@ -236,7 +236,7 @@ final class FileDiffTest extends TestCase
                         $b = 1;
                     }
                 }',
-                ['foo\a::$aB', 'foo\a::F', 'foo\a::foo', 'foo\a::bar'],
+                ['Foo\A::$aB', 'Foo\A::F', 'Foo\A::foo', 'Foo\A::bar'],
                 [],
                 [],
                 [[0, 0], [0, 0], [0, 0], [0, 0]],
@@ -291,7 +291,7 @@ final class FileDiffTest extends TestCase
                         $b = 1;
                     }
                 }',
-                ['foo\a::$aB', 'foo\a::F', 'foo\a::foo', 'foo\a::bar'],
+                ['Foo\A::$aB', 'Foo\A::F', 'Foo\A::foo', 'Foo\A::bar'],
                 [],
                 [],
                 [[0, 0], [0, 0], [0, 0], [0, 0]],
@@ -333,7 +333,7 @@ final class FileDiffTest extends TestCase
                         $b = 1;
                     }
                 }',
-                ['foo\a::$aB', 'foo\a::F', 'foo\a::foo', 'foo\a::bar'],
+                ['Foo\A::$aB', 'Foo\A::F', 'Foo\A::foo', 'Foo\A::bar'],
                 [],
                 [],
                 [[1, 1], [2, 2], [2, 2], [5, 5]],
@@ -362,8 +362,8 @@ final class FileDiffTest extends TestCase
                         $b = 1;
                     }
                 }',
-                ['foo\a::bar'],
-                ['foo\a::foo'],
+                ['Foo\A::bar'],
+                ['Foo\A::foo'],
                 [],
                 [[1, 0]],
                 [],
@@ -392,8 +392,8 @@ final class FileDiffTest extends TestCase
                         $c = 1;
                     }
                 }',
-                ['foo\a::bar'],
-                ['foo\a::foo'],
+                ['Foo\A::bar'],
+                ['Foo\A::foo'],
                 [],
                 [[32, 1]],
                 [],
@@ -421,9 +421,9 @@ final class FileDiffTest extends TestCase
                         $b = 1;
                     }
                 }',
-                ['foo\a::foo'],
+                ['Foo\A::foo'],
                 [],
-                ['foo\a::bar', 'foo\a::bar'],
+                ['Foo\A::bar', 'Foo\A::bar'],
                 [[0, 0]],
                 [[182, 258]],
             ],
@@ -442,7 +442,7 @@ final class FileDiffTest extends TestCase
                 }',
                 [],
                 [],
-                ['foo\a::$a', 'foo\a::$b'],
+                ['Foo\A::$a', 'Foo\A::$b'],
                 [],
                 [[84, 93]],
             ],
@@ -460,7 +460,7 @@ final class FileDiffTest extends TestCase
                     public $a = 2;
                 }',
                 [],
-                ['foo\a::$a'],
+                ['Foo\A::$a'],
                 [],
                 [],
                 [],
@@ -479,7 +479,7 @@ final class FileDiffTest extends TestCase
                     public $a = 2;
                 }',
                 [],
-                ['foo\a::$a'],
+                ['Foo\A::$a'],
                 [],
                 [],
                 [],
@@ -501,7 +501,7 @@ final class FileDiffTest extends TestCase
                 }',
                 [],
                 [],
-                ['foo\a::$a', 'foo\a::$a'],
+                ['Foo\A::$a', 'Foo\A::$a'],
                 [],
                 [[84, 133]],
             ],
@@ -522,7 +522,7 @@ final class FileDiffTest extends TestCase
                 }',
                 [],
                 [],
-                ['foo\a::$a', 'foo\a::$a'],
+                ['Foo\A::$a', 'Foo\A::$a'],
                 [],
                 [[84, 140]],
             ],
@@ -543,7 +543,7 @@ final class FileDiffTest extends TestCase
                 }',
                 [],
                 [],
-                ['foo\a::$a', 'foo\a::$a'],
+                ['Foo\A::$a', 'Foo\A::$a'],
                 [],
                 [[84, 133]],
             ],
@@ -562,7 +562,7 @@ final class FileDiffTest extends TestCase
                 }',
                 [],
                 [],
-                ['foo\a::$a', 'foo\a::$a'],
+                ['Foo\A::$a', 'Foo\A::$a'],
                 [],
                 [[84, 93]],
             ],
@@ -581,7 +581,7 @@ final class FileDiffTest extends TestCase
                 }',
                 [],
                 [],
-                ['foo\a::$a', 'foo\a::$a'],
+                ['Foo\A::$a', 'Foo\A::$a'],
                 [],
                 [[84, 100]],
             ],
@@ -600,7 +600,7 @@ final class FileDiffTest extends TestCase
                 }',
                 [],
                 [],
-                ['foo\a::$a', 'foo\a::$a'],
+                ['Foo\A::$a', 'Foo\A::$a'],
                 [],
                 [[84, 100]],
             ],
@@ -630,9 +630,9 @@ final class FileDiffTest extends TestCase
                         $b = 2;
                     }
                 }',
-                ['foo\a::bar'],
+                ['Foo\A::bar'],
                 [],
-                ['foo\a::foo', 'foo\a::foo'],
+                ['Foo\A::foo', 'Foo\A::foo'],
                 [[84, 3]],
                 [[84, 160]],
             ],
@@ -662,9 +662,9 @@ final class FileDiffTest extends TestCase
                         $b = 2;
                     }
                 }',
-                ['foo\a::foo'],
+                ['Foo\A::foo'],
                 [],
-                ['foo\a::bar', 'foo\a::bar'],
+                ['Foo\A::bar', 'Foo\A::bar'],
                 [[0, 0]],
                 [[182, 258]],
             ],
@@ -694,9 +694,9 @@ final class FileDiffTest extends TestCase
                         $b = 2;
                     }
                 }',
-                ['foo\a::foo'],
+                ['Foo\A::foo'],
                 [],
-                ['foo\a::bar', 'foo\a::bar'],
+                ['Foo\A::bar', 'Foo\A::bar'],
                 [[0, 0]],
                 [[182, 342]],
             ],
@@ -729,9 +729,9 @@ final class FileDiffTest extends TestCase
                         $b = 2;
                     }
                 }',
-                ['foo\a::foo'],
+                ['Foo\A::foo'],
                 [],
-                ['foo\a::bar', 'foo\a::bar'],
+                ['Foo\A::bar', 'Foo\A::bar'],
                 [[0, 0]],
                 [[182, 344]],
             ],
@@ -758,9 +758,9 @@ final class FileDiffTest extends TestCase
                         $b = 2;
                     }
                 }',
-                ['foo\a::foo'],
+                ['Foo\A::foo'],
                 [],
-                ['foo\a::bar', 'foo\a::bar'],
+                ['Foo\A::bar', 'Foo\A::bar'],
                 [[0, 0]],
                 [[182, 258]],
             ],
@@ -808,9 +808,9 @@ final class FileDiffTest extends TestCase
                         $b = 1;
                     }
                 }',
-                ['foo\a::foo', 'foo\a::bar'],
+                ['Foo\A::foo', 'Foo\A::bar'],
                 [],
-                ['foo\a::bat'],
+                ['Foo\A::bat'],
                 [[0, 0], [0, 0]],
                 [[450, 610]],
             ],
@@ -883,8 +883,8 @@ final class FileDiffTest extends TestCase
                         $f = 6;
                     }
                 }',
-                ['foo\a::foo', 'foo\a::bat'],
-                ['foo\a::bar'],
+                ['Foo\A::foo', 'Foo\A::bat'],
+                ['Foo\A::bar'],
                 [],
                 [[0, 0], [4, 4]],
                 [],
@@ -958,8 +958,8 @@ final class FileDiffTest extends TestCase
                         $f = 6;
                     }
                 }',
-                ['foo\a::foo', 'foo\a::bat'],
-                ['foo\a::bar'],
+                ['Foo\A::foo', 'Foo\A::bat'],
+                ['Foo\A::bar'],
                 [],
                 [[0, 0], [-4, -4]],
                 [],
@@ -990,9 +990,9 @@ final class FileDiffTest extends TestCase
                         $c = 1;
                     }
                 }',
-                ['foo\a::bar', 'foo\a::bat'],
+                ['Foo\A::bar', 'Foo\A::bat'],
                 [],
-                ['foo\a::foo'],
+                ['Foo\A::foo'],
                 [[-98, -3], [-98, -3]],
                 [[84, 160]],
             ],
@@ -1022,9 +1022,9 @@ final class FileDiffTest extends TestCase
                         $c = 1;
                     }
                 }',
-                ['foo\a::foo', 'foo\a::bat'],
+                ['Foo\A::foo', 'Foo\A::bat'],
                 [],
-                ['foo\a::bar'],
+                ['Foo\A::bar'],
                 [[0, 0], [-98, -3]],
                 [[182, 258]],
             ],
@@ -1122,9 +1122,9 @@ final class FileDiffTest extends TestCase
                         $c = 1;
                     }
                 }',
-                ['foo\a::foo', 'foo\a::bar'],
+                ['Foo\A::foo', 'Foo\A::bar'],
                 [],
-                ['foo\a::bat'],
+                ['Foo\A::bat'],
                 [[0, 0], [0, 0]],
                 [],
             ],
@@ -1172,9 +1172,9 @@ final class FileDiffTest extends TestCase
                         $b = 1;
                     }
                 }',
-                ['foo\a::foo', 'foo\a::bar'],
+                ['Foo\A::foo', 'Foo\A::bar'],
                 [],
-                ['foo\a::bat'],
+                ['Foo\A::bat'],
                 [[183, 7], [183, 7]],
                 [],
             ],
@@ -1222,9 +1222,9 @@ final class FileDiffTest extends TestCase
                         $b = 1;
                     }
                 }',
-                ['foo\a::foo', 'foo\a::bar'],
+                ['Foo\A::foo', 'Foo\A::bar'],
                 [],
-                ['foo\a::bat'],
+                ['Foo\A::bat'],
                 [[0, 0], [183, 7]],
                 [],
             ],
@@ -1274,7 +1274,7 @@ final class FileDiffTest extends TestCase
                 }',
                 [],
                 [],
-                ['use:D', 'use:E', 'foo\a::foo', 'foo\a::bar', 'foo\a::foo', 'foo\a::bar'],
+                ['use:D', 'use:E', 'Foo\A::foo', 'Foo\A::bar', 'Foo\A::foo', 'Foo\A::bar'],
                 [],
                 [[84, 304], [327, 547]],
             ],
@@ -1303,7 +1303,7 @@ final class FileDiffTest extends TestCase
 
                     }
                 }',
-                ['foo\a::foo', 'foo\a::bar'],
+                ['Foo\A::foo', 'Foo\A::bar'],
                 [],
                 [],
                 [],
@@ -1338,9 +1338,9 @@ final class FileDiffTest extends TestCase
                     }
 
                     class C extends B { }',
-                ['foo\a::__construct', 'foo\a::bar', 'foo\b::bat'],
+                ['Foo\A::__construct', 'Foo\A::bar', 'Foo\B::bat'],
                 [],
-                ['foo\b::__construct', 'foo\b::bar'],
+                ['Foo\B::__construct', 'Foo\B::bar'],
                 [[0, 0], [0, 0], [120, 2]],
                 [],
             ],
@@ -1375,7 +1375,7 @@ final class FileDiffTest extends TestCase
                         $b = 1;
                     }
                 }',
-                ['foo\t::$aB', 'foo\t::F', 'foo\t::foo', 'foo\t::bar'],
+                ['Foo\T::$aB', 'Foo\T::F', 'Foo\T::foo', 'Foo\T::bar'],
                 [],
                 [],
                 [[0, 0], [0, 0], [0, 0], [0, 0]],
@@ -1396,7 +1396,7 @@ final class FileDiffTest extends TestCase
                 }',
                 [],
                 [],
-                ['foo\t::$a', 'foo\t::$b'],
+                ['Foo\T::$a', 'Foo\T::$b'],
                 [],
                 [[84, 93]],
             ],
@@ -1425,9 +1425,9 @@ final class FileDiffTest extends TestCase
                             return "hello";
                         }
                     }',
-                ['foo\t::bat'],
+                ['Foo\T::bat'],
                 [],
-                ['foo\t::barbar', 'foo\t::barbar'],
+                ['Foo\T::barBar', 'Foo\T::barBar'],
                 [[-9, 0]],
                 [[96, 199]],
             ],
@@ -1461,8 +1461,8 @@ final class FileDiffTest extends TestCase
                             return "hello";
                         }
                     }',
-                ['foo\c::bat'],
-                ['foo\c::barbar'],
+                ['Foo\C::bat'],
+                ['Foo\C::barBar'],
                 [],
                 [[-36, -1]],
                 [],
@@ -1512,9 +1512,9 @@ final class FileDiffTest extends TestCase
                             return true;
                         }
                     }',
-                ['bar\foo::a', 'bar\foo::c'],
+                ['Bar\Foo::a', 'Bar\Foo::c'],
                 [],
-                ['bar\foo::b'],
+                ['Bar\Foo::b'],
                 [[0, 0], [229, 8]],
                 [],
             ],
@@ -1561,8 +1561,8 @@ final class FileDiffTest extends TestCase
                     }',
                 [],
                 [
-                    'a\b::foo',
-                    'a\b::bar',
+                    'A\B::foo',
+                    'A\B::bar',
                 ],
                 [],
                 [],
@@ -1587,7 +1587,7 @@ final class FileDiffTest extends TestCase
                             throw new Exception();
                         }
                     }',
-                ['foo\a::foo'],
+                ['Foo\A::foo'],
                 [],
                 ['use:Exception'],
                 [[-36, -2]],
@@ -1618,7 +1618,7 @@ final class FileDiffTest extends TestCase
                         }
                     }',
                 [],
-                ['foo\c::foo'],
+                ['Foo\C::foo'],
                 [],
                 [],
                 [],
@@ -1690,7 +1690,7 @@ final class FileDiffTest extends TestCase
                     }',
                 [],
                 [],
-                ['c\a::foo', 'c\a::bar', 'c\a::zap', 'c\a::top', 'c\a::rot', 'c\a::bar'],
+                ['C\A::foo', 'C\A::bar', 'C\A::zap', 'C\A::top', 'C\A::rot', 'C\A::bar'],
                 [],
                 [[124, 405], [432, 711], [738, 1_016], [1_043, 1_284]],
             ],
@@ -1728,7 +1728,7 @@ final class FileDiffTest extends TestCase
                     }
                     ',
                 [],
-                ['a\c::foo'],
+                ['A\C::foo'],
                 [],
                 [],
                 [],
@@ -1802,9 +1802,9 @@ final class FileDiffTest extends TestCase
                         }
                     }
                     ',
-                ['foo\a::bat'],
+                ['Foo\A::bat'],
                 [],
-                ['foo\a::foo', 'foo\a::bar', 'foo\a::foo', 'foo\a::bar'],
+                ['Foo\A::foo', 'Foo\A::bar', 'Foo\A::foo', 'Foo\A::bar'],
                 [[-6, 0]],
                 [[116, 428], [455, 756]],
             ],

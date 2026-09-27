@@ -31,7 +31,7 @@ final class MagicFunctionProvider implements
     #[Override]
     public static function getFunctionIds(): array
     {
-        return [StrId::magicfunction];
+        return [StrId::magicFunction];
     }
 
     /**
@@ -41,7 +41,7 @@ final class MagicFunctionProvider implements
     public static function doesFunctionExist(FunctionExistenceProviderEvent $event): ?bool
     {
         $function_id = $event->getFunctionId();
-        return $function_id === StrId::magicfunction;
+        return $function_id === StrId::magicFunction;
     }
 
     /**

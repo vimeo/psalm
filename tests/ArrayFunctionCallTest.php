@@ -1181,11 +1181,7 @@ final class ArrayFunctionCallTest extends TestCase
                     }
 
                     array_filter([1, 2, 3], "fooFoo");
-                    array_filter([1, 2, 3], "foofoo");
-                    array_filter([1, 2, 3], "FOOFOO");
-                    array_filter([1, 2, 3], "A::barBar");
-                    array_filter([1, 2, 3], "A::BARBAR");
-                    array_filter([1, 2, 3], "A::barbar");',
+                    array_filter([1, 2, 3], "A::barBar");',
             ],
             'arrayFilterIgnoreMissingClass' => [
                 'code' => '<?php
