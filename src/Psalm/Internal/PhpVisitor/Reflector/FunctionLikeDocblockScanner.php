@@ -513,26 +513,27 @@ final class FunctionLikeDocblockScanner
                         if (!isset($param_type_mapping[$token_body])) {
                             $template_name = 'TGeneratedFromParam' . $j;
 
-                            $already_wrapped = false;
+                            $existing_wrap = null;
                             if ($param_storage->type !== null) {
                                 foreach ($param_storage->type->getAtomicTypes() as $atomic) {
                                     if ($atomic instanceof TTemplateParam
                                         && $atomic->param_name === $template_name
                                     ) {
-                                        $already_wrapped = true;
+                                        $existing_wrap = $atomic;
                                         break;
                                     }
                                 }
                             }
 
-                            if ($already_wrapped) {
+                            if ($existing_wrap !== null) {
                                 // A prior handler in this scan (e.g. handleRemovedTaint vs
                                 // handleReturn) already wrapped this param. Re-wrapping would nest
                                 // TTemplateParam.as_type inside itself once per docblock annotation,
                                 // producing an exponentially-long type signature (filter_var carries
                                 // ~50 conditional taint-escape annotations on the same `$filter`).
-                                $function_template_types[$template_name]
-                                    = $storage->template_types[$template_name];
+                                $function_template_types[$template_name] = [
+                                    $existing_wrap->defining_class => $existing_wrap->as,
+                                ];
                                 $param_type_mapping[$token_body] = $template_name;
                             } else {
                                 // First touch in this scan, or rescan after a stub override (params
