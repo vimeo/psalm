@@ -6,6 +6,7 @@ namespace Psalm\Tests\Internal\Provider;
 
 use Amp\Serialization\NativeSerializer;
 use Override;
+use PhpParser\PrettyPrinter\Standard;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\StatementsProvider;
 use Psalm\Tests\TestCase;
@@ -32,26 +33,33 @@ final class StatementsProviderTest extends TestCase
         parent::tearDown();
     }
 
-    public function testVendorFileIsParsedOnlyOnce(): void
+    public function testVendorFileIsMemoisedOnItsSecondRequest(): void
     {
         $provider = new StatementsProvider(self::vendorFileProvider(), new FakeParserCacheProvider());
         $progress = new RecordingProgress();
 
         $first = $provider->getStatementsForFile(self::vendorFilePath(), self::PHP_VERSION_ID, false, $progress);
         $second = $provider->getStatementsForFile(self::vendorFilePath(), self::PHP_VERSION_ID, false, $progress);
+        $third = $provider->getStatementsForFile(self::vendorFilePath(), self::PHP_VERSION_ID, false, $progress);
+        $fourth = $provider->getStatementsForFile(self::vendorFilePath(), self::PHP_VERSION_ID, false, $progress);
 
-        $this->assertSame(1, $progress->countDebugMessagesContaining(self::PARSING_MESSAGE));
+        $this->assertSame(2, $progress->countDebugMessagesContaining(self::PARSING_MESSAGE));
         $this->assertEquals($first, $second);
+        $this->assertEquals($first, $third);
+        $this->assertEquals($first, $fourth);
     }
 
     public function testMemoisedVendorStatementsAreNotSharedBetweenCallers(): void
     {
         $provider = new StatementsProvider(self::vendorFileProvider(), new FakeParserCacheProvider());
 
-        $first = $provider->getStatementsForFile(self::vendorFilePath(), self::PHP_VERSION_ID, false);
+        $provider->getStatementsForFile(self::vendorFilePath(), self::PHP_VERSION_ID, false);
         $second = $provider->getStatementsForFile(self::vendorFilePath(), self::PHP_VERSION_ID, false);
+        $third = $provider->getStatementsForFile(self::vendorFilePath(), self::PHP_VERSION_ID, false);
+        $fourth = $provider->getStatementsForFile(self::vendorFilePath(), self::PHP_VERSION_ID, false);
 
-        $this->assertNotSame($first[0], $second[0]);
+        $this->assertNotSame($second[0], $third[0]);
+        $this->assertNotSame($third[0], $fourth[0]);
     }
 
     public function testChangedVendorFileIsParsedAgain(): void
@@ -61,10 +69,12 @@ final class StatementsProviderTest extends TestCase
         $progress = new RecordingProgress();
 
         $provider->getStatementsForFile(self::vendorFilePath(), self::PHP_VERSION_ID, false, $progress);
-        $files->setContents(self::vendorFilePath(), '<?php class Acme { public function g(): void {} }');
         $provider->getStatementsForFile(self::vendorFilePath(), self::PHP_VERSION_ID, false, $progress);
+        $files->setContents(self::vendorFilePath(), '<?php class Acme { public function g(): void {} }');
+        $stmts = $provider->getStatementsForFile(self::vendorFilePath(), self::PHP_VERSION_ID, false, $progress);
 
-        $this->assertSame(2, $progress->countDebugMessagesContaining(self::PARSING_MESSAGE));
+        $this->assertSame(3, $progress->countDebugMessagesContaining(self::PARSING_MESSAGE));
+        $this->assertStringContainsString('function g(', (new Standard())->prettyPrint($stmts));
     }
 
     public function testVendorFileTooDeepToUnserializeIsParsedAgain(): void
@@ -77,11 +87,11 @@ final class StatementsProviderTest extends TestCase
         $provider = new StatementsProvider($files, new FakeParserCacheProvider());
         $progress = new RecordingProgress();
 
-        $provider->getStatementsForFile(self::vendorFilePath(), self::PHP_VERSION_ID, false, $progress);
-        $provider->getStatementsForFile(self::vendorFilePath(), self::PHP_VERSION_ID, false, $progress);
-        $provider->getStatementsForFile(self::vendorFilePath(), self::PHP_VERSION_ID, false, $progress);
+        for ($i = 0; $i < 4; $i++) {
+            $provider->getStatementsForFile(self::vendorFilePath(), self::PHP_VERSION_ID, false, $progress);
+        }
 
-        $this->assertSame(3, $progress->countDebugMessagesContaining(self::PARSING_MESSAGE));
+        $this->assertSame(4, $progress->countDebugMessagesContaining(self::PARSING_MESSAGE));
     }
 
     public function testStatementsAreNotMemoisedWithoutAParserCacheProvider(): void

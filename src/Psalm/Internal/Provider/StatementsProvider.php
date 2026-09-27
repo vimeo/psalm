@@ -36,6 +36,7 @@ use function array_merge;
 use function count;
 use function extension_loaded;
 use function hash;
+use function is_string;
 use function md5;
 use function str_starts_with;
 use function strlen;
@@ -78,9 +79,10 @@ final class StatementsProvider
 
     /**
      * Statements of vendor files, which the parser cache provider refuses to store, kept serialized so that
-     * repeated requests unserialize instead of re-parsing. Null marks a file whose statements could not be restored.
+     * repeated requests unserialize instead of re-parsing.
      *
-     * @var array<string, array{string, ?string}> file path => [content hash, serialized statements]
+     * @var array<string, array{string, string|false|null}> file path => [content hash, serialized statements],
+     *     where null means the file was requested once so far and false that its statements cannot be restored
      */
     private array $vendor_statements = [];
 
@@ -129,20 +131,24 @@ final class StatementsProvider
                 : hash('xxh128', $analysis_php_version_id . "\0" . $file_contents);
 
             $memoised = $this->vendor_statements[$file_path] ?? null;
+            $seen_before = false;
 
             if ($memoised !== null && $memoised[0] === $vendor_hash) {
-                if ($memoised[1] !== null) {
+                if (is_string($memoised[1])) {
                     try {
                         /** @var list<Stmt> */
                         return self::getSerializer()->unserialize($memoised[1]);
                     } catch (SerializationException) {
                         // The native serializer cannot rebuild statements nested deeper than unserialize_max_depth.
                         // Parse such a file from source, as before, rather than failing on every repeat request.
-                        $this->vendor_statements[$file_path] = [$vendor_hash, null];
+                        $this->vendor_statements[$file_path] = [$vendor_hash, false];
+                        $vendor_hash = null;
                     }
+                } elseif ($memoised[1] === null) {
+                    $seen_before = true;
+                } else {
+                    $vendor_hash = null;
                 }
-
-                $vendor_hash = null;
             }
 
             $progress->debug('Parsing ' . $file_path . " because we cannot use cache\n");
@@ -151,8 +157,13 @@ final class StatementsProvider
 
             $stmts = self::parseStatements($file_contents, $analysis_php_version_id, $has_errors, $file_path);
 
+            // Most vendor files are only ever requested once, by the scanner, so a file is serialized on its second
+            // request rather than its first.
             if ($vendor_hash !== null && !$has_errors) {
-                $this->vendor_statements[$file_path] = [$vendor_hash, self::getSerializer()->serialize($stmts)];
+                $this->vendor_statements[$file_path] = [
+                    $vendor_hash,
+                    $seen_before ? self::getSerializer()->serialize($stmts) : null,
+                ];
             }
 
             return $stmts;
