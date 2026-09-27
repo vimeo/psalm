@@ -425,13 +425,34 @@ final class CallableTypeComparator
                     if ($method_storage->template_types !== null && $container_type_part !== null) {
                         $template_result = new TemplateResult($method_storage->template_types, []);
 
-                        TemplateStandinTypeReplacer::fillTemplateResult(
-                            new Union([$callable]),
-                            $template_result,
-                            $codebase,
-                            null,
-                            new Union([$container_type_part]),
-                        );
+                        // Bind templates to the argument types the expected callable passes in
+                        foreach ($callable->params ?? [] as $offset => $param) {
+                            $container_param_type = $container_type_part->params[$offset]->type ?? null;
+
+                            if ($param->type && $container_param_type) {
+                                TemplateStandinTypeReplacer::fillTemplateResult(
+                                    $param->type,
+                                    $template_result,
+                                    $codebase,
+                                    null,
+                                    $container_param_type,
+                                );
+                            }
+                        }
+
+                        // and to the expected return type, unless the caller discards it
+                        if ($callable->return_type
+                            && $container_type_part->return_type
+                            && !$container_type_part->return_type->isVoid()
+                        ) {
+                            TemplateStandinTypeReplacer::fillTemplateResult(
+                                $callable->return_type,
+                                $template_result,
+                                $codebase,
+                                null,
+                                $container_type_part->return_type,
+                            );
+                        }
 
                         $callable = $callable->replaceTemplateTypesWithArgTypes($template_result, $codebase);
                     }

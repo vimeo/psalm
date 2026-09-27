@@ -1236,6 +1236,63 @@ final class CallableTest extends TestCase
                     '$result' => 'list{int, int, int}',
                 ],
             ],
+            'polymorphicArrayCallableWithParamOnlyTemplate' => [
+                'code' => '<?php
+                    class Sink {
+                        /**
+                         * @template B
+                         * @param B $b
+                         */
+                        public static function consume($b): void {}
+                    }
+
+                    /**
+                     * @param callable(int): void $f
+                     */
+                    function bar(callable $f): void {}
+
+                    bar([Sink::class, "consume"]);',
+            ],
+            'polymorphicArrayCallableWithNestedCallableParam' => [
+                'code' => '<?php
+                    class Runner {
+                        /**
+                         * @template B
+                         * @param callable(): B $f
+                         * @return B
+                         */
+                        public static function run(callable $f) {
+                            return $f();
+                        }
+                    }
+
+                    /**
+                     * @param callable(callable(): int): int $f
+                     */
+                    function bar(callable $f): void {}
+
+                    bar([Runner::class, "run"]);',
+            ],
+            'polymorphicArrayCallableWithIgnoredVoidReturn' => [
+                'code' => '<?php
+                    class Id {
+                        /**
+                         * @template B
+                         * @param B $b
+                         * @return B
+                         */
+                        public static function id($b) {
+                            return $b;
+                        }
+                    }
+
+                    /**
+                     * @param callable(int): void $f
+                     */
+                    function bar(callable $f): void {}
+
+                    bar([Id::class, "id"]);',
+            ],
             'callableMethodArrayCallableMissingTypes' => [
                 'code' => '<?php
                     function foo(callable $c): void {}
@@ -2588,6 +2645,27 @@ final class CallableTest extends TestCase
 
                     bar([Id::class, "id"]);',
                 'error_message' => 'InvalidArgument',
+            ],
+            'polymorphicArrayCallableViolatingTemplateBound' => [
+                'code' => '<?php
+                    class Str {
+                        /**
+                         * @template B of string
+                         * @param B $b
+                         * @return B
+                         */
+                        public static function id(string $b): string {
+                            return $b;
+                        }
+                    }
+
+                    /**
+                     * @param callable(int): int $f
+                     */
+                    function bar(callable $f): void {}
+
+                    bar([Str::class, "id"]);',
+                'error_message' => 'InvalidScalarArgument',
             ],
             'undefinedCallableMethodArrayWithoutClass' => [
                 'code' => '<?php
